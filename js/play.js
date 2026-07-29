@@ -340,6 +340,10 @@ function pmTicker(){
 // the weapons as a flagged addition rather than invented into the ticker.
 function pmCombatSection(){
   let h='<div class="pm-box"><div class="pm-sect-head bar"><span class="no">04</span> COMBAT</div>';
+  // Which of this character's Combat Styles (if any) cover a given weapon —
+  // built on the Combat Styles card, shown here so it's actually usable at
+  // the table instead of sitting inert in character data.
+  const stylesFor=n=>stylesList().filter(s=>styleDef(s.key).weapons.includes(n)).map(s=>s.name);
   if(S.gearWeapons.length){
     h+=S.gearWeapons.map(n=>{const w=WEAPON_MAP[n];if(!w)return"";
       const meta=(w.group==="Ranged"
@@ -347,8 +351,10 @@ function pmCombatSection(){
         :"SIZE "+esc(w.size||"—")+" &middot; REACH "+esc(w.reach||"—"))
        +" &middot; AP/HP "+esc(w.apHp||"—")
        +(w.effects&&w.effects!=="—"?" &middot; "+esc(w.effects).toUpperCase():"");
+      const inStyle=stylesFor(n);
       return '<div class="pm-wpn"><div class="top"><span class="nm">'+esc(w.name)+'</span><span class="dmg">'+esc(w.dmg)+'</span></div>'
-       +'<div class="meta">'+meta+'</div></div>';
+       +'<div class="meta">'+meta+'</div>'
+       +(inStyle.length?'<div class="meta">'+esc(inStyle.join(", "))+'</div>':'')+'</div>';
     }).join("");
   }else h+='<p class="pm-empty">No weapons carried — add some on the Money &amp; Gear step.</p>';
   h+='<div class="pm-fatrow"><span title="Fatigue levels apply escalating penalties (Combat chapter) — GM-adjudicated, not auto-calculated here.">Fatigue</span>'
@@ -690,6 +696,7 @@ function renderPlayView(){
        +'</table><p style="margin-top:8px"><button class="chip" onclick="APP.playInvAdd()">+ add item</button></p>';
     }
   }else if(tab==="features"){
+    h+=combatStylesReadOnlyHTML();
     h+=S.passions.length?'<div class="pm-invlist">'+S.passions.map(p=>'<div class="pm-invrow"><span>'+esc(p.name||"(unnamed)")+'</span><span class="pctval">'+passionVal(p)+'%</span></div>').join("")+'</div>':'<p class="pm-empty">No passions recorded.</p>';
   }else if(tab==="effects"){
     h+=specialEffectsPanel();
@@ -903,10 +910,71 @@ function stepFinish(){
   let h=head("Finish Creating","That&rsquo;s the character built. Enter Play Mode to start using it at the table &mdash; you can always jump back into any step from the Edit button in Play Mode to make changes, nothing here is locked in.");
   h+='<div class="card"><h3>'+esc(S.concept.name||"Unnamed Character")+'</h3>'
    +(meta?'<p class="note">'+esc(meta)+'</p>':"")+'</div>';
+  h+=combatStylesCard();
   h+=campaignCard();
   h+='<div class="exportrow"><button class="nav primary" onclick="APP.toPlay()">&#9654; Finish Creating &mdash; Enter Play Mode</button>'
    +'<button class="nav" onclick="APP.toSheet(\'character\')">View / Print Sheet</button></div>';
   return h;
+}
+// Combat Style composition — weapons and Combat Style Traits attached to
+// each style the character has (name + allocation already happen on the
+// Culture/Career/Quick Skills step; this is the one place to build out what
+// the style actually covers). Editable here only — Play Mode's Features tab
+// shows the built result read-only, it doesn't let you change it mid-game.
+function combatStylesCard(){
+  const styles=stylesList();
+  if(!styles.length){
+    return '<div class="card"><h3>Combat Styles</h3><p class="note">No Combat Style yet &mdash; take one back on the Culture, Career, or Quick Skills step (it needs a name there first), then come back here to build out its weapons and traits.</p></div>';
+  }
+  let h='<div class="card"><h3>Combat Styles</h3>'
+   +'<p class="note">Pick as many weapons and Combat Style Traits as fit &mdash; no fixed slot count either way. Traits are the fan-compiled <i>Mythras Combat Style Traits Encyclopedia</i>; hover one for its rules text, or see the full text below once selected.</p>';
+  h+=styles.map(combatStyleEditorHTML).join("");
+  h+='</div>';
+  return h;
+}
+function combatStyleEditorHTML(s){
+  const d=styleDef(s.key);
+  let h='<div class="cstyle-block">';
+  h+='<h4 class="cstyle-name">'+esc(s.name)+'</h4>';
+  h+='<div class="field"><label>Weapons ('+d.weapons.length+' selected)</label><div class="choicechips">'
+   +WEAPONS.map(w=>'<button class="chip '+(d.weapons.includes(w.name)?"on":"")+'" onclick="APP.toggleStyleWeapon(\''+jsq(s.key)+'\',\''+jsq(w.name)+'\')" title="'
+     +esc(w.group+" · "+w.dmg+" · Size "+w.size+" · Reach "+w.reach+(w.traits?" · "+w.traits:""))+'">'+esc(w.name)+'</button>').join("")+'</div></div>';
+  h+='<div class="field"><label>Combat Style Traits ('+d.traits.length+' selected)</label>'
+   +COMBAT_TRAIT_CATEGORIES.map(cat=>{
+     const items=COMBAT_TRAITS.filter(t=>t.category===cat);
+     return '<details class="cstyle-traitgroup"><summary>'+esc(cat)+' ('+items.length+')</summary><div class="choicechips">'
+      +items.map(t=>'<button class="chip '+(d.traits.includes(t.name)?"on":"")+'" onclick="APP.toggleStyleTrait(\''+jsq(s.key)+'\',\''+jsq(t.name)+'\')" title="'+esc(t.desc)+'">'+esc(t.name)+'</button>').join("")+'</div></details>';
+   }).join("")+'</div>';
+  if(d.traits.length){
+    h+='<div class="cstyle-traitdescs">'+d.traits.map(tn=>{
+      const t=COMBAT_TRAITS.find(x=>x.name===tn);if(!t)return"";
+      return '<p class="note"><b>'+esc(t.name)+'</b> <span class="cstyle-traitsrc">('+esc(t.category)+' &middot; '+esc(t.source)+')</span> &mdash; '+esc(t.desc)+'</p>';
+    }).join("")+'</div>';
+  }
+  h+='</div>';
+  return h;
+}
+// Read-only version of the above for Play Mode's Features tab — shows what
+// was built on the Combat Styles card (name, weapons, full trait rules
+// text) so a player can actually reference it at the table. No editing
+// controls here; that only happens back in the Character Builder.
+function combatStylesReadOnlyHTML(){
+  const styles=stylesList();
+  if(!styles.length)return "";
+  return '<div class="pm-cstyle-ro">'+styles.map(s=>{
+    const d=styleDef(s.key);
+    let h='<div class="pm-cstyle-block"><h4>'+esc(s.name)+'</h4>';
+    h+=d.weapons.length?'<p class="pm-notes"><b>Weapons:</b> '+d.weapons.map(esc).join(", ")+'</p>'
+      :'<p class="pm-empty">No weapons attached — edit this style from the Character Builder&rsquo;s Finish step.</p>';
+    if(d.traits.length){
+      h+=d.traits.map(tn=>{
+        const t=COMBAT_TRAITS.find(x=>x.name===tn);if(!t)return"";
+        return '<details class="pm-fx-item"><summary>'+esc(t.name)+' <span class="pm-fx-badge">'+esc(t.category)+'</span></summary><p>'+esc(t.desc)+'</p></details>';
+      }).join("");
+    }else h+='<p class="pm-empty">No Combat Style Traits attached.</p>';
+    h+='</div>';
+    return h;
+  }).join("")+'</div>';
 }
 function campaignCard(){
   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){

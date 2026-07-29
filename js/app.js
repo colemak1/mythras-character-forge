@@ -185,6 +185,9 @@ window.APP={
  toggleWeapon(name){const i=S.gearWeapons.indexOf(name);
    if(i>=0)S.gearWeapons.splice(i,1);else S.gearWeapons.push(name);render();},
  setArmor(loc,material){S.armor[loc]=material;render();},
+ /* combat style composition — any number of weapons/traits, Character Builder only */
+ toggleStyleWeapon(key,name){toggleInList(styleDef(key).weapons,name);render();},
+ toggleStyleTrait(key,name){toggleInList(styleDef(key).traits,name);render();},
  /* roller */
  roll(key){const em=entryMap();const e=em[key];if(!e)return;
    const base=finalPct(key);const g=gradedPct(key,base);

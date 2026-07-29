@@ -73,6 +73,12 @@ function freshState(){return {
  charMode:"roll", poolA:[], poolB:[], assignA:{}, assignB:{}, fixedAP:0,
  culture:null, cultChoice:[], cultProf:[null,null,null], cultProfSpec:["","",""],
  cultStyleOn:false, cultStyleName:"",
+ // Combat Style composition — weapons and Combat Style Traits attached to
+ // each named style, keyed by the same style key stylesList()/S.alloc
+ // already use ("style:cult", "style:k"+i, "style:quick"). Kept separate
+ // from the style's name/allocation (which drive the %) since a style can
+ // be renamed or reslotted without losing what's been built into it.
+ styleDefs:{},
  career:null, carProf:[null,null,null], carProfSpec:["","",""], carStyles:[],
  customCareer:{isCustom:false,name:"",std:[],prof:[],styleSlots:0},
  hobby:null, hobbySpec:"",
@@ -115,6 +121,7 @@ function normalizeState(){
   S.archAdvantages=S.archAdvantages||[];
   S.qProf=S.qProf||[null,null,null];S.qProfSpec=S.qProfSpec||["","",""];
   S.qStyleOn=!!S.qStyleOn;S.qStyleName=S.qStyleName||"";
+  S.styleDefs=S.styleDefs||{};
   S.cultMembership=S.cultMembership||{archetype:null,name:"",rank:0};
   if(typeof S.cultMembership.rank!=="number")S.cultMembership.rank=0; // migrate old string ranks
   if(S.money&&S.money.quickMult==null)S.money.quickMult=50;
@@ -203,6 +210,12 @@ function stylesList(){
   });
   return out;
 }
+// Get-or-create the weapon/trait composition attached to a Combat Style
+// (keyed the same way as S.alloc — see the styleDefs comment in freshState).
+// Any number of weapons and any number of traits, player's choice; nothing
+// here is validated against a fixed slot count.
+function styleDef(key){return S.styleDefs[key]||(S.styleDefs[key]={weapons:[],traits:[]});}
+function toggleInList(list,item){const i=list.indexOf(item);if(i>=0)list.splice(i,1);else list.push(item);}
 // All keys eligible for the Quick Character 100-point pool: every Standard
 // Skill, the three chosen Professional Skills, and the optional Combat Style.
 function quickKeys(){
