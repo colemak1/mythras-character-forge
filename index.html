@@ -1693,7 +1693,8 @@ async function onSignedIn(user){
 }
 async function ensureProfile(name){
   if(!AUTH_USER)return;
-  await sb.from("profiles").upsert({id:AUTH_USER.id,display_name:name},{onConflict:"id"});
+  const {error}=await sb.from("profiles").upsert({id:AUTH_USER.id,display_name:name},{onConflict:"id"});
+  if(error)throw error;
   AUTH_PROFILE={id:AUTH_USER.id,display_name:name};
 }
 
@@ -1705,7 +1706,17 @@ async function cloudFetchCampaigns(){
 async function cloudCreateCampaign(name){
   const {data,error}=await sb.from("campaigns").insert({name,notes:"",dm_id:AUTH_USER.id,invite_code:genId().toUpperCase()}).select().single();
   if(error)throw error;
-  await sb.from("campaign_members").insert({campaign_id:data.id,user_id:AUTH_USER.id,role:"dm"});
+  // This insert used to go unchecked — if it failed (RLS, network blip),
+  // the campaign row still existed with the right dm_id, but the DM had no
+  // campaign_members row, so anything keying "am I DM here" off membership
+  // (rather than campaigns.dm_id) silently stopped recognizing them. Surface
+  // the failure and roll back the orphaned campaign rather than leaving a
+  // half-created campaign with a DM who doesn't show up as a member.
+  const {error:memberError}=await sb.from("campaign_members").insert({campaign_id:data.id,user_id:AUTH_USER.id,role:"dm"});
+  if(memberError){
+    await sb.from("campaigns").delete().eq("id",data.id);
+    throw memberError;
+  }
   return data;
 }
 async function cloudUpdateCampaign(id,fields){
@@ -4399,7 +4410,23 @@ window.APP={
  refreshBoard(){if(CURRENT_CAMPAIGN_ID)boardRefetch(CURRENT_CAMPAIGN_ID);},
  boardOpenChar(id,ownerName){
    APP.openCharToPlay(id,{ownerName:ownerName||null,returnTo:"board"});},
- setCampaign(id){S.campaignId=id||null;render();},
+ setCampaign(id){
+   // cloudUpsertCharacter()'s UPDATE path deliberately never writes
+   // campaign_id (see the comment there) to stop the debounced autosave
+   // from clobbering a DM (re)assignment with a stale in-memory value. But
+   // that meant picking a campaign here and clicking "Save to Library"
+   // NEVER actually persisted the assignment for a character that already
+   // had a cloud row — the general save path is blind to campaign_id by
+   // design, and nothing else wrote it. Route the actual persistence
+   // through the same dedicated single-field update the Campaign page's
+   // own assign/unassign actions use, immediately on change, instead of
+   // hoping a later generic save will carry it — it won't.
+   const cid=id||null;S.campaignId=cid;render();
+   if(cloudActive()&&isUuid(S._libId)){
+     (cid?assignCharUnified(S._libId,cid):unassignCharUnified(S._libId))
+       .catch(e=>alert("Could not update campaign assignment: "+e.message));
+   }
+ },
  saveToLibrary(){
    saveToLibraryUnified().then(()=>{S._libLastSaved=Date.now();render();})
      .catch(e=>alert("Could not save to library: "+e.message));},
