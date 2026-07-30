@@ -893,6 +893,7 @@ function characterSheetBody(){
   h+='<div class="mhead-grid">';
   h+='<div class="mbox"><div class="mbox-t">Player &amp; Character</div>'
    +mkv("Player",esc(S.concept.player||"—"))+mkv("Character",esc(S.concept.name||"Unnamed"))
+   +mkv("Species",esc(speciesDef()?speciesDef().label:"Human"))
    +mkv("Culture",esc(S.culture||"—"))+mkv("Career",esc(careerName||"—"))
    +mkv("Age",esc(S.concept.age||"—"))+mkv("Gender",esc(S.concept.gender||"—"))
    +mkv("Frame",esc(S.concept.frame||"—"))+mkv("Handed",esc(S.concept.handed||"—"))+'</div>';
@@ -1039,10 +1040,22 @@ function combatStyleEditorHTML(s){
 // was built on the Combat Styles card (name, weapons, full trait rules
 // text) so a player can actually reference it at the table. No editing
 // controls here; that only happens back in the Character Builder.
+// Racial traits, read-only, for Play Mode's Features tab. These are
+// situational Grade shifts the GM calls for, so they live here as reference
+// text rather than being folded into a percentage — the same treatment the
+// Pulp/Paragon Grade-easier Advantages get.
+function speciesTraitsReadOnlyHTML(){
+  const sp=speciesDef();
+  if(!sp||!sp.traits.length)return "";
+  return '<div class="pm-cstyle-ro"><div class="pm-cstyle-block"><h4>'+esc(sp.label)+' &mdash; racial traits</h4>'
+   +'<p class="pm-notes">Movement '+sp.move+'m &middot; lifespan '+esc(sp.lifespan)+'</p>'
+   +sp.traits.map(([n,d])=>'<details class="pm-fx-item"><summary>'+esc(n)+'</summary><p>'+esc(d)+'</p></details>').join("")
+   +'</div></div>';
+}
 function combatStylesReadOnlyHTML(){
   const styles=stylesList();
-  if(!styles.length)return "";
-  return '<div class="pm-cstyle-ro">'+styles.map(s=>{
+  if(!styles.length)return speciesTraitsReadOnlyHTML();
+  return speciesTraitsReadOnlyHTML()+'<div class="pm-cstyle-ro">'+styles.map(s=>{
     const d=styleDef(s.key);
     let h='<div class="pm-cstyle-block"><h4>'+esc(s.name)+'</h4>';
     h+=d.weapons.length?'<p class="pm-notes"><b>Weapons:</b> '+d.weapons.map(esc).join(", ")+'</p>'
@@ -1092,6 +1105,7 @@ function rulesNotes(){
   +'<li><b>Cult &amp; Community</b> (Cults &amp; Brotherhoods chapter, pp.196&ndash;200, confirmed against page images): the five organisation types (Theist Cult, Animist/Spirit Cult, Sorcery Order, Mystical Order, Brotherhood) and their rank titles &mdash; Common/Dedicated/Proven/Overseer/Leader &mdash; are the book&rsquo;s own, as are the per-rank Requirements (years of membership + a minimum number of cult skills at a minimum %) and Training Discount (0/25/50/75/100%). <b>Correction:</b> rank does not grant a flat skill % bonus &mdash; an earlier pass invented that mechanic; it has been removed. What stays intentionally setting-specific, per the book&rsquo;s own design (cults are meant to be campaign-defined), is which nine archetypes exist for Sit&#39;ota, their names/blurbs, and which skill each one teaches.</li>'
   +'<li><b>Encumbrance</b> (core rulebook, Encumbrance section, confirmed against page image): unencumbered up to STR&times;2. Over STR&times;2 (&ldquo;Burdened&rdquo;): STR/DEX-based skills, including Combat Styles, are one Grade harder, Movement &minus;2m, no sprinting. Over STR&times;3 (&ldquo;Overloaded&rdquo;): two Grades harder, Movement halved, walk-only. STR&times;4 is a hard cap &mdash; flagged but not blocked by this tool. Worn armour counts at half its packed ENC toward these totals; carried (unworn) armour counts full ENC. <b>These penalties are now applied, not just described:</b> a skill counts as STR/DEX-based if its base formula contains STR or DEX (which is every Combat Style), and the Grade shift feeds the same <code>gradeForEntry()</code> the skill list, sheet, Play Mode and every roll button already use. Until this pass the warning text promised a penalty that never reached a roll.</li>'
   +'<li><b>Fatigue</b> (Fatigue Levels table). Each level sets an <i>absolute</i> Skill Grade for all rolls (Winded/Tired Hard, Wearied/Exhausted Formidable, Debilitated/Incapacitated Herculean, Semi-Conscious and beyond Hopeless), plus Movement, Initiative and Action Point penalties, and a Recovery Period that is divided by the character&rsquo;s Healing Rate. All of it is applied automatically now; the track used to be a picker that stored a string and changed nothing. Because the table states a grade rather than a shift, Fatigue acts as a <i>floor</i> on difficulty and takes the harsher of itself and any Encumbrance shift, rather than stacking with it &mdash; the book gives no stacking rule, and summing them would be an invention. Table transcribed from the <a href="https://srd.mythras.net/" target="_blank" rel="noopener">Mythras Imperative SRD</a>, published by The Design Mechanism under the ORC License, which reproduces the core rulebook&rsquo;s own Fatigue table.</li>'
+  +'<li><b>Non-human species.</b> Picking a species on the Concept step swaps in that species&rsquo; characteristic dice (which drive the roller, the Points Build bounds and the pool), its Movement Rate, and its racial traits; everything downstream &mdash; Culture, Career, skills, Attributes, Hit Points &mdash; runs unchanged, which is how the rules handle it. The Racial Characteristics Table, Movement Rates and racial special rules come from the <a href="https://cfi-srd.mythras.net/" target="_blank" rel="noopener">Classic Fantasy Imperative SRD</a> (The Design Mechanism, ORC License) &mdash; the same engine, and the only open Mythras-family source for playable non-human dice. Its Human row is identical to core Mythras (3d6 / 2d6+6), which is the cross-check that the two agree. <b>Two seams worth knowing:</b> (1) Points Build keeps the core rulebook&rsquo;s flat 80/90/100 pool for humans but uses the species rules&rsquo; &ldquo;racial averages + 6&rdquo; for demi-humans, because a flat 80 would put a dwarf below its own species average; (2) CFI&rsquo;s &ldquo;humans get +1 Luck Point&rdquo; balance perk is <i>not</i> applied, since it is a Classic Fantasy rule rather than core Mythras and would silently inflate every human character. Racial traits are all situational Grade shifts or narrative rules, so they are recorded on the sheet rather than folded into a percentage &mdash; the same treatment the Pulp/Paragon Grade-easier Advantages already get.</li>'
   +'<li><b>Movement Rate</b> was hardcoded as the string &ldquo;6m&rdquo; in five places. It now comes from the species template (core: &ldquo;Movement is not calculated from Characteristics but is a default value which differs from species to species. The base Movement Rate for humans is 6 metres&rdquo;) and is reduced by Fatigue and Encumbrance. Gaits are Walk / Run &times;3 / Sprint &times;5; sprinting is lost while Burdened and everything above a walk while Overloaded.</li>'
   +'<li>Not modelled in v1: age bands, background events, magic spell lists.</li>'
   +'</ul></div></details>';

@@ -53,6 +53,28 @@ window.APP={
  manual(c,v){const n=parseInt(v,10);S.chars[c]=Number.isFinite(n)?n:null;render();},
  fap(v){S.fixedAP=v;render();},
  /* character tier & creation method */
+ /* species (non-human characters) */
+ // Switching species changes the characteristic dice, so anything already
+ // rolled or built is meaningless afterwards — same reasoning, and the same
+ // confirmation, as switching character tier.
+ pickSpecies(key){
+   const nw=(key==="human"||!key)?(key||null):key;
+   if(S.species===nw)return;
+   if(charsReady()&&!confirm("Switching species resets your characteristics — each species rolls its own characteristic dice. Continue?"))return;
+   S.species=nw;
+   CHARS.forEach(c=>S.chars[c]=null);S.poolA=[];S.poolB=[];S.assignA={};S.assignB={};
+   render();},
+ // Non-human characteristics are rolled per characteristic off that species'
+ // own dice, not from the two shared human pools (a dwarf's STR 2d6+9 and DEX
+ // 3d6 aren't interchangeable, so there is nothing to allocate between).
+ // Pulp/Paragon still get the book's "roll one extra die and drop the lowest"
+ // treatment, generalised to whatever die the species uses.
+ rollSpeciesAll(){const sp=speciesDef();if(!sp)return;
+   CHARS.forEach(c=>{S.chars[c]=rollSpeciesChar(sp,c);});render();},
+ rollSpeciesOne(c){const sp=speciesDef();if(!sp)return;
+   S.chars[c]=rollSpeciesChar(sp,c);render();},
+ speciesAverages(){const sp=speciesDef();if(!sp)return;
+   CHARS.forEach(c=>{S.chars[c]=sp.avg[c];});render();},
  archetype(name){
    if(S.archetype===name)return;
    if(charsReady()&&!confirm("Switching character tier resets your characteristics — the dice and point-build pools differ by tier. Continue?"))return;

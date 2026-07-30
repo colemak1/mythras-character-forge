@@ -106,10 +106,40 @@ function archetypeCard(){
   }
   return h+'</div>';
 }
+// Species picker. Non-human characters were previously impossible — there was
+// no path at all, and Movement was the literal string "6m". Picking a species
+// swaps in its characteristic dice (which drives the roller, the Points Build
+// bounds and the pool), its Movement Rate, and its racial traits.
+function speciesCard(){
+  const cur=S.species||"human";
+  let h='<div class="card"><h3>Species</h3>'
+   +'<p class="note">Non-human characters are built exactly like humans &mdash; same Culture, Career, skills and Attributes &mdash; but roll their own characteristic dice and have their own Movement Rate. Everything downstream adapts automatically.</p>'
+   +'<div class="pickgrid pickgrid-sm">'+SPECIES.map(sp=>
+     '<button class="pick '+(cur===sp.key?"on":"")+'" onclick="APP.pickSpecies(\''+sp.key+'\')">'
+     +'<span class="pn">'+esc(sp.label)+'</span>'
+     +'<div class="pd">'+esc(sp.blurb)+'</div>'
+     +'<div class="pmeta">Move '+sp.move+'m &middot; '+esc(sp.lifespan)+'</div></button>').join("")+'</div>';
+  const sp=SPECIES_MAP[cur];
+  h+='<table class="rt speciestbl"><tr><th>&nbsp;</th>'+CHARS.map(c=>'<th class="num">'+c+'</th>').join("")+'</tr>'
+   +'<tr><td>Dice</td>'+CHARS.map(c=>'<td class="num">'+esc(sp.dice[c])+'</td>').join("")+'</tr>'
+   +'<tr><td>Range</td>'+CHARS.map(c=>'<td class="num">'+sp.bounds[c][0]+'&ndash;'+sp.bounds[c][1]+'</td>').join("")+'</tr>'
+   +'<tr><td>Average</td>'+CHARS.map(c=>'<td class="num">'+sp.avg[c]+'</td>').join("")+'</tr></table>';
+  h+='<p class="note">Points Build pool for a '+esc(sp.label)+(S.archetype!=="ordinary"?" "+ARCHETYPES[S.archetype].label:"")+': <b>'+pbPool()+'</b> points.'
+   +(sp.key==="human"
+     ?' (Core rulebook&rsquo;s flat pool.)'
+     :' (Racial averages '+sp.avgTotal+' + 6, per the species rules'+(S.archetype!=="ordinary"?", + this tier&rsquo;s increment":"")+'.)')+'</p>';
+  if(sp.traits.length){
+    h+='<div class="field"><label>Racial traits</label>'
+     +sp.traits.map(([n,d])=>'<p class="note"><b>'+esc(n)+'</b> &mdash; '+esc(d)+'</p>').join("")
+     +'<p class="note"><i>These are situational Grade shifts and narrative rules, so &mdash; exactly as with the Pulp/Paragon Grade-easier Advantages &mdash; they are recorded on your sheet rather than folded into a percentage. Characteristic dice and Movement Rate are applied automatically.</i></p></div>';
+  }
+  h+='<p class="note rulesrc">Characteristic dice, Movement Rates and racial traits from the <a href="https://cfi-srd.mythras.net/" target="_blank" rel="noopener">Classic Fantasy Imperative SRD</a> (The Design Mechanism, ORC License). Its Human row matches core Mythras exactly.</p>';
+  return h+'</div>';
+}
 function stepConcept(){
   const c=S.concept;
   return head("Concept","Who is this character? Keep it simple for now &mdash; the numbers come next, and everything here is free text.")
-  +modeCard()+archetypeCard()
+  +modeCard()+archetypeCard()+speciesCard()
   +'<div class="card"><div class="grid2">'
   +fld("Character name",tIn("concept","name",c.name,"e.g. Anathaym"))
   +fld("Player",tIn("concept","player",c.player,""))
@@ -126,7 +156,22 @@ function stepChars(){
   let body="";
   const tier=ARCHETYPES[S.archetype];
   const isOrd=S.archetype==="ordinary";
-  if(S.charMode==="roll"){
+  if(S.charMode==="roll"&&!usesHumanPools()){
+    // Each characteristic has its own die for a non-human species, so there
+    // is no shared pool to allocate between — roll them individually, with a
+    // re-roll on each in case the GM allows it.
+    const sp=speciesDef();
+    body='<div class="card"><h3>Roll '+esc(sp.label)+' characteristics</h3>'
+    +'<div class="rulequote">&ldquo;Demi-human characters are created in almost the same way as humans. Characteristics are determined using the Characteristic dice for that species, which will result in different Characteristic values and ranges, but otherwise all the other elements: Attributes, Culture, Class and so on, are factored as normal.&rdquo;</div>'
+    +(isOrd?"":'<p class="note">'+esc(ARCHETYPES[S.archetype].label)+': one extra die is rolled for each characteristic and the lowest discarded.</p>')
+    +'<p><button class="chip actionchip" onclick="APP.rollSpeciesAll()" style="font-size:13.5px">Roll all seven</button> '
+    +'<button class="nav" onclick="APP.speciesAverages()" style="border:1px solid var(--line);border-radius:5px;padding:6px 14px">Use racial averages</button></p>'
+    +'<div class="charrow" style="margin-top:12px">'
+    +CHARS.map(c=>'<div class="charbox"><div class="cname">'+c+'</div><div class="cval">'+(S.chars[c]??"&mdash;")+'</div>'
+      +'<div class="cctl"><button class="chip actionchip" onclick="APP.rollSpeciesOne(\''+c+'\')">roll '+esc(sp.dice[c])+'</button></div>'
+      +'<div class="crange">'+sp.bounds[c][0]+'&ndash;'+sp.bounds[c][1]+'</div></div>').join("")
+    +'</div></div>';
+  }else if(S.charMode==="roll"){
     const quote=isOrd
      ?"&ldquo;3d6 for STR, CON, DEX, POW and CHA. 2d6+6 for INT and SIZ. Allocate results to fit the concept. Results may be allocated in the order listed, or distributed as the Games Master and players agree.&rdquo;"
      :tier.quote;
@@ -173,7 +218,9 @@ function stepChars(){
       return '<div class="charbox'+(oob?" oob":"")+'"><div class="cname">'+c+'</div><input type="number" min="'+mn+'" max="'+mx+'" value="'+(v??"")+'" onchange="APP.manual(\''+c+'\',this.value)"><div class="crange">'+mn+'&ndash;'+mx+'</div></div>';
     }).join("")+'</div></div>';
   }
+  const spNow=speciesDef();
   return head("Characteristics","Seven characteristics drive everything downstream &mdash; attributes, skill bases and hit points all cascade from these.")
+  +(spNow&&spNow.key!=="human"?'<p class="note">Rolling as a <b>'+esc(spNow.label)+'</b> (Movement '+spNow.move+'m). Change species on the Concept step.</p>':"")
   +'<div class="modeseg">'
   +'<button class="'+(S.charMode==="roll"?"on":"")+'" onclick="APP.mode(\'roll\')">Roll dice</button>'
   +'<button class="'+(S.charMode==="pb"?"on":"")+'" onclick="APP.mode(\'pb\')">Points build ('+pbPool()+')</button>'

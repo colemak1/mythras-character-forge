@@ -283,6 +283,20 @@ const charMin=c=>charBounds(c).min, charMax=c=>charBounds(c).max;
 // Where the bound the player just tripped over comes from, so the validation
 // message explains itself instead of just asserting a number.
 function charRangeSource(){const sp=speciesDef();return sp?" for a "+sp.label:" for a human";}
+// Roll one characteristic off a species' own dice. Pulp Hero and Paragon use
+// the book's "Dice Roll, High" treatment — roll one extra die of the same
+// size and discard the lowest — generalised here to whatever die the species
+// happens to use (2d4+4, 1d3+2, 3d6+3 and so on), rather than assuming d6.
+function rollSpeciesChar(sp,c){
+  const d=parseDice(sp.dice[c]);if(!d)return null;
+  const extra=S.archetype==="ordinary"?0:1;
+  const rolls=Array.from({length:d.n+extra},()=>1+Math.floor(Math.random()*d.sides)).sort((a,b)=>a-b);
+  return rolls.slice(extra).reduce((a,b)=>a+b,0)+d.mod;
+}
+// True when characteristics come from one shared pool per dice group (plain
+// human core rules: 3d6 x5 and 2d6+6 x2, freely assignable) rather than a
+// separate die per characteristic.
+function usesHumanPools(){const sp=speciesDef();return !sp||sp.key==="human";}
 // Points Build pool. Humans use the core rulebook's flat pool per character
 // tier (80 / 90 / 100); species templates override this with their own.
 function pbPool(){

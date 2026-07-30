@@ -24,6 +24,136 @@ const PROF={"Acting":"CHAx2","Acrobatics":"STR+DEX","Art":"CHA+POW","Binding":"C
 "Survival":"CON+POW","Teach":"INT+CHA","Trance":"POW+CON","Track":"INT+CON"};
 const MAGIC=new Set(["Binding","Devotion","Exhort","Folk Magic","Invocation","Meditation","Mysticism","Shaping","Trance"]);
 
+/* ================= SPECIES / NON-HUMAN CHARACTERS =================
+   The core Mythras rulebook builds humans; non-human player characters are
+   handled by giving the species its own characteristic dice and Movement Rate
+   and otherwise running character creation unchanged ("Demi-human characters
+   are created in almost the same way as humans. Characteristics are determined
+   using the Characteristic dice for that species, which will result in
+   different Characteristic values and ranges, but otherwise all the other
+   elements: Attributes, Culture, Class and so on, are factored as normal.").
+
+   SOURCE. The Racial Characteristics Table below, the Movement Rates, and the
+   racial special rules are transcribed from the Classic Fantasy Imperative
+   SRD (cfi-srd.mythras.net), published by The Design Mechanism under the ORC
+   License — the same Mythras engine, and the only *open* Mythras-family
+   source for playable non-human characteristic dice. Its Human row is
+   identical to core Mythras (STR/CON/DEX/POW/CHA 3d6, SIZ/INT 2d6+6), which
+   is the cross-check that the two agree.
+
+   POINTS BUILD. Two different, individually faithful models meet here, and
+   the seam is deliberate rather than smoothed over:
+     - Human keeps the core rulebook's flat pool (80 / 90 / 100 by tier), which
+       this app already had verified against the page.
+     - Non-humans use the CFI model — start from the racial averages and
+       spend 6 more points — because a flat 80 would put a dwarf (racial
+       averages summing to 85) below its own species average. pbPool below is
+       that sum plus 6; the tier increment (+10 Pulp / +20 Paragon) rides on
+       top exactly as it does for humans.
+
+   MOVEMENT. CFI states Movement in feet and puts humans at 20 feet; core
+   Mythras puts humans at 6 metres. Converting at that anchor (0.3 m/ft) gives
+   20ft = 6m and 15ft = 4.5m, which is what the `move` field holds.
+
+   TRAITS. Every racial special rule below is either situational ("one grade
+   easier on Perception rolls to spot something") or narrative (lifespan,
+   literacy). This app's existing, deliberate convention is that situational
+   Grade shifts are surfaced as flags rather than baked into a percentage —
+   the same call already made for the Pulp/Paragon Grade-easier Advantages,
+   for the same reason: a Grade is a roll modifier the GM calls for, not a
+   skill bonus. Only the three hard numbers (characteristic dice, the bounds
+   they imply, and Movement Rate) are applied automatically.
+
+   NOT INCLUDED. CFI gives humans "+1 Luck Point" as a balance perk against
+   demi-human abilities. That is a Classic Fantasy rule, not core Mythras, and
+   folding it in would silently inflate every plain human character this app
+   has ever built — so it is omitted. */
+const SPECIES=[
+ {key:"human",label:"Human",move:6,pbPool:null,lifespan:"~100 years",
+  blurb:"The core rulebook's default. Adaptable, fast-learning, found everywhere.",
+  dice:{STR:"3d6",CON:"3d6",SIZ:"2d6+6",DEX:"3d6",INT:"2d6+6",POW:"3d6",CHA:"3d6"},
+  traits:[]},
+ {key:"dwarf",label:"Dwarf",move:4.5,lifespan:"~450 years",
+  blurb:"Mountain-hall crafters and miners: strong, tough, materialistic, deeply suspicious of magic.",
+  dice:{STR:"2d6+9",CON:"2d6+9",SIZ:"2d4+4",DEX:"3d6",INT:"2d6+6",POW:"3d6",CHA:"2d6+2"},
+  traits:[
+   ["Darkvision","Sees 60 feet in dim light as though bright (Standard Perception rolls), and in darkness as though dim (Perception rolls are Hard), in shades of grey only. Does not work in magical darkness."],
+   ["Magic Resistance","Willpower rolls to resist Arcane magic are one Grade easier. No effect on Divine magic."],
+   ["Poison Resistance","Endurance rolls relating to poison are one Grade easier."],
+   ["Tunnel Sense","An Easy Perception roll detects stonework pits, deadfalls and traps, slopes and grades, approximate depth underground, new construction, and shifting walls, within 10 feet."],
+   ["Literate","Typically able to read and write any language they can speak."]]},
+ {key:"elf",label:"Elf",move:6,lifespan:"~1,100 years",
+  blurb:"Long-lived woodland folk — graceful, remote, keenly perceptive, and hard to charm.",
+  dice:{STR:"2d6+4",CON:"3d6",SIZ:"2d6+4",DEX:"2d6+9",INT:"2d6+7",POW:"2d6+7",CHA:"3d6"},
+  traits:[
+   ["Sharp Vision","All Perception rolls to spot something are one Grade easier."],
+   ["Resistance to Sleep and Charm","Willpower rolls to resist Sleep and Charm effects are two Grades easier. May drop the resistance voluntarily."],
+   ["Stealthy","Wearing nothing more restrictive than light armour, Stealth rolls are one Grade easier."],
+   ["Elven Chain","Adept at casting Arcane magic while wearing elven chain."],
+   ["Literate","Typically able to read and write any language they can speak."]]},
+ {key:"gnome",label:"Gnome",move:4.5,lifespan:"~700 years",
+  blurb:"Smallest of the demi-humans: burrow-dwelling gem-cutters, incorrigible jokers, close kin to dwarves.",
+  dice:{STR:"2d6+1",CON:"2d6+6",SIZ:"1d3+2",DEX:"3d6+2",INT:"2d6+8",POW:"2d6+7",CHA:"3d6"},
+  traits:[
+   ["Darkvision","Sees 60 feet in dim light as though bright (Standard Perception rolls), and in darkness as though dim (Perception rolls are Hard), in shades of grey only. Does not work in magical darkness."],
+   ["Magic Resistance","Willpower rolls to resist Arcane magic are one Grade easier — two Grades easier against illusions. No effect on Divine magic."],
+   ["Poison Resistance","Endurance rolls relating to poison are one Grade easier."],
+   ["Tunnel Sense","An Easy Perception roll detects stonework pits, deadfalls and traps, slopes and grades, approximate depth underground, new construction, and shifting walls, within 10 feet."],
+   ["Literate","Typically able to read and write any language they can speak."]]},
+ {key:"halfelf",label:"Half-Elf",move:6,lifespan:"~300 years",
+  blurb:"Elf and human both, at home in neither — the elven gifts at half strength, the human wanderlust at full.",
+  dice:{STR:"3d6",CON:"3d6",SIZ:"2d6+6",DEX:"2d6+6",INT:"2d6+6",POW:"2d6+6",CHA:"3d6"},
+  traits:[
+   ["Sharp Vision","All Perception rolls to spot something are one Grade easier."],
+   ["Resistance to Sleep and Charm","Willpower rolls to resist Sleep and Charm effects are one Grade easier. May drop the resistance voluntarily."],
+   ["Stealthy","Wearing nothing more restrictive than light armour, Stealth rolls are one Grade easier."],
+   ["Elven Chain","Adept at casting Arcane magic while wearing elven chain."],
+   ["Literate","Typically able to read and write any language they can speak."]]},
+ {key:"halforc",label:"Half-Orc",move:6,lifespan:"~80 years",
+  blurb:"Frontier-born and frontier-shaped: bigger and stronger than a human, and trusted by almost nobody.",
+  dice:{STR:"2d6+9",CON:"2d6+6",SIZ:"2d6+9",DEX:"3d6",INT:"2d6+5",POW:"3d6",CHA:"2d6+1"},
+  traits:[
+   ["Darkvision","Sees 60 feet in dim light as though bright (Standard Perception rolls), and in darkness as though dim (Perception rolls are Hard), in shades of grey only. Does not work in magical darkness."],
+   ["Survival Bonus (Specific)","If raised among orcs, Survival rolls in the character's area of origin are one Grade easier."],
+   ["Illiterate (if orc-raised)","Typically unable to read or write. Literacy costs 1 Experience Roll and a month of training under a literate teacher for half-skill literacy in one known language, and the same again for full literacy."]]},
+ {key:"halfling",label:"Halfling",move:4.5,lifespan:"~170 years",
+  blurb:"Shire-dwelling farmers and gossips, physically slight but startlingly lucky and quiet on their feet.",
+  dice:{STR:"2d6+1",CON:"2d6+7",SIZ:"1d4+5",DEX:"3d6+3",INT:"2d6+6",POW:"2d6+9",CHA:"2d6+5"},
+  traits:[
+   ["Stealthy","Wearing nothing more restrictive than light armour, Stealth rolls are one Grade easier."],
+   ["Magic Resistance","Willpower rolls to resist Arcane magic are one Grade easier. No effect on Divine magic."],
+   ["Poison Resistance","Endurance rolls relating to poison are one Grade easier."],
+   ["Exposure Tolerance (Feet)","No adverse effects from exposure while barefoot, whatever the temperature. The rest of the body suffers exposure normally."],
+   ["Literate","Typically able to read and write any language they can speak."]]}
+];
+// Parse "2d6+9" / "1d3+2" / "3d6" into {n, sides, mod} so bounds, averages and
+// rolls all derive from the one dice string rather than being three separate
+// hand-maintained columns that could disagree.
+function parseDice(str){
+  const m=/^(\d+)d(\d+)([+-]\d+)?$/.exec(String(str).trim());
+  if(!m)return null;
+  return {n:+m[1],sides:+m[2],mod:m[3]?+m[3]:0};
+}
+const diceMin=d=>d.n+d.mod, diceMax=d=>d.n*d.sides+d.mod;
+// The book prints a "racial average" in parentheses after each dice score and
+// uses it as the Points Build starting value. It is the true dice average
+// rounded up (e.g. 3d6 = 10.5 -> 11, 2d4+4 = 9), which reproduces every
+// printed value in the source table.
+const diceAvg=d=>Math.ceil(d.n*(d.sides+1)/2)+d.mod;
+function rollDice(d){let t=d.mod;for(let i=0;i<d.n;i++)t+=1+Math.floor(Math.random()*d.sides);return t;}
+// Precompute bounds / averages / points-build pool onto each species entry.
+SPECIES.forEach(sp=>{
+  sp.bounds={};sp.avg={};let sum=0;
+  CHARS.forEach(c=>{const d=parseDice(sp.dice[c]);
+    sp.bounds[c]=[diceMin(d),diceMax(d)];sp.avg[c]=diceAvg(d);sum+=sp.avg[c];});
+  sp.avgTotal=sum;
+  // Human deliberately keeps the core rulebook's own flat pool (pbPool null
+  // means "fall through to ARCHETYPES[tier].pbPoints"); demi-humans use the
+  // CFI "racial averages + 6" model.
+  if(sp.pbPool===undefined)sp.pbPool=sum+6;
+});
+const SPECIES_MAP=Object.fromEntries(SPECIES.map(s=>[s.key,s]));
+
 // Cultures (workbook Culture Summary; money from core p.21, verified visually)
 const CULTURES={
 "Barbarian":{money:50,
