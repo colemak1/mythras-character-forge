@@ -67,6 +67,10 @@ let S=freshState();
 function freshState(){return {
  step:0, overrides:{},
  creationMode:"full", archetype:"ordinary", archAdvantages:[],
+ // null = plain human on the core rulebook's own dice. A key into SPECIES_MAP
+ // swaps in that species' characteristic dice, bounds, Movement Rate and
+ // traits (see the Species step).
+ species:null,
  campaignId:null, _libId:null, _libLastSaved:null,
  concept:{name:"",player:"",gender:"",age:"",frame:"Medium",handed:"Right",homeland:"",notes:""},
  chars:{STR:null,CON:null,SIZ:null,DEX:null,INT:null,POW:null,CHA:null},
@@ -118,6 +122,7 @@ function normalizeState(){
   S.armor=S.armor||{};ARMOR_LOCATIONS.forEach(l=>{if(!S.armor[l])S.armor[l]="None";});
   S.alloc.bonus=S.alloc.bonus||{};S.alloc.quick=S.alloc.quick||{};
   S.creationMode=S.creationMode||"full";S.archetype=S.archetype||"ordinary";
+  if(S.species===undefined)S.species=null;
   S.archAdvantages=S.archAdvantages||[];
   S.qProf=S.qProf||[null,null,null];S.qProfSpec=S.qProfSpec||["","",""];
   S.qStyleOn=!!S.qStyleOn;S.qStyleName=S.qStyleName||"";
@@ -162,6 +167,38 @@ const $=s=>document.querySelector(s);
 const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const jsq=k=>esc(String(k).replace(/\\/g,"\\\\").replace(/'/g,"\\'"));
 const charsReady=()=>CHARS.every(c=>Number.isFinite(S.chars[c])&&S.chars[c]>0);
+// The character's species template, or null for "plain human core rules".
+// Species templates (characteristic dice, Movement Rate, traits) land here in
+// a later pass; charBounds() below is already written against it so the range
+// check has exactly one definition to widen when they arrive.
+function speciesDef(){return (typeof SPECIES_MAP!=="undefined"&&S.species)?(SPECIES_MAP[S.species]||null):null;}
+// Legal range for one characteristic. For humans this is the core rulebook's
+// own 3-18 (8-18 for INT/SIZ) — the range the 3d6 / 2d6+6 dice can actually
+// produce. Species templates carry their own dice, so their bounds are the
+// min/max of those dice instead (see SPECIES in data.js). Deliberately a
+// single shared helper rather than an inline literal, because the bound is
+// needed in four separate places (Points Build stepper, Manual entry input
+// attributes, validate(), and the species blurb) and they were previously
+// allowed to disagree — which is exactly how the Roll/Manual validation hole
+// in the audit happened.
+function charBounds(c){
+  const sp=speciesDef();
+  const b=sp&&sp.bounds&&sp.bounds[c];
+  if(b)return {min:b[0],max:b[1]};
+  return {min:(c==="INT"||c==="SIZ")?8:3,max:18};
+}
+const charMin=c=>charBounds(c).min, charMax=c=>charBounds(c).max;
+// Where the bound the player just tripped over comes from, so the validation
+// message explains itself instead of just asserting a number.
+function charRangeSource(){const sp=speciesDef();return sp?" for a "+sp.label:" for a human";}
+// Points Build pool. Humans use the core rulebook's flat pool per character
+// tier (80 / 90 / 100); species templates override this with their own.
+function pbPool(){
+  const sp=speciesDef();
+  const base=ARCHETYPES[S.archetype].pbPoints;
+  if(!sp||sp.pbPool==null)return base;
+  return sp.pbPool+(base-ARCHETYPES.ordinary.pbPoints);
+}
 function baseOf(f,c){c=c||S.chars;if(!charsReady())return 0;
   if(f.endsWith("x2"))return 2*c[f.slice(0,-2)];
   return f.split("+").reduce((a,k)=>a+c[k],0);}
@@ -282,12 +319,18 @@ function validate(step){
   switch(name){
    case "Characteristics":{
     if(!charsReady())return bad("Assign a value to all seven characteristics.");
+    // Range check runs in EVERY entry mode. It used to sit inside the
+    // charMode==="pb" branch below, which meant Roll mode and Manual entry
+    // skipped it entirely and a hand-typed STR of 21 validated clean. The
+    // bound itself is whatever the character's species can actually roll
+    // (charBounds), so this stays correct once non-human templates exist.
+    for(const c of CHARS){const {min,max}=charBounds(c);
+      if(S.chars[c]<min||S.chars[c]>max)
+        return bad(c+" must be between "+min+" and "+max+charRangeSource()+" — "+c+" is currently "+S.chars[c]+".");}
     if(S.charMode==="pb"){
-      const pool=ARCHETYPES[S.archetype].pbPoints;
+      const pool=pbPool();
       const total=CHARS.reduce((a,c)=>a+S.chars[c],0);
       if(total!==pool)return bad("Points build must use all "+pool+" points ("+total+" spent).");
-      for(const c of CHARS){const mn=(c==="INT"||c==="SIZ")?8:3;
-        if(S.chars[c]<mn||S.chars[c]>18)return bad(c+" must be between "+mn+" and 18.");}
     }
     return ok();}
    case "Attributes":{

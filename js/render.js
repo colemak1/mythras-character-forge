@@ -145,7 +145,7 @@ function stepChars(){
     }).join("")+'</div></div>';
   }else if(S.charMode==="pb"){
     const total=CHARS.reduce((a,c)=>a+(S.chars[c]||0),0);
-    const pool=tier.pbPoints;
+    const pool=pbPool();
     body='<div class="card"><h3>Points build &mdash; '+pool+' points</h3>'
     +'<div class="rulequote">'+(isOrd
       ?"&ldquo;Alternatively distribute 80 points amongst the characteristics. Minimum 3 (8 for INT and SIZ), maximum 18. Use all the points.&rdquo;"
@@ -153,18 +153,30 @@ function stepChars(){
     +'<div class="pool"><span>Points</span><span class="pv '+(total===pool?"ok":(total>pool?"bad":""))+'">'+total+' / '+pool+'</span>'
      +'<div class="pbar"><i style="width:'+Math.min(100,total/pool*100)+'%"></i></div><span class="note">'+(pool-total)+' left</span></div>'
     +'<div class="charrow" style="margin-top:10px">'+CHARS.map(c=>{
-      const mn=(c==="INT"||c==="SIZ")?8:3;
+      const {min:mn,max:mx}=charBounds(c);
       return '<div class="charbox"><div class="cname">'+c+'</div><div class="cval">'+(S.chars[c]??"&mdash;")+'</div><div class="cctl"><button aria-label="decrease '+c+'" onclick="APP.pb(\''+c+'\',-1)">&minus;</button><button aria-label="increase '+c+'" onclick="APP.pb(\''+c+'\',1)">+</button></div>'
-       +'<div class="cctl" style="margin-top:3px"><button class="chip actionchip" onclick="APP.pbSet(\''+c+'\','+mn+')">min</button><button class="chip actionchip" onclick="APP.pbSet(\''+c+'\',18)">max</button></div></div>';
+       +'<div class="cctl" style="margin-top:3px"><button class="chip actionchip" onclick="APP.pbSet(\''+c+'\','+mn+')">min</button><button class="chip actionchip" onclick="APP.pbSet(\''+c+'\','+mx+')">max</button></div>'
+       +'<div class="crange">'+mn+'&ndash;'+mx+'</div></div>';
     }).join("")+'</div></div>';
   }else{
-    body='<div class="card"><h3>Manual entry</h3><p class="note">For pre-rolled or GM-supplied values. Human range is normally 3&ndash;18 (INT and SIZ 8&ndash;18).</p>'
-    +'<div class="charrow" style="margin-top:10px">'+CHARS.map(c=>'<div class="charbox"><div class="cname">'+c+'</div><input type="number" min="1" max="21" value="'+(S.chars[c]??"")+'" onchange="APP.manual(\''+c+'\',this.value)"></div>').join("")+'</div></div>';
+    // Manual entry is still free-typing (it exists for pre-rolled/GM-supplied
+    // numbers), but the input now advertises the same bound validate() will
+    // actually enforce, instead of the old arbitrary max="21" that matched no
+    // rule at all and let 19-21 through unchallenged.
+    const rangeTxt=speciesDef()
+      ? esc(speciesDef().label)+" range: "+CHARS.map(c=>c+" "+charMin(c)+"&ndash;"+charMax(c)).join(", ")
+      : "Human range is 3&ndash;18 (INT and SIZ 8&ndash;18).";
+    body='<div class="card"><h3>Manual entry</h3><p class="note">For pre-rolled or GM-supplied values. '+rangeTxt+' Out-of-range values are blocked on the Next button &mdash; use the GM override below if the character is deliberately superhuman.</p>'
+    +'<div class="charrow" style="margin-top:10px">'+CHARS.map(c=>{
+      const {min:mn,max:mx}=charBounds(c);const v=S.chars[c];
+      const oob=Number.isFinite(v)&&(v<mn||v>mx);
+      return '<div class="charbox'+(oob?" oob":"")+'"><div class="cname">'+c+'</div><input type="number" min="'+mn+'" max="'+mx+'" value="'+(v??"")+'" onchange="APP.manual(\''+c+'\',this.value)"><div class="crange">'+mn+'&ndash;'+mx+'</div></div>';
+    }).join("")+'</div></div>';
   }
   return head("Characteristics","Seven characteristics drive everything downstream &mdash; attributes, skill bases and hit points all cascade from these.")
   +'<div class="modeseg">'
   +'<button class="'+(S.charMode==="roll"?"on":"")+'" onclick="APP.mode(\'roll\')">Roll dice</button>'
-  +'<button class="'+(S.charMode==="pb"?"on":"")+'" onclick="APP.mode(\'pb\')">Points build ('+tier.pbPoints+')</button>'
+  +'<button class="'+(S.charMode==="pb"?"on":"")+'" onclick="APP.mode(\'pb\')">Points build ('+pbPool()+')</button>'
   +'<button class="'+(S.charMode==="manual"?"on":"")+'" onclick="APP.mode(\'manual\')">Manual</button>'
   +'</div>'+body;
 }

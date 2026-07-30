@@ -9,8 +9,7 @@ window.APP={
  set2(f,v){S[f]=v;render();},
  /* characteristics */
  mode(m){S.charMode=m;
-   if(m==="pb"){CHARS.forEach(c=>{const mn=(c==="INT"||c==="SIZ")?8:3;
-     if(!Number.isFinite(S.chars[c]))S.chars[c]=mn;});}
+   if(m==="pb"){CHARS.forEach(c=>{if(!Number.isFinite(S.chars[c]))S.chars[c]=charMin(c);});}
    render();},
  rollPools(){
    const tier=ARCHETYPES[S.archetype], ord=S.archetype==="ordinary";
@@ -30,17 +29,17 @@ window.APP={
    if(idx===""){delete asg[c];S.chars[c]=null;}
    else{asg[c]=+idx;S.chars[c]=pool[+idx];}
    render();},
- pb(c,dir){const mnOf=k=>(k==="INT"||k==="SIZ")?8:3;const mn=mnOf(c);
-   const pool=ARCHETYPES[S.archetype].pbPoints;
+ pb(c,dir){const mnOf=charMin;const mn=mnOf(c);
+   const pool=pbPool();
    const cur=S.chars[c];
    // First "+" on an unset characteristic lands on its minimum, not min+1.
    const v=(cur==null)?(dir>0?mn:mn-1):cur+dir;
-   if(v<mn||v>18)return;
+   if(v<mn||v>charMax(c))return;
    const otherReserved=CHARS.reduce((a,k)=>a+(k===c?0:(S.chars[k]??mnOf(k))),0);
    if(otherReserved+v>pool)return;
    S.chars[c]=v;render();},
- pbSet(c,target){const mnOf=k=>(k==="INT"||k==="SIZ")?8:3;
-   const pool=ARCHETYPES[S.archetype].pbPoints;
+ pbSet(c,target){const mnOf=charMin;
+   const pool=pbPool();
    // Budget against the pool minus what every OTHER characteristic already
    // reserves — unset ones reserve their own minimum, not 0 — so clicking
    // "max"/"fill" on one stat can never push the total over the pool by
@@ -49,7 +48,7 @@ window.APP={
    // bug: mn could be applied after the pool clamp and silently overspend).
    const otherReserved=CHARS.reduce((a,k)=>a+(k===c?0:(S.chars[k]??mnOf(k))),0);
    const avail=Math.max(0,pool-otherReserved);
-   S.chars[c]=Math.max(0,Math.min(18,target,avail));
+   S.chars[c]=Math.max(0,Math.min(charMax(c),target,avail));
    render();},
  manual(c,v){const n=parseInt(v,10);S.chars[c]=Number.isFinite(n)?n:null;render();},
  fap(v){S.fixedAP=v;render();},
