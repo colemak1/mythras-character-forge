@@ -53,6 +53,73 @@ window.APP={
  manual(c,v){const n=parseInt(v,10);S.chars[c]=Number.isFinite(n)?n:null;render();},
  fap(v){S.fixedAP=v;render();},
  /* character tier & creation method */
+ /* ---- magic ---- */
+ toggleFolkSpell(name){
+   const i=S.magic.folk.findIndex(f=>f.name===name);
+   if(i>=0)S.magic.folk.splice(i,1);
+   else S.magic.folk.push({name,spec:""});
+   render();},
+ folkSpec(name,v){const f=S.magic.folk.find(x=>x.name===name);if(f)f.spec=v;render();},
+ // Magicians begin with 1d4+1 spells; this rolls that number and fills them
+ // at random for a player who'd rather not pick.
+ rollStartingFolk(){
+   const n=d(4)+1;const pool=FOLK_MAGIC.slice();const picked=[];
+   for(let i=0;i<n&&pool.length;i++)picked.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+   S.magic.folk=picked.map(s=>({name:s.n,spec:""}));render();},
+ clearFolk(){S.magic.folk=[];render();},
+ addMagic(tradition){
+   S.magic.known.push({tradition,name:"",notes:"",cost:1,intensity:1,pow:0,cha:0,shapings:[]});
+   render();},
+ magicField(i,f,v){const m=S.magic.known[i];if(!m)return;
+   m[f]=(f==="name"||f==="notes")?v:(parseInt(v,10)||0);render();},
+ toggleShaping(i,name){const m=S.magic.known[i];if(!m)return;
+   m.shapings=m.shapings||[];toggleInList(m.shapings,name);render();},
+ delMagic(i){S.magic.known.splice(i,1);render();},
+ devotional(v){S.magic.devotional=Math.max(0,parseInt(v,10)||0);
+   S.magic.devotionalUsed=Math.min(S.magic.devotionalUsed,S.magic.devotional);render();},
+ devotionalAdj(n){if(viewOnlyBlock())return;
+   S.magic.devotionalUsed=Math.max(0,Math.min(devotionalMax(),(S.magic.devotionalUsed||0)-n));render();},
+ devotionalReset(){if(viewOnlyBlock())return;S.magic.devotionalUsed=0;render();},
+ // Cast a known piece of magic: roll the tradition's casting skill through
+ // the same graded pipeline as any other roll, then apply the cost.
+ //
+ // Folk Magic's cost is the book's own result table — Critical costs nothing,
+ // Success and Failure both cost 1 Magic Point (failure still burns the
+ // point), Fumble costs 1d3. The other traditions use the entry's own
+ // recorded cost, spent only when the casting succeeds, since their cost
+ // rules live in the player's rulebook and guessing a failure cost would be
+ // an invention.
+ castMagic(idx){
+   if(viewOnlyBlock())return;
+   const m=allMagic()[idx];if(!m)return;
+   const trad=MAGIC_TRAD_MAP[m.tradition];if(!trad)return;
+   const key=magicSkillKey(trad.castSkill);
+   if(!key){alert("This character doesn't have the "+trad.castSkill+" skill, so there's nothing to roll. Add it as a Professional Skill first.");return;}
+   const base=finalPct(key);const g=gradedPct(key,base);
+   if(g.pct===null){alert(g.grade==="automatic"?"Automatic — the magic simply works.":"Hopeless — no casting can be attempted at this Grade.");return;}
+   const r=d100();const tier=resolveRoll(r,g.pct);
+   if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
+   let costTxt="",worked=(tier==="Critical"||tier==="Success");
+   if(m.tradition==="folk"){
+     const mp=tier==="Critical"?0:(tier==="Fumble"?d(3):1);
+     if(mp>0)S.play.magic=Math.max(0,playCurMagic()-mp);
+     costTxt=mp===0?"no Magic Points (Critical)":mp+" Magic Point"+(mp>1?"s":"");
+   }else if(worked){
+     const cost=magicEntryCost(m);
+     if(trad.pool==="devotional"){
+       if(cost>devotionalCur()){alert("Not enough left in the Devotional Pool ("+devotionalCur()+" of "+devotionalMax()+") to invoke that.");return;}
+       S.magic.devotionalUsed=(S.magic.devotionalUsed||0)+cost;
+       costTxt=cost+" from the Devotional Pool";
+     }else if(trad.pool==="mp"&&cost>0){
+       S.play.magic=Math.max(0,playCurMagic()-cost);
+       costTxt=cost+" Magic Point"+(cost>1?"s":"");
+     }else costTxt="no point cost";
+   }else costTxt="nothing spent";
+   const tag=g.grade!=="standard"?" ("+GRADE_LABEL[g.grade]+")":"";
+   S.rollLog.unshift({label:magicLabel(m)+" — "+trad.castSkill+tag,pct:g.pct,
+     roll:r===100?"00":r,tier,combat:false,oppTier:null,
+     magic:(worked?"cast":"failed")+", "+costTxt});
+   S.rollLog=S.rollLog.slice(0,8);render();},
  /* age bands (Experience Table) */
  // Changing band changes the Bonus Skill Points pool, so warn if points are
  // already sitting in it rather than silently invalidating that step.
@@ -652,6 +719,16 @@ function buildMD(){
     if(!list.length)return "";
     return "## "+t+"\n\n| Skill | % |\n|---|---|\n"+list.map(e=>"| "+e.label+" | "+finalPct(e.key)+"% |").join("\n")+"\n\n";};
   md+=grp("Standard","Standard Skills")+grp("Professional","Professional Skills")+grp("Magic","Magic Skills")+grp("Combat Style","Combat Styles");
+  const magicKnown=allMagic();
+  if(magicKnown.length)md+="## Magic Known\n\n"
+    +(devotionalMax()?"Devotional Pool: "+devotionalCur()+" / "+devotionalMax()+" MP\n\n":"")
+    +"| Magic | Tradition | Cast with | Cost |\n|---|---|---|---|\n"
+    +magicKnown.map(m=>{const t=MAGIC_TRAD_MAP[m.tradition];
+      const cost=m.tradition==="folk"?"1 MP (0 on a Critical)"
+        :m.tradition==="sorcery"?(sorceryCost(m).mp+" MP / "+sorceryCost(m).turns+" turns")
+        :m.tradition==="animism"?("POW "+(m.pow||0)+", CHA "+(m.cha||0))
+        :((m.cost||0)+(t.pool==="devotional"?" pool":" MP"));
+      return "| "+magicLabel(m)+" | "+t.label+" | "+t.castSkill+" | "+cost+" |";}).join("\n")+"\n\n";
   if(S.passions.length)md+="## Passions\n\n| Passion | % |\n|---|---|\n"+S.passions.map(p=>"| "+(p.name||"(unnamed)")+" | "+passionVal(p)+"% |").join("\n")+"\n\n";
   if(S.gearWeapons.length)md+="## Weapons\n\n| Weapon | Damage | Reach | Effects | ENC | AP/HP |\n|---|---|---|---|---|---|\n"
     +S.gearWeapons.map(nm=>{const w=WEAPON_MAP[nm];return w?"| "+w.name+" | "+w.dmg+" | "+w.reach+" | "+w.effects+" | "+w.enc+" | "+w.apHp+" |":"";}).filter(Boolean).join("\n")+"\n\n";

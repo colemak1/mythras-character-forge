@@ -194,6 +194,12 @@ function freshState(){return {
  // Age band (Experience Table). `years` is the rolled or typed age; `events`
  // holds generated Life Events and whether each has been applied.
  age:{category:"adult",years:null,events:[]},
+ // Magic the character actually knows. `folk` holds Folk Magic spell names
+ // (plus a speciality for Find (X)); `known` holds entries for the four
+ // traditions whose content lives in the player's own rulebook. `devotional`
+ // is the Magic Points a theist has invested in their Devotional Pool, and
+ // `devotionalUsed` how much of it is currently spent.
+ magic:{folk:[],known:[],devotional:0,devotionalUsed:0},
  campaignId:null, _libId:null, _libLastSaved:null,
  // heightM / weightKg are optional hand-typed overrides — blank means "use
  // the figure derived from SIZ, species and build" (see heightWeight()).
@@ -251,6 +257,10 @@ function normalizeState(){
   S.age=S.age||{category:"adult",years:null,events:[]};
   if(!AGE_MAP[S.age.category])S.age.category="adult";
   S.age.events=S.age.events||[];
+  S.magic=S.magic||{folk:[],known:[],devotional:0,devotionalUsed:0};
+  S.magic.folk=S.magic.folk||[];S.magic.known=S.magic.known||[];
+  if(typeof S.magic.devotional!=="number")S.magic.devotional=0;
+  if(typeof S.magic.devotionalUsed!=="number")S.magic.devotionalUsed=0;
   if(S.concept&&S.concept.heightM===undefined)S.concept.heightM="";
   if(S.concept&&S.concept.weightKg===undefined)S.concept.weightKg="";
   S.archAdvantages=S.archAdvantages||[];
@@ -277,13 +287,13 @@ function normalizeState(){
 // a one-line change in each array to bring back.
 function currentSteps(){
   return S.creationMode==="quick"
-   ?["Concept","Characteristics","Attributes","Quick Skills","Passions","Money & Gear","Finish"]
-   :["Concept","Characteristics","Attributes","Culture","Career","Bonus Skills","Passions","Money & Gear","Finish"];
+   ?["Concept","Characteristics","Attributes","Quick Skills","Passions","Magic","Money & Gear","Finish"]
+   :["Concept","Characteristics","Attributes","Culture","Career","Bonus Skills","Passions","Magic","Money & Gear","Finish"];
 }
 function stepFns(){
   return S.creationMode==="quick"
-   ?[stepConcept,stepChars,stepAttrs,stepQuickSkills,stepPassions,stepMoney,stepFinish]
-   :[stepConcept,stepChars,stepAttrs,stepCulture,stepCareer,stepBonus,stepPassions,stepMoney,stepFinish];
+   ?[stepConcept,stepChars,stepAttrs,stepQuickSkills,stepPassions,stepMagic,stepMoney,stepFinish]
+   :[stepConcept,stepChars,stepAttrs,stepCulture,stepCareer,stepBonus,stepPassions,stepMagic,stepMoney,stepFinish];
 }
 function ageBand(){return AGE_MAP[(S.age&&S.age.category)||"adult"]||AGE_MAP.adult;}
 // Bonus Skill Points now come from the Experience Table's age band rather than
@@ -457,6 +467,57 @@ function finalPct(key){const em=entryMap();const e=em[key];if(!e)return 0;
 // that reads a skill's % — Play Mode list, Actions tab, Sheet, roll log —
 // reflects Experience improvement with no extra plumbing.
 function xpBonus(key){return (S.xp&&S.xp.bonus&&S.xp.bonus[key])||0;}
+/* ================= MAGIC =================
+   Which magic skills the character actually acquired, so the Magic step can
+   show the traditions they can use and flag the ones they can't yet. Magic
+   skills arrive as Professional Skills through Culture, Career, hobby or the
+   Quick Skills pool, so this reads them straight off acquiredProfs(). */
+function magicSkillKey(name){
+  const p=acquiredProfs().find(x=>x.name===name);
+  return p?p.key:null;
+}
+function hasMagicSkill(name){return !!magicSkillKey(name);}
+function magicSkillPct(name){const k=magicSkillKey(name);return k?finalPct(k):null;}
+// A tradition is "available" once the character has its casting skill. Theism
+// also wants Devotion (to build the pool) and Sorcery wants Shaping (to
+// manipulate), so those are reported as supporting skills rather than
+// blockers — a theist with Exhort but no Devotion can still invoke, they just
+// have no pool to invoke from.
+const TRADITION_SUPPORT={theism:["Devotion"],sorcery:["Shaping"],animism:["Trance"],mysticism:["Meditation"]};
+function traditionStatus(t){
+  const cast=hasMagicSkill(t.castSkill);
+  const support=(TRADITION_SUPPORT[t.key]||[]).map(n=>({name:n,has:hasMagicSkill(n),pct:magicSkillPct(n)}));
+  return {available:cast,castPct:magicSkillPct(t.castSkill),support};
+}
+function knownOf(traditionKey){return S.magic.known.filter(m=>m.tradition===traditionKey);}
+// Sorcery cost model (see MAGIC_TRADITIONS.sorcery.summary and §5 of
+// docs/mythras-rules-reference.md): one Magic Point for the spell itself plus
+// one per shaping category applied, and one casting turn each the same way.
+function sorceryCost(entry){
+  const n=(entry.shapings||[]).length;
+  return {mp:1+n,turns:1+n,shapings:n};
+}
+function magicEntryCost(entry){
+  if(entry.tradition==="sorcery")return sorceryCost(entry).mp;
+  return Math.max(0,parseInt(entry.cost,10)||0);
+}
+// Devotional Pool: Magic Points a theist has offered to their deity. It is a
+// separate reserve from general Magic Points, which is why it is tracked on
+// its own rather than coming out of playCurMagic().
+function devotionalMax(){return Math.max(0,parseInt(S.magic.devotional,10)||0);}
+function devotionalCur(){return Math.max(0,devotionalMax()-(S.magic.devotionalUsed||0));}
+// Every piece of magic the character knows, in one list, for the sheet and
+// Play Mode's Magic tab.
+function allMagic(){
+  const out=S.magic.folk.map(f=>({tradition:"folk",name:f.name,spec:f.spec||"",
+    spell:FOLK_MAGIC_MAP[f.name]||null}));
+  return out.concat(S.magic.known.map(m=>Object.assign({},m)));
+}
+function magicLabel(m){
+  if(m.tradition==="folk")return m.spec?m.name.replace(/\(X\)/,"("+m.spec+")"):m.name;
+  return m.name||"(unnamed)";
+}
+
 /* ================= VALIDATION ================= */
 function cultureReqKeys(){
   if(!S.culture)return [];

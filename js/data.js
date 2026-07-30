@@ -614,6 +614,107 @@ const ARCHETYPES={
    quote:"&ldquo;Roll 4d6, discarding the lowest die six times, then assign the five results of your choice (typically, the highest five) to STR, CON, DEX, POW, and CHA. Next, roll 3d6+6, discarding the lowest die three times and assign the two results of your choice (typically, the highest two) to SIZ and INT. If using the Points Build method, players build their character from a pre-set pool of 100 points.&rdquo; &mdash; Mythras Companion, p.55"}
 };
 
+/* ================= MAGIC =================
+   The app has always had the magic *skills* (Binding, Devotion, Exhort, Folk
+   Magic, Invocation, Meditation, Mysticism, Shaping, Trance) but nothing to
+   spend them on, so a caster finished character creation holding a percentage
+   and no magic.
+
+   WHAT IS AND ISN'T REPRODUCED HERE, because the difference matters:
+
+   - FOLK MAGIC below is complete and verbatim — spell names, traits and full
+     rules text — from the Mythras Imperative SRD (srd.mythras.net), published
+     by The Design Mechanism under the ORC License, which explicitly permits
+     this reuse. The Imperative calls the casting skill "Magic"; in full
+     Mythras the same spells are the Folk Magic list, cast off the Folk Magic
+     skill, which is what this app uses.
+
+   - THEISM, SORCERY, ANIMISM and MYSTICISM content — the miracle lists, the
+     grimoires, the spirit rosters, the talents — is Reserved Material in the
+     Mythras core rulebook and is NOT reproduced. This repo has no verified
+     transcription of any of it, and fabricating spell lists would be far
+     worse than a gap. What ships instead is each tradition's *mechanics*: the
+     correct pools, the correct casting skill, the correct cost arithmetic and
+     roll resolution, with the player entering the magic their own rulebook
+     and GM allow them. That is a working system with the content left to the
+     book, not a stub.
+
+   MAGIC_TRAITS: the trait vocabulary the Folk Magic list uses. */
+const MAGIC_TRAITS={
+ "Concentration":"The spell's effects remain in place if the caster continues to concentrate on maintaining it. Concentration requires the caster to be free of all physical and mental distractions: any such disturbance interrupts the concentration, resulting in the spell's immediate dismissal.",
+ "Instant":"The spell's effects happen immediately. It has no duration.",
+ "Ranged":"Can be cast at a distance of up to the caster's Folk Magic score in metres. The caster must know the location of the target; if they cannot directly see or sense it, the casting roll is one grade harder.",
+ "Touch":"The caster must be in physical contact with the target while the spell is cast. Touching the target's carried accoutrements is enough.",
+ "Special Duration":"The spell states its own duration in its description rather than lasting the scene.",
+ "Resist (Endurance)":"The target may resist with an Opposed Roll of Endurance against the casting result. Resisting with Endurance is a passive action.",
+ "Resist (Willpower)":"The target may resist with an Opposed Roll of Willpower against the casting result. Resisting with Willpower is a passive action.",
+ "Resist (Evade)":"The target may resist with an Opposed Roll of Evade against the casting result. Evading costs an Action Point — a target with none left is powerless against the spell.",
+ "Resist (Special)":"Resistance depends on what is being affected; see the spell's own description."
+};
+// Unless a spell has Concentration or Instant, it lasts the whole scene or
+// action it was used for. All Folk Magic spells are Intensity and Magnitude 1
+// by their minor nature.
+const FOLK_MAGIC=[
+ {n:"Alarm",t:["Special Duration"],d:"Casting Alarm on a location such as a room or small clearing creates a temporary psychic bond between the area and the caster. If the area is accessed by a living creature with a SIZ greater than 1, the caster is automatically made aware that something has transgressed no matter how great the distance. The Alarm is usually a distinct tingling sensation or mental twinge which will awaken the caster. Alarm can also be used on an individual object, triggering when touched or moved."},
+ {n:"Avert",t:["Instant","Ranged"],d:"Avert is used to dismiss another spell within range. Avert can be cast reactively to neutralize offensive spells, by using the Counter Magic Reactive Action."},
+ {n:"Befuddle",t:["Ranged","Resist (Willpower)"],d:"Befuddle causes confusion within the mind of a corporeal target. The subject of the spell has difficulty thinking straight, forgetting where it is, what it is doing and why — often lapsing into disassociated lines of thought. Befuddled targets can still act in self defense, but cannot initiate any constructive activity until the spell ends. Any sort of attack or threatening action instantly breaks the spell, whether or not it was directed specifically at the befuddled target."},
+ {n:"Bladesharp",t:["Touch"],d:"Bladesharp is cast on edged and piercing melee weapons. It increases the damage of a weapon by one dice step and incidentally leaves the edge honed after the spell concludes. This spell is often used on tools such as logging axes, plows, and razors. Thus, casting this spell on a dagger increases it to 1d6+1 damage, whereas the same spell on a great axe would increase it to 2d8+2 damage. (1d4→1d6→1d8→1d10→2d6→2d8→2d10)."},
+ {n:"Bludgeon",t:["Touch"],d:"Bludgeon is like Bladesharp but used on weapons and tools that deal blunt-force trauma rather than cutting or piercing damage. It is normally used to aid with threshing grain, fulling wool, or similar heavy-duty work."},
+ {n:"Breath",t:["Touch"],d:"Breath permits the recipient to hold their breath for an extended period, so that they can temporarily venture into harmful environments, such as underwater; or atmospheres tainted by rock dust, gases, smoke, or poisons. The spell lasts for a maximum of half the caster's POW in minutes, during which time the recipient cannot speak, or the breath is lost, and they must immediately begin to breathe from their environment suffering any present risks — be that asphyxiation, drowning, poisoning, etc."},
+ {n:"Calm",t:["Ranged","Resist (Willpower)"],d:"Calm attempts to dampen down the passions of the target, perhaps ensuring that a lovesick paramour doesn't press his suit, a frightened rival doesn't scream for help or that weapons are not drawn in anger. A calmed person is not otherwise mentally affected; thus, any sort of assault or threatening action still permits the target to defend themselves and even attack, albeit they will do so in a calm and level-headed manner."},
+ {n:"Chill",t:["Instant","Touch"],d:"Chill dramatically reduces the temperature of small objects (no larger than the caster's hand) down to the temperature of ice water. Useful for rapidly cooling hot items, chilling drinks, and so forth. The spell does not freeze an object and neither does it cause any damage to its structure: it merely renders it very cold."},
+ {n:"Darkness",t:["Concentration","Ranged"],d:"Darkness creates an area of shadow, equal to POW in square metres, which suppresses all light within it. This is enough volume to fill a modest room, a length of corridor or form a small cloud if cast outside. All non-magical light, including sunlight, passing into or present within the boundary is reduced to the equivalent of a dim glow."},
+ {n:"Disruption",t:["Instant","Ranged","Resist (Endurance)"],d:"Disruption is used for damaging or disassembling physical objects without the need for tools. It is commonly employed to drive off or kill living creatures, such as birds or vermin. When successfully cast, Disruption inflicts 1d3 damage to a single random Hit Location or the overall Hit Points of an object. In both cases the damage ignores any armor or natural protection."},
+ {n:"Extinguish",t:["Instant","Ranged"],d:"Extinguish immediately quenches flames and small fires of modest size and heat. It is useful for dousing candles, lanterns, torches, or small cook fires, but it will not work on magical or larger, more ferocious conflagrations such as pyres, burning houses or dragon flames."},
+ {n:"Find (X)",t:["Concentration","Ranged","Resist (Special)"],d:"Find has many variations; always specific and learned as separate spells. It works by attuning to the natural emanations of a creature or thing, alerting the caster to its presence within the spell's range. Find can be blocked by dense or thick materials such as metal, or earth and stone at least one metre thick. The spell cannot discern emotions or thoughts. Common examples: Find Arrows (locates ammunition shot by hunters which missed its target); Find Flaw (identifies flaws in an object, such as hidden imperfections or physical damage); Find Livestock (locates a particular type of animal — can be resisted with Willpower); Find Loot (locates precious metals and gems); Find Object (locates a lost personal possession); Find Sickness (identifies the existence of disease and illness, whether magical or mundane).",spec:"what it finds, e.g. Loot"},
+ {n:"Firearrow",t:["Touch"],d:"Firearrow causes all missiles thrown or fired by the recipient to burst into flame when released. Ostensibly created to act as a signal flare, it has since evolved into a combat magic. Missiles under its effect add an additional 1d3 damage but are extinguished if they impale flesh. Those that strike flammable material have a chance equal to the caster's Folk Magic skill of setting alight whatever they lodge in, such as wooden shields, thatched roofs and so on. Wooden ammunition is consumed as part of the spell."},
+ {n:"Fireblade",t:["Touch"],d:"Fireblade is like Firearrow but is instead cast on hand tools and melee weapons. The original purpose of the spell is to sterilize surgical equipment, aid in slash and burn agriculture or provide illumination during darkness without the need to carry an additional light source. If cast on a weapon it inflicts an additional 1d3 damage, and has the chance of setting flammable materials alight if held to them for several rounds. Wooden hafted weapons under the effects of Fireblade will be consumed as part of the spell."},
+ {n:"Glue",t:["Touch"],d:"Glue cements together two solid, inanimate objects for the duration of the spell, for example a cartwheel to its axle or a door to its frame. Whilst under the effects of the spell the items, no matter how disparate, cannot be parted unless something actively tries to wrench them apart. In this circumstance the spell has a Brawn skill equal to five times the caster's POW and fails when a superior Brawn is set against it, defeating it in an Opposed Roll. Once the spell concludes or fails, the items part completely unharmed."},
+ {n:"Heal",t:["Instant","Touch"],d:"Heal has several different effects depending on the nature of the ailment it is being used on. If the subject is suffering from a minor complaint such as a headache, back pain, hangover, cold, warts and so on, then the symptoms are immediately lifted. Cast on a location suffering a Minor Wound it restores all lost Hit Points instantly. Against Serious or Major Wounds no Hit Points are recovered. However, the spell will stabilize locations, stop all bleeding and prevent imminent death from inattention."},
+ {n:"Ignite",t:["Instant","Ranged"],d:"Ignite only works on flammable inorganic matter, causing a small object or hand-sized area to burst into flame. Depending on what was set alight, once burning, the flames may then spread unless quenched or countered in some way. This spell is normally used to light candles, torches, or lanterns from afar. It can also be used to start a camp or cooking fire in adverse conditions, such as using damp kindling or in strong winds."},
+ {n:"Knock",t:["Instant","Touch"],d:"Knock magically unfastens any device that is currently secured with a mechanical bar or lock. It does not work on magically locked objects, only mundane ones. The spell only affects a single fastening, so if there are several locks and bars securing the object, the spell will need to be recast for each one."},
+ {n:"Light",t:["Concentration","Ranged"],d:"Light must be cast on an inanimate object (this could be a branch, sword blade, spear point, torch and so on). It produces enough light to illuminate an area as though with a lantern. It can also be cast directly against a Darkness spell to counter it. In this case both spells are consumed, leaving the ambient light to illuminate the area."},
+ {n:"Lock",t:["Special Duration","Touch"],d:"Lock magically secures any device that already has a mechanical bar or lock present. A Locked device can be opened only by the caster and cannot be picked by mundane means (such as by a thief using lock-picks) since the magic renders the mechanism immobile; however, it could still be forced open by breaking the object the lock is set into. The magic remains in place until opened by the caster, after which the device must be subject to a further casting of Lock to restore the enchantment. The Magic Point used to cast Lock does not recover until the spell is dismissed or concludes naturally.",holdsMp:true},
+ {n:"Phantasm",t:["Concentration","Ranged"],d:"Phantasm allows the caster to weave together insubstantial or near weightless objects so that they take a shape or ghostly form. Thus, a spectral figure could be woven from a naturally occurring mist, or a face formed in a pile of dead leaves. Beyond this the spell has little effect, save to frighten, intrigue, or disconcert those that view it."},
+ {n:"Sleep",t:["Resist (Endurance)","Touch"],d:"Sleep sends its recipient into a deep, peaceful sleep. It has no effect on creatures with a SIZ greater than the caster's POW. Unless the target resists, it slumbers for a number of hours equal to half the caster's POW. However, the spell takes 1d3 Rounds to take effect before the target falls unconscious. Any attempt to cast this spell in a combat situation automatically fails."},
+ {n:"Vigor",t:["Touch"],d:"Vigor makes the recipient feel alive and energetic, being used to offset the effects of strenuous physical labor. For the spell's duration, all Fatigue effects gained from laborious activity are ignored (but return on the spell's dismissal)."},
+ {n:"Witchsight",t:["Ranged","Resist (Willpower)"],d:"Witchsight allows the caster to see active magic, enchanted items, and invisible entities (although such things are simply shadowy representations) that lie within range and line of sight. It can also penetrate illusions or discern the true guise of shapeshifted creatures. Beings which wish to remain hidden or disguised must win an Opposed Roll of their Willpower versus the casting roll."}
+];
+const FOLK_MAGIC_MAP=Object.fromEntries(FOLK_MAGIC.map(s=>[s.n,s]));
+
+/* The four traditions whose content is Reserved Material. Each entry records
+   what the app CAN do faithfully: which skill rolls to cast, what pool the
+   cost comes out of, and what fields a given piece of magic needs so the app
+   can compute and track it. `fields` drives the entry form; `castSkill` is the
+   Professional Skill rolled; `pool` is which resource the cost is drawn from. */
+const MAGIC_TRADITIONS=[
+ {key:"folk",label:"Folk Magic",castSkill:"Folk Magic",pool:"mp",hasContent:true,
+  summary:"Universal, low-powered, everyday magic — the hedge-witch's repertoire. Cast with the Folk Magic skill for a Magic Point; every Folk Magic spell is Intensity and Magnitude 1 by its minor nature.",
+  costRule:"Critical: free. Success: 1 Magic Point, and the spell works. Failure: 1 Magic Point, and it doesn't. Fumble: 1d3 Magic Points, and it doesn't.",
+  fields:[]},
+ {key:"theism",label:"Theism (Miracles)",castSkill:"Exhort",pool:"devotional",hasContent:false,
+  summary:"Divine magic granted by a deity. The worshipper invests Magic Points into a Devotional Pool dedicated to their god (governed by the Devotion skill), and invokes Miracles from that pool using Exhort. A successfully exhorted Miracle manifests at its full Magnitude and Intensity.",
+  costRule:"Roll Exhort to invoke. The cost is drawn from the Devotional Pool rather than from general Magic Points — set your pool below, and record each Miracle's cost from your rulebook.",
+  fields:[["cost","Pool cost",1],["intensity","Intensity",1]],
+  contentNote:"Miracle lists are specific to each deity and cult and are Reserved Material in the core rulebook — add the Miracles your cult grants you."},
+ {key:"sorcery",label:"Sorcery (Grimoire)",castSkill:"Invocation",pool:"mp",hasContent:false,
+  summary:"Learned, manipulable magic from a grimoire. Invocation casts the spell; Shaping manipulates it — a caster spends Magic Points on the spell itself plus one more per shaping category applied (Duration, Range, Targets, Magnitude, Intensity), and each additional shaping also costs an extra turn to cast.",
+  costRule:"The shaping calculator below computes both numbers: 1 Magic Point for the spell plus 1 per shaping applied, and casting turns to match.",
+  fields:[],shaping:["Duration","Range","Targets","Magnitude","Intensity"],
+  contentNote:"Grimoire spell lists are Reserved Material in the core rulebook — add the spells in the grimoire your character has studied."},
+ {key:"animism",label:"Animism (Spirits)",castSkill:"Binding",pool:"none",hasContent:false,
+  summary:"Shamanic magic worked through spirits rather than spells. Binding binds a spirit into service or into a fetish; Trance lets the shaman discorporate into the spirit world. A bound spirit's abilities are what the animist actually brings to bear.",
+  costRule:"Roll Binding to bind or command a spirit; Trance to discorporate. Spirits are tracked below with their own POW and CHA, which is what spirit combat is fought with.",
+  fields:[["pow","Spirit POW",0],["cha","Spirit CHA",0]],
+  contentNote:"Spirit types and their abilities are Reserved Material in the core rulebook — record the spirits your character has bound."},
+ {key:"mysticism",label:"Mysticism (Talents)",castSkill:"Mysticism",pool:"mp",hasContent:false,
+  summary:"Mind over the matter of one's own body. A mystic develops Talents that push a personal capability past normal limits, sustained by Magic Points; Meditation supports the discipline. Simple in structure, but expensive to run.",
+  costRule:"Roll Mysticism to invoke a Talent, paying its Magic Point cost. Record each Talent's Intensity and cost from your rulebook.",
+  fields:[["cost","Magic Point cost",1],["intensity","Intensity",1]],
+  contentNote:"Talent lists are Reserved Material in the core rulebook — add the Talents your character has developed."}
+];
+const MAGIC_TRAD_MAP=Object.fromEntries(MAGIC_TRADITIONS.map(t=>[t.key,t]));
+
 /* ================= AGE BANDS =================
    The Experience Table ("Creating Experienced Characters"). Age is not
    flavour text in Mythras: it sets how many Bonus Skill Points the character

@@ -133,6 +133,31 @@ input[type=number]{-moz-appearance:textfield}
 .lifeevrow .fx{grid-column:1;font-size:11.5px;color:var(--dim);font-family:var(--mono)}
 .lifeevrow .a{grid-column:2;grid-row:1/3;align-self:center;white-space:nowrap}
 .lifeevrow .applied{font-family:var(--mono);font-size:11px;color:var(--verd)}
+/* Magic step: Folk Magic spell list, and the per-tradition entry editors for
+   the traditions whose content lives in the player's own rulebook. */
+.spelllist{margin-top:10px}
+.spellrow{border:1px solid var(--line-soft);border-radius:var(--r-sm);padding:9px 11px;margin-bottom:7px;background:var(--panel3)}
+.spellrow .sh{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.spellrow .sh b{font-family:var(--serif);font-size:14.5px;color:var(--bronze-hi)}
+.spellrow .sh .chip{margin-left:auto}
+.spelltrait{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);border-radius:2px;padding:1px 5px;color:var(--dim);cursor:help}
+.spellrow .sspec{margin-top:6px}
+.spellrow .sspec input{width:100%}
+.spellrow .sd{margin-top:6px;font-size:13px;color:var(--dim);line-height:1.55}
+.reservednote{border-left:3px solid var(--gold);background:var(--inset);padding:8px 12px;margin:8px 0;font-size:12.5px;color:var(--dim)}
+.magicrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid var(--line-soft);border-radius:var(--r-sm);padding:9px 11px;margin-bottom:7px}
+.magicrow .mname{flex:1;min-width:170px}
+.magicrow .mnum{font-size:11.5px;color:var(--dim);display:flex;align-items:center;gap:5px}
+.magicrow .mnum input{width:62px}
+.magicrow .mnotes{flex:1 0 100%}
+.magicrow .mdel{margin-left:auto}
+.mshaping{flex:1 0 100%;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.mshaping .mcost{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--bronze-hi)}
+/* Play Mode magic pools strip */
+.pm-magicpools{display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--pm-dim);border-bottom:1px dotted var(--pm-line-soft);padding-bottom:8px;margin-bottom:10px}
+.pm-magicpools b{color:var(--pm-text);font-size:13px}
+.pm-devadj{display:inline-flex;gap:3px;align-items:center}
+.pm-fx-item summary .pm-btn.roll{margin-left:8px}
 .okmsg{color:var(--verd);font-size:13px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 18px}

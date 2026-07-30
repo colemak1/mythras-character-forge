@@ -520,6 +520,95 @@ function stepQuickSkills(){
   return h;
 }
 
+/* ---- step: magic ----
+   The app has always had the magic skills but nothing to spend them on. This
+   step is where a caster picks up actual magic. Folk Magic ships complete;
+   the other four traditions ship as working mechanics with the content
+   entered from the player's own rulebook (see the MAGIC block in data.js for
+   why, at length). */
+function stepMagic(){
+  let h=head("Magic","Optional. If your character has a magic skill, this is where they get magic to use it on &mdash; picked here, then castable from Play Mode with the right skill rolled and the right cost deducted.");
+  const anyMagic=MAGIC_TRADITIONS.some(t=>traditionStatus(t).available);
+  if(!anyMagic){
+    h+='<div class="card"><h3>No magic skills yet</h3>'
+     +'<p class="note">This character hasn&rsquo;t picked up any of the casting skills, so there&rsquo;s nothing to cast with. Magic skills are Professional Skills &mdash; take one on the Culture, Career, Bonus Skills or Quick Skills step and this page fills in:</p>'
+     +'<table class="rt"><tr><th>Tradition</th><th>Casting skill</th><th>Also wants</th></tr>'
+     +MAGIC_TRADITIONS.map(t=>'<tr><td>'+esc(t.label)+'</td><td>'+esc(t.castSkill)+'</td><td class="note">'
+       +esc((TRADITION_SUPPORT[t.key]||[]).join(", ")||"—")+'</td></tr>').join("")+'</table>'
+     +'<p class="note">Plenty of characters have no magic at all &mdash; skipping this step is a perfectly normal choice.</p></div>';
+    return h;
+  }
+  MAGIC_TRADITIONS.forEach(t=>{
+    const st=traditionStatus(t);
+    if(!st.available)return;
+    h+='<div class="card"><h3>'+esc(t.label)+' <span class="note">'+esc(t.castSkill)+' '+st.castPct+'%</span></h3>'
+     +'<p class="note">'+esc(t.summary)+'</p>'
+     +(st.support.length?'<p class="note">'+st.support.map(s=>esc(s.name)+": "+(s.has?s.pct+"%":"<i>not taken</i>")).join(" &middot; ")+'</p>':"")
+     +'<div class="rulequote">'+esc(t.costRule)+'</div>';
+    h+=t.key==="folk"?folkMagicPicker():knownMagicEditor(t);
+    h+='</div>';
+  });
+  // Traditions whose skill the character lacks, listed compactly so the page
+  // doesn't pretend the other four don't exist.
+  const missing=MAGIC_TRADITIONS.filter(t=>!traditionStatus(t).available);
+  if(missing.length){
+    h+='<div class="card"><h3>Other traditions</h3><p class="note">Not available to this character &mdash; each needs its casting skill taken as a Professional Skill first: '
+     +missing.map(t=>esc(t.label)+" ("+esc(t.castSkill)+")").join(" &middot; ")+'.</p></div>';
+  }
+  return h;
+}
+function folkMagicPicker(){
+  const known=S.magic.folk;
+  let h='<p><button class="chip actionchip" onclick="APP.rollStartingFolk()">roll 1d4+1 starting spells</button>'
+   +(known.length?' <button class="chip" onclick="APP.clearFolk()">clear all</button>':"")
+   +' <span class="note">Magicians begin with 1d4+1 spells; more cost 3 Experience Rolls and a week&rsquo;s study each.</span></p>';
+  h+='<div class="field"><label>Spells known ('+known.length+' of '+FOLK_MAGIC.length+')</label><div class="choicechips">'
+   +FOLK_MAGIC.map(s=>'<button class="chip '+(known.some(k=>k.name===s.n)?"on":"")+'" title="'
+     +esc(s.t.join(", ")+" — "+s.d.slice(0,220)+(s.d.length>220?"…":""))+'" onclick="APP.toggleFolkSpell(\''+jsq(s.n)+'\')">'+esc(s.n)+'</button>').join("")
+   +'</div></div>';
+  if(known.length){
+    h+='<div class="spelllist">'+known.map(k=>{
+      const s=FOLK_MAGIC_MAP[k.name];if(!s)return "";
+      return '<div class="spellrow"><div class="sh"><b>'+esc(magicLabel({tradition:"folk",name:k.name,spec:k.spec}))+'</b>'
+       +s.t.map(tr=>'<span class="spelltrait" title="'+esc(MAGIC_TRAITS[tr]||"")+'">'+esc(tr)+'</span>').join("")
+       +'<button class="chip" onclick="APP.toggleFolkSpell(\''+jsq(k.name)+'\')" aria-label="forget spell">&times;</button></div>'
+       +(s.spec?'<div class="sspec"><input type="text" value="'+esc(k.spec)+'" placeholder="speciality: '+esc(s.spec)+'" onchange="APP.folkSpec(\''+jsq(k.name)+'\',this.value)"></div>':"")
+       +'<div class="sd">'+esc(s.d)+'</div></div>';
+    }).join("")+'</div>';
+  }
+  h+='<p class="note rulesrc">Folk Magic spells, traits and rules text reproduced from the <a href="https://srd.mythras.net/" target="_blank" rel="noopener">Mythras Imperative SRD</a>, published by The Design Mechanism under the ORC License. Based on Mythras Imperative, written by Pete Nash and Lawrence Whitaker, published by The Design Mechanism, Copyright 2023.</p>';
+  return h;
+}
+function knownMagicEditor(t){
+  const rows=S.magic.known.map((m,i)=>({m,i})).filter(x=>x.m.tradition===t.key);
+  let h='<div class="reservednote">'+esc(t.contentNote)+'</div>';
+  if(t.key==="theism"){
+    h+='<div class="grid2">'
+     +fld("Devotional Pool (Magic Points offered up)",'<input type="number" min="0" value="'+devotionalMax()+'" onchange="APP.devotional(this.value)">')
+     +fld("Currently available",'<div class="agetotal">'+devotionalCur()+' / '+devotionalMax()+'</div>')
+     +'</div>';
+  }
+  h+=rows.map(({m,i})=>{
+    let r='<div class="magicrow">'
+     +'<input type="text" class="mname" value="'+esc(m.name)+'" placeholder="'+esc(t.key==="animism"?"spirit name":t.key==="theism"?"miracle name":t.key==="mysticism"?"talent name":"spell name")+'" onchange="APP.magicField('+i+',\'name\',this.value)">';
+    (t.fields||[]).forEach(([f,label])=>{
+      r+='<label class="mnum">'+esc(label)+'<input type="number" min="0" value="'+(m[f]||0)+'" onchange="APP.magicField('+i+',\''+f+'\',this.value)"></label>';
+    });
+    if(t.shaping){
+      const c=sorceryCost(m);
+      r+='<div class="mshaping"><span class="note">Shaping applied:</span>'
+       +t.shaping.map(sn=>'<button class="chip '+((m.shapings||[]).includes(sn)?"on":"")+'" onclick="APP.toggleShaping('+i+',\''+jsq(sn)+'\')">'+esc(sn)+'</button>').join("")
+       +'<span class="mcost">'+c.mp+' MP &middot; '+c.turns+' turn'+(c.turns>1?"s":"")+' to cast</span></div>';
+    }
+    r+='<button class="chip mdel" onclick="APP.delMagic('+i+')" aria-label="remove">&times;</button>'
+     +'<textarea class="mnotes" rows="2" placeholder="effect / notes from your rulebook" onchange="APP.magicField('+i+',\'notes\',this.value)">'+esc(m.notes||"")+'</textarea>'
+     +'</div>';
+    return r;
+  }).join("");
+  const noun=t.key==="animism"?"spirit":t.key==="theism"?"Miracle":t.key==="mysticism"?"Talent":"spell";
+  h+='<p><button class="chip actionchip" onclick="APP.addMagic(\''+t.key+'\')">+ add '+noun+'</button></p>';
+  return h;
+}
 /* ---- step: cult & community ---- */
 function stepCult(){
   let h=head("Cult & Community","Optional: a religious cult, order, or plain community affiliation. Grants access to the skill it teaches plus a starter Passion (added on the next step) — entirely skippable if this character isn't affiliated with anything.");
