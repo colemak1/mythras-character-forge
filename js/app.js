@@ -586,6 +586,7 @@ function buildMD(){
    "magic_points: "+(charsReady()?c.POW:""),
    "healing_rate: "+(charsReady()?healRate(c.CON):""),
    "movement: "+(charsReady()?moveText():"6m"),
+   ...(charsReady()?["height_m: "+heightWeight().m.toFixed(2),"weight_kg: "+heightWeight().kg]:[]),
    ...(S.species?["species: "+(SPECIES_MAP[S.species]?SPECIES_MAP[S.species].label:S.species)]:[]),
    "tags:","  - character","---"].join("\n");
   let md=yaml+"\n\n# "+n+"\n\n";

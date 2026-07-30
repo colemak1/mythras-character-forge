@@ -126,6 +126,47 @@ const SPECIES=[
    ["Exposure Tolerance (Feet)","No adverse effects from exposure while barefoot, whatever the temperature. The rest of the body suffers exposure normally."],
    ["Literate","Typically able to read and write any language they can speak."]]}
 ];
+/* ---- Height & Weight ----
+   PROVENANCE, PLEASE READ BEFORE CHANGING THESE NUMBERS.
+
+   The core rulebook's Height and Weight table (p.9) is Reserved Material and
+   is not reproduced here — this app has no verified transcription of it, and
+   inventing one and calling it the book's table would be exactly the kind of
+   fabrication the rest of this file has had to be cleaned of twice already
+   (see the weapon STR/DEX-minimum and Half Plate notes above).
+
+   What this IS: an explicit, stated model, computed from SIZ and build, with
+   both figures overridable by hand for anyone who has the book open. SIZ is
+   a measure of mass, so:
+
+     weight = massPerSiz x SIZ                          (build-independent:
+                                                         SIZ *is* the mass)
+     height = heightAt x (SIZ / avgSIZ)^(1/3) x build   (same mass, taller if
+                                                         lithe, shorter if
+                                                         heavy — cube root
+                                                         because mass scales
+                                                         with the cube of a
+                                                         linear dimension)
+
+   ANCHORS. Human is pinned at the standard adult figure for its average SIZ
+   of 13: 1.75 m and 75 kg. Each demi-human's heightAt is pinned to the height
+   its own species description states (Dwarf "between 4'8" and 4'10"", Gnome
+   "3'4" to 3'7"", Halfling "an average of 4'0" to 4'3"", Elf "around the same
+   height as humans", Half-Orc "standing taller than a human on average") at
+   that species' average SIZ, and massPerSiz is set from each species' stated
+   build — dwarves stocky, elves and halflings slight. Those height quotes are
+   real, cited text from the Classic Fantasy Imperative SRD; the mass
+   constants are this app's calibration, not a book table. */
+const BUILD_FACTORS={"Lithe":1.06,"Medium":1.0,"Heavy":0.94};
+const HW_ANCHORS={
+ human:   {heightAt:1.75,massPerSiz:5.8},
+ dwarf:   {heightAt:1.45,massPerSiz:7.5},  // 4'9" — stocky, dense
+ elf:     {heightAt:1.75,massPerSiz:5.2},  // human height, slender build
+ gnome:   {heightAt:1.05,massPerSiz:5.5},  // 3'5"
+ halfelf: {heightAt:1.75,massPerSiz:5.6},
+ halforc: {heightAt:1.90,massPerSiz:6.2},  // "taller than a human on average"
+ halfling:{heightAt:1.26,massPerSiz:4.5}   // 4'1.5" — slight
+};
 // Parse "2d6+9" / "1d3+2" / "3d6" into {n, sides, mod} so bounds, averages and
 // rolls all derive from the one dice string rather than being three separate
 // hand-maintained columns that could disagree.

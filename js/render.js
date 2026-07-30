@@ -42,7 +42,8 @@ function renderLedger(){
       +led("Magic Points",c.POW)
       +led("Healing Rate",healRate(c.CON))
       +led("Exp. Modifier",(xpMod(c.CHA)>=0?"+":"")+xpMod(c.CHA))
-      +led("Movement",moveText()+(moveRate().m!==moveBase()?' <span class="note">(base '+moveBase()+'m)</span>':""));
+      +led("Movement",moveText()+(moveRate().m!==moveBase()?' <span class="note">(base '+moveBase()+'m)</span>':""))
+      +led("Height / Weight",heightWeightText());
     h+='<h3>Hit Points</h3><table class="ledhp">'+hpLocsFinal(c.CON,c.SIZ).map(([l,v])=>'<tr><td>'+l+'</td><td>'+v+'</td></tr>').join("")+'</table>';
   }
   const stepName=currentSteps()[S.step];
@@ -136,6 +137,33 @@ function speciesCard(){
   h+='<p class="note rulesrc">Characteristic dice, Movement Rates and racial traits from the <a href="https://cfi-srd.mythras.net/" target="_blank" rel="noopener">Classic Fantasy Imperative SRD</a> (The Design Mechanism, ORC License). Its Human row matches core Mythras exactly.</p>';
   return h+'</div>';
 }
+// Height & Weight, computed rather than the text reminder that used to sit
+// here. Both figures are overridable — the point of the override boxes is
+// that anyone with the printed Height & Weight table can enter its exact
+// value and have it flow to the sheet and export like any other field.
+function heightWeightCard(){
+  const c=S.concept;
+  const hw=heightWeight();
+  let h='<div class="card"><h3>Height &amp; Weight</h3>';
+  if(!hw){
+    h+='<p class="note">Set characteristics first &mdash; height and weight are derived from SIZ, your species and your body frame. You can also type them in by hand once SIZ is known.</p>';
+    return h+'</div>';
+  }
+  const sp=speciesDef();
+  h+='<div class="hwreadout">'
+   +'<div class="hwbig"><span class="hwv">'+hw.m.toFixed(2)+'<small>m</small></span><span class="hwsub">'+hw.ft+'</span><span class="hwlbl">Height</span></div>'
+   +'<div class="hwbig"><span class="hwv">'+hw.kg+'<small>kg</small></span><span class="hwsub">'+hw.lb+' lb</span><span class="hwlbl">Weight</span></div>'
+   +'<div class="hwfrom">from SIZ <b>'+S.chars.SIZ+'</b> &middot; '+esc(sp?sp.label:"Human")+' &middot; '+esc(hw.build)+' frame'
+   +(hw.overriddenH||hw.overriddenW?'<br><span class="note">Hand-entered value in use (derived would be '+hw.derivedM.toFixed(2)+'m / '+hw.derivedKg+'kg).</span>':"")
+   +'</div></div>';
+  h+='<div class="grid2">'
+   +fld("Height override (metres)",'<input type="number" step="0.01" min="0" value="'+esc(c.heightM)+'" placeholder="'+hw.derivedM.toFixed(2)+'" onchange="APP.set(\'concept\',\'heightM\',this.value)">')
+   +fld("Weight override (kg)",'<input type="number" step="1" min="0" value="'+esc(c.weightKg)+'" placeholder="'+hw.derivedKg+'" onchange="APP.set(\'concept\',\'weightKg\',this.value)">')
+   +'</div>';
+  h+='<p class="note">Body frame (set above) redistributes the same SIZ: a Lithe build is taller and leaner for its mass, Heavy is shorter and denser. Weight tracks SIZ directly, since SIZ <i>is</i> the character&rsquo;s mass.</p>';
+  h+='<p class="note rulesrc">The core rulebook&rsquo;s Height &amp; Weight table (p.9) is not reproduced here &mdash; this app has no verified transcription of it, and inventing one would be worse than saying so. These are computed from a stated model (see <code>HW_ANCHORS</code> in data.js) pinned to the standard adult figure for an average-SIZ human and, for each demi-human, to the height its own species description gives. If you have the table in front of you, type its value into the override boxes and it wins outright.</p>';
+  return h+'</div>';
+}
 function stepConcept(){
   const c=S.concept;
   return head("Concept","Who is this character? Keep it simple for now &mdash; the numbers come next, and everything here is free text.")
@@ -149,7 +177,7 @@ function stepConcept(){
   +fld("Handedness",'<select onchange="APP.set(\'concept\',\'handed\',this.value)">'+["Right","Left","Ambidextrous"].map(o=>'<option '+(c.handed===o?"selected":"")+'>'+o+'</option>').join("")+'</select>')
   +fld("Body frame",'<select onchange="APP.set(\'concept\',\'frame\',this.value)">'+["Lithe","Medium","Heavy"].map(o=>'<option '+(c.frame===o?"selected":"")+'>'+o+'</option>').join("")+'</select>')
   +'</div>'+fld("Concept notes",'<textarea rows="3" onchange="APP.set(\'concept\',\'notes\',this.value)">'+esc(c.notes)+'</textarea>')
-  +'<p class="note">Height and weight are read off the Height &amp; Weight table (core p.9) from SIZ and frame once characteristics are set &mdash; record them in the notes if you wish.</p></div>';
+  +'</div>'+heightWeightCard();
 }
 
 function stepChars(){
@@ -251,6 +279,8 @@ function stepAttrs(){
    ["Initiative Bonus",initBonus(c.INT,c.DEX),"average of DEX &amp; INT, fractions up"],
    ["Luck Points",luckFinal(c.POW)+(hasAdv("luck")?" (Advantage +"+(S.archetype==="paragon"?2:1)+")":""),"POW "+c.POW],
    ["Magic Points",c.POW,"equal to POW"],
+   ["Height",(()=>{const hw=heightWeight();return hw.m.toFixed(2)+"m";})(),(()=>{const hw=heightWeight();return hw.ft+" &mdash; SIZ "+c.SIZ+", "+esc(hw.build)+" frame";})()],
+   ["Weight",(()=>{const hw=heightWeight();return hw.kg+"kg";})(),(()=>{const hw=heightWeight();return hw.lb+" lb &mdash; SIZ "+c.SIZ;})()],
    ["Movement Rate",moveText(),(()=>{const r=moveRate();const sp=speciesDef();
      const src=sp?sp.label+" base "+r.base+"m":"human base 6m";
      return r.notes.length?src+" &mdash; "+r.notes.join("; "):src;})()]];

@@ -125,6 +125,34 @@ function moveGaits(){
   return {walk:r.m,run:r.walkOnly?null:r.m*3,sprint:(r.walkOnly||r.noSprint)?null:r.m*5,info:r};
 }
 const moveText=()=>{const r=moveRate();return r.immobile?"0m":(r.m+"m");};
+
+/* ---- Height & Weight ----
+   Was a one-line reminder on the Concept step ("read them off the Height &
+   Weight table from SIZ and frame") that never computed anything. Now derived
+   from SIZ, species and build per the model documented at HW_ANCHORS, and
+   overridable — S.concept.heightM / weightKg, when set, win outright, so
+   anyone working from the printed table can just type the book's figure in
+   and have it flow to the sheet and the export like any other value. */
+function heightWeight(){
+  if(!charsReady())return null;
+  const spKey=(speciesDef()&&speciesDef().key)||"human";
+  const a=HW_ANCHORS[spKey]||HW_ANCHORS.human;
+  const avgSiz=(SPECIES_MAP[spKey]||SPECIES_MAP.human).avg.SIZ;
+  const build=BUILD_FACTORS[S.concept.frame]||1;
+  const siz=S.chars.SIZ;
+  const derivedM=a.heightAt*Math.pow(siz/avgSiz,1/3)*build;
+  const derivedKg=a.massPerSiz*siz;
+  const om=parseFloat(S.concept.heightM), ok=parseFloat(S.concept.weightKg);
+  const m=Number.isFinite(om)&&om>0?om:derivedM;
+  const kg=Number.isFinite(ok)&&ok>0?ok:derivedKg;
+  return {m:Math.round(m*100)/100,kg:Math.round(kg),
+    derivedM:Math.round(derivedM*100)/100,derivedKg:Math.round(derivedKg),
+    overriddenH:m!==derivedM,overriddenW:kg!==derivedKg,
+    ft:mToFtIn(m),lb:Math.round(kg*2.2046),species:spKey,build:S.concept.frame||"Medium"};
+}
+function mToFtIn(m){const totalIn=Math.round(m*39.3701);return Math.floor(totalIn/12)+"&prime;"+(totalIn%12)+"&Prime;";}
+function heightWeightText(){const hw=heightWeight();
+  return hw?(hw.m.toFixed(2)+"m / "+hw.kg+"kg"):"—";}
 function gradedPct(key,basePct){
   const g=gradeForEntry(key);const mult=GRADE_MULT[g];
   return mult==null?{pct:null,grade:g}:{pct:Math.max(0,Math.round(basePct*mult)),grade:g};
@@ -164,7 +192,9 @@ function freshState(){return {
  // traits (see the Species step).
  species:null,
  campaignId:null, _libId:null, _libLastSaved:null,
- concept:{name:"",player:"",gender:"",age:"",frame:"Medium",handed:"Right",homeland:"",notes:""},
+ // heightM / weightKg are optional hand-typed overrides — blank means "use
+ // the figure derived from SIZ, species and build" (see heightWeight()).
+ concept:{name:"",player:"",gender:"",age:"",frame:"Medium",handed:"Right",homeland:"",notes:"",heightM:"",weightKg:""},
  chars:{STR:null,CON:null,SIZ:null,DEX:null,INT:null,POW:null,CHA:null},
  charMode:"roll", poolA:[], poolB:[], assignA:{}, assignB:{}, fixedAP:0,
  culture:null, cultChoice:[], cultProf:[null,null,null], cultProfSpec:["","",""],
