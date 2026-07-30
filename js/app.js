@@ -336,6 +336,11 @@ window.APP={
    S.play.luck=Math.max(0,Math.min(max,newCur));render();},
  playMagicAdj(d){if(viewOnlyBlock())return;S.play.magic=Math.max(0,Math.min(playMaxMagic(),playCurMagic()+d));render();},
  playSetFatigue(v){if(viewOnlyBlock())return;S.play.fatigue=v;render();},
+ // Step one level up or down the Fatigue track — the common case in play is
+ // "failed an Endurance roll, take a level", not picking off a dropdown.
+ playFatigueAdj(d){if(viewOnlyBlock())return;
+   const i=FATIGUE_LEVELS.indexOf(S.play.fatigue||"Fresh");
+   S.play.fatigue=FATIGUE_LEVELS[Math.max(0,Math.min(FATIGUE_LEVELS.length-1,(i<0?0:i)+d))];render();},
  // Inventory edits in Play Mode — allowed for the owner (VIEW_ONLY is false)
  // and, as a narrow exception, for the campaign DM (VIEW_ONLY_IS_DM), for
  // loot distribution / adding or removing gear mid-session. Blocked for a
@@ -558,7 +563,9 @@ function buildMD(){
    "luck_points: "+(charsReady()?luckFinal(c.POW):""),
    "magic_points: "+(charsReady()?c.POW:""),
    "healing_rate: "+(charsReady()?healRate(c.CON):""),
-   "movement: 6m","tags:","  - character","---"].join("\n");
+   "movement: "+(charsReady()?moveText():"6m"),
+   ...(S.species?["species: "+(SPECIES_MAP[S.species]?SPECIES_MAP[S.species].label:S.species)]:[]),
+   "tags:","  - character","---"].join("\n");
   let md=yaml+"\n\n# "+n+"\n\n";
   if(S.concept.homeland)md+="*"+[S.culture,S.career,S.concept.homeland].filter(Boolean).join(" · ")+"*\n\n";
   if(charsReady()){

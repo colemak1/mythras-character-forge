@@ -28,11 +28,103 @@ function hpLocsFinal(CON,SIZ){const base=hpLocs(CON,SIZ);if(!hasAdv("hp"))return
 // Grade math: shift one step toward Very Easy (used for the Pulp/Paragon
 // Endurance/Stealth/Willpower "one Grade easier" Advantages), then apply the
 // resulting grade's multiplier to a base skill %.
-function shiftGradeEasier(g){const i=GRADE_ORDER.indexOf(g);return GRADE_ORDER[Math.max(1,i-1)];}
-function gradeForEntry(key){
-  const advKey=GRADE_EASIER_ADV[key];
-  return (advKey&&hasAdv(advKey))?shiftGradeEasier(ACTIVE_GRADE):ACTIVE_GRADE;
+function shiftGradeEasier(g,n){const i=GRADE_ORDER.indexOf(g);return GRADE_ORDER[Math.max(1,i-(n==null?1:n))];}
+// Shifting harder can reach Hopeless (the step past Herculean) but never
+// wraps round to Automatic, mirroring shiftGradeEasier's floor at Very Easy.
+function shiftGradeHarder(g,n){const i=GRADE_ORDER.indexOf(g);return GRADE_ORDER[Math.min(GRADE_ORDER.length-1,i+(n==null?1:n))];}
+const gradeHardness=g=>GRADE_ORDER.indexOf(g);
+
+/* ---- Conditions that make rolls harder: Encumbrance and Fatigue ----
+   Both of these were computed and displayed but never reached an actual roll.
+   They meet here, in the one function every % readout and every roll button
+   already goes through (gradeForEntry -> gradedPct).
+
+   Encumbrance (core rulebook, Encumbrance section): over STR x2 "Burdened"
+   makes skills that use STR or DEX — Combat Styles included — one Grade
+   harder; over STR x3 "Overloaded" makes them two Grades harder. It is a
+   relative SHIFT, and it only touches STR/DEX skills.
+
+   Fatigue (Fatigue Levels table, see FATIGUE_TABLE): each level states an
+   absolute Skill Grade for the character's rolls, and it applies to every
+   skill, not just physical ones. So it behaves as a FLOOR on difficulty
+   rather than another shift — a Winded character rolls at Hard, and a
+   Winded *and* Burdened character rolls their Combat Style at Formidable
+   (Standard shifted one harder by the load = Hard, which the Winded floor
+   then does not worsen... but Overloaded's two steps take it to Formidable,
+   which is worse than the floor and therefore wins). Taking the harsher of
+   the two rather than summing them keeps the table's own wording intact
+   instead of inventing a stacking rule the book does not state. */
+function skillUsesStrDex(key){
+  const e=entryMap()[key];
+  const f=(e&&e.formula)||"";
+  return /STR|DEX/.test(f);
 }
+// 0 / 1 / 2 Grade steps from carried weight, or null when characteristics
+// aren't set yet. Only STR/DEX-based skills are affected.
+function encGradeSteps(key){
+  const st=encStatus();
+  if(!st||st.level==="ok")return 0;
+  if(!skillUsesStrDex(key))return 0;
+  return st.steps||0;
+}
+function fatigueRow(){return FATIGUE_MAP[(S.play&&S.play.fatigue)||"Fresh"]||FATIGUE_MAP.Fresh;}
+function fatigueGradeFloor(){const r=fatigueRow();return r&&r.grade?r.grade:null;}
+function gradeForEntry(key){
+  let g=ACTIVE_GRADE;
+  const advKey=GRADE_EASIER_ADV[key];
+  if(advKey&&hasAdv(advKey))g=shiftGradeEasier(g);
+  const steps=encGradeSteps(key);
+  if(steps>0)g=shiftGradeHarder(g,steps);
+  const floor=fatigueGradeFloor();
+  if(floor&&gradeHardness(floor)>gradeHardness(g))g=floor;
+  return g;
+}
+// Everything currently making a given skill's Grade differ from the Active
+// Grade, as short labelled reasons — so the sheet and Play Mode can say WHY a
+// number moved instead of silently showing a different percentage.
+function gradeReasons(key){
+  const out=[];
+  const advKey=GRADE_EASIER_ADV[key];
+  if(advKey&&hasAdv(advKey))out.push({dir:"easier",text:ARCHETYPES[S.archetype].label+" Advantage: one Grade easier"});
+  const steps=encGradeSteps(key);
+  if(steps>0){const st=encStatus();
+    out.push({dir:"harder",text:st.label+": "+steps+" Grade"+(steps>1?"s":"")+" harder (STR/DEX skill)"});}
+  const floor=fatigueGradeFloor();
+  if(floor)out.push({dir:"harder",text:"Fatigue ("+fatigueRow().name+"): rolls are "+GRADE_LABEL[floor]});
+  return out;
+}
+
+/* ---- Movement Rate ----
+   Was the hardcoded string "6m" in five separate places. Base comes from the
+   species template (core rulebook: "Movement is not calculated from
+   Characteristics but is a default value which differs from species to
+   species. The base Movement Rate for humans is 6 metres"), then Fatigue and
+   Encumbrance modify it. */
+function moveBase(){const sp=speciesDef();return sp&&sp.move!=null?sp.move:6;}
+function moveRate(){
+  let m=moveBase();const notes=[];let immobile=false,noSprint=false,walkOnly=false;
+  const f=fatigueRow();
+  if(f&&f.move!=null){
+    if(f.move==="immobile"||f.move==="none"){immobile=true;m=0;notes.push("Fatigue ("+f.name+"): immobile");}
+    else if(f.move==="half"){m=m/2;notes.push("Fatigue ("+f.name+"): Movement halved");}
+    else {m=m+f.move;notes.push("Fatigue ("+f.name+"): "+f.move+"m");}
+  }
+  const st=encStatus();
+  if(st&&st.level!=="ok"){
+    if(st.level==="warn"){m=m-2;noSprint=true;notes.push("Burdened: -2m, no sprinting");}
+    else {m=m/2;walkOnly=true;notes.push("Overloaded: Movement halved, walk only");}
+  }
+  m=Math.max(0,Math.round(m*2)/2);
+  return {base:moveBase(),m,notes,immobile,noSprint,walkOnly};
+}
+// Gaits (core rulebook; restated in the Imperative SRD's Community Errata):
+// Run is Move x3, Sprint is Move x5. Sprinting is unavailable while Burdened
+// and everything above a walk is unavailable while Overloaded.
+function moveGaits(){
+  const r=moveRate();
+  return {walk:r.m,run:r.walkOnly?null:r.m*3,sprint:(r.walkOnly||r.noSprint)?null:r.m*5,info:r};
+}
+const moveText=()=>{const r=moveRate();return r.immobile?"0m":(r.m+"m");};
 function gradedPct(key,basePct){
   const g=gradeForEntry(key);const mult=GRADE_MULT[g];
   return mult==null?{pct:null,grade:g}:{pct:Math.max(0,Math.round(basePct*mult)),grade:g};

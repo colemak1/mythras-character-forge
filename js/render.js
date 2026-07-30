@@ -42,7 +42,7 @@ function renderLedger(){
       +led("Magic Points",c.POW)
       +led("Healing Rate",healRate(c.CON))
       +led("Exp. Modifier",(xpMod(c.CHA)>=0?"+":"")+xpMod(c.CHA))
-      +led("Movement","6m");
+      +led("Movement",moveText()+(moveRate().m!==moveBase()?' <span class="note">(base '+moveBase()+'m)</span>':""));
     h+='<h3>Hit Points</h3><table class="ledhp">'+hpLocsFinal(c.CON,c.SIZ).map(([l,v])=>'<tr><td>'+l+'</td><td>'+v+'</td></tr>').join("")+'</table>';
   }
   const stepName=currentSteps()[S.step];
@@ -204,7 +204,9 @@ function stepAttrs(){
    ["Initiative Bonus",initBonus(c.INT,c.DEX),"average of DEX &amp; INT, fractions up"],
    ["Luck Points",luckFinal(c.POW)+(hasAdv("luck")?" (Advantage +"+(S.archetype==="paragon"?2:1)+")":""),"POW "+c.POW],
    ["Magic Points",c.POW,"equal to POW"],
-   ["Movement Rate","6m","default for humans"]];
+   ["Movement Rate",moveText(),(()=>{const r=moveRate();const sp=speciesDef();
+     const src=sp?sp.label+" base "+r.base+"m":"human base 6m";
+     return r.notes.length?src+" &mdash; "+r.notes.join("; "):src;})()]];
   return head("Attributes","Nothing to enter here &mdash; every attribute is computed from the verified core tables and updates live if you revisit characteristics.")
   +'<div class="card"><div class="attrgrid">'+rows.map(r=>'<div class="attr"><div class="an">'+r[0]+'</div><div class="av">'+r[1]+'</div><div class="ah">'+r[2]+'</div></div>').join("")+'</div>'
   +'<p class="note" style="margin-top:10px"><b>Optional rule &mdash; Fixed Action Points:</b> &ldquo;all characters can start the game with either 2 or 3 Action Points, regardless of INT and DEX.&rdquo; '
@@ -471,13 +473,36 @@ function armourPenaltyToInit(){
 // as Strenuous activity for Fatigue. STR x4 is a hard cap — cannot be
 // carried at all, encumbered or not.
 function encLimit(){return charsReady()?S.chars.STR*2:null;}
+// `steps` is the number of Difficulty Grades this load actually costs a
+// STR/DEX-based skill. It used to exist only inside the message string, which
+// is why the penalty was displayed but never applied — engine.js's
+// encGradeSteps() reads it now and feeds it straight into gradeForEntry().
 function encStatus(){
   if(!charsReady())return null;
   const total=gearEncTotal(),lim=S.chars.STR*2,over=S.chars.STR*3,cap=S.chars.STR*4;
-  if(total<=lim)return {level:"ok",msg:"Within your unencumbered limit."};
-  if(total<=over)return {level:"warn",msg:"Burdened &mdash; over STR&times;2 ("+lim+"): STR/DEX-based skills (including Combat Styles) are one Grade harder, Movement -2m, no sprinting."};
-  if(total<=cap)return {level:"bad",msg:"Overloaded &mdash; over STR&times;3 ("+over+"): STR/DEX-based skills are two Grades harder, Movement halved, walk-only."};
-  return {level:"bad",msg:"Over the STR&times;4 hard cap ("+cap+") &mdash; this much cannot physically be carried, per the book."};
+  if(total<=lim)return {level:"ok",steps:0,label:"Unencumbered",msg:"Within your unencumbered limit."};
+  if(total<=over)return {level:"warn",steps:1,label:"Burdened",msg:"Burdened &mdash; over STR&times;2 ("+lim+"): STR/DEX-based skills (including Combat Styles) are one Grade harder, Movement -2m, no sprinting."};
+  if(total<=cap)return {level:"bad",steps:2,label:"Overloaded",msg:"Overloaded &mdash; over STR&times;3 ("+over+"): STR/DEX-based skills are two Grades harder, Movement halved, walk-only."};
+  return {level:"bad",steps:2,label:"Over the hard cap",msg:"Over the STR&times;4 hard cap ("+cap+") &mdash; this much cannot physically be carried, per the book. Penalties shown are Overloaded&rsquo;s; the book simply does not allow this load at all."};
+}
+// Shows the encumbrance penalty as applied numbers rather than as a sentence
+// describing a penalty that used to never happen: which skills are affected,
+// what Grade they now roll at, and what the load does to Movement.
+function encEffectPanel(){
+  const st=encStatus();if(!st||st.level==="ok")return "";
+  const affected=allEntries().filter(e=>skillUsesStrDex(e.key));
+  const sample=affected.slice(0,6).map(e=>{
+    const g=gradedPct(e.key,finalPct(e.key));
+    return '<tr><td>'+esc(e.label)+'</td><td class="num">'+finalPct(e.key)+'%</td>'
+      +'<td class="num">'+(g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%")+'</td>'
+      +'<td>'+GRADE_LABEL[g.grade]+'</td></tr>';}).join("");
+  const r=moveRate();
+  return '<div class="encfx"><b>Applied now:</b> '+affected.length+' STR/DEX-based skill'+(affected.length===1?"":"s")
+   +' (Combat Styles included) roll at <b>'+GRADE_LABEL[gradeForEntry("std:Athletics")]+'</b>'
+   +' &middot; Movement <b>'+r.m+'m</b>'+(r.noSprint?" (no sprinting)":"")+(r.walkOnly?" (walk only)":"")
+   +'<table class="rt"><tr><th>Skill</th><th class="num">Base</th><th class="num">Encumbered</th><th>Grade</th></tr>'+sample+'</table>'
+   +(affected.length>6?'<p class="note">&hellip;and '+(affected.length-6)+' more &mdash; every STR/DEX skill on the sheet now shows the reduced figure.</p>':"")
+   +'</div>';
 }
 /* ---- step: money & gear ---- */
 function baseMult(){
@@ -523,7 +548,7 @@ function stepMoney(){
     +'<td><button class="chip" aria-label="remove item" onclick="APP.invDel('+i+')">&times;</button></td></tr>').join("")
    +'</table><p style="margin-top:8px"><button class="chip" onclick="APP.invAdd()">+ add item</button> &nbsp;<span class="note">Inventory ENC: <b style="font-family:var(--mono)">'+S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.enc||0),0)+'</b> &nbsp;&middot;&nbsp; Total gear ENC (weapons + armour + inventory): <b style="font-family:var(--mono)">'+gearEncTotal()+'</b>'
    +(encLimit()!==null?' &nbsp;&middot;&nbsp; Unencumbered limit (STR&times;2): <b style="font-family:var(--mono)">'+encLimit()+'</b>':"")+'</span>'
-   +(encStatus()&&encStatus().level!=="ok"?'<p class="'+(encStatus().level==="bad"?"warn":"note")+'" style="margin-top:4px">'+encStatus().msg+'</p>':"")+'</p></div>';
+   +(encStatus()&&encStatus().level!=="ok"?'<p class="'+(encStatus().level==="bad"?"warn":"note")+'" style="margin-top:4px">'+encStatus().msg+'</p>'+encEffectPanel():"")+'</p></div>';
   return h;
 }
 /* ---- step: sheet & export ---- */

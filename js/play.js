@@ -60,10 +60,18 @@ function charVitals(state){
   const hpMax=locs.reduce((a,l)=>a+l.max,0);
   const maxLuck=luckFinal(c.POW), curLuck=state.play.luck==null?maxLuck:Math.min(state.play.luck,maxLuck);
   const maxMagic=c.POW, curMagic=state.play.magic==null?maxMagic:Math.min(state.play.magic,maxMagic);
-  const maxAP=apFinal(c.INT,c.DEX,state.fixedAP);
-  const apUsed=Math.min(state.play.apUsed||0,maxAP);
   const fatigue=state.play.fatigue||"Fresh";
-  return {locs,worst,worstLoc,hpCur,hpMax,maxLuck,curLuck,maxMagic,curMagic,maxAP,apUsed,fatigue};
+  // Fatigue's Action Point column is a real penalty off the maximum (-1 at
+  // Exhausted, -2 Debilitated, -3 Incapacitated, no actions at all beyond
+  // that), applied here rather than in apFinal() so the character sheet keeps
+  // reporting the character's own rested AP while Play Mode reports what they
+  // can actually spend this round. Never drops below 0.
+  const fRow=FATIGUE_MAP[fatigue]||FATIGUE_MAP.Fresh;
+  const baseAP=apFinal(c.INT,c.DEX,state.fixedAP);
+  const maxAP=fRow.act===false?0:Math.max(0,baseAP+(fRow.ap||0));
+  const apUsed=Math.min(state.play.apUsed||0,maxAP);
+  return {locs,worst,worstLoc,hpCur,hpMax,maxLuck,curLuck,maxMagic,curMagic,
+    maxAP,baseAP,apUsed,fatigue,fatigueRow:fRow};
 }
 function playMaxHP(loc,state){const l=charVitals(state).locs.find(x=>x.loc===loc);return l?l.max:0;}
 function playCurHP(loc,state){const l=charVitals(state).locs.find(x=>x.loc===loc);return l?l.cur:0;}
@@ -101,10 +109,21 @@ function playMaxAP(state){return charVitals(state).maxAP;}
 // The Actions tab reads the actual equipped ranged weapon's "load" stat
 // (already tracked in WEAPON_MAP for the Combat-section readout) instead
 // of hardcoding a single number that would be wrong for most weapons.
-// Fatigue track (Combat chapter) — a real Mythras mechanic that was tracked
-// nowhere in Play Mode before; each step applies escalating penalties the GM
-// adjudicates, so this is deliberately just a label picker, not a formula.
-const FATIGUE_LEVELS=["Fresh","Winded","Tired","Wearied","Exhausted","Debilitated","Incapacitated","Semi-Conscious","Comatose"];
+// Fatigue track. This used to be a bare list of level names with the note
+// "deliberately just a label picker, not a formula" — the effects are now
+// applied for real off FATIGUE_TABLE (skill Grade floor, Movement, Initiative
+// and Action Points), so the list is derived from that table instead of being
+// a second, independent copy of the level names that could drift from it.
+const FATIGUE_LEVELS=FATIGUE_TABLE.map(f=>f.name);
+// Recovery Period / Healing Rate, rendered as human-readable rest time.
+function fatigueRecoveryText(){
+  const r=fatigueRow();const mins=FATIGUE_RECOVERY_MINUTES[r.name];
+  if(!mins)return r.name==="Dead"?"Never.":"No rest needed.";
+  const hr=charsReady()?Math.max(1,healRate(S.chars.CON)):1;
+  const t=mins/hr;
+  const txt=t<60?(Math.round(t)+" minutes"):((Math.round(t/6)/10)+" hours");
+  return txt+" of complete rest to shed this level ("+r.recovery+" ÷ Healing Rate "+hr+").";
+}
 function gradedPassivePct(key){const g=gradedPct(key,finalPct(key));return g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%";}
 function hitD20For(loc){const e=HIT_D20.find(x=>x[1]===loc);return e?e[0].replace("-","–"):"—";}
 // ---- Vitals & Armour body diagram: colour ramp for the 7-zone figure and
@@ -322,9 +341,20 @@ function pmTicker(){
   h+='<div class="pm-tk"><span class="k">Action Pts</span><span class="pm-pips" title="Click a pip to spend / restore">'
    +Array.from({length:maxAP},(_,i)=>'<button class="pm-pip'+(i<remainAP?"":" off")+'" aria-label="action point" onclick="APP.playApSetPip('+i+')"></button>').join("")+'</span></div>';
   h+='<div class="pm-tk"><span class="k">Damage Mod</span><span class="v">'+dmCalc(c.STR,c.SIZ)+'</span></div>';
-  h+='<div class="pm-tk"><span class="k">Initiative</span><span class="v">'+(initBonus(c.INT,c.DEX)-initPenalty)+'</span></div>';
+  // Initiative and Move both carry live Fatigue/Encumbrance penalties now, so
+  // they're marked (and titled) when they're showing something other than the
+  // character's rested, unladen figure.
+  const fRow=fatigueRow();
+  const initFat=fRow.init||0;
+  const initVal=initBonus(c.INT,c.DEX)-initPenalty+initFat;
+  h+='<div class="pm-tk"><span class="k">Initiative</span><span class="v'+(initFat?" mod":"")+'" title="'
+   +esc("Base "+initBonus(c.INT,c.DEX)+(initPenalty?", armour -"+initPenalty:"")+(initFat?", Fatigue ("+fRow.name+") "+initFat:""))+'">'+initVal+'</span></div>';
   h+='<div class="pm-tk"><span class="k">Heal Rate</span><span class="v">'+healRate(c.CON)+'</span></div>';
-  h+='<div class="pm-tk"><span class="k">Move</span><span class="v">6<small>m</small></span></div>';
+  const mv=moveRate(),gaits=moveGaits();
+  h+='<div class="pm-tk"><span class="k">Move</span><span class="v'+(mv.m!==mv.base?" mod":"")+'" title="'
+   +esc((mv.notes.length?mv.notes.join("; ")+". ":"Base "+mv.base+"m. ")
+     +"Walk "+gaits.walk+"m"+(gaits.run?", Run "+gaits.run+"m":", Run unavailable")+(gaits.sprint?", Sprint "+gaits.sprint+"m":", Sprint unavailable"))+'">'
+   +mv.m+'<small>m</small></span></div>';
   h+='<div class="pm-tk"><span class="k">Luck</span><span class="pm-pips" title="Click a pip to spend / restore">'
    +Array.from({length:maxLuck},(_,i)=>'<button class="pm-pip'+(i<curLuck?"":" off")+'" aria-label="luck point" onclick="APP.playLuckSetPip('+i+')"></button>').join("")+'</span></div>';
   h+='<div class="pm-tk"><span class="k">Magic</span><span class="v">'+curMagic+'<small>/'+maxMagic+'</small></span>'
@@ -357,9 +387,31 @@ function pmCombatSection(){
        +(inStyle.length?'<div class="meta">'+esc(inStyle.join(", "))+'</div>':'')+'</div>';
     }).join("");
   }else h+='<p class="pm-empty">No weapons carried — add some on the Money &amp; Gear step.</p>';
-  h+='<div class="pm-fatrow"><span title="Fatigue levels apply escalating penalties (Combat chapter) — GM-adjudicated, not auto-calculated here.">Fatigue</span>'
-   +'<select class="pm-fatsel" onchange="APP.playSetFatigue(this.value)">'+FATIGUE_LEVELS.map(f=>'<option '+(S.play.fatigue===f?"selected":"")+'>'+f+'</option>').join("")+'</select></div>';
+  h+=pmFatiguePanel();
   h+='</div>';
+  return h;
+}
+// Fatigue, with its actual mechanical consequences spelled out and applied.
+// Previously a bare picker whose only effect was to store a string.
+function pmFatiguePanel(){
+  const r=fatigueRow();
+  const v=charVitals();
+  const mv=moveRate();
+  const idx=FATIGUE_TABLE.indexOf(r);
+  let h='<div class="pm-fatrow"><span title="Fatigue Levels table — each level sets an absolute Skill Grade and penalises Movement, Initiative and Action Points.">Fatigue</span>'
+   +'<select class="pm-fatsel" onchange="APP.playSetFatigue(this.value)">'
+   +FATIGUE_LEVELS.map(f=>'<option '+(r.name===f?"selected":"")+'>'+f+'</option>').join("")+'</select>'
+   +'<span class="pm-fatstep"><button class="pm-sbtn" title="Recover a level" onclick="APP.playFatigueAdj(-1)">&minus;</button>'
+   +'<button class="pm-sbtn dmg" title="Accrue a level" onclick="APP.playFatigueAdj(1)">+</button></span></div>';
+  if(idx>0){
+    const bits=[];
+    bits.push('<span class="fx-g">All skill rolls: <b>'+GRADE_LABEL[r.grade]+'</b></span>');
+    bits.push('<span>Move <b>'+(mv.immobile?"immobile":mv.m+"m")+'</b></span>');
+    if(r.init)bits.push('<span>Initiative <b>'+r.init+'</b></span>');
+    if(r.ap)bits.push('<span>Action Points <b>'+r.ap+'</b> (now '+v.maxAP+'/'+v.baseAP+')</span>');
+    if(r.act===false)bits.push('<span class="fx-bad"><b>No activities possible</b></span>');
+    h+='<div class="pm-fatfx">'+bits.join("")+'<span class="pm-fatrec">'+esc(fatigueRecoveryText())+'</span></div>';
+  }
   return h;
 }
 
@@ -763,6 +815,32 @@ function xpLogRow(r){
   return '<div class="pm-xplogrow'+(r.success?" ok":"")+'">'+esc(r.label)+' — d100 '+r.roll+' + INT '+r.int+' = <b>'+r.total+'</b> vs '+r.target+'% &rarr; '
    +(r.success?"met/beat it":"fell short")+', <b>+'+r.gain+'%</b>'+(r.fumbleApplied?" (fumble +1% applied first)":"")+' &rarr; now <b>'+r.newPct+'%</b></div>';
 }
+// Standing conditions that are silently altering every percentage on the
+// sheet. Encumbrance and Fatigue both used to be display-only; now that they
+// really do move the numbers, the sheet has to say so somewhere the reader
+// can't miss, or a shrunken Athletics score looks like a bug.
+function conditionsSummary(){
+  if(!charsReady())return "";
+  const rows=[];
+  const enc=encStatus();
+  if(enc&&enc.level!=="ok"){
+    rows.push(['<b>'+esc(enc.label)+'</b> (gear ENC '+gearEncTotal()+' vs STR&times;2 = '+encLimit()+')',
+      enc.steps+' Grade'+(enc.steps>1?"s":"")+' harder on every STR/DEX skill and Combat Style']);
+  }
+  const f=fatigueRow();
+  if(f.name!=="Fresh"){
+    const bits=['all skill rolls at <b>'+GRADE_LABEL[f.grade]+'</b>'];
+    if(f.init)bits.push('Initiative '+f.init);
+    if(f.ap)bits.push('Action Points '+f.ap);
+    rows.push(['<b>Fatigue: '+esc(f.name)+'</b>',bits.join(", ")]);
+  }
+  const mv=moveRate();
+  if(mv.m!==mv.base)rows.push(['<b>Movement</b>',mv.base+'m &rarr; '+mv.m+'m &mdash; '+esc(mv.notes.join("; "))]);
+  if(!rows.length)return '<p class="note" style="margin-top:8px">No standing conditions &mdash; unencumbered and Fresh, so every % below is the character&rsquo;s plain skill.</p>';
+  return '<div class="condbox"><h4>Conditions currently applied to these numbers</h4>'
+   +rows.map(r=>'<div class="condrow"><span>'+r[0]+'</span><span>'+r[1]+'</span></div>').join("")
+   +'<p class="note">Set Fatigue in Play Mode; change carried gear on the Money &amp; Gear step.</p></div>';
+}
 // The dense print-style character sheet. Used to be the builder's final
 // step ("Sheet & Export"); now that Play Mode covers everything a player
 // needs during a session, this is instead a standalone reference/printout
@@ -778,9 +856,11 @@ function characterSheetBody(){
   // Mythras has no proficiency toggle — "trained" here just means invested.
   const skrows=list=>list.map(e=>{
     const base=finalPct(e.key);const g=gradedPct(e.key,base);const shifted=g.grade!==ACTIVE_GRADE;
+    const why=gradeReasons(e.key);
+    const whyTxt=why.length?why.map(r=>r.text).join(" · "):"";
     let valueHtml;
-    if(g.pct===null)valueHtml='<span class="note" style="text-transform:capitalize">'+GRADE_LABEL[g.grade]+'</span>';
-    else if(g.grade!=="standard")valueHtml='<span class="pct">'+g.pct+'%</span> <span class="note" style="text-decoration:line-through">'+base+'%</span>'+(shifted?' <span class="note" title="Pulp/Paragon Advantage: one Grade easier">&#9733;</span>':"");
+    if(g.pct===null)valueHtml='<span class="note" style="text-transform:capitalize" title="'+esc(whyTxt)+'">'+GRADE_LABEL[g.grade]+'</span>';
+    else if(g.grade!=="standard")valueHtml='<span class="pct" title="'+esc(whyTxt)+'">'+g.pct+'%</span> <span class="note" style="text-decoration:line-through">'+base+'%</span>'+(shifted?' <span class="note" title="'+esc(whyTxt||"Grade shifted")+'">&#9733;</span>':"");
     else valueHtml='<span class="pct">'+base+'%</span>';
     const dot='<span class="trdot" style="color:'+(e.trained?"var(--verd)":"var(--faint)")+'" title="'+(e.trained?"Trained":"Base only, no points invested")+'">'+(e.trained?"&#9679;":"&#9675;")+'</span>';
     return '<div class="skrow"><span>'+dot+esc(e.label)+(e.provisional?' <span class="warn" title="Combat Style base % uses STR+DEX as a working default, same formula as Athletics/Swim/Unarmed — the book leaves each style&#39;s exact base characteristics to the Games Master/setting">&#9888;</span>':"")+'</span><span>'+valueHtml+' <button class="rollb" onclick="APP.roll(\''+jsq(e.key)+'\')">roll</button></span></div>';
@@ -789,7 +869,8 @@ function characterSheetBody(){
   h+='<div class="card"><h3>Difficulty Grade</h3><p class="note">Shifts every skill %, and what the roll button uses, until you set it back to Standard.'
    +(S.archetype!=="ordinary"?' Endurance/Stealth/Willpower auto-shift one step easier if you took that Advantage (marked &#9733;).':"")+'</p>'
    +'<select onchange="APP.setGrade(this.value)">'+GRADES.map(([k,l])=>'<option value="'+k+'" '+(ACTIVE_GRADE===k?"selected":"")+'>'+l+'</option>').join("")+'</select>'
-   +(ACTIVE_GRADE!=="standard"?' <button class="chip" onclick="APP.setGrade(\'standard\')">reset to Standard</button>':"")+'</div>';
+   +(ACTIVE_GRADE!=="standard"?' <button class="chip" onclick="APP.setGrade(\'standard\')">reset to Standard</button>':"")
+   +conditionsSummary()+'</div>';
   h+='<div class="rolllog" id="rolllog">'+(S.rollLog.length?S.rollLog.map((r,i)=>'<div class="'+(i===0?"fresh ":"")+'t'+r.tier+'">d100 = '+r.roll+' vs '+esc(r.label)+' '+r.pct+'% &rarr; <b>'+r.tier+'</b></div>').join(""):'<span class="note">Roll log &mdash; click &ldquo;roll&rdquo; beside any skill. Crit &le; 1/10 skill (round up) &middot; 01&ndash;05 auto success &middot; 96&ndash;00 auto failure &middot; fumble 99&ndash;00 (00 only if skill &gt; 100).</span>')+'</div>';
   // Dense, print-style grid sheet — modelled on the official Mythras
   // character sheet's layout (small bordered boxes, a title panel, compact
@@ -844,7 +925,7 @@ function characterSheetBody(){
     ].map(([nm,v,lk,lv])=>'<tr><td class="nm">'+nm+'</td><td class="vv">'+v+'</td><td class="lk">'+lk+'</td><td class="lv">'+lv+'</td></tr>').join("")
    +'</table></div>';
   h+='<div class="mbox"><div class="mbox-t">Attributes</div><table class="mchtable">'
-   +[["Movement","6m"],["Magic Points",c.POW],["Action Points",apFinal(c.INT,c.DEX,S.fixedAP)],
+   +[["Movement",moveText()],["Magic Points",c.POW],["Action Points",apFinal(c.INT,c.DEX,S.fixedAP)],
      ["Damage Modifier",dmCalc(c.STR,c.SIZ)],["Initiative Bonus",initBonus(c.INT,c.DEX)-initPenalty],
      ["Healing Rate",healRate(c.CON)],["Luck Points",luckFinal(c.POW)],["Experience Mod.",(xpMod(c.CHA)>=0?"+":"")+xpMod(c.CHA)]
     ].map(([nm,v])=>'<tr><td class="nm" colspan="3">'+nm+'</td><td class="vv">'+v+'</td></tr>').join("")
@@ -1009,7 +1090,9 @@ function rulesNotes(){
   +'<li>The doubled Healing Rate for Pulp/Paragon (Minor or Serious Wounds only, Major Wounds unaffected) is noted next to Healing Rate rather than computed, since this build doesn&rsquo;t track wound severity.</li>'
   +'<li><b>Difficulty Grade</b> (core rulebook, Skills chapter, p.38, confirmed against page image): Very Easy doubles the skill, Easy adds half again, Standard is unchanged, Hard cuts it by a third, Formidable halves it, Herculean drops it to a tenth; Automatic needs no roll and Hopeless allows none. The selector on the Sheet step applies this to every skill % and to the roll button. Rounding direction isn&rsquo;t specified in the book for this table, so results are rounded to the nearest whole percent.</li>'
   +'<li><b>Cult &amp; Community</b> (Cults &amp; Brotherhoods chapter, pp.196&ndash;200, confirmed against page images): the five organisation types (Theist Cult, Animist/Spirit Cult, Sorcery Order, Mystical Order, Brotherhood) and their rank titles &mdash; Common/Dedicated/Proven/Overseer/Leader &mdash; are the book&rsquo;s own, as are the per-rank Requirements (years of membership + a minimum number of cult skills at a minimum %) and Training Discount (0/25/50/75/100%). <b>Correction:</b> rank does not grant a flat skill % bonus &mdash; an earlier pass invented that mechanic; it has been removed. What stays intentionally setting-specific, per the book&rsquo;s own design (cults are meant to be campaign-defined), is which nine archetypes exist for Sit&#39;ota, their names/blurbs, and which skill each one teaches.</li>'
-  +'<li><b>Encumbrance</b> (core rulebook, Encumbrance section, confirmed against page image): unencumbered up to STR&times;2. Over STR&times;2 (&ldquo;Burdened&rdquo;): STR/DEX-based skills, including Combat Styles, are one Grade harder, Movement &minus;2m, no sprinting. Over STR&times;3 (&ldquo;Overloaded&rdquo;): two Grades harder, Movement halved, walk-only. STR&times;4 is a hard cap &mdash; flagged but not blocked by this tool. Worn armour counts at half its packed ENC toward these totals; carried (unworn) armour counts full ENC.</li>'
+  +'<li><b>Encumbrance</b> (core rulebook, Encumbrance section, confirmed against page image): unencumbered up to STR&times;2. Over STR&times;2 (&ldquo;Burdened&rdquo;): STR/DEX-based skills, including Combat Styles, are one Grade harder, Movement &minus;2m, no sprinting. Over STR&times;3 (&ldquo;Overloaded&rdquo;): two Grades harder, Movement halved, walk-only. STR&times;4 is a hard cap &mdash; flagged but not blocked by this tool. Worn armour counts at half its packed ENC toward these totals; carried (unworn) armour counts full ENC. <b>These penalties are now applied, not just described:</b> a skill counts as STR/DEX-based if its base formula contains STR or DEX (which is every Combat Style), and the Grade shift feeds the same <code>gradeForEntry()</code> the skill list, sheet, Play Mode and every roll button already use. Until this pass the warning text promised a penalty that never reached a roll.</li>'
+  +'<li><b>Fatigue</b> (Fatigue Levels table). Each level sets an <i>absolute</i> Skill Grade for all rolls (Winded/Tired Hard, Wearied/Exhausted Formidable, Debilitated/Incapacitated Herculean, Semi-Conscious and beyond Hopeless), plus Movement, Initiative and Action Point penalties, and a Recovery Period that is divided by the character&rsquo;s Healing Rate. All of it is applied automatically now; the track used to be a picker that stored a string and changed nothing. Because the table states a grade rather than a shift, Fatigue acts as a <i>floor</i> on difficulty and takes the harsher of itself and any Encumbrance shift, rather than stacking with it &mdash; the book gives no stacking rule, and summing them would be an invention. Table transcribed from the <a href="https://srd.mythras.net/" target="_blank" rel="noopener">Mythras Imperative SRD</a>, published by The Design Mechanism under the ORC License, which reproduces the core rulebook&rsquo;s own Fatigue table.</li>'
+  +'<li><b>Movement Rate</b> was hardcoded as the string &ldquo;6m&rdquo; in five places. It now comes from the species template (core: &ldquo;Movement is not calculated from Characteristics but is a default value which differs from species to species. The base Movement Rate for humans is 6 metres&rdquo;) and is reduced by Fatigue and Encumbrance. Gaits are Walk / Run &times;3 / Sprint &times;5; sprinting is lost while Burdened and everything above a walk while Overloaded.</li>'
   +'<li>Not modelled in v1: age bands, background events, magic spell lists.</li>'
   +'</ul></div></details>';
 }

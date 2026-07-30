@@ -91,6 +91,15 @@ input[type=number]{-moz-appearance:textfield}
 .rulequote{border-left:3px solid var(--bronze-deep);background:var(--inset);padding:9px 13px;color:var(--dim);font-family:var(--mono);font-size:12px;border-radius:0 var(--r-sm) var(--r-sm) 0;margin:8px 0}
 .note{color:var(--dim);font-size:13px}
 .warn{color:var(--madder-hi);font-size:13px}
+/* Encumbrance / Fatigue: panels that show the penalty as applied numbers,
+   now that both conditions actually move the skill percentages. */
+.encfx{border:1px solid var(--line);border-left:3px solid var(--madder);background:var(--inset);padding:9px 12px;margin-top:8px;border-radius:0 var(--r-sm) var(--r-sm) 0;font-size:13px}
+.encfx table{margin-top:7px}
+.condbox{border:1px solid var(--line);border-left:3px solid var(--madder);background:var(--inset);padding:10px 13px;margin-top:10px;border-radius:0 var(--r-sm) var(--r-sm) 0}
+.condbox h4{margin:0 0 7px;font-family:var(--serif);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--bronze)}
+.condrow{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:3px 0;border-bottom:1px dotted var(--line-soft);font-size:13px}
+.condrow:last-of-type{border-bottom:none}
+.condrow span:last-child{color:var(--dim);text-align:right}
 .okmsg{color:var(--verd);font-size:13px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 18px}
@@ -717,6 +726,18 @@ body.play-mode #main{background:var(--pm-bg);max-width:none;padding:0;margin-inl
 .pm-wpn .meta{font-family:var(--mono);font-size:9.5px;color:var(--pm-dim);margin-top:3px;letter-spacing:.03em}
 .pm-fatrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dotted var(--pm-line-soft);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--pm-dim)}
 .pm-fatsel{font-size:10.5px;background:var(--pm-bg);border:1px solid var(--pm-line);color:var(--pm-text);border-radius:0;padding:3px 6px;font-family:var(--mono);text-transform:uppercase}
+/* Fatigue's applied effects, shown under the picker whenever the character is
+   past Fresh (the level now really does change skill Grade / Move / Init / AP). */
+.pm-fatstep{display:inline-flex;gap:3px;margin-left:6px}
+.pm-fatfx{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--pm-dim);text-transform:none}
+.pm-fatfx b{color:var(--pm-text)}
+.pm-fatfx .fx-g b{color:var(--pm-warn)}
+.pm-fatfx .fx-bad b{color:var(--pm-bad)}
+.pm-fatfx .pm-fatrec{flex:1 0 100%;color:var(--pm-dim);font-style:italic}
+/* Ticker values that are currently showing a penalised figure rather than the
+   character's rested/unladen one. */
+.pm-tk .v.mod{color:var(--pm-warn)}
+.pm-tk .v.mod::after{content:"*";font-size:.7em;vertical-align:super}
 .pm-magadj{display:inline-flex;gap:4px;align-items:center;margin-left:4px}
 /* VIEW_ONLY (Party Board -> viewing a teammate's sheet): grey out and
    disable every control that would mutate play state. The click handlers

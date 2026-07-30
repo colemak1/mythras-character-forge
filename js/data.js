@@ -457,3 +457,38 @@ const GRADE_MULT={automatic:null,veasy:2,easy:1.5,standard:1,hard:2/3,formidable
 const GRADE_EASIER_ADV={"std:Endurance":"endurance","std:Stealth":"stealth","std:Willpower":"willpower"};
 let ACTIVE_GRADE="standard"; // session-only difficulty grade, applied on the Sheet step
 
+// Fatigue Levels table — transcribed from the Mythras Imperative SRD's Game
+// System > Fatigue section (srd.mythras.net), which is published under the
+// ORC License and reproduces the core rulebook's own Fatigue table. This was
+// previously a bare list of level names with no mechanical effect attached;
+// the five effect columns below are the book's.
+//   grade    — the Skill Grade column. This is an ABSOLUTE grade the level
+//              imposes, not a relative shift: "Winded" means skill rolls are
+//              made at Hard, full stop. It therefore acts as a floor (see
+//              fatigueGradeFloor / gradeForEntry in engine.js) rather than
+//              stacking step-by-step with other penalties.
+//   move     — Movement column. null = no penalty, a number = metres off the
+//              Movement Rate, "half" = halved, "immobile"/"none" = can't move.
+//   init/ap  — flat penalties to Initiative and to maximum Action Points.
+//   act      — false once the level bars all activity outright.
+const FATIGUE_TABLE=[
+ {name:"Fresh",         grade:null,        move:null,      init:0, ap:0, act:true,  recovery:"—"},
+ {name:"Winded",        grade:"hard",      move:null,      init:0, ap:0, act:true,  recovery:"15 minutes"},
+ {name:"Tired",         grade:"hard",      move:-1,        init:0, ap:0, act:true,  recovery:"3 hours"},
+ {name:"Wearied",       grade:"formidable",move:-2,        init:-2,ap:0, act:true,  recovery:"6 hours"},
+ {name:"Exhausted",     grade:"formidable",move:"half",    init:-4,ap:-1,act:true,  recovery:"12 hours"},
+ {name:"Debilitated",   grade:"herculean", move:"half",    init:-6,ap:-2,act:true,  recovery:"18 hours"},
+ {name:"Incapacitated", grade:"herculean", move:"immobile",init:-8,ap:-3,act:true,  recovery:"24 hours"},
+ {name:"Semi-Conscious",grade:"hopeless",  move:"none",    init:null,ap:null,act:false,recovery:"36 hours"},
+ {name:"Comatose",      grade:"hopeless",  move:"none",    init:null,ap:null,act:false,recovery:"48 hours"},
+ {name:"Dead",          grade:"hopeless",  move:"none",    init:null,ap:null,act:false,recovery:"Never"}
+];
+const FATIGUE_MAP=Object.fromEntries(FATIGUE_TABLE.map(f=>[f.name,f]));
+// Recovery time is the table's Recovery Period divided by Healing Rate (SRD:
+// "The amount of complete rest needed to recover from each level of accrued
+// Fatigue is equal to the Recovery Period divided by the character's Healing
+// Rate"), so the raw column above is only half the answer — see fatigueRow().
+const FATIGUE_RECOVERY_MINUTES={"Fresh":0,"Winded":15,"Tired":180,"Wearied":360,
+ "Exhausted":720,"Debilitated":1080,"Incapacitated":1440,"Semi-Conscious":2160,
+ "Comatose":2880,"Dead":null};
+
