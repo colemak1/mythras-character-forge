@@ -191,6 +191,9 @@ function freshState(){return {
  // swaps in that species' characteristic dice, bounds, Movement Rate and
  // traits (see the Species step).
  species:null,
+ // Age band (Experience Table). `years` is the rolled or typed age; `events`
+ // holds generated Life Events and whether each has been applied.
+ age:{category:"adult",years:null,events:[]},
  campaignId:null, _libId:null, _libLastSaved:null,
  // heightM / weightKg are optional hand-typed overrides — blank means "use
  // the figure derived from SIZ, species and build" (see heightWeight()).
@@ -245,6 +248,11 @@ function normalizeState(){
   S.alloc.bonus=S.alloc.bonus||{};S.alloc.quick=S.alloc.quick||{};
   S.creationMode=S.creationMode||"full";S.archetype=S.archetype||"ordinary";
   if(S.species===undefined)S.species=null;
+  S.age=S.age||{category:"adult",years:null,events:[]};
+  if(!AGE_MAP[S.age.category])S.age.category="adult";
+  S.age.events=S.age.events||[];
+  if(S.concept&&S.concept.heightM===undefined)S.concept.heightM="";
+  if(S.concept&&S.concept.weightKg===undefined)S.concept.weightKg="";
   S.archAdvantages=S.archAdvantages||[];
   S.qProf=S.qProf||[null,null,null];S.qProfSpec=S.qProfSpec||["","",""];
   S.qStyleOn=!!S.qStyleOn;S.qStyleName=S.qStyleName||"";
@@ -277,8 +285,27 @@ function stepFns(){
    ?[stepConcept,stepChars,stepAttrs,stepQuickSkills,stepPassions,stepMoney,stepFinish]
    :[stepConcept,stepChars,stepAttrs,stepCulture,stepCareer,stepBonus,stepPassions,stepMoney,stepFinish];
 }
-function bonusPool(){return 150+(ARCHETYPES[S.archetype].bonusExtra||0);}
-function bonusCap(){return ARCHETYPES[S.archetype].bonusCap||15;}
+function ageBand(){return AGE_MAP[(S.age&&S.age.category)||"adult"]||AGE_MAP.adult;}
+// Bonus Skill Points now come from the Experience Table's age band rather than
+// a hardcoded 150/15. Adult is 150/+15, which is exactly what was hardcoded,
+// so nothing changes for a default character.
+//
+// Composing age with the Pulp/Paragon tiers: the tier's extra points are
+// additive (the Companion describes them as an addition to the character's
+// bonus points). For the cap, note that ARCHETYPES.ordinary.bonusCap is 15
+// only because 15 *is* the Adult row of the Experience Table — it is not a
+// tier permission, so an Ordinary character takes their age band's cap
+// unmodified (a Young Ordinary character is capped at +10, not +15). Pulp and
+// Paragon do genuinely raise the ceiling, and since both numbers are
+// permissions rather than penalties the more generous one wins: a Senior Pulp
+// Hero gets 250+50 points at a cap of 25 (the age band's, above Pulp's 20),
+// while a Paragon of any age keeps 40.
+function bonusPool(){return ageBand().bonus+(ARCHETYPES[S.archetype].bonusExtra||0);}
+function bonusCap(){
+  const age=ageBand().cap;
+  if(S.archetype==="ordinary")return age;
+  return Math.max(age,ARCHETYPES[S.archetype].bonusCap||age);
+}
 function phaseLimits(ph){
   if(ph==="bonus")return {pool:bonusPool(),max:bonusCap()};
   return {pool:100,max:15};

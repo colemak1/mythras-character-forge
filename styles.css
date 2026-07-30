@@ -116,6 +116,23 @@ input[type=number]{-moz-appearance:textfield}
 .hwbig .hwsub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:2px}
 .hwbig .hwlbl{font-family:var(--serif);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--bronze);margin-top:4px}
 .hwfrom{flex:1;min-width:190px;font-size:12.5px;color:var(--dim)}
+/* Age band (Experience Table) and the Life Events generator. */
+.agetbl{margin-top:8px}
+.agetbl tr.agesel{background:var(--inset)}
+.agetbl tr.agesel td{border-color:var(--bronze-deep)}
+.agetbl .note{font-size:11.5px;margin-top:2px}
+.agetotal{font-family:var(--mono);font-size:15px;color:var(--bronze-hi);padding:7px 0}
+.agemini{font-family:var(--mono);font-size:15px;color:var(--ink);padding:6px 0}
+.agemini .note{font-family:var(--serif);font-size:12px;margin-left:6px}
+.lifeev{border-top:1px dotted var(--line-soft);margin-top:12px;padding-top:10px}
+.lifeev h4{margin:0 0 6px;font-family:var(--serif);font-size:13.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--bronze)}
+.housetag{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;border:1px solid var(--line);border-radius:2px;padding:1px 5px;color:var(--faint);margin-left:7px;text-transform:uppercase;vertical-align:middle}
+.lifeevrow{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:8px 0;border-bottom:1px dotted var(--line-soft)}
+.lifeevrow:last-child{border-bottom:none}
+.lifeevrow .t{grid-column:1;font-size:13.5px}
+.lifeevrow .fx{grid-column:1;font-size:11.5px;color:var(--dim);font-family:var(--mono)}
+.lifeevrow .a{grid-column:2;grid-row:1/3;align-self:center;white-space:nowrap}
+.lifeevrow .applied{font-family:var(--mono);font-size:11px;color:var(--verd)}
 .okmsg{color:var(--verd);font-size:13px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 18px}

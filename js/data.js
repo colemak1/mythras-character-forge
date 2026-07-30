@@ -614,6 +614,98 @@ const ARCHETYPES={
    quote:"&ldquo;Roll 4d6, discarding the lowest die six times, then assign the five results of your choice (typically, the highest five) to STR, CON, DEX, POW, and CHA. Next, roll 3d6+6, discarding the lowest die three times and assign the two results of your choice (typically, the highest two) to SIZ and INT. If using the Points Build method, players build their character from a pre-set pool of 100 points.&rdquo; &mdash; Mythras Companion, p.55"}
 };
 
+/* ================= AGE BANDS =================
+   The Experience Table ("Creating Experienced Characters"). Age is not
+   flavour text in Mythras: it sets how many Bonus Skill Points the character
+   gets and how many of them may go on any one skill. Adult — 150 points, max
+   +15 — is the default every other part of this app was already hardcoded to,
+   so an Adult character's numbers are unchanged by this table arriving.
+
+   Transcribed from the Mythras Imperative SRD (srd.mythras.net, The Design
+   Mechanism, ORC License), whose Experience Table is the core rulebook's.
+
+   The book's own caveat, worth repeating in the UI: "the noted Age Bonus
+   should be treated as approximate, as campaigns advance at different rates".
+   Note also that the table gives no characteristic modifiers for age — a
+   common assumption from other d100 games, but not something this table
+   does, so nothing of the sort is applied here. */
+const AGE_CATEGORIES=[
+ {key:"young", label:"Young",       dice:"10+1d6", base:10,n:1, bonus:100,cap:10,
+  blurb:"Barely out of childhood — quick, untested, with everything still ahead."},
+ {key:"adult", label:"Adult",       dice:"15+2d6", base:15,n:2, bonus:150,cap:15,
+  blurb:"The default starting adventurer: trained, capable, not yet weathered."},
+ {key:"middle",label:"Middle Aged", dice:"25+3d6", base:25,n:3, bonus:200,cap:20,
+  blurb:"A working life already behind them, and the competence that comes with it."},
+ {key:"senior",label:"Senior",      dice:"40+4d6", base:40,n:4, bonus:250,cap:25,
+  blurb:"Decades of practice; the kind of person younger adventurers ask for advice."},
+ {key:"old",   label:"Old",         dice:"60+5d6", base:60,n:5, bonus:300,cap:30,
+  blurb:"A lifetime's expertise. Whether the body still cooperates is the GM's call."}
+];
+const AGE_MAP=Object.fromEntries(AGE_CATEGORIES.map(a=>[a.key,a]));
+
+/* ---- Life Events ----
+   HOUSE CONTENT, NOT A BOOK TABLE — flagged as such in the UI. The core
+   rulebook ties age to the Experience Table above; it does not ship a
+   background-events roll table, and this app has no verified transcription of
+   one from any supplement. Rather than fabricate a table and present it as
+   rules, this is an openly-labelled generator whose only job is to prompt
+   backstory — but every entry that has a mechanical consequence expresses it
+   through something the app already models properly (a Passion at its correct
+   book-derived starting value, an inventory item, a change to starting
+   silver), applied with one click and fully editable afterwards. Nothing here
+   invents a mechanic.
+   effect: null | {type:"passion",name,ptype} | {type:"item",name,enc}
+           | {type:"silver",pct} | {type:"note"} */
+const LIFE_EVENTS=[
+ {t:"A mentor took you in and taught you their trade. You never quite repaid them.",
+  effect:{type:"passion",name:"Loyalty to your old mentor",ptype:"platonic"}},
+ {t:"You lost someone early. It shaped how you deal with people.",
+  effect:{type:"passion",name:"Love (the one you lost)",ptype:"romantic"}},
+ {t:"A rival bested you publicly, and you have never let it go.",
+  effect:{type:"passion",name:"Hate (your old rival)",ptype:"averse"}},
+ {t:"You survived something that killed everyone else present.",
+  effect:{type:"passion",name:"Fear (whatever it was)",ptype:"object"}},
+ {t:"You swore an oath to a lord, captain or elder, and it still binds you.",
+  effect:{type:"passion",name:"Loyalty to the one you swore to",ptype:"org"}},
+ {t:"You fell in with a crew, a warband or a company for a few years.",
+  effect:{type:"passion",name:"Loyalty to your old company",ptype:"org"}},
+ {t:"You inherited a keepsake from a relative you barely knew.",
+  effect:{type:"item",name:"Family heirloom",enc:0}},
+ {t:"You came away from a bad job with a weapon that wasn't yours.",
+  effect:{type:"item",name:"Someone else's blade",enc:1}},
+ {t:"A journey took you far further from home than you meant to go.",
+  effect:{type:"passion",name:"Love (a distant place)",ptype:"place"}},
+ {t:"You were cheated badly enough to change how you do business.",
+  effect:{type:"passion",name:"Distrust (merchants and moneylenders)",ptype:"species"}},
+ {t:"A windfall passed through your hands. Some of it stuck.",
+  effect:{type:"silver",pct:25}},
+ {t:"A debt, a fine or a bad season stripped you of most of what you had.",
+  effect:{type:"silver",pct:-25}},
+ {t:"You spent a stretch somewhere you would rather not discuss — a cell, a ship, a siege.",
+  effect:{type:"note"}},
+ {t:"You took a wound that healed badly and still aches before rain.",
+  effect:{type:"note"}},
+ {t:"You raised someone else's child, or your own, and it cost you years.",
+  effect:{type:"passion",name:"Protect (the child you raised)",ptype:"platonic"}},
+ {t:"You found a faith, a philosophy or a discipline that steadied you.",
+  effect:{type:"passion",name:"Uphold (your creed)",ptype:"place"}},
+ {t:"You made an enemy of an institution rather than a person.",
+  effect:{type:"passion",name:"Hate (the institution that wronged you)",ptype:"org"}},
+ {t:"A stretch of genuine prosperity — a trade, a farm, a shop that worked.",
+  effect:{type:"silver",pct:40}},
+ {t:"You buried a friend and have carried the obligation ever since.",
+  effect:{type:"passion",name:"Loyalty to a dead friend's memory",ptype:"org"}},
+ {t:"You picked up a tool of your trade good enough to be worth keeping.",
+  effect:{type:"item",name:"Fine tools of your trade",enc:2}},
+ {t:"Somewhere in there you learned to read, or wish you had.",effect:{type:"note"}},
+ {t:"You were on the wrong side of something and had to leave in a hurry.",
+  effect:{type:"passion",name:"Fear (being recognised)",ptype:"object"}},
+ {t:"A stranger did you an enormous kindness you have never been able to return.",
+  effect:{type:"passion",name:"Seek (the stranger who helped you)",ptype:"platonic"}},
+ {t:"You spent years in service to a household, and know its secrets.",
+  effect:{type:"passion",name:"Loyalty to the household you served",ptype:"org"}}
+];
+
 // Difficulty Grade table (core rulebook, Skills chapter — verified against
 // page scan; the core table is multiplicative, not a flat percentage).
 // Automatic/Hopeless bypass the % entirely (no roll needed / can't attempt).

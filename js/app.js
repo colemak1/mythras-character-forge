@@ -53,6 +53,57 @@ window.APP={
  manual(c,v){const n=parseInt(v,10);S.chars[c]=Number.isFinite(n)?n:null;render();},
  fap(v){S.fixedAP=v;render();},
  /* character tier & creation method */
+ /* age bands (Experience Table) */
+ // Changing band changes the Bonus Skill Points pool, so warn if points are
+ // already sitting in it rather than silently invalidating that step.
+ pickAge(key){
+   if(!AGE_MAP[key]||S.age.category===key)return;
+   const prev=S.age.category, spent=aSum("bonus"), oldPool=bonusPool();
+   S.age.category=key;
+   const nwPool=bonusPool();
+   if(spent>0&&nwPool!==oldPool
+      &&!confirm("This age band changes your Bonus Skill Points from "+oldPool+" to "+nwPool
+        +". The "+spent+" points you have already allocated stay where they are, but the Bonus Skills step will need rebalancing to the new total. Continue?")){
+     S.age.category=prev;render();return;}
+   // Keep the rolled age honest against the band it now belongs to.
+   const a=AGE_MAP[key];
+   if(S.age.years!=null&&(S.age.years<a.base+a.n||S.age.years>a.base+a.n*6))S.age.years=null;
+   render();},
+ rollAge(){const a=ageBand();let t=a.base;for(let i=0;i<a.n;i++)t+=d(6);
+   S.age.years=t;S.concept.age=String(t);render();},
+ ageYears(v){const n=parseInt(v,10);S.age.years=Number.isFinite(n)?n:null;
+   S.concept.age=Number.isFinite(n)?String(n):"";render();},
+ // Life Events: one per age band above Young (a Young character has barely
+ // had time for any). House content, clearly flagged as such in the UI.
+ rollLifeEvents(){
+   const n=AGE_CATEGORIES.findIndex(a=>a.key===S.age.category);
+   const count=Math.max(1,n);
+   const pool=LIFE_EVENTS.slice();const picked=[];
+   for(let i=0;i<count&&pool.length;i++)picked.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+   S.age.events=picked.map(e=>({t:e.t,effect:e.effect,applied:false}));
+   render();},
+ clearLifeEvents(){S.age.events=[];render();},
+ delLifeEvent(i){S.age.events.splice(i,1);render();},
+ // Apply an event's mechanical consequence through the app's existing
+ // systems — a real Passion at its correct starting value, a real inventory
+ // row, a real change to starting silver. Nothing bespoke.
+ applyLifeEvent(i){
+   const ev=S.age.events[i];if(!ev||ev.applied||!ev.effect)return;
+   const f=ev.effect;
+   if(f.type==="passion"){
+     if(!S.passions.some(p=>p.name===f.name))
+       S.passions.push({name:f.name,type:f.ptype||"org",subjPOW:"",subjCHA:""});
+   }else if(f.type==="item"){
+     S.inventory.push({name:f.name,qty:1,enc:f.enc||0});
+   }else if(f.type==="silver"){
+     // Expressed as a percentage of starting money so it scales with culture
+     // and social class instead of being a flat number that means something
+     // different to a Primitive and a Civilised character.
+     const t=moneyTotal();
+     if(!t){alert("Roll your starting money on the Money & Gear step first — this event adjusts it by "+f.pct+"%.");return;}
+     S.money.spent=Math.round((S.money.spent||0)-t*f.pct/100);
+   }
+   ev.applied=true;render();},
  /* species (non-human characters) */
  // Switching species changes the characteristic dice, so anything already
  // rolled or built is meaningless afterwards — same reasoning, and the same

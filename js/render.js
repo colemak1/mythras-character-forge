@@ -137,6 +137,56 @@ function speciesCard(){
   h+='<p class="note rulesrc">Characteristic dice, Movement Rates and racial traits from the <a href="https://cfi-srd.mythras.net/" target="_blank" rel="noopener">Classic Fantasy Imperative SRD</a> (The Design Mechanism, ORC License). Its Human row matches core Mythras exactly.</p>';
   return h+'</div>';
 }
+// Age band (Experience Table). Age used to be a free-text box with no
+// mechanical effect at all; the band now sets the Bonus Skill Points pool and
+// the per-skill cap on the Bonus Skills step.
+function ageCard(){
+  const cur=ageBand();
+  const sp=speciesDef();
+  const tierExtra=ARCHETYPES[S.archetype].bonusExtra||0;
+  let h='<div class="card"><h3>Age</h3>'
+   +'<p class="note">Age is not flavour in Mythras: it sets how many Bonus Skill Points the character has lived long enough to accumulate, and how much of that may go into any single skill.</p>'
+   +'<table class="rt agetbl"><tr><th>Category</th><th>Age</th><th class="num">Bonus Skill Points</th><th class="num">Max per skill</th><th></th></tr>'
+   +AGE_CATEGORIES.map(a=>'<tr class="'+(cur.key===a.key?"agesel":"")+'">'
+     +'<td><b>'+esc(a.label)+'</b><div class="note">'+esc(a.blurb)+'</div></td>'
+     +'<td class="num">'+esc(a.dice)+'</td><td class="num">'+a.bonus+(tierExtra?' <span class="note">+'+tierExtra+'</span>':"")+'</td>'
+     +'<td class="num">+'+a.cap+'</td>'
+     +'<td><button class="chip '+(cur.key===a.key?"on":"")+'" onclick="APP.pickAge(\''+a.key+'\')">'+(cur.key===a.key?"selected":"choose")+'</button></td></tr>').join("")
+   +'</table>';
+  h+='<div class="grid2" style="margin-top:10px">'
+   +fld("Exact age (years)",'<div style="display:flex;gap:6px"><input type="number" min="0" value="'+esc(S.age.years==null?"":S.age.years)+'" placeholder="'+esc(cur.dice)+'" onchange="APP.ageYears(this.value)">'
+     +'<button class="chip actionchip" onclick="APP.rollAge()">roll '+esc(cur.dice)+'</button></div>')
+   +fld("Resulting Bonus Skill Points",'<div class="agetotal">'+bonusPool()+' points &middot; max '+bonusCap()+' per skill</div>')
+   +'</div>';
+  if(sp)h+='<p class="note">A '+esc(sp.label)+' lives '+esc(sp.lifespan)+', so these bands describe a very different span of life than they do for a human &mdash; the categories are about accumulated experience, not calendar years. Adjust the exact age to suit.</p>';
+  h+='<p class="note rulesrc">Experience Table from the <a href="https://srd.mythras.net/" target="_blank" rel="noopener">Mythras Imperative SRD</a> (The Design Mechanism, ORC License), which reproduces the core rulebook&rsquo;s table. The book notes the age bonus &ldquo;should be treated as approximate, as campaigns advance at different rates&rdquo;. The table gives no characteristic modifiers for age, so none are applied.</p>';
+  h+=lifeEventsBlock();
+  return h+'</div>';
+}
+// Life Events. Openly labelled house content — see the LIFE_EVENTS comment in
+// data.js for why this isn't presented as a book table.
+function lifeEventsBlock(){
+  let h='<div class="lifeev"><h4>Life events <span class="housetag">house content</span></h4>'
+   +'<p class="note">The rules tie age to the Experience Table above and stop there &mdash; there is no background-events table in the core book, and this app has no verified transcription of one from a supplement. So this is a backstory prompt generator, not a rules table. Every event that carries a mechanical consequence applies it through something the app already models properly: a Passion at its correct starting value, an inventory item, or a change to starting silver.</p>'
+   +'<p><button class="chip actionchip" onclick="APP.rollLifeEvents()">'+(S.age.events.length?"reroll events":"roll life events")+'</button>'
+   +(S.age.events.length?' <button class="chip" onclick="APP.clearLifeEvents()">clear</button>':"")+'</p>';
+  if(!S.age.events.length)return h+'</div>';
+  h+=S.age.events.map((ev,i)=>{
+    const f=ev.effect;
+    let fx="";
+    if(f&&f.type==="passion")fx="Adds the Passion &ldquo;"+esc(f.name)+"&rdquo;";
+    else if(f&&f.type==="item")fx="Adds &ldquo;"+esc(f.name)+"&rdquo; (ENC "+(f.enc||0)+") to your inventory";
+    else if(f&&f.type==="silver")fx=(f.pct>0?"+":"")+f.pct+"% to your starting silver";
+    else fx="Background colour only &mdash; no mechanical effect";
+    return '<div class="lifeevrow"><div class="t">'+esc(ev.t)+'</div>'
+     +'<div class="fx">'+fx+'</div>'
+     +'<div class="a">'+(f&&f.type!=="note"
+        ?(ev.applied?'<span class="applied">&#10003; applied</span>':'<button class="chip" onclick="APP.applyLifeEvent('+i+')">apply</button>')
+        :"")
+      +' <button class="chip" onclick="APP.delLifeEvent('+i+')" aria-label="remove event">&times;</button></div></div>';
+  }).join("");
+  return h+'</div>';
+}
 // Height & Weight, computed rather than the text reminder that used to sit
 // here. Both figures are overridable — the point of the override boxes is
 // that anyone with the printed Height & Weight table can enter its exact
@@ -172,12 +222,12 @@ function stepConcept(){
   +fld("Character name",tIn("concept","name",c.name,"e.g. Anathaym"))
   +fld("Player",tIn("concept","player",c.player,""))
   +fld("Gender",tIn("concept","gender",c.gender,""))
-  +fld("Age",tIn("concept","age",c.age,"adult by default"))
+  +fld("Age",'<div class="agemini">'+esc(S.age.years==null?"—":String(S.age.years))+' <span class="note">'+esc(ageBand().label)+' &mdash; set in the Age card below</span></div>')
   +fld("Homeland",tIn("concept","homeland",c.homeland,"e.g. a region of Sit'ota"))
   +fld("Handedness",'<select onchange="APP.set(\'concept\',\'handed\',this.value)">'+["Right","Left","Ambidextrous"].map(o=>'<option '+(c.handed===o?"selected":"")+'>'+o+'</option>').join("")+'</select>')
   +fld("Body frame",'<select onchange="APP.set(\'concept\',\'frame\',this.value)">'+["Lithe","Medium","Heavy"].map(o=>'<option '+(c.frame===o?"selected":"")+'>'+o+'</option>').join("")+'</select>')
   +'</div>'+fld("Concept notes",'<textarea rows="3" onchange="APP.set(\'concept\',\'notes\',this.value)">'+esc(c.notes)+'</textarea>')
-  +'</div>'+heightWeightCard();
+  +'</div>'+ageCard()+heightWeightCard();
 }
 
 function stepChars(){
@@ -437,9 +487,13 @@ function stepBonus(){
   const pool=bonusPool(),cap=bonusCap(),tierExtra=ARCHETYPES[S.archetype].bonusExtra||0;
   let h=head("Bonus Skill Points","Free development: "+pool+" points across anything the character knows, no more than "+cap+"% to any one skill &mdash; plus one extra Professional Skill as a hobby.");
   const hobOff=Object.keys(PROF).sort();
+  const band=ageBand();
   h+='<div class="card"><h3>Hobby skill</h3>'
    +'<div class="rulequote">&ldquo;Default characters have 150 points with a limit of assigning no more than 15 points per skill. Choose one additional Professional skill as a hobby speciality.&rdquo;'
    +(tierExtra?' &mdash; '+ARCHETYPES[S.archetype].label+' adds +'+tierExtra+' points and raises the per-skill cap to '+cap+'% (Mythras Companion, pp.54&ndash;55).':"")+'</div>'
+   +'<p class="note">Your pool comes from the Experience Table&rsquo;s age band: <b>'+esc(band.label)+'</b> gives <b>'+band.bonus+'</b> points at a cap of <b>+'+band.cap+'</b> per skill'
+   +(tierExtra?', plus '+ARCHETYPES[S.archetype].label+'&rsquo;s +'+tierExtra+' (the more generous of the two caps applies, so '+cap+' here)':"")
+   +'. Change it on the Concept step.</p>'
    +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
    +'<select onchange="APP.hobby(this.value)"><option value="">&mdash; choose a hobby skill &mdash;</option>'
    +hobOff.map(n=>'<option '+(S.hobby===n?"selected":"")+'>'+n+'</option>').join("")+'</select>'
