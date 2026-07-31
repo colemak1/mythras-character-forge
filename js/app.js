@@ -344,6 +344,24 @@ window.APP={
  /* combat style composition — any number of weapons/traits, Character Builder only */
  toggleStyleWeapon(key,name){toggleInList(styleDef(key).weapons,name);render();},
  toggleStyleTrait(key,name){toggleInList(styleDef(key).traits,name);render();},
+ // Trait search re-renders on every keystroke (needed for live filtering,
+ // not just on blur like every other field in this app) which would
+ // normally cost the input its focus and cursor position the instant the
+ // DOM gets replaced -- captured before render() and restored after.
+ cstyleSearch(key,val){
+   cstyleUI(key).search=val;
+   const el=document.activeElement;
+   const id=el&&el.id,start=el&&el.selectionStart,end=el&&el.selectionEnd;
+   render();
+   if(id){const fresh=document.getElementById(id);
+     if(fresh){fresh.focus();try{fresh.setSelectionRange(start,end);}catch(e){}}}
+ },
+ // Native <details> open/closed state is lost on every re-render (the DOM
+ // node is thrown away and rebuilt) unless remembered somewhere -- this is
+ // exactly why picking a trait used to collapse its whole category back
+ // down. No render() call needed here: the browser already opens/closes
+ // the element on its own; this only has to remember that for next time.
+ cstyleToggleCat(key,cat,isOpen){cstyleUI(key).openCats[cat]=isOpen;},
  /* roller */
  roll(key){const em=entryMap();const e=em[key];if(!e)return;
    const base=finalPct(key);const g=gradedPct(key,base);

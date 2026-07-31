@@ -1050,54 +1050,16 @@ function stepFinish(){
   let h=head("Finish Creating","That&rsquo;s the character built. Enter Play Mode to start using it at the table &mdash; you can always jump back into any step from the Edit button in Play Mode to make changes, nothing here is locked in.");
   h+='<div class="card"><h3>'+esc(S.concept.name||"Unnamed Character")+'</h3>'
    +(meta?'<p class="note">'+esc(meta)+'</p>':"")+'</div>';
-  h+=combatStylesCard();
   h+=campaignCard();
   h+='<div class="exportrow"><button class="nav primary" onclick="APP.toPlay()">&#9654; Finish Creating &mdash; Enter Play Mode</button>'
    +'<button class="nav" onclick="APP.toSheet(\'character\')">View / Print Sheet</button></div>';
   return h;
 }
-// Combat Style composition — weapons and Combat Style Traits attached to
-// each style the character has (name + allocation already happen on the
-// Culture/Career/Quick Skills step; this is the one place to build out what
-// the style actually covers). Editable here only — Play Mode's Features tab
-// shows the built result read-only, it doesn't let you change it mid-game.
-function combatStylesCard(){
-  const styles=stylesList();
-  if(!styles.length){
-    return '<div class="card"><h3>Combat Styles</h3><p class="note">No Combat Style yet &mdash; take one back on the Culture, Career, or Quick Skills step (it needs a name there first), then come back here to build out its weapons and traits.</p></div>';
-  }
-  let h='<div class="card"><h3>Combat Styles</h3>'
-   +'<p class="note">Pick as many weapons and Combat Style Traits as fit &mdash; no fixed slot count either way. Traits are the fan-compiled <i>Mythras Combat Style Traits Encyclopedia</i>; hover one for its rules text, or see the full text below once selected.</p>';
-  h+=styles.map(combatStyleEditorHTML).join("");
-  h+='</div>';
-  return h;
-}
-function combatStyleEditorHTML(s){
-  const d=styleDef(s.key);
-  let h='<div class="cstyle-block">';
-  h+='<h4 class="cstyle-name">'+esc(s.name)+'</h4>';
-  h+='<div class="field"><label>Weapons ('+d.weapons.length+' selected)</label><div class="choicechips">'
-   +WEAPONS.map(w=>'<button class="chip '+(d.weapons.includes(w.name)?"on":"")+'" onclick="APP.toggleStyleWeapon(\''+jsq(s.key)+'\',\''+jsq(w.name)+'\')" title="'
-     +esc(w.group+" · "+w.dmg+" · Size "+w.size+" · Reach "+w.reach+(w.traits?" · "+w.traits:""))+'">'+esc(w.name)+'</button>').join("")+'</div></div>';
-  h+='<div class="field"><label>Combat Style Traits ('+d.traits.length+' selected)</label>'
-   +COMBAT_TRAIT_CATEGORIES.map(cat=>{
-     const items=COMBAT_TRAITS.filter(t=>t.category===cat);
-     return '<details class="cstyle-traitgroup"><summary>'+esc(cat)+' ('+items.length+')</summary><div class="choicechips">'
-      +items.map(t=>'<button class="chip '+(d.traits.includes(t.name)?"on":"")+'" onclick="APP.toggleStyleTrait(\''+jsq(s.key)+'\',\''+jsq(t.name)+'\')" title="'+esc(t.desc)+'">'+esc(t.name)+'</button>').join("")+'</div></details>';
-   }).join("")+'</div>';
-  if(d.traits.length){
-    h+='<div class="cstyle-traitdescs">'+d.traits.map(tn=>{
-      const t=COMBAT_TRAITS.find(x=>x.name===tn);if(!t)return"";
-      return '<p class="note"><b>'+esc(t.name)+'</b> <span class="cstyle-traitsrc">('+esc(t.category)+' &middot; '+esc(t.source)+')</span> &mdash; '+esc(t.desc)+'</p>';
-    }).join("")+'</div>';
-  }
-  h+='</div>';
-  return h;
-}
-// Read-only version of the above for Play Mode's Features tab — shows what
-// was built on the Combat Styles card (name, weapons, full trait rules
-// text) so a player can actually reference it at the table. No editing
-// controls here; that only happens back in the Character Builder.
+// Read-only recap of each Combat Style for Play Mode's Features tab — the
+// actual weapons/traits builder (combatStyleBuilderHTML, in render.js) now
+// lives inline on whichever step names the style (Culture/Career/Quick
+// Skills), not here. No editing controls here; that only happens on those
+// steps.
 // Racial traits, read-only, for Play Mode's Features tab. These are
 // situational Grade shifts the GM calls for, so they live here as reference
 // text rather than being folded into a percentage — the same treatment the
@@ -1117,7 +1079,7 @@ function combatStylesReadOnlyHTML(){
     const d=styleDef(s.key);
     let h='<div class="pm-cstyle-block"><h4>'+esc(s.name)+'</h4>';
     h+=d.weapons.length?'<p class="pm-notes"><b>Weapons:</b> '+d.weapons.map(esc).join(", ")+'</p>'
-      :'<p class="pm-empty">No weapons attached — edit this style from the Character Builder&rsquo;s Finish step.</p>';
+      :'<p class="pm-empty">No weapons attached — edit this style back on the Culture, Career, or Quick Skills step.</p>';
     if(d.traits.length){
       h+=d.traits.map(tn=>{
         const t=COMBAT_TRAITS.find(x=>x.name===tn);if(!t)return"";

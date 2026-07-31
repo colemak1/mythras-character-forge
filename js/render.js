@@ -386,6 +386,56 @@ function allocTable(phase,rows,pool,min,max,quote,groupOrder){
 function rowFor(key,required){const em=entryMap();const e=em[key];if(!e)return null;
   return {key,label:e.label,base:e.base,required:!!required,plus40:(key==="std:Customs"||key==="std:Native Tongue")};}
 
+/* ---- Combat Style builder (weapons + traits) ----
+   Lives inline on whichever step actually names the style (Culture,
+   Career, Quick Skills) -- it used to sit alone on the Finish step, after
+   everything else was already decided, which read as a bolted-on chore
+   instead of part of building the character. A linked Career style (see
+   stepCareer) points back at the Culture step's editor instead of
+   duplicating it -- there's only ever one real set of weapons/traits per
+   style, however many places reference it.
+
+   CSTYLE_UI is transient browser-session UI state (search text, which
+   trait categories are expanded) -- not part of the character, never
+   saved/exported, keyed by the same style key as S.styleDefs. */
+let CSTYLE_UI={};
+function cstyleUI(key){return CSTYLE_UI[key]||(CSTYLE_UI[key]={search:"",openCats:{}});}
+function cstyleDomId(key){return "cstyleSearch_"+key.replace(/[^a-zA-Z0-9]/g,"_");}
+// One trait as a full-width row: name, one-line summary and category tag
+// all visible before it's ever selected (not hover/selection-gated the way
+// the old chip+tooltip version was), full text still on hover for anyone
+// who wants the complete rules text without reading the summary.
+function cstyleTraitRow(styleKey,t,on){
+  const summary=t.desc.length>100?t.desc.slice(0,97)+"…":t.desc;
+  return '<button class="cstyle-traitrow'+(on?" on":"")+'" onclick="APP.toggleStyleTrait(\''+jsq(styleKey)+'\',\''+jsq(t.name)+'\')" title="'+esc(t.desc)+'">'
+   +'<span class="cstyle-traitcheck">'+(on?"&#10003;":"")+'</span>'
+   +'<span class="cstyle-traitbody"><b>'+esc(t.name)+'</b><span class="cstyle-traitcat">'+esc(t.category)+' &middot; '+esc(t.source)+'</span>'
+   +'<span class="cstyle-traitsum">'+esc(summary)+'</span></span></button>';
+}
+function combatStyleBuilderHTML(s){
+  const d=styleDef(s.key),ui=cstyleUI(s.key),domId=cstyleDomId(s.key);
+  let h='<div class="field"><label>Weapons ('+d.weapons.length+' selected)</label><div class="choicechips">'
+   +WEAPONS.map(w=>'<button class="chip '+(d.weapons.includes(w.name)?"on":"")+'" onclick="APP.toggleStyleWeapon(\''+jsq(s.key)+'\',\''+jsq(w.name)+'\')" title="'
+     +esc(w.group+" · "+w.dmg+" · Size "+w.size+" · Reach "+w.reach+(w.traits?" · "+w.traits:""))+'">'+esc(w.name)+'</button>').join("")+'</div></div>';
+  h+='<div class="field"><label>Combat Style Traits ('+d.traits.length+' selected)</label>';
+  if(d.traits.length)h+='<div class="cstyle-selectedbar">'+d.traits.map(tn=>'<button class="chip on sm" onclick="APP.toggleStyleTrait(\''+jsq(s.key)+'\',\''+jsq(tn)+'\')" title="Click to remove">'+esc(tn)+' &times;</button>').join("")+'</div>';
+  h+='<input type="text" class="cstyle-search" id="'+domId+'" placeholder="Search '+COMBAT_TRAITS.length+' Combat Style Traits by name or effect&hellip;" value="'+esc(ui.search)+'" oninput="APP.cstyleSearch(\''+jsq(s.key)+'\',this.value)">';
+  const q=ui.search.trim().toLowerCase();
+  if(q){
+    const matches=COMBAT_TRAITS.filter(t=>t.name.toLowerCase().includes(q)||t.desc.toLowerCase().includes(q));
+    h+='<div class="cstyle-searchresults">'+(matches.length?matches.map(t=>cstyleTraitRow(s.key,t,d.traits.includes(t.name))).join(""):'<p class="note" style="padding:8px">No traits match &ldquo;'+esc(ui.search)+'&rdquo;.</p>')+'</div>';
+  }else{
+    h+=COMBAT_TRAIT_CATEGORIES.map(cat=>{
+      const items=COMBAT_TRAITS.filter(t=>t.category===cat);
+      const selCount=items.filter(t=>d.traits.includes(t.name)).length;
+      return '<details class="cstyle-traitgroup" '+(ui.openCats[cat]?"open":"")+' ontoggle="APP.cstyleToggleCat(\''+jsq(s.key)+'\',\''+jsq(cat)+'\',this.open)">'
+       +'<summary><span>'+esc(cat)+'</span><span class="cstyle-catcount">'+items.length+(selCount?' &middot; '+selCount+' selected':'')+'</span></summary>'
+       +'<div class="cstyle-traitlist">'+items.map(t=>cstyleTraitRow(s.key,t,d.traits.includes(t.name))).join("")+'</div></details>';
+    }).join("");
+  }
+  h+='</div>';
+  return h;
+}
 /* ---- step: culture ---- */
 function stepCulture(){
   let h=head("Culture","Your cultural background: +40% to Customs and Native Tongue, three Professional Skills, an optional Combat Style, and 100 points across all of them.");
@@ -398,8 +448,10 @@ function stepCulture(){
   h+='<div class="card"><h3>Three professional skills</h3>'+profPickers("cult",c.prof,3)+'</div>';
   h+='<div class="card"><h3>Combat style <span class="note">(optional &mdash; &ldquo;If desired, select a single Combat Style&rdquo;)</span></h3>'
    +'<p><label><input type="checkbox" '+(S.cultStyleOn?"checked":"")+' onchange="APP.cultStyle(this.checked)"> Take a cultural combat style</label></p>'
-   +(S.cultStyleOn?fld("Style name (weapons &amp; traits per your GM)",'<input type="text" value="'+esc(S.cultStyleName)+'" placeholder="e.g. '+esc(c.styles.split(",")[0].trim())+'" onchange="APP.set2(\'cultStyleName\',this.value)">'):"")
-   +'<p class="note">Examples for '+S.culture+': '+esc(c.styles)+'</p></div>';
+   +(S.cultStyleOn?fld("Style name",'<input type="text" value="'+esc(S.cultStyleName)+'" placeholder="e.g. '+esc(c.styles.split(",")[0].trim())+'" onchange="APP.set2(\'cultStyleName\',this.value)">'):"")
+   +'<p class="note">Examples for '+S.culture+': '+esc(c.styles)+'</p>'
+   +(S.cultStyleOn?combatStyleBuilderHTML({key:"style:cult",name:S.cultStyleName||"Cultural Combat Style"}):"")
+   +'</div>';
   const rows=cultureReqKeys().map(k=>rowFor(k,true)).filter(Boolean);
   h+='<div class="card"><h3>Allocate 100 cultural points</h3>'
    +allocTable("culture",rows,100,5,15,"&ldquo;Distribute 100 points amongst the listed Standard Skills, the chosen Professional Skills, and the Combat Style (if selected)&hellip; each skill must receive a minimum of 5% and cannot receive more than 15%.&rdquo;")+'</div>';
@@ -471,6 +523,8 @@ function stepCareer(){
        +'</select> '
        +(cs.mode==="new"?'<input type="text" value="'+esc(cs.name)+'" placeholder="style name" onchange="APP.carStyleName('+i+',this.value)">':'<span class="note">'+esc(S.cultStyleName||"Cultural Combat Style")+'</span>')
        +'</div>';
+      if(cs.mode==="link")h+='<p class="note">Uses <b>'+esc(S.cultStyleName||"Cultural Combat Style")+'</b>&rsquo;s weapons &amp; traits &mdash; edit those back on the Culture step.</p>';
+      else if((cs.name||"").trim())h+=combatStyleBuilderHTML({key:"style:k"+i,name:cs.name});
     });
     h+='<p class="note">&ldquo;Choosing a Style or Professional Skill previously gained via cultural background simply allows the character to further apply some of their career skill points.&rdquo;</p></div>';
   }
@@ -511,7 +565,8 @@ function stepQuickSkills(){
   h+='<div class="card"><h3>Three professional skills</h3>'+profPickers("quick",offers,3)+'</div>';
   h+='<div class="card"><h3>Combat style <span class="note">(optional)</span></h3>'
    +'<p><label><input type="checkbox" '+(S.qStyleOn?"checked":"")+' onchange="APP.qStyle(this.checked)"> Take a Combat Style</label></p>'
-   +(S.qStyleOn?fld("Style name (weapons &amp; traits per your GM)",'<input type="text" value="'+esc(S.qStyleName)+'" placeholder="e.g. Pit Fighter" onchange="APP.set2(\'qStyleName\',this.value)">'):"")
+   +(S.qStyleOn?fld("Style name",'<input type="text" value="'+esc(S.qStyleName)+'" placeholder="e.g. Pit Fighter" onchange="APP.set2(\'qStyleName\',this.value)">'):"")
+   +(S.qStyleOn?combatStyleBuilderHTML({key:"style:quick",name:S.qStyleName||"Combat Style"}):"")
    +'</div>';
   h+='<p class="note">Customs and Native Tongue gain <b>+40%</b> each, irrespective of method, applied automatically below.</p>';
   const rows=quickKeys().map(k=>rowFor(k,true)).filter(Boolean);
