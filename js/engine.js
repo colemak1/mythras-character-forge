@@ -201,6 +201,17 @@ function freshState(){return {
  // `devotionalUsed` how much of it is currently spent.
  magic:{folk:[],known:[],devotional:0,devotionalUsed:0},
  campaignId:null, _libId:null, _libLastSaved:null,
+ // True whenever this character's data came from somewhere not yet
+ // verified as belonging to whoever is currently signed in -- the autosave
+ // slot, a "local" My-Characters entry, or a JSON import. false here (a
+ // brand-new, blank character, or one already explicitly saved under the
+ // current account) is what allows the debounced background cloud push to
+ // silently create a row for it; see saveToLibraryUnified()/
+ // scheduleCloudPush() in cloud.js. Never rely on a loaded blob's own
+ // stored value for this — every place that loads a character sets it
+ // explicitly based on where the data actually came from, not on
+ // whatever it happened to be the last time this exact JSON was saved.
+ _pendingClaim:false,
  // heightM / weightKg are optional hand-typed overrides — blank means "use
  // the figure derived from SIZ, species and build" (see heightWeight()).
  concept:{name:"",player:"",gender:"",age:"",frame:"Medium",handed:"Right",homeland:"",notes:"",heightM:"",weightKg:""},
@@ -248,6 +259,11 @@ function freshState(){return {
  xp:{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[]}
 };}
 function normalizeState(){
+  // Defensive coercion only -- every actual load path (openCharToPlay/Edit/
+  // Sheet, fromMenuContinue, import) sets the real value explicitly right
+  // after calling this, based on where the data came from. This just keeps
+  // the field boolean if something ever skips that.
+  S._pendingClaim=!!S._pendingClaim;
   S.alloc=S.alloc||{};S.alloc.culture=S.alloc.culture||{};S.alloc.career=S.alloc.career||{};
   S.gearWeapons=S.gearWeapons||[];
   S.armor=S.armor||{};ARMOR_LOCATIONS.forEach(l=>{if(!S.armor[l])S.armor[l]="None";});

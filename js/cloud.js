@@ -209,6 +209,15 @@ async function cloudUpsertCharacter(entry){
 async function refreshCampaigns(){CAMP_CACHE=await cloudFetchCampaigns();render();}
 
 const AUTOSAVE_KEY="mythrasForgeAutosave_v1";
+// Scoped by signed-in identity (AUTH_USER only -- MOCK_AUTH is a local-only
+// test identity, same treatment cloudActive() already gives it) so signing
+// out, or a different account signing in on a shared browser, can never see
+// or resume another account's in-progress "Continue" character. Without
+// this the raw key above was a single slot shared by literally anyone who
+// ever used this browser, signed in or not, which is how a stranger's
+// abandoned work could end up offered to -- and then silently attached to
+// -- whoever happens to be signed in next.
+function autosaveKey(){return AUTOSAVE_KEY+":"+(AUTH_USER?AUTH_USER.id:"local");}
 /* ================= CAMPAIGNS & CHARACTER LIBRARY (localStorage) =================
    The autosave above is a single scratch slot for whatever's currently being
    edited. Campaigns need to reference multiple *saved* characters, so this is
@@ -313,14 +322,24 @@ async function deleteCampaignUnified(id){
 // row that was never created, and the character would never actually reach
 // the cloud at all (silently — the debounced push swallows the error).
 function isUuid(s){return typeof s==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);}
-async function saveToLibraryUnified(){
+async function saveToLibraryUnified(explicit){
   if(cloudActive()){
+    // A character loaded from somewhere not yet verified as belonging to
+    // whoever is currently signed in (S._pendingClaim -- the autosave slot,
+    // a "local" My-Characters entry, or a JSON import) may only ever be
+    // attached to the cloud by an explicit "Save to Library" click, never
+    // by this function's other caller, the debounced background push.
+    // Without this, opening someone else's abandoned local character (or
+    // the account-agnostic old "Continue" prompt) while signed in would
+    // silently upload their data to whoever happens to be signed in the
+    // next time the debounced push fires -- no click, no confirmation.
+    if(!explicit&&S._pendingClaim&&!isUuid(S._libId))return null;
     const saved=await cloudUpsertCharacter({
       id:isUuid(S._libId)?S._libId:undefined,campaignId:S.campaignId||null,name:S.concept.name||"Unnamed Character",
       tier:S.archetype,culture:S.culture||"",
       career:(S.customCareer&&S.customCareer.isCustom?S.customCareer.name:S.career)||"",
       state:JSON.parse(JSON.stringify(S))});
-    S._libId=saved.id;return saved;
+    S._libId=saved.id;S._pendingClaim=false;return saved;
   }
   return saveCurrentToLibraryLocal();
 }
@@ -357,26 +376,26 @@ let CLOUD_PUSH_TIMER=null;
 // flurry of clicks in a single combat round doesn't turn into a network
 // request per click; the Party Board's own realtime subscription then picks
 // up the change and refetches. Never fires for a VIEW_ONLY session (someone
-// looking at a teammate's sheet from the board) or before the character has
-// ever been saved once (no S._libId yet to update).
+// looking at a teammate's sheet from the board).
 function scheduleCloudPush(){
-  // Used to also require S._libId to already be set — which only happened
-  // via the explicit "Save to Library" button — so a brand-new character
-  // was NEVER pushed to the cloud by this debounced autosave path. It
-  // existed only in the single shared local autosave slot
-  // (mythrasForgeAutosave_v1), which gets silently overwritten the moment a
-  // second character is created/opened before the first was ever manually
-  // saved. That's how characters were disappearing permanently.
-  // Now: this fires as long as there's real work worth saving
-  // (hasUnsavedWork() — same gate the local-mirror path already used),
-  // regardless of whether S._libId is set yet. saveToLibraryUnified() /
-  // cloudUpsertCharacter() already correctly take the INSERT path when
-  // S._libId isn't a real UUID (see isUuid()), so the first debounced push
-  // after starting a new character now auto-creates its cloud row without
-  // ever requiring the Save button to be clicked.
+  // This fires as long as there's real work worth saving (hasUnsavedWork()
+  // — same gate the local-mirror path already used), regardless of whether
+  // S._libId is set yet: a brand-new character (started fresh, never
+  // touched local storage) auto-creates its cloud row on the first
+  // debounced push without ever requiring the Save button, so it can't
+  // silently disappear if the player forgets to click Save.
+  //
+  // The one thing this must never do is silently claim a character that
+  // came from somewhere not yet verified as belonging to whoever is
+  // currently signed in — S._pendingClaim marks exactly that (autosave
+  // resume, a "local" My-Characters entry, a JSON import). saveToLibraryUnified()
+  // itself enforces the actual rule (only an explicit Save click may claim
+  // pending content); this function doesn't need its own copy of that
+  // check, just to know it isn't skipping the debounce for no reason when
+  // that guard quietly no-ops the push.
   if(!cloudActive()||VIEW_ONLY||!hasUnsavedWork())return;
   clearTimeout(CLOUD_PUSH_TIMER);
-  CLOUD_PUSH_TIMER=setTimeout(()=>{saveToLibraryUnified().catch(e=>console.warn("cloud sync",e));},1500);
+  CLOUD_PUSH_TIMER=setTimeout(()=>{saveToLibraryUnified(false).catch(e=>console.warn("cloud sync",e));},1500);
 }
 let DM_INV_PUSH_TIMER=null;
 // Separate debounced push for the DM-editing-a-player's-inventory case.
@@ -392,7 +411,7 @@ function scheduleDmInventoryPush(){
   },1500);
 }
 function saveAutosave(){
-  try{localStorage.setItem(AUTOSAVE_KEY,JSON.stringify({S,ts:Date.now()}));}catch(e){/* storage unavailable — silently skip */}
+  try{localStorage.setItem(autosaveKey(),JSON.stringify({S,ts:Date.now()}));}catch(e){/* storage unavailable — silently skip */}
   // Also keep the character library (mythrasForgeCharLib_v1) in sync on
   // every autosave, not just on an explicit "Save to Library" click. The
   // library already existed as infrastructure for Campaigns, but until now
@@ -417,7 +436,7 @@ function saveAutosave(){
 }
 function updateAutosaveTag(){
   const el=$("#autosaveTag");if(!el)return;
-  try{const raw=localStorage.getItem(AUTOSAVE_KEY);
+  try{const raw=localStorage.getItem(autosaveKey());
     if(raw){const t=JSON.parse(raw).ts;el.textContent="autosaved "+new Date(t).toLocaleTimeString()+" (click to clear)";el.onclick=APP.clearAutosave;el.style.cursor="pointer";}
     else{el.textContent="";el.onclick=null;el.style.cursor="";}
   }catch(e){el.textContent="";}
@@ -433,7 +452,7 @@ let CURRENT_CAMPAIGN_ID=null;
 let XP_OPEN=false; // Improve Skills modal visibility — ephemeral UI state, not saved character data
 let SHEET_RETURN_VIEW="play"; // where APP.backFromSheet() sends you back to — set by whoever opened the sheet view
 function getAutosaveInfo(){
-  try{const raw=localStorage.getItem(AUTOSAVE_KEY);if(!raw)return null;
+  try{const raw=localStorage.getItem(autosaveKey());if(!raw)return null;
     const saved=JSON.parse(raw);if(!saved||!saved.S)return null;
     const s=saved.S;
     const careerName=s.customCareer&&s.customCareer.isCustom?s.customCareer.name:s.career;

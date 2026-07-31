@@ -470,6 +470,7 @@ window.APP={
  openCharToSheet(id){
    openCharUnified(id).then(entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);normalizeState();
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
+     S._pendingClaim=(entry.ownerId==="local");
      SHEET_RETURN_VIEW="library";APPVIEW="sheet";render();window.scrollTo(0,0);});},
  playDamage(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const n=el?parseInt(el.value,10):NaN;
    if(!Number.isFinite(n)||n<=0)return;
@@ -536,13 +537,13 @@ window.APP={
    const f=$("#importFile");f.onchange=()=>{const file=f.files[0];if(!file)return;
    const rd=new FileReader();rd.onload=()=>{try{const data=JSON.parse(rd.result);
      if(!data.chars||!data.concept)throw new Error("Not a Character Forge file");
-     S=Object.assign(freshState(),data);normalizeState();render();}catch(e){alert("Import failed: "+e.message);}};
+     S=Object.assign(freshState(),data);normalizeState();S._pendingClaim=true;render();}catch(e){alert("Import failed: "+e.message);}};
    rd.readAsText(file);f.value="";};f.click();},
  newCharacter(){
    const hasWork=S.concept.name||charsReady()||S.culture||S.career;
    if(hasWork&&!confirm("Start a new character? This clears the current one from the screen (autosave and any exported files are unaffected until overwritten)."))return;
    S=freshState();render();window.scrollTo(0,0);},
- clearAutosave(){try{localStorage.removeItem(AUTOSAVE_KEY);}catch(e){}updateAutosaveTag();},
+ clearAutosave(){try{localStorage.removeItem(autosaveKey());}catch(e){}updateAutosaveTag();},
  /* main menu */
  toMenu(){APPVIEW="menu";render();window.scrollTo(0,0);},
  fromMenuNew(){
@@ -551,15 +552,15 @@ window.APP={
  fromMenuContinue(){
    const info=getAutosaveInfo();if(!info)return;
    if(hasUnsavedWork()&&!confirm("Load the autosaved character? This replaces what's currently loaded."))return;
-   try{const raw=localStorage.getItem(AUTOSAVE_KEY);const saved=JSON.parse(raw);
-     S=Object.assign(freshState(),saved.S);normalizeState();APPVIEW="character";render();window.scrollTo(0,0);
+   try{const raw=localStorage.getItem(autosaveKey());const saved=JSON.parse(raw);
+     S=Object.assign(freshState(),saved.S);normalizeState();S._pendingClaim=true;APPVIEW="character";render();window.scrollTo(0,0);
    }catch(e){alert("Could not load the autosaved character.");}},
  fromMenuImport(){
    if(hasUnsavedWork()&&!confirm("Importing will replace the character currently loaded. Continue?"))return;
    const f=$("#menuImportFile");f.onchange=()=>{const file=f.files[0];if(!file)return;
    const rd=new FileReader();rd.onload=()=>{try{const data=JSON.parse(rd.result);
      if(!data.chars||!data.concept)throw new Error("Not a Character Forge file");
-     S=Object.assign(freshState(),data);normalizeState();APPVIEW="character";render();window.scrollTo(0,0);
+     S=Object.assign(freshState(),data);normalizeState();S._pendingClaim=true;APPVIEW="character";render();window.scrollTo(0,0);
    }catch(e){alert("Import failed: "+e.message);}};
    rd.readAsText(file);f.value="";};f.click();},
  /* my characters */
@@ -567,6 +568,7 @@ window.APP={
  openCharToPlay(id,opts){
    openCharUnified(id).then(async entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);normalizeState();
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
+     S._pendingClaim=(entry.ownerId==="local");
      const viewingOther=cloudActive()&&entry.ownerId!=null&&entry.ownerId!==AUTH_USER.id;
      VIEW_ONLY=viewingOther;
      VIEW_ONLY_IS_DM=viewingOther?await isDmOfCampaign(entry.campaignId):false;
@@ -576,6 +578,7 @@ window.APP={
  openCharToEdit(id){
    openCharUnified(id).then(entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);normalizeState();
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
+     S._pendingClaim=(entry.ownerId==="local");
      APPVIEW="character";render();window.scrollTo(0,0);});},
  deleteLibChar(id,name){
    if(!confirm('Delete "'+name+'"? This can\'t be undone — Export JSON first if you want a copy.'))return;
@@ -660,7 +663,7 @@ window.APP={
    }
  },
  saveToLibrary(){
-   saveToLibraryUnified().then(()=>{S._libLastSaved=Date.now();render();})
+   saveToLibraryUnified(true).then(()=>{S._libLastSaved=Date.now();render();})
      .catch(e=>alert("Could not save to library: "+e.message));},
  joinCampaign(){
    const el=$("#joinCode");const code=el&&el.value&&el.value.trim();
