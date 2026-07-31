@@ -645,7 +645,7 @@ function stepPassions(){
      +(t.needs.includes("subjCHA")?' &nbsp;subject CHA <input type="number" value="'+(p.subjCHA||"")+'" onchange="APP.pas('+i+',\'subjCHA\',this.value)">':"")
      +' &nbsp;&rarr; <b style="font-family:var(--mono);color:var(--bronze-hi)">'+passionVal(p)+'%</b></div></div>';
   });
-  h+='<p><button class="chip" onclick="APP.addPas()">+ add passion</button>'
+  h+='<p><button class="chip" onpointerdown="APP.addPas()" onclick="APP.addPas()">+ add passion</button>'
    +(S.culture?' <button class="chip" onclick="APP.pasFromCulture()">use '+S.culture+' suggestions</button>':"")
    +(S.cultMembership.archetype?' <button class="chip" onclick="APP.pasFromCult()">use '+esc(S.cultMembership.name||cultArch().name)+' suggestion</button>':"")+'</p></div>';
   return h;

@@ -1,5 +1,12 @@
 "use strict";
 /* ================= APP HANDLERS ================= */
+// Guards a handler against firing twice for one user interaction when it's
+// bound to both pointerdown and click (see addPas below) -- pointerdown is
+// the one that actually does the work, click is a same-tick echo of the
+// same press plus the keyboard-activation path, both landing well within
+// this window.
+let _lastFireAt={};
+function debounceFire(key,fn){const now=Date.now();if(now-(_lastFireAt[key]||0)<400)return;_lastFireAt[key]=now;fn();}
 window.APP={
  go(i){if(i<0||i>=currentSteps().length)return;
    if(i>S.step){for(let s=S.step;s<i;s++){if(!stepPassed(s)){S.step=s;render();window.scrollTo(0,0);return;}}}
@@ -299,7 +306,17 @@ window.APP={
  cultField(f,v){S.cultMembership[f]=(f==="rank")?(+v||0):v;render();},
  leaveCult(){S.cultMembership={archetype:null,name:"",rank:0};render();},
  /* passions */
- addPas(){S.passions.push({name:"",type:"org",subjPOW:"",subjCHA:""});render();},
+ // Bound to both pointerdown and click in render.js (see the button markup
+ // in stepPassions): a click immediately following an edit in another field
+ // (e.g. typing a passion name then clicking "+ add passion" without
+ // clicking elsewhere first) can have its click event resolve against a
+ // stale button reference -- the preceding field's onchange fires on blur,
+ // which calls render() and replaces the whole step's DOM, including this
+ // button, before the click actually dispatches. pointerdown fires
+ // immediately on press, before that blur/render cycle, so it isn't
+ // affected; debounceFire absorbs the click that (still) follows it so a
+ // normal press only ever adds one passion.
+ addPas(){debounceFire('addPas',()=>{S.passions.push({name:"",type:"org",subjPOW:"",subjCHA:""});render();});},
  delPas(i){S.passions.splice(i,1);render();},
  pas(i,f,v){S.passions[i][f]=v;render();},
  pasFromCulture(){if(!S.culture)return;const c=CULTURES[S.culture];
