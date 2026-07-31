@@ -630,6 +630,15 @@ function validate(step){
     const s=aSum("bonus");
     if(s!==pool)return bad("Spend exactly "+pool+" bonus points ("+s+" spent).");
     return ok();}
+   case "Money & Gear":{
+    // Every other pool (Culture/Career/Bonus) hard-blocks overspending; this
+    // one only ever turned the remaining total red and let you proceed
+    // anyway. gearCostTotal() (weapons + armour, auto-summed) plus whatever
+    // manual "additional" spending is entered must not exceed starting money
+    // -- going under budget is fine, only going over blocks the step.
+    const total=moneyTotal(),spent=gearCostTotal()+(S.money.spent||0);
+    if(spent>total)return bad("You've spent "+spent+" sp but only have "+total+" sp — reduce gear or additional spending by "+(spent-total)+" sp.");
+    return ok();}
    default:return ok();
   }
 }

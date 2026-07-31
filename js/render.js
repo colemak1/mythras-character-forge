@@ -666,6 +666,22 @@ function passionVal(p){
 // Effects, ENC, the weapon's own AP/HP, Traits, Milieu and Cost, all now
 // transcribed from the book (see the WEAPONS data-block comment above).
 function weaponsEnc(){return S.gearWeapons.reduce((a,n)=>{const w=WEAPON_MAP[n];return a+(w?w.enc:0);},0);}
+function weaponsCost(){return S.gearWeapons.reduce((a,n)=>{const w=WEAPON_MAP[n];return a+(w?w.cost:0);},0);}
+// Armour Table (p.58) only gives cost as a full 7-location suit total (the
+// middle figure in ARMOR_MATERIALS' "suit" string, e.g. Half Plate's
+// "28/3500/6" = ENC/Cost/Armour Penalty) -- there's no per-location cost
+// column in the book. Divided by 7 and weighted the same way armorEncAt/
+// armorLocWeight already do for ENC, so a "Each Arm"/"Each Leg" pick still
+// counts as the two physical locations it represents.
+function armorCostAt(loc){const m=ARMOR_MAP[S.armor[loc]]||ARMOR_MAP.None;
+  const suitCost=parseFloat((m.suit||"0/0/0").split("/")[1])||0;
+  return suitCost/7;}
+function armorCostTotal(){return ARMOR_LOCATIONS.reduce((a,l)=>a+armorCostAt(l)*armorLocWeight(l),0);}
+// Weapons + armour cost, auto-summed the same way gearEncTotal() already
+// auto-sums ENC -- inventory items have no known price (they're free-text),
+// so those still rely on S.money.spent for whatever the player manually
+// adds on top.
+function gearCostTotal(){return Math.round(weaponsCost()+armorCostTotal());}
 // Worn armour counts at half its packed ENC value while worn; carried
 // (unworn) armour counts full ENC (core rulebook, Encumbrance section,
 // confirmed against page image). "Each Arm"/"Each Leg" are single pickers
@@ -733,7 +749,7 @@ function moneyTotal(){const base=S.money.dice.reduce((a,b)=>a+b,0);
   return Math.round(base*baseMult()*(S.money.mod||1));}
 function stepMoney(){
   const mult=S.creationMode==="quick"?S.money.quickMult:(S.culture?CULTURES[S.culture].money:null);
-  let h=head("Money & Gear","Starting silver comes from culture and social class; gear is whatever you buy with it. Encumbrance is totted up and flagged against your STR&times;2 limit, but not enforced &mdash; nothing here blocks you from carrying more.");
+  let h=head("Money & Gear","Starting silver comes from culture and social class; weapon and armour cost is totalled automatically as you pick gear. Encumbrance is totted up and flagged against your STR&times;2 limit, but not enforced &mdash; nothing here blocks you from carrying more.");
   h+='<div class="card"><h3>Starting money</h3>'
    +'<div class="rulequote">&ldquo;Barbarians: 4d6 &times;50 &middot; Civilised: 4d6 &times;75 &middot; Nomadic: 4d6 &times;25 &middot; Primitive: 4d6 &times;10 silver pieces. Multiply the character&rsquo;s starting money by the Money Modifier to determine the available cash&hellip;&rdquo;</div>'
    +(S.creationMode==="quick"?fld("Money multiplier (no culture in Quick Character &mdash; pick one to match the concept, e.g. 50)",'<input type="number" value="'+mult+'" onchange="APP.mon(\'quickMult\',this.value)">'):"")
@@ -745,9 +761,14 @@ function stepMoney(){
    +'<div class="grid3" style="margin-top:8px">'
    +fld("Social class (free text, overrides the picker above)",'<input type="text" value="'+esc(S.money.socialClass)+'" placeholder="e.g. Freeman" onchange="APP.mon(\'socialClass\',this.value)">')
    +fld("Money modifier (from your social class table)",'<input type="number" step="0.5" value="'+S.money.mod+'" onchange="APP.mon(\'mod\',this.value)">')
-   +fld("Silver spent on gear",'<input type="number" value="'+S.money.spent+'" onchange="APP.mon(\'spent\',this.value)">')
+   +fld("Additional silver spent (inventory, misc.)",'<input type="number" value="'+S.money.spent+'" onchange="APP.mon(\'spent\',this.value)">')
    +'</div>'
-   +(S.money.dice.length?'<p style="margin-top:6px">Starting money: <b style="font-family:var(--mono);color:var(--bronze-hi)">'+moneyTotal()+' sp</b> &nbsp;&middot;&nbsp; remaining: <b style="font-family:var(--mono)">'+(moneyTotal()-(S.money.spent||0))+' sp</b></p>':"")
+   +(()=>{const gc=gearCostTotal(),extra=S.money.spent||0,spent=gc+extra,total=moneyTotal(),remaining=total-spent,over=remaining<0;
+     return (S.money.dice.length?'<p style="margin-top:6px">Starting money: <b style="font-family:var(--mono);color:var(--bronze-hi)">'+total+' sp</b>'
+       +' &nbsp;&middot;&nbsp; weapons &amp; armour: <b style="font-family:var(--mono)">'+gc+' sp</b>'
+       +(extra?' &nbsp;&middot;&nbsp; additional: <b style="font-family:var(--mono)">'+extra+' sp</b>':'')
+       +' &nbsp;&middot;&nbsp; remaining: <b class="'+(over?"warn":"")+'" style="font-family:var(--mono)">'+remaining+' sp</b></p>':'')
+     +(over?'<p class="warn" style="margin-top:4px">Over budget by '+(-remaining)+' sp &mdash; drop some gear or reduce additional spending before this step will pass.</p>':'');})()
    +'<p class="note">Roll picks the class name automatically; use the free-text field if your Games Master gives you a specific title or a different Money Modifier.</p>')
    +'</div>';
   h+='<div class="card"><h3>Weapons</h3><p class="note">One-Handed, Two-Handed, Shield and Ranged tables (Economics &amp; Equipment, pp.63&ndash;66). No weapon has a STR/DEX minimum in Mythras.</p>'
