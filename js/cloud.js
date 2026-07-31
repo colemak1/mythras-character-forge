@@ -289,9 +289,16 @@ async function loadCampaignViewUnified(id){
   }else{
     const raw=getCampaignLocal(id);
     const campaign=raw?{id:raw.id,name:raw.name,notes:raw.notes,created_at:new Date(raw.createdAt).toISOString(),dm_id:null,invite_code:null}:null;
-    CAMPAIGN_VIEW=campaign?{campaign,members:[],
-      chars:charsInCampaignLocal(id).map(localCharShape),
-      unassigned:unassignedCharsLocal().map(localCharShape)}:null;
+    // Always an object, even when campaign itself is null (id not found) --
+    // matching the cloud branch above. CAMPAIGN_VIEW===null is how
+    // campaignDetailHTML()/boardHTML() distinguish "still loading" from "here's
+    // what we found (nothing)"; collapsing a not-found result back to bare
+    // null made a bad/stale campaign link (typed by hand, or now reachable
+    // directly via router.js) get stuck on "Loading campaign…" forever, since
+    // nothing was ever going to load it deeper the second time.
+    CAMPAIGN_VIEW={campaign,members:[],
+      chars:campaign?charsInCampaignLocal(id).map(localCharShape):[],
+      unassigned:campaign?unassignedCharsLocal().map(localCharShape):[]};
   }
   render();
 }
@@ -666,7 +673,7 @@ function campaignDetailHTML(){
     h+=fld("Name",'<input type="text" value="'+esc(camp.name)+'" onchange="APP.campField(\'name\',this.value)">')
      +fld("Notes",'<textarea rows="4" onchange="APP.campField(\'notes\',this.value)">'+esc(camp.notes||"")+'</textarea>');
   }else{
-    h+='<p style="font-family:var(--serif);font-size:20px;color:var(--bronze-hi);text-transform:uppercase">'+esc(camp.name)+'</p>'
+    h+='<p style="font-family:\'Cinzel\',serif;font-size:19px;letter-spacing:.03em;color:#8a5a12;text-transform:uppercase">'+esc(camp.name)+'</p>'
      +(camp.notes?'<p class="note" style="margin-top:6px">'+esc(camp.notes)+'</p>':"");
   }
   h+='<p class="note" style="margin-top:8px">Created '+new Date(camp.created_at).toLocaleString()
@@ -781,7 +788,12 @@ function boardCardHTML(row){
   const v=charVitals(state);
   const initials=((row.name||"?").match(/\b[A-Za-z]/g)||["?"]).slice(0,2).join("").toUpperCase();
   const meta=[row.culture,row.career].filter(Boolean).join(" · ")||"—";
-  const barColor=v.worst==="major"?"var(--pm-bad)":v.worst==="serious"?"var(--pm-warn)":v.worst==="minor"?"var(--pm-minor)":"var(--pm-good)";
+  // Literal colours, not var(--pm-*) -- those custom properties are only
+  // ever defined under body.play-mode (see styles.css), so referencing them
+  // here on the Party Board (body.menu-mode) resolved to nothing and left
+  // this bar's coloured fill invisible. Matches .pb-condchip's own palette
+  // for the same condition so the chip and the bar always agree.
+  const barColor=v.worst==="major"?"#a52d20":v.worst==="serious"?"#8a5a12":v.worst==="minor"?"#8a5a12":"#3c5936";
   const isMine=cloudActive()?row.owner_id===(AUTH_USER&&AUTH_USER.id):true;
   const fatTag=v.fatigue&&v.fatigue!=="Fresh"?'<span class="pb-fat">'+esc(v.fatigue)+'</span>':"";
   return '<div class="pb-card '+v.worst+'" onclick="APP.boardOpenChar(\''+row.id+'\',\''+jsq(row.owner_name||"")+'\')" role="button" tabindex="0">'
