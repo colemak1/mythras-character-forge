@@ -623,7 +623,7 @@ function playRollLogRow(r,i){
   return row+'</div>';
 }
 function renderPlayView(){
-  document.body.classList.remove("menu-mode");
+  document.body.classList.remove("menu-mode","sheet-mode");
   document.body.classList.add("play-mode");
   document.body.classList.toggle("view-only",VIEW_ONLY);
   document.title=(S.concept.name?S.concept.name+" — ":"")+"Play Mode";
