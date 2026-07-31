@@ -542,56 +542,39 @@ function renderAccountView(){
 // asymmetric two-column hero (headline/CTA on the left, a real content
 // panel — not decoration — filling the right column), then a proper
 // multi-column secondary section below instead of a single stacked list.
-function tierShowcaseHTML(){
-  return '<div class="mmenu-panel mmenu-tiers"><div class="mmenu-panel-eyebrow">Choose your power tier</div>'
-   +'<div class="mmenu-tier-row"><b>Ordinary</b><span>The default for most campaigns &mdash; grounded, mortal heroes.</span></div>'
-   +'<div class="mmenu-tier-row"><b>Pulp Hero</b><span>Bigger characteristics, extra Advantages, a larger skill pool. <i>Mythras Companion</i>.</span></div>'
-   +'<div class="mmenu-tier-row"><b>Paragon</b><span>The largest characteristics and skill pool Mythras offers.</span></div>'
-   +'</div>';
-}
-function continuePreviewHTML(auto){
-  const initials=(auto.name.match(/\b[A-Za-z]/g)||["?"]).slice(0,2).join("").toUpperCase();
-  const metaBits=[auto.culture,auto.career,auto.tier?ARCHETYPES[auto.tier].label:null].filter(Boolean);
-  let h='<div class="mmenu-panel mmenu-preview"><div class="mmenu-panel-eyebrow">Continue where you left off</div>'
-   +'<div class="mmenu-preview-head"><div class="mmenu-preview-portrait">'+esc(initials)+'</div><div>'
-   +'<div class="mmenu-preview-name">'+esc(auto.name)+'</div>'
-   +'<div class="mmenu-preview-meta">'+(metaBits.length?esc(metaBits.join(" · ")):"Concept only, so far")+'</div></div></div>';
-  if(auto.chars){
-    h+='<div class="mmenu-preview-chars">'+["STR","CON","SIZ","DEX","INT","POW","CHA"].map(k=>
-      '<div class="mmenu-pc"><b>'+auto.chars[k]+'</b><span>'+k+'</span></div>').join("")+'</div>';
-  }
-  h+='<div class="mmenu-preview-foot"><span class="mmenu-preview-ts">Autosaved '+esc(new Date(auto.ts).toLocaleString())+'</span>'
-   +'<button class="mmenu-cta-secondary" onclick="APP.fromMenuContinue()">Resume &rarr;</button></div></div>';
-  return h;
-}
+// Home screen — "Aegean golden hour": the approved mockup
+// (docs/homepage-mockup-approved.html) after a long round of iteration.
+// Deliberately minimal by design (5 actions + sign-in, nothing else) rather
+// than the earlier landing-page-style menu this replaced; every action
+// routes to the same real handlers that page used, just reached through a
+// plain button instead of a card with preview content. The one addition
+// beyond the mockup itself is a small "Continue as X" link, shown only
+// when there's an autosaved character to resume — dropping that outright
+// would have quietly removed a real feature rather than just simplified
+// the page, so it's kept but deliberately unobtrusive rather than styled
+// as one of the five primary actions.
 function menuHTML(){
   const auto=getAutosaveInfo();
-  const campReady=!CLOUD_ENABLED||!!AUTH_USER||!!MOCK_AUTH;
-  let h='<div class="mmenu">';
-  h+='<div class="mmenu-brand"><div class="mmenu-brandwrap"><span class="mmenu-brandmark">Mythras</span><span class="mmenu-branddiv">&middot;</span><span class="mmenu-brandsub">Character Forge</span></div>';
+  let h='<div class="myth-home">';
+  h+='<div class="myth-home-sunglow" aria-hidden="true"></div>';
+  h+='<div class="myth-home-marble" aria-hidden="true"></div>';
+  h+='<div class="myth-home-col l" aria-hidden="true"></div><div class="myth-home-col r" aria-hidden="true"></div>';
+  h+='<div class="myth-home-colcap l" aria-hidden="true"></div><div class="myth-home-colcap r" aria-hidden="true"></div>';
+  h+='<div class="myth-home-colbase l" aria-hidden="true"></div><div class="myth-home-colbase r" aria-hidden="true"></div>';
   h+=signInButtonHTML();
-  h+='</div>'; // /mmenu-brand
-  h+='<div class="mmenu-hero">';
-  h+='<div class="mmenu-hero-left"><h1>Build your character for <span>Sit&rsquo;ota</span></h1>'
-   +'<p class="mmenu-lede">Full Mythras character creation &mdash; Culture, Career, and Bonus Skills &mdash; plus Quick Character shortcuts, three power tiers, and a live Play Mode dashboard for the table.</p>'
-   +'<div class="mmenu-ctarow"><button class="mmenu-cta-primary" onclick="APP.fromMenuNew()">Create New Character &rarr;</button>'
-   +(auto?'<button class="mmenu-cta-ghost" onclick="APP.fromMenuContinue()">Continue as '+esc(auto.name)+'</button>':"")
-   +'</div><p class="mmenu-trust">Runs entirely in your browser &mdash; autosaves locally, no account required.</p></div>';
-  h+='<div class="mmenu-hero-right">'+(auto?continuePreviewHTML(auto):tierShowcaseHTML())+'</div>';
-  h+='</div>'; // /mmenu-hero
-  h+='<div class="mmenu-secgrid">';
-  h+=charsPreviewCardHTML();
-  h+='<div class="mmenu-seccard"><div class="mmenu-panel-eyebrow">Campaign</div>'
-   +(campReady?'<button class="mmenu-secbtn" onclick="APP.newCampaign()"><b>New Campaign</b><span>Start a campaign shell as DM &mdash; name it, then link characters to it.</span></button>'
-              :'<button class="mmenu-secbtn" disabled><b>New Campaign</b><span>Sign in (top right) first to create or manage campaigns.</span></button>')
-   +(campReady?'<button class="mmenu-secbtn" onclick="APP.toCampaigns()"><b>Manage Campaigns</b><span>'+(CAMP_CACHE?CAMP_CACHE.length+" campaign"+(CAMP_CACHE.length===1?"":"s"):"View your campaigns.")+'</span></button>'
-              :'<button class="mmenu-secbtn" disabled><b>Manage Campaigns</b><span>Sign in (top right) first to create or manage campaigns.</span></button>')
-   +(cloudActive()?'<div class="mmenu-joinrow"><input type="text" id="joinCode" placeholder="INVITE CODE" style="text-transform:uppercase">'
-     +'<button class="chip" onclick="APP.joinCampaign()">Join</button></div>':"")
+  h+='<div class="myth-home-stack">';
+  h+='<div class="myth-home-title">Mythras</div>';
+  h+='<div class="myth-home-rule"></div>';
+  h+='<div class="myth-home-menu">'
+   +'<button class="myth-home-mbtn" onclick="APP.fromMenuNew()">Create a character</button>'
+   +'<button class="myth-home-mbtn" onclick="APP.newCampaign()">Create a campaign</button>'
+   +'<button class="myth-home-mbtn" onclick="APP.homeJoinCampaign()">Join a campaign</button>'
+   +'<button class="myth-home-mbtn" onclick="APP.toLibrary()">My characters</button>'
+   +'<button class="myth-home-mbtn" onclick="APP.toCampaigns()">My campaigns</button>'
    +'</div>';
-  h+=aboutCardHTML();
-  h+='</div>'; // /mmenu-secgrid
-  h+='</div>'; // /mmenu
+  if(auto)h+='<button class="myth-home-continue" onclick="APP.fromMenuContinue()">Continue as '+esc(auto.name)+' &rarr;</button>';
+  h+='</div>'; // /myth-home-stack
+  h+='</div>'; // /myth-home
   return h;
 }
 // Top-right sign-in affordance: reflects real Supabase auth if present,
@@ -600,42 +583,12 @@ function menuHTML(){
 // standalone Account page rather than opening a form inline.
 function signInButtonHTML(){
   if(!CLOUD_ENABLED)return "";
-  let label,cls="mmenu-signinbtn";
+  let label,cls="myth-home-signin";
   if(MOCK_AUTH){label="Test: "+esc(MOCK_AUTH.display_name);cls+=" is-active is-mock";}
   else if(AUTH_USER&&AUTH_PROFILE){label=esc(AUTH_PROFILE.display_name);cls+=" is-active";}
   else if(AUTH_USER){label="Finish sign-in";}
   else{label="Sign In";}
-  return '<button class="'+cls+'" onclick="APP.toAccount()"><span class="dot"></span>'+label+'</button>';
-}
-// Recent-characters preview card for the secondary grid — reads the local
-// library directly (fast, synchronous, always available even offline);
-// the full "My Characters" page does the proper cloud/local unified fetch.
-function charsPreviewCardHTML(){
-  const recents=loadCharLibLocal().map(localCharShape).sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at)).slice(0,3);
-  let h='<div class="mmenu-seccard"><div class="mmenu-panel-eyebrow">My Characters</div>';
-  if(!recents.length){
-    h+='<p class="note" style="font-size:12px;margin-bottom:10px">No characters saved yet &mdash; build one and it&rsquo;ll show up here automatically.</p>';
-  }else{
-    h+=recents.map(c=>{
-      const initials=((c.name||"?").match(/\b[A-Za-z]/g)||["?"]).slice(0,2).join("").toUpperCase();
-      const meta=[c.culture,c.career].filter(Boolean).join(" &middot; ")||"In progress";
-      return '<button class="mmenu-charmini" onclick="APP.openCharToPlay(\''+c.id+'\')"><span class="mmenu-charmini-ini">'+esc(initials)+'</span>'
-       +'<span class="mmenu-charmini-txt"><b>'+esc(c.name||"Unnamed Character")+'</b><i>'+meta+'</i></span></button>';
-    }).join("");
-  }
-  h+='<button class="mmenu-secbtn" style="border-top:1px dotted var(--line-soft);margin-top:4px;padding-top:11px" onclick="APP.toLibrary()"><b>View All Characters</b><span>Browse, edit, or jump straight into Play Mode.</span></button>';
-  return h+'</div>';
-}
-// Third secondary-grid card: fills what would otherwise be empty width on
-// wide viewports with genuinely useful orientation content, the way a real
-// landing page uses a "how it works" or feature-highlight block rather than
-// leaving whitespace once the primary CTAs are covered.
-function aboutCardHTML(){
-  return '<div class="mmenu-seccard"><div class="mmenu-panel-eyebrow">How it works</div>'
-   +'<div class="mmenu-secbtn" style="cursor:default"><b>1. Build</b><span>Full Mythras creation or Quick Character shortcuts &mdash; Culture, Career, Bonus Skills, gear.</span></div>'
-   +'<div class="mmenu-secbtn" style="cursor:default"><b>2. Autosave</b><span>Every change saves to this browser instantly and lands in My Characters.</span></div>'
-   +'<div class="mmenu-secbtn" style="cursor:default"><b>3. Play</b><span>Jump into the live dashboard for HP, Action Points, Special Effects, and rolls at the table.</span></div>'
-   +'</div>';
+  return '<button class="'+cls+'" onclick="APP.toAccount()">'+label+'</button>';
 }
 function renderMenuView(){
   document.body.classList.remove("play-mode");

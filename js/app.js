@@ -665,14 +665,21 @@ window.APP={
  saveToLibrary(){
    saveToLibraryUnified(true).then(()=>{S._libLastSaved=Date.now();render();})
      .catch(e=>alert("Could not save to library: "+e.message));},
- joinCampaign(){
-   const el=$("#joinCode");const code=el&&el.value&&el.value.trim();
+ // Takes the code directly rather than reading a specific DOM element —
+ // the home screen's "Join a campaign" button (homeJoinCampaign below)
+ // has no visible input field of its own, per the approved design.
+ joinCampaign(code){
+   code=(code||"").trim();
    if(!code)return;
    cloudJoinCampaign(code).then(res=>{
      if(!res){alert("Invalid invite code.");return;}
      CURRENT_CAMPAIGN_ID=res.id;APPVIEW="campaign";CAMPAIGN_VIEW=null;render();
      loadCampaignViewUnified(res.id);window.scrollTo(0,0);
    }).catch(e=>alert("Could not join campaign: "+e.message));},
+ homeJoinCampaign(){
+   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){alert("Sign in first — joining a campaign needs an account.");return;}
+   const code=prompt("Enter the campaign's invite code:");
+   if(code)APP.joinCampaign(code);},
  /* account */
  signIn(){
    const email=($("#authEmail")&&$("#authEmail").value||"").trim();

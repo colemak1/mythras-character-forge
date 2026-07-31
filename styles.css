@@ -526,6 +526,66 @@ body.play-mode #rail,body.play-mode #ledger,body.play-mode .foot{display:none}
   .mmenu-topbar{padding-right:0;flex-wrap:wrap;gap:10px}
   .mmenu-acctbtn{position:static}
 }
+/* ---- home screen: "Aegean golden hour" ----
+   The approved mockup (docs/homepage-mockup-approved.html) reproduced as
+   closely as the values translate to a real, responsive page instead of a
+   fixed 1180x664 canvas: clamp()/min() in place of literal pixel sizes,
+   the flanking columns hidden below ~900px (they'd just collide with
+   content at phone/tablet widths, and were purely decorative to begin
+   with), everything else kept at the mockup's own colours and proportions.
+   Deliberately its own visual language, separate from the .mmenu-* rules
+   below (still used by Account/Campaigns/My Characters) and from the
+   parchment "Blood Ledger" skin the builder and Play Mode use — this is
+   the front door, not a utility screen, and was signed off as its own
+   look after a dedicated design pass. */
+.myth-home{position:relative;min-height:100vh;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  background:linear-gradient(180deg,#f0d9a0 0%,#e8b866 45%,#c8863a 78%,#7a4e1e 100%);
+  color:#2a1c0c;font-family:'Cormorant Garamond',serif}
+.myth-home-sunglow{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);
+  width:min(560px,70vw);height:min(560px,70vw);pointer-events:none;
+  background:radial-gradient(circle,rgba(255,240,200,.8),transparent 68%)}
+.myth-home-marble{position:absolute;inset:0;opacity:.12;mix-blend-mode:multiply;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.08' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.myth-home-col{position:absolute;top:0;bottom:0;width:66px;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(60,35,10,.22) 0 4px,transparent 4px 14px)}
+.myth-home-col.l{left:64px}.myth-home-col.r{right:64px}
+.myth-home-colcap{position:absolute;top:0;width:98px;height:20px;background:rgba(60,35,10,.32);pointer-events:none}
+.myth-home-colcap.l{left:48px}.myth-home-colcap.r{right:48px}
+.myth-home-colbase{position:absolute;bottom:0;width:98px;height:20px;background:rgba(60,35,10,.32);pointer-events:none}
+.myth-home-colbase.l{left:48px}.myth-home-colbase.r{right:48px}
+@media (max-width:900px){
+  .myth-home-col,.myth-home-colcap,.myth-home-colbase{display:none}
+}
+.myth-home-signin{position:absolute;top:24px;right:24px;padding:9px 22px;border:1.5px solid #6b4a1e;border-radius:2px;
+  font-family:'Cinzel',serif;font-weight:600;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:#3a2408;background:rgba(255,245,220,.35)}
+.myth-home-signin:hover{background:rgba(255,245,220,.55)}
+.myth-home-signin.is-active{background:rgba(60,35,10,.16);border-color:#4a3012}
+.myth-home-signin.is-mock{border-style:dashed}
+@media (min-width:901px){.myth-home-signin{right:170px}}
+.myth-home-stack{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+  gap:24px;padding:100px 20px 60px}
+.myth-home-title{font-family:'Cinzel',serif;font-weight:900;font-size:clamp(42px,9vw,80px);line-height:1;
+  letter-spacing:.09em;text-transform:uppercase;color:#241706;text-shadow:0 1px 0 rgba(255,240,210,.5)}
+.myth-home-rule{width:min(400px,78vw);height:1px;margin:4px 0;position:relative;
+  background:linear-gradient(90deg,transparent,#6b4a1e,transparent)}
+.myth-home-rule::before{content:"\25C6";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  background:#e8b866;padding:0 12px;color:#6b4a1e;font-size:11px}
+.myth-home-menu{width:min(340px,88vw);display:flex;flex-direction:column;gap:10px}
+.myth-home-mbtn{width:100%;padding:15px 0;text-align:center;border:1.5px solid #6b4a1e;border-radius:2px;
+  background:rgba(255,245,220,.32);font-family:'Cinzel',serif;font-weight:600;font-size:12.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:#2a1c0c}
+.myth-home-mbtn:hover{background:rgba(255,245,220,.55);border-color:#4a3012}
+/* Not part of the approved mockup itself -- resuming an in-progress
+   autosaved character was a real feature of the page this replaced, so it
+   stays reachable, just deliberately understated (a plain text link, not
+   a sixth button) rather than competing with the five actions that were
+   actually signed off. */
+.myth-home-continue{margin-top:2px;background:none;border:none;font-family:'Cormorant Garamond',serif;
+  font-style:italic;font-size:16px;color:#4a3012;text-decoration:underline;text-underline-offset:3px}
+.myth-home-continue:hover{color:#241706}
+
 /* ---- campaigns list / detail screens (unchanged by the Main Menu rebuild
    above — these still use the older card-grid pattern, which is fine for a
    secondary utility screen reached one click deep, not the front door). ---- */

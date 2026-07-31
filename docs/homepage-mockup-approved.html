@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Approved home screen mockup — Aegean golden hour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Cormorant+Garamond:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#000;font-family:'Cormorant Garamond',serif}
+  .screen{position:relative;width:1180px;height:664px;overflow:hidden;
+    background:linear-gradient(180deg,#f0d9a0 0%,#e8b866 45%,#c8863a 78%,#7a4e1e 100%);color:#2a1c0c}
+  .sunglow{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);width:560px;height:560px;
+    background:radial-gradient(circle,rgba(255,240,200,.8),transparent 68%)}
+  .marble{position:absolute;inset:0;opacity:.12;mix-blend-mode:multiply;pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.08' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .column{position:absolute;top:0;bottom:0;width:66px;background:repeating-linear-gradient(90deg,rgba(60,35,10,.22) 0 4px,transparent 4px 14px)}
+  .column.l{left:64px}.column.r{right:64px}
+  .colcap{position:absolute;top:0;width:98px;height:20px;background:rgba(60,35,10,.32)}
+  .colcap.l{left:48px}.colcap.r{right:48px}
+  .colbase{position:absolute;bottom:0;width:98px;height:20px;background:rgba(60,35,10,.32)}
+  .colbase.l{left:48px}.colbase.r{right:48px}
+
+  .signin{position:absolute;top:30px;right:186px;padding:9px 22px;border:1.5px solid #6b4a1e;
+    font-family:'Cinzel',serif;font-weight:600;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:#3a2408;background:rgba(255,245,220,.35)}
+
+  .stack{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:24px}
+  .title{font-family:'Cinzel',serif;font-weight:900;font-size:80px;letter-spacing:.09em;text-transform:uppercase;
+    color:#241706;text-shadow:0 1px 0 rgba(255,240,210,.5)}
+  .rule{width:400px;height:1px;background:linear-gradient(90deg,transparent,#6b4a1e,transparent);position:relative}
+  .rule::before{content:"◆";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:#e8b866;padding:0 12px;color:#6b4a1e;font-size:11px}
+  .menu{width:340px;display:flex;flex-direction:column;gap:10px}
+  .mbtn{width:100%;padding:15px 0;text-align:center;border:1.5px solid #6b4a1e;background:rgba(255,245,220,.32);
+    font-family:'Cinzel',serif;font-weight:600;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:#2a1c0c}
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="sunglow"></div>
+  <div class="marble"></div>
+  <div class="column l"></div><div class="column r"></div>
+  <div class="colcap l"></div><div class="colcap r"></div>
+  <div class="colbase l"></div><div class="colbase r"></div>
+  <button class="signin">Sign in</button>
+  <div class="stack">
+    <div class="title">Mythras</div>
+    <div class="rule"></div>
+    <div class="menu">
+      <button class="mbtn">Create a character</button>
+      <button class="mbtn">Create a campaign</button>
+      <button class="mbtn">Join a campaign</button>
+      <button class="mbtn">My characters</button>
+      <button class="mbtn">My campaigns</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
