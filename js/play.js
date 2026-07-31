@@ -773,7 +773,7 @@ function renderPlayView(){
   }else if(tab==="inventory"){
     h+='<table class="pm-atktable"><tr><th>Location</th><th>Armour</th><th>AP</th></tr>'
      +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(S.armor[l])+'</td><td>'+armorApAt(l)+'</td></tr>').join("")+'</table>';
-    h+='<p class="pm-invmeta">Gear ENC '+gearEncTotal()+' / '+(encLimit()??"—")+' unencumbered'+(S.money.dice.length?(' &middot; '+(moneyTotal()-(S.money.spent||0))+' / '+moneyTotal()+' sp'):"")+'</p>';
+    h+='<p class="pm-invmeta">Gear ENC '+gearEncTotal()+' / '+(encLimit()??"—")+' unencumbered'+(S.money.dice.length?(' &middot; '+moneyRemaining()+' / '+moneyTotal()+' sp'):"")+'</p>';
     if(inventoryBlock()){
       // Plain party-member view of a teammate's sheet: static list, no controls.
       if(S.inventory.length)h+='<div class="pm-invlist">'+S.inventory.map(it=>'<div class="pm-invrow"><span>'+esc(it.name)+' &times;'+it.qty+'</span><span class="pm-empty">ENC '+((it.qty||0)*(it.enc||0))+'</span></div>').join("")+'</div>';
@@ -953,7 +953,7 @@ function characterSheetBody(){
    +'<table class="mtiny"><tr><th>Loc</th><th>Armour</th><th class="num">AP</th></tr>'
    +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(S.armor[l])+'</td><td class="num">'+armorApAt(l)+'</td></tr>').join("")+'</table>'
    +mkv("Init. penalty",initPenalty?"−"+initPenalty:"0")
-   +mkv("Silver",S.money.dice.length?(moneyTotal()-(S.money.spent||0))+" / "+moneyTotal()+" sp":"—")+'</div>';
+   +mkv("Silver",S.money.dice.length?moneyRemaining()+" / "+moneyTotal()+" sp":"—")+'</div>';
   h+='</div>'; // /mhead-grid
 
   // ---- main grid: characteristics/attributes/money (left), hit locations +
@@ -977,8 +977,8 @@ function characterSheetBody(){
     ].map(([nm,v])=>'<tr><td class="nm" colspan="3">'+nm+'</td><td class="vv">'+v+'</td></tr>').join("")
    +'</table></div>';
   h+='<div class="mbox"><div class="mbox-t">Money &amp; Wealth</div>'
-   +mkv("Starting",S.money.dice.length?moneyTotal()+" sp":"—")+mkv("Spent",(S.money.spent||0)+" sp")
-   +mkv("Remaining",S.money.dice.length?(moneyTotal()-(S.money.spent||0))+" sp":"—")
+   +mkv("Starting",S.money.dice.length?moneyTotal()+" sp":"—")+mkv("Spent",moneySpentTotal()+" sp")
+   +mkv("Remaining",S.money.dice.length?moneyRemaining()+" sp":"—")
    +mkv("Gear ENC",gearEncTotal())+mkv("Enc. limit (STR×2)",encLimit())+'</div>';
   h+='<div class="mbox mmagicbox"><div class="mbox-t">Magic Points</div><div class="mbig">'+c.POW+'</div></div>';
   h+='</div>'; // /mcol left

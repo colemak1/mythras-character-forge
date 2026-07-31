@@ -734,7 +734,7 @@ function buildMD(){
     +S.gearWeapons.map(nm=>{const w=WEAPON_MAP[nm];return w?"| "+w.name+" | "+w.dmg+" | "+w.reach+" | "+w.effects+" | "+w.enc+" | "+w.apHp+" |":"";}).filter(Boolean).join("\n")+"\n\n";
   md+="## Armour\n\n| Location | Construction | AP |\n|---|---|---|\n"+ARMOR_LOCATIONS.map(l=>"| "+l+" | "+S.armor[l]+" | "+armorApAt(l)+" |").join("\n")
     +"\n\nArmour Penalty to Initiative: -"+armourPenaltyToInit()+"\n\n";
-  if(S.money.dice.length)md+="## Money\n\nStarting: "+moneyTotal()+" sp — remaining: "+(moneyTotal()-(S.money.spent||0))+" sp\n\n";
+  if(S.money.dice.length)md+="## Money\n\nStarting: "+moneyTotal()+" sp — remaining: "+moneyRemaining()+" sp\n\n";
   if(S.inventory.length)md+="## Equipment\n\n"+S.inventory.map(it=>"- "+it.name+" ×"+it.qty+" (ENC "+((it.qty||0)*(it.enc||0))+")").join("\n")+"\n\n";
   if(S.concept.notes)md+="## Notes\n\n"+S.concept.notes+"\n";
   return md;

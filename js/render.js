@@ -51,7 +51,7 @@ function renderLedger(){
     "Bonus Skills":["bonus",bonusPool(),"Bonus"],"Quick Skills":["quick",100,"Quick"]};
   const p=poolByName[stepName];
   if(p){const sp=aSum(p[0]);h+='<h3>'+p[2]+' points</h3>'+led("Spent",sp+" / "+p[1])+led("Remaining",p[1]-sp);}
-  if(S.money.dice.length){const t=moneyTotal();h+='<h3>Silver</h3>'+led("Starting",t+" sp")+led("Remaining",(t-(S.money.spent||0))+" sp");}
+  if(S.money.dice.length){h+='<h3>Silver</h3>'+led("Starting",moneyTotal()+" sp")+led("Remaining",moneyRemaining()+" sp");}
   if(stepName==="Money & Gear"){h+='<h3>Gear</h3>'+led("Total ENC",gearEncTotal())+led("Unencumbered limit",encLimit()??"—");}
   $("#ledger").innerHTML=h;
 }
@@ -747,6 +747,13 @@ function baseMult(){
 }
 function moneyTotal(){const base=S.money.dice.reduce((a,b)=>a+b,0);
   return Math.round(base*baseMult()*(S.money.mod||1));}
+// Total silver spent: auto-summed weapon/armour cost plus whatever's in
+// S.money.spent (manual/inventory spending, and the +/- adjustments life
+// events apply directly to that field). Every "remaining silver" display
+// in the app (ledger, Play Mode, sheet export) should read through this
+// rather than re-deriving it, now that gear cost isn't purely manual.
+function moneySpentTotal(){return gearCostTotal()+(S.money.spent||0);}
+function moneyRemaining(){return moneyTotal()-moneySpentTotal();}
 function stepMoney(){
   const mult=S.creationMode==="quick"?S.money.quickMult:(S.culture?CULTURES[S.culture].money:null);
   let h=head("Money & Gear","Starting silver comes from culture and social class; weapon and armour cost is totalled automatically as you pick gear. Encumbrance is totted up and flagged against your STR&times;2 limit, but not enforced &mdash; nothing here blocks you from carrying more.");
