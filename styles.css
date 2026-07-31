@@ -397,128 +397,140 @@ body.play-mode #rail,body.play-mode #ledger,body.play-mode .foot{display:none}
    page does — a slim wordmark, then an asymmetric two-column hero (copy +
    CTA on the left, a real content panel on the right — not decoration),
    then a genuine multi-column secondary section, all inside a wide frame. */
-.mmenu{max-width:min(1680px,94vw);margin:0 auto;padding:52px 44px 90px}
+/* Golden-hour utility chrome (Account / My Characters / Party Board share
+   this .mmenu-* vocabulary) -- same background gradient, Cinzel display
+   type and flat bordered-bronze button language as the "Aegean golden
+   hour" home screen below, so these screens read as one product with it
+   instead of the home screen being the only page that got the new look.
+   Still its own component set rather than literally reusing .myth-home-*
+   selectors, since these are content-dense utility pages (forms, lists,
+   grids), not the five-button hero the home mockup was built for. */
+.mmenu{max-width:min(1680px,94vw);margin:0 auto;padding:52px 44px 90px;
+  min-height:100vh;color:#2a1c0c;font-family:'Cormorant Garamond',serif;
+  background:linear-gradient(180deg,#f0d9a0 0%,#e8b866 45%,#c8863a 78%,#7a4e1e 100%);
+  background-attachment:fixed}
 .mmenu-brand{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:46px}
 .mmenu-brandwrap{display:flex;align-items:baseline;gap:9px}
-.mmenu-brandmark{font-family:var(--serif);font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
-.mmenu-branddiv{color:var(--bronze);font-size:15px}
-.mmenu-brandsub{font-family:var(--serif);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--bronze-hi)}
+.mmenu-brandmark{font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#241706}
+.mmenu-branddiv{color:#6b4a1e;font-size:15px}
+.mmenu-brandsub{font-family:'Cinzel',serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6b4a1e}
 /* Sign-in lives top-right like almost every real app, not embedded in the
    page body — a clear, low-commitment affordance rather than a form
    fighting for attention next to the primary CTA. */
-.mmenu-signinbtn{display:flex;align-items:center;gap:8px;background:var(--panel3);border:1px solid var(--line);border-radius:var(--r-pill);padding:9px 18px 9px 14px;font-family:var(--serif);font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--bronze-deep);white-space:nowrap}
-.mmenu-signinbtn:hover{border-color:var(--bronze);background:var(--panel)}
-.mmenu-signinbtn.is-active{background:var(--bronze-hi);color:#fff8e6;border-color:var(--bronze-hi)}
-.mmenu-signinbtn .dot{width:7px;height:7px;border-radius:50%;background:var(--bronze);flex:0 0 auto}
-.mmenu-signinbtn.is-mock .dot{background:#c97b3d}
-.mmenu-signinbtn.is-active .dot{background:#fff8e6}
+.mmenu-signinbtn{display:flex;align-items:center;gap:8px;background:rgba(255,245,220,.35);border:1.5px solid #6b4a1e;border-radius:2px;padding:9px 18px 9px 14px;font-family:'Cinzel',serif;font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#2a1c0c;white-space:nowrap}
+.mmenu-signinbtn:hover{background:rgba(255,245,220,.55);border-color:#4a3012}
+.mmenu-signinbtn.is-active{background:rgba(60,35,10,.16);color:#2a1c0c;border-color:#4a3012}
+.mmenu-signinbtn .dot{width:7px;height:7px;border-radius:50%;background:#6b4a1e;flex:0 0 auto}
+.mmenu-signinbtn.is-mock .dot{background:#a5601f}
+.mmenu-signinbtn.is-active .dot{background:#4a3012}
 /* Standalone Account / My-Characters pages (reached one click from the
    menu) reuse the same brand wordmark plus a back button, top-right. */
 .mmenu-topbar{display:flex;align-items:baseline;gap:9px;margin-bottom:34px;position:relative;padding-right:150px}
-.mmenu-acctbtn{position:absolute;right:0;top:-6px;background:transparent;border:1px solid var(--line);border-radius:var(--r-pill);padding:8px 16px;font-family:var(--serif);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--bronze-deep);white-space:nowrap}
-.mmenu-acctbtn:hover{border-color:var(--bronze);background:var(--panel3)}
+.mmenu-acctbtn{position:absolute;right:0;top:-6px;background:rgba(255,245,220,.35);border:1.5px solid #6b4a1e;border-radius:2px;padding:9px 18px;font-family:'Cinzel',serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#2a1c0c;white-space:nowrap}
+.mmenu-acctbtn:hover{background:rgba(255,245,220,.55);border-color:#4a3012}
 .mmenu-pagehead{margin-bottom:34px}
-.mmenu-pagehead h1{font-family:var(--serif);font-size:32px;color:var(--ink);font-weight:700}
-.mmenu-pagehead p{color:var(--dim);font-size:13.5px;margin-top:6px}
+.mmenu-pagehead h1{font-family:'Cinzel',serif;font-weight:700;font-size:32px;letter-spacing:.04em;text-transform:uppercase;color:#241706}
+.mmenu-pagehead p{color:rgba(42,28,12,.72);font-size:14.5px;margin-top:8px;font-family:'Cormorant Garamond',serif;font-style:italic}
 .mmenu-hero{display:grid;grid-template-columns:1.15fr 1fr;gap:60px;align-items:center;margin-bottom:60px}
-.mmenu-hero-left h1{font-size:44px;line-height:1.15;color:var(--ink);letter-spacing:.01em;text-transform:none;font-weight:700}
-.mmenu-hero-left h1 span{color:var(--bronze-hi);font-style:italic}
-.mmenu-lede{color:var(--dim);font-size:15.5px;line-height:1.6;margin-top:18px;max-width:52ch}
+.mmenu-hero-left h1{font-family:'Cinzel',serif;font-size:40px;line-height:1.2;color:#241706;letter-spacing:.02em;text-transform:uppercase;font-weight:700}
+.mmenu-hero-left h1 span{color:#8a5a12;font-family:'Cormorant Garamond',serif;font-style:italic;text-transform:none;letter-spacing:0}
+.mmenu-lede{color:rgba(42,28,12,.75);font-size:16.5px;line-height:1.6;margin-top:18px;max-width:52ch;font-family:'Cormorant Garamond',serif}
 .mmenu-ctarow{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px;align-items:center}
-.mmenu-cta-primary{background:var(--bronze-hi);color:#fff8e6;font-family:var(--serif);text-transform:uppercase;letter-spacing:.05em;font-size:15px;font-weight:700;padding:15px 32px;border-radius:var(--r-sm);box-shadow:var(--shadow-md);border:1px solid var(--bronze-hi)}
-.mmenu-cta-primary:hover{background:var(--bronze-brt);border-color:var(--bronze-brt);box-shadow:var(--shadow-lg);transform:translateY(-1px)}
-.mmenu-cta-ghost{background:transparent;color:var(--bronze-deep);font-family:var(--serif);text-transform:uppercase;letter-spacing:.05em;font-size:14px;font-weight:700;padding:14px 24px;border-radius:var(--r-sm);border:1px solid var(--line)}
-.mmenu-cta-ghost:hover{border-color:var(--bronze);background:var(--panel3)}
-.mmenu-trust{color:var(--faint);font-size:12px;margin-top:16px;font-family:var(--mono)}
+.mmenu-cta-primary{background:rgba(255,245,220,.4);color:#2a1c0c;font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.1em;font-size:13px;font-weight:600;padding:15px 30px;border-radius:2px;border:1.5px solid #6b4a1e}
+.mmenu-cta-primary:hover{background:rgba(255,245,220,.6);border-color:#4a3012}
+.mmenu-cta-ghost{background:transparent;color:#2a1c0c;font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.08em;font-size:12px;font-weight:600;padding:12px 22px;border-radius:2px;border:1.5px solid rgba(107,74,30,.55)}
+.mmenu-cta-ghost:hover{border-color:#6b4a1e;background:rgba(255,245,220,.3)}
+.mmenu-trust{color:rgba(42,28,12,.55);font-size:12px;margin-top:16px;font-family:var(--mono)}
 /* Hero right column: a real, load-bearing panel (character preview or tier
    showcase), not filler art — reinforces the headline the way a product
    screenshot does on a SaaS landing page. */
 .mmenu-hero-right{display:flex}
-.mmenu-panel{background:linear-gradient(160deg,var(--panel3),var(--panel));border:1px solid var(--line-soft);border-radius:var(--r-lg);padding:22px 24px;box-shadow:var(--shadow-lg);width:100%}
-.mmenu-panel-eyebrow{font-family:var(--serif);text-transform:uppercase;letter-spacing:.1em;color:var(--bronze);font-size:11px;font-weight:700;margin-bottom:14px}
-.mmenu-tier-row{display:flex;flex-direction:column;gap:2px;padding:11px 0;border-bottom:1px dotted var(--line-soft)}
+.mmenu-panel{background:rgba(255,248,232,.72);border:1.5px solid rgba(107,74,30,.5);border-radius:4px;padding:22px 24px;box-shadow:0 8px 24px -10px rgba(42,20,6,.35);width:100%}
+.mmenu-panel-eyebrow{font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.12em;color:#8a5a12;font-size:10.5px;font-weight:700;margin-bottom:14px}
+.mmenu-tier-row{display:flex;flex-direction:column;gap:2px;padding:11px 0;border-bottom:1px dotted rgba(107,74,30,.3)}
 .mmenu-tier-row:last-child{border-bottom:none}
-.mmenu-tier-row b{font-family:var(--serif);color:var(--bronze-hi);font-size:15px;text-transform:uppercase;letter-spacing:.03em}
-.mmenu-tier-row span{font-size:12.5px;color:var(--dim);line-height:1.5}
-.mmenu-tier-row span i{color:var(--faint)}
+.mmenu-tier-row b{font-family:'Cinzel',serif;color:#8a5a12;font-size:14px;text-transform:uppercase;letter-spacing:.03em}
+.mmenu-tier-row span{font-size:13px;color:rgba(42,28,12,.72);line-height:1.5;font-family:'Cormorant Garamond',serif}
+.mmenu-tier-row span i{color:rgba(42,28,12,.5)}
 .mmenu-preview-head{display:flex;gap:13px;align-items:center}
-.mmenu-preview-portrait{width:52px;height:52px;border-radius:50%;background:var(--panel);border:2px solid var(--bronze);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;color:var(--bronze-hi);font-size:18px;flex:0 0 auto}
-.mmenu-preview-name{font-family:var(--serif);font-size:19px;color:var(--ink);font-weight:700}
-.mmenu-preview-meta{font-size:12px;color:var(--dim);margin-top:2px}
+.mmenu-preview-portrait{width:52px;height:52px;border-radius:50%;background:rgba(255,248,232,.6);border:2px solid #8a5a12;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;color:#8a5a12;font-size:17px;flex:0 0 auto}
+.mmenu-preview-name{font-family:'Cinzel',serif;font-size:17px;color:#241706;font-weight:700;letter-spacing:.02em}
+.mmenu-preview-meta{font-size:12.5px;color:rgba(42,28,12,.72);margin-top:3px;font-family:'Cormorant Garamond',serif}
 .mmenu-preview-chars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:18px}
-.mmenu-pc{background:var(--inset);border:1px solid var(--line);border-radius:var(--r-sm);text-align:center;padding:6px 0}
-.mmenu-pc b{display:block;font-family:var(--mono);font-size:15px;color:var(--bronze-hi)}
-.mmenu-pc span{font-size:9px;color:var(--faint);letter-spacing:.06em}
-.mmenu-preview-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:20px;padding-top:14px;border-top:1px solid var(--line-soft)}
-.mmenu-preview-ts{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
-.mmenu-cta-secondary{background:var(--panel3);color:var(--bronze-deep);font-family:var(--serif);text-transform:uppercase;letter-spacing:.04em;font-size:12.5px;font-weight:700;padding:8px 16px;border-radius:var(--r-sm);border:1px solid var(--bronze)}
-.mmenu-cta-secondary:hover{background:var(--bronze-hi);color:#fff8e6}
+.mmenu-pc{background:rgba(255,248,232,.55);border:1px solid rgba(107,74,30,.4);border-radius:3px;text-align:center;padding:6px 0}
+.mmenu-pc b{display:block;font-family:var(--mono);font-size:15px;color:#8a5a12}
+.mmenu-pc span{font-size:9px;color:rgba(42,28,12,.55);letter-spacing:.06em}
+.mmenu-preview-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:20px;padding-top:14px;border-top:1px solid rgba(107,74,30,.3)}
+.mmenu-preview-ts{font-family:var(--mono);font-size:10.5px;color:rgba(42,28,12,.5)}
+.mmenu-cta-secondary{background:rgba(255,245,220,.4);color:#2a1c0c;font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.08em;font-size:11.5px;font-weight:600;padding:8px 16px;border-radius:2px;border:1.5px solid #6b4a1e}
+.mmenu-cta-secondary:hover{background:rgba(255,245,220,.6);border-color:#4a3012}
 /* Secondary section: genuinely multi-column at full width instead of a
    single stacked list, so the page keeps using its width below the fold
    too, not just in the hero. */
-.mmenu-secgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;padding-top:28px;border-top:1px solid var(--line-soft)}
-.mmenu-seccard{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r-md);padding:18px 20px;box-shadow:var(--shadow-sm)}
+.mmenu-secgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;padding-top:28px;border-top:1px solid rgba(107,74,30,.3)}
+.mmenu-seccard{background:rgba(255,248,232,.68);border:1.5px solid rgba(107,74,30,.45);border-radius:4px;padding:18px 20px}
 .mmenu-authhead{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
-.mmenu-authhead b{font-family:var(--serif);font-size:14.5px;color:var(--ink)}
-.mmenu-authhead span{font-size:12px;color:var(--dim);line-height:1.5}
-.mmenu-secbtn{display:flex;flex-direction:column;gap:3px;text-align:left;width:100%;padding:11px 0;border-bottom:1px dotted var(--line-soft)}
+.mmenu-authhead b{font-family:'Cinzel',serif;font-size:14px;letter-spacing:.02em;color:#241706}
+.mmenu-authhead span{font-size:13px;color:rgba(42,28,12,.72);line-height:1.5;font-family:'Cormorant Garamond',serif}
+.mmenu-secbtn{display:flex;flex-direction:column;gap:3px;text-align:left;width:100%;padding:11px 0;border-bottom:1px dotted rgba(107,74,30,.3)}
 .mmenu-secbtn:last-of-type{border-bottom:none}
-.mmenu-secbtn:hover:not(:disabled) b{color:var(--bronze-hi)}
+.mmenu-secbtn:hover:not(:disabled) b{color:#8a5a12}
 .mmenu-secbtn:disabled{opacity:.5;cursor:not-allowed}
-.mmenu-secbtn b{font-family:var(--serif);font-size:13.5px;color:var(--ink);text-transform:uppercase;letter-spacing:.02em}
-.mmenu-secbtn span{font-size:12px;color:var(--dim)}
+.mmenu-secbtn b{font-family:'Cinzel',serif;font-size:13px;color:#241706;text-transform:uppercase;letter-spacing:.03em}
+.mmenu-secbtn span{font-size:12.5px;color:rgba(42,28,12,.72);font-family:'Cormorant Garamond',serif}
 .mmenu-joinrow{display:flex;gap:6px;margin-top:6px}
 .mmenu-joinrow input{flex:1;min-width:0}
-.mmenu-joinrow .chip{min-height:38px;padding:6px 16px;border-radius:var(--r-sm);font-family:var(--sans);font-weight:600;background:var(--bronze-hi);color:#fff8e6;border-color:var(--bronze-hi);flex:0 0 auto}
-.mmenu-joinrow .chip:hover{background:var(--bronze-brt);border-color:var(--bronze-brt);color:#fff}
+.mmenu .chip{border:1.5px solid rgba(107,74,30,.55);background:rgba(255,245,220,.35);color:#2a1c0c;font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:2px}
+.mmenu .chip:hover{border-color:#6b4a1e;background:rgba(255,245,220,.55);color:#241706}
+.mmenu-joinrow .chip{min-height:38px;padding:6px 16px;flex:0 0 auto}
 /* My Characters — compact preview rows on the menu, full cards on the
    dedicated list page. */
-.mmenu-charmini{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 0;border-bottom:1px dotted var(--line-soft)}
+.mmenu-charmini{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 0;border-bottom:1px dotted rgba(107,74,30,.3)}
 .mmenu-charmini:last-of-type{border-bottom:none}
-.mmenu-charmini:hover .mmenu-charmini-txt b{color:var(--bronze-hi)}
-.mmenu-charmini-ini{width:32px;height:32px;border-radius:50%;background:var(--inset);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;font-size:12px;color:var(--bronze-hi);flex:0 0 auto}
+.mmenu-charmini:hover .mmenu-charmini-txt b{color:#8a5a12}
+.mmenu-charmini-ini{width:32px;height:32px;border-radius:50%;background:rgba(255,248,232,.6);border:1px solid rgba(107,74,30,.4);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:11px;color:#8a5a12;flex:0 0 auto}
 .mmenu-charmini-txt{display:flex;flex-direction:column;gap:1px;min-width:0}
-.mmenu-charmini-txt b{font-family:var(--serif);font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mmenu-charmini-txt i{font-size:11px;color:var(--dim);font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mmenu-charmini-txt b{font-family:'Cinzel',serif;font-size:12px;letter-spacing:.01em;color:#241706;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mmenu-charmini-txt i{font-size:12px;color:rgba(42,28,12,.72);font-style:italic;font-family:'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mmenu-charlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
-.mmenu-charcard{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r-md);padding:18px 20px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:12px}
-.mmenu-charcard-ts{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
-.mmenu-charcard-actions{display:flex;gap:8px;align-items:center;margin-top:2px}
-.mmenu-charcard-del{margin-left:auto;background:transparent;border:none;color:var(--faint);font-size:20px;line-height:1;width:28px;height:28px;border-radius:50%;flex:0 0 auto}
-.mmenu-charcard-del:hover{background:var(--inset);color:#a8402c}
-.mmenu-cta-ghost.sm{padding:7px 14px;font-size:11.5px}
-.mmenu-cta-secondary.sm{padding:6px 12px;font-size:11px}
+.mmenu-charcard{background:rgba(255,248,232,.72);border:1.5px solid rgba(107,74,30,.5);border-radius:4px;padding:18px 20px;box-shadow:0 6px 18px -10px rgba(42,20,6,.3);display:flex;flex-direction:column;gap:12px}
+.mmenu-charcard-ts{font-family:var(--mono);font-size:10.5px;color:rgba(42,28,12,.5)}
+.mmenu-charcard-actions{display:flex;gap:8px;align-items:center;margin-top:2px;flex-wrap:wrap}
+.mmenu-charcard-del{margin-left:auto;background:transparent;border:none;color:rgba(42,28,12,.5);font-size:20px;line-height:1;width:28px;height:28px;border-radius:50%;flex:0 0 auto}
+.mmenu-charcard-del:hover{background:rgba(165,45,32,.12);color:#a52d20}
+.mmenu-cta-ghost.sm{padding:7px 14px;font-size:10.5px}
+.mmenu-cta-secondary.sm{padding:6px 12px;font-size:10.5px}
 /* Account page */
 .mmenu-authgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;align-items:start}
 .mmenu-mockpanel{border-style:dashed}
 /* Party Board */
-.pb-livedot{margin-left:10px;font-size:11px;font-family:var(--mono);color:var(--faint)}
-.pb-livedot.on{color:var(--ok)}
+.pb-livedot{margin-left:10px;font-size:11px;font-family:var(--mono);color:rgba(42,28,12,.5)}
+.pb-livedot.on{color:#3c5936}
 .pb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:18px}
-.pb-card{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r-md);padding:16px 18px;box-shadow:var(--shadow-sm);cursor:pointer;transition:box-shadow .15s ease,transform .15s ease;display:flex;flex-direction:column;gap:10px}
-.pb-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
-.pb-card.minor{border-color:var(--bronze-hi)}
-.pb-card.serious{border-color:var(--bronze-hi)}
-.pb-card.major{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad),var(--shadow-sm)}
+.pb-card{background:rgba(255,248,232,.72);border:1.5px solid rgba(107,74,30,.5);border-radius:4px;padding:16px 18px;box-shadow:0 6px 18px -10px rgba(42,20,6,.3);cursor:pointer;transition:box-shadow .15s ease,transform .15s ease,border-color .15s ease;display:flex;flex-direction:column;gap:10px}
+.pb-card:hover{box-shadow:0 10px 26px -10px rgba(42,20,6,.4);transform:translateY(-1px);border-color:#6b4a1e}
+.pb-card.minor{border-color:#8a5a12}
+.pb-card.serious{border-color:#8a5a12}
+.pb-card.major{border-color:#a52d20;box-shadow:0 0 0 1px #a52d20,0 6px 18px -10px rgba(42,20,6,.3)}
 .pb-head{display:flex;align-items:center;gap:10px}
-.pb-portrait{width:36px;height:36px;border-radius:50%;background:var(--inset);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;font-size:13px;color:var(--bronze-hi);flex:0 0 auto}
+.pb-portrait{width:36px;height:36px;border-radius:50%;background:rgba(255,248,232,.6);border:1px solid rgba(107,74,30,.4);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:12px;color:#8a5a12;flex:0 0 auto}
 .pb-id{min-width:0;flex:1}
-.pb-name{font-family:var(--serif);font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pb-name i{font-style:normal;color:var(--faint);font-size:11px}
-.pb-meta{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pb-condchip{flex:0 0 auto;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:var(--r-pill);border:1px solid}
-.pb-condchip.ok{color:var(--ok);border-color:var(--ok);background:rgba(60,89,54,.08)}
-.pb-condchip.minor{color:var(--bronze-hi);border-color:var(--bronze-hi);background:rgba(169,116,15,.1)}
-.pb-condchip.serious{color:var(--bronze-hi);border-color:var(--bronze-hi);background:rgba(169,116,15,.1)}
-.pb-condchip.major{color:var(--bad);border-color:var(--bad);background:rgba(165,45,32,.1)}
-.pb-hpbar{height:6px;border-radius:3px;background:var(--inset);overflow:hidden}
+.pb-name{font-family:'Cinzel',serif;font-size:13px;letter-spacing:.01em;color:#241706;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb-name i{font-style:normal;color:rgba(42,28,12,.5);font-size:11px}
+.pb-meta{font-size:12px;color:rgba(42,28,12,.72);font-family:'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb-condchip{flex:0 0 auto;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:2px;border:1px solid}
+.pb-condchip.ok{color:#3c5936;border-color:#3c5936;background:rgba(60,89,54,.1)}
+.pb-condchip.minor{color:#8a5a12;border-color:#8a5a12;background:rgba(138,90,18,.12)}
+.pb-condchip.serious{color:#8a5a12;border-color:#8a5a12;background:rgba(138,90,18,.12)}
+.pb-condchip.major{color:#a52d20;border-color:#a52d20;background:rgba(165,45,32,.12)}
+.pb-hpbar{height:6px;border-radius:3px;background:rgba(107,74,30,.15);overflow:hidden}
 .pb-hpbar i{display:block;height:100%;border-radius:3px}
 .pb-strip{display:flex;gap:3px}
 .pb-cell{flex:1;height:8px;border-radius:2px;display:block}
-.pb-cell.major{outline:1px solid var(--bad)}
-.pb-resrow{display:flex;gap:10px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;color:var(--dim)}
-.pb-fat{color:var(--bronze-hi);font-weight:600}
-.pb-updated{font-size:10px;color:var(--faint);font-family:var(--mono)}
+.pb-cell.major{outline:1px solid #a52d20}
+.pb-resrow{display:flex;gap:10px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;color:rgba(42,28,12,.72)}
+.pb-fat{color:#8a5a12;font-weight:600}
+.pb-updated{font-size:10px;color:rgba(42,28,12,.5);font-family:var(--mono)}
 @media (max-width:880px){
   .mmenu-hero{grid-template-columns:1fr}
   .mmenu-hero-left h1{font-size:34px}
@@ -586,25 +598,60 @@ body.play-mode #rail,body.play-mode #ledger,body.play-mode .foot{display:none}
   font-style:italic;font-size:16px;color:#4a3012;text-decoration:underline;text-underline-offset:3px}
 .myth-home-continue:hover{color:#241706}
 
-/* ---- campaigns list / detail screens (unchanged by the Main Menu rebuild
-   above — these still use the older card-grid pattern, which is fine for a
-   secondary utility screen reached one click deep, not the front door). ---- */
-.menuwrap{max-width:840px;margin:0 auto;padding:60px 24px 80px}
+/* ---- campaigns list / campaign detail / party board screens — same
+   golden-hour treatment as .mmenu above (Account/My Characters): the
+   gradient background, Cinzel display type and flat bordered-bronze button
+   language. These screens also pull in the Character Builder's own shared
+   component classes directly (.card/.chip/.nav/.field/inputs) rather than
+   duplicating card/button/field primitives of their own, so those are
+   reskinned below too -- but ONLY when nested inside .menuwrap, so the
+   Character Builder itself (which uses the exact same class names but never
+   sits inside .menuwrap) keeps its existing parchment look untouched. The
+   standalone printable Character Sheet also reuses .card/.chip/.nav, but
+   lives in its own .sheetview-wrap, not .menuwrap, for the same reason: it's
+   a print-style reference sheet, not a navigation screen, and was left out
+   of this pass on purpose. */
+.menuwrap{max-width:min(1100px,94vw);margin:0 auto;padding:60px 24px 80px;
+  min-height:100vh;color:#2a1c0c;font-family:'Cormorant Garamond',serif;
+  background:linear-gradient(180deg,#f0d9a0 0%,#e8b866 45%,#c8863a 78%,#7a4e1e 100%);
+  background-attachment:fixed}
 /* Standalone Character Sheet view — wider than .menuwrap so the dense
    print-style grid (originally built for the 960px builder column) doesn't
-   get squeezed; body.menu-mode already zeroes out #main's own max-width. */
+   get squeezed; body.menu-mode already zeroes out #main's own max-width.
+   Deliberately NOT part of the golden-hour restyle above (see comment) —
+   keeps the plain parchment page background it already had. */
 .sheetview-wrap{max-width:1040px;margin:0 auto;padding:26px 32px 60px}
 .menuhead{text-align:center;margin-bottom:36px}
-.menuhead h1{font-size:34px;color:var(--bronze-hi)}
-.menuhead p{color:var(--dim);margin-top:6px;font-family:var(--mono);font-size:13px}
+.menuhead h1{font-family:'Cinzel',serif;font-weight:700;font-size:32px;letter-spacing:.04em;text-transform:uppercase;color:#241706}
+.menuhead p{color:rgba(42,28,12,.72);margin-top:8px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px}
 .menutiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.menusec{grid-column:1/-1;margin-top:16px;font-family:var(--serif);text-transform:uppercase;letter-spacing:.08em;color:var(--dim);font-size:12px;border-bottom:1px solid var(--line-soft);padding-bottom:4px}
+.menusec{grid-column:1/-1;margin-top:16px;font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.1em;color:rgba(42,28,12,.6);font-size:11px;border-bottom:1px solid rgba(107,74,30,.3);padding-bottom:6px}
 .menusec:first-child{margin-top:0}
-.menutile{display:flex;flex-direction:column;gap:4px;text-align:left;background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--shadow-sm)}
-.menutile:hover:not(:disabled){border-color:var(--bronze);box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.menutile{display:flex;flex-direction:column;gap:4px;text-align:left;background:rgba(255,248,232,.72);border:1.5px solid rgba(107,74,30,.5);border-radius:4px;padding:16px 18px;box-shadow:0 6px 18px -10px rgba(42,20,6,.3)}
+.menutile:hover:not(:disabled){border-color:#6b4a1e;box-shadow:0 10px 26px -10px rgba(42,20,6,.4);transform:translateY(-2px)}
 .menutile:disabled{opacity:.5;cursor:not-allowed}
-.menutile .mt-title{font-family:var(--serif);text-transform:uppercase;letter-spacing:.04em;font-size:16px;color:var(--bronze-hi)}
-.menutile .mt-desc{font-size:12px;color:var(--dim)}
+.menutile .mt-title{font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.03em;font-size:15px;color:#241706}
+.menutile .mt-desc{font-size:12.5px;color:rgba(42,28,12,.72);font-family:'Cormorant Garamond',serif}
+/* Shared Character-Builder component classes, reskinned only when nested
+   inside .menuwrap (Campaign detail's form/lists, Party Board's back/
+   refresh buttons) — see the comment above this section. */
+.menuwrap h1,.menuwrap h2,.menuwrap h3{font-family:'Cinzel',serif;letter-spacing:.04em;color:#241706}
+.menuwrap .card{background:rgba(255,248,232,.72);border:1.5px solid rgba(107,74,30,.5);border-radius:4px;box-shadow:0 6px 18px -10px rgba(42,20,6,.3);max-width:760px;margin-inline:auto}
+.menuwrap .card h3{font-size:16px}
+.menuwrap .field label{color:rgba(42,28,12,.65)}
+.menuwrap input,.menuwrap select,.menuwrap textarea{background:rgba(255,248,232,.6);border:1px solid rgba(107,74,30,.45);color:#2a1c0c}
+.menuwrap input:hover,.menuwrap select:hover,.menuwrap textarea:hover{border-color:#6b4a1e}
+.menuwrap input:focus,.menuwrap select:focus,.menuwrap textarea:focus{border-color:#6b4a1e;box-shadow:0 0 0 3px rgba(107,74,30,.25)}
+.menuwrap .note{color:rgba(42,28,12,.68);font-family:'Cormorant Garamond',serif;font-size:14.5px}
+.menuwrap .skrow{border-bottom-color:rgba(107,74,30,.3)}
+.menuwrap .nav{border:1.5px solid rgba(107,74,30,.55);border-radius:2px;padding:10px 20px;font-family:'Cinzel',serif;letter-spacing:.08em;font-size:12.5px;font-weight:600;text-transform:uppercase;background:rgba(255,245,220,.35);color:#2a1c0c}
+.menuwrap .nav:hover:not(:disabled){border-color:#6b4a1e;background:rgba(255,245,220,.55)}
+.menuwrap .nav.primary{background:rgba(255,245,220,.5);border-color:#6b4a1e;color:#241706;font-weight:700}
+.menuwrap .nav.primary:hover:not(:disabled){background:rgba(255,245,220,.7);border-color:#4a3012}
+.menuwrap .chip{border:1.5px solid rgba(107,74,30,.55);background:rgba(255,245,220,.35);color:#2a1c0c;font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:2px}
+.menuwrap .chip:hover{border-color:#6b4a1e;background:rgba(255,245,220,.55);color:#241706}
+.menuwrap .chip.on{background:#3c5936;border-color:#3c5936;color:#fff}
+.menuwrap .chip.on:hover{background:#3c5936}
 
 /* ---- play mode: "THE SPECIMEN" — stark black-and-cream brutalist
    newspaper/anatomical-plate skin, restyled from the approved

@@ -673,7 +673,7 @@ function campaignDetailHTML(){
     h+=fld("Name",'<input type="text" value="'+esc(camp.name)+'" onchange="APP.campField(\'name\',this.value)">')
      +fld("Notes",'<textarea rows="4" onchange="APP.campField(\'notes\',this.value)">'+esc(camp.notes||"")+'</textarea>');
   }else{
-    h+='<p style="font-family:var(--serif);font-size:20px;color:var(--bronze-hi);text-transform:uppercase">'+esc(camp.name)+'</p>'
+    h+='<p style="font-family:\'Cinzel\',serif;font-size:19px;letter-spacing:.03em;color:#8a5a12;text-transform:uppercase">'+esc(camp.name)+'</p>'
      +(camp.notes?'<p class="note" style="margin-top:6px">'+esc(camp.notes)+'</p>':"");
   }
   h+='<p class="note" style="margin-top:8px">Created '+new Date(camp.created_at).toLocaleString()
