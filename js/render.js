@@ -1,6 +1,16 @@
 "use strict";
 /* ================= RENDER: FRAME ================= */
 function render(){
+  renderInner();
+  // Keep the URL in sync with whatever was just drawn -- see router.js. Runs
+  // after renderInner(), not before: several branches below call
+  // saveAutosave() as their last step, and in local/signed-out mode that's
+  // what actually assigns S._libId (see saveCurrentToLibraryLocal in
+  // cloud.js) the first time a brand-new character is touched. Syncing
+  // before that would still be reading the old, not-yet-identified state.
+  syncRouteFromState();
+}
+function renderInner(){
   // The Difficulty Grade popover lives outside #main (see toggleGradePop),
   // so it isn't wiped by the innerHTML rebuild below — close it explicitly
   // on every render so it can never go stale against whatever just changed

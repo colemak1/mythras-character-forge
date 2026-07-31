@@ -784,5 +784,4 @@ function buildMD(){
   if(S.concept.notes)md+="## Notes\n\n"+S.concept.notes+"\n";
   return md;
 }
-initAuth();
-render();
+boot();
