@@ -788,7 +788,12 @@ function boardCardHTML(row){
   const v=charVitals(state);
   const initials=((row.name||"?").match(/\b[A-Za-z]/g)||["?"]).slice(0,2).join("").toUpperCase();
   const meta=[row.culture,row.career].filter(Boolean).join(" · ")||"—";
-  const barColor=v.worst==="major"?"var(--pm-bad)":v.worst==="serious"?"var(--pm-warn)":v.worst==="minor"?"var(--pm-minor)":"var(--pm-good)";
+  // Literal colours, not var(--pm-*) -- those custom properties are only
+  // ever defined under body.play-mode (see styles.css), so referencing them
+  // here on the Party Board (body.menu-mode) resolved to nothing and left
+  // this bar's coloured fill invisible. Matches .pb-condchip's own palette
+  // for the same condition so the chip and the bar always agree.
+  const barColor=v.worst==="major"?"#a52d20":v.worst==="serious"?"#8a5a12":v.worst==="minor"?"#8a5a12":"#3c5936";
   const isMine=cloudActive()?row.owner_id===(AUTH_USER&&AUTH_USER.id):true;
   const fatTag=v.fatigue&&v.fatigue!=="Fresh"?'<span class="pb-fat">'+esc(v.fatigue)+'</span>':"";
   return '<div class="pb-card '+v.worst+'" onclick="APP.boardOpenChar(\''+row.id+'\',\''+jsq(row.owner_name||"")+'\')" role="button" tabindex="0">'
