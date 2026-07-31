@@ -28,11 +28,131 @@ function hpLocsFinal(CON,SIZ){const base=hpLocs(CON,SIZ);if(!hasAdv("hp"))return
 // Grade math: shift one step toward Very Easy (used for the Pulp/Paragon
 // Endurance/Stealth/Willpower "one Grade easier" Advantages), then apply the
 // resulting grade's multiplier to a base skill %.
-function shiftGradeEasier(g){const i=GRADE_ORDER.indexOf(g);return GRADE_ORDER[Math.max(1,i-1)];}
-function gradeForEntry(key){
-  const advKey=GRADE_EASIER_ADV[key];
-  return (advKey&&hasAdv(advKey))?shiftGradeEasier(ACTIVE_GRADE):ACTIVE_GRADE;
+function shiftGradeEasier(g,n){const i=GRADE_ORDER.indexOf(g);return GRADE_ORDER[Math.max(1,i-(n==null?1:n))];}
+// Shifting harder can reach Hopeless (the step past Herculean) but never
+// wraps round to Automatic, mirroring shiftGradeEasier's floor at Very Easy.
+function shiftGradeHarder(g,n){const i=GRADE_ORDER.indexOf(g);return GRADE_ORDER[Math.min(GRADE_ORDER.length-1,i+(n==null?1:n))];}
+const gradeHardness=g=>GRADE_ORDER.indexOf(g);
+
+/* ---- Conditions that make rolls harder: Encumbrance and Fatigue ----
+   Both of these were computed and displayed but never reached an actual roll.
+   They meet here, in the one function every % readout and every roll button
+   already goes through (gradeForEntry -> gradedPct).
+
+   Encumbrance (core rulebook, Encumbrance section): over STR x2 "Burdened"
+   makes skills that use STR or DEX — Combat Styles included — one Grade
+   harder; over STR x3 "Overloaded" makes them two Grades harder. It is a
+   relative SHIFT, and it only touches STR/DEX skills.
+
+   Fatigue (Fatigue Levels table, see FATIGUE_TABLE): each level states an
+   absolute Skill Grade for the character's rolls, and it applies to every
+   skill, not just physical ones. So it behaves as a FLOOR on difficulty
+   rather than another shift — a Winded character rolls at Hard, and a
+   Winded *and* Burdened character rolls their Combat Style at Formidable
+   (Standard shifted one harder by the load = Hard, which the Winded floor
+   then does not worsen... but Overloaded's two steps take it to Formidable,
+   which is worse than the floor and therefore wins). Taking the harsher of
+   the two rather than summing them keeps the table's own wording intact
+   instead of inventing a stacking rule the book does not state. */
+function skillUsesStrDex(key){
+  const e=entryMap()[key];
+  const f=(e&&e.formula)||"";
+  return /STR|DEX/.test(f);
 }
+// 0 / 1 / 2 Grade steps from carried weight, or null when characteristics
+// aren't set yet. Only STR/DEX-based skills are affected.
+function encGradeSteps(key){
+  const st=encStatus();
+  if(!st||st.level==="ok")return 0;
+  if(!skillUsesStrDex(key))return 0;
+  return st.steps||0;
+}
+function fatigueRow(){return FATIGUE_MAP[(S.play&&S.play.fatigue)||"Fresh"]||FATIGUE_MAP.Fresh;}
+function fatigueGradeFloor(){const r=fatigueRow();return r&&r.grade?r.grade:null;}
+function gradeForEntry(key){
+  let g=ACTIVE_GRADE;
+  const advKey=GRADE_EASIER_ADV[key];
+  if(advKey&&hasAdv(advKey))g=shiftGradeEasier(g);
+  const steps=encGradeSteps(key);
+  if(steps>0)g=shiftGradeHarder(g,steps);
+  const floor=fatigueGradeFloor();
+  if(floor&&gradeHardness(floor)>gradeHardness(g))g=floor;
+  return g;
+}
+// Everything currently making a given skill's Grade differ from the Active
+// Grade, as short labelled reasons — so the sheet and Play Mode can say WHY a
+// number moved instead of silently showing a different percentage.
+function gradeReasons(key){
+  const out=[];
+  const advKey=GRADE_EASIER_ADV[key];
+  if(advKey&&hasAdv(advKey))out.push({dir:"easier",text:ARCHETYPES[S.archetype].label+" Advantage: one Grade easier"});
+  const steps=encGradeSteps(key);
+  if(steps>0){const st=encStatus();
+    out.push({dir:"harder",text:st.label+": "+steps+" Grade"+(steps>1?"s":"")+" harder (STR/DEX skill)"});}
+  const floor=fatigueGradeFloor();
+  if(floor)out.push({dir:"harder",text:"Fatigue ("+fatigueRow().name+"): rolls are "+GRADE_LABEL[floor]});
+  return out;
+}
+
+/* ---- Movement Rate ----
+   Was the hardcoded string "6m" in five separate places. Base comes from the
+   species template (core rulebook: "Movement is not calculated from
+   Characteristics but is a default value which differs from species to
+   species. The base Movement Rate for humans is 6 metres"), then Fatigue and
+   Encumbrance modify it. */
+function moveBase(){const sp=speciesDef();return sp&&sp.move!=null?sp.move:6;}
+function moveRate(){
+  let m=moveBase();const notes=[];let immobile=false,noSprint=false,walkOnly=false;
+  const f=fatigueRow();
+  if(f&&f.move!=null){
+    if(f.move==="immobile"||f.move==="none"){immobile=true;m=0;notes.push("Fatigue ("+f.name+"): immobile");}
+    else if(f.move==="half"){m=m/2;notes.push("Fatigue ("+f.name+"): Movement halved");}
+    else {m=m+f.move;notes.push("Fatigue ("+f.name+"): "+f.move+"m");}
+  }
+  const st=encStatus();
+  if(st&&st.level!=="ok"){
+    if(st.level==="warn"){m=m-2;noSprint=true;notes.push("Burdened: -2m, no sprinting");}
+    else {m=m/2;walkOnly=true;notes.push("Overloaded: Movement halved, walk only");}
+  }
+  m=Math.max(0,Math.round(m*2)/2);
+  return {base:moveBase(),m,notes,immobile,noSprint,walkOnly};
+}
+// Gaits (core rulebook; restated in the Imperative SRD's Community Errata):
+// Run is Move x3, Sprint is Move x5. Sprinting is unavailable while Burdened
+// and everything above a walk is unavailable while Overloaded.
+function moveGaits(){
+  const r=moveRate();
+  return {walk:r.m,run:r.walkOnly?null:r.m*3,sprint:(r.walkOnly||r.noSprint)?null:r.m*5,info:r};
+}
+const moveText=()=>{const r=moveRate();return r.immobile?"0m":(r.m+"m");};
+
+/* ---- Height & Weight ----
+   Was a one-line reminder on the Concept step ("read them off the Height &
+   Weight table from SIZ and frame") that never computed anything. Now derived
+   from SIZ, species and build per the model documented at HW_ANCHORS, and
+   overridable — S.concept.heightM / weightKg, when set, win outright, so
+   anyone working from the printed table can just type the book's figure in
+   and have it flow to the sheet and the export like any other value. */
+function heightWeight(){
+  if(!charsReady())return null;
+  const spKey=(speciesDef()&&speciesDef().key)||"human";
+  const a=HW_ANCHORS[spKey]||HW_ANCHORS.human;
+  const avgSiz=(SPECIES_MAP[spKey]||SPECIES_MAP.human).avg.SIZ;
+  const build=BUILD_FACTORS[S.concept.frame]||1;
+  const siz=S.chars.SIZ;
+  const derivedM=a.heightAt*Math.pow(siz/avgSiz,1/3)*build;
+  const derivedKg=a.massPerSiz*siz;
+  const om=parseFloat(S.concept.heightM), ok=parseFloat(S.concept.weightKg);
+  const m=Number.isFinite(om)&&om>0?om:derivedM;
+  const kg=Number.isFinite(ok)&&ok>0?ok:derivedKg;
+  return {m:Math.round(m*100)/100,kg:Math.round(kg),
+    derivedM:Math.round(derivedM*100)/100,derivedKg:Math.round(derivedKg),
+    overriddenH:m!==derivedM,overriddenW:kg!==derivedKg,
+    ft:mToFtIn(m),lb:Math.round(kg*2.2046),species:spKey,build:S.concept.frame||"Medium"};
+}
+function mToFtIn(m){const totalIn=Math.round(m*39.3701);return Math.floor(totalIn/12)+"&prime;"+(totalIn%12)+"&Prime;";}
+function heightWeightText(){const hw=heightWeight();
+  return hw?(hw.m.toFixed(2)+"m / "+hw.kg+"kg"):"—";}
 function gradedPct(key,basePct){
   const g=gradeForEntry(key);const mult=GRADE_MULT[g];
   return mult==null?{pct:null,grade:g}:{pct:Math.max(0,Math.round(basePct*mult)),grade:g};
@@ -67,8 +187,34 @@ let S=freshState();
 function freshState(){return {
  step:0, overrides:{},
  creationMode:"full", archetype:"ordinary", archAdvantages:[],
+ // null = plain human on the core rulebook's own dice. A key into SPECIES_MAP
+ // swaps in that species' characteristic dice, bounds, Movement Rate and
+ // traits (see the Species step).
+ species:null,
+ // Age band (Experience Table). `years` is the rolled or typed age; `events`
+ // holds generated Life Events and whether each has been applied.
+ age:{category:"adult",years:null,events:[]},
+ // Magic the character actually knows. `folk` holds Folk Magic spell names
+ // (plus a speciality for Find (X)); `known` holds entries for the four
+ // traditions whose content lives in the player's own rulebook. `devotional`
+ // is the Magic Points a theist has invested in their Devotional Pool, and
+ // `devotionalUsed` how much of it is currently spent.
+ magic:{folk:[],known:[],devotional:0,devotionalUsed:0},
  campaignId:null, _libId:null, _libLastSaved:null,
- concept:{name:"",player:"",gender:"",age:"",frame:"Medium",handed:"Right",homeland:"",notes:""},
+ // True whenever this character's data came from somewhere not yet
+ // verified as belonging to whoever is currently signed in -- the autosave
+ // slot, a "local" My-Characters entry, or a JSON import. false here (a
+ // brand-new, blank character, or one already explicitly saved under the
+ // current account) is what allows the debounced background cloud push to
+ // silently create a row for it; see saveToLibraryUnified()/
+ // scheduleCloudPush() in cloud.js. Never rely on a loaded blob's own
+ // stored value for this — every place that loads a character sets it
+ // explicitly based on where the data actually came from, not on
+ // whatever it happened to be the last time this exact JSON was saved.
+ _pendingClaim:false,
+ // heightM / weightKg are optional hand-typed overrides — blank means "use
+ // the figure derived from SIZ, species and build" (see heightWeight()).
+ concept:{name:"",player:"",gender:"",age:"",frame:"Medium",handed:"Right",homeland:"",notes:"",heightM:"",weightKg:""},
  chars:{STR:null,CON:null,SIZ:null,DEX:null,INT:null,POW:null,CHA:null},
  charMode:"roll", poolA:[], poolB:[], assignA:{}, assignB:{}, fixedAP:0,
  culture:null, cultChoice:[], cultProf:[null,null,null], cultProfSpec:["","",""],
@@ -113,11 +259,26 @@ function freshState(){return {
  xp:{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[]}
 };}
 function normalizeState(){
+  // Defensive coercion only -- every actual load path (openCharToPlay/Edit/
+  // Sheet, fromMenuContinue, import) sets the real value explicitly right
+  // after calling this, based on where the data came from. This just keeps
+  // the field boolean if something ever skips that.
+  S._pendingClaim=!!S._pendingClaim;
   S.alloc=S.alloc||{};S.alloc.culture=S.alloc.culture||{};S.alloc.career=S.alloc.career||{};
   S.gearWeapons=S.gearWeapons||[];
   S.armor=S.armor||{};ARMOR_LOCATIONS.forEach(l=>{if(!S.armor[l])S.armor[l]="None";});
   S.alloc.bonus=S.alloc.bonus||{};S.alloc.quick=S.alloc.quick||{};
   S.creationMode=S.creationMode||"full";S.archetype=S.archetype||"ordinary";
+  if(S.species===undefined)S.species=null;
+  S.age=S.age||{category:"adult",years:null,events:[]};
+  if(!AGE_MAP[S.age.category])S.age.category="adult";
+  S.age.events=S.age.events||[];
+  S.magic=S.magic||{folk:[],known:[],devotional:0,devotionalUsed:0};
+  S.magic.folk=S.magic.folk||[];S.magic.known=S.magic.known||[];
+  if(typeof S.magic.devotional!=="number")S.magic.devotional=0;
+  if(typeof S.magic.devotionalUsed!=="number")S.magic.devotionalUsed=0;
+  if(S.concept&&S.concept.heightM===undefined)S.concept.heightM="";
+  if(S.concept&&S.concept.weightKg===undefined)S.concept.weightKg="";
   S.archAdvantages=S.archAdvantages||[];
   S.qProf=S.qProf||[null,null,null];S.qProfSpec=S.qProfSpec||["","",""];
   S.qStyleOn=!!S.qStyleOn;S.qStyleName=S.qStyleName||"";
@@ -142,16 +303,35 @@ function normalizeState(){
 // a one-line change in each array to bring back.
 function currentSteps(){
   return S.creationMode==="quick"
-   ?["Concept","Characteristics","Attributes","Quick Skills","Passions","Money & Gear","Finish"]
-   :["Concept","Characteristics","Attributes","Culture","Career","Bonus Skills","Passions","Money & Gear","Finish"];
+   ?["Concept","Characteristics","Attributes","Quick Skills","Passions","Magic","Money & Gear","Finish"]
+   :["Concept","Characteristics","Attributes","Culture","Career","Bonus Skills","Passions","Magic","Money & Gear","Finish"];
 }
 function stepFns(){
   return S.creationMode==="quick"
-   ?[stepConcept,stepChars,stepAttrs,stepQuickSkills,stepPassions,stepMoney,stepFinish]
-   :[stepConcept,stepChars,stepAttrs,stepCulture,stepCareer,stepBonus,stepPassions,stepMoney,stepFinish];
+   ?[stepConcept,stepChars,stepAttrs,stepQuickSkills,stepPassions,stepMagic,stepMoney,stepFinish]
+   :[stepConcept,stepChars,stepAttrs,stepCulture,stepCareer,stepBonus,stepPassions,stepMagic,stepMoney,stepFinish];
 }
-function bonusPool(){return 150+(ARCHETYPES[S.archetype].bonusExtra||0);}
-function bonusCap(){return ARCHETYPES[S.archetype].bonusCap||15;}
+function ageBand(){return AGE_MAP[(S.age&&S.age.category)||"adult"]||AGE_MAP.adult;}
+// Bonus Skill Points now come from the Experience Table's age band rather than
+// a hardcoded 150/15. Adult is 150/+15, which is exactly what was hardcoded,
+// so nothing changes for a default character.
+//
+// Composing age with the Pulp/Paragon tiers: the tier's extra points are
+// additive (the Companion describes them as an addition to the character's
+// bonus points). For the cap, note that ARCHETYPES.ordinary.bonusCap is 15
+// only because 15 *is* the Adult row of the Experience Table — it is not a
+// tier permission, so an Ordinary character takes their age band's cap
+// unmodified (a Young Ordinary character is capped at +10, not +15). Pulp and
+// Paragon do genuinely raise the ceiling, and since both numbers are
+// permissions rather than penalties the more generous one wins: a Senior Pulp
+// Hero gets 250+50 points at a cap of 25 (the age band's, above Pulp's 20),
+// while a Paragon of any age keeps 40.
+function bonusPool(){return ageBand().bonus+(ARCHETYPES[S.archetype].bonusExtra||0);}
+function bonusCap(){
+  const age=ageBand().cap;
+  if(S.archetype==="ordinary")return age;
+  return Math.max(age,ARCHETYPES[S.archetype].bonusCap||age);
+}
 function phaseLimits(ph){
   if(ph==="bonus")return {pool:bonusPool(),max:bonusCap()};
   return {pool:100,max:15};
@@ -162,6 +342,52 @@ const $=s=>document.querySelector(s);
 const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const jsq=k=>esc(String(k).replace(/\\/g,"\\\\").replace(/'/g,"\\'"));
 const charsReady=()=>CHARS.every(c=>Number.isFinite(S.chars[c])&&S.chars[c]>0);
+// The character's species template, or null for "plain human core rules".
+// Species templates (characteristic dice, Movement Rate, traits) land here in
+// a later pass; charBounds() below is already written against it so the range
+// check has exactly one definition to widen when they arrive.
+function speciesDef(){return (typeof SPECIES_MAP!=="undefined"&&S.species)?(SPECIES_MAP[S.species]||null):null;}
+// Legal range for one characteristic. For humans this is the core rulebook's
+// own 3-18 (8-18 for INT/SIZ) — the range the 3d6 / 2d6+6 dice can actually
+// produce. Species templates carry their own dice, so their bounds are the
+// min/max of those dice instead (see SPECIES in data.js). Deliberately a
+// single shared helper rather than an inline literal, because the bound is
+// needed in four separate places (Points Build stepper, Manual entry input
+// attributes, validate(), and the species blurb) and they were previously
+// allowed to disagree — which is exactly how the Roll/Manual validation hole
+// in the audit happened.
+function charBounds(c){
+  const sp=speciesDef();
+  const b=sp&&sp.bounds&&sp.bounds[c];
+  if(b)return {min:b[0],max:b[1]};
+  return {min:(c==="INT"||c==="SIZ")?8:3,max:18};
+}
+const charMin=c=>charBounds(c).min, charMax=c=>charBounds(c).max;
+// Where the bound the player just tripped over comes from, so the validation
+// message explains itself instead of just asserting a number.
+function charRangeSource(){const sp=speciesDef();return sp?" for a "+sp.label:" for a human";}
+// Roll one characteristic off a species' own dice. Pulp Hero and Paragon use
+// the book's "Dice Roll, High" treatment — roll one extra die of the same
+// size and discard the lowest — generalised here to whatever die the species
+// happens to use (2d4+4, 1d3+2, 3d6+3 and so on), rather than assuming d6.
+function rollSpeciesChar(sp,c){
+  const d=parseDice(sp.dice[c]);if(!d)return null;
+  const extra=S.archetype==="ordinary"?0:1;
+  const rolls=Array.from({length:d.n+extra},()=>1+Math.floor(Math.random()*d.sides)).sort((a,b)=>a-b);
+  return rolls.slice(extra).reduce((a,b)=>a+b,0)+d.mod;
+}
+// True when characteristics come from one shared pool per dice group (plain
+// human core rules: 3d6 x5 and 2d6+6 x2, freely assignable) rather than a
+// separate die per characteristic.
+function usesHumanPools(){const sp=speciesDef();return !sp||sp.key==="human";}
+// Points Build pool. Humans use the core rulebook's flat pool per character
+// tier (80 / 90 / 100); species templates override this with their own.
+function pbPool(){
+  const sp=speciesDef();
+  const base=ARCHETYPES[S.archetype].pbPoints;
+  if(!sp||sp.pbPool==null)return base;
+  return sp.pbPool+(base-ARCHETYPES.ordinary.pbPoints);
+}
 function baseOf(f,c){c=c||S.chars;if(!charsReady())return 0;
   if(f.endsWith("x2"))return 2*c[f.slice(0,-2)];
   return f.split("+").reduce((a,k)=>a+c[k],0);}
@@ -257,6 +483,57 @@ function finalPct(key){const em=entryMap();const e=em[key];if(!e)return 0;
 // that reads a skill's % — Play Mode list, Actions tab, Sheet, roll log —
 // reflects Experience improvement with no extra plumbing.
 function xpBonus(key){return (S.xp&&S.xp.bonus&&S.xp.bonus[key])||0;}
+/* ================= MAGIC =================
+   Which magic skills the character actually acquired, so the Magic step can
+   show the traditions they can use and flag the ones they can't yet. Magic
+   skills arrive as Professional Skills through Culture, Career, hobby or the
+   Quick Skills pool, so this reads them straight off acquiredProfs(). */
+function magicSkillKey(name){
+  const p=acquiredProfs().find(x=>x.name===name);
+  return p?p.key:null;
+}
+function hasMagicSkill(name){return !!magicSkillKey(name);}
+function magicSkillPct(name){const k=magicSkillKey(name);return k?finalPct(k):null;}
+// A tradition is "available" once the character has its casting skill. Theism
+// also wants Devotion (to build the pool) and Sorcery wants Shaping (to
+// manipulate), so those are reported as supporting skills rather than
+// blockers — a theist with Exhort but no Devotion can still invoke, they just
+// have no pool to invoke from.
+const TRADITION_SUPPORT={theism:["Devotion"],sorcery:["Shaping"],animism:["Trance"],mysticism:["Meditation"]};
+function traditionStatus(t){
+  const cast=hasMagicSkill(t.castSkill);
+  const support=(TRADITION_SUPPORT[t.key]||[]).map(n=>({name:n,has:hasMagicSkill(n),pct:magicSkillPct(n)}));
+  return {available:cast,castPct:magicSkillPct(t.castSkill),support};
+}
+function knownOf(traditionKey){return S.magic.known.filter(m=>m.tradition===traditionKey);}
+// Sorcery cost model (see MAGIC_TRADITIONS.sorcery.summary and §5 of
+// docs/mythras-rules-reference.md): one Magic Point for the spell itself plus
+// one per shaping category applied, and one casting turn each the same way.
+function sorceryCost(entry){
+  const n=(entry.shapings||[]).length;
+  return {mp:1+n,turns:1+n,shapings:n};
+}
+function magicEntryCost(entry){
+  if(entry.tradition==="sorcery")return sorceryCost(entry).mp;
+  return Math.max(0,parseInt(entry.cost,10)||0);
+}
+// Devotional Pool: Magic Points a theist has offered to their deity. It is a
+// separate reserve from general Magic Points, which is why it is tracked on
+// its own rather than coming out of playCurMagic().
+function devotionalMax(){return Math.max(0,parseInt(S.magic.devotional,10)||0);}
+function devotionalCur(){return Math.max(0,devotionalMax()-(S.magic.devotionalUsed||0));}
+// Every piece of magic the character knows, in one list, for the sheet and
+// Play Mode's Magic tab.
+function allMagic(){
+  const out=S.magic.folk.map(f=>({tradition:"folk",name:f.name,spec:f.spec||"",
+    spell:FOLK_MAGIC_MAP[f.name]||null}));
+  return out.concat(S.magic.known.map(m=>Object.assign({},m)));
+}
+function magicLabel(m){
+  if(m.tradition==="folk")return m.spec?m.name.replace(/\(X\)/,"("+m.spec+")"):m.name;
+  return m.name||"(unnamed)";
+}
+
 /* ================= VALIDATION ================= */
 function cultureReqKeys(){
   if(!S.culture)return [];
@@ -282,12 +559,18 @@ function validate(step){
   switch(name){
    case "Characteristics":{
     if(!charsReady())return bad("Assign a value to all seven characteristics.");
+    // Range check runs in EVERY entry mode. It used to sit inside the
+    // charMode==="pb" branch below, which meant Roll mode and Manual entry
+    // skipped it entirely and a hand-typed STR of 21 validated clean. The
+    // bound itself is whatever the character's species can actually roll
+    // (charBounds), so this stays correct once non-human templates exist.
+    for(const c of CHARS){const {min,max}=charBounds(c);
+      if(S.chars[c]<min||S.chars[c]>max)
+        return bad(c+" must be between "+min+" and "+max+charRangeSource()+" — "+c+" is currently "+S.chars[c]+".");}
     if(S.charMode==="pb"){
-      const pool=ARCHETYPES[S.archetype].pbPoints;
+      const pool=pbPool();
       const total=CHARS.reduce((a,c)=>a+S.chars[c],0);
       if(total!==pool)return bad("Points build must use all "+pool+" points ("+total+" spent).");
-      for(const c of CHARS){const mn=(c==="INT"||c==="SIZ")?8:3;
-        if(S.chars[c]<mn||S.chars[c]>18)return bad(c+" must be between "+mn+" and 18.");}
     }
     return ok();}
    case "Attributes":{
@@ -362,6 +645,15 @@ function validate(step){
     for(const key of keys){if(aGet("bonus",key)>cap)return bad("No skill may receive more than "+cap+" bonus points.");}
     const s=aSum("bonus");
     if(s!==pool)return bad("Spend exactly "+pool+" bonus points ("+s+" spent).");
+    return ok();}
+   case "Money & Gear":{
+    // Every other pool (Culture/Career/Bonus) hard-blocks overspending; this
+    // one only ever turned the remaining total red and let you proceed
+    // anyway. gearCostTotal() (weapons + armour, auto-summed) plus whatever
+    // manual "additional" spending is entered must not exceed starting money
+    // -- going under budget is fine, only going over blocks the step.
+    const total=moneyTotal(),spent=gearCostTotal()+(S.money.spent||0);
+    if(spent>total)return bad("You've spent "+spent+" sp but only have "+total+" sp — reduce gear or additional spending by "+(spent-total)+" sp.");
     return ok();}
    default:return ok();
   }

@@ -42,7 +42,8 @@ function renderLedger(){
       +led("Magic Points",c.POW)
       +led("Healing Rate",healRate(c.CON))
       +led("Exp. Modifier",(xpMod(c.CHA)>=0?"+":"")+xpMod(c.CHA))
-      +led("Movement","6m");
+      +led("Movement",moveText()+(moveRate().m!==moveBase()?' <span class="note">(base '+moveBase()+'m)</span>':""))
+      +led("Height / Weight",heightWeightText());
     h+='<h3>Hit Points</h3><table class="ledhp">'+hpLocsFinal(c.CON,c.SIZ).map(([l,v])=>'<tr><td>'+l+'</td><td>'+v+'</td></tr>').join("")+'</table>';
   }
   const stepName=currentSteps()[S.step];
@@ -50,7 +51,7 @@ function renderLedger(){
     "Bonus Skills":["bonus",bonusPool(),"Bonus"],"Quick Skills":["quick",100,"Quick"]};
   const p=poolByName[stepName];
   if(p){const sp=aSum(p[0]);h+='<h3>'+p[2]+' points</h3>'+led("Spent",sp+" / "+p[1])+led("Remaining",p[1]-sp);}
-  if(S.money.dice.length){const t=moneyTotal();h+='<h3>Silver</h3>'+led("Starting",t+" sp")+led("Remaining",(t-(S.money.spent||0))+" sp");}
+  if(S.money.dice.length){h+='<h3>Silver</h3>'+led("Starting",moneyTotal()+" sp")+led("Remaining",moneyRemaining()+" sp");}
   if(stepName==="Money & Gear"){h+='<h3>Gear</h3>'+led("Total ENC",gearEncTotal())+led("Unencumbered limit",encLimit()??"—");}
   $("#ledger").innerHTML=h;
 }
@@ -106,27 +107,149 @@ function archetypeCard(){
   }
   return h+'</div>';
 }
+// Species picker. Non-human characters were previously impossible — there was
+// no path at all, and Movement was the literal string "6m". Picking a species
+// swaps in its characteristic dice (which drives the roller, the Points Build
+// bounds and the pool), its Movement Rate, and its racial traits.
+function speciesCard(){
+  const cur=S.species||"human";
+  let h='<div class="card"><h3>Species</h3>'
+   +'<p class="note">Non-human characters are built exactly like humans &mdash; same Culture, Career, skills and Attributes &mdash; but roll their own characteristic dice and have their own Movement Rate. Everything downstream adapts automatically.</p>'
+   +'<div class="pickgrid pickgrid-sm">'+SPECIES.map(sp=>
+     '<button class="pick '+(cur===sp.key?"on":"")+'" onclick="APP.pickSpecies(\''+sp.key+'\')">'
+     +'<span class="pn">'+esc(sp.label)+'</span>'
+     +'<div class="pd">'+esc(sp.blurb)+'</div>'
+     +'<div class="pmeta">Move '+sp.move+'m &middot; '+esc(sp.lifespan)+'</div></button>').join("")+'</div>';
+  const sp=SPECIES_MAP[cur];
+  h+='<table class="rt speciestbl"><tr><th>&nbsp;</th>'+CHARS.map(c=>'<th class="num">'+c+'</th>').join("")+'</tr>'
+   +'<tr><td>Dice</td>'+CHARS.map(c=>'<td class="num">'+esc(sp.dice[c])+'</td>').join("")+'</tr>'
+   +'<tr><td>Range</td>'+CHARS.map(c=>'<td class="num">'+sp.bounds[c][0]+'&ndash;'+sp.bounds[c][1]+'</td>').join("")+'</tr>'
+   +'<tr><td>Average</td>'+CHARS.map(c=>'<td class="num">'+sp.avg[c]+'</td>').join("")+'</tr></table>';
+  h+='<p class="note">Points Build pool for a '+esc(sp.label)+(S.archetype!=="ordinary"?" "+ARCHETYPES[S.archetype].label:"")+': <b>'+pbPool()+'</b> points.'
+   +(sp.key==="human"
+     ?' (Core rulebook&rsquo;s flat pool.)'
+     :' (Racial averages '+sp.avgTotal+' + 6, per the species rules'+(S.archetype!=="ordinary"?", + this tier&rsquo;s increment":"")+'.)')+'</p>';
+  if(sp.traits.length){
+    h+='<div class="field"><label>Racial traits</label>'
+     +sp.traits.map(([n,d])=>'<p class="note"><b>'+esc(n)+'</b> &mdash; '+esc(d)+'</p>').join("")
+     +'<p class="note"><i>These are situational Grade shifts and narrative rules, so &mdash; exactly as with the Pulp/Paragon Grade-easier Advantages &mdash; they are recorded on your sheet rather than folded into a percentage. Characteristic dice and Movement Rate are applied automatically.</i></p></div>';
+  }
+  h+='<p class="note rulesrc">Characteristic dice, Movement Rates and racial traits from the <a href="https://cfi-srd.mythras.net/" target="_blank" rel="noopener">Classic Fantasy Imperative SRD</a> (The Design Mechanism, ORC License). Its Human row matches core Mythras exactly.</p>';
+  return h+'</div>';
+}
+// Age band (Experience Table). Age used to be a free-text box with no
+// mechanical effect at all; the band now sets the Bonus Skill Points pool and
+// the per-skill cap on the Bonus Skills step.
+function ageCard(){
+  const cur=ageBand();
+  const sp=speciesDef();
+  const tierExtra=ARCHETYPES[S.archetype].bonusExtra||0;
+  let h='<div class="card"><h3>Age</h3>'
+   +'<p class="note">Age is not flavour in Mythras: it sets how many Bonus Skill Points the character has lived long enough to accumulate, and how much of that may go into any single skill.</p>'
+   +'<table class="rt agetbl"><tr><th>Category</th><th>Age</th><th class="num">Bonus Skill Points</th><th class="num">Max per skill</th><th></th></tr>'
+   +AGE_CATEGORIES.map(a=>'<tr class="'+(cur.key===a.key?"agesel":"")+'">'
+     +'<td><b>'+esc(a.label)+'</b><div class="note">'+esc(a.blurb)+'</div></td>'
+     +'<td class="num">'+esc(a.dice)+'</td><td class="num">'+a.bonus+(tierExtra?' <span class="note">+'+tierExtra+'</span>':"")+'</td>'
+     +'<td class="num">+'+a.cap+'</td>'
+     +'<td><button class="chip '+(cur.key===a.key?"on":"")+'" onclick="APP.pickAge(\''+a.key+'\')">'+(cur.key===a.key?"selected":"choose")+'</button></td></tr>').join("")
+   +'</table>';
+  h+='<div class="grid2" style="margin-top:10px">'
+   +fld("Exact age (years)",'<div style="display:flex;gap:6px"><input type="number" min="0" value="'+esc(S.age.years==null?"":S.age.years)+'" placeholder="'+esc(cur.dice)+'" onchange="APP.ageYears(this.value)">'
+     +'<button class="chip actionchip" onclick="APP.rollAge()">roll '+esc(cur.dice)+'</button></div>')
+   +fld("Resulting Bonus Skill Points",'<div class="agetotal">'+bonusPool()+' points &middot; max '+bonusCap()+' per skill</div>')
+   +'</div>';
+  if(sp)h+='<p class="note">A '+esc(sp.label)+' lives '+esc(sp.lifespan)+', so these bands describe a very different span of life than they do for a human &mdash; the categories are about accumulated experience, not calendar years. Adjust the exact age to suit.</p>';
+  h+='<p class="note rulesrc">Experience Table from the <a href="https://srd.mythras.net/" target="_blank" rel="noopener">Mythras Imperative SRD</a> (The Design Mechanism, ORC License), which reproduces the core rulebook&rsquo;s table. The book notes the age bonus &ldquo;should be treated as approximate, as campaigns advance at different rates&rdquo;. The table gives no characteristic modifiers for age, so none are applied.</p>';
+  h+=lifeEventsBlock();
+  return h+'</div>';
+}
+// Life Events. Openly labelled house content — see the LIFE_EVENTS comment in
+// data.js for why this isn't presented as a book table.
+function lifeEventsBlock(){
+  let h='<div class="lifeev"><h4>Life events <span class="housetag">house content</span></h4>'
+   +'<p class="note">The rules tie age to the Experience Table above and stop there &mdash; there is no background-events table in the core book, and this app has no verified transcription of one from a supplement. So this is a backstory prompt generator, not a rules table. Every event that carries a mechanical consequence applies it through something the app already models properly: a Passion at its correct starting value, an inventory item, or a change to starting silver.</p>'
+   +'<p><button class="chip actionchip" onclick="APP.rollLifeEvents()">'+(S.age.events.length?"reroll events":"roll life events")+'</button>'
+   +(S.age.events.length?' <button class="chip" onclick="APP.clearLifeEvents()">clear</button>':"")+'</p>';
+  if(!S.age.events.length)return h+'</div>';
+  h+=S.age.events.map((ev,i)=>{
+    const f=ev.effect;
+    let fx="";
+    if(f&&f.type==="passion")fx="Adds the Passion &ldquo;"+esc(f.name)+"&rdquo;";
+    else if(f&&f.type==="item")fx="Adds &ldquo;"+esc(f.name)+"&rdquo; (ENC "+(f.enc||0)+") to your inventory";
+    else if(f&&f.type==="silver")fx=(f.pct>0?"+":"")+f.pct+"% to your starting silver";
+    else fx="Background colour only &mdash; no mechanical effect";
+    return '<div class="lifeevrow"><div class="t">'+esc(ev.t)+'</div>'
+     +'<div class="fx">'+fx+'</div>'
+     +'<div class="a">'+(f&&f.type!=="note"
+        ?(ev.applied?'<span class="applied">&#10003; applied</span>':'<button class="chip" onclick="APP.applyLifeEvent('+i+')">apply</button>')
+        :"")
+      +' <button class="chip" onclick="APP.delLifeEvent('+i+')" aria-label="remove event">&times;</button></div></div>';
+  }).join("");
+  return h+'</div>';
+}
+// Height & Weight, computed rather than the text reminder that used to sit
+// here. Both figures are overridable — the point of the override boxes is
+// that anyone with the printed Height & Weight table can enter its exact
+// value and have it flow to the sheet and export like any other field.
+function heightWeightCard(){
+  const c=S.concept;
+  const hw=heightWeight();
+  let h='<div class="card"><h3>Height &amp; Weight</h3>';
+  if(!hw){
+    h+='<p class="note">Set characteristics first &mdash; height and weight are derived from SIZ, your species and your body frame. You can also type them in by hand once SIZ is known.</p>';
+    return h+'</div>';
+  }
+  const sp=speciesDef();
+  h+='<div class="hwreadout">'
+   +'<div class="hwbig"><span class="hwv">'+hw.m.toFixed(2)+'<small>m</small></span><span class="hwsub">'+hw.ft+'</span><span class="hwlbl">Height</span></div>'
+   +'<div class="hwbig"><span class="hwv">'+hw.kg+'<small>kg</small></span><span class="hwsub">'+hw.lb+' lb</span><span class="hwlbl">Weight</span></div>'
+   +'<div class="hwfrom">from SIZ <b>'+S.chars.SIZ+'</b> &middot; '+esc(sp?sp.label:"Human")+' &middot; '+esc(hw.build)+' frame'
+   +(hw.overriddenH||hw.overriddenW?'<br><span class="note">Hand-entered value in use (derived would be '+hw.derivedM.toFixed(2)+'m / '+hw.derivedKg+'kg).</span>':"")
+   +'</div></div>';
+  h+='<div class="grid2">'
+   +fld("Height override (metres)",'<input type="number" step="0.01" min="0" value="'+esc(c.heightM)+'" placeholder="'+hw.derivedM.toFixed(2)+'" onchange="APP.set(\'concept\',\'heightM\',this.value)">')
+   +fld("Weight override (kg)",'<input type="number" step="1" min="0" value="'+esc(c.weightKg)+'" placeholder="'+hw.derivedKg+'" onchange="APP.set(\'concept\',\'weightKg\',this.value)">')
+   +'</div>';
+  h+='<p class="note">Body frame (set above) redistributes the same SIZ: a Lithe build is taller and leaner for its mass, Heavy is shorter and denser. Weight tracks SIZ directly, since SIZ <i>is</i> the character&rsquo;s mass.</p>';
+  h+='<p class="note rulesrc">The core rulebook&rsquo;s Height &amp; Weight table (p.9) is not reproduced here &mdash; this app has no verified transcription of it, and inventing one would be worse than saying so. These are computed from a stated model (see <code>HW_ANCHORS</code> in data.js) pinned to the standard adult figure for an average-SIZ human and, for each demi-human, to the height its own species description gives. If you have the table in front of you, type its value into the override boxes and it wins outright.</p>';
+  return h+'</div>';
+}
 function stepConcept(){
   const c=S.concept;
   return head("Concept","Who is this character? Keep it simple for now &mdash; the numbers come next, and everything here is free text.")
-  +modeCard()+archetypeCard()
+  +modeCard()+archetypeCard()+speciesCard()
   +'<div class="card"><div class="grid2">'
   +fld("Character name",tIn("concept","name",c.name,"e.g. Anathaym"))
   +fld("Player",tIn("concept","player",c.player,""))
   +fld("Gender",tIn("concept","gender",c.gender,""))
-  +fld("Age",tIn("concept","age",c.age,"adult by default"))
+  +fld("Age",'<div class="agemini">'+esc(S.age.years==null?"—":String(S.age.years))+' <span class="note">'+esc(ageBand().label)+' &mdash; set in the Age card below</span></div>')
   +fld("Homeland",tIn("concept","homeland",c.homeland,"e.g. a region of Sit'ota"))
   +fld("Handedness",'<select onchange="APP.set(\'concept\',\'handed\',this.value)">'+["Right","Left","Ambidextrous"].map(o=>'<option '+(c.handed===o?"selected":"")+'>'+o+'</option>').join("")+'</select>')
   +fld("Body frame",'<select onchange="APP.set(\'concept\',\'frame\',this.value)">'+["Lithe","Medium","Heavy"].map(o=>'<option '+(c.frame===o?"selected":"")+'>'+o+'</option>').join("")+'</select>')
   +'</div>'+fld("Concept notes",'<textarea rows="3" onchange="APP.set(\'concept\',\'notes\',this.value)">'+esc(c.notes)+'</textarea>')
-  +'<p class="note">Height and weight are read off the Height &amp; Weight table (core p.9) from SIZ and frame once characteristics are set &mdash; record them in the notes if you wish.</p></div>';
+  +'</div>'+ageCard()+heightWeightCard();
 }
 
 function stepChars(){
   let body="";
   const tier=ARCHETYPES[S.archetype];
   const isOrd=S.archetype==="ordinary";
-  if(S.charMode==="roll"){
+  if(S.charMode==="roll"&&!usesHumanPools()){
+    // Each characteristic has its own die for a non-human species, so there
+    // is no shared pool to allocate between — roll them individually, with a
+    // re-roll on each in case the GM allows it.
+    const sp=speciesDef();
+    body='<div class="card"><h3>Roll '+esc(sp.label)+' characteristics</h3>'
+    +'<div class="rulequote">&ldquo;Demi-human characters are created in almost the same way as humans. Characteristics are determined using the Characteristic dice for that species, which will result in different Characteristic values and ranges, but otherwise all the other elements: Attributes, Culture, Class and so on, are factored as normal.&rdquo;</div>'
+    +(isOrd?"":'<p class="note">'+esc(ARCHETYPES[S.archetype].label)+': one extra die is rolled for each characteristic and the lowest discarded.</p>')
+    +'<p><button class="chip actionchip" onclick="APP.rollSpeciesAll()" style="font-size:13.5px">Roll all seven</button> '
+    +'<button class="nav" onclick="APP.speciesAverages()" style="border:1px solid var(--line);border-radius:5px;padding:6px 14px">Use racial averages</button></p>'
+    +'<div class="charrow" style="margin-top:12px">'
+    +CHARS.map(c=>'<div class="charbox"><div class="cname">'+c+'</div><div class="cval">'+(S.chars[c]??"&mdash;")+'</div>'
+      +'<div class="cctl"><button class="chip actionchip" onclick="APP.rollSpeciesOne(\''+c+'\')">roll '+esc(sp.dice[c])+'</button></div>'
+      +'<div class="crange">'+sp.bounds[c][0]+'&ndash;'+sp.bounds[c][1]+'</div></div>').join("")
+    +'</div></div>';
+  }else if(S.charMode==="roll"){
     const quote=isOrd
      ?"&ldquo;3d6 for STR, CON, DEX, POW and CHA. 2d6+6 for INT and SIZ. Allocate results to fit the concept. Results may be allocated in the order listed, or distributed as the Games Master and players agree.&rdquo;"
      :tier.quote;
@@ -145,7 +268,7 @@ function stepChars(){
     }).join("")+'</div></div>';
   }else if(S.charMode==="pb"){
     const total=CHARS.reduce((a,c)=>a+(S.chars[c]||0),0);
-    const pool=tier.pbPoints;
+    const pool=pbPool();
     body='<div class="card"><h3>Points build &mdash; '+pool+' points</h3>'
     +'<div class="rulequote">'+(isOrd
       ?"&ldquo;Alternatively distribute 80 points amongst the characteristics. Minimum 3 (8 for INT and SIZ), maximum 18. Use all the points.&rdquo;"
@@ -153,18 +276,32 @@ function stepChars(){
     +'<div class="pool"><span>Points</span><span class="pv '+(total===pool?"ok":(total>pool?"bad":""))+'">'+total+' / '+pool+'</span>'
      +'<div class="pbar"><i style="width:'+Math.min(100,total/pool*100)+'%"></i></div><span class="note">'+(pool-total)+' left</span></div>'
     +'<div class="charrow" style="margin-top:10px">'+CHARS.map(c=>{
-      const mn=(c==="INT"||c==="SIZ")?8:3;
+      const {min:mn,max:mx}=charBounds(c);
       return '<div class="charbox"><div class="cname">'+c+'</div><div class="cval">'+(S.chars[c]??"&mdash;")+'</div><div class="cctl"><button aria-label="decrease '+c+'" onclick="APP.pb(\''+c+'\',-1)">&minus;</button><button aria-label="increase '+c+'" onclick="APP.pb(\''+c+'\',1)">+</button></div>'
-       +'<div class="cctl" style="margin-top:3px"><button class="chip actionchip" onclick="APP.pbSet(\''+c+'\','+mn+')">min</button><button class="chip actionchip" onclick="APP.pbSet(\''+c+'\',18)">max</button></div></div>';
+       +'<div class="cctl" style="margin-top:3px"><button class="chip actionchip" onclick="APP.pbSet(\''+c+'\','+mn+')">min</button><button class="chip actionchip" onclick="APP.pbSet(\''+c+'\','+mx+')">max</button></div>'
+       +'<div class="crange">'+mn+'&ndash;'+mx+'</div></div>';
     }).join("")+'</div></div>';
   }else{
-    body='<div class="card"><h3>Manual entry</h3><p class="note">For pre-rolled or GM-supplied values. Human range is normally 3&ndash;18 (INT and SIZ 8&ndash;18).</p>'
-    +'<div class="charrow" style="margin-top:10px">'+CHARS.map(c=>'<div class="charbox"><div class="cname">'+c+'</div><input type="number" min="1" max="21" value="'+(S.chars[c]??"")+'" onchange="APP.manual(\''+c+'\',this.value)"></div>').join("")+'</div></div>';
+    // Manual entry is still free-typing (it exists for pre-rolled/GM-supplied
+    // numbers), but the input now advertises the same bound validate() will
+    // actually enforce, instead of the old arbitrary max="21" that matched no
+    // rule at all and let 19-21 through unchallenged.
+    const rangeTxt=speciesDef()
+      ? esc(speciesDef().label)+" range: "+CHARS.map(c=>c+" "+charMin(c)+"&ndash;"+charMax(c)).join(", ")
+      : "Human range is 3&ndash;18 (INT and SIZ 8&ndash;18).";
+    body='<div class="card"><h3>Manual entry</h3><p class="note">For pre-rolled or GM-supplied values. '+rangeTxt+' Out-of-range values are blocked on the Next button &mdash; use the GM override below if the character is deliberately superhuman.</p>'
+    +'<div class="charrow" style="margin-top:10px">'+CHARS.map(c=>{
+      const {min:mn,max:mx}=charBounds(c);const v=S.chars[c];
+      const oob=Number.isFinite(v)&&(v<mn||v>mx);
+      return '<div class="charbox'+(oob?" oob":"")+'"><div class="cname">'+c+'</div><input type="number" min="'+mn+'" max="'+mx+'" value="'+(v??"")+'" onchange="APP.manual(\''+c+'\',this.value)"><div class="crange">'+mn+'&ndash;'+mx+'</div></div>';
+    }).join("")+'</div></div>';
   }
+  const spNow=speciesDef();
   return head("Characteristics","Seven characteristics drive everything downstream &mdash; attributes, skill bases and hit points all cascade from these.")
+  +(spNow&&spNow.key!=="human"?'<p class="note">Rolling as a <b>'+esc(spNow.label)+'</b> (Movement '+spNow.move+'m). Change species on the Concept step.</p>':"")
   +'<div class="modeseg">'
   +'<button class="'+(S.charMode==="roll"?"on":"")+'" onclick="APP.mode(\'roll\')">Roll dice</button>'
-  +'<button class="'+(S.charMode==="pb"?"on":"")+'" onclick="APP.mode(\'pb\')">Points build ('+tier.pbPoints+')</button>'
+  +'<button class="'+(S.charMode==="pb"?"on":"")+'" onclick="APP.mode(\'pb\')">Points build ('+pbPool()+')</button>'
   +'<button class="'+(S.charMode==="manual"?"on":"")+'" onclick="APP.mode(\'manual\')">Manual</button>'
   +'</div>'+body;
 }
@@ -192,7 +329,11 @@ function stepAttrs(){
    ["Initiative Bonus",initBonus(c.INT,c.DEX),"average of DEX &amp; INT, fractions up"],
    ["Luck Points",luckFinal(c.POW)+(hasAdv("luck")?" (Advantage +"+(S.archetype==="paragon"?2:1)+")":""),"POW "+c.POW],
    ["Magic Points",c.POW,"equal to POW"],
-   ["Movement Rate","6m","default for humans"]];
+   ["Height",(()=>{const hw=heightWeight();return hw.m.toFixed(2)+"m";})(),(()=>{const hw=heightWeight();return hw.ft+" &mdash; SIZ "+c.SIZ+", "+esc(hw.build)+" frame";})()],
+   ["Weight",(()=>{const hw=heightWeight();return hw.kg+"kg";})(),(()=>{const hw=heightWeight();return hw.lb+" lb &mdash; SIZ "+c.SIZ;})()],
+   ["Movement Rate",moveText(),(()=>{const r=moveRate();const sp=speciesDef();
+     const src=sp?sp.label+" base "+r.base+"m":"human base 6m";
+     return r.notes.length?src+" &mdash; "+r.notes.join("; "):src;})()]];
   return head("Attributes","Nothing to enter here &mdash; every attribute is computed from the verified core tables and updates live if you revisit characteristics.")
   +'<div class="card"><div class="attrgrid">'+rows.map(r=>'<div class="attr"><div class="an">'+r[0]+'</div><div class="av">'+r[1]+'</div><div class="ah">'+r[2]+'</div></div>').join("")+'</div>'
   +'<p class="note" style="margin-top:10px"><b>Optional rule &mdash; Fixed Action Points:</b> &ldquo;all characters can start the game with either 2 or 3 Action Points, regardless of INT and DEX.&rdquo; '
@@ -245,6 +386,56 @@ function allocTable(phase,rows,pool,min,max,quote,groupOrder){
 function rowFor(key,required){const em=entryMap();const e=em[key];if(!e)return null;
   return {key,label:e.label,base:e.base,required:!!required,plus40:(key==="std:Customs"||key==="std:Native Tongue")};}
 
+/* ---- Combat Style builder (weapons + traits) ----
+   Lives inline on whichever step actually names the style (Culture,
+   Career, Quick Skills) -- it used to sit alone on the Finish step, after
+   everything else was already decided, which read as a bolted-on chore
+   instead of part of building the character. A linked Career style (see
+   stepCareer) points back at the Culture step's editor instead of
+   duplicating it -- there's only ever one real set of weapons/traits per
+   style, however many places reference it.
+
+   CSTYLE_UI is transient browser-session UI state (search text, which
+   trait categories are expanded) -- not part of the character, never
+   saved/exported, keyed by the same style key as S.styleDefs. */
+let CSTYLE_UI={};
+function cstyleUI(key){return CSTYLE_UI[key]||(CSTYLE_UI[key]={search:"",openCats:{}});}
+function cstyleDomId(key){return "cstyleSearch_"+key.replace(/[^a-zA-Z0-9]/g,"_");}
+// One trait as a full-width row: name, one-line summary and category tag
+// all visible before it's ever selected (not hover/selection-gated the way
+// the old chip+tooltip version was), full text still on hover for anyone
+// who wants the complete rules text without reading the summary.
+function cstyleTraitRow(styleKey,t,on){
+  const summary=t.desc.length>100?t.desc.slice(0,97)+"…":t.desc;
+  return '<button class="cstyle-traitrow'+(on?" on":"")+'" onclick="APP.toggleStyleTrait(\''+jsq(styleKey)+'\',\''+jsq(t.name)+'\')" title="'+esc(t.desc)+'">'
+   +'<span class="cstyle-traitcheck">'+(on?"&#10003;":"")+'</span>'
+   +'<span class="cstyle-traitbody"><b>'+esc(t.name)+'</b><span class="cstyle-traitcat">'+esc(t.category)+' &middot; '+esc(t.source)+'</span>'
+   +'<span class="cstyle-traitsum">'+esc(summary)+'</span></span></button>';
+}
+function combatStyleBuilderHTML(s){
+  const d=styleDef(s.key),ui=cstyleUI(s.key),domId=cstyleDomId(s.key);
+  let h='<div class="field"><label>Weapons ('+d.weapons.length+' selected)</label><div class="choicechips">'
+   +WEAPONS.map(w=>'<button class="chip '+(d.weapons.includes(w.name)?"on":"")+'" onclick="APP.toggleStyleWeapon(\''+jsq(s.key)+'\',\''+jsq(w.name)+'\')" title="'
+     +esc(w.group+" · "+w.dmg+" · Size "+w.size+" · Reach "+w.reach+(w.traits?" · "+w.traits:""))+'">'+esc(w.name)+'</button>').join("")+'</div></div>';
+  h+='<div class="field"><label>Combat Style Traits ('+d.traits.length+' selected)</label>';
+  if(d.traits.length)h+='<div class="cstyle-selectedbar">'+d.traits.map(tn=>'<button class="chip on sm" onclick="APP.toggleStyleTrait(\''+jsq(s.key)+'\',\''+jsq(tn)+'\')" title="Click to remove">'+esc(tn)+' &times;</button>').join("")+'</div>';
+  h+='<input type="text" class="cstyle-search" id="'+domId+'" placeholder="Search '+COMBAT_TRAITS.length+' Combat Style Traits by name or effect&hellip;" value="'+esc(ui.search)+'" oninput="APP.cstyleSearch(\''+jsq(s.key)+'\',this.value)">';
+  const q=ui.search.trim().toLowerCase();
+  if(q){
+    const matches=COMBAT_TRAITS.filter(t=>t.name.toLowerCase().includes(q)||t.desc.toLowerCase().includes(q));
+    h+='<div class="cstyle-searchresults">'+(matches.length?matches.map(t=>cstyleTraitRow(s.key,t,d.traits.includes(t.name))).join(""):'<p class="note" style="padding:8px">No traits match &ldquo;'+esc(ui.search)+'&rdquo;.</p>')+'</div>';
+  }else{
+    h+=COMBAT_TRAIT_CATEGORIES.map(cat=>{
+      const items=COMBAT_TRAITS.filter(t=>t.category===cat);
+      const selCount=items.filter(t=>d.traits.includes(t.name)).length;
+      return '<details class="cstyle-traitgroup" '+(ui.openCats[cat]?"open":"")+' ontoggle="APP.cstyleToggleCat(\''+jsq(s.key)+'\',\''+jsq(cat)+'\',this.open)">'
+       +'<summary><span>'+esc(cat)+'</span><span class="cstyle-catcount">'+items.length+(selCount?' &middot; '+selCount+' selected':'')+'</span></summary>'
+       +'<div class="cstyle-traitlist">'+items.map(t=>cstyleTraitRow(s.key,t,d.traits.includes(t.name))).join("")+'</div></details>';
+    }).join("");
+  }
+  h+='</div>';
+  return h;
+}
 /* ---- step: culture ---- */
 function stepCulture(){
   let h=head("Culture","Your cultural background: +40% to Customs and Native Tongue, three Professional Skills, an optional Combat Style, and 100 points across all of them.");
@@ -257,8 +448,10 @@ function stepCulture(){
   h+='<div class="card"><h3>Three professional skills</h3>'+profPickers("cult",c.prof,3)+'</div>';
   h+='<div class="card"><h3>Combat style <span class="note">(optional &mdash; &ldquo;If desired, select a single Combat Style&rdquo;)</span></h3>'
    +'<p><label><input type="checkbox" '+(S.cultStyleOn?"checked":"")+' onchange="APP.cultStyle(this.checked)"> Take a cultural combat style</label></p>'
-   +(S.cultStyleOn?fld("Style name (weapons &amp; traits per your GM)",'<input type="text" value="'+esc(S.cultStyleName)+'" placeholder="e.g. '+esc(c.styles.split(",")[0].trim())+'" onchange="APP.set2(\'cultStyleName\',this.value)">'):"")
-   +'<p class="note">Examples for '+S.culture+': '+esc(c.styles)+'</p></div>';
+   +(S.cultStyleOn?fld("Style name",'<input type="text" value="'+esc(S.cultStyleName)+'" placeholder="e.g. '+esc(c.styles.split(",")[0].trim())+'" onchange="APP.set2(\'cultStyleName\',this.value)">'):"")
+   +'<p class="note">Examples for '+S.culture+': '+esc(c.styles)+'</p>'
+   +(S.cultStyleOn?combatStyleBuilderHTML({key:"style:cult",name:S.cultStyleName||"Cultural Combat Style"}):"")
+   +'</div>';
   const rows=cultureReqKeys().map(k=>rowFor(k,true)).filter(Boolean);
   h+='<div class="card"><h3>Allocate 100 cultural points</h3>'
    +allocTable("culture",rows,100,5,15,"&ldquo;Distribute 100 points amongst the listed Standard Skills, the chosen Professional Skills, and the Combat Style (if selected)&hellip; each skill must receive a minimum of 5% and cannot receive more than 15%.&rdquo;")+'</div>';
@@ -330,6 +523,8 @@ function stepCareer(){
        +'</select> '
        +(cs.mode==="new"?'<input type="text" value="'+esc(cs.name)+'" placeholder="style name" onchange="APP.carStyleName('+i+',this.value)">':'<span class="note">'+esc(S.cultStyleName||"Cultural Combat Style")+'</span>')
        +'</div>';
+      if(cs.mode==="link")h+='<p class="note">Uses <b>'+esc(S.cultStyleName||"Cultural Combat Style")+'</b>&rsquo;s weapons &amp; traits &mdash; edit those back on the Culture step.</p>';
+      else if((cs.name||"").trim())h+=combatStyleBuilderHTML({key:"style:k"+i,name:cs.name});
     });
     h+='<p class="note">&ldquo;Choosing a Style or Professional Skill previously gained via cultural background simply allows the character to further apply some of their career skill points.&rdquo;</p></div>';
   }
@@ -346,9 +541,13 @@ function stepBonus(){
   const pool=bonusPool(),cap=bonusCap(),tierExtra=ARCHETYPES[S.archetype].bonusExtra||0;
   let h=head("Bonus Skill Points","Free development: "+pool+" points across anything the character knows, no more than "+cap+"% to any one skill &mdash; plus one extra Professional Skill as a hobby.");
   const hobOff=Object.keys(PROF).sort();
+  const band=ageBand();
   h+='<div class="card"><h3>Hobby skill</h3>'
    +'<div class="rulequote">&ldquo;Default characters have 150 points with a limit of assigning no more than 15 points per skill. Choose one additional Professional skill as a hobby speciality.&rdquo;'
    +(tierExtra?' &mdash; '+ARCHETYPES[S.archetype].label+' adds +'+tierExtra+' points and raises the per-skill cap to '+cap+'% (Mythras Companion, pp.54&ndash;55).':"")+'</div>'
+   +'<p class="note">Your pool comes from the Experience Table&rsquo;s age band: <b>'+esc(band.label)+'</b> gives <b>'+band.bonus+'</b> points at a cap of <b>+'+band.cap+'</b> per skill'
+   +(tierExtra?', plus '+ARCHETYPES[S.archetype].label+'&rsquo;s +'+tierExtra+' (the more generous of the two caps applies, so '+cap+' here)':"")
+   +'. Change it on the Concept step.</p>'
    +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
    +'<select onchange="APP.hobby(this.value)"><option value="">&mdash; choose a hobby skill &mdash;</option>'
    +hobOff.map(n=>'<option '+(S.hobby===n?"selected":"")+'>'+n+'</option>').join("")+'</select>'
@@ -366,7 +565,8 @@ function stepQuickSkills(){
   h+='<div class="card"><h3>Three professional skills</h3>'+profPickers("quick",offers,3)+'</div>';
   h+='<div class="card"><h3>Combat style <span class="note">(optional)</span></h3>'
    +'<p><label><input type="checkbox" '+(S.qStyleOn?"checked":"")+' onchange="APP.qStyle(this.checked)"> Take a Combat Style</label></p>'
-   +(S.qStyleOn?fld("Style name (weapons &amp; traits per your GM)",'<input type="text" value="'+esc(S.qStyleName)+'" placeholder="e.g. Pit Fighter" onchange="APP.set2(\'qStyleName\',this.value)">'):"")
+   +(S.qStyleOn?fld("Style name",'<input type="text" value="'+esc(S.qStyleName)+'" placeholder="e.g. Pit Fighter" onchange="APP.set2(\'qStyleName\',this.value)">'):"")
+   +(S.qStyleOn?combatStyleBuilderHTML({key:"style:quick",name:S.qStyleName||"Combat Style"}):"")
    +'</div>';
   h+='<p class="note">Customs and Native Tongue gain <b>+40%</b> each, irrespective of method, applied automatically below.</p>';
   const rows=quickKeys().map(k=>rowFor(k,true)).filter(Boolean);
@@ -375,6 +575,95 @@ function stepQuickSkills(){
   return h;
 }
 
+/* ---- step: magic ----
+   The app has always had the magic skills but nothing to spend them on. This
+   step is where a caster picks up actual magic. Folk Magic ships complete;
+   the other four traditions ship as working mechanics with the content
+   entered from the player's own rulebook (see the MAGIC block in data.js for
+   why, at length). */
+function stepMagic(){
+  let h=head("Magic","Optional. If your character has a magic skill, this is where they get magic to use it on &mdash; picked here, then castable from Play Mode with the right skill rolled and the right cost deducted.");
+  const anyMagic=MAGIC_TRADITIONS.some(t=>traditionStatus(t).available);
+  if(!anyMagic){
+    h+='<div class="card"><h3>No magic skills yet</h3>'
+     +'<p class="note">This character hasn&rsquo;t picked up any of the casting skills, so there&rsquo;s nothing to cast with. Magic skills are Professional Skills &mdash; take one on the Culture, Career, Bonus Skills or Quick Skills step and this page fills in:</p>'
+     +'<table class="rt"><tr><th>Tradition</th><th>Casting skill</th><th>Also wants</th></tr>'
+     +MAGIC_TRADITIONS.map(t=>'<tr><td>'+esc(t.label)+'</td><td>'+esc(t.castSkill)+'</td><td class="note">'
+       +esc((TRADITION_SUPPORT[t.key]||[]).join(", ")||"—")+'</td></tr>').join("")+'</table>'
+     +'<p class="note">Plenty of characters have no magic at all &mdash; skipping this step is a perfectly normal choice.</p></div>';
+    return h;
+  }
+  MAGIC_TRADITIONS.forEach(t=>{
+    const st=traditionStatus(t);
+    if(!st.available)return;
+    h+='<div class="card"><h3>'+esc(t.label)+' <span class="note">'+esc(t.castSkill)+' '+st.castPct+'%</span></h3>'
+     +'<p class="note">'+esc(t.summary)+'</p>'
+     +(st.support.length?'<p class="note">'+st.support.map(s=>esc(s.name)+": "+(s.has?s.pct+"%":"<i>not taken</i>")).join(" &middot; ")+'</p>':"")
+     +'<div class="rulequote">'+esc(t.costRule)+'</div>';
+    h+=t.key==="folk"?folkMagicPicker():knownMagicEditor(t);
+    h+='</div>';
+  });
+  // Traditions whose skill the character lacks, listed compactly so the page
+  // doesn't pretend the other four don't exist.
+  const missing=MAGIC_TRADITIONS.filter(t=>!traditionStatus(t).available);
+  if(missing.length){
+    h+='<div class="card"><h3>Other traditions</h3><p class="note">Not available to this character &mdash; each needs its casting skill taken as a Professional Skill first: '
+     +missing.map(t=>esc(t.label)+" ("+esc(t.castSkill)+")").join(" &middot; ")+'.</p></div>';
+  }
+  return h;
+}
+function folkMagicPicker(){
+  const known=S.magic.folk;
+  let h='<p><button class="chip actionchip" onclick="APP.rollStartingFolk()">roll 1d4+1 starting spells</button>'
+   +(known.length?' <button class="chip" onclick="APP.clearFolk()">clear all</button>':"")
+   +' <span class="note">Magicians begin with 1d4+1 spells; more cost 3 Experience Rolls and a week&rsquo;s study each.</span></p>';
+  h+='<div class="field"><label>Spells known ('+known.length+' of '+FOLK_MAGIC.length+')</label><div class="choicechips">'
+   +FOLK_MAGIC.map(s=>'<button class="chip '+(known.some(k=>k.name===s.n)?"on":"")+'" title="'
+     +esc(s.t.join(", ")+" — "+s.d.slice(0,220)+(s.d.length>220?"…":""))+'" onclick="APP.toggleFolkSpell(\''+jsq(s.n)+'\')">'+esc(s.n)+'</button>').join("")
+   +'</div></div>';
+  if(known.length){
+    h+='<div class="spelllist">'+known.map(k=>{
+      const s=FOLK_MAGIC_MAP[k.name];if(!s)return "";
+      return '<div class="spellrow"><div class="sh"><b>'+esc(magicLabel({tradition:"folk",name:k.name,spec:k.spec}))+'</b>'
+       +s.t.map(tr=>'<span class="spelltrait" title="'+esc(MAGIC_TRAITS[tr]||"")+'">'+esc(tr)+'</span>').join("")
+       +'<button class="chip" onclick="APP.toggleFolkSpell(\''+jsq(k.name)+'\')" aria-label="forget spell">&times;</button></div>'
+       +(s.spec?'<div class="sspec"><input type="text" value="'+esc(k.spec)+'" placeholder="speciality: '+esc(s.spec)+'" onchange="APP.folkSpec(\''+jsq(k.name)+'\',this.value)"></div>':"")
+       +'<div class="sd">'+esc(s.d)+'</div></div>';
+    }).join("")+'</div>';
+  }
+  h+='<p class="note rulesrc">Folk Magic spells, traits and rules text reproduced from the <a href="https://srd.mythras.net/" target="_blank" rel="noopener">Mythras Imperative SRD</a>, published by The Design Mechanism under the ORC License. Based on Mythras Imperative, written by Pete Nash and Lawrence Whitaker, published by The Design Mechanism, Copyright 2023.</p>';
+  return h;
+}
+function knownMagicEditor(t){
+  const rows=S.magic.known.map((m,i)=>({m,i})).filter(x=>x.m.tradition===t.key);
+  let h='<div class="reservednote">'+esc(t.contentNote)+'</div>';
+  if(t.key==="theism"){
+    h+='<div class="grid2">'
+     +fld("Devotional Pool (Magic Points offered up)",'<input type="number" min="0" value="'+devotionalMax()+'" onchange="APP.devotional(this.value)">')
+     +fld("Currently available",'<div class="agetotal">'+devotionalCur()+' / '+devotionalMax()+'</div>')
+     +'</div>';
+  }
+  h+=rows.map(({m,i})=>{
+    let r='<div class="magicrow">'
+     +'<input type="text" class="mname" value="'+esc(m.name)+'" placeholder="'+esc(t.key==="animism"?"spirit name":t.key==="theism"?"miracle name":t.key==="mysticism"?"talent name":"spell name")+'" onchange="APP.magicField('+i+',\'name\',this.value)">';
+    (t.fields||[]).forEach(([f,label])=>{
+      r+='<label class="mnum">'+esc(label)+'<input type="number" min="0" value="'+(m[f]||0)+'" onchange="APP.magicField('+i+',\''+f+'\',this.value)"></label>';
+    });
+    if(t.shaping){
+      const c=sorceryCost(m);
+      r+='<div class="mshaping"><span class="note">Shaping applied:</span>'
+       +t.shaping.map(sn=>'<button class="chip '+((m.shapings||[]).includes(sn)?"on":"")+'" onclick="APP.toggleShaping('+i+',\''+jsq(sn)+'\')">'+esc(sn)+'</button>').join("")
+       +'<span class="mcost">'+c.mp+' MP &middot; '+c.turns+' turn'+(c.turns>1?"s":"")+' to cast</span></div>';
+    }
+    r+='<button class="chip mdel" onclick="APP.delMagic('+i+')" aria-label="remove">&times;</button>'
+     +'<textarea class="mnotes" rows="2" placeholder="effect / notes from your rulebook" onchange="APP.magicField('+i+',\'notes\',this.value)">'+esc(m.notes||"")+'</textarea>'
+     +'</div>';
+    return r;
+  }).join("");
+  const noun=t.key==="animism"?"spirit":t.key==="theism"?"Miracle":t.key==="mysticism"?"Talent":"spell";
+  h+='<p><button class="chip actionchip" onclick="APP.addMagic(\''+t.key+'\')">+ add '+noun+'</button></p>';
+  return h;
+}
 /* ---- step: cult & community ---- */
 function stepCult(){
   let h=head("Cult & Community","Optional: a religious cult, order, or plain community affiliation. Grants access to the skill it teaches plus a starter Passion (added on the next step) — entirely skippable if this character isn't affiliated with anything.");
@@ -411,7 +700,7 @@ function stepPassions(){
      +(t.needs.includes("subjCHA")?' &nbsp;subject CHA <input type="number" value="'+(p.subjCHA||"")+'" onchange="APP.pas('+i+',\'subjCHA\',this.value)">':"")
      +' &nbsp;&rarr; <b style="font-family:var(--mono);color:var(--bronze-hi)">'+passionVal(p)+'%</b></div></div>';
   });
-  h+='<p><button class="chip" onclick="APP.addPas()">+ add passion</button>'
+  h+='<p><button class="chip" onpointerdown="APP.addPas()" onclick="APP.addPas()">+ add passion</button>'
    +(S.culture?' <button class="chip" onclick="APP.pasFromCulture()">use '+S.culture+' suggestions</button>':"")
    +(S.cultMembership.archetype?' <button class="chip" onclick="APP.pasFromCult()">use '+esc(S.cultMembership.name||cultArch().name)+' suggestion</button>':"")+'</p></div>';
   return h;
@@ -432,6 +721,22 @@ function passionVal(p){
 // Effects, ENC, the weapon's own AP/HP, Traits, Milieu and Cost, all now
 // transcribed from the book (see the WEAPONS data-block comment above).
 function weaponsEnc(){return S.gearWeapons.reduce((a,n)=>{const w=WEAPON_MAP[n];return a+(w?w.enc:0);},0);}
+function weaponsCost(){return S.gearWeapons.reduce((a,n)=>{const w=WEAPON_MAP[n];return a+(w?w.cost:0);},0);}
+// Armour Table (p.58) only gives cost as a full 7-location suit total (the
+// middle figure in ARMOR_MATERIALS' "suit" string, e.g. Half Plate's
+// "28/3500/6" = ENC/Cost/Armour Penalty) -- there's no per-location cost
+// column in the book. Divided by 7 and weighted the same way armorEncAt/
+// armorLocWeight already do for ENC, so a "Each Arm"/"Each Leg" pick still
+// counts as the two physical locations it represents.
+function armorCostAt(loc){const m=ARMOR_MAP[S.armor[loc]]||ARMOR_MAP.None;
+  const suitCost=parseFloat((m.suit||"0/0/0").split("/")[1])||0;
+  return suitCost/7;}
+function armorCostTotal(){return ARMOR_LOCATIONS.reduce((a,l)=>a+armorCostAt(l)*armorLocWeight(l),0);}
+// Weapons + armour cost, auto-summed the same way gearEncTotal() already
+// auto-sums ENC -- inventory items have no known price (they're free-text),
+// so those still rely on S.money.spent for whatever the player manually
+// adds on top.
+function gearCostTotal(){return Math.round(weaponsCost()+armorCostTotal());}
 // Worn armour counts at half its packed ENC value while worn; carried
 // (unworn) armour counts full ENC (core rulebook, Encumbrance section,
 // confirmed against page image). "Each Arm"/"Each Leg" are single pickers
@@ -459,13 +764,36 @@ function armourPenaltyToInit(){
 // as Strenuous activity for Fatigue. STR x4 is a hard cap — cannot be
 // carried at all, encumbered or not.
 function encLimit(){return charsReady()?S.chars.STR*2:null;}
+// `steps` is the number of Difficulty Grades this load actually costs a
+// STR/DEX-based skill. It used to exist only inside the message string, which
+// is why the penalty was displayed but never applied — engine.js's
+// encGradeSteps() reads it now and feeds it straight into gradeForEntry().
 function encStatus(){
   if(!charsReady())return null;
   const total=gearEncTotal(),lim=S.chars.STR*2,over=S.chars.STR*3,cap=S.chars.STR*4;
-  if(total<=lim)return {level:"ok",msg:"Within your unencumbered limit."};
-  if(total<=over)return {level:"warn",msg:"Burdened &mdash; over STR&times;2 ("+lim+"): STR/DEX-based skills (including Combat Styles) are one Grade harder, Movement -2m, no sprinting."};
-  if(total<=cap)return {level:"bad",msg:"Overloaded &mdash; over STR&times;3 ("+over+"): STR/DEX-based skills are two Grades harder, Movement halved, walk-only."};
-  return {level:"bad",msg:"Over the STR&times;4 hard cap ("+cap+") &mdash; this much cannot physically be carried, per the book."};
+  if(total<=lim)return {level:"ok",steps:0,label:"Unencumbered",msg:"Within your unencumbered limit."};
+  if(total<=over)return {level:"warn",steps:1,label:"Burdened",msg:"Burdened &mdash; over STR&times;2 ("+lim+"): STR/DEX-based skills (including Combat Styles) are one Grade harder, Movement -2m, no sprinting."};
+  if(total<=cap)return {level:"bad",steps:2,label:"Overloaded",msg:"Overloaded &mdash; over STR&times;3 ("+over+"): STR/DEX-based skills are two Grades harder, Movement halved, walk-only."};
+  return {level:"bad",steps:2,label:"Over the hard cap",msg:"Over the STR&times;4 hard cap ("+cap+") &mdash; this much cannot physically be carried, per the book. Penalties shown are Overloaded&rsquo;s; the book simply does not allow this load at all."};
+}
+// Shows the encumbrance penalty as applied numbers rather than as a sentence
+// describing a penalty that used to never happen: which skills are affected,
+// what Grade they now roll at, and what the load does to Movement.
+function encEffectPanel(){
+  const st=encStatus();if(!st||st.level==="ok")return "";
+  const affected=allEntries().filter(e=>skillUsesStrDex(e.key));
+  const sample=affected.slice(0,6).map(e=>{
+    const g=gradedPct(e.key,finalPct(e.key));
+    return '<tr><td>'+esc(e.label)+'</td><td class="num">'+finalPct(e.key)+'%</td>'
+      +'<td class="num">'+(g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%")+'</td>'
+      +'<td>'+GRADE_LABEL[g.grade]+'</td></tr>';}).join("");
+  const r=moveRate();
+  return '<div class="encfx"><b>Applied now:</b> '+affected.length+' STR/DEX-based skill'+(affected.length===1?"":"s")
+   +' (Combat Styles included) roll at <b>'+GRADE_LABEL[gradeForEntry("std:Athletics")]+'</b>'
+   +' &middot; Movement <b>'+r.m+'m</b>'+(r.noSprint?" (no sprinting)":"")+(r.walkOnly?" (walk only)":"")
+   +'<table class="rt"><tr><th>Skill</th><th class="num">Base</th><th class="num">Encumbered</th><th>Grade</th></tr>'+sample+'</table>'
+   +(affected.length>6?'<p class="note">&hellip;and '+(affected.length-6)+' more &mdash; every STR/DEX skill on the sheet now shows the reduced figure.</p>':"")
+   +'</div>';
 }
 /* ---- step: money & gear ---- */
 function baseMult(){
@@ -474,9 +802,16 @@ function baseMult(){
 }
 function moneyTotal(){const base=S.money.dice.reduce((a,b)=>a+b,0);
   return Math.round(base*baseMult()*(S.money.mod||1));}
+// Total silver spent: auto-summed weapon/armour cost plus whatever's in
+// S.money.spent (manual/inventory spending, and the +/- adjustments life
+// events apply directly to that field). Every "remaining silver" display
+// in the app (ledger, Play Mode, sheet export) should read through this
+// rather than re-deriving it, now that gear cost isn't purely manual.
+function moneySpentTotal(){return gearCostTotal()+(S.money.spent||0);}
+function moneyRemaining(){return moneyTotal()-moneySpentTotal();}
 function stepMoney(){
   const mult=S.creationMode==="quick"?S.money.quickMult:(S.culture?CULTURES[S.culture].money:null);
-  let h=head("Money & Gear","Starting silver comes from culture and social class; gear is whatever you buy with it. Encumbrance is totted up and flagged against your STR&times;2 limit, but not enforced &mdash; nothing here blocks you from carrying more.");
+  let h=head("Money & Gear","Starting silver comes from culture and social class; weapon and armour cost is totalled automatically as you pick gear. Encumbrance is totted up and flagged against your STR&times;2 limit, but not enforced &mdash; nothing here blocks you from carrying more.");
   h+='<div class="card"><h3>Starting money</h3>'
    +'<div class="rulequote">&ldquo;Barbarians: 4d6 &times;50 &middot; Civilised: 4d6 &times;75 &middot; Nomadic: 4d6 &times;25 &middot; Primitive: 4d6 &times;10 silver pieces. Multiply the character&rsquo;s starting money by the Money Modifier to determine the available cash&hellip;&rdquo;</div>'
    +(S.creationMode==="quick"?fld("Money multiplier (no culture in Quick Character &mdash; pick one to match the concept, e.g. 50)",'<input type="number" value="'+mult+'" onchange="APP.mon(\'quickMult\',this.value)">'):"")
@@ -488,9 +823,14 @@ function stepMoney(){
    +'<div class="grid3" style="margin-top:8px">'
    +fld("Social class (free text, overrides the picker above)",'<input type="text" value="'+esc(S.money.socialClass)+'" placeholder="e.g. Freeman" onchange="APP.mon(\'socialClass\',this.value)">')
    +fld("Money modifier (from your social class table)",'<input type="number" step="0.5" value="'+S.money.mod+'" onchange="APP.mon(\'mod\',this.value)">')
-   +fld("Silver spent on gear",'<input type="number" value="'+S.money.spent+'" onchange="APP.mon(\'spent\',this.value)">')
+   +fld("Additional silver spent (inventory, misc.)",'<input type="number" value="'+S.money.spent+'" onchange="APP.mon(\'spent\',this.value)">')
    +'</div>'
-   +(S.money.dice.length?'<p style="margin-top:6px">Starting money: <b style="font-family:var(--mono);color:var(--bronze-hi)">'+moneyTotal()+' sp</b> &nbsp;&middot;&nbsp; remaining: <b style="font-family:var(--mono)">'+(moneyTotal()-(S.money.spent||0))+' sp</b></p>':"")
+   +(()=>{const gc=gearCostTotal(),extra=S.money.spent||0,spent=gc+extra,total=moneyTotal(),remaining=total-spent,over=remaining<0;
+     return (S.money.dice.length?'<p style="margin-top:6px">Starting money: <b style="font-family:var(--mono);color:var(--bronze-hi)">'+total+' sp</b>'
+       +' &nbsp;&middot;&nbsp; weapons &amp; armour: <b style="font-family:var(--mono)">'+gc+' sp</b>'
+       +(extra?' &nbsp;&middot;&nbsp; additional: <b style="font-family:var(--mono)">'+extra+' sp</b>':'')
+       +' &nbsp;&middot;&nbsp; remaining: <b class="'+(over?"warn":"")+'" style="font-family:var(--mono)">'+remaining+' sp</b></p>':'')
+     +(over?'<p class="warn" style="margin-top:4px">Over budget by '+(-remaining)+' sp &mdash; drop some gear or reduce additional spending before this step will pass.</p>':'');})()
    +'<p class="note">Roll picks the class name automatically; use the free-text field if your Games Master gives you a specific title or a different Money Modifier.</p>')
    +'</div>';
   h+='<div class="card"><h3>Weapons</h3><p class="note">One-Handed, Two-Handed, Shield and Ranged tables (Economics &amp; Equipment, pp.63&ndash;66). No weapon has a STR/DEX minimum in Mythras.</p>'
@@ -511,7 +851,7 @@ function stepMoney(){
     +'<td><button class="chip" aria-label="remove item" onclick="APP.invDel('+i+')">&times;</button></td></tr>').join("")
    +'</table><p style="margin-top:8px"><button class="chip" onclick="APP.invAdd()">+ add item</button> &nbsp;<span class="note">Inventory ENC: <b style="font-family:var(--mono)">'+S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.enc||0),0)+'</b> &nbsp;&middot;&nbsp; Total gear ENC (weapons + armour + inventory): <b style="font-family:var(--mono)">'+gearEncTotal()+'</b>'
    +(encLimit()!==null?' &nbsp;&middot;&nbsp; Unencumbered limit (STR&times;2): <b style="font-family:var(--mono)">'+encLimit()+'</b>':"")+'</span>'
-   +(encStatus()&&encStatus().level!=="ok"?'<p class="'+(encStatus().level==="bad"?"warn":"note")+'" style="margin-top:4px">'+encStatus().msg+'</p>':"")+'</p></div>';
+   +(encStatus()&&encStatus().level!=="ok"?'<p class="'+(encStatus().level==="bad"?"warn":"note")+'" style="margin-top:4px">'+encStatus().msg+'</p>'+encEffectPanel():"")+'</p></div>';
   return h;
 }
 /* ---- step: sheet & export ---- */

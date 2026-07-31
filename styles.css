@@ -91,6 +91,73 @@ input[type=number]{-moz-appearance:textfield}
 .rulequote{border-left:3px solid var(--bronze-deep);background:var(--inset);padding:9px 13px;color:var(--dim);font-family:var(--mono);font-size:12px;border-radius:0 var(--r-sm) var(--r-sm) 0;margin:8px 0}
 .note{color:var(--dim);font-size:13px}
 .warn{color:var(--madder-hi);font-size:13px}
+/* Encumbrance / Fatigue: panels that show the penalty as applied numbers,
+   now that both conditions actually move the skill percentages. */
+.encfx{border:1px solid var(--line);border-left:3px solid var(--madder);background:var(--inset);padding:9px 12px;margin-top:8px;border-radius:0 var(--r-sm) var(--r-sm) 0;font-size:13px}
+.encfx table{margin-top:7px}
+.condbox{border:1px solid var(--line);border-left:3px solid var(--madder);background:var(--inset);padding:10px 13px;margin-top:10px;border-radius:0 var(--r-sm) var(--r-sm) 0}
+.condbox h4{margin:0 0 7px;font-family:var(--serif);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--bronze)}
+.condrow{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:3px 0;border-bottom:1px dotted var(--line-soft);font-size:13px}
+.condrow:last-of-type{border-bottom:none}
+.condrow span:last-child{color:var(--dim);text-align:right}
+/* Species picker: denser grid than the culture/career pickers, since there
+   are seven entries each carrying a stat line. */
+.pickgrid-sm{grid-template-columns:repeat(auto-fill,minmax(178px,1fr))}
+.pick .pmeta{font-family:var(--mono);font-size:10.5px;color:var(--bronze);margin-top:5px;letter-spacing:.04em}
+.speciestbl{margin-top:10px;font-family:var(--mono);font-size:12px}
+.speciestbl td:first-child,.speciestbl th:first-child{text-align:left;color:var(--dim)}
+.rulesrc{font-size:11.5px;color:var(--faint);border-top:1px dotted var(--line-soft);padding-top:7px;margin-top:9px}
+.rulesrc a{color:var(--bronze)}
+/* Height & Weight readout — computed from SIZ, species and build. */
+.hwreadout{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap;padding:4px 0 12px}
+.hwbig{display:flex;flex-direction:column;line-height:1.1}
+.hwbig .hwv{font-family:var(--mono);font-size:29px;font-weight:600;color:var(--bronze-hi)}
+.hwbig .hwv small{font-size:15px;color:var(--dim);margin-left:2px}
+.hwbig .hwsub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:2px}
+.hwbig .hwlbl{font-family:var(--serif);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--bronze);margin-top:4px}
+.hwfrom{flex:1;min-width:190px;font-size:12.5px;color:var(--dim)}
+/* Age band (Experience Table) and the Life Events generator. */
+.agetbl{margin-top:8px}
+.agetbl tr.agesel{background:var(--inset)}
+.agetbl tr.agesel td{border-color:var(--bronze-deep)}
+.agetbl .note{font-size:11.5px;margin-top:2px}
+.agetotal{font-family:var(--mono);font-size:15px;color:var(--bronze-hi);padding:7px 0}
+.agemini{font-family:var(--mono);font-size:15px;color:var(--ink);padding:6px 0}
+.agemini .note{font-family:var(--serif);font-size:12px;margin-left:6px}
+.lifeev{border-top:1px dotted var(--line-soft);margin-top:12px;padding-top:10px}
+.lifeev h4{margin:0 0 6px;font-family:var(--serif);font-size:13.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--bronze)}
+.housetag{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;border:1px solid var(--line);border-radius:2px;padding:1px 5px;color:var(--faint);margin-left:7px;text-transform:uppercase;vertical-align:middle}
+.lifeevrow{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:8px 0;border-bottom:1px dotted var(--line-soft)}
+.lifeevrow:last-child{border-bottom:none}
+.lifeevrow .t{grid-column:1;font-size:13.5px}
+.lifeevrow .fx{grid-column:1;font-size:11.5px;color:var(--dim);font-family:var(--mono)}
+.lifeevrow .a{grid-column:2;grid-row:1/3;align-self:center;white-space:nowrap}
+.lifeevrow .applied{font-family:var(--mono);font-size:11px;color:var(--verd)}
+/* Magic step: Folk Magic spell list, and the per-tradition entry editors for
+   the traditions whose content lives in the player's own rulebook. */
+.spelllist{margin-top:10px}
+.spellrow{border:1px solid var(--line-soft);border-radius:var(--r-sm);padding:9px 11px;margin-bottom:7px;background:var(--panel3)}
+.spellrow .sh{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.spellrow .sh b{font-family:var(--serif);font-size:14.5px;color:var(--bronze-hi)}
+.spellrow .sh .chip{margin-left:auto}
+.spelltrait{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);border-radius:2px;padding:1px 5px;color:var(--dim);cursor:help}
+.spellrow .sspec{margin-top:6px}
+.spellrow .sspec input{width:100%}
+.spellrow .sd{margin-top:6px;font-size:13px;color:var(--dim);line-height:1.55}
+.reservednote{border-left:3px solid var(--gold);background:var(--inset);padding:8px 12px;margin:8px 0;font-size:12.5px;color:var(--dim)}
+.magicrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid var(--line-soft);border-radius:var(--r-sm);padding:9px 11px;margin-bottom:7px}
+.magicrow .mname{flex:1;min-width:170px}
+.magicrow .mnum{font-size:11.5px;color:var(--dim);display:flex;align-items:center;gap:5px}
+.magicrow .mnum input{width:62px}
+.magicrow .mnotes{flex:1 0 100%}
+.magicrow .mdel{margin-left:auto}
+.mshaping{flex:1 0 100%;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.mshaping .mcost{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--bronze-hi)}
+/* Play Mode magic pools strip */
+.pm-magicpools{display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--pm-dim);border-bottom:1px dotted var(--pm-line-soft);padding-bottom:8px;margin-bottom:10px}
+.pm-magicpools b{color:var(--pm-text);font-size:13px}
+.pm-devadj{display:inline-flex;gap:3px;align-items:center}
+.pm-fx-item summary .pm-btn.roll{margin-left:8px}
 .okmsg{color:var(--verd);font-size:13px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 18px}
@@ -101,11 +168,31 @@ input[type=number]{-moz-appearance:textfield}
 .cstyle-block{border-top:1px solid var(--line-soft);padding-top:12px;margin-top:12px}
 .cstyle-block:first-of-type{border-top:none;padding-top:0;margin-top:0}
 .cstyle-name{color:var(--ink);font-size:14px;letter-spacing:.04em;margin-bottom:8px}
-.cstyle-traitgroup{margin:6px 0;border:1px solid var(--line-soft);border-radius:var(--r-sm);background:var(--panel3)}
-.cstyle-traitgroup summary{cursor:pointer;padding:7px 12px;color:var(--dim);font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
-.cstyle-traitgroup .choicechips{padding:0 12px 10px}
-.cstyle-traitdescs{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-soft)}
-.cstyle-traitdescs p{margin-bottom:6px}
+/* Selected-traits recap: a removable-chip summary so what's picked stays
+   visible even with every category collapsed. Plain flex-wrap is fine here
+   (unlike the browsing list below) since removing a chip is a committed
+   action, not a rapid click-through where a same-tick reflow could steal
+   the next click. */
+.cstyle-selectedbar{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.cstyle-search{width:100%;margin:8px 0}
+.cstyle-traitgroup{margin:6px 0;border:1px solid var(--line-soft);border-radius:var(--r-sm);background:var(--panel3);overflow:hidden}
+.cstyle-traitgroup summary{cursor:pointer;padding:8px 12px;color:var(--dim);font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.cstyle-catcount{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:400;font-family:var(--mono);font-size:11.5px}
+/* Vertical stack, not a wrapped chip row -- a trait toggling its own
+   selected state changes that row's border/background only, never its
+   width, so no sibling row can ever shift position out from under a
+   fast click the way the old horizontal chip layout did. */
+.cstyle-traitlist,.cstyle-searchresults{display:flex;flex-direction:column;gap:1px;padding:6px}
+.cstyle-searchresults{border:1px solid var(--line-soft);border-radius:var(--r-sm);background:var(--panel3);margin-top:4px}
+.cstyle-traitrow{display:flex;align-items:flex-start;gap:9px;width:100%;text-align:left;padding:7px 8px;border-radius:var(--r-sm);border:1px solid transparent}
+.cstyle-traitrow:hover{background:var(--panel)}
+.cstyle-traitrow.on{background:rgba(60,89,54,.12);border-color:var(--verd)}
+.cstyle-traitcheck{flex:0 0 16px;height:16px;margin-top:2px;border:1px solid var(--line);border-radius:3px;background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700}
+.cstyle-traitrow.on .cstyle-traitcheck{background:var(--verd);border-color:var(--verd)}
+.cstyle-traitbody{display:flex;flex-direction:column;gap:1px;min-width:0}
+.cstyle-traitbody b{font-size:13px;color:var(--ink)}
+.cstyle-traitcat{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em}
+.cstyle-traitsum{font-size:12px;color:var(--dim);line-height:1.4}
 .cstyle-traitsrc{color:var(--faint);font-style:italic}
 
 /* ---- characteristic blocks ---- */
@@ -117,6 +204,12 @@ input[type=number]{-moz-appearance:textfield}
 .charbox .cctl button{flex:1;height:30px;border:1px solid var(--line);border-radius:var(--r-sm);font-family:var(--mono);background:var(--panel)}
 .charbox .cctl button:hover{border-color:var(--bronze);color:var(--bronze-hi);background:var(--panel2)}
 .charbox select,.charbox input{width:100%;text-align:center;font-family:var(--mono)}
+/* Legal range caption under each characteristic box, and the out-of-bounds
+   state for Manual entry (the range check now runs in every entry mode). */
+.charbox .crange{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);margin-top:5px}
+.charbox.oob{border-color:var(--bad)}
+.charbox.oob input{color:var(--bad);font-weight:700}
+.charbox.oob .crange{color:var(--bad)}
 .dicechip{display:inline-block;min-width:36px;text-align:center;font-family:var(--mono-deco);border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 7px;margin:2px;background:var(--panel3);box-shadow:var(--shadow-sm)}
 .modeseg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow-sm)}
 .modeseg button{padding:9px 16px;color:var(--dim);border-right:1px solid var(--line);font-family:var(--serif);font-size:13px;letter-spacing:.04em;text-transform:uppercase;background:var(--panel)}
@@ -144,12 +237,22 @@ table.rt tr:nth-child(odd):not(:first-child) td{background:rgba(201,185,141,.16)
 .pick.on::after{content:"\2713";float:right;color:var(--bronze);font-weight:700}
 .pick .pn{font-family:var(--serif);font-size:15px;letter-spacing:.04em;color:var(--bronze-hi);text-transform:uppercase;font-weight:700}
 .pick .pd{font-size:12.5px;color:var(--dim);margin-top:3px;line-height:1.45}
-.choicechips{display:flex;flex-wrap:wrap;gap:7px;margin:7px 0}
+.choicechips{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:7px;margin:7px 0}
 .chip{display:inline-flex;align-items:center;gap:5px;min-height:30px;box-sizing:border-box;border:1px solid var(--line);border-radius:var(--r-pill);padding:4px 13px;font-size:13px;color:var(--dim);font-family:var(--mono);background:var(--panel)}
 .chip.on{border-color:var(--verd);background:var(--verd);color:#fff;font-weight:700}
 .chip.on::before{content:"\2713";font-weight:700}
 .chip:hover{border-color:var(--bronze);color:var(--ink);background:var(--panel3)}
 .chip.on:hover{color:#fff;background:var(--verd)}
+/* Selection chips inside a .choicechips grid (weapons, standard-skill
+   picks, etc.) keep a constant size whether selected or not -- font-weight
+   is fixed and the checkmark glyph is always reserved, just invisible
+   until selected -- so picking one can never shift where its neighbours
+   sit mid-click. Playtesting hit this concretely: selecting Sabre reflowed
+   the row and the very next click, aimed at Buckler, landed on Whip. */
+.choicechips .chip{width:100%;justify-content:center;text-align:center;white-space:normal;line-height:1.25;font-weight:700}
+.choicechips .chip::before{content:"\2713";font-weight:700;opacity:0;margin-right:1px}
+.choicechips .chip.on::before{opacity:1}
+.chip.sm{min-height:24px;padding:2px 10px;font-size:11.5px}
 /* action chips: functional buttons (clear/fill/min/max/etc) get a squarer,
    filled look so they read as "do something" controls rather than the
    rounded-pill toggle-selection look of a plain .chip. Sized by padding
@@ -423,6 +526,66 @@ body.play-mode #rail,body.play-mode #ledger,body.play-mode .foot{display:none}
   .mmenu-topbar{padding-right:0;flex-wrap:wrap;gap:10px}
   .mmenu-acctbtn{position:static}
 }
+/* ---- home screen: "Aegean golden hour" ----
+   The approved mockup (docs/homepage-mockup-approved.html) reproduced as
+   closely as the values translate to a real, responsive page instead of a
+   fixed 1180x664 canvas: clamp()/min() in place of literal pixel sizes,
+   the flanking columns hidden below ~900px (they'd just collide with
+   content at phone/tablet widths, and were purely decorative to begin
+   with), everything else kept at the mockup's own colours and proportions.
+   Deliberately its own visual language, separate from the .mmenu-* rules
+   below (still used by Account/Campaigns/My Characters) and from the
+   parchment "Blood Ledger" skin the builder and Play Mode use — this is
+   the front door, not a utility screen, and was signed off as its own
+   look after a dedicated design pass. */
+.myth-home{position:relative;min-height:100vh;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  background:linear-gradient(180deg,#f0d9a0 0%,#e8b866 45%,#c8863a 78%,#7a4e1e 100%);
+  color:#2a1c0c;font-family:'Cormorant Garamond',serif}
+.myth-home-sunglow{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);
+  width:min(560px,70vw);height:min(560px,70vw);pointer-events:none;
+  background:radial-gradient(circle,rgba(255,240,200,.8),transparent 68%)}
+.myth-home-marble{position:absolute;inset:0;opacity:.12;mix-blend-mode:multiply;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.08' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.myth-home-col{position:absolute;top:0;bottom:0;width:66px;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(60,35,10,.22) 0 4px,transparent 4px 14px)}
+.myth-home-col.l{left:64px}.myth-home-col.r{right:64px}
+.myth-home-colcap{position:absolute;top:0;width:98px;height:20px;background:rgba(60,35,10,.32);pointer-events:none}
+.myth-home-colcap.l{left:48px}.myth-home-colcap.r{right:48px}
+.myth-home-colbase{position:absolute;bottom:0;width:98px;height:20px;background:rgba(60,35,10,.32);pointer-events:none}
+.myth-home-colbase.l{left:48px}.myth-home-colbase.r{right:48px}
+@media (max-width:900px){
+  .myth-home-col,.myth-home-colcap,.myth-home-colbase{display:none}
+}
+.myth-home-signin{position:absolute;top:24px;right:24px;padding:9px 22px;border:1.5px solid #6b4a1e;border-radius:2px;
+  font-family:'Cinzel',serif;font-weight:600;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:#3a2408;background:rgba(255,245,220,.35)}
+.myth-home-signin:hover{background:rgba(255,245,220,.55)}
+.myth-home-signin.is-active{background:rgba(60,35,10,.16);border-color:#4a3012}
+.myth-home-signin.is-mock{border-style:dashed}
+@media (min-width:901px){.myth-home-signin{right:170px}}
+.myth-home-stack{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+  gap:24px;padding:100px 20px 60px}
+.myth-home-title{font-family:'Cinzel',serif;font-weight:900;font-size:clamp(42px,9vw,80px);line-height:1;
+  letter-spacing:.09em;text-transform:uppercase;color:#241706;text-shadow:0 1px 0 rgba(255,240,210,.5)}
+.myth-home-rule{width:min(400px,78vw);height:1px;margin:4px 0;position:relative;
+  background:linear-gradient(90deg,transparent,#6b4a1e,transparent)}
+.myth-home-rule::before{content:"\25C6";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  background:#e8b866;padding:0 12px;color:#6b4a1e;font-size:11px}
+.myth-home-menu{width:min(340px,88vw);display:flex;flex-direction:column;gap:10px}
+.myth-home-mbtn{width:100%;padding:15px 0;text-align:center;border:1.5px solid #6b4a1e;border-radius:2px;
+  background:rgba(255,245,220,.32);font-family:'Cinzel',serif;font-weight:600;font-size:12.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:#2a1c0c}
+.myth-home-mbtn:hover{background:rgba(255,245,220,.55);border-color:#4a3012}
+/* Not part of the approved mockup itself -- resuming an in-progress
+   autosaved character was a real feature of the page this replaced, so it
+   stays reachable, just deliberately understated (a plain text link, not
+   a sixth button) rather than competing with the five actions that were
+   actually signed off. */
+.myth-home-continue{margin-top:2px;background:none;border:none;font-family:'Cormorant Garamond',serif;
+  font-style:italic;font-size:16px;color:#4a3012;text-decoration:underline;text-underline-offset:3px}
+.myth-home-continue:hover{color:#241706}
+
 /* ---- campaigns list / detail screens (unchanged by the Main Menu rebuild
    above — these still use the older card-grid pattern, which is fine for a
    secondary utility screen reached one click deep, not the front door). ---- */
@@ -711,6 +874,18 @@ body.play-mode #main{background:var(--pm-bg);max-width:none;padding:0;margin-inl
 .pm-wpn .meta{font-family:var(--mono);font-size:9.5px;color:var(--pm-dim);margin-top:3px;letter-spacing:.03em}
 .pm-fatrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dotted var(--pm-line-soft);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--pm-dim)}
 .pm-fatsel{font-size:10.5px;background:var(--pm-bg);border:1px solid var(--pm-line);color:var(--pm-text);border-radius:0;padding:3px 6px;font-family:var(--mono);text-transform:uppercase}
+/* Fatigue's applied effects, shown under the picker whenever the character is
+   past Fresh (the level now really does change skill Grade / Move / Init / AP). */
+.pm-fatstep{display:inline-flex;gap:3px;margin-left:6px}
+.pm-fatfx{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--pm-dim);text-transform:none}
+.pm-fatfx b{color:var(--pm-text)}
+.pm-fatfx .fx-g b{color:var(--pm-warn)}
+.pm-fatfx .fx-bad b{color:var(--pm-bad)}
+.pm-fatfx .pm-fatrec{flex:1 0 100%;color:var(--pm-dim);font-style:italic}
+/* Ticker values that are currently showing a penalised figure rather than the
+   character's rested/unladen one. */
+.pm-tk .v.mod{color:var(--pm-warn)}
+.pm-tk .v.mod::after{content:"*";font-size:.7em;vertical-align:super}
 .pm-magadj{display:inline-flex;gap:4px;align-items:center;margin-left:4px}
 /* VIEW_ONLY (Party Board -> viewing a teammate's sheet): grey out and
    disable every control that would mutate play state. The click handlers

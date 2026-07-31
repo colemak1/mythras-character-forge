@@ -1,5 +1,12 @@
 "use strict";
 /* ================= APP HANDLERS ================= */
+// Guards a handler against firing twice for one user interaction when it's
+// bound to both pointerdown and click (see addPas below) -- pointerdown is
+// the one that actually does the work, click is a same-tick echo of the
+// same press plus the keyboard-activation path, both landing well within
+// this window.
+let _lastFireAt={};
+function debounceFire(key,fn){const now=Date.now();if(now-(_lastFireAt[key]||0)<400)return;_lastFireAt[key]=now;fn();}
 window.APP={
  go(i){if(i<0||i>=currentSteps().length)return;
    if(i>S.step){for(let s=S.step;s<i;s++){if(!stepPassed(s)){S.step=s;render();window.scrollTo(0,0);return;}}}
@@ -9,8 +16,7 @@ window.APP={
  set2(f,v){S[f]=v;render();},
  /* characteristics */
  mode(m){S.charMode=m;
-   if(m==="pb"){CHARS.forEach(c=>{const mn=(c==="INT"||c==="SIZ")?8:3;
-     if(!Number.isFinite(S.chars[c]))S.chars[c]=mn;});}
+   if(m==="pb"){CHARS.forEach(c=>{if(!Number.isFinite(S.chars[c]))S.chars[c]=charMin(c);});}
    render();},
  rollPools(){
    const tier=ARCHETYPES[S.archetype], ord=S.archetype==="ordinary";
@@ -30,17 +36,17 @@ window.APP={
    if(idx===""){delete asg[c];S.chars[c]=null;}
    else{asg[c]=+idx;S.chars[c]=pool[+idx];}
    render();},
- pb(c,dir){const mnOf=k=>(k==="INT"||k==="SIZ")?8:3;const mn=mnOf(c);
-   const pool=ARCHETYPES[S.archetype].pbPoints;
+ pb(c,dir){const mnOf=charMin;const mn=mnOf(c);
+   const pool=pbPool();
    const cur=S.chars[c];
    // First "+" on an unset characteristic lands on its minimum, not min+1.
    const v=(cur==null)?(dir>0?mn:mn-1):cur+dir;
-   if(v<mn||v>18)return;
+   if(v<mn||v>charMax(c))return;
    const otherReserved=CHARS.reduce((a,k)=>a+(k===c?0:(S.chars[k]??mnOf(k))),0);
    if(otherReserved+v>pool)return;
    S.chars[c]=v;render();},
- pbSet(c,target){const mnOf=k=>(k==="INT"||k==="SIZ")?8:3;
-   const pool=ARCHETYPES[S.archetype].pbPoints;
+ pbSet(c,target){const mnOf=charMin;
+   const pool=pbPool();
    // Budget against the pool minus what every OTHER characteristic already
    // reserves — unset ones reserve their own minimum, not 0 — so clicking
    // "max"/"fill" on one stat can never push the total over the pool by
@@ -49,11 +55,151 @@ window.APP={
    // bug: mn could be applied after the pool clamp and silently overspend).
    const otherReserved=CHARS.reduce((a,k)=>a+(k===c?0:(S.chars[k]??mnOf(k))),0);
    const avail=Math.max(0,pool-otherReserved);
-   S.chars[c]=Math.max(0,Math.min(18,target,avail));
+   S.chars[c]=Math.max(0,Math.min(charMax(c),target,avail));
    render();},
  manual(c,v){const n=parseInt(v,10);S.chars[c]=Number.isFinite(n)?n:null;render();},
  fap(v){S.fixedAP=v;render();},
  /* character tier & creation method */
+ /* ---- magic ---- */
+ toggleFolkSpell(name){
+   const i=S.magic.folk.findIndex(f=>f.name===name);
+   if(i>=0)S.magic.folk.splice(i,1);
+   else S.magic.folk.push({name,spec:""});
+   render();},
+ folkSpec(name,v){const f=S.magic.folk.find(x=>x.name===name);if(f)f.spec=v;render();},
+ // Magicians begin with 1d4+1 spells; this rolls that number and fills them
+ // at random for a player who'd rather not pick.
+ rollStartingFolk(){
+   const n=d(4)+1;const pool=FOLK_MAGIC.slice();const picked=[];
+   for(let i=0;i<n&&pool.length;i++)picked.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+   S.magic.folk=picked.map(s=>({name:s.n,spec:""}));render();},
+ clearFolk(){S.magic.folk=[];render();},
+ addMagic(tradition){
+   S.magic.known.push({tradition,name:"",notes:"",cost:1,intensity:1,pow:0,cha:0,shapings:[]});
+   render();},
+ magicField(i,f,v){const m=S.magic.known[i];if(!m)return;
+   m[f]=(f==="name"||f==="notes")?v:(parseInt(v,10)||0);render();},
+ toggleShaping(i,name){const m=S.magic.known[i];if(!m)return;
+   m.shapings=m.shapings||[];toggleInList(m.shapings,name);render();},
+ delMagic(i){S.magic.known.splice(i,1);render();},
+ devotional(v){S.magic.devotional=Math.max(0,parseInt(v,10)||0);
+   S.magic.devotionalUsed=Math.min(S.magic.devotionalUsed,S.magic.devotional);render();},
+ devotionalAdj(n){if(viewOnlyBlock())return;
+   S.magic.devotionalUsed=Math.max(0,Math.min(devotionalMax(),(S.magic.devotionalUsed||0)-n));render();},
+ devotionalReset(){if(viewOnlyBlock())return;S.magic.devotionalUsed=0;render();},
+ // Cast a known piece of magic: roll the tradition's casting skill through
+ // the same graded pipeline as any other roll, then apply the cost.
+ //
+ // Folk Magic's cost is the book's own result table — Critical costs nothing,
+ // Success and Failure both cost 1 Magic Point (failure still burns the
+ // point), Fumble costs 1d3. The other traditions use the entry's own
+ // recorded cost, spent only when the casting succeeds, since their cost
+ // rules live in the player's rulebook and guessing a failure cost would be
+ // an invention.
+ castMagic(idx){
+   if(viewOnlyBlock())return;
+   const m=allMagic()[idx];if(!m)return;
+   const trad=MAGIC_TRAD_MAP[m.tradition];if(!trad)return;
+   const key=magicSkillKey(trad.castSkill);
+   if(!key){alert("This character doesn't have the "+trad.castSkill+" skill, so there's nothing to roll. Add it as a Professional Skill first.");return;}
+   const base=finalPct(key);const g=gradedPct(key,base);
+   if(g.pct===null){alert(g.grade==="automatic"?"Automatic — the magic simply works.":"Hopeless — no casting can be attempted at this Grade.");return;}
+   const r=d100();const tier=resolveRoll(r,g.pct);
+   if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
+   let costTxt="",worked=(tier==="Critical"||tier==="Success");
+   if(m.tradition==="folk"){
+     const mp=tier==="Critical"?0:(tier==="Fumble"?d(3):1);
+     if(mp>0)S.play.magic=Math.max(0,playCurMagic()-mp);
+     costTxt=mp===0?"no Magic Points (Critical)":mp+" Magic Point"+(mp>1?"s":"");
+   }else if(worked){
+     const cost=magicEntryCost(m);
+     if(trad.pool==="devotional"){
+       if(cost>devotionalCur()){alert("Not enough left in the Devotional Pool ("+devotionalCur()+" of "+devotionalMax()+") to invoke that.");return;}
+       S.magic.devotionalUsed=(S.magic.devotionalUsed||0)+cost;
+       costTxt=cost+" from the Devotional Pool";
+     }else if(trad.pool==="mp"&&cost>0){
+       S.play.magic=Math.max(0,playCurMagic()-cost);
+       costTxt=cost+" Magic Point"+(cost>1?"s":"");
+     }else costTxt="no point cost";
+   }else costTxt="nothing spent";
+   const tag=g.grade!=="standard"?" ("+GRADE_LABEL[g.grade]+")":"";
+   S.rollLog.unshift({label:magicLabel(m)+" — "+trad.castSkill+tag,pct:g.pct,
+     roll:r===100?"00":r,tier,combat:false,oppTier:null,
+     magic:(worked?"cast":"failed")+", "+costTxt});
+   S.rollLog=S.rollLog.slice(0,8);render();},
+ /* age bands (Experience Table) */
+ // Changing band changes the Bonus Skill Points pool, so warn if points are
+ // already sitting in it rather than silently invalidating that step.
+ pickAge(key){
+   if(!AGE_MAP[key]||S.age.category===key)return;
+   const prev=S.age.category, spent=aSum("bonus"), oldPool=bonusPool();
+   S.age.category=key;
+   const nwPool=bonusPool();
+   if(spent>0&&nwPool!==oldPool
+      &&!confirm("This age band changes your Bonus Skill Points from "+oldPool+" to "+nwPool
+        +". The "+spent+" points you have already allocated stay where they are, but the Bonus Skills step will need rebalancing to the new total. Continue?")){
+     S.age.category=prev;render();return;}
+   // Keep the rolled age honest against the band it now belongs to.
+   const a=AGE_MAP[key];
+   if(S.age.years!=null&&(S.age.years<a.base+a.n||S.age.years>a.base+a.n*6))S.age.years=null;
+   render();},
+ rollAge(){const a=ageBand();let t=a.base;for(let i=0;i<a.n;i++)t+=d(6);
+   S.age.years=t;S.concept.age=String(t);render();},
+ ageYears(v){const n=parseInt(v,10);S.age.years=Number.isFinite(n)?n:null;
+   S.concept.age=Number.isFinite(n)?String(n):"";render();},
+ // Life Events: one per age band above Young (a Young character has barely
+ // had time for any). House content, clearly flagged as such in the UI.
+ rollLifeEvents(){
+   const n=AGE_CATEGORIES.findIndex(a=>a.key===S.age.category);
+   const count=Math.max(1,n);
+   const pool=LIFE_EVENTS.slice();const picked=[];
+   for(let i=0;i<count&&pool.length;i++)picked.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+   S.age.events=picked.map(e=>({t:e.t,effect:e.effect,applied:false}));
+   render();},
+ clearLifeEvents(){S.age.events=[];render();},
+ delLifeEvent(i){S.age.events.splice(i,1);render();},
+ // Apply an event's mechanical consequence through the app's existing
+ // systems — a real Passion at its correct starting value, a real inventory
+ // row, a real change to starting silver. Nothing bespoke.
+ applyLifeEvent(i){
+   const ev=S.age.events[i];if(!ev||ev.applied||!ev.effect)return;
+   const f=ev.effect;
+   if(f.type==="passion"){
+     if(!S.passions.some(p=>p.name===f.name))
+       S.passions.push({name:f.name,type:f.ptype||"org",subjPOW:"",subjCHA:""});
+   }else if(f.type==="item"){
+     S.inventory.push({name:f.name,qty:1,enc:f.enc||0});
+   }else if(f.type==="silver"){
+     // Expressed as a percentage of starting money so it scales with culture
+     // and social class instead of being a flat number that means something
+     // different to a Primitive and a Civilised character.
+     const t=moneyTotal();
+     if(!t){alert("Roll your starting money on the Money & Gear step first — this event adjusts it by "+f.pct+"%.");return;}
+     S.money.spent=Math.round((S.money.spent||0)-t*f.pct/100);
+   }
+   ev.applied=true;render();},
+ /* species (non-human characters) */
+ // Switching species changes the characteristic dice, so anything already
+ // rolled or built is meaningless afterwards — same reasoning, and the same
+ // confirmation, as switching character tier.
+ pickSpecies(key){
+   const nw=(key==="human"||!key)?(key||null):key;
+   if(S.species===nw)return;
+   if(charsReady()&&!confirm("Switching species resets your characteristics — each species rolls its own characteristic dice. Continue?"))return;
+   S.species=nw;
+   CHARS.forEach(c=>S.chars[c]=null);S.poolA=[];S.poolB=[];S.assignA={};S.assignB={};
+   render();},
+ // Non-human characteristics are rolled per characteristic off that species'
+ // own dice, not from the two shared human pools (a dwarf's STR 2d6+9 and DEX
+ // 3d6 aren't interchangeable, so there is nothing to allocate between).
+ // Pulp/Paragon still get the book's "roll one extra die and drop the lowest"
+ // treatment, generalised to whatever die the species uses.
+ rollSpeciesAll(){const sp=speciesDef();if(!sp)return;
+   CHARS.forEach(c=>{S.chars[c]=rollSpeciesChar(sp,c);});render();},
+ rollSpeciesOne(c){const sp=speciesDef();if(!sp)return;
+   S.chars[c]=rollSpeciesChar(sp,c);render();},
+ speciesAverages(){const sp=speciesDef();if(!sp)return;
+   CHARS.forEach(c=>{S.chars[c]=sp.avg[c];});render();},
  archetype(name){
    if(S.archetype===name)return;
    if(charsReady()&&!confirm("Switching character tier resets your characteristics — the dice and point-build pools differ by tier. Continue?"))return;
@@ -160,7 +306,17 @@ window.APP={
  cultField(f,v){S.cultMembership[f]=(f==="rank")?(+v||0):v;render();},
  leaveCult(){S.cultMembership={archetype:null,name:"",rank:0};render();},
  /* passions */
- addPas(){S.passions.push({name:"",type:"org",subjPOW:"",subjCHA:""});render();},
+ // Bound to both pointerdown and click in render.js (see the button markup
+ // in stepPassions): a click immediately following an edit in another field
+ // (e.g. typing a passion name then clicking "+ add passion" without
+ // clicking elsewhere first) can have its click event resolve against a
+ // stale button reference -- the preceding field's onchange fires on blur,
+ // which calls render() and replaces the whole step's DOM, including this
+ // button, before the click actually dispatches. pointerdown fires
+ // immediately on press, before that blur/render cycle, so it isn't
+ // affected; debounceFire absorbs the click that (still) follows it so a
+ // normal press only ever adds one passion.
+ addPas(){debounceFire('addPas',()=>{S.passions.push({name:"",type:"org",subjPOW:"",subjCHA:""});render();});},
  delPas(i){S.passions.splice(i,1);render();},
  pas(i,f,v){S.passions[i][f]=v;render();},
  pasFromCulture(){if(!S.culture)return;const c=CULTURES[S.culture];
@@ -188,6 +344,24 @@ window.APP={
  /* combat style composition — any number of weapons/traits, Character Builder only */
  toggleStyleWeapon(key,name){toggleInList(styleDef(key).weapons,name);render();},
  toggleStyleTrait(key,name){toggleInList(styleDef(key).traits,name);render();},
+ // Trait search re-renders on every keystroke (needed for live filtering,
+ // not just on blur like every other field in this app) which would
+ // normally cost the input its focus and cursor position the instant the
+ // DOM gets replaced -- captured before render() and restored after.
+ cstyleSearch(key,val){
+   cstyleUI(key).search=val;
+   const el=document.activeElement;
+   const id=el&&el.id,start=el&&el.selectionStart,end=el&&el.selectionEnd;
+   render();
+   if(id){const fresh=document.getElementById(id);
+     if(fresh){fresh.focus();try{fresh.setSelectionRange(start,end);}catch(e){}}}
+ },
+ // Native <details> open/closed state is lost on every re-render (the DOM
+ // node is thrown away and rebuilt) unless remembered somewhere -- this is
+ // exactly why picking a trait used to collapse its whole category back
+ // down. No render() call needed here: the browser already opens/closes
+ // the element on its own; this only has to remember that for next time.
+ cstyleToggleCat(key,cat,isOpen){cstyleUI(key).openCats[cat]=isOpen;},
  /* roller */
  roll(key){const em=entryMap();const e=em[key];if(!e)return;
    const base=finalPct(key);const g=gradedPct(key,base);
@@ -296,6 +470,7 @@ window.APP={
  openCharToSheet(id){
    openCharUnified(id).then(entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);normalizeState();
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
+     S._pendingClaim=(entry.ownerId==="local");
      SHEET_RETURN_VIEW="library";APPVIEW="sheet";render();window.scrollTo(0,0);});},
  playDamage(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const n=el?parseInt(el.value,10):NaN;
    if(!Number.isFinite(n)||n<=0)return;
@@ -337,6 +512,11 @@ window.APP={
    S.play.luck=Math.max(0,Math.min(max,newCur));render();},
  playMagicAdj(d){if(viewOnlyBlock())return;S.play.magic=Math.max(0,Math.min(playMaxMagic(),playCurMagic()+d));render();},
  playSetFatigue(v){if(viewOnlyBlock())return;S.play.fatigue=v;render();},
+ // Step one level up or down the Fatigue track — the common case in play is
+ // "failed an Endurance roll, take a level", not picking off a dropdown.
+ playFatigueAdj(d){if(viewOnlyBlock())return;
+   const i=FATIGUE_LEVELS.indexOf(S.play.fatigue||"Fresh");
+   S.play.fatigue=FATIGUE_LEVELS[Math.max(0,Math.min(FATIGUE_LEVELS.length-1,(i<0?0:i)+d))];render();},
  // Inventory edits in Play Mode — allowed for the owner (VIEW_ONLY is false)
  // and, as a narrow exception, for the campaign DM (VIEW_ONLY_IS_DM), for
  // loot distribution / adding or removing gear mid-session. Blocked for a
@@ -357,13 +537,13 @@ window.APP={
    const f=$("#importFile");f.onchange=()=>{const file=f.files[0];if(!file)return;
    const rd=new FileReader();rd.onload=()=>{try{const data=JSON.parse(rd.result);
      if(!data.chars||!data.concept)throw new Error("Not a Character Forge file");
-     S=Object.assign(freshState(),data);normalizeState();render();}catch(e){alert("Import failed: "+e.message);}};
+     S=Object.assign(freshState(),data);normalizeState();S._pendingClaim=true;render();}catch(e){alert("Import failed: "+e.message);}};
    rd.readAsText(file);f.value="";};f.click();},
  newCharacter(){
    const hasWork=S.concept.name||charsReady()||S.culture||S.career;
    if(hasWork&&!confirm("Start a new character? This clears the current one from the screen (autosave and any exported files are unaffected until overwritten)."))return;
    S=freshState();render();window.scrollTo(0,0);},
- clearAutosave(){try{localStorage.removeItem(AUTOSAVE_KEY);}catch(e){}updateAutosaveTag();},
+ clearAutosave(){try{localStorage.removeItem(autosaveKey());}catch(e){}updateAutosaveTag();},
  /* main menu */
  toMenu(){APPVIEW="menu";render();window.scrollTo(0,0);},
  fromMenuNew(){
@@ -372,15 +552,15 @@ window.APP={
  fromMenuContinue(){
    const info=getAutosaveInfo();if(!info)return;
    if(hasUnsavedWork()&&!confirm("Load the autosaved character? This replaces what's currently loaded."))return;
-   try{const raw=localStorage.getItem(AUTOSAVE_KEY);const saved=JSON.parse(raw);
-     S=Object.assign(freshState(),saved.S);normalizeState();APPVIEW="character";render();window.scrollTo(0,0);
+   try{const raw=localStorage.getItem(autosaveKey());const saved=JSON.parse(raw);
+     S=Object.assign(freshState(),saved.S);normalizeState();S._pendingClaim=true;APPVIEW="character";render();window.scrollTo(0,0);
    }catch(e){alert("Could not load the autosaved character.");}},
  fromMenuImport(){
    if(hasUnsavedWork()&&!confirm("Importing will replace the character currently loaded. Continue?"))return;
    const f=$("#menuImportFile");f.onchange=()=>{const file=f.files[0];if(!file)return;
    const rd=new FileReader();rd.onload=()=>{try{const data=JSON.parse(rd.result);
      if(!data.chars||!data.concept)throw new Error("Not a Character Forge file");
-     S=Object.assign(freshState(),data);normalizeState();APPVIEW="character";render();window.scrollTo(0,0);
+     S=Object.assign(freshState(),data);normalizeState();S._pendingClaim=true;APPVIEW="character";render();window.scrollTo(0,0);
    }catch(e){alert("Import failed: "+e.message);}};
    rd.readAsText(file);f.value="";};f.click();},
  /* my characters */
@@ -388,6 +568,7 @@ window.APP={
  openCharToPlay(id,opts){
    openCharUnified(id).then(async entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);normalizeState();
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
+     S._pendingClaim=(entry.ownerId==="local");
      const viewingOther=cloudActive()&&entry.ownerId!=null&&entry.ownerId!==AUTH_USER.id;
      VIEW_ONLY=viewingOther;
      VIEW_ONLY_IS_DM=viewingOther?await isDmOfCampaign(entry.campaignId):false;
@@ -397,6 +578,7 @@ window.APP={
  openCharToEdit(id){
    openCharUnified(id).then(entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);normalizeState();
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
+     S._pendingClaim=(entry.ownerId==="local");
      APPVIEW="character";render();window.scrollTo(0,0);});},
  deleteLibChar(id,name){
    if(!confirm('Delete "'+name+'"? This can\'t be undone — Export JSON first if you want a copy.'))return;
@@ -481,16 +663,23 @@ window.APP={
    }
  },
  saveToLibrary(){
-   saveToLibraryUnified().then(()=>{S._libLastSaved=Date.now();render();})
+   saveToLibraryUnified(true).then(()=>{S._libLastSaved=Date.now();render();})
      .catch(e=>alert("Could not save to library: "+e.message));},
- joinCampaign(){
-   const el=$("#joinCode");const code=el&&el.value&&el.value.trim();
+ // Takes the code directly rather than reading a specific DOM element —
+ // the home screen's "Join a campaign" button (homeJoinCampaign below)
+ // has no visible input field of its own, per the approved design.
+ joinCampaign(code){
+   code=(code||"").trim();
    if(!code)return;
    cloudJoinCampaign(code).then(res=>{
      if(!res){alert("Invalid invite code.");return;}
      CURRENT_CAMPAIGN_ID=res.id;APPVIEW="campaign";CAMPAIGN_VIEW=null;render();
      loadCampaignViewUnified(res.id);window.scrollTo(0,0);
    }).catch(e=>alert("Could not join campaign: "+e.message));},
+ homeJoinCampaign(){
+   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){alert("Sign in first — joining a campaign needs an account.");return;}
+   const code=prompt("Enter the campaign's invite code:");
+   if(code)APP.joinCampaign(code);},
  /* account */
  signIn(){
    const email=($("#authEmail")&&$("#authEmail").value||"").trim();
@@ -559,7 +748,10 @@ function buildMD(){
    "luck_points: "+(charsReady()?luckFinal(c.POW):""),
    "magic_points: "+(charsReady()?c.POW:""),
    "healing_rate: "+(charsReady()?healRate(c.CON):""),
-   "movement: 6m","tags:","  - character","---"].join("\n");
+   "movement: "+(charsReady()?moveText():"6m"),
+   ...(charsReady()?["height_m: "+heightWeight().m.toFixed(2),"weight_kg: "+heightWeight().kg]:[]),
+   ...(S.species?["species: "+(SPECIES_MAP[S.species]?SPECIES_MAP[S.species].label:S.species)]:[]),
+   "tags:","  - character","---"].join("\n");
   let md=yaml+"\n\n# "+n+"\n\n";
   if(S.concept.homeland)md+="*"+[S.culture,S.career,S.concept.homeland].filter(Boolean).join(" · ")+"*\n\n";
   if(charsReady()){
@@ -572,12 +764,22 @@ function buildMD(){
     if(!list.length)return "";
     return "## "+t+"\n\n| Skill | % |\n|---|---|\n"+list.map(e=>"| "+e.label+" | "+finalPct(e.key)+"% |").join("\n")+"\n\n";};
   md+=grp("Standard","Standard Skills")+grp("Professional","Professional Skills")+grp("Magic","Magic Skills")+grp("Combat Style","Combat Styles");
+  const magicKnown=allMagic();
+  if(magicKnown.length)md+="## Magic Known\n\n"
+    +(devotionalMax()?"Devotional Pool: "+devotionalCur()+" / "+devotionalMax()+" MP\n\n":"")
+    +"| Magic | Tradition | Cast with | Cost |\n|---|---|---|---|\n"
+    +magicKnown.map(m=>{const t=MAGIC_TRAD_MAP[m.tradition];
+      const cost=m.tradition==="folk"?"1 MP (0 on a Critical)"
+        :m.tradition==="sorcery"?(sorceryCost(m).mp+" MP / "+sorceryCost(m).turns+" turns")
+        :m.tradition==="animism"?("POW "+(m.pow||0)+", CHA "+(m.cha||0))
+        :((m.cost||0)+(t.pool==="devotional"?" pool":" MP"));
+      return "| "+magicLabel(m)+" | "+t.label+" | "+t.castSkill+" | "+cost+" |";}).join("\n")+"\n\n";
   if(S.passions.length)md+="## Passions\n\n| Passion | % |\n|---|---|\n"+S.passions.map(p=>"| "+(p.name||"(unnamed)")+" | "+passionVal(p)+"% |").join("\n")+"\n\n";
   if(S.gearWeapons.length)md+="## Weapons\n\n| Weapon | Damage | Reach | Effects | ENC | AP/HP |\n|---|---|---|---|---|---|\n"
     +S.gearWeapons.map(nm=>{const w=WEAPON_MAP[nm];return w?"| "+w.name+" | "+w.dmg+" | "+w.reach+" | "+w.effects+" | "+w.enc+" | "+w.apHp+" |":"";}).filter(Boolean).join("\n")+"\n\n";
   md+="## Armour\n\n| Location | Construction | AP |\n|---|---|---|\n"+ARMOR_LOCATIONS.map(l=>"| "+l+" | "+S.armor[l]+" | "+armorApAt(l)+" |").join("\n")
     +"\n\nArmour Penalty to Initiative: -"+armourPenaltyToInit()+"\n\n";
-  if(S.money.dice.length)md+="## Money\n\nStarting: "+moneyTotal()+" sp — remaining: "+(moneyTotal()-(S.money.spent||0))+" sp\n\n";
+  if(S.money.dice.length)md+="## Money\n\nStarting: "+moneyTotal()+" sp — remaining: "+moneyRemaining()+" sp\n\n";
   if(S.inventory.length)md+="## Equipment\n\n"+S.inventory.map(it=>"- "+it.name+" ×"+it.qty+" (ENC "+((it.qty||0)*(it.enc||0))+")").join("\n")+"\n\n";
   if(S.concept.notes)md+="## Notes\n\n"+S.concept.notes+"\n";
   return md;
