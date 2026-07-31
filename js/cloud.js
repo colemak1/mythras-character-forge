@@ -289,9 +289,16 @@ async function loadCampaignViewUnified(id){
   }else{
     const raw=getCampaignLocal(id);
     const campaign=raw?{id:raw.id,name:raw.name,notes:raw.notes,created_at:new Date(raw.createdAt).toISOString(),dm_id:null,invite_code:null}:null;
-    CAMPAIGN_VIEW=campaign?{campaign,members:[],
-      chars:charsInCampaignLocal(id).map(localCharShape),
-      unassigned:unassignedCharsLocal().map(localCharShape)}:null;
+    // Always an object, even when campaign itself is null (id not found) --
+    // matching the cloud branch above. CAMPAIGN_VIEW===null is how
+    // campaignDetailHTML()/boardHTML() distinguish "still loading" from "here's
+    // what we found (nothing)"; collapsing a not-found result back to bare
+    // null made a bad/stale campaign link (typed by hand, or now reachable
+    // directly via router.js) get stuck on "Loading campaign…" forever, since
+    // nothing was ever going to load it deeper the second time.
+    CAMPAIGN_VIEW={campaign,members:[],
+      chars:campaign?charsInCampaignLocal(id).map(localCharShape):[],
+      unassigned:campaign?unassignedCharsLocal().map(localCharShape):[]};
   }
   render();
 }
