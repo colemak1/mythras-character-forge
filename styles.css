@@ -678,24 +678,24 @@ body.play-mode #rail,body.play-mode #ledger,body.play-mode .foot{display:none}
    file needed to move. Scoped entirely under body.play-mode so it never
    touches the parchment character-builder look. ---- */
 body.play-mode{
-  --pm-bg:#f4f1e8;--pm-panel:#f4f1e8;--pm-panel2:#ece8db;
-  --pm-line:#16130e;--pm-line-soft:rgba(22,19,14,.3);
-  --pm-text:#16130e;--pm-dim:rgba(22,19,14,.62);
-  --pm-accent:#e0340f;--pm-accent-hi:#a82408;
-  /* literal palette from playmode-restyle-D.html is strictly paper/ink/red —
-     no green or amber anywhere. "good"/"warn" used to be a traffic-light
-     green/amber; healthy now reads as plain ink, and a Serious Wound reads
-     as the deep red instead of the brighter accent red used for Major,
-     giving a two-tone red distinction without leaving the ink/red palette. */
-  --pm-good:#16130e;--pm-warn:#a82408;--pm-bad:#e0340f;
-  /* Minor Wound needed its own tone, distinct from full-health ink and from
-     the Serious/Major reds, without leaving the paper/ink/red family — this
-     is a straight ink+red blend (~45% red into ink), reading as "ink with a
-     trace of red" rather than a fourth hue. */
-  --pm-minor:#58170b;
+  /* Golden-hour recolor pass (kept every selector, grid, and structural rule
+     below untouched — only these token values changed, plus the masthead
+     display font a few rules down). Was strictly paper/ink/red; now a warm
+     parchment/ink/bronze family so Play Mode reads as the same product as
+     the home screen and Character Builder instead of a separate brutalist
+     skin, without touching layout or any interactive behaviour. */
+  --pm-bg:#f1e3bf;--pm-panel:#f1e3bf;--pm-panel2:#e8d4a6;
+  --pm-line:#2a1c0c;--pm-line-soft:rgba(42,28,12,.32);
+  --pm-text:#2a1c0c;--pm-dim:rgba(42,28,12,.62);
+  --pm-accent:#b8791e;--pm-accent-hi:#8a5511;
+  /* "good"/"warn" stay ink/bronze; "bad" (Major Wound) keeps a real danger
+     red-brown so wound severity still reads as alarming against the warm
+     palette instead of blending into the bronze accent. */
+  --pm-good:#2a1c0c;--pm-warn:#8a5511;--pm-bad:#8a2b18;
+  --pm-minor:#6b4a1e;
   --serif:'Archivo',sans-serif;--sans:'Archivo',sans-serif;--mono:'Space Mono',monospace;
   background:
-    repeating-linear-gradient(90deg,transparent 0 119px,rgba(22,19,14,.028) 119px 120px),
+    repeating-linear-gradient(90deg,transparent 0 119px,rgba(42,28,12,.045) 119px 120px),
     var(--pm-bg);
 }
 body.play-mode #main{background:var(--pm-bg);max-width:none;padding:0;margin-inline:0}
@@ -733,8 +733,12 @@ body.play-mode #main{background:var(--pm-bg);max-width:none;padding:0;margin-inl
 .pm-mast-top .red{color:var(--pm-accent)}
 .pm-barcode{display:inline-block;height:12px;vertical-align:-2px;margin-right:8px;width:54px;
   background:repeating-linear-gradient(90deg,var(--pm-line) 0 2px,transparent 2px 4px,var(--pm-line) 4px 5px,transparent 5px 8px,var(--pm-line) 8px 11px,transparent 11px 13px)}
-.pm-mast-name{font-family:'Archivo',sans-serif;font-weight:900;letter-spacing:-.035em;line-height:.92;
-  font-size:clamp(54px,7.6vw,102px);text-transform:uppercase;padding:14px 0 6px;
+/* Font swap: was Archivo (the same workhorse sans as the rest of the sheet)
+   -- Cinzel ties the masthead wordmark to the home screen / builder display
+   type. Kept the hollow-outline treatment and every layout property as-is;
+   only the typeface changed. */
+.pm-mast-name{font-family:'Cinzel',serif;font-weight:900;letter-spacing:-.01em;line-height:.92;
+  font-size:clamp(46px,6.6vw,88px);text-transform:uppercase;padding:14px 0 6px;
   display:flex;flex-wrap:wrap;column-gap:.22em;align-items:baseline}
 .pm-mast-name .outline{color:transparent;-webkit-text-stroke:2.5px var(--pm-line)}
 .pm-mast-name .fin{font-size:.35em;color:var(--pm-accent);-webkit-text-stroke:0;letter-spacing:0}
@@ -852,7 +856,7 @@ body.play-mode #main{background:var(--pm-bg);max-width:none;padding:0;margin-inl
 .pm-locrow.st-serious .hp{color:var(--pm-warn)}
 .pm-locrow.st-major .hp{color:var(--pm-bad)}
 .pm-legend{display:flex;align-items:center;gap:7px;margin-top:9px}
-.pm-legendgrad{flex:1;height:6px;border-radius:0;border:1px solid var(--pm-line);background:linear-gradient(90deg,#f4f1e8 0%,#16130e 30%,#e0340f 75%,#a82408 100%)}
+.pm-legendgrad{flex:1;height:6px;border-radius:0;border:1px solid var(--pm-line);background:linear-gradient(90deg,#f1e3bf 0%,#2a1c0c 30%,#b8791e 75%,#8a5511 100%)}
 .pm-legend span{font:9px var(--mono);color:var(--pm-dim);white-space:nowrap;text-transform:uppercase;letter-spacing:.08em}
 .pm-locdetail{margin-top:12px;background:var(--pm-panel2);border:1px solid var(--pm-line);border-radius:0;padding:12px 14px}
 .pm-locdetail .dt{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
@@ -902,8 +906,8 @@ body.play-mode #main{background:var(--pm-bg);max-width:none;padding:0;margin-inl
 .pm-xpbadge{background:var(--pm-accent);color:var(--pm-bg);border-radius:0;padding:1px 7px;font-size:10px;font-weight:700;margin-left:6px;font-family:var(--mono)}
 
 /* Improve Skills modal (Experience Rolls, core rulebook pp.71-73) */
-.pm-modal-backdrop{position:fixed;inset:0;background:rgba(22,19,14,.55);z-index:700;display:flex;align-items:center;justify-content:center;padding:24px}
-.pm-modal{background:var(--pm-bg);border:2px solid var(--pm-line);border-radius:0;max-width:660px;width:100%;max-height:85vh;overflow:auto;padding:18px 20px 20px;box-shadow:8px 8px 0 rgba(22,19,14,.25);color:var(--pm-text);font-family:var(--sans)}
+.pm-modal-backdrop{position:fixed;inset:0;background:rgba(42,28,12,.55);z-index:700;display:flex;align-items:center;justify-content:center;padding:24px}
+.pm-modal{background:var(--pm-bg);border:2px solid var(--pm-line);border-radius:0;max-width:660px;width:100%;max-height:85vh;overflow:auto;padding:18px 20px 20px;box-shadow:8px 8px 0 rgba(42,28,12,.25);color:var(--pm-text);font-family:var(--sans)}
 .pm-modal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;border-bottom:3px solid var(--pm-line);padding-bottom:10px}
 .pm-modal-hd h3{font-family:'Archivo',sans-serif;text-transform:uppercase;letter-spacing:.06em;font-size:16px;font-weight:900;color:var(--pm-text);margin:0}
 .pm-xppool{display:flex;flex-direction:column;gap:6px;background:var(--pm-panel2);border:1px solid var(--pm-line);border-radius:0;padding:10px 12px;margin-bottom:10px;font-size:12.5px}
@@ -1011,7 +1015,7 @@ body.play-mode #main{background:var(--pm-bg);max-width:none;padding:0;margin-inl
 
 /* literal .colophon footer */
 .pm-colophon{margin:10px 28px 0;display:flex;justify-content:space-between;
-  font-family:var(--mono);font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--pm-line-35,rgba(22,19,14,.35))}
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--pm-line-35,rgba(42,28,12,.4))}
 
 /* Special Effects reference tab */
 .pm-fx-list{display:flex;flex-direction:column;gap:14px}
