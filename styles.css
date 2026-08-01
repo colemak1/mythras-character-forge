@@ -12,7 +12,15 @@
   --bronze:#8a5e0f; --bronze-hi:#a9740f; --bronze-brt:#c8901c; --bronze-deep:#1c1710;
   --verd:#3c5936; --madder:#8a2318; --madder-hi:#a52d20; --gold:#a9740f;
   --ok:#3c5936; --bad:#a52d20;
-  --serif:"Spectral",Georgia,serif;
+  /* Display font tied to the golden-hour identity (home screen, menus, Play
+     Mode all use Cinzel for headers/labels) -- every h1/h2/h3/.smallcaps
+     and section-title style below picks this up automatically. Body copy
+     stays Spectral: it's already a legible warm serif and this app has a
+     lot of dense paragraph/tabular text (rule quotes, culture/career
+     descriptions, the printable sheet) where Cormorant Garamond's thinner,
+     more display-oriented letterforms would hurt readability at small
+     sizes -- so unlike Play Mode's masthead, this is a header-only swap. */
+  --serif:"Cinzel",Georgia,serif;
   --sans:"Spectral","Iowan Old Style",Georgia,serif;
   /* Plain monospace reserved for genuinely numeric/tabular data (stat
      scores, dice results, percentages) — legible and gives numbers a
@@ -43,13 +51,20 @@ html{scrollbar-color:var(--line) var(--bg)}
    large-scale gradients rather than flat fills or busy repeating patterns.
    Everything here stays under ~10% opacity — texture and depth, not noise
    you consciously notice. */
+/* Golden-hour tie-in: the flat parchment tint is now the same amber-to-
+   bronze sunset gradient as the home screen / menus / Play Mode, with the
+   original fractal-noise paper grain and light-wash layered back on top at
+   the same low opacity so the builder still reads as paper, not a flat
+   poster. This only affects the plain `body` element (the Character
+   Builder step-flow) -- body.menu-mode and body.play-mode both already set
+   their own background and win on specificity, so neither is touched. */
 body{background-color:var(--bg);color:var(--ink);font:15px/1.6 var(--sans);min-height:100vh;
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.35  0 0 0 0 0.29  0 0 0 0 0.19  0 0 0 0.32 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-    radial-gradient(ellipse 130% 90% at 50% 45%, transparent 55%, rgba(22,16,8,.07) 100%),
-    radial-gradient(ellipse 1400px 900px at 50% -10%, rgba(255,250,232,.5), transparent 60%);
+    radial-gradient(ellipse 1400px 900px at 50% -10%, rgba(255,250,232,.55), transparent 60%),
+    linear-gradient(180deg,#f0d9a0 0%,#e8b866 45%,#c8863a 100%);
   background-repeat:repeat, no-repeat, no-repeat;
-  background-blend-mode:multiply, multiply, normal;
+  background-blend-mode:multiply, normal, normal;
   background-attachment:fixed, fixed, fixed;}
 h1,h2,h3,.smallcaps{font-family:var(--serif);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
 h1{font-weight:800}
@@ -84,7 +99,15 @@ input[type=number]{-moz-appearance:textfield}
 
 /* ---- main ---- */
 #main{padding:26px 32px calc(var(--foot-h, 90px) + 24px);max-width:960px;margin-inline:auto}
-.stephead{margin-bottom:5px;font-size:29px;color:var(--ink);letter-spacing:.03em}
+.stephead{margin-bottom:14px;font-size:29px;color:var(--ink);letter-spacing:.03em;position:relative;padding-bottom:14px}
+/* Diamond-rule divider under every step title -- same device as
+   .myth-home-rule on the home screen (a diamond glyph, then a line fading
+   to transparent), just left-aligned to match this page's left-aligned
+   heading instead of centered. Pure CSS on the existing .stephead element,
+   so no render/template changes were needed anywhere in js/render.js. */
+.stephead::before{content:"\25C6";position:absolute;left:0;bottom:0;color:var(--bronze);font-size:9px;line-height:1}
+.stephead::after{content:"";position:absolute;left:16px;right:0;bottom:4px;height:1px;
+  background:linear-gradient(90deg,var(--bronze),transparent)}
 .steplede{color:var(--dim);margin-bottom:20px;max-width:70ch;font-size:14.5px;line-height:1.55}
 .card{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r-md);padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
 .card h3{color:var(--bronze);font-size:15px;margin-bottom:12px;letter-spacing:.06em}
@@ -386,6 +409,22 @@ details.rn li{margin:4px 0 4px 18px}
 body.menu-mode:not(.sheet-mode){
   background:linear-gradient(180deg,#f0d9a0 0%,#e8b866 45%,#c8863a 78%,#7a4e1e 100%);
   background-attachment:fixed;
+}
+/* The printable Character Sheet (body.sheet-mode) is meant to keep the
+   OLD plain parchment look -- it fell through to the base `body{}` rule by
+   default until that rule itself was changed to the golden-hour gradient
+   for the Character Builder. Restoring the original flat-tint declaration
+   here, scoped to .sheet-mode specifically, so the sheet view is unaffected
+   by either the menu-mode gradient above or the builder's background. */
+body.sheet-mode{
+  background-color:var(--bg);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.35  0 0 0 0 0.29  0 0 0 0 0.19  0 0 0 0.32 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse 130% 90% at 50% 45%, transparent 55%, rgba(22,16,8,.07) 100%),
+    radial-gradient(ellipse 1400px 900px at 50% -10%, rgba(255,250,232,.5), transparent 60%);
+  background-repeat:repeat, no-repeat, no-repeat;
+  background-blend-mode:multiply, multiply, normal;
+  background-attachment:fixed, fixed, fixed;
 }
 body.menu-mode .app{grid-template-columns:1fr}
 body.menu-mode #rail,body.menu-mode #ledger,body.menu-mode .foot{display:none}
