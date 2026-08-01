@@ -536,6 +536,7 @@ function accountHTML(){
 }
 function renderAccountView(){
   document.body.classList.remove("play-mode");
+  document.body.classList.remove("sheet-mode");
   document.body.classList.add("menu-mode");
   document.title="Account — Mythras Character Forge";
   $("#main").innerHTML=accountHTML();
@@ -599,6 +600,7 @@ function signInButtonHTML(){
 }
 function renderMenuView(){
   document.body.classList.remove("play-mode");
+  document.body.classList.remove("sheet-mode");
   document.body.classList.add("menu-mode");
   document.title="Mythras Character Forge";
   $("#main").innerHTML=menuHTML();
@@ -619,6 +621,7 @@ function campaignsHTML(){
 }
 function renderCampaignsView(){
   document.body.classList.remove("play-mode");
+  document.body.classList.remove("sheet-mode");
   document.body.classList.add("menu-mode");
   document.title="Campaigns — Mythras Character Forge";
   $("#main").innerHTML=campaignsHTML();
@@ -656,6 +659,7 @@ function libraryHTML(){
 }
 function renderLibraryView(){
   document.body.classList.remove("play-mode");
+  document.body.classList.remove("sheet-mode");
   document.body.classList.add("menu-mode");
   document.title="My Characters — Mythras Character Forge";
   $("#main").innerHTML=libraryHTML();
@@ -705,6 +709,7 @@ function campaignDetailHTML(){
 }
 function renderCampaignView(){
   document.body.classList.remove("play-mode");
+  document.body.classList.remove("sheet-mode");
   document.body.classList.add("menu-mode");
   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;
   document.title=(camp?camp.name+" — ":"")+"Campaigns — Mythras Character Forge";
@@ -828,6 +833,7 @@ function boardHTML(){
 }
 function renderBoardView(){
   document.body.classList.remove("play-mode");
+  document.body.classList.remove("sheet-mode");
   document.body.classList.add("menu-mode");
   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;
   document.title=(camp?camp.name+" — ":"")+"Party Board — Mythras Character Forge";
@@ -840,7 +846,10 @@ function renderBoardView(){
 // since this isn't part of the step-flow chrome.
 function renderSheetView(){
   document.body.classList.remove("play-mode");
-  document.body.classList.add("menu-mode");
+  // "sheet-mode" alongside "menu-mode" so this view keeps the plain parchment
+  // background (styles.css excludes it from the golden-hour full-bleed rule)
+  // while still getting the menu-mode layout trick (hides #rail/#ledger/.foot).
+  document.body.classList.add("menu-mode","sheet-mode");
   document.title=(S.concept.name?S.concept.name+" — ":"")+"Character Sheet";
   const backLabel=SHEET_RETURN_VIEW==="play"?"&#8592; Back to Play Mode":SHEET_RETURN_VIEW==="library"?"&#8592; Back to My Characters":"&#8592; Back";
   let h='<div class="sheetview-wrap"><p><button class="nav" onclick="APP.backFromSheet()">'+backLabel+'</button></p>';

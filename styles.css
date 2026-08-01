@@ -376,6 +376,17 @@ details.rn .body{padding:0 16px 12px;color:var(--dim);font-size:13px}
 details.rn li{margin:4px 0 4px 18px}
 
 /* ---- main menu v2 ---- */
+/* Full-bleed golden-hour gradient for every .mmenu/.menuwrap screen (Account,
+   My Characters, Campaigns, Campaign detail, Party Board) -- applied to the
+   body itself (unconstrained width) rather than to the inner max-width box,
+   so it fills edge-to-edge instead of leaving the plain parchment/noise body
+   texture visible down the sides on wide viewports. Explicitly excluded for
+   the standalone Character Sheet (body.sheet-mode), which keeps its own
+   plain parchment look on purpose -- see .sheetview-wrap below. */
+body.menu-mode:not(.sheet-mode){
+  background:linear-gradient(180deg,#f0d9a0 0%,#e8b866 45%,#c8863a 78%,#7a4e1e 100%);
+  background-attachment:fixed;
+}
 body.menu-mode .app{grid-template-columns:1fr}
 body.menu-mode #rail,body.menu-mode #ledger,body.menu-mode .foot{display:none}
 /* #main's own max-width:960px (set for the character-builder step column)
@@ -405,10 +416,13 @@ body.play-mode #rail,body.play-mode #ledger,body.play-mode .foot{display:none}
    Still its own component set rather than literally reusing .myth-home-*
    selectors, since these are content-dense utility pages (forms, lists,
    grids), not the five-button hero the home mockup was built for. */
+/* Background moved to body.menu-mode (below, near the other menu-mode rules)
+   so the gradient is full-bleed edge-to-edge instead of stopping at this
+   element's own max-width -- the max-width box used to carry the gradient
+   itself, which left the plain parchment/noise body texture showing as a
+   visible seam down both sides on anything wider than ~1170px viewport. */
 .mmenu{max-width:min(1680px,94vw);margin:0 auto;padding:52px 44px 90px;
-  min-height:100vh;color:#2a1c0c;font-family:'Cormorant Garamond',serif;
-  background:linear-gradient(180deg,#f0d9a0 0%,#e8b866 45%,#c8863a 78%,#7a4e1e 100%);
-  background-attachment:fixed}
+  min-height:100vh;color:#2a1c0c;font-family:'Cormorant Garamond',serif}
 .mmenu-brand{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:46px}
 .mmenu-brandwrap{display:flex;align-items:baseline;gap:9px}
 .mmenu-brandmark{font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#241706}
@@ -611,10 +625,9 @@ body.play-mode #rail,body.play-mode #ledger,body.play-mode .foot{display:none}
    lives in its own .sheetview-wrap, not .menuwrap, for the same reason: it's
    a print-style reference sheet, not a navigation screen, and was left out
    of this pass on purpose. */
+/* Same full-bleed fix as .mmenu above -- gradient lives on body.menu-mode now. */
 .menuwrap{max-width:min(1100px,94vw);margin:0 auto;padding:60px 24px 80px;
-  min-height:100vh;color:#2a1c0c;font-family:'Cormorant Garamond',serif;
-  background:linear-gradient(180deg,#f0d9a0 0%,#e8b866 45%,#c8863a 78%,#7a4e1e 100%);
-  background-attachment:fixed}
+  min-height:100vh;color:#2a1c0c;font-family:'Cormorant Garamond',serif}
 /* Standalone Character Sheet view — wider than .menuwrap so the dense
    print-style grid (originally built for the 960px builder column) doesn't
    get squeezed; body.menu-mode already zeroes out #main's own max-width.
