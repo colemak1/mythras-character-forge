@@ -480,9 +480,10 @@ function menuTile(title,desc,onclick,disabled,primary){
 // Account is its own page now, reached via a top-right button on the Main
 // Menu, rather than a form embedded in the menu body — the same pattern
 // almost every real app uses (sign-in is a destination, not furniture on
-// the home screen). Offers both the real Supabase magic-link flow and a
-// clearly-labeled local mock session for testing Campaign features without
-// needing a real inbox round-trip.
+// the home screen). Email & password only -- the magic-link toggle and the
+// local-mock "Test Account" panel were both removed from this view; MOCK_AUTH
+// itself and the code paths that check it elsewhere are untouched, this only
+// drops the panel that used to set it.
 function accountHTML(){
   let h='<div class="mmenu"><div class="mmenu-topbar"><span class="mmenu-brandmark">Mythras</span><span class="mmenu-branddiv">&middot;</span><span class="mmenu-brandsub">Character Forge</span>'
    +'<button class="mmenu-acctbtn" onclick="APP.toMenu()">&#8592; Main Menu</button></div>';
@@ -512,25 +513,9 @@ function accountHTML(){
      +'<button class="chip" onclick="APP.signUp()">Create account</button></div>'
      +'<button class="mmenu-cta-ghost sm" style="align-self:flex-start" onclick="APP.forgotPassword()">Forgot password?</button>'
      +'</div>'
-     +(AUTH_PENDING==="signup"?'<p class="okmsg" style="margin-top:8px">Check your email to confirm your account, then sign in.</p>':"")
-     +'<details style="margin-top:12px"><summary class="note" style="cursor:pointer">Prefer a magic link instead?</summary>'
-     +'<div class="mmenu-joinrow" style="margin-top:8px"><input type="email" id="authEmailLink" placeholder="you@example.com">'
-     +'<button class="chip" onclick="APP.sendMagicLink(\'authEmailLink\')">Send link</button></div>'
-     +(AUTH_PENDING===true?'<p class="okmsg" style="margin-top:8px">Check your email for the sign-in link.</p>':"")
-     +'</details>';
+     +(AUTH_PENDING==="signup"?'<p class="okmsg" style="margin-top:8px">Check your email to confirm your account, then sign in.</p>':"");
   }
   h+='</div>';
-  if(CLOUD_ENABLED&&!AUTH_USER){
-    h+='<div class="mmenu-panel mmenu-mockpanel"><div class="mmenu-panel-eyebrow">Test account &mdash; this browser only</div>';
-    if(MOCK_AUTH){
-      h+='<div class="mmenu-authhead"><b>'+esc(MOCK_AUTH.display_name)+'</b><span>Mock session &mdash; Campaign features are unlocked locally. Nothing is sent anywhere.</span></div>'
-       +'<button class="mmenu-cta-ghost" onclick="APP.mockSignOut()">End test session</button>';
-    }else{
-      h+='<p class="note">Skip real sign-in and try the Campaign features with a fake local identity for testing &mdash; nothing leaves this browser, and it won&rsquo;t sync with anyone else.</p>'
-       +'<div class="mmenu-joinrow"><input type="text" id="mockName" placeholder="Test DM name"><button class="chip" onclick="APP.mockSignIn()">Use test account</button></div>';
-    }
-    h+='</div>';
-  }
   h+='</div></div>';
   return h;
 }
