@@ -666,26 +666,23 @@ body.play-mode #rail,body.play-mode #ledger,body.play-mode .foot{display:none}
 .menuwrap .chip.on{background:#3c5936;border-color:#3c5936;color:#fff}
 .menuwrap .chip.on:hover{background:#3c5936}
 
-/* ---- play mode: "THE SPECIMEN" — stark black-and-cream brutalist
-   newspaper/anatomical-plate skin, restyled from the approved
-   playmode-restyle-D.html mockup verbatim (masthead identity block with a
-   hollow-outline name, a rotated rubber-stamp condition badge, ghost
-   watermark section numerals, dot-leader skill index, and a hand-drawn
-   dashed-circle annotation flagging whichever hit location currently
-   carries a Major Wound). Every selector name below is unchanged from the
-   previous dark-amber skin — only the declarations changed — so none of
-   the onclick handlers or state-driven class toggles elsewhere in this
-   file needed to move. Scoped entirely under body.play-mode so it never
-   touches the parchment character-builder look. ---- */
+/* ---- play mode: "GOLDEN HOUR SHEET" -- rebuilt (not recolored) from the
+   old "THE SPECIMEN" brutalist newspaper/anatomical-plate skin, per direct
+   user feedback that a plain palette/font swap over the old brutalist
+   shapes still read as "lab artifacts" -- ghost watermark numerals, a
+   rotated rubber-stamp badge, thick black bars, and monospace-uppercase
+   labels everywhere. Every selector name below is STILL unchanged from the
+   original skin (every onclick handler and state-driven class toggle
+   elsewhere in this file works untouched), and the .pm-columns grid
+   geometry (128px/372px/minmax(320px,1fr)/318px, same section order) is
+   untouched too -- only the visual treatment of each component changed, to
+   the same rounded-card / soft-shadow / Cinzel-label / diamond-rule
+   vocabulary the home screen and Character Builder already use. Scoped
+   entirely under body.play-mode so it never touches the parchment
+   character-builder look. ---- */
 body.play-mode{
-  /* Golden-hour recolor pass (kept every selector, grid, and structural rule
-     below untouched — only these token values changed, plus the masthead
-     display font a few rules down). Was strictly paper/ink/red; now a warm
-     parchment/ink/bronze family so Play Mode reads as the same product as
-     the home screen and Character Builder instead of a separate brutalist
-     skin, without touching layout or any interactive behaviour. */
-  --pm-bg:#f1e3bf;--pm-panel:#f1e3bf;--pm-panel2:#e8d4a6;
-  --pm-line:#2a1c0c;--pm-line-soft:rgba(42,28,12,.32);
+  --pm-bg:#f1e3bf;--pm-panel:#fbf3e1;--pm-panel2:#f2e6c8;
+  --pm-line:#2a1c0c;--pm-line-soft:rgba(42,28,12,.28);
   --pm-text:#2a1c0c;--pm-dim:rgba(42,28,12,.62);
   --pm-accent:#b8791e;--pm-accent-hi:#8a5511;
   /* "good"/"warn" stay ink/bronze; "bad" (Major Wound) keeps a real danger
@@ -693,134 +690,127 @@ body.play-mode{
      palette instead of blending into the bronze accent. */
   --pm-good:#2a1c0c;--pm-warn:#8a5511;--pm-bad:#8a2b18;
   --pm-minor:#6b4a1e;
-  --serif:'Archivo',sans-serif;--sans:'Archivo',sans-serif;--mono:'Space Mono',monospace;
-  background:
-    repeating-linear-gradient(90deg,transparent 0 119px,rgba(42,28,12,.045) 119px 120px),
-    var(--pm-bg);
+  --pm-r-sm:6px;--pm-r-md:12px;
+  --pm-shadow-sm:0 1px 3px rgba(42,28,12,.14);
+  --pm-shadow-md:0 6px 18px -8px rgba(42,28,12,.32);
+  --serif:'Cinzel',serif;--sans:'Cormorant Garamond',serif;--mono:'Space Mono',monospace;
+  background:linear-gradient(180deg,#f0d9a0 0%,#e8b866 55%,#c8863a 100%);
 }
-body.play-mode #main{background:var(--pm-bg);max-width:none;padding:0;margin-inline:0}
-.pm-wrap{max-width:2200px;margin:0 auto;padding:14px 0 34px;color:var(--pm-text);font-family:var(--sans)}
-.pm-btn{background:var(--pm-panel2);border:1.5px solid var(--pm-line);color:var(--pm-text);border-radius:0;padding:5px 12px;font-size:10.5px;font-family:var(--mono);font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inline:0}
+.pm-wrap{max-width:1680px;margin:0 auto;padding:20px 24px 40px;color:var(--pm-text);font-family:var(--sans)}
+.pm-btn{background:var(--pm-panel2);border:1px solid var(--pm-line);color:var(--pm-text);border-radius:999px;padding:5px 14px;font-size:11px;font-family:'Cinzel',serif;font-weight:600;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
 .pm-btn:hover:not(:disabled){border-color:var(--pm-accent);color:var(--pm-accent-hi)}
 .pm-btn:disabled{opacity:.35;cursor:not-allowed}
-.pm-btn.roll{background:var(--pm-accent);border-color:var(--pm-accent);color:var(--pm-bg);font-weight:700}
-.pm-btn.roll:hover{background:var(--pm-accent-hi);border-color:var(--pm-accent-hi);color:var(--pm-bg)}
-.pm-btn.sm{padding:2px 8px;font-size:9.5px;border-radius:0}
-.pm-box{background:var(--pm-panel);border:none;border-radius:0;padding:14px 18px 18px;position:relative;overflow:hidden}
+.pm-btn.roll{background:var(--pm-accent);border-color:var(--pm-accent);color:#fff8e6;font-weight:700}
+.pm-btn.roll:hover{background:var(--pm-accent-hi);border-color:var(--pm-accent-hi);color:#fff8e6}
+.pm-btn.sm{padding:2px 10px;font-size:10px}
+.pm-box{background:var(--pm-panel);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-md);box-shadow:var(--pm-shadow-sm);padding:16px 18px 18px;position:relative;margin-bottom:14px}
 .pm-box>*{position:relative;z-index:1}
 .pm-empty{color:var(--pm-dim);font-size:12.5px;font-style:italic}
-/* literal .ghost from the mockup — a big oversized watermark numeral,
-   used ONLY on the Vitals (02) and Skills (03) sections, exactly as in
-   playmode-restyle-D.html (Combat/Actions/Log do not carry one there). */
-.pm-ghost{position:absolute;top:2px;right:8px;z-index:0;pointer-events:none;
-  font-family:'Archivo',sans-serif;font-weight:900;font-size:88px;line-height:1;
-  color:transparent;-webkit-text-stroke:1px var(--pm-line-soft);letter-spacing:-.05em}
-/* section header — mono label, red index no. — matches .sect-head literally */
-.pm-sect-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;
-  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.24em;text-transform:uppercase}
-.pm-sect-head .no{color:var(--pm-accent)}
-.pm-sect-head.bar{background:var(--pm-line);color:var(--pm-bg);margin:-14px -18px 14px;padding:8px 18px;letter-spacing:.3em}
-.pm-sect-head.bar .no{color:var(--pm-accent)}
-.pm-box h3{font-family:var(--mono);text-transform:uppercase;letter-spacing:.22em;font-size:10px;color:var(--pm-dim);font-weight:700;margin:0 0 10px;padding-bottom:8px;border-bottom:2px solid var(--pm-line)}
+/* Was a big oversized outline-numeral watermark behind Vitals/Skills --
+   the single biggest "lab readout" tell. Removed entirely rather than
+   softened; the section already has a clear Cinzel label. */
+.pm-ghost{display:none}
+/* Section header: was a tiny mono uppercase label with a red index number --
+   now a Cinzel small-caps label with a diamond rule trailing off to the
+   right, matching .myth-home-rule / the builder's card headers. */
+.pm-sect-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;
+  font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--pm-accent-hi)}
+.pm-sect-head .no{display:none}
+.pm-sect-head::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--pm-line-soft),transparent)}
+.pm-sect-head.bar{background:none;color:var(--pm-accent-hi);margin:0 0 12px;padding:0;letter-spacing:.1em}
+.pm-sect-head.bar .no{display:none}
+.pm-box h3{font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--pm-accent-hi);font-weight:700;margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid var(--pm-line-soft)}
 
-/* ================= MASTHEAD (literal port of .mast/.mast-top/.mast-name/
-   .dateline/.barcode from playmode-restyle-D.html) ================= */
-.pm-utilbar{display:flex;align-items:center;gap:10px;margin:0 28px 10px;flex-wrap:wrap}
-.pm-mast{padding:0 28px}
+/* ================= MASTHEAD ================= */
+.pm-utilbar{display:flex;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap}
+.pm-mast{background:var(--pm-panel);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-md);box-shadow:var(--pm-shadow-md);padding:18px 26px 14px;margin-bottom:14px}
 .pm-mast-top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;
-  font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
-  padding-bottom:8px;border-bottom:5px solid var(--pm-line)}
-.pm-mast-top .red{color:var(--pm-accent)}
-.pm-barcode{display:inline-block;height:12px;vertical-align:-2px;margin-right:8px;width:54px;
-  background:repeating-linear-gradient(90deg,var(--pm-line) 0 2px,transparent 2px 4px,var(--pm-line) 4px 5px,transparent 5px 8px,var(--pm-line) 8px 11px,transparent 11px 13px)}
-/* Font swap: was Archivo (the same workhorse sans as the rest of the sheet)
-   -- Cinzel ties the masthead wordmark to the home screen / builder display
-   type. Kept the hollow-outline treatment and every layout property as-is;
-   only the typeface changed. */
-.pm-mast-name{font-family:'Cinzel',serif;font-weight:900;letter-spacing:-.01em;line-height:.92;
-  font-size:clamp(46px,6.6vw,88px);text-transform:uppercase;padding:14px 0 6px;
-  display:flex;flex-wrap:wrap;column-gap:.22em;align-items:baseline}
-.pm-mast-name .outline{color:transparent;-webkit-text-stroke:2.5px var(--pm-line)}
-.pm-mast-name .fin{font-size:.35em;color:var(--pm-accent);-webkit-text-stroke:0;letter-spacing:0}
-.pm-dateline{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;
-  padding:6px 0 10px;border-top:1px solid var(--pm-line);font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
-.pm-dateline .sep{color:var(--pm-accent);margin:0 10px}
-.pm-dateline .right{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--pm-dim)}
-.pm-viewonly-banner{margin:8px 28px 0;background:var(--pm-panel2);border:2px solid var(--pm-accent);color:var(--pm-accent-hi);
-  font-size:11.5px;padding:9px 14px;border-radius:0;font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em}
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--pm-dim)}
+.pm-mast-top .red{color:var(--pm-accent-hi)}
+/* Barcode graphic dropped -- newspaper-issue signifier with no equivalent
+   on the home screen / builder. */
+.pm-barcode{display:none}
+.pm-mast-name{font-family:'Cinzel',serif;font-weight:900;letter-spacing:.01em;line-height:1.05;
+  font-size:clamp(34px,4.4vw,56px);text-transform:uppercase;text-align:center;padding:12px 0 6px;
+  display:flex;flex-wrap:wrap;column-gap:.2em;align-items:baseline;justify-content:center;
+  text-shadow:0 1px 0 rgba(255,240,210,.5)}
+/* Hollow-outline surname treatment dropped -- reads as a print-plate
+   trick, not a golden-hour one; surname now just sits at a lighter weight
+   in the accent bronze instead. */
+.pm-mast-name .outline{color:var(--pm-accent-hi);-webkit-text-stroke:0;font-weight:600}
+.pm-mast-name .fin{font-size:.4em;color:var(--pm-accent-hi);-webkit-text-stroke:0;letter-spacing:0;vertical-align:middle}
+.pm-dateline{display:flex;justify-content:center;align-items:baseline;flex-wrap:wrap;gap:8px;
+  padding:8px 0 0;font-family:var(--sans);font-style:italic;font-size:16px;letter-spacing:.02em;color:var(--pm-dim);text-align:center}
+.pm-dateline .sep{color:var(--pm-accent-hi);margin:0 8px;font-style:normal}
+.pm-dateline .right{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--pm-dim);text-transform:uppercase;font-style:normal}
+.pm-viewonly-banner{margin:10px 0 0;background:var(--pm-panel2);border:1px solid var(--pm-accent-hi);color:var(--pm-accent-hi);
+  font-size:12px;padding:8px 14px;border-radius:var(--pm-r-sm);font-family:var(--sans);font-style:italic;text-align:center}
 
-/* ============ ATTRIBUTE TICKER BAND (literal .ticker/.tk/.pips/.pip) ============ */
-.pm-ticker{margin:0 28px;border-top:1px solid var(--pm-line);border-bottom:1px solid var(--pm-line);display:flex;flex-wrap:wrap}
-.pm-tk{flex:1 1 auto;display:flex;align-items:center;gap:9px;padding:9px 16px;border-right:1px solid var(--pm-line-soft)}
+/* ============ ATTRIBUTE TICKER BAND ============ */
+.pm-ticker{background:var(--pm-panel);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-md);box-shadow:var(--pm-shadow-sm);display:flex;flex-wrap:wrap;margin-bottom:14px;overflow:hidden}
+.pm-tk{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 14px;border-right:1px dotted var(--pm-line-soft)}
 .pm-tk:last-child{border-right:none}
-.pm-tk .k{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--pm-dim)}
-.pm-tk .v{font-weight:900;font-size:21px;letter-spacing:-.02em;font-variant-numeric:tabular-nums;font-family:'Archivo',sans-serif}
-.pm-tk .v small{font-size:12px;font-weight:700;color:var(--pm-dim)}
+.pm-tk .k{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--pm-accent-hi)}
+.pm-tk .v{font-weight:700;font-size:19px;letter-spacing:-.01em;font-variant-numeric:tabular-nums;font-family:var(--mono);color:var(--pm-text)}
+.pm-tk .v small{font-size:11px;font-weight:700;color:var(--pm-dim)}
 .pm-tk .adj{display:inline-flex;gap:3px;margin-left:2px}
-.pm-tk .adj button{background:none;border:1px solid var(--pm-line-soft);color:var(--pm-text);width:16px;height:16px;line-height:1;font-family:var(--mono);font-size:10px;cursor:pointer;padding:0}
+.pm-tk .adj button{background:none;border:1px solid var(--pm-line-soft);color:var(--pm-text);width:16px;height:16px;line-height:1;border-radius:50%;font-family:var(--mono);font-size:10px;cursor:pointer;padding:0}
 .pm-tk .adj button:hover{border-color:var(--pm-accent);color:var(--pm-accent-hi)}
-.pm-pips{display:inline-flex;gap:5px}
-.pm-pip{width:12px;height:12px;border:2px solid var(--pm-accent);border-radius:50%;background:var(--pm-accent);padding:0;cursor:pointer}
-.pm-pip.off{background:transparent;border-color:var(--pm-line)}
+.pm-pips{display:inline-flex;gap:4px;margin-top:2px}
+.pm-pip{width:11px;height:11px;border:1.5px solid var(--pm-accent-hi);border-radius:50%;background:var(--pm-accent-hi);padding:0;cursor:pointer}
+.pm-pip.off{background:transparent;border-color:var(--pm-line-soft)}
 .pm-pip:hover{border-color:var(--pm-accent-hi)}
 
-/* ================= MAIN GRID (literal .sheet/.col — 4 tracks: rail /
-   vitals / skills / combat-actions-log — instead of the previous 3-col
-   stack) ================= */
-.pm-columns{display:grid;grid-template-columns:128px 372px minmax(320px,1fr) 318px;
-  margin:0 28px;border-bottom:5px solid var(--pm-line);align-items:stretch;gap:0}
-.pm-col{border-right:1px solid var(--pm-line);padding:0;min-width:0;display:block}
-.pm-col:last-child{border-right:none}
+/* ================= MAIN GRID -- 4 tracks: rail / vitals / skills /
+   combat-actions-log. Column widths are the one thing held fixed. ================= */
+.pm-columns{display:grid;grid-template-columns:128px 372px minmax(320px,1fr) 318px;gap:14px;align-items:stretch}
+.pm-col{padding:0;min-width:0;display:block}
+.pm-col-rail,.pm-col-vitals,.pm-col-skills{background:var(--pm-panel);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-md);box-shadow:var(--pm-shadow-sm);padding:14px}
 .pm-col-right{display:flex;flex-direction:column}
 .pm-col-right .pm-box{flex:none}
-.pm-col-right .pm-box+.pm-box{border-top:1px solid var(--pm-line)}
+.pm-col-right .pm-box:last-child{margin-bottom:0}
 
-/* ============ CHARACTERISTIC RAIL (col 1, literal .rail/.rail-head/.chx) ============ */
-.pm-rail-head{padding:10px 12px;border-bottom:1px solid var(--pm-line);
-  font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase}
-.pm-rail-head .red{color:var(--pm-accent)}
-.pm-chx{padding:9px 12px 10px;border-bottom:1px solid var(--pm-line-soft);position:relative}
-.pm-chx:last-of-type{border-bottom:none}
+/* ============ CHARACTERISTIC RAIL (col 1) ============ */
+.pm-rail-head{padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--pm-line-soft);
+  font-family:'Cinzel',serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:center;color:var(--pm-accent-hi)}
+.pm-rail-head .red{color:var(--pm-accent-hi)}
+.pm-chx{background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:8px 10px 9px;margin-bottom:7px;position:relative}
+.pm-chx:last-of-type{margin-bottom:0}
 .pm-chx .row1{display:flex;justify-content:space-between;align-items:baseline}
-.pm-chx .lbl{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase}
-.pm-chx .idx{font-family:var(--mono);font-size:8px;color:var(--pm-accent)}
-.pm-chx .val{font-weight:900;font-size:32px;line-height:1;letter-spacing:-.04em;margin:2px 0 3px;
-  font-variant-numeric:tabular-nums;font-family:'Archivo',sans-serif}
-.pm-chx .x5{font-family:var(--mono);font-size:9px;color:var(--pm-dim);letter-spacing:.06em}
-.pm-chx .tick{height:3px;background:var(--pm-line-soft);margin-top:5px;position:relative}
-.pm-chx .tick i{position:absolute;inset:0 auto 0 0;background:var(--pm-line);display:block;height:100%}
-.pm-chx.hi .val{color:var(--pm-accent)}
-.pm-chx.hi .tick i{background:var(--pm-accent)}
+.pm-chx .lbl{font-family:'Cinzel',serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pm-dim)}
+.pm-chx .idx{display:none}
+.pm-chx .val{font-weight:700;font-size:26px;line-height:1.1;letter-spacing:-.01em;margin:2px 0 3px;
+  font-variant-numeric:tabular-nums;font-family:var(--mono);color:var(--pm-text)}
+.pm-chx .x5{font-family:var(--mono);font-size:9px;color:var(--pm-dim);letter-spacing:.02em}
+.pm-chx .tick{height:3px;background:var(--pm-line-soft);border-radius:999px;margin-top:5px;position:relative;overflow:hidden}
+.pm-chx .tick i{position:absolute;inset:0 auto 0 0;background:var(--pm-accent);display:block;height:100%}
+.pm-chx.hi{border-color:var(--pm-accent-hi)}
+.pm-chx.hi .val{color:var(--pm-accent-hi)}
+.pm-chx.hi .tick i{background:var(--pm-accent-hi)}
 
 /* ============ VITALS / PLATE (col 2) ============ */
-.pm-plate-cap{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--pm-dim);text-transform:uppercase;margin-top:8px}
-.pm-plate-cap b{color:var(--pm-accent)}
-/* literal .stamp — rotated rubber-stamp condition flag, distress-masked,
-   pinned over the top-right of the plate exactly as in the mockup. */
-.pm-stamp{position:absolute;right:12px;top:44px;transform:rotate(7deg);z-index:3;
-  font-family:var(--mono);font-weight:700;font-size:10px;letter-spacing:.22em;text-transform:uppercase;
-  color:var(--pm-accent);border:2px solid var(--pm-accent);padding:4px 8px;background:var(--pm-bg);
-  mask-image:radial-gradient(circle at 30% 40%,black 96%,transparent 97%);
-  -webkit-mask-image:radial-gradient(circle at 30% 40%,black 96%,transparent 97%)}
+.pm-plate-cap{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.08em;color:var(--pm-dim);text-transform:uppercase;margin-top:8px}
+.pm-plate-cap b{color:var(--pm-accent-hi)}
+/* Rotated distress-masked rubber-stamp condition badge -> a plain rounded
+   pill badge, same information, none of the "ink stamp" texture trick. */
+.pm-stamp{display:inline-block;float:right;position:relative;top:-2px;transform:none;z-index:3;
+  font-family:'Cinzel',serif;font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--pm-accent-hi);border:1.5px solid var(--pm-accent-hi);padding:3px 12px;border-radius:999px;background:var(--pm-panel2)}
 .pm-stamp.ok{color:var(--pm-good);border-color:var(--pm-good)}
 .pm-stamp.minor{color:var(--pm-minor);border-color:var(--pm-minor)}
 .pm-stamp.major{color:var(--pm-bad);border-color:var(--pm-bad)}
-.pm-vit-total{display:flex;align-items:center;gap:10px;margin:10px 0 12px}
-.pm-vit-total .lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--pm-dim);white-space:nowrap;font-family:var(--mono)}
+.pm-vit-total{display:flex;align-items:center;gap:10px;margin:8px 0 12px;clear:both}
+.pm-vit-total .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--pm-dim);white-space:nowrap;font-family:'Cinzel',serif}
 .pm-vit-total .num{font:700 14px var(--mono);color:var(--pm-text)}
 .pm-vit-total .num span{color:var(--pm-dim);font-weight:400;font-size:11px}
-.pm-totbar{flex:1;height:8px;border-radius:0;background:var(--pm-panel2);border:1px solid var(--pm-line);overflow:hidden}
-.pm-totbar i{display:block;height:100%;border-radius:0;transition:width .25s ease,background .25s ease}
-/* patent-drawing plate: figure gets the full column width so the leader
-   lines have room to reach labels on both edges (mirrors D's 336px-wide
-   .plate SVG with HEAD/R.ARM/ABDOMEN/R.LEG leadered left and CHEST/L.ARM/
-   L.LEG leadered right); the interactive click-to-select loclist keeps its
-   own row-based controls stacked underneath rather than squeezed beside it. */
+.pm-totbar{flex:1;height:9px;border-radius:999px;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);overflow:hidden}
+.pm-totbar i{display:block;height:100%;border-radius:999px;transition:width .25s ease,background .25s ease}
 .pm-vit-body{display:flex;flex-direction:column;gap:4px;align-items:stretch}
-.pm-figwrap{width:100%}
+.pm-figwrap{width:100%;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:6px}
 .pm-figwrap svg{display:block;width:100%;height:auto}
-.pm-figcap{font:8.5px var(--mono);color:var(--pm-dim);text-align:center;margin-top:4px;padding-top:6px;
-  letter-spacing:.3em;text-transform:uppercase;border-top:1px solid var(--pm-line)}
+.pm-figcap{font:9px var(--mono);color:var(--pm-dim);text-align:center;margin-top:4px;padding-top:6px;
+  letter-spacing:.14em;text-transform:uppercase;border-top:1px solid var(--pm-line-soft)}
 .pm-leader{fill:none;stroke:var(--pm-line);stroke-width:1}
 .pm-leader.wound{stroke:var(--pm-accent)}
 .pm-leader.wound.minor{stroke:var(--pm-minor)}
@@ -842,106 +832,106 @@ body.play-mode #main{background:var(--pm-bg);max-width:none;padding:0;margin-inl
 .bz.serious .hatch,.bz.major .hatch{display:block}
 .bz.major .shape{animation:pmpulse 1.6s ease-in-out infinite}
 @keyframes pmpulse{0%,100%{stroke-opacity:.55}50%{stroke-opacity:1}}
-.pm-loclist{flex:1;min-width:0;display:flex;flex-direction:column;gap:0;border-top:1px solid var(--pm-line-soft)}
+.pm-loclist{flex:1;min-width:0;display:flex;flex-direction:column;gap:0;border-top:1px solid var(--pm-line-soft);margin-top:4px}
 .pm-locrow{display:grid;grid-template-columns:10px 1fr auto auto;gap:6px;align-items:center;
   padding:5px 6px;border:none;border-bottom:1px dotted var(--pm-line-soft);border-radius:0;cursor:pointer;background:transparent}
 .pm-locrow:hover,.pm-locrow.sel{background:var(--pm-panel2)}
 .pm-locrow.sel{box-shadow:inset 3px 0 0 var(--pm-accent)}
-.pm-locrow .dot{width:8px;height:8px;border-radius:50%;border:1px solid var(--pm-line);transition:background .25s ease;flex:0 0 auto}
-.pm-locrow .nm{font-size:11px;color:var(--pm-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono);letter-spacing:.02em}
+.pm-locrow .dot{width:8px;height:8px;border-radius:50%;border:1px solid var(--pm-line-soft);transition:background .25s ease;flex:0 0 auto}
+.pm-locrow .nm{font-size:13px;color:var(--pm-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--sans);letter-spacing:.01em}
 .pm-locrow .ap{font:9.5px var(--mono);color:var(--pm-dim);display:inline-flex;align-items:center;white-space:nowrap}
-.pm-locrow .hp{font:700 11.5px var(--mono);text-align:right;min-width:34px;color:var(--pm-text)}
+.pm-locrow .hp{font:700 12px var(--mono);text-align:right;min-width:34px;color:var(--pm-text)}
 .pm-locrow .hp span{color:var(--pm-dim);font-weight:400;font-size:10px}
 .pm-locrow.st-minor .hp{color:var(--pm-minor)}
 .pm-locrow.st-serious .hp{color:var(--pm-warn)}
 .pm-locrow.st-major .hp{color:var(--pm-bad)}
 .pm-legend{display:flex;align-items:center;gap:7px;margin-top:9px}
-.pm-legendgrad{flex:1;height:6px;border-radius:0;border:1px solid var(--pm-line);background:linear-gradient(90deg,#f1e3bf 0%,#2a1c0c 30%,#b8791e 75%,#8a5511 100%)}
-.pm-legend span{font:9px var(--mono);color:var(--pm-dim);white-space:nowrap;text-transform:uppercase;letter-spacing:.08em}
-.pm-locdetail{margin-top:12px;background:var(--pm-panel2);border:1px solid var(--pm-line);border-radius:0;padding:12px 14px}
+.pm-legendgrad{flex:1;height:6px;border-radius:999px;border:1px solid var(--pm-line-soft);background:linear-gradient(90deg,#f1e3bf 0%,#2a1c0c 30%,#b8791e 75%,#8a5511 100%)}
+.pm-legend span{font:9px var(--mono);color:var(--pm-dim);white-space:nowrap;text-transform:uppercase;letter-spacing:.06em}
+.pm-locdetail{margin-top:12px;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:12px 14px}
 .pm-locdetail .dt{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.pm-locdetail .dt b{font-size:14px;color:var(--pm-text);font-family:'Archivo',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.pm-locdetail .dt b{font-size:14px;color:var(--pm-text);font-family:'Cinzel',serif;font-weight:700;text-transform:uppercase;letter-spacing:.01em}
 .pm-locdetail .dt .d20{font:10px var(--mono);color:var(--pm-dim)}
 .pm-locdetail .arm{font:10.5px var(--mono);color:var(--pm-dim);margin-top:3px}
 .pm-locdetail .hpline{font:700 17px var(--mono);color:var(--pm-text);margin:8px 0 3px}
 .pm-locdetail .hpline span{font-size:11px;font-weight:400;color:var(--pm-dim)}
-.pm-woundtag{font:700 9px var(--mono);text-transform:uppercase;letter-spacing:.08em;padding:1px 8px;border-radius:0;border:1.5px solid var(--pm-line);color:var(--pm-dim);margin-left:8px;vertical-align:2px}
+.pm-woundtag{font:700 9px var(--mono);text-transform:uppercase;letter-spacing:.05em;padding:1px 9px;border-radius:999px;border:1.5px solid var(--pm-line-soft);color:var(--pm-dim);margin-left:8px;vertical-align:2px}
 .pm-woundtag.ok{color:var(--pm-good);border-color:var(--pm-good)}
 .pm-woundtag.minor{color:var(--pm-minor);border-color:var(--pm-minor)}
 .pm-woundtag.serious{color:var(--pm-warn);border-color:var(--pm-warn)}
-.pm-woundtag.major{color:var(--pm-bad);border-color:var(--pm-bad);background:rgba(224,52,15,.08)}
-.pm-locdetail .fx{font-size:11px;color:var(--pm-dim);line-height:1.5;margin:6px 0 10px}
+.pm-woundtag.major{color:var(--pm-bad);border-color:var(--pm-bad);background:rgba(138,43,24,.1)}
+.pm-locdetail .fx{font-size:12px;color:var(--pm-dim);line-height:1.5;margin:6px 0 10px;font-family:var(--sans)}
 .pm-dctl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.pm-dctl input{width:46px;border:1px solid var(--pm-line);background:var(--pm-bg);color:var(--pm-text);font-family:var(--mono);padding:3px 5px}
-.pm-sbtn{background:var(--pm-bg);border:1.5px solid var(--pm-line);color:var(--pm-text);border-radius:0;padding:3px 10px;font-size:10.5px;font-family:var(--mono);font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+.pm-dctl input{width:46px;border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);background:var(--pm-bg);color:var(--pm-text);font-family:var(--mono);padding:3px 5px}
+.pm-sbtn{background:var(--pm-bg);border:1px solid var(--pm-line-soft);color:var(--pm-text);border-radius:999px;padding:3px 11px;font-size:10.5px;font-family:'Cinzel',serif;font-weight:600;letter-spacing:.02em;text-transform:uppercase;cursor:pointer}
 .pm-sbtn:hover{border-color:var(--pm-accent);color:var(--pm-accent-hi)}
 .pm-sbtn.dmg{border-color:var(--pm-bad);color:var(--pm-bad)}
-.pm-sbtn.dmg:hover{background:var(--pm-bad);color:var(--pm-bg)}
+.pm-sbtn.dmg:hover{background:var(--pm-bad);color:#fff8e6}
 
-/* center column: one continuous scrollable skills list — literal
-   .sk-band/.sk dot-leader index, ".cbt" variant for Combat Styles */
-.pm-gradenote{color:var(--pm-accent-hi);font-family:var(--mono);text-transform:none;letter-spacing:0;font-size:11px}
-.pm-skillgroup h4{font-family:var(--mono);text-transform:uppercase;font-size:11px;font-weight:700;letter-spacing:.26em;color:var(--pm-text);margin:16px 0 8px;border-bottom:1px solid var(--pm-line);padding-bottom:0;display:flex;align-items:center;gap:10px}
-.pm-skillgroup h4::after{content:"";flex:1;border-top:1px solid var(--pm-line);transform:translateY(-6px)}
+/* center column: one continuous scrollable skills list, dot-leader index
+   kept (it's a genuinely nice typographic device, not a "lab" artifact on
+   its own) but warmed up; ".cbt" variant for Combat Styles */
+.pm-gradenote{color:var(--pm-accent-hi);font-family:var(--sans);font-style:italic;font-size:12px}
+.pm-skillgroup h4{font-family:'Cinzel',serif;text-transform:uppercase;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--pm-accent-hi);margin:16px 0 8px;border-bottom:1px solid var(--pm-line-soft);padding-bottom:5px;display:flex;align-items:center;gap:10px}
+.pm-skillgroup h4::after{content:none}
 .pm-skillgroup h4:first-child{margin-top:0}
 .pm-skillrow{display:flex;align-items:baseline;gap:8px;padding:4.5px 0;border-bottom:none;font-size:13px}
-.pm-skillrow .nm{color:var(--pm-text);font-weight:600;font-size:14px;letter-spacing:.01em;white-space:nowrap}
-.pm-skillrow .base{font-family:var(--mono);font-size:9px;color:var(--pm-line-35,var(--pm-line-soft));letter-spacing:.05em;white-space:nowrap}
-.pm-skillrow .lead{flex:1;border-bottom:2px dotted var(--pm-line-35,var(--pm-line-soft));transform:translateY(-3px);min-width:12px}
-.pm-skillrow .pctval{font-family:var(--mono);font-weight:900;color:var(--pm-text);min-width:22px;text-align:right;cursor:pointer;font-size:19px;letter-spacing:-.02em}
-.pm-skillrow .pctval:hover,.pm-stylechip b:hover{color:var(--pm-accent-hi);text-decoration:underline}
+.pm-skillrow .nm{color:var(--pm-text);font-weight:600;font-size:15px;letter-spacing:0;white-space:nowrap;font-family:var(--sans)}
+.pm-skillrow .base{font-family:var(--mono);font-size:9px;color:var(--pm-dim);letter-spacing:.03em;white-space:nowrap}
+.pm-skillrow .lead{flex:1;border-bottom:1.5px dotted var(--pm-line-soft);transform:translateY(-3px);min-width:12px}
+.pm-skillrow .pctval{font-family:var(--mono);font-weight:700;color:var(--pm-accent-hi);min-width:22px;text-align:right;cursor:pointer;font-size:18px;letter-spacing:-.01em}
+.pm-skillrow .pctval:hover,.pm-stylechip b:hover{color:var(--pm-accent);text-decoration:underline}
 .pm-skillrow.cbt{padding:7px 0}
-.pm-skillrow.cbt .nm{font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.02em}
-.pm-skillrow.cbt .pctval{font-size:26px;color:var(--pm-accent)}
+.pm-skillrow.cbt .nm{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;font-family:'Cinzel',serif}
+.pm-skillrow.cbt .pctval{font-size:23px;color:var(--pm-accent)}
 /* On-demand Difficulty Grade reference popover — opened by clicking any
    skill/style %, closed by clicking it again, clicking away, or Escape. */
-.pm-gradepop{position:fixed;z-index:600;background:var(--pm-bg);border:2px solid var(--pm-line);border-radius:0;box-shadow:4px 4px 0 var(--pm-line);padding:10px 12px;font-size:12px;min-width:172px;font-family:var(--mono)}
-.pm-gradepop-hd{font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;font-size:10px;font-weight:700;color:var(--pm-dim);margin-bottom:6px;border-bottom:1px solid var(--pm-line);padding-bottom:5px}
+.pm-gradepop{position:fixed;z-index:600;background:var(--pm-panel);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-md);box-shadow:var(--pm-shadow-md);padding:10px 12px;font-size:12px;min-width:172px;font-family:var(--sans)}
+.pm-gradepop-hd{font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.08em;font-size:10px;font-weight:700;color:var(--pm-accent-hi);margin-bottom:6px;border-bottom:1px solid var(--pm-line-soft);padding-bottom:5px}
 .pm-gradepop table{width:100%;border-collapse:collapse}
-.pm-gradepop td{padding:2px 0;color:var(--pm-text);font-size:12px}
+.pm-gradepop td{padding:2px 0;color:var(--pm-text);font-size:12.5px}
 .pm-gradepop td.g{color:var(--pm-dim)}
 .pm-gradepop td.p{text-align:right;font-family:var(--mono);font-weight:700;color:var(--pm-text)}
 .pm-gradepop tr.cur td{color:var(--pm-accent-hi)}
-.pm-gradepop-note{margin-top:7px;padding-top:6px;border-top:1px solid var(--pm-line-soft);color:var(--pm-dim);font-size:10px;line-height:1.4}
-.pm-xpbadge{background:var(--pm-accent);color:var(--pm-bg);border-radius:0;padding:1px 7px;font-size:10px;font-weight:700;margin-left:6px;font-family:var(--mono)}
+.pm-gradepop-note{margin-top:7px;padding-top:6px;border-top:1px solid var(--pm-line-soft);color:var(--pm-dim);font-size:10.5px;line-height:1.4;font-family:var(--sans)}
+.pm-xpbadge{background:var(--pm-accent);color:#fff8e6;border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;margin-left:6px;font-family:var(--mono)}
 
 /* Improve Skills modal (Experience Rolls, core rulebook pp.71-73) */
-.pm-modal-backdrop{position:fixed;inset:0;background:rgba(42,28,12,.55);z-index:700;display:flex;align-items:center;justify-content:center;padding:24px}
-.pm-modal{background:var(--pm-bg);border:2px solid var(--pm-line);border-radius:0;max-width:660px;width:100%;max-height:85vh;overflow:auto;padding:18px 20px 20px;box-shadow:8px 8px 0 rgba(42,28,12,.25);color:var(--pm-text);font-family:var(--sans)}
-.pm-modal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;border-bottom:3px solid var(--pm-line);padding-bottom:10px}
-.pm-modal-hd h3{font-family:'Archivo',sans-serif;text-transform:uppercase;letter-spacing:.06em;font-size:16px;font-weight:900;color:var(--pm-text);margin:0}
-.pm-xppool{display:flex;flex-direction:column;gap:6px;background:var(--pm-panel2);border:1px solid var(--pm-line);border-radius:0;padding:10px 12px;margin-bottom:10px;font-size:12.5px}
+.pm-modal-backdrop{position:fixed;inset:0;background:rgba(42,28,12,.5);z-index:700;display:flex;align-items:center;justify-content:center;padding:24px}
+.pm-modal{background:var(--pm-panel);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-md);max-width:660px;width:100%;max-height:85vh;overflow:auto;padding:18px 20px 20px;box-shadow:var(--pm-shadow-md);color:var(--pm-text);font-family:var(--sans)}
+.pm-modal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;border-bottom:1px solid var(--pm-line-soft);padding-bottom:10px}
+.pm-modal-hd h3{font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.04em;font-size:16px;font-weight:700;color:var(--pm-accent-hi);margin:0}
+.pm-xppool{display:flex;flex-direction:column;gap:6px;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:10px 12px;margin-bottom:10px;font-size:12.5px}
 .pm-xpaward{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .pm-xplist{max-height:280px;overflow:auto;margin-top:4px;padding-right:4px}
 .pm-xprow{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px dotted var(--pm-line-soft);font-size:12.5px}
 .pm-xprow .nm{flex:1;color:var(--pm-text)}
 .pm-xprow .pctval{font-family:var(--mono);font-weight:700;color:var(--pm-text);min-width:34px;text-align:right}
-.pm-xpflag{background:none;border:1.5px solid var(--pm-line);color:var(--pm-dim);border-radius:0;width:22px;height:22px;flex:0 0 auto;cursor:pointer;font-size:12px;line-height:1;padding:0}
+.pm-xpflag{background:none;border:1.5px solid var(--pm-line-soft);color:var(--pm-dim);border-radius:50%;width:22px;height:22px;flex:0 0 auto;cursor:pointer;font-size:12px;line-height:1;padding:0}
 .pm-xpflag:hover{border-color:var(--pm-warn);color:var(--pm-warn)}
-.pm-xpflag.on{border-color:var(--pm-warn);color:var(--pm-warn);background:rgba(168,99,27,.14)}
-.pm-xplog{margin-top:12px;border-top:2px solid var(--pm-line);padding-top:10px}
-.pm-xplog h4{font-family:var(--mono);text-transform:uppercase;font-size:10.5px;font-weight:700;letter-spacing:.16em;color:var(--pm-text);margin:0 0 7px}
+.pm-xpflag.on{border-color:var(--pm-warn);color:var(--pm-warn);background:rgba(138,85,17,.14)}
+.pm-xplog{margin-top:12px;border-top:1px solid var(--pm-line-soft);padding-top:10px}
+.pm-xplog h4{font-family:'Cinzel',serif;text-transform:uppercase;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--pm-accent-hi);margin:0 0 7px}
 .pm-xplogrow{font-size:11.5px;color:var(--pm-dim);padding:2px 0;font-family:var(--mono)}
 .pm-xplogrow b{color:var(--pm-text)}
 .pm-xplogrow.ok b{color:var(--pm-good)}
 .pm-xplogrow.fumble{color:var(--pm-warn)}
 
-/* col 4, sect A "04 COMBAT" — literal .wpn weapon blocks (no tiles/pips —
-   those live in the ticker now) plus a Fatigue selector appended below,
-   flagged as a real-functionality addition the static mockup has no
-   equivalent for. */
-.pm-wpn{padding:9px 0 10px;border-bottom:1px solid var(--pm-line-soft)}
-.pm-wpn:last-of-type{border-bottom:none}
+/* col 4, sect A "COMBAT" — weapon blocks now rounded cards, plus the
+   Fatigue selector below (real functionality, no equivalent in any static
+   reference mockup). */
+.pm-wpn{background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:9px 12px;margin-bottom:8px}
+.pm-wpn:last-of-type{margin-bottom:0}
 .pm-wpn .top{display:flex;justify-content:space-between;align-items:baseline}
-.pm-wpn .nm{font-weight:900;font-size:16px;text-transform:uppercase;letter-spacing:.01em;font-family:'Archivo',sans-serif}
-.pm-wpn .dmg{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--pm-accent)}
-.pm-wpn .meta{font-family:var(--mono);font-size:9.5px;color:var(--pm-dim);margin-top:3px;letter-spacing:.03em}
-.pm-fatrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dotted var(--pm-line-soft);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--pm-dim)}
-.pm-fatsel{font-size:10.5px;background:var(--pm-bg);border:1px solid var(--pm-line);color:var(--pm-text);border-radius:0;padding:3px 6px;font-family:var(--mono);text-transform:uppercase}
+.pm-wpn .nm{font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:.01em;font-family:'Cinzel',serif;color:var(--pm-text)}
+.pm-wpn .dmg{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--pm-accent-hi)}
+.pm-wpn .meta{font-family:var(--mono);font-size:10px;color:var(--pm-dim);margin-top:3px;letter-spacing:.02em}
+.pm-fatrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dotted var(--pm-line-soft);font-family:'Cinzel',serif;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--pm-dim)}
+.pm-fatsel{font-size:11px;background:var(--pm-bg);border:1px solid var(--pm-line-soft);color:var(--pm-text);border-radius:999px;padding:3px 10px;font-family:var(--sans);text-transform:uppercase}
 /* Fatigue's applied effects, shown under the picker whenever the character is
    past Fresh (the level now really does change skill Grade / Move / Init / AP). */
 .pm-fatstep{display:inline-flex;gap:3px;margin-left:6px}
-.pm-fatfx{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--pm-dim);text-transform:none}
+.pm-fatfx{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.03em;color:var(--pm-dim);text-transform:none}
 .pm-fatfx b{color:var(--pm-text)}
 .pm-fatfx .fx-g b{color:var(--pm-warn)}
 .pm-fatfx .fx-bad b{color:var(--pm-bad)}
@@ -957,74 +947,72 @@ body.play-mode #main{background:var(--pm-bg);max-width:none;padding:0;margin-inl
    UI honest about what's actually clickable. */
 .play-mode.view-only .pm-sbtn,.play-mode.view-only .pm-pip,.play-mode.view-only .pm-fatsel,.play-mode.view-only .pm-dctl input,
 .play-mode.view-only .pm-tk .adj button,.play-mode.view-only .pm-act,.play-mode.view-only .pm-newround{pointer-events:none;opacity:.4;cursor:not-allowed}
-/* col 4, sect B (tabs) — no sect-head/ghost at all in the mockup, tabs sit
-   directly at the top of the section. Literal .tabs/.tab: red text + red
-   underline bar on the active tab, not an inverted fill. */
-.pm-tabs{display:flex;gap:0;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px;border-bottom:1px solid var(--pm-line);flex-wrap:wrap}
-.pm-tabbtn{background:transparent;border:none;color:var(--pm-line-35,var(--pm-dim));padding:6px 10px 7px;cursor:pointer;position:relative}
-.pm-tabbtn:hover{color:var(--pm-text)}
-.pm-tabbtn.on{color:var(--pm-accent)}
-.pm-tabbtn.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--pm-accent)}
-.pm-tabpanel{background:var(--pm-panel);border:none;padding:0}
+/* col 4, sect B (tabs): pill-shaped tab buttons instead of a red
+   text+underline treatment. */
+.pm-tabs{display:flex;gap:6px;font-family:'Cinzel',serif;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:12px;flex-wrap:wrap}
+.pm-tabbtn{background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:999px;color:var(--pm-dim);padding:6px 13px;cursor:pointer;position:relative}
+.pm-tabbtn:hover{color:var(--pm-text);border-color:var(--pm-accent)}
+.pm-tabbtn.on{background:var(--pm-accent-hi);border-color:var(--pm-accent-hi);color:#fff8e6}
+.pm-tabbtn.on::after{content:none}
+.pm-tabpanel{background:transparent;border:none;padding:0}
 /* literal .act — static Mythras action-cost reference list */
-.pm-actbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0 10px;margin-bottom:6px;border-bottom:1px solid var(--pm-line)}
-.pm-actbar .apread{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--pm-dim)}
-.pm-actbar .apread b{color:var(--pm-text);font-size:13px}
-.pm-newround{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  background:var(--pm-text);color:var(--pm-bg);border:1px solid var(--pm-text);padding:5px 10px;cursor:pointer}
-.pm-newround:hover{background:var(--pm-accent);border-color:var(--pm-accent)}
-.pm-act{display:flex;justify-content:space-between;align-items:center;width:100%;padding:6px 0;border-bottom:1px dotted var(--pm-line-soft);
+.pm-actbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0 10px;margin-bottom:6px;border-bottom:1px solid var(--pm-line-soft)}
+.pm-actbar .apread{font-family:var(--sans);font-size:13px;letter-spacing:.02em;color:var(--pm-dim)}
+.pm-actbar .apread b{color:var(--pm-text);font-size:15px}
+.pm-newround{font-family:'Cinzel',serif;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  background:var(--pm-text);color:var(--pm-bg);border:none;border-radius:999px;padding:6px 14px;cursor:pointer}
+.pm-newround:hover{background:var(--pm-accent);color:#fff8e6}
+.pm-act{display:flex;justify-content:space-between;align-items:center;width:100%;padding:7px 4px;border-bottom:1px dotted var(--pm-line-soft);
   background:none;border-left:none;border-right:none;border-top:none;text-align:left;font-family:inherit;cursor:pointer;color:inherit}
 .pm-act:last-child{border-bottom:none}
 .pm-act:hover:not(:disabled){background:var(--pm-panel2)}
 .pm-act:disabled{cursor:not-allowed;opacity:.45}
-.pm-act .nm{font-weight:600;font-size:14px}
-.pm-act .note{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.03em;color:var(--pm-dim);font-weight:400;margin-top:1px}
-.pm-act .cost{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.12em;background:var(--pm-line);color:var(--pm-bg);padding:2px 7px;white-space:nowrap}
+.pm-act .nm{font-weight:600;font-size:14.5px;font-family:var(--sans)}
+.pm-act .note{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.02em;color:var(--pm-dim);font-weight:400;margin-top:1px}
+.pm-act .cost{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);color:var(--pm-accent-hi);border-radius:999px;padding:2px 9px;white-space:nowrap}
 .pm-act .cost.free{background:none;color:var(--pm-dim);border:1px solid var(--pm-line-soft)}
-.pm-atktable{width:100%;border-collapse:collapse;font-size:12px}
-.pm-atktable th{text-align:left;font-family:var(--mono);text-transform:uppercase;font-size:9.5px;font-weight:700;letter-spacing:.1em;color:var(--pm-dim);border-bottom:2px solid var(--pm-line);padding:6px 8px}
+.pm-atktable{width:100%;border-collapse:collapse;font-size:12.5px}
+.pm-atktable th{text-align:left;font-family:'Cinzel',serif;text-transform:uppercase;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--pm-accent-hi);border-bottom:1px solid var(--pm-line-soft);padding:6px 8px}
 .pm-atktable td{padding:6px 8px;border-bottom:1px dotted var(--pm-line-soft);color:var(--pm-text)}
 .pm-atk-styles{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.pm-stylechip{display:flex;align-items:center;gap:6px;background:var(--pm-panel2);border:1.5px solid var(--pm-line);border-radius:0;padding:5px 8px 5px 12px;font-size:11.5px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.03em}
-.pm-stylechip b{color:var(--pm-text);font-family:var(--mono);cursor:pointer;font-size:14px}
-.pm-invmeta{color:var(--pm-dim);font-size:11.5px;margin-top:10px;font-family:var(--mono)}
+.pm-stylechip{display:flex;align-items:center;gap:6px;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:999px;padding:5px 8px 5px 13px;font-size:12px;font-family:var(--sans);text-transform:uppercase;letter-spacing:.02em}
+.pm-stylechip b{color:var(--pm-accent-hi);font-family:var(--mono);cursor:pointer;font-size:14px}
+.pm-invmeta{color:var(--pm-dim);font-size:12px;margin-top:10px;font-family:var(--sans);font-style:italic}
 .pm-invlist{margin-top:8px}
-.pm-invrow{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted var(--pm-line-soft);font-size:12.5px}
-.pm-notes{font-size:13px;line-height:1.6;color:var(--pm-text)}
+.pm-invrow{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted var(--pm-line-soft);font-size:13px}
+.pm-notes{font-size:14px;line-height:1.6;color:var(--pm-text);font-family:var(--sans)}
 .pm-cstyle-block{margin-bottom:16px}
-.pm-cstyle-block h4{font-family:var(--mono);text-transform:uppercase;font-size:11px;font-weight:700;letter-spacing:.26em;color:var(--pm-text);margin-bottom:8px}
+.pm-cstyle-block h4{font-family:'Cinzel',serif;text-transform:uppercase;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--pm-accent-hi);margin-bottom:8px}
 .pm-cstyle-block .pm-fx-item{margin-bottom:6px}
-/* col 4, sect C "05 PRESS LOG — D100" — literal .log/.log-e: d/w/r three
-   column row, Critical rolls get the full-bleed inverted black treatment,
-   Failure/Fumble rolls go red + strikethrough. */
-.pm-rolllog{font-family:var(--mono);font-size:11px}
-.pm-rolllog .log-e{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--pm-line-soft)}
+/* col 4, sect C "PRESS LOG" — a Critical roll gets a soft bronze-tint
+   highlight instead of a full-bleed inverted-black bar; Failure/Fumble
+   still read clearly via strikethrough + the danger red-brown. */
+.pm-rolllog{font-family:var(--mono);font-size:11.5px}
+.pm-rolllog .log-e{display:flex;gap:8px;align-items:baseline;padding:6px 4px;border-bottom:1px dotted var(--pm-line-soft);border-radius:var(--pm-r-sm)}
 .pm-rolllog .log-e:last-child{border-bottom:none}
-.pm-rolllog .log-e .d{font-weight:700;font-size:16px;width:28px;text-align:right;font-variant-numeric:tabular-nums;flex:0 0 auto}
+.pm-rolllog .log-e .d{font-weight:700;font-size:16px;width:28px;text-align:right;font-variant-numeric:tabular-nums;flex:0 0 auto;color:var(--pm-dim)}
 .pm-rolllog .log-e .w{color:var(--pm-dim);flex:1}
-.pm-rolllog .log-e .r{font-weight:700;letter-spacing:.12em;font-size:9px;text-transform:uppercase;flex:0 0 auto}
-.pm-rolllog .log-e.crit{background:var(--pm-line);color:var(--pm-bg);margin:0 -18px;padding:6px 18px}
-.pm-rolllog .log-e.crit .d{color:var(--pm-accent)}
-.pm-rolllog .log-e.crit .w{color:var(--pm-panel2)}
-.pm-rolllog .log-e.crit .r{color:var(--pm-accent)}
-.pm-rolllog .log-e.fail .d{color:var(--pm-accent)}
+.pm-rolllog .log-e .r{font-weight:700;letter-spacing:.06em;font-size:9.5px;text-transform:uppercase;flex:0 0 auto}
+.pm-rolllog .log-e.crit{background:rgba(184,121,30,.14);border:1px solid var(--pm-accent-hi);margin:0;padding:6px 10px}
+.pm-rolllog .log-e.crit .d{color:var(--pm-accent-hi)}
+.pm-rolllog .log-e.crit .w{color:var(--pm-text)}
+.pm-rolllog .log-e.crit .r{color:var(--pm-accent-hi)}
+.pm-rolllog .log-e.fail .d{color:var(--pm-bad)}
 .pm-rolllog .log-e.fail .w{text-decoration:line-through}
-.pm-rolllog .log-e.fail .r{color:var(--pm-accent)}
-.pm-fx-resolve{margin-top:4px;padding-top:4px;border-top:1px dotted var(--pm-line-soft);display:flex;gap:5px;flex-wrap:wrap;align-items:center;color:var(--pm-text);font-size:11px}
+.pm-rolllog .log-e.fail .r{color:var(--pm-bad)}
+.pm-fx-resolve{margin-top:4px;padding-top:4px;border-top:1px dotted var(--pm-line-soft);display:flex;gap:5px;flex-wrap:wrap;align-items:center;color:var(--pm-text);font-size:11.5px}
 
-/* literal .colophon footer */
-.pm-colophon{margin:10px 28px 0;display:flex;justify-content:space-between;
-  font-family:var(--mono);font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--pm-line-35,rgba(42,28,12,.4))}
+.pm-colophon{margin:10px 0 0;display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--pm-line-35,rgba(42,28,12,.4))}
 
 /* Special Effects reference tab */
 .pm-fx-list{display:flex;flex-direction:column;gap:14px}
 .pm-fx-group{display:flex;flex-direction:column;gap:6px}
-.pm-fx-grouphead{margin:0 0 3px;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--pm-text);font-family:var(--mono);font-weight:700;border-bottom:1px solid var(--pm-line-soft);padding-bottom:4px}
-.pm-fx-item{background:var(--pm-panel2);border:1px solid var(--pm-line);border-radius:0;padding:9px 12px}
-.pm-fx-item summary{cursor:pointer;font-size:12.5px;color:var(--pm-text);display:flex;align-items:center;gap:7px;flex-wrap:wrap;list-style:revert;font-weight:600}
-.pm-fx-item p{margin-top:8px;padding-top:8px;border-top:1px dotted var(--pm-line-soft);font-size:12px;color:var(--pm-dim);line-height:1.55}
-.pm-fx-badge{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.04em;padding:1px 8px;border-radius:0;border:1px solid var(--pm-line);color:var(--pm-dim)}
+.pm-fx-grouphead{margin:0 0 3px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--pm-accent-hi);font-family:'Cinzel',serif;font-weight:700;border-bottom:1px solid var(--pm-line-soft);padding-bottom:4px}
+.pm-fx-item{background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:9px 12px}
+.pm-fx-item summary{cursor:pointer;font-size:13px;color:var(--pm-text);display:flex;align-items:center;gap:7px;flex-wrap:wrap;list-style:revert;font-weight:600;font-family:var(--sans)}
+.pm-fx-item p{margin-top:8px;padding-top:8px;border-top:1px dotted var(--pm-line-soft);font-size:12.5px;color:var(--pm-dim);line-height:1.55;font-family:var(--sans)}
+.pm-fx-badge{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.02em;padding:1px 9px;border-radius:999px;border:1px solid var(--pm-line-soft);color:var(--pm-dim)}
 .pm-fx-badge.off{color:var(--pm-bad);border-color:var(--pm-bad)}
 .pm-fx-badge.def{color:#2f5a7a;border-color:#2f5a7a}
 .pm-fx-badge.roll{color:var(--pm-accent-hi);border-color:var(--pm-accent-hi)}
@@ -1034,11 +1022,12 @@ body.play-mode #main{background:var(--pm-bg);max-width:none;padding:0;margin-inl
 @media (max-width:1120px){
   .app{grid-template-columns:200px minmax(0,1fr)}
   #ledger{display:none}
-  /* literal mockup breakpoint: rail stays put, vitals+skills share a row,
-     combat/actions/log drops to a full-width row underneath */
+  /* rail stays put, vitals+skills share a row, combat/actions/log drops to
+     a full-width row underneath -- same breakpoint behaviour as before,
+     just without the hard divider lines the old skin drew at each seam. */
   .pm-columns{grid-template-columns:128px 1fr 1fr}
-  .pm-col-right{grid-column:2/4;border-right:none;border-top:1px solid var(--pm-line);flex-direction:row;flex-wrap:wrap}
-  .pm-col-right .pm-box{flex:1 1 260px;border-top:none!important;border-right:1px solid var(--pm-line-soft)}
+  .pm-col-right{grid-column:2/4;flex-direction:row;flex-wrap:wrap}
+  .pm-col-right .pm-box{flex:1 1 260px}
 }
 @media (max-width:760px){
   .app{grid-template-columns:1fr}
@@ -1061,13 +1050,10 @@ body.play-mode #main{background:var(--pm-bg);max-width:none;padding:0;margin-inl
   .foot button.nav{order:3;width:100%;text-align:center}
   .foot button.nav:first-child{order:0}
   .pm-columns{grid-template-columns:1fr}
-  .pm-col{border-right:none;border-top:1px solid var(--pm-line)}
-  .pm-col:first-child{border-top:none}
   .pm-col-right{grid-column:auto;flex-direction:column}
-  .pm-col-right .pm-box{border-right:none!important}
-  .pm-col-right .pm-box+.pm-box{border-top:1px solid var(--pm-line)}
   .pm-mast-top{flex-direction:column;align-items:flex-start;gap:2px}
-  .pm-mast-name{font-size:clamp(32px,12vw,56px)}
+  .pm-mast-name{font-size:clamp(30px,12vw,48px);justify-content:flex-start;text-align:left}
+  .pm-dateline{justify-content:flex-start;text-align:left}
 }
 
 @media (prefers-reduced-motion:no-preference){
