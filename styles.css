@@ -30,7 +30,7 @@
   --mono-deco:"Special Elite",ui-monospace,Menlo,Consolas,monospace;
   /* Shared elevation/shape tokens so every card, tile, button and input
      draws from the same small vocabulary instead of one-off values. */
-  --r-sm:6px; --r-md:10px; --r-lg:16px; --r-pill:999px;
+  --r-sm:6px; --r-md:10px; --r-lg:16px;
   --shadow-sm:0 1px 2px rgba(28,22,12,.10), 0 1px 1px rgba(28,22,12,.06);
   --shadow-md:0 2px 6px rgba(28,22,12,.10), 0 8px 20px -6px rgba(28,22,12,.18);
   --shadow-lg:0 10px 30px -10px rgba(28,22,12,.30), 0 2px 8px rgba(28,22,12,.10);
@@ -89,7 +89,7 @@ input[type=number]{-moz-appearance:textfield}
 /* ---- step rail ---- */
 #rail{border-right:1px solid var(--line-soft);padding:20px 12px;background:var(--panel2)}
 .railstep{display:flex;gap:11px;align-items:center;width:100%;text-align:left;padding:10px 12px;color:var(--dim);border-radius:var(--r-sm);margin-bottom:2px;font-size:14px}
-.railstep .n{flex:0 0 26px;height:26px;border:1px solid var(--line);border-radius:var(--r-pill);display:grid;place-items:center;font-family:var(--mono);font-size:11px;background:var(--panel3);transition:inherit}
+.railstep .n{flex:0 0 26px;height:26px;border:1px solid var(--line);border-radius:var(--r-sm);display:grid;place-items:center;font-family:var(--mono);font-size:11px;background:var(--panel3);transition:inherit}
 .railstep.active{color:var(--ink);background:var(--panel);box-shadow:var(--shadow-sm);font-weight:600}
 .railstep.active .n{border-color:var(--bronze);color:#fff;background:var(--bronze-hi)}
 .railstep.done .n{border-color:var(--verd);color:var(--verd);background:var(--panel3)}
@@ -267,6 +267,12 @@ p label{display:inline-flex;align-items:center;gap:5px}
   background:var(--bronze-hi);border-radius:3px;padding:3px 11px;box-shadow:0 2px 5px -1px rgba(28,22,12,.4);white-space:nowrap;
   font-family:var(--serif);letter-spacing:.1em;color:#fff8e6;font-size:11px;text-transform:uppercase;font-weight:700}
 .charbox.oob .cname{background:var(--bad)}
+/* "Little boxes" fillable-shape accent -- see the fuller comment by
+   .attr::after above. Smaller here (16x7) since .charbox's own padding is
+   tighter and the banner above already claims the top edge. */
+.charbox::after{content:"";position:absolute;right:5px;bottom:4px;width:16px;height:7px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 20'%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%238a5511' stroke-width='1.5'/%3E%3Crect x='24' y='2' width='16' height='16' rx='2' fill='none' stroke='%238a5511' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-size:contain;background-position:center;opacity:.35;pointer-events:none}
 .charbox .cval{font-family:var(--mono);font-size:27px;font-weight:600;line-height:1.25;min-height:34px;color:var(--ink)}
 .charbox .cctl{display:flex;gap:4px;margin-top:6px}
 .charbox .cctl button{flex:1;height:30px;border:1px solid var(--line);border-radius:var(--r-sm);font-family:var(--mono);background:var(--panel)}
@@ -287,10 +293,19 @@ p label{display:inline-flex;align-items:center;gap:5px}
 
 /* ---- attribute chips / tables ---- */
 .attrgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:11px}
-.attr{background:var(--panel3);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 13px;box-shadow:var(--shadow-sm)}
+.attr{position:relative;background:var(--panel3);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 13px;box-shadow:var(--shadow-sm)}
 .attr .an{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-family:var(--serif);font-weight:700}
 .attr .av{font-family:var(--mono);font-size:22px;color:var(--bronze-hi);font-weight:600}
 .attr .ah{font-size:12px;color:var(--faint)}
+/* Subtle nod to the "little boxes" convention on physical Mythras sheets --
+   a fillable circle+square pair printed next to each Characteristic/
+   Attribute value for the player to write the number in by hand. Generic
+   fillable-form convention (not distinctive/copyrightable), decorative
+   only via a corner ::after, doesn't touch or replace the real value
+   display. Same treatment on .charbox/.pm-chx/.pm-tk below. */
+.attr::after{content:"";position:absolute;right:8px;bottom:7px;width:22px;height:10px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 20'%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%238a5511' stroke-width='1.5'/%3E%3Crect x='24' y='2' width='16' height='16' rx='2' fill='none' stroke='%238a5511' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-size:contain;background-position:center;opacity:.4;pointer-events:none}
 table.rt{border-collapse:separate;border-spacing:0;width:100%;font-size:13px;margin-top:6px;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--line-soft)}
 table.rt th{font-family:var(--serif);text-transform:uppercase;letter-spacing:.05em;background:var(--bronze-deep);color:#f1e2b8;text-align:left;padding:7px 10px;font-size:12px}
 table.rt td{border-bottom:1px solid var(--line-soft);padding:6px 10px}
@@ -306,7 +321,7 @@ table.rt tr:nth-child(odd):not(:first-child) td{background:rgba(201,185,141,.16)
 .pick .pn{font-family:var(--serif);font-size:15px;letter-spacing:.04em;color:var(--bronze-hi);text-transform:uppercase;font-weight:700}
 .pick .pd{font-size:12.5px;color:var(--dim);margin-top:3px;line-height:1.45}
 .choicechips{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:7px;margin:7px 0}
-.chip{display:inline-flex;align-items:center;gap:5px;min-height:30px;box-sizing:border-box;border:1px solid var(--line);border-radius:var(--r-pill);padding:4px 13px;font-size:13px;color:var(--dim);font-family:var(--mono);background:var(--panel)}
+.chip{display:inline-flex;align-items:center;gap:5px;min-height:30px;box-sizing:border-box;border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 13px;font-size:13px;color:var(--dim);font-family:var(--mono);background:var(--panel)}
 .chip.on{border-color:var(--verd);background:var(--verd);color:#fff;font-weight:700}
 .chip.on::before{content:"\2713";font-weight:700}
 .chip:hover{border-color:var(--bronze);color:var(--ink);background:var(--panel3)}
@@ -321,11 +336,11 @@ table.rt tr:nth-child(odd):not(:first-child) td{background:rgba(201,185,141,.16)
 .choicechips .chip::before{content:"\2713";font-weight:700;opacity:0;margin-right:1px}
 .choicechips .chip.on::before{opacity:1}
 .chip.sm{min-height:24px;padding:2px 10px;font-size:11.5px}
-/* action chips: functional buttons (clear/fill/min/max/etc) get a squarer,
+/* action chips: functional buttons (clear/fill/min/max/etc) get a solid
    filled look so they read as "do something" controls rather than the
-   rounded-pill toggle-selection look of a plain .chip. Sized by padding
-   with a min-width (not a fixed width) so labels like "clear"/"fill" never
-   clip. */
+   outline toggle-selection look of a plain .chip (same corner radius as
+   .chip, the distinction is fill not shape). Sized by padding with a
+   min-width (not a fixed width) so labels like "clear"/"fill" never clip. */
 .actionchip{border-radius:var(--r-sm);background:var(--panel3);border-color:var(--line);font-weight:600;letter-spacing:.02em;padding:4px 15px;min-width:52px;justify-content:center}
 .actionchip:hover{background:var(--bronze-hi);border-color:var(--bronze);color:#fff8e6}
 
@@ -347,7 +362,7 @@ table.rt tr:nth-child(odd):not(:first-child) td{background:rgba(201,185,141,.16)
 .pool{position:sticky;top:0;z-index:5;background:var(--panel3);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 15px;display:flex;gap:16px;align-items:center;margin-bottom:12px;box-shadow:var(--shadow-md)}
 .pool .pv{font-family:var(--mono);font-size:20px;font-weight:600}
 .pool .pv.ok{color:var(--verd)} .pool .pv.bad{color:var(--madder-hi)}
-.pbar{flex:1;height:9px;background:var(--inset);border-radius:var(--r-pill);overflow:hidden;border:1px solid var(--line)}
+.pbar{flex:1;height:9px;background:var(--inset);border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--line)}
 .pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--bronze),var(--bronze-brt))}
 
 /* ---- ledger ---- */
@@ -808,7 +823,7 @@ body.play-mode{
 }
 body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inline:0}
 .pm-wrap{max-width:1680px;margin:0 auto;padding:20px 24px 40px;color:var(--pm-text);font-family:var(--sans)}
-.pm-btn{background:var(--pm-panel2);border:1px solid var(--pm-line);color:var(--pm-text);border-radius:999px;padding:5px 14px;font-size:11px;font-family:'Cinzel',serif;font-weight:600;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.pm-btn{background:var(--pm-panel2);border:1px solid var(--pm-line);color:var(--pm-text);border-radius:var(--pm-r-sm);padding:5px 14px;font-size:11px;font-family:'Cinzel',serif;font-weight:600;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
 .pm-btn:hover:not(:disabled){border-color:var(--pm-accent);color:var(--pm-accent-hi)}
 .pm-btn:disabled{opacity:.35;cursor:not-allowed}
 .pm-btn.roll{background:var(--pm-accent);border-color:var(--pm-accent);color:#fff8e6;font-weight:700}
@@ -879,8 +894,13 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 
 /* ============ ATTRIBUTE TICKER BAND ============ */
 .pm-ticker{position:relative;background-color:var(--pm-panel);border:1px solid var(--pm-accent-hi);border-radius:var(--pm-r-md);box-shadow:var(--pm-shadow-sm);display:flex;flex-wrap:wrap;margin-bottom:14px;overflow:hidden}
-.pm-tk{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 14px;border-right:1px dotted var(--pm-line-soft)}
+.pm-tk{position:relative;flex:1 1 auto;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 14px;border-right:1px dotted var(--pm-line-soft)}
 .pm-tk:last-child{border-right:none}
+/* "Little boxes" fillable-shape accent -- see the fuller comment by
+   .attr::after in the Builder section. */
+.pm-tk::after{content:"";position:absolute;right:6px;bottom:5px;width:20px;height:9px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 20'%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%238a5511' stroke-width='1.5'/%3E%3Crect x='24' y='2' width='16' height='16' rx='2' fill='none' stroke='%238a5511' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-size:contain;background-position:center;opacity:.35;pointer-events:none}
 .pm-tk .k{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--pm-accent-hi)}
 .pm-tk .v{font-weight:700;font-size:19px;letter-spacing:-.01em;font-variant-numeric:tabular-nums;font-family:var(--mono);color:var(--pm-text)}
 .pm-tk .v small{font-size:11px;font-weight:700;color:var(--pm-dim)}
@@ -923,10 +943,16 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
   background:var(--pm-accent-hi);border-radius:3px;padding:3px 11px;box-shadow:0 2px 5px -1px rgba(42,28,12,.4);white-space:nowrap;margin:0}
 .pm-chx .lbl{font-family:'Cinzel',serif;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff8e6}
 .pm-chx .idx{display:none}
+/* "Little boxes" fillable-shape accent -- see the fuller comment by
+   .attr::after in the Builder section. Same small size as .charbox's own
+   (the rail column is just as tight). */
+.pm-chx::after{content:"";position:absolute;right:5px;bottom:4px;width:16px;height:7px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 20'%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%238a5511' stroke-width='1.5'/%3E%3Crect x='24' y='2' width='16' height='16' rx='2' fill='none' stroke='%238a5511' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-size:contain;background-position:center;opacity:.35;pointer-events:none}
 .pm-chx .val{font-weight:700;font-size:26px;line-height:1.1;letter-spacing:-.01em;margin:2px 0 3px;
   font-variant-numeric:tabular-nums;font-family:var(--mono);color:var(--pm-text)}
 .pm-chx .x5{font-family:var(--mono);font-size:9px;color:var(--pm-dim);letter-spacing:.02em}
-.pm-chx .tick{height:3px;background:var(--pm-line-soft);border-radius:999px;margin-top:5px;position:relative;overflow:hidden}
+.pm-chx .tick{height:3px;background:var(--pm-line-soft);border-radius:var(--pm-r-sm);margin-top:5px;position:relative;overflow:hidden}
 .pm-chx .tick i{position:absolute;inset:0 auto 0 0;background:var(--pm-accent);display:block;height:100%}
 .pm-chx.hi{border-color:var(--pm-accent-hi)}
 .pm-chx.hi .row1{background:var(--pm-accent)}
@@ -940,7 +966,7 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
    pill badge, same information, none of the "ink stamp" texture trick. */
 .pm-stamp{display:inline-block;float:right;position:relative;top:-2px;transform:none;z-index:3;
   font-family:'Cinzel',serif;font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--pm-accent-hi);border:1.5px solid var(--pm-accent-hi);padding:3px 12px;border-radius:999px;background:var(--pm-panel2)}
+  color:var(--pm-accent-hi);border:1.5px solid var(--pm-accent-hi);padding:3px 12px;border-radius:var(--pm-r-sm);background:var(--pm-panel2)}
 .pm-stamp.ok{color:var(--pm-good);border-color:var(--pm-good)}
 .pm-stamp.minor{color:var(--pm-minor);border-color:var(--pm-minor)}
 .pm-stamp.major{color:var(--pm-bad);border-color:var(--pm-bad)}
@@ -948,8 +974,8 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-vit-total .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--pm-dim);white-space:nowrap;font-family:'Cinzel',serif}
 .pm-vit-total .num{font:700 14px var(--mono);color:var(--pm-text)}
 .pm-vit-total .num span{color:var(--pm-dim);font-weight:400;font-size:11px}
-.pm-totbar{flex:1;height:9px;border-radius:999px;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);overflow:hidden}
-.pm-totbar i{display:block;height:100%;border-radius:999px;transition:width .25s ease,background .25s ease}
+.pm-totbar{flex:1;height:9px;border-radius:var(--pm-r-sm);background:var(--pm-panel2);border:1px solid var(--pm-line-soft);overflow:hidden}
+.pm-totbar i{display:block;height:100%;border-radius:var(--pm-r-sm);transition:width .25s ease,background .25s ease}
 .pm-vit-body{display:flex;flex-direction:column;gap:4px;align-items:stretch}
 .pm-figwrap{width:100%;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:6px}
 .pm-figwrap svg{display:block;width:100%;height:auto}
@@ -990,7 +1016,7 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-locrow.st-serious .hp{color:var(--pm-warn)}
 .pm-locrow.st-major .hp{color:var(--pm-bad)}
 .pm-legend{display:flex;align-items:center;gap:7px;margin-top:9px}
-.pm-legendgrad{flex:1;height:6px;border-radius:999px;border:1px solid var(--pm-line-soft);background:linear-gradient(90deg,#f1e3bf 0%,#2a1c0c 30%,#b8791e 75%,#8a5511 100%)}
+.pm-legendgrad{flex:1;height:6px;border-radius:var(--pm-r-sm);border:1px solid var(--pm-line-soft);background:linear-gradient(90deg,#f1e3bf 0%,#2a1c0c 30%,#b8791e 75%,#8a5511 100%)}
 .pm-legend span{font:9px var(--mono);color:var(--pm-dim);white-space:nowrap;text-transform:uppercase;letter-spacing:.06em}
 .pm-locdetail{margin-top:12px;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:12px 14px}
 .pm-locdetail .dt{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
@@ -999,7 +1025,7 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-locdetail .arm{font:10.5px var(--mono);color:var(--pm-dim);margin-top:3px}
 .pm-locdetail .hpline{font:700 17px var(--mono);color:var(--pm-text);margin:8px 0 3px}
 .pm-locdetail .hpline span{font-size:11px;font-weight:400;color:var(--pm-dim)}
-.pm-woundtag{font:700 9px var(--mono);text-transform:uppercase;letter-spacing:.05em;padding:1px 9px;border-radius:999px;border:1.5px solid var(--pm-line-soft);color:var(--pm-dim);margin-left:8px;vertical-align:2px}
+.pm-woundtag{font:700 9px var(--mono);text-transform:uppercase;letter-spacing:.05em;padding:1px 9px;border-radius:var(--pm-r-sm);border:1.5px solid var(--pm-line-soft);color:var(--pm-dim);margin-left:8px;vertical-align:2px}
 .pm-woundtag.ok{color:var(--pm-good);border-color:var(--pm-good)}
 .pm-woundtag.minor{color:var(--pm-minor);border-color:var(--pm-minor)}
 .pm-woundtag.serious{color:var(--pm-warn);border-color:var(--pm-warn)}
@@ -1007,7 +1033,7 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-locdetail .fx{font-size:12px;color:var(--pm-dim);line-height:1.5;margin:6px 0 10px;font-family:var(--sans)}
 .pm-dctl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .pm-dctl input{width:46px;border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);background:var(--pm-bg);color:var(--pm-text);font-family:var(--mono);padding:3px 5px}
-.pm-sbtn{background:var(--pm-bg);border:1px solid var(--pm-line-soft);color:var(--pm-text);border-radius:999px;padding:3px 11px;font-size:10.5px;font-family:'Cinzel',serif;font-weight:600;letter-spacing:.02em;text-transform:uppercase;cursor:pointer}
+.pm-sbtn{background:var(--pm-bg);border:1px solid var(--pm-line-soft);color:var(--pm-text);border-radius:var(--pm-r-sm);padding:3px 11px;font-size:10.5px;font-family:'Cinzel',serif;font-weight:600;letter-spacing:.02em;text-transform:uppercase;cursor:pointer}
 .pm-sbtn:hover{border-color:var(--pm-accent);color:var(--pm-accent-hi)}
 .pm-sbtn.dmg{border-color:var(--pm-bad);color:var(--pm-bad)}
 .pm-sbtn.dmg:hover{background:var(--pm-bad);color:#fff8e6}
@@ -1036,6 +1062,16 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-skillrow.cbt{padding:7px 0}
 .pm-skillrow.cbt .nm{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;font-family:'Cinzel',serif}
 .pm-skillrow.cbt .pctval{font-size:23px;color:var(--pm-accent)}
+/* Checked-skill flag (Experience Roll eligibility) -- same icon-toggle
+   language as .pm-xpflag in the Improve Skills modal, sized down for this
+   denser row and given its own bronze accent (rather than the fumble
+   flag's amber) so the two read as distinct states when both appear near
+   each other. Physical-dice result logger sits right before the roll
+   button since they're the two ways a result gets into the row. */
+.pm-ckflag{background:none;border:1.5px solid var(--pm-line-soft);color:var(--pm-dim);border-radius:50%;width:17px;height:17px;flex:0 0 auto;cursor:pointer;font-size:10px;line-height:1;padding:0}
+.pm-ckflag:hover{border-color:var(--pm-accent);color:var(--pm-accent-hi)}
+.pm-ckflag.on{border-color:var(--pm-accent-hi);color:var(--pm-accent-hi);background:rgba(184,121,30,.14)}
+.pm-logsel{flex:0 0 auto;font-size:9.5px;background:var(--pm-bg);border:1px solid var(--pm-line-soft);color:var(--pm-dim);border-radius:var(--pm-r-sm);padding:2px 4px;font-family:var(--sans);max-width:58px}
 /* On-demand Difficulty Grade reference popover — opened by clicking any
    skill/style %, closed by clicking it again, clicking away, or Escape. */
 .pm-gradepop{position:fixed;z-index:600;background:var(--pm-panel);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-md);box-shadow:var(--pm-shadow-md);padding:10px 12px;font-size:12px;min-width:172px;font-family:var(--sans)}
@@ -1046,7 +1082,7 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-gradepop td.p{text-align:right;font-family:var(--mono);font-weight:700;color:var(--pm-text)}
 .pm-gradepop tr.cur td{color:var(--pm-accent-hi)}
 .pm-gradepop-note{margin-top:7px;padding-top:6px;border-top:1px solid var(--pm-line-soft);color:var(--pm-dim);font-size:10.5px;line-height:1.4;font-family:var(--sans)}
-.pm-xpbadge{background:var(--pm-accent);color:#fff8e6;border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;margin-left:6px;font-family:var(--mono)}
+.pm-xpbadge{background:var(--pm-accent);color:#fff8e6;border-radius:var(--pm-r-sm);padding:1px 8px;font-size:10px;font-weight:700;margin-left:6px;font-family:var(--mono)}
 
 /* Improve Skills modal (Experience Rolls, core rulebook pp.71-73) */
 .pm-modal-backdrop{position:fixed;inset:0;background:rgba(42,28,12,.5);z-index:700;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -1082,7 +1118,7 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-wpn .dmg{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--pm-accent-hi)}
 .pm-wpn .meta{font-family:var(--mono);font-size:10px;color:var(--pm-dim);margin-top:3px;letter-spacing:.02em}
 .pm-fatrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dotted var(--pm-line-soft);font-family:'Cinzel',serif;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--pm-dim)}
-.pm-fatsel{font-size:11px;background:var(--pm-bg);border:1px solid var(--pm-line-soft);color:var(--pm-text);border-radius:999px;padding:3px 10px;font-family:var(--sans);text-transform:uppercase}
+.pm-fatsel{font-size:11px;background:var(--pm-bg);border:1px solid var(--pm-line-soft);color:var(--pm-text);border-radius:var(--pm-r-sm);padding:3px 10px;font-family:var(--sans);text-transform:uppercase}
 /* Fatigue's applied effects, shown under the picker whenever the character is
    past Fresh (the level now really does change skill Grade / Move / Init / AP). */
 .pm-fatstep{display:inline-flex;gap:3px;margin-left:6px}
@@ -1102,10 +1138,10 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
    UI honest about what's actually clickable. */
 .play-mode.view-only .pm-sbtn,.play-mode.view-only .pm-pip,.play-mode.view-only .pm-fatsel,.play-mode.view-only .pm-dctl input,
 .play-mode.view-only .pm-tk .adj button,.play-mode.view-only .pm-act,.play-mode.view-only .pm-newround{pointer-events:none;opacity:.4;cursor:not-allowed}
-/* col 4, sect B (tabs): pill-shaped tab buttons instead of a red
+/* col 4, sect B (tabs): rounded tab buttons instead of a red
    text+underline treatment. */
 .pm-tabs{display:flex;gap:6px;font-family:'Cinzel',serif;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:12px;flex-wrap:wrap}
-.pm-tabbtn{background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:999px;color:var(--pm-dim);padding:6px 13px;cursor:pointer;position:relative}
+.pm-tabbtn{background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);color:var(--pm-dim);padding:6px 13px;cursor:pointer;position:relative}
 .pm-tabbtn:hover{color:var(--pm-text);border-color:var(--pm-accent)}
 .pm-tabbtn.on{background:var(--pm-accent-hi);border-color:var(--pm-accent-hi);color:#fff8e6}
 .pm-tabbtn.on::after{content:none}
@@ -1115,7 +1151,7 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-actbar .apread{font-family:var(--sans);font-size:13px;letter-spacing:.02em;color:var(--pm-dim)}
 .pm-actbar .apread b{color:var(--pm-text);font-size:15px}
 .pm-newround{font-family:'Cinzel',serif;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-  background:var(--pm-accent);color:#fff8e6;border:none;border-radius:999px;padding:6px 14px;cursor:pointer}
+  background:var(--pm-accent);color:#fff8e6;border:none;border-radius:var(--pm-r-sm);padding:6px 14px;cursor:pointer}
 .pm-newround:hover{background:var(--pm-accent-hi)}
 .pm-act{display:flex;justify-content:space-between;align-items:center;width:100%;padding:7px 4px;border-bottom:1px dotted var(--pm-line-soft);
   background:none;border-left:none;border-right:none;border-top:none;text-align:left;font-family:inherit;cursor:pointer;color:inherit}
@@ -1124,13 +1160,13 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-act:disabled{cursor:not-allowed;opacity:.45}
 .pm-act .nm{font-weight:600;font-size:14.5px;font-family:var(--sans)}
 .pm-act .note{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.02em;color:var(--pm-dim);font-weight:400;margin-top:1px}
-.pm-act .cost{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);color:var(--pm-accent-hi);border-radius:999px;padding:2px 9px;white-space:nowrap}
+.pm-act .cost{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);color:var(--pm-accent-hi);border-radius:var(--pm-r-sm);padding:2px 9px;white-space:nowrap}
 .pm-act .cost.free{background:none;color:var(--pm-dim);border:1px solid var(--pm-line-soft)}
 .pm-atktable{width:100%;border-collapse:collapse;font-size:12.5px}
 .pm-atktable th{text-align:left;font-family:'Cinzel',serif;text-transform:uppercase;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--pm-accent-hi);border-bottom:1px solid var(--pm-line-soft);padding:6px 8px}
 .pm-atktable td{padding:6px 8px;border-bottom:1px dotted var(--pm-line-soft);color:var(--pm-text)}
 .pm-atk-styles{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.pm-stylechip{display:flex;align-items:center;gap:6px;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:999px;padding:5px 8px 5px 13px;font-size:12px;font-family:var(--sans);text-transform:uppercase;letter-spacing:.02em}
+.pm-stylechip{display:flex;align-items:center;gap:6px;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:5px 8px 5px 13px;font-size:12px;font-family:var(--sans);text-transform:uppercase;letter-spacing:.02em}
 .pm-stylechip b{color:var(--pm-accent-hi);font-family:var(--mono);cursor:pointer;font-size:14px}
 .pm-invmeta{color:var(--pm-dim);font-size:12px;margin-top:10px;font-family:var(--sans);font-style:italic}
 .pm-invlist{margin-top:8px}
@@ -1173,7 +1209,7 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-fx-item{background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:9px 12px}
 .pm-fx-item summary{cursor:pointer;font-size:13px;color:var(--pm-text);display:flex;align-items:center;gap:7px;flex-wrap:wrap;list-style:revert;font-weight:600;font-family:var(--sans)}
 .pm-fx-item p{margin-top:8px;padding-top:8px;border-top:1px dotted var(--pm-line-soft);font-size:12.5px;color:var(--pm-dim);line-height:1.55;font-family:var(--sans)}
-.pm-fx-badge{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.02em;padding:1px 9px;border-radius:999px;border:1px solid var(--pm-line-soft);color:var(--pm-dim)}
+.pm-fx-badge{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.02em;padding:1px 9px;border-radius:var(--pm-r-sm);border:1px solid var(--pm-line-soft);color:var(--pm-dim)}
 .pm-fx-badge.off{color:var(--pm-bad);border-color:var(--pm-bad)}
 .pm-fx-badge.def{color:#2f5a7a;border-color:#2f5a7a}
 .pm-fx-badge.roll{color:var(--pm-accent-hi);border-color:var(--pm-accent-hi)}
