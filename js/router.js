@@ -29,6 +29,12 @@
      #/character/<id>                a specific character in the builder
      #/character/<id>/play           that character in Play Mode
      #/character/<id>/sheet          that character's printable Sheet
+     #/join/<code>                   accept a campaign invite link (see
+                                      "Copy Invite Link" in campaignDetailHTML)
+                                      -- a one-way trampoline, never a state
+                                      currentRoute() reflects back to, since it
+                                      always resolves onward to /account or
+                                      /campaign/<id>
 */
 
 function currentRoute(){
@@ -59,6 +65,7 @@ function parseRoute(hash){
   if((m=path.match(/^\/character\/([^/]+)\/play$/)))return {view:"play",charId:decodeURIComponent(m[1])};
   if((m=path.match(/^\/character\/([^/]+)\/sheet$/)))return {view:"sheet",charId:decodeURIComponent(m[1])};
   if((m=path.match(/^\/character\/([^/]+)$/)))return {view:"character",charId:decodeURIComponent(m[1])};
+  if((m=path.match(/^\/join\/([^/]+)$/)))return {view:"join",code:decodeURIComponent(m[1])};
   return null;
 }
 // Loads a character by id into S, same normalization every existing opener
@@ -158,6 +165,26 @@ async function applyRoute(route,opts){
       if(!ok){redirectHome("That character isn't available — it may have been deleted, or you may need to sign in.");return;}
       SHEET_RETURN_VIEW="library";
       APPVIEW="sheet";render();
+      break;
+    }
+    case "join": {
+      if(!CLOUD_ENABLED){redirectHome("Invite links need cloud sync configured for this copy of the app.");return;}
+      if(!AUTH_USER){
+        // Can't keep the code in the hash -- render() is about to rewrite it
+        // to #/account via syncRouteFromState() the moment APPVIEW changes.
+        // Stash it out-of-band instead (see stashPendingJoin/takePendingJoin
+        // in cloud.js) so it survives both an in-place sign-in and a
+        // sign-up's email-confirmation round trip (which reloads the page).
+        stashPendingJoin(route.code);
+        APPVIEW="account";AUTH_MSG={text:"Sign in to accept this campaign invite — you'll land right in it afterward."};render();
+        return;
+      }
+      try{
+        const res=await cloudJoinCampaign(route.code);
+        if(!res){redirectHome("That invite link isn't valid — the code may be wrong, or the campaign may have been deleted.");return;}
+        CURRENT_CAMPAIGN_ID=res.id;APPVIEW="campaign";CAMPAIGN_VIEW=null;render();
+        await loadCampaignViewUnified(res.id);
+      }catch(e){redirectHome("Could not join campaign: "+e.message);}
       break;
     }
   }
