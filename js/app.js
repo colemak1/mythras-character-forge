@@ -111,6 +111,7 @@ window.APP={
    if(g.pct===null){PM_MSG=g.grade==="automatic"?"Automatic — the magic simply works.":"Hopeless — no casting can be attempted at this Grade.";render();return;}
    const r=d100();const tier=resolveRoll(r,g.pct);
    if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
+   if(tier==="Critical")APP.markChecked(key);
    let costTxt="",worked=(tier==="Critical"||tier==="Success");
    if(m.tradition==="folk"){
      const mp=tier==="Critical"?0:(tier==="Fumble"?d(3):1);
@@ -369,6 +370,20 @@ window.APP={
  // down. No render() call needed here: the browser already opens/closes
  // the element on its own; this only has to remember that for next time.
  cstyleToggleCat(key,cat,isOpen){cstyleUI(key).openCats[cat]=isOpen;},
+ // Most tables at the table roll physical dice instead of clicking this
+ // app's own Roll button, so auto-checking on a Critical (and auto-flagging
+ // on a Fumble) can't only key off roll()'s own outcome -- that would miss
+ // most real rolls. This is the manual equivalent: report a physical-dice
+ // result for a skill without the app doing any rolling itself, feeding the
+ // exact same markChecked()/fumbled-flag side effects roll() triggers, plus
+ // a Press Log entry so the session record stays complete either way.
+ logResult(key,tier){
+   if(viewOnlyBlock()||!tier)return;
+   const em=entryMap();const e=em[key];if(!e)return;
+   if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
+   if(tier==="Critical")APP.markChecked(key);
+   S.rollLog.unshift({label:e.label+" (logged)",pct:finalPct(key),roll:"—",tier,combat:key.startsWith("style:"),oppTier:null});
+   S.rollLog=S.rollLog.slice(0,8);render();},
  /* roller */
  roll(key){const em=entryMap();const e=em[key];if(!e)return;
    PM_MSG=null;
@@ -379,10 +394,15 @@ window.APP={
    const tier=resolveRoll(r,pct);
    // Experience Rolls (core rulebook pp.71-73): a Fumble flags this skill
    // for a free +1% next time the player runs Improve Skills — automatic
-   // here so nobody has to remember to mark it by hand. Critical does NOT
-   // factor into Experience at all (verified against the book — a common
-   // misconception carried over from other d100 games).
+   // here so nobody has to remember to mark it by hand. A Critical does NOT
+   // grant that same automatic +1% (verified against the book — a common
+   // misconception carried over from other d100 games); it DOES mark the
+   // skill "checked" under the separate, newer checked-skill/Experience
+   // Modifier system (Myth's reconstruction, not book-verified yet — see
+   // xpBonusRolls() in engine.js) -- a different mechanic, not a
+   // contradiction of the note above.
    if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
+   if(tier==="Critical")APP.markChecked(key);
    S.rollLog.unshift({label:e.label+tag,pct,roll:r===100?"00":r,tier,combat:key.startsWith("style:"),oppTier:null});
    S.rollLog=S.rollLog.slice(0,8);render();},
  playSetOpponentTier(i,tier){if(!S.rollLog[i])return;S.rollLog[i].oppTier=tier;render();},
@@ -395,6 +415,17 @@ window.APP={
    render();},
  xpToggleFumble(key){const i=S.xp.fumbled.indexOf(key);
    if(i>=0)S.xp.fumbled.splice(i,1);else S.xp.fumbled.push(key);render();},
+ // Manual "checked" toggle for a dramatic non-crit success the app can't
+ // detect algorithmically -- same interaction as xpToggleFumble above, just
+ // a different flag. See markChecked() for the auto-set path (a Critical,
+ // in-app or manually logged) and xpSpend() for how a checked skill's own
+ // flag clears when its Experience Roll gets spent.
+ xpToggleChecked(key){const i=S.xp.checked.indexOf(key);
+   if(i>=0)S.xp.checked.splice(i,1);else S.xp.checked.push(key);render();},
+ // Shared by roll()/castMagic() (a Critical on the app's own roller) and
+ // logResult() (a Critical reported by hand for a physical-dice roll) --
+ // one place that actually sets the flag, so both paths can never drift.
+ markChecked(key){if(!S.xp.checked.includes(key))S.xp.checked.push(key);},
  // Apply a flagged skill's free Fumble +1% on its own, without spending an
  // Experience Roll (the book grants this unconditionally, not just when a
  // roll happens to also be spent on that skill).
@@ -404,11 +435,17 @@ window.APP={
    S.xp.fumbled=S.xp.fumbled.filter(k=>k!==key);
    S.xp.history.unshift({type:"fumble",key,label:e.label,newPct:finalPct(key)});
    S.xp.history=S.xp.history.slice(0,25);render();},
- // Spend one banked Experience Roll on a skill: 1d100 + INT vs current %
+ // Spend one Experience Roll on a skill: 1d100 + INT vs current %
  // (equal-or-beat = +1d4+1%, otherwise still +1%). If the skill is flagged
  // Fumbled, that free +1% is applied first per the book, then the roll is
  // made against the now-updated %. One roll per skill per sitting.
- xpSpend(key){if(VIEW_ONLY||S.xp.pool<=0||S.xp.usedThisRun.includes(key))return;
+ // Draws from xpRollsAvailable() (the manually-awarded pool plus checked-
+ // skill bonus rolls, see engine.js), not S.xp.pool alone -- if this skill
+ // is itself checked, spending consumes THAT flag specifically (checked
+ // skills are self-contained roll opportunities, same relationship a
+ // fumble flag already has to its own +1%); otherwise it draws from the
+ // shared manual pool.
+ xpSpend(key){if(VIEW_ONLY||xpRollsAvailable()<=0||S.xp.usedThisRun.includes(key))return;
    const e=entryMap()[key];if(!e)return;
    let fumbleApplied=false;
    if(S.xp.fumbled.includes(key)){
@@ -421,7 +458,9 @@ window.APP={
    const success=total>=target;
    const gain=success?(d(4)+1):1;
    S.xp.bonus[key]=(S.xp.bonus[key]||0)+gain;
-   S.xp.pool--;S.xp.usedThisRun.push(key);
+   if(S.xp.checked.includes(key))S.xp.checked=S.xp.checked.filter(k=>k!==key);
+   else S.xp.pool=Math.max(0,S.xp.pool-1);
+   S.xp.usedThisRun.push(key);
    S.xp.history.unshift({type:"roll",key,label:e.label,roll:r===100?"00":r,int:S.chars.INT,total,target,success,gain,fumbleApplied,newPct:finalPct(key)});
    S.xp.history=S.xp.history.slice(0,25);render();},
  // On-demand Difficulty Grade reference popover (Play Mode). Deliberately

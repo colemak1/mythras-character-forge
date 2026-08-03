@@ -256,7 +256,15 @@ function freshState(){return {
  // usedThisRun tracks the "same skill may not benefit from more than one
  // Experience Roll per session" cap — reset whenever new rolls are awarded,
  // since this app has no other concept of a game "session" boundary.
- xp:{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[]}
+ // checked = skill keys currently flagged eligible for an Experience Roll,
+ // auto-set on a Critical (in-app roll or a manually logged physical-dice
+ // result — see APP.logResult) or toggled by hand for a dramatic non-crit
+ // success the app can't detect algorithmically. Cleared specifically when
+ // that skill's own Experience Roll is spent (xpSpend, in app.js), not on
+ // any session boundary — see xpRollsAvailable()/xpBonusRolls() below for
+ // how this feeds the roll-count formula (Myth's reconstruction, not yet
+ // confirmed against the book).
+ xp:{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[]}
 };}
 function normalizeState(){
   // Defensive coercion only -- every actual load path (openCharToPlay/Edit/
@@ -292,9 +300,10 @@ function normalizeState(){
   if(!S.play.tab)S.play.tab="actions";
   if(!S.play.fatigue)S.play.fatigue="Fresh";
   if(S.play.selectedLoc===undefined)S.play.selectedLoc=null;
-  S.xp=S.xp||{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[]};
+  S.xp=S.xp||{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[]};
   S.xp.fumbled=S.xp.fumbled||[];S.xp.bonus=S.xp.bonus||{};
   S.xp.usedThisRun=S.xp.usedThisRun||[];S.xp.history=S.xp.history||[];
+  S.xp.checked=S.xp.checked||[];
   if(typeof S.xp.pool!=="number")S.xp.pool=0;
 }
 // Cult & Community is temporarily pulled out of the flow (user's own call,
@@ -483,6 +492,18 @@ function finalPct(key){const em=entryMap();const e=em[key];if(!e)return 0;
 // that reads a skill's % — Play Mode list, Actions tab, Sheet, roll log —
 // reflects Experience improvement with no extra plumbing.
 function xpBonus(key){return (S.xp&&S.xp.bonus&&S.xp.bonus[key])||0;}
+// Checked-skill Experience Rolls, on top of the manually-awarded S.xp.pool.
+// Myth's best reconstruction of the rule, NOT independently verified against
+// the book -- ship it, but every surface that shows this number says so.
+// One checked skill = one roll opportunity, shifted up or down by the
+// character's Experience Mod (xpMod(CHA), unchanged/confirmed-correct on its
+// own). Floored at 0 so a low-CHA character never has this go negative.
+function xpBonusRolls(){return Math.max(0,(S.xp.checked||[]).length+xpMod(S.chars.CHA));}
+// Total Experience Rolls available to spend right now: the manual pool plus
+// the checked-skill bonus above. This is the single number every "can I
+// spend a roll" check and every UI count should read, so the two pools
+// never have to be reasoned about separately by a player.
+function xpRollsAvailable(){return S.xp.pool+xpBonusRolls();}
 /* ================= MAGIC =================
    Which magic skills the character actually acquired, so the Magic step can
    show the traditions they can use and flag the ones they can't yet. Magic

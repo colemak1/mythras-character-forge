@@ -711,11 +711,30 @@ function renderPlayView(){
     const pctTxt=g.pct===null?GRADE_LABEL[g.grade]:String(g.pct);
     const cbt=e.grp==="Combat Style";
     const baseFmt=(e.formula||"").replace(/x(\d)/i,"×$1").toUpperCase();
+    const checked=S.xp.checked.includes(e.key);
+    // Checked-skill flag (Experience Roll eligibility) -- same interaction
+    // language as the Improve Skills modal's fumble flag (.pm-xpflag), a
+    // small icon toggle rather than a native checkbox, just its own bronze
+    // accent instead of the fumble's amber so the two read as different
+    // states at a glance. Manual toggle for a dramatic non-crit success the
+    // app can't detect on its own; auto-set on a Critical (in-app roll,
+    // .pm-logsel below, or the Improve Skills modal's own copy of this).
+    const ckflag='<button class="pm-ckflag'+(checked?" on":"")+'" title="'+(checked?"Checked — eligible for an Experience Roll. Click to clear.":"Mark checked (eligible for an Experience Roll)")+'" onclick="APP.xpToggleChecked(\''+jsq(e.key)+'\')">&#10003;</button>';
+    // Physical-dice result logger -- most tables roll real dice instead of
+    // clicking "roll" below, so auto-checking on a Critical can't only key
+    // off this app's own roll() outcome. Fires the same markChecked()/
+    // fumble-flag side effects roll() does, without doing a roll itself.
+    // Resets to the placeholder after firing since it's fire-and-forget,
+    // not a persistent selector.
+    const logsel='<select class="pm-logsel" title="Log a physical-dice result for this skill" onchange="if(this.value){APP.logResult(\''+jsq(e.key)+'\',this.value);}this.value=\'\'">'
+     +'<option value="">log&hellip;</option><option value="Critical">Critical</option><option value="Fumble">Fumble</option></select>';
     return '<div class="pm-skillrow'+(cbt?" cbt":"")+'">'
+     +ckflag
      +'<span class="nm">'+esc(e.label)+'</span>'
      +(baseFmt?'<span class="base">'+esc(baseFmt)+'</span>':'')
      +'<span class="lead"></span>'
      +'<span class="pctval" onclick="APP.toggleGradePop(\''+jsq(e.key)+'\',\''+jsq(e.label)+'\',event)" title="Click for Difficulty Grades">'+pctTxt+'</span>'
+     +logsel
      +'<button class="pm-btn roll" onclick="APP.roll(\''+jsq(e.key)+'\')">roll</button></div>';
   };
   h+='<div class="pm-col pm-col-skills"><div class="pm-box pm-skillsbox" style="height:100%">'
@@ -835,23 +854,28 @@ function xpModalHtml(){
   const row=e=>{
     const pct=finalPct(e.key);
     const flagged=S.xp.fumbled.includes(e.key);
+    const checked=S.xp.checked.includes(e.key);
     const used=S.xp.usedThisRun.includes(e.key);
-    const canSpend=S.xp.pool>0&&!used;
+    const canSpend=xpRollsAvailable()>0&&!used;
     return '<div class="pm-xprow">'
      +'<button class="pm-xpflag'+(flagged?" on":"")+'" title="'+(flagged?"Fumbled — free +1% pending. Click to remove flag.":"Mark this skill as Fumbled (free +1%)")+'" onclick="APP.xpToggleFumble(\''+jsq(e.key)+'\')">&#9873;</button>'
+     +'<button class="pm-ckflag'+(checked?" on":"")+'" title="'+(checked?"Checked — eligible for an Experience Roll. Click to clear.":"Mark checked (eligible for an Experience Roll)")+'" onclick="APP.xpToggleChecked(\''+jsq(e.key)+'\')">&#10003;</button>'
      +'<span class="nm">'+esc(e.label)+'</span>'
      +'<span class="pctval">'+pct+'%</span>'
      +(flagged?'<button class="pm-btn sm" onclick="APP.xpApplyFumble(\''+jsq(e.key)+'\')">apply +1%</button>':'')
      +'<button class="pm-btn sm roll" '+(canSpend?"":"disabled")+' onclick="APP.xpSpend(\''+jsq(e.key)+'\')">'+(used?"used this sitting":"spend roll")+'</button>'
      +'</div>';
   };
+  const bonusRolls=xpBonusRolls();
   let h='<div class="pm-modal-backdrop" onclick="APP.closeXP()"><div class="pm-modal" onclick="event.stopPropagation()">';
   h+='<div class="pm-modal-hd"><h3>Improve Skills — Experience Rolls</h3><button class="pm-btn sm" onclick="APP.closeXP()">&times; close</button></div>';
-  h+='<div class="pm-xppool"><div>Experience Rolls banked: <b>'+S.xp.pool+'</b></div>'
+  h+='<div class="pm-xppool"><div>Experience Rolls available: <b>'+xpRollsAvailable()+'</b>'
+   +' <span class="pm-empty">('+S.xp.pool+' banked + '+bonusRolls+' from checked skills)</span></div>'
+   +'<div class="pm-empty" style="margin-top:2px">Checked skills: <b>'+S.xp.checked.length+'</b> &times; 1, Experience Mod (CHA '+S.chars.CHA+'): <b>'+(xpMod(S.chars.CHA)>=0?"+":"")+xpMod(S.chars.CHA)+'</b> &rarr; '+bonusRolls+' bonus roll'+(bonusRolls===1?"":"s")+'. <i>Checked-skill formula is Myth&rsquo;s reconstruction, not yet confirmed against the book &mdash; may change.</i></div>'
    +'<div class="pm-xpaward">Award <input type="number" id="xpAwardN" value="3" min="1" style="width:52px"> '
    +'<button class="pm-btn sm" onclick="APP.xpAward(document.getElementById(\'xpAwardN\').value)">+ add to pool</button> '
    +'<span class="pm-empty">core book: 2&ndash;4 per sitting, GM discretion. Awarding resets the once-per-skill cap below.</span></div></div>';
-  h+='<p class="pm-empty">Spend 1 roll on a skill: roll 1d100, add INT ('+S.chars.INT+'). Total meets or beats the skill&rsquo;s current % &rarr; <b>+1d4+1%</b>. Total falls short &rarr; still <b>+1%</b> (an Experience Roll never fails outright). A skill flagged &#9873; got a Fumble since the last sitting and gets a free <b>+1%</b> (applied before any roll spent on it, doesn&rsquo;t stack) &mdash; this flags automatically when you roll a Fumble in Play Mode, or click the flag by hand. Only one Experience Roll per skill per sitting.</p>';
+  h+='<p class="pm-empty">Spend 1 roll on a skill: roll 1d100, add INT ('+S.chars.INT+'). Total meets or beats the skill&rsquo;s current % &rarr; <b>+1d4+1%</b>. Total falls short &rarr; still <b>+1%</b> (an Experience Roll never fails outright). A skill flagged &#9873; got a Fumble since the last sitting and gets a free <b>+1%</b> (applied before any roll spent on it, doesn&rsquo;t stack) &mdash; this flags automatically when you roll a Fumble in Play Mode, or click the flag by hand. A skill flagged &#10003; is checked (eligible for an Experience Roll of its own) &mdash; automatic on a Critical, in-app or logged by hand for a physical-dice roll, or click the flag yourself for a dramatic success the app can&rsquo;t detect; spending its roll clears that flag specifically. Only one Experience Roll per skill per sitting.</p>';
   h+='<div class="pm-xplist">';
   h+='<div class="pm-skillgroup"><h4>Standard</h4>'+grp("Standard").map(row).join("")+'</div>';
   if(grp("Professional").length)h+='<div class="pm-skillgroup"><h4>Professional</h4>'+grp("Professional").map(row).join("")+'</div>';
