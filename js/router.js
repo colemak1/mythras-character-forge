@@ -80,8 +80,7 @@ async function loadCharacterInto(charId){
   return true;
 }
 function redirectHome(msg){
-  APPVIEW="menu";render();
-  if(msg)alert(msg);
+  APPVIEW="menu";MENU_MSG=msg||null;render();
 }
 async function applyRoute(route,opts){
   opts=opts||{};

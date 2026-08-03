@@ -74,14 +74,18 @@ window.APP={
    for(let i=0;i<n&&pool.length;i++)picked.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
    S.magic.folk=picked.map(s=>({name:s.n,spec:""}));render();},
  clearFolk(){S.magic.folk=[];render();},
- addMagic(tradition){
+ // Same stale-DOM-click race addPas() guards against below (a click
+ // landing right after a preceding field's onchange/blur already tore down
+ // and rebuilt this button) -- these sit right next to Miracle/spell name
+ // and stat fields, so they're just as exposed to it.
+ addMagic(tradition){debounceFire('addMagic',()=>{
    S.magic.known.push({tradition,name:"",notes:"",cost:1,intensity:1,pow:0,cha:0,shapings:[]});
-   render();},
+   render();});},
  magicField(i,f,v){const m=S.magic.known[i];if(!m)return;
    m[f]=(f==="name"||f==="notes")?v:(parseInt(v,10)||0);render();},
  toggleShaping(i,name){const m=S.magic.known[i];if(!m)return;
    m.shapings=m.shapings||[];toggleInList(m.shapings,name);render();},
- delMagic(i){S.magic.known.splice(i,1);render();},
+ delMagic(i){debounceFire('delMagic'+i,()=>{S.magic.known.splice(i,1);render();});},
  devotional(v){S.magic.devotional=Math.max(0,parseInt(v,10)||0);
    S.magic.devotionalUsed=Math.min(S.magic.devotionalUsed,S.magic.devotional);render();},
  devotionalAdj(n){if(viewOnlyBlock())return;
@@ -98,12 +102,13 @@ window.APP={
  // an invention.
  castMagic(idx){
    if(viewOnlyBlock())return;
+   PM_MSG=null;
    const m=allMagic()[idx];if(!m)return;
    const trad=MAGIC_TRAD_MAP[m.tradition];if(!trad)return;
    const key=magicSkillKey(trad.castSkill);
-   if(!key){alert("This character doesn't have the "+trad.castSkill+" skill, so there's nothing to roll. Add it as a Professional Skill first.");return;}
+   if(!key){PM_MSG="This character doesn't have the "+trad.castSkill+" skill, so there's nothing to roll. Add it as a Professional Skill first.";render();return;}
    const base=finalPct(key);const g=gradedPct(key,base);
-   if(g.pct===null){alert(g.grade==="automatic"?"Automatic — the magic simply works.":"Hopeless — no casting can be attempted at this Grade.");return;}
+   if(g.pct===null){PM_MSG=g.grade==="automatic"?"Automatic — the magic simply works.":"Hopeless — no casting can be attempted at this Grade.";render();return;}
    const r=d100();const tier=resolveRoll(r,g.pct);
    if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
    let costTxt="",worked=(tier==="Critical"||tier==="Success");
@@ -114,7 +119,7 @@ window.APP={
    }else if(worked){
      const cost=magicEntryCost(m);
      if(trad.pool==="devotional"){
-       if(cost>devotionalCur()){alert("Not enough left in the Devotional Pool ("+devotionalCur()+" of "+devotionalMax()+") to invoke that.");return;}
+       if(cost>devotionalCur()){PM_MSG="Not enough left in the Devotional Pool ("+devotionalCur()+" of "+devotionalMax()+") to invoke that.";render();return;}
        S.magic.devotionalUsed=(S.magic.devotionalUsed||0)+cost;
        costTxt=cost+" from the Devotional Pool";
      }else if(trad.pool==="mp"&&cost>0){
@@ -174,7 +179,7 @@ window.APP={
      // and social class instead of being a flat number that means something
      // different to a Primitive and a Civilised character.
      const t=moneyTotal();
-     if(!t){alert("Roll your starting money on the Money & Gear step first — this event adjusts it by "+f.pct+"%.");return;}
+     if(!t){BUILDER_MSG="Roll your starting money on the Money & Gear step first — this event adjusts it by "+f.pct+"%.";render();return;}
      S.money.spent=Math.round((S.money.spent||0)-t*f.pct/100);
    }
    ev.applied=true;render();},
@@ -317,7 +322,7 @@ window.APP={
  // affected; debounceFire absorbs the click that (still) follows it so a
  // normal press only ever adds one passion.
  addPas(){debounceFire('addPas',()=>{S.passions.push({name:"",type:"org",subjPOW:"",subjCHA:""});render();});},
- delPas(i){S.passions.splice(i,1);render();},
+ delPas(i){debounceFire('delPas'+i,()=>{S.passions.splice(i,1);render();});},
  pas(i,f,v){S.passions[i][f]=v;render();},
  pasFromCulture(){if(!S.culture)return;const c=CULTURES[S.culture];
    const types=["org","romantic","averse"];
@@ -334,8 +339,10 @@ window.APP={
  pickSocialClass(name){if(!name)return;const list=SOCIAL_CLASSES[S.culture]||[];
    const opt=list.find(([n])=>n===name);if(!opt)return;
    S.money.socialClass=opt[0];S.money.mod=opt[1];render();},
- invAdd(){S.inventory.push({name:"",qty:1,enc:0});render();},
- invDel(i){S.inventory.splice(i,1);render();},
+ // Same stale-DOM-click race addPas() guards against below -- these sit
+ // right next to the item name/qty/enc fields in the Inventory table.
+ invAdd(){debounceFire('invAdd',()=>{S.inventory.push({name:"",qty:1,enc:0});render();});},
+ invDel(i){debounceFire('invDel'+i,()=>{S.inventory.splice(i,1);render();});},
  inv(i,f,v){S.inventory[i][f]=(f==="name")?v:(parseFloat(v)||0);render();},
  /* weapons & armour */
  toggleWeapon(name){const i=S.gearWeapons.indexOf(name);
@@ -364,8 +371,9 @@ window.APP={
  cstyleToggleCat(key,cat,isOpen){cstyleUI(key).openCats[cat]=isOpen;},
  /* roller */
  roll(key){const em=entryMap();const e=em[key];if(!e)return;
+   PM_MSG=null;
    const base=finalPct(key);const g=gradedPct(key,base);
-   if(g.pct===null){alert(g.grade==="automatic"?"Automatic — no roll needed, it just succeeds.":"Hopeless — no attempt can be made at this Grade.");return;}
+   if(g.pct===null){PM_MSG=g.grade==="automatic"?"Automatic — no roll needed, it just succeeds.":"Hopeless — no attempt can be made at this Grade.";render();return;}
    const pct=g.pct;const r=d100();
    const tag=g.grade!=="standard"?" ("+GRADE_LABEL[g.grade]+")":"";
    const tier=resolveRoll(r,pct);
@@ -531,21 +539,13 @@ window.APP={
  exportJSON(){const data=JSON.stringify(S,null,2);
    dl((S.concept.name||"character").replace(/\s+/g,"_")+".mythras.json",data,"application/json");},
  exportMD(){dl((S.concept.name||"character").replace(/\s+/g,"_")+".md",buildMD(),"text/markdown");},
- importJSON(){
-   const hasWork=S.concept.name||charsReady()||S.culture||S.career;
-   if(hasWork&&!confirm("Importing will replace the character currently on screen. Continue?"))return;
-   const f=$("#importFile");f.onchange=()=>{const file=f.files[0];if(!file)return;
-   const rd=new FileReader();rd.onload=()=>{try{const data=JSON.parse(rd.result);
-     if(!data.chars||!data.concept)throw new Error("Not a Character Forge file");
-     S=Object.assign(freshState(),data);normalizeState();S._pendingClaim=true;render();}catch(e){alert("Import failed: "+e.message);}};
-   rd.readAsText(file);f.value="";};f.click();},
  newCharacter(){
    const hasWork=S.concept.name||charsReady()||S.culture||S.career;
    if(hasWork&&!confirm("Start a new character? This clears the current one from the screen (autosave and any exported files are unaffected until overwritten)."))return;
    S=freshState();render();window.scrollTo(0,0);},
  clearAutosave(){try{localStorage.removeItem(autosaveKey());}catch(e){}updateAutosaveTag();},
  /* main menu */
- toMenu(){APPVIEW="menu";render();window.scrollTo(0,0);},
+ toMenu(){APPVIEW="menu";MENU_MSG=null;render();window.scrollTo(0,0);},
  fromMenuNew(){
    if(hasUnsavedWork()&&!confirm("Start a new character? This clears the one currently loaded (autosave and exports are unaffected until overwritten)."))return;
    S=freshState();APPVIEW="character";render();window.scrollTo(0,0);},
@@ -554,17 +554,9 @@ window.APP={
    if(hasUnsavedWork()&&!confirm("Load the autosaved character? This replaces what's currently loaded."))return;
    try{const raw=localStorage.getItem(autosaveKey());const saved=JSON.parse(raw);
      S=Object.assign(freshState(),saved.S);normalizeState();S._pendingClaim=true;APPVIEW="character";render();window.scrollTo(0,0);
-   }catch(e){alert("Could not load the autosaved character.");}},
- fromMenuImport(){
-   if(hasUnsavedWork()&&!confirm("Importing will replace the character currently loaded. Continue?"))return;
-   const f=$("#menuImportFile");f.onchange=()=>{const file=f.files[0];if(!file)return;
-   const rd=new FileReader();rd.onload=()=>{try{const data=JSON.parse(rd.result);
-     if(!data.chars||!data.concept)throw new Error("Not a Character Forge file");
-     S=Object.assign(freshState(),data);normalizeState();S._pendingClaim=true;APPVIEW="character";render();window.scrollTo(0,0);
-   }catch(e){alert("Import failed: "+e.message);}};
-   rd.readAsText(file);f.value="";};f.click();},
+   }catch(e){MENU_MSG="Could not load the autosaved character.";render();}},
  /* my characters */
- toLibrary(){APPVIEW="library";LIB_CACHE=null;render();loadLibraryUnified();window.scrollTo(0,0);},
+ toLibrary(){APPVIEW="library";LIB_CACHE=null;CAMP_MSG=null;render();loadLibraryUnified();window.scrollTo(0,0);},
  openCharToPlay(id,opts){
    openCharUnified(id).then(async entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);normalizeState();
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
@@ -583,34 +575,34 @@ window.APP={
  deleteLibChar(id,name){
    if(!confirm('Delete "'+name+'"? This can\'t be undone — Export JSON first if you want a copy.'))return;
    deleteCharUnified(id).then(()=>{LIB_CACHE=null;render();loadLibraryUnified();})
-     .catch(e=>alert("Could not delete character: "+e.message));},
+     .catch(e=>{CAMP_MSG="Could not delete character: "+e.message;render();});},
  /* account */
- toAccount(){APPVIEW="account";render();window.scrollTo(0,0);},
+ toAccount(){APPVIEW="account";AUTH_MSG=null;render();window.scrollTo(0,0);},
  mockSignIn(){
    const el=$("#mockName");const name=(el&&el.value&&el.value.trim())||"Test DM";
    MOCK_AUTH={id:"mock-"+genId(),display_name:name};
    CAMP_CACHE=null;render();},
  mockSignOut(){MOCK_AUTH=null;CAMP_CACHE=null;render();},
  /* campaigns */
- toCampaigns(){APPVIEW="campaigns";CAMP_CACHE=null;render();loadCampaignsUnified();window.scrollTo(0,0);},
+ toCampaigns(){APPVIEW="campaigns";CAMP_CACHE=null;CAMP_MSG=null;render();loadCampaignsUnified();window.scrollTo(0,0);},
  newCampaign(){
-   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){alert("Sign in first — campaigns need an account once cloud sync is on.");return;}
+   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){CAMP_MSG="Sign in first — campaigns need an account once cloud sync is on.";render();return;}
    createCampaignUnified("New Campaign").then(camp=>{
      CURRENT_CAMPAIGN_ID=camp.id;APPVIEW="campaign";CAMPAIGN_VIEW=null;render();
      loadCampaignViewUnified(camp.id);window.scrollTo(0,0);
-   }).catch(e=>alert("Could not create campaign: "+e.message));},
- openCampaign(id){CURRENT_CAMPAIGN_ID=id;APPVIEW="campaign";CAMPAIGN_VIEW=null;render();
+   }).catch(e=>{CAMP_MSG="Could not create campaign: "+e.message;render();});},
+ openCampaign(id){CURRENT_CAMPAIGN_ID=id;APPVIEW="campaign";CAMPAIGN_VIEW=null;CAMP_MSG=null;render();
    loadCampaignViewUnified(id);window.scrollTo(0,0);},
  campField(f,v){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
    camp[f]=v;render(); // optimistic — reflect the edit immediately
    const fn=f==="name"?renameCampaignUnified:noteCampaignUnified;
-   fn(camp.id,v).catch(e=>alert("Could not save: "+e.message));},
+   fn(camp.id,v).catch(e=>{CAMP_MSG="Could not save: "+e.message;render();});},
  deleteCampaign(){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
    if(!confirm("Delete campaign \""+camp.name+"\"? Linked characters stay in place, just unassigned."))return;
    deleteCampaignUnified(camp.id).then(()=>{APPVIEW="campaigns";CAMP_CACHE=null;render();loadCampaignsUnified();})
-     .catch(e=>alert("Could not delete campaign: "+e.message));},
+     .catch(e=>{CAMP_MSG="Could not delete campaign: "+e.message;render();});},
  newCharacterForCampaign(){
    if(hasUnsavedWork()&&!confirm("Start a new character for this campaign? This clears the one currently loaded (autosave and exports are unaffected until overwritten)."))return;
    const cid=CURRENT_CAMPAIGN_ID;S=freshState();S.campaignId=cid;APPVIEW="character";render();window.scrollTo(0,0);},
@@ -618,7 +610,7 @@ window.APP={
    const sel=$("#assignPicker");if(!sel||!sel.value)return;
    assignCharUnified(sel.value,CURRENT_CAMPAIGN_ID)
      .then(()=>loadCampaignViewUnified(CURRENT_CAMPAIGN_ID))
-     .catch(e=>alert("Could not assign character: "+e.message));},
+     .catch(e=>{CAMP_MSG="Could not assign character: "+e.message;render();});},
  openLibChar(id){
    if(hasUnsavedWork()&&!confirm("Open this character? This replaces what's currently loaded."))return;
    openCharUnified(id).then(entry=>{
@@ -626,25 +618,71 @@ window.APP={
      S=Object.assign(freshState(),entry.state);normalizeState();
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
      APPVIEW="character";render();window.scrollTo(0,0);
-   }).catch(e=>alert("Could not open character: "+e.message));},
+   }).catch(e=>{CAMP_MSG="Could not open character: "+e.message;render();});},
  unassignChar(id){
    unassignCharUnified(id).then(()=>loadCampaignViewUnified(CURRENT_CAMPAIGN_ID))
-     .catch(e=>alert("Could not unassign character: "+e.message));},
+     .catch(e=>{CAMP_MSG="Could not unassign character: "+e.message;render();});},
  // DM detaching a PLAYER's character (not their own) from the campaign —
  // routes through the dm_unassign_character RPC, never a direct table
  // write. The DM can only do this, never delete the character outright.
  dmUnassignChar(id){
    if(!confirm("Unassign this character from the campaign? The character itself is untouched, just no longer linked here."))return;
    cloudDmUnassignCharacter(id).then(()=>loadCampaignViewUnified(CURRENT_CAMPAIGN_ID))
-     .catch(e=>alert("Could not unassign character: "+e.message));},
+     .catch(e=>{CAMP_MSG="Could not unassign character: "+e.message;render();});},
  /* party board */
  toBoard(campaignId){
    if(campaignId)CURRENT_CAMPAIGN_ID=campaignId;
-   APPVIEW="board";BOARD_CHARS=null;render();window.scrollTo(0,0);
+   APPVIEW="board";BOARD_CHARS=null;BOARD_TAB="status";render();window.scrollTo(0,0);
    boardLoad(CURRENT_CAMPAIGN_ID);},
  refreshBoard(){if(CURRENT_CAMPAIGN_ID)boardRefetch(CURRENT_CAMPAIGN_ID);},
  boardOpenChar(id,ownerName){
    APP.openCharToPlay(id,{ownerName:ownerName||null,returnTo:"board"});},
+ /* GM session tools (initiative/NPCs/session notes) — one shared optimistic
+    mutate-then-save helper, same pattern as campField() above: mutate the
+    in-memory session_state, render() immediately, fire the write in the
+    background, surface a failure inline rather than losing the edit. */
+ setBoardTab(tab){BOARD_TAB=tab;render();},
+ gmSessionMutate(mutatorFn){
+   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
+   const st=sessionStateOf(camp);
+   mutatorFn(st);
+   camp.session_state=st;
+   GM_SESSION_ERROR=null;render();
+   sessionStateCampaignUnified(camp.id,st).catch(e=>{GM_SESSION_ERROR="Could not save: "+e.message;render();});
+ },
+ gmAddPcInit(){
+   const sel=$("#gmPcPicker");if(!sel||!sel.value)return;
+   const charId=sel.value;
+   APP.gmSessionMutate(st=>st.initiative.push({id:genId(),kind:"pc",ref:charId,init:0}));},
+ gmAddNpcInit(){
+   const nameEl=$("#gmNpcInitName"),valEl=$("#gmNpcInitVal");
+   const name=(nameEl&&nameEl.value&&nameEl.value.trim())||"";
+   if(!name)return;
+   const init=(valEl&&parseInt(valEl.value,10))||0;
+   APP.gmSessionMutate(st=>st.initiative.push({id:genId(),kind:"npc",name,init}));},
+ gmSetInit(id,val){
+   const n=parseInt(val,10)||0;
+   APP.gmSessionMutate(st=>{const e=st.initiative.find(e=>e.id===id);if(e)e.init=n;});},
+ gmRemoveInit(id){
+   APP.gmSessionMutate(st=>{st.initiative=st.initiative.filter(e=>e.id!==id);});},
+ gmAdvanceTurn(){
+   APP.gmSessionMutate(st=>{
+     if(!st.initiative.length)return;
+     const next=st.turnIdx+1;
+     if(next>=st.initiative.length){st.turnIdx=0;st.round=(st.round||1)+1;}
+     else st.turnIdx=next;
+   });},
+ gmResetRound(){APP.gmSessionMutate(st=>{st.round=1;st.turnIdx=0;});},
+ gmAddNpc(){
+   APP.gmSessionMutate(st=>st.npcs.push({id:genId(),name:"New NPC",hpCur:10,hpMax:10,stat1:"",stat2:""}));},
+ gmRemoveNpc(id){
+   APP.gmSessionMutate(st=>{st.npcs=st.npcs.filter(n=>n.id!==id);});},
+ gmNpcField(id,f,v){
+   APP.gmSessionMutate(st=>{
+     const n=st.npcs.find(n=>n.id===id);if(!n)return;
+     n[f]=(f==="hpCur"||f==="hpMax")?(parseInt(v,10)||0):v;
+   });},
+ gmNotes(v){APP.gmSessionMutate(st=>{st.sessionNotes=v;});},
  setCampaign(id){
    // cloudUpsertCharacter()'s UPDATE path deliberately never writes
    // campaign_id (see the comment there) to stop the debounced autosave
@@ -656,15 +694,16 @@ window.APP={
    // through the same dedicated single-field update the Campaign page's
    // own assign/unassign actions use, immediately on change, instead of
    // hoping a later generic save will carry it — it won't.
-   const cid=id||null;S.campaignId=cid;render();
+   const cid=id||null;S.campaignId=cid;BUILDER_MSG=null;render();
    if(cloudActive()&&isUuid(S._libId)){
      (cid?assignCharUnified(S._libId,cid):unassignCharUnified(S._libId))
-       .catch(e=>alert("Could not update campaign assignment: "+e.message));
+       .catch(e=>{BUILDER_MSG="Could not update campaign assignment: "+e.message;render();});
    }
  },
  saveToLibrary(){
+   BUILDER_MSG=null;
    saveToLibraryUnified(true).then(()=>{S._libLastSaved=Date.now();render();})
-     .catch(e=>alert("Could not save to library: "+e.message));},
+     .catch(e=>{BUILDER_MSG="Could not save to library: "+e.message;render();});},
  // Takes the code directly rather than reading a specific DOM element —
  // the home screen's "Join a campaign" button (homeJoinCampaign below)
  // has no visible input field of its own, per the approved design.
@@ -672,29 +711,31 @@ window.APP={
    code=(code||"").trim();
    if(!code)return;
    cloudJoinCampaign(code).then(res=>{
-     if(!res){alert("Invalid invite code.");return;}
+     if(!res){MENU_MSG="Invalid invite code.";render();return;}
      CURRENT_CAMPAIGN_ID=res.id;APPVIEW="campaign";CAMPAIGN_VIEW=null;render();
      loadCampaignViewUnified(res.id);window.scrollTo(0,0);
-   }).catch(e=>alert("Could not join campaign: "+e.message));},
+   }).catch(e=>{MENU_MSG="Could not join campaign: "+e.message;render();});},
  homeJoinCampaign(){
-   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){alert("Sign in first — joining a campaign needs an account.");return;}
+   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){MENU_MSG="Sign in first — joining a campaign needs an account.";render();return;}
    const code=prompt("Enter the campaign's invite code:");
    if(code)APP.joinCampaign(code);},
  /* account */
  signIn(){
+   AUTH_MSG=null;
    const email=($("#authEmail")&&$("#authEmail").value||"").trim();
    const pw=$("#authPw")&&$("#authPw").value||"";
-   if(!email||!pw){alert("Enter your email and password.");return;}
+   if(!email||!pw){AUTH_MSG={text:"Enter your email and password."};render();return;}
    sb.auth.signInWithPassword({email,password:pw}).then(({error})=>{
-     if(error)alert("Sign-in failed: "+error.message);
+     if(error){AUTH_MSG={text:"Sign-in failed: "+error.message};render();}
    });},
  signUp(){
+   AUTH_MSG=null;
    const email=($("#authEmail")&&$("#authEmail").value||"").trim();
    const pw=$("#authPw")&&$("#authPw").value||"";
-   if(!email){alert("Enter your email first.");return;}
-   if(pw.length<8){alert("Password must be at least 8 characters.");return;}
+   if(!email){AUTH_MSG={text:"Enter your email first."};render();return;}
+   if(pw.length<8){AUTH_MSG={text:"Password must be at least 8 characters."};render();return;}
    sb.auth.signUp({email,password:pw,options:{emailRedirectTo:window.location.href}}).then(({data,error})=>{
-     if(error){alert("Sign-up failed: "+error.message);return;}
+     if(error){AUTH_MSG={text:"Sign-up failed: "+error.message};render();return;}
      // If email confirmation is required, Supabase returns a user but no
      // session yet — nothing to do here but wait; onAuthStateChange fires
      // once they click the confirmation link. If confirmation is off,
@@ -703,29 +744,26 @@ window.APP={
      if(!data.session){AUTH_PENDING="signup";render();}
    });},
  forgotPassword(){
+   AUTH_MSG=null;
    const email=($("#authEmail")&&$("#authEmail").value||"").trim();
-   if(!email){alert("Enter your email first.");return;}
+   if(!email){AUTH_MSG={text:"Enter your email first."};render();return;}
    sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.href}).then(({error})=>{
-     alert(error?("Could not send reset email: "+error.message):"Reset email sent — check your inbox.");
+     AUTH_MSG=error?{text:"Could not send reset email: "+error.message}:{text:"Reset email sent — check your inbox.",level:"okmsg"};
+     render();
    });},
  setNewPassword(){
+   AUTH_MSG=null;
    const pw=$("#authNewPw")&&$("#authNewPw").value||"";
-   if(pw.length<8){alert("Password must be at least 8 characters.");return;}
+   if(pw.length<8){AUTH_MSG={text:"Password must be at least 8 characters."};render();return;}
    sb.auth.updateUser({password:pw}).then(({error})=>{
-     if(error){alert("Could not set new password: "+error.message);return;}
-     AUTH_RECOVERY=false;alert("Password updated.");render();
-   });},
- sendMagicLink(fieldId){
-   const el=$("#"+(fieldId||"authEmail"));const email=el&&el.value&&el.value.trim();
-   if(!email){alert("Enter your email first.");return;}
-   sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.href}}).then(({error})=>{
-     if(error){alert("Could not send link: "+error.message);return;}
-     AUTH_PENDING=true;render();
+     if(error){AUTH_MSG={text:"Could not set new password: "+error.message};render();return;}
+     AUTH_RECOVERY=false;AUTH_MSG={text:"Password updated.",level:"okmsg"};render();
    });},
  setDisplayName(){
+   AUTH_MSG=null;
    const el=$("#authName");const name=el&&el.value&&el.value.trim();
    if(!name)return;
-   ensureProfile(name).then(render).catch(e=>alert("Could not save name: "+e.message));},
+   ensureProfile(name).then(render).catch(e=>{AUTH_MSG={text:"Could not save name: "+e.message};render();});},
  signOut(){sb.auth.signOut().then(()=>{AUTH_USER=null;AUTH_PROFILE=null;AUTH_PENDING=false;CAMP_CACHE=null;APPVIEW="menu";render();});}
 };
 function dl(name,content,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);
