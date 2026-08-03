@@ -87,9 +87,16 @@ function renderFoot(){
 }
 
 /* ================= RENDER: STEPS ================= */
+// Inline replacement for the Builder's former alert() calls that don't fit
+// any one step (the Concept step's campaign-assignment select, the Sheet
+// step's "Save to Library" button, the Age step's "Apply" life-event
+// button) -- rendered once here so it shows up regardless of which step
+// triggered it, cleared on the next successful render of whichever action
+// set it.
+let BUILDER_MSG=null;
 function renderMain(){
   const f=stepFns()[S.step];
-  $("#main").innerHTML=f();
+  $("#main").innerHTML=(BUILDER_MSG?'<p class="warn" style="margin-bottom:10px">'+esc(BUILDER_MSG)+'</p>':'')+f();
 }
 function head(t,l){return '<h2 class="stephead">'+t+'</h2><p class="steplede">'+l+'</p>';}
 function fld(label,inner){return '<div class="field"><label>'+label+'</label>'+inner+'</div>';}
@@ -665,13 +672,13 @@ function knownMagicEditor(t){
        +t.shaping.map(sn=>'<button class="chip '+((m.shapings||[]).includes(sn)?"on":"")+'" onclick="APP.toggleShaping('+i+',\''+jsq(sn)+'\')">'+esc(sn)+'</button>').join("")
        +'<span class="mcost">'+c.mp+' MP &middot; '+c.turns+' turn'+(c.turns>1?"s":"")+' to cast</span></div>';
     }
-    r+='<button class="chip mdel" onclick="APP.delMagic('+i+')" aria-label="remove">&times;</button>'
+    r+='<button class="chip mdel" onpointerdown="APP.delMagic('+i+')" onclick="APP.delMagic('+i+')" aria-label="remove">&times;</button>'
      +'<textarea class="mnotes" rows="2" placeholder="effect / notes from your rulebook" onchange="APP.magicField('+i+',\'notes\',this.value)">'+esc(m.notes||"")+'</textarea>'
      +'</div>';
     return r;
   }).join("");
   const noun=t.key==="animism"?"spirit":t.key==="theism"?"Miracle":t.key==="mysticism"?"Talent":"spell";
-  h+='<p><button class="chip actionchip" onclick="APP.addMagic(\''+t.key+'\')">+ add '+noun+'</button></p>';
+  h+='<p><button class="chip actionchip" onpointerdown="APP.addMagic(\''+t.key+'\')" onclick="APP.addMagic(\''+t.key+'\')">+ add '+noun+'</button></p>';
   return h;
 }
 /* ---- step: cult & community ---- */
@@ -703,7 +710,7 @@ function stepPassions(){
      +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
      +'<input type="text" value="'+esc(p.name)+'" placeholder="e.g. Loyalty to Clan Chieftain" style="flex:1;min-width:180px" onchange="APP.pas('+i+',\'name\',this.value)">'
      +'<select onchange="APP.pas('+i+',\'type\',this.value)">'+Object.entries(PASSION_TYPES).map(([k,v])=>'<option value="'+k+'" '+(p.type===k?"selected":"")+'>'+v.label+'</option>').join("")+'</select>'
-     +'<button class="chip" onclick="APP.delPas('+i+')">remove</button></div>'
+     +'<button class="chip" onpointerdown="APP.delPas('+i+')" onclick="APP.delPas('+i+')">remove</button></div>'
      +'<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:6px" class="note">'
      +'Formula: '+t.calc
      +(t.needs.includes("subjPOW")?' &nbsp;subject POW <input type="number" value="'+(p.subjPOW||"")+'" onchange="APP.pas('+i+',\'subjPOW\',this.value)">':"")
@@ -858,8 +865,8 @@ function stepMoney(){
    +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.inv('+i+',\'name\',this.value)"></td>'
     +'<td class="num"><input type="number" value="'+it.qty+'" onchange="APP.inv('+i+',\'qty\',this.value)"></td>'
     +'<td class="num"><input type="number" step="0.5" value="'+it.enc+'" onchange="APP.inv('+i+',\'enc\',this.value)"></td>'
-    +'<td><button class="chip" aria-label="remove item" onclick="APP.invDel('+i+')">&times;</button></td></tr>').join("")
-   +'</table><p style="margin-top:8px"><button class="chip" onclick="APP.invAdd()">+ add item</button> &nbsp;<span class="note">Inventory ENC: <b style="font-family:var(--mono)">'+S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.enc||0),0)+'</b> &nbsp;&middot;&nbsp; Total gear ENC (weapons + armour + inventory): <b style="font-family:var(--mono)">'+gearEncTotal()+'</b>'
+    +'<td><button class="chip" aria-label="remove item" onpointerdown="APP.invDel('+i+')" onclick="APP.invDel('+i+')">&times;</button></td></tr>').join("")
+   +'</table><p style="margin-top:8px"><button class="chip" onpointerdown="APP.invAdd()" onclick="APP.invAdd()">+ add item</button> &nbsp;<span class="note">Inventory ENC: <b style="font-family:var(--mono)">'+S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.enc||0),0)+'</b> &nbsp;&middot;&nbsp; Total gear ENC (weapons + armour + inventory): <b style="font-family:var(--mono)">'+gearEncTotal()+'</b>'
    +(encLimit()!==null?' &nbsp;&middot;&nbsp; Unencumbered limit (STR&times;2): <b style="font-family:var(--mono)">'+encLimit()+'</b>':"")+'</span>'
    +(encStatus()&&encStatus().level!=="ok"?'<p class="'+(encStatus().level==="bad"?"warn":"note")+'" style="margin-top:4px">'+encStatus().msg+'</p>'+encEffectPanel():"")+'</p></div>';
   return h;

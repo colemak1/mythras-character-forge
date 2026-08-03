@@ -1,5 +1,12 @@
 "use strict";
 /* ================= PLAY MODE ================= */
+// Transient "why didn't that roll happen" feedback (missing skill, Hopeless
+// Grade, Devotional Pool exhausted) for roll()/castMagic() below -- shown as
+// a line above the roll log (both the dense Play Mode one and the printable
+// Character Sheet's own mini roll log, the two places those buttons live)
+// instead of a blocking alert(). Cleared at the top of each new roll/cast
+// attempt so it never lingers past whatever prompted it.
+let PM_MSG=null;
 // Session tracking for a finished character: current HP per hit location,
 // current Luck/Magic Points, and an Action-Points-used-this-round counter.
 // All derived maxes reuse the exact same functions the sheet already uses
@@ -802,6 +809,7 @@ function renderPlayView(){
   h+='</div></div>';
 
   h+='<div class="pm-box pm-rolllog-wrap"><div class="pm-sect-head"><span class="no">05</span> PRESS LOG &mdash; D100</div>'
+   +(PM_MSG?'<p class="warn" style="margin-bottom:7px">'+esc(PM_MSG)+'</p>':'')
    +'<p class="pm-empty" style="margin-bottom:7px">Critical &le; 1/10 skill (round up) &middot; 01&ndash;05 auto success &middot; 96&ndash;00 auto failure &middot; Fumble 99&ndash;00 (00 only if skill&gt;100). A combat Fumble isn&#39;t just a miss &mdash; it can hand your opponent free Special Effects.</p>'
    +'<div class="pm-rolllog">'
    +(S.rollLog.length?S.rollLog.map((r,i)=>playRollLogRow(r,i)).join(""):'<span class="pm-empty">No rolls yet — click "roll" beside any skill.</span>')
@@ -915,7 +923,8 @@ function characterSheetBody(){
    +'<select onchange="APP.setGrade(this.value)">'+GRADES.map(([k,l])=>'<option value="'+k+'" '+(ACTIVE_GRADE===k?"selected":"")+'>'+l+'</option>').join("")+'</select>'
    +(ACTIVE_GRADE!=="standard"?' <button class="chip" onclick="APP.setGrade(\'standard\')">reset to Standard</button>':"")
    +conditionsSummary()+'</div>';
-  h+='<div class="rolllog" id="rolllog">'+(S.rollLog.length?S.rollLog.map((r,i)=>'<div class="'+(i===0?"fresh ":"")+'t'+r.tier+'">d100 = '+r.roll+' vs '+esc(r.label)+' '+r.pct+'% &rarr; <b>'+r.tier+'</b></div>').join(""):'<span class="note">Roll log &mdash; click &ldquo;roll&rdquo; beside any skill. Crit &le; 1/10 skill (round up) &middot; 01&ndash;05 auto success &middot; 96&ndash;00 auto failure &middot; fumble 99&ndash;00 (00 only if skill &gt; 100).</span>')+'</div>';
+  h+=(PM_MSG?'<p class="warn" style="margin-top:6px">'+esc(PM_MSG)+'</p>':'')
+   +'<div class="rolllog" id="rolllog">'+(S.rollLog.length?S.rollLog.map((r,i)=>'<div class="'+(i===0?"fresh ":"")+'t'+r.tier+'">d100 = '+r.roll+' vs '+esc(r.label)+' '+r.pct+'% &rarr; <b>'+r.tier+'</b></div>').join(""):'<span class="note">Roll log &mdash; click &ldquo;roll&rdquo; beside any skill. Crit &le; 1/10 skill (round up) &middot; 01&ndash;05 auto success &middot; 96&ndash;00 auto failure &middot; fumble 99&ndash;00 (00 only if skill &gt; 100).</span>')+'</div>';
   // Dense, print-style grid sheet — modelled on the official Mythras
   // character sheet's layout (small bordered boxes, a title panel, compact
   // Characteristics/Attributes tables, a Hit Locations table with a body

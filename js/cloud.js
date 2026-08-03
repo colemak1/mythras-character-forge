@@ -39,6 +39,20 @@ let MOCK_AUTH=null;      // {id,display_name} once "mock signed in", else null
 const anyAuth=()=>AUTH_USER||MOCK_AUTH;
 let CAMP_CACHE=null;     // array once loaded from the cloud, else null ("loading")
 let CAMPAIGN_VIEW=null;  // {campaign,members,chars,unassigned} for whatever campaign is open
+/* GM session tools (initiative tracker, NPC/monster quick-stats, session
+   notes) live in one jsonb column on the campaign row -- campaigns.session_state
+   -- rather than a new table, so they ride the exact same read/write/realtime
+   path as `notes` already does. Requires a DB-side migration this app can't
+   run itself (no service-role key on the client, only the anon key): run
+   `alter table campaigns add column session_state jsonb;` and, if the
+   `campaigns` table isn't already in the realtime publication (`characters`
+   clearly is, `campaigns` never needed live updates before now),
+   `alter publication supabase_realtime add table campaigns;`. Until that
+   migration lands, cloud writes below fail gracefully (caught, surfaced as
+   inline feedback like every other campaign write) and local-only mode
+   works immediately. */
+function emptySessionState(){return {npcs:[],initiative:[],round:1,turnIdx:0,sessionNotes:""};}
+function sessionStateOf(camp){return (camp&&camp.session_state)||emptySessionState();}
 let LIB_CACHE=null;      // characters relevant to whatever's currently shown
 // Play Mode viewing someone else's character (Party Board -> click a card):
 // VIEW_ONLY disables every playXxx mutator and the cloud-push scheduler so a
@@ -261,10 +275,17 @@ function saveCurrentToLibraryLocal(){
    are populated by a loader, then render() is called again once they land
    (a short "Loading…" state shows in between). */
 const cloudActive=()=>CLOUD_ENABLED&&!!AUTH_USER;
+// Local campaign records store session_state under the same camelCase
+// convention as createdAt (converted to created_at here) -- one shared spot
+// for the local->unified shape instead of the four near-identical object
+// literals this used to be inlined as (list/detail/create/board-refetch).
+function normalizeLocalCampaign(c){
+  return c?{id:c.id,name:c.name,notes:c.notes,session_state:c.sessionState||null,
+    created_at:new Date(c.createdAt).toISOString(),dm_id:null,invite_code:null}:null;
+}
 async function loadCampaignsUnified(){
   if(cloudActive()){CAMP_CACHE=await cloudFetchCampaigns();}
-  else{CAMP_CACHE=loadCampaignsLocal().map(c=>({id:c.id,name:c.name,notes:c.notes,
-    created_at:new Date(c.createdAt).toISOString(),dm_id:null,invite_code:null}));}
+  else{CAMP_CACHE=loadCampaignsLocal().map(normalizeLocalCampaign);}
   render();
 }
 // "My Characters" — every character ever autosaved (local) or owned
@@ -287,8 +308,7 @@ async function loadCampaignViewUnified(id){
     ]);
     CAMPAIGN_VIEW={campaign:campRes.data||null,members,chars,unassigned:mine.filter(c=>!c.campaign_id)};
   }else{
-    const raw=getCampaignLocal(id);
-    const campaign=raw?{id:raw.id,name:raw.name,notes:raw.notes,created_at:new Date(raw.createdAt).toISOString(),dm_id:null,invite_code:null}:null;
+    const campaign=normalizeLocalCampaign(getCampaignLocal(id));
     // Always an object, even when campaign itself is null (id not found) --
     // matching the cloud branch above. CAMPAIGN_VIEW===null is how
     // campaignDetailHTML()/boardHTML() distinguish "still loading" from "here's
@@ -306,7 +326,7 @@ async function createCampaignUnified(name){
   if(cloudActive())return cloudCreateCampaign(name);
   const camp={id:genId(),name,notes:"",createdAt:Date.now()};
   upsertCampaignLocal(camp);
-  return {id:camp.id,name:camp.name,notes:camp.notes,created_at:new Date(camp.createdAt).toISOString(),dm_id:null,invite_code:null};
+  return normalizeLocalCampaign(camp);
 }
 async function renameCampaignUnified(id,name){
   if(cloudActive())return cloudUpdateCampaign(id,{name});
@@ -315,6 +335,17 @@ async function renameCampaignUnified(id,name){
 async function noteCampaignUnified(id,notes){
   if(cloudActive())return cloudUpdateCampaign(id,{notes});
   const camp=getCampaignLocal(id);if(!camp)return;camp.notes=notes;upsertCampaignLocal(camp);
+}
+async function sessionStateCampaignUnified(id,sessionState){
+  if(cloudActive())return cloudUpdateCampaign(id,{session_state:sessionState});
+  const camp=getCampaignLocal(id);if(!camp)return;camp.sessionState=sessionState;upsertCampaignLocal(camp);
+}
+// Single-row refetch used by the board's realtime handler below to pick up
+// GM-tool edits (initiative/NPCs/notes) made from another tab/device,
+// mirroring loadBoardUnified's character refetch.
+async function loadCampaignRowUnified(id){
+  if(cloudActive()){const {data}=await sb.from("campaigns").select("*").eq("id",id).maybeSingle();return data||null;}
+  return normalizeLocalCampaign(getCampaignLocal(id));
 }
 async function deleteCampaignUnified(id){
   if(cloudActive())return cloudDeleteCampaign(id);
@@ -456,6 +487,19 @@ function updateAutosaveTag(){
    several "apps" this file can open into. */
 let APPVIEW="menu";
 let CURRENT_CAMPAIGN_ID=null;
+// Inline replacement for the Main Menu's former alert() calls (bad
+// autosave load, join-a-campaign guard/result, a stale deep link bouncing
+// here via router.js's redirectHome) -- rendered once near the bottom of
+// menuHTML(), cleared whenever the menu is (re)entered.
+let MENU_MSG=null;
+// Same idea, shared across Campaigns list / Campaign detail / My Characters
+// -- closely related pages reached from the same Main Menu tiles, each
+// clears it on its own entry point so a stale message never bleeds from one
+// into another.
+let CAMP_MSG=null;
+// Account page (sign-in/sign-up/password errors, plus success messages like
+// "Reset email sent" and "Password updated" that used to be a bare alert()).
+let AUTH_MSG=null;
 let XP_OPEN=false; // Improve Skills modal visibility — ephemeral UI state, not saved character data
 let SHEET_RETURN_VIEW="play"; // where APP.backFromSheet() sends you back to — set by whoever opened the sheet view
 function getAutosaveInfo(){
@@ -515,6 +559,7 @@ function accountHTML(){
      +'</div>'
      +(AUTH_PENDING==="signup"?'<p class="okmsg" style="margin-top:8px">Check your email to confirm your account, then sign in.</p>':"");
   }
+  if(AUTH_MSG)h+='<p class="'+(AUTH_MSG.level||"warn")+'" style="margin-top:8px">'+esc(AUTH_MSG.text)+'</p>';
   h+='</div>';
   h+='</div></div>';
   return h;
@@ -566,6 +611,7 @@ function menuHTML(){
    +'<button class="myth-home-mbtn" onclick="APP.toCampaigns()">My campaigns</button>'
    +'</div>';
   if(auto)h+='<button class="myth-home-continue" onclick="APP.fromMenuContinue()">Continue as '+esc(auto.name)+' &rarr;</button>';
+  if(MENU_MSG)h+='<p class="warn" style="margin-top:10px;text-align:center">'+esc(MENU_MSG)+'</p>';
   h+='</div>'; // /myth-home-stack
   h+='</div>'; // /myth-home
   return h;
@@ -596,6 +642,7 @@ function campaignsHTML(){
   const camps=CAMP_CACHE.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   let h='<div class="menuwrap"><div class="menuhead"><h1>Campaigns</h1><p>'+(cloudActive()?"Synced to your account — DMs see every linked character.":"Local to this browser only.")+'</p></div>';
   h+='<p style="text-align:center;margin-bottom:20px"><button class="nav" onclick="APP.toMenu()">&#8592; Main Menu</button> <button class="nav primary" onclick="APP.newCampaign()">+ New Campaign</button></p>';
+  if(CAMP_MSG)h+='<p class="warn" style="text-align:center;margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
   if(!camps.length){h+='<p class="note" style="text-align:center">No campaigns yet — start one above, or join one with an invite code from the Main Menu.</p>';}
   h+='<div class="menutiles">'+camps.map(c=>{
     const mineAsDm=!cloudActive()||c.dm_id===(AUTH_USER&&AUTH_USER.id);
@@ -616,6 +663,7 @@ function libraryHTML(){
   let h='<div class="mmenu"><div class="mmenu-topbar"><span class="mmenu-brandmark">Mythras</span><span class="mmenu-branddiv">&middot;</span><span class="mmenu-brandsub">Character Forge</span>'
    +'<button class="mmenu-acctbtn" onclick="APP.toMenu()">&#8592; Main Menu</button></div>';
   h+='<div class="mmenu-pagehead"><h1>My Characters</h1><p>'+(cloudActive()?"Every character saved to your account.":"Every character autosaved in this browser.")+'</p></div>';
+  if(CAMP_MSG)h+='<p class="warn" style="margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
   if(LIB_CACHE===null){h+='<p class="note">Loading&hellip;</p></div>';return h;}
   if(!LIB_CACHE.length){
     h+='<div class="mmenu-panel"><p class="note">No characters saved yet — start one from the Main Menu and it&rsquo;ll show up here automatically as you build it.</p>'
@@ -657,6 +705,7 @@ function campaignDetailHTML(){
   const isDM=!cloudActive()||camp.dm_id===(AUTH_USER&&AUTH_USER.id);
   let h='<div class="menuwrap">';
   h+='<p><button class="nav" onclick="APP.toCampaigns()">&#8592; Campaigns</button></p>';
+  if(CAMP_MSG)h+='<p class="warn">'+esc(CAMP_MSG)+'</p>';
   h+='<div class="card"><h3>Campaign'+(isDM?"":' <span class="note">(player view)</span>')+'</h3>';
   if(isDM){
     h+=fld("Name",'<input type="text" value="'+esc(camp.name)+'" onchange="APP.campField(\'name\',this.value)">')
@@ -708,6 +757,8 @@ function renderCampaignView(){
    Play Mode itself uses — so the board can never show a different wound
    tier or HP total than the character's own Play Mode screen would. */
 let BOARD_CHARS=null;          // array of {id,name,tier,culture,career,owner_id,owner_name,campaign_id,state,updated_at}, or null while loading
+let BOARD_TAB="status";        // "status" (live character grid) or "gm" (initiative/NPCs/notes, DM-only)
+let GM_SESSION_ERROR=null;     // set when a GM-tools save fails, cleared on the next successful edit
 let BOARD_SUB=null,BOARD_LIVE=false;
 let BOARD_REFETCH_TIMER=null,BOARD_TICK_TIMER=null,BOARD_POLL_TIMER=null;
 // Cloud rows already carry `state` + owner_name from cloudFetchCharacters();
@@ -725,6 +776,14 @@ function boardSubscribe(campaignId){
   BOARD_SUB=sb.channel("board-"+campaignId)
     .on("postgres_changes",{event:"*",schema:"public",table:"characters",filter:"campaign_id=eq."+campaignId},
         ()=>boardRefetch(campaignId))
+    // Second listener on the same channel, watching the campaign row itself
+    // (name/notes/session_state) so a GM's initiative/NPC/notes edit shows
+    // up live for anyone else looking at this campaign's board — same
+    // debounced-refetch handler as the characters listener above, requires
+    // `campaigns` to be added to the realtime publication (see the comment
+    // by emptySessionState() near the top of this file).
+    .on("postgres_changes",{event:"*",schema:"public",table:"campaigns",filter:"id=eq."+campaignId},
+        ()=>boardRefetch(campaignId))
     .subscribe(status=>{BOARD_LIVE=(status==="SUBSCRIBED");if(APPVIEW==="board")render();});
 }
 function boardUnsubscribeChannel(){if(BOARD_SUB){sb.removeChannel(BOARD_SUB);BOARD_SUB=null;}BOARD_LIVE=false;}
@@ -739,11 +798,16 @@ function boardUnsubscribe(){
 // Realtime delivers a row-changed *signal*, not trusted payload data (a
 // character's `state` jsonb can be large) — always refetch the full list
 // over REST, debounced so a burst of near-simultaneous edits collapses into
-// one request instead of one per event.
+// one request instead of one per event. Also refreshes CAMPAIGN_VIEW.campaign
+// (name/notes/session_state) -- it's normally only fetched once on entry via
+// loadCampaignViewUnified, so without this a GM tools edit made in another
+// tab would never appear here until the board was left and reopened.
 function boardRefetch(campaignId){
   clearTimeout(BOARD_REFETCH_TIMER);
   BOARD_REFETCH_TIMER=setTimeout(async()=>{
-    BOARD_CHARS=await loadBoardUnified(campaignId);
+    const [chars,camp]=await Promise.all([loadBoardUnified(campaignId),loadCampaignRowUnified(campaignId)]);
+    BOARD_CHARS=chars;
+    if(camp&&CAMPAIGN_VIEW)CAMPAIGN_VIEW.campaign=camp;
     BOARD_LAST_FETCH=Date.now();
     if(APPVIEW==="board")render();
   },300);
@@ -801,11 +865,20 @@ function boardCardHTML(row){
 }
 function boardHTML(){
   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;
+  // GM Tools (initiative/NPCs/session notes) are DM-only -- same isDM check
+  // campaignDetailHTML() uses. Local-only mode has no multiplayer concept,
+  // so whoever's driving the browser counts as the DM there.
+  const isDM=!cloudActive()||!!(camp&&camp.dm_id===(AUTH_USER&&AUTH_USER.id));
   let h='<div class="menuwrap pb-wrap">';
   h+='<p><button class="nav" onclick="APP.openCampaign(\''+(CURRENT_CAMPAIGN_ID||"")+'\')">&#8592; '+(camp?esc(camp.name):"Campaign")+'</button> '
    +'<button class="nav" onclick="APP.refreshBoard()">&#8635; Refresh</button>'
    +(cloudActive()?'<span class="pb-livedot '+(BOARD_LIVE?"on":"off")+'" title="'+(BOARD_LIVE?"Live — updates arrive automatically":"Reconnecting…")+'">'+(BOARD_LIVE?"&#9679; Live":"&#9675; Connecting…")+'</span>':'')+'</p>';
   h+='<div class="menuhead"><h1>Party Board'+(camp?" — "+esc(camp.name):"")+'</h1><p>Live status for every character linked to this campaign. Click a card to open it in Play Mode.</p></div>';
+  if(isDM&&camp){
+    h+='<p class="pb-tabs"><button class="chip'+(BOARD_TAB==="status"?" on":"")+'" onclick="APP.setBoardTab(\'status\')">Live Status</button> '
+     +'<button class="chip'+(BOARD_TAB==="gm"?" on":"")+'" onclick="APP.setBoardTab(\'gm\')">GM Tools</button></p>';
+  }
+  if(BOARD_TAB==="gm"&&isDM&&camp){h+=gmToolsHTML(camp);h+='</div>';return h;}
   if(BOARD_CHARS===null){h+='<p class="note" style="text-align:center">Loading party&hellip;</p></div>';return h;}
   if(!BOARD_CHARS.length){h+='<p class="note" style="text-align:center">No characters linked to this campaign yet.</p></div>';return h;}
   const sorted=BOARD_CHARS.slice().sort((a,b)=>{
@@ -814,6 +887,64 @@ function boardHTML(){
   });
   h+='<div class="pb-grid">'+sorted.map(boardCardHTML).join("")+'</div>';
   h+='</div>';
+  return h;
+}
+/* ---- GM session tools: initiative tracker, NPC/monster quick-stats,
+   session notes. All three live in one campaigns.session_state jsonb blob
+   (see emptySessionState() near the top of this file), mutated optimistically
+   the same way campField() handles name/notes, and refreshed for every
+   viewer via the board-<id> realtime channel's campaigns listener. ---- */
+function gmToolsHTML(camp){
+  const st=sessionStateOf(camp);
+  const order=st.initiative.slice().sort((a,b)=>b.init-a.init);
+  const activeId=order.length?order[Math.min(st.turnIdx,order.length-1)].id:null;
+  const inInit=new Set(st.initiative.filter(e=>e.kind==="pc").map(e=>e.ref));
+  const pcChoices=(BOARD_CHARS||[]).filter(c=>!inInit.has(c.id));
+  let h=GM_SESSION_ERROR?'<p class="warn" style="margin-bottom:10px">'+esc(GM_SESSION_ERROR)+'</p>':'';
+  h+='<div class="card"><h3>Initiative &amp; Turn Order</h3>';
+  h+='<div class="pb-initctl"><span class="pb-round">Round <b>'+st.round+'</b></span>'
+   +'<button class="chip" onclick="APP.gmAdvanceTurn()" '+(order.length?"":"disabled")+'>Advance turn &rarr;</button>'
+   +'<button class="chip" onclick="APP.gmResetRound()" '+(order.length?"":"disabled")+'>Reset round</button></div>';
+  if(order.length){
+    h+='<div class="pb-initlist">'+order.map(e=>{
+      const isPc=e.kind==="pc";
+      const row=isPc?(BOARD_CHARS||[]).find(c=>c.id===e.ref):null;
+      const name=isPc?(row?row.name:"(removed character)"):e.name;
+      const sub=isPc?"PC":"NPC";
+      return '<div class="pb-initrow'+(e.id===activeId?" on":"")+'">'
+       +'<span class="pb-initname">'+esc(name||"Unnamed")+' <i>'+sub+'</i></span>'
+       +'<input type="number" class="pb-initval" value="'+e.init+'" onchange="APP.gmSetInit(\''+e.id+'\',this.value)" aria-label="Initiative">'
+       +'<button class="chip sm" onclick="APP.gmRemoveInit(\''+e.id+'\')" aria-label="remove from initiative">&times;</button>'
+       +'</div>';
+    }).join("")+'</div>';
+  }else{h+='<p class="note">No one in the initiative order yet — add a party character or an NPC below.</p>';}
+  h+='<div class="pb-initadd">'
+   +'<select id="gmPcPicker"><option value="">&mdash; add a party character &mdash;</option>'
+   +pcChoices.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+'</select>'
+   +'<button class="chip" onclick="APP.gmAddPcInit()" '+(pcChoices.length?"":"disabled")+'>add</button>'
+   +'</div>';
+  h+='<div class="pb-initadd">'
+   +'<input type="text" id="gmNpcInitName" placeholder="NPC/monster name">'
+   +'<input type="number" id="gmNpcInitVal" placeholder="Init" style="width:70px">'
+   +'<button class="chip" onclick="APP.gmAddNpcInit()">add</button>'
+   +'</div></div>';
+  h+='<div class="card"><h3>NPCs &amp; Monsters</h3>';
+  if(st.npcs.length){
+    h+='<div class="pb-npclist">'+st.npcs.map(n=>
+      '<div class="pb-npccard">'
+       +'<div class="pb-npchead"><input type="text" class="pb-npcname" value="'+esc(n.name)+'" placeholder="Name" onchange="APP.gmNpcField(\''+n.id+'\',\'name\',this.value)">'
+       +'<button class="chip sm" onclick="APP.gmRemoveNpc(\''+n.id+'\')" aria-label="remove NPC">&times;</button></div>'
+       +'<div class="pb-npchp"><label>HP</label><input type="number" value="'+n.hpCur+'" onchange="APP.gmNpcField(\''+n.id+'\',\'hpCur\',this.value)" style="width:56px"> / '
+       +'<input type="number" value="'+n.hpMax+'" onchange="APP.gmNpcField(\''+n.id+'\',\'hpMax\',this.value)" style="width:56px"></div>'
+       +'<input type="text" class="pb-npcstat" value="'+esc(n.stat1||"")+'" placeholder="e.g. Combat Style 65%, Dodge 40%" onchange="APP.gmNpcField(\''+n.id+'\',\'stat1\',this.value)">'
+       +'<input type="text" class="pb-npcstat" value="'+esc(n.stat2||"")+'" placeholder="e.g. special abilities, notes" onchange="APP.gmNpcField(\''+n.id+'\',\'stat2\',this.value)">'
+       +'</div>'
+    ).join("")+'</div>';
+  }else{h+='<p class="note">No NPCs or monsters prepped yet.</p>';}
+  h+='<p style="margin-top:10px"><button class="chip" onclick="APP.gmAddNpc()">+ add NPC/monster</button></p></div>';
+  h+='<div class="card"><h3>Session Notes</h3>'
+   +'<p class="note" style="margin-bottom:8px">Visible only to you — not shown to players on this board.</p>'
+   +'<textarea rows="6" placeholder="Scene notes, secrets, reminders for this session&hellip;" onchange="APP.gmNotes(this.value)">'+esc(st.sessionNotes||"")+'</textarea></div>';
   return h;
 }
 function renderBoardView(){
