@@ -1020,7 +1020,15 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-skillgroup h4::after{content:none}
 .pm-skillgroup h4:first-child{margin-top:0}
 .pm-skillrow{display:flex;align-items:baseline;gap:8px;padding:4.5px 0;border-bottom:none;font-size:13px}
-.pm-skillrow .nm{color:var(--pm-text);font-weight:600;font-size:15px;letter-spacing:0;white-space:nowrap;font-family:var(--sans)}
+/* Pre-existing gap (present since the very first commit, not something PR #8
+   introduced): white-space:nowrap with no overflow:hidden/ellipsis or
+   min-width:0, unlike .pm-locrow .nm's identical-purpose rule just above,
+   which already has the full safe pattern. A long skill/Combat Style name
+   used to just spill into whatever soft padding was nearby; the PR #8 frame
+   gave every card a crisp bordered edge, which is what makes that overflow
+   suddenly read as "past the card" instead of blending in. min-width:0 lets
+   the flex item actually shrink so the ellipsis can take over. */
+.pm-skillrow .nm{color:var(--pm-text);font-weight:600;font-size:15px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;font-family:var(--sans)}
 .pm-skillrow .base{font-family:var(--mono);font-size:9px;color:var(--pm-dim);letter-spacing:.03em;white-space:nowrap}
 .pm-skillrow .lead{flex:1;border-bottom:1.5px dotted var(--pm-line-soft);transform:translateY(-3px);min-width:12px}
 .pm-skillrow .pctval{font-family:var(--mono);font-weight:700;color:var(--pm-accent-hi);min-width:22px;text-align:right;cursor:pointer;font-size:18px;letter-spacing:-.01em}
@@ -1049,7 +1057,10 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-xpaward{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .pm-xplist{max-height:280px;overflow:auto;margin-top:4px;padding-right:4px}
 .pm-xprow{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px dotted var(--pm-line-soft);font-size:12.5px}
-.pm-xprow .nm{flex:1;color:var(--pm-text)}
+/* Defensive only -- real skill names always contain a space so this hasn't
+   actually overflowed in practice, but it's the same flex:1-without-
+   min-width:0 gap as the two rules above, so hardening it while in here. */
+.pm-xprow .nm{flex:1;min-width:0;color:var(--pm-text)}
 .pm-xprow .pctval{font-family:var(--mono);font-weight:700;color:var(--pm-text);min-width:34px;text-align:right}
 .pm-xpflag{background:none;border:1.5px solid var(--pm-line-soft);color:var(--pm-dim);border-radius:50%;width:22px;height:22px;flex:0 0 auto;cursor:pointer;font-size:12px;line-height:1;padding:0}
 .pm-xpflag:hover{border-color:var(--pm-warn);color:var(--pm-warn)}
@@ -1104,8 +1115,8 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-actbar .apread{font-family:var(--sans);font-size:13px;letter-spacing:.02em;color:var(--pm-dim)}
 .pm-actbar .apread b{color:var(--pm-text);font-size:15px}
 .pm-newround{font-family:'Cinzel',serif;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-  background:var(--pm-text);color:var(--pm-bg);border:none;border-radius:999px;padding:6px 14px;cursor:pointer}
-.pm-newround:hover{background:var(--pm-accent);color:#fff8e6}
+  background:var(--pm-accent);color:#fff8e6;border:none;border-radius:999px;padding:6px 14px;cursor:pointer}
+.pm-newround:hover{background:var(--pm-accent-hi)}
 .pm-act{display:flex;justify-content:space-between;align-items:center;width:100%;padding:7px 4px;border-bottom:1px dotted var(--pm-line-soft);
   background:none;border-left:none;border-right:none;border-top:none;text-align:left;font-family:inherit;cursor:pointer;color:inherit}
 .pm-act:last-child{border-bottom:none}
@@ -1135,7 +1146,13 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-rolllog .log-e{display:flex;gap:8px;align-items:baseline;padding:6px 4px;border-bottom:1px dotted var(--pm-line-soft);border-radius:var(--pm-r-sm)}
 .pm-rolllog .log-e:last-child{border-bottom:none}
 .pm-rolllog .log-e .d{font-weight:700;font-size:16px;width:28px;text-align:right;font-variant-numeric:tabular-nums;flex:0 0 auto;color:var(--pm-dim)}
-.pm-rolllog .log-e .w{color:var(--pm-dim);flex:1}
+/* Same class of bug as .pm-skillrow .nm above: flex:1 alone doesn't let a
+   flex item shrink below its content's min-content width (a single long
+   unbroken computed label), so instead of wrapping it forced the whole row
+   -- and at this narrow a breakpoint, the whole page -- wider than intended.
+   min-width:0 lets it shrink to fit; overflow-wrap lets genuinely long
+   single-token labels break rather than push out sideways. */
+.pm-rolllog .log-e .w{color:var(--pm-dim);flex:1;min-width:0;overflow-wrap:break-word}
 .pm-rolllog .log-e .r{font-weight:700;letter-spacing:.06em;font-size:9.5px;text-transform:uppercase;flex:0 0 auto}
 .pm-rolllog .log-e.crit{background:rgba(184,121,30,.14);border:1px solid var(--pm-accent-hi);margin:0;padding:6px 10px}
 .pm-rolllog .log-e.crit .d{color:var(--pm-accent-hi)}
@@ -1171,7 +1188,13 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
      just without the hard divider lines the old skin drew at each seam. */
   .pm-columns{grid-template-columns:128px 1fr 1fr}
   .pm-col-right{grid-column:2/4;flex-direction:row;flex-wrap:wrap}
-  .pm-col-right .pm-box{flex:1 1 260px}
+  /* min-width:0 is load-bearing here, not decorative -- without it this
+     flex item's default min-width:auto resolves to its content's
+     min-content size, so unbreakable content (see .pm-rolllog .log-e .w
+     above) forces the box itself past its own 260px flex-basis and past
+     .pm-col-right's own bounds, the same overflow-past-the-border bug one
+     level up the tree from where it first looked like it lived. */
+  .pm-col-right .pm-box{flex:1 1 260px;min-width:0}
 }
 @media (max-width:760px){
   .app{grid-template-columns:1fr}
