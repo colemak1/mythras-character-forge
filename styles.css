@@ -1179,7 +1179,7 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
    highlight instead of a full-bleed inverted-black bar; Failure/Fumble
    still read clearly via strikethrough + the danger red-brown. */
 .pm-rolllog{font-family:var(--mono);font-size:11.5px}
-.pm-rolllog .log-e{display:flex;gap:8px;align-items:baseline;padding:6px 4px;border-bottom:1px dotted var(--pm-line-soft);border-radius:var(--pm-r-sm)}
+.pm-rolllog .log-e{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;padding:6px 4px;border-bottom:1px dotted var(--pm-line-soft);border-radius:var(--pm-r-sm)}
 .pm-rolllog .log-e:last-child{border-bottom:none}
 .pm-rolllog .log-e .d{font-weight:700;font-size:16px;width:28px;text-align:right;font-variant-numeric:tabular-nums;flex:0 0 auto;color:var(--pm-dim)}
 /* Same class of bug as .pm-skillrow .nm above: flex:1 alone doesn't let a
@@ -1190,6 +1190,13 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
    single-token labels break rather than push out sideways. */
 .pm-rolllog .log-e .w{color:var(--pm-dim);flex:1;min-width:0;overflow-wrap:break-word}
 .pm-rolllog .log-e .r{font-weight:700;letter-spacing:.06em;font-size:9.5px;text-transform:uppercase;flex:0 0 auto}
+/* .pm-fx-resolve (magic/opponent-tier resolution line) is a 4th sibling
+   inside this same flex row, not a block below it -- without flex-wrap
+   above and a forced 100% basis here, it sat in the row alongside .d/.w/.r,
+   eating horizontal space until .w's flex:1;min-width:0 had nothing left
+   to shrink into and collapsed to 0px, wrapping its text one character per
+   line. flex-basis:100% forces it onto its own full-width line instead. */
+.pm-rolllog .log-e .pm-fx-resolve{flex-basis:100%}
 .pm-rolllog .log-e.crit{background:rgba(184,121,30,.14);border:1px solid var(--pm-accent-hi);margin:0;padding:6px 10px}
 .pm-rolllog .log-e.crit .d{color:var(--pm-accent-hi)}
 .pm-rolllog .log-e.crit .w{color:var(--pm-text)}
