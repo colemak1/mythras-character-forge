@@ -596,6 +596,14 @@ window.APP={
    if(hasUnsavedWork()&&!confirm("Start a new character? This clears the one currently loaded (autosave and exports are unaffected until overwritten)."))return;
    S=freshState();APPVIEW="character";render();window.scrollTo(0,0);},
  fromMenuContinue(){
+   // Same account gate as fromMenuNew() -- this was the actual hole: the
+   // "Continue as X" link reads the autosave slot directly and never
+   // checked auth state, so it bypassed the Main Menu's sign-in requirement
+   // entirely. Left unfixed, it's also self-sustaining -- landing in the
+   // builder this way still calls saveAutosave() on every render, which
+   // re-writes the very ":local" slot this reads from (see cloud.js), so
+   // the loophole would keep recreating itself even after a sign-out wipe.
+   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){MENU_MSG="Sign in first — creating a character needs an account.";render();return;}
    const info=getAutosaveInfo();if(!info)return;
    if(hasUnsavedWork()&&!confirm("Load the autosaved character? This replaces what's currently loaded."))return;
    try{const raw=localStorage.getItem(autosaveKey());const saved=JSON.parse(raw);

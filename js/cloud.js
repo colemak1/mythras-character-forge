@@ -650,7 +650,14 @@ function menuHTML(){
    +'<button class="myth-home-mbtn" onclick="APP.toLibrary()">My characters</button>'
    +'<button class="myth-home-mbtn" onclick="APP.toCampaigns()">My campaigns</button>'
    +'</div>';
-  if(auto)h+='<button class="myth-home-continue" onclick="APP.fromMenuContinue()">Continue as '+esc(auto.name)+' &rarr;</button>';
+  // Same account gate as the "Create a character" tile above -- signed out
+  // (with cloud sync configured), there's nothing valid for this link to
+  // resume, so it shouldn't even be offered. Hiding it here is belt-and-
+  // suspenders alongside the same check in APP.fromMenuContinue(): this is
+  // what actually stops a signed-out visitor from seeing another account's
+  // (or a stale pre-gate) character name advertised on a shared browser.
+  const canContinue=auto&&(!CLOUD_ENABLED||AUTH_USER||MOCK_AUTH);
+  if(canContinue)h+='<button class="myth-home-continue" onclick="APP.fromMenuContinue()">Continue as '+esc(auto.name)+' &rarr;</button>';
   if(MENU_MSG)h+='<p class="warn" style="margin-top:10px;text-align:center">'+esc(MENU_MSG)+'</p>';
   h+='</div>'; // /myth-home-stack
   h+='</div>'; // /myth-home
