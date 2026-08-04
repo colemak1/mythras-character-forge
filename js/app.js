@@ -586,6 +586,13 @@ window.APP={
  /* main menu */
  toMenu(){APPVIEW="menu";MENU_MSG=null;render();window.scrollTo(0,0);},
  fromMenuNew(){
+   // Character creation requires a real account once cloud sync is
+   // configured -- no more "build anonymously, sign in later" limbo (see
+   // signOut's local-data wipe below, which is what this gate exists to
+   // keep meaningful). MOCK_AUTH still bypasses it, matching the carve-out
+   // newCampaign()/homeJoinCampaign() already give the local-only test
+   // identity elsewhere in this file.
+   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){MENU_MSG="Sign in first — creating a character needs an account.";render();return;}
    if(hasUnsavedWork()&&!confirm("Start a new character? This clears the one currently loaded (autosave and exports are unaffected until overwritten)."))return;
    S=freshState();APPVIEW="character";render();window.scrollTo(0,0);},
  fromMenuContinue(){
@@ -643,6 +650,7 @@ window.APP={
    deleteCampaignUnified(camp.id).then(()=>{APPVIEW="campaigns";CAMP_CACHE=null;render();loadCampaignsUnified();})
      .catch(e=>{CAMP_MSG="Could not delete campaign: "+e.message;render();});},
  newCharacterForCampaign(){
+   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){CAMP_MSG="Sign in first — creating a character needs an account.";render();return;}
    if(hasUnsavedWork()&&!confirm("Start a new character for this campaign? This clears the one currently loaded (autosave and exports are unaffected until overwritten)."))return;
    const cid=CURRENT_CAMPAIGN_ID;S=freshState();S.campaignId=cid;APPVIEW="character";render();window.scrollTo(0,0);},
  assignPicked(){
@@ -822,7 +830,20 @@ window.APP={
    const el=$("#authName");const name=el&&el.value&&el.value.trim();
    if(!name)return;
    ensureProfile(name).then(render).catch(e=>{AUTH_MSG={text:"Could not save name: "+e.message};render();});},
- signOut(){sb.auth.signOut().then(()=>{AUTH_USER=null;AUTH_PROFILE=null;AUTH_PENDING=false;CAMP_CACHE=null;APPVIEW="menu";render();});}
+ signOut(){
+   const uid=AUTH_USER&&AUTH_USER.id;
+   // Force the same final cloud push the debounced autosave would otherwise
+   // handle ~1.5s later (scheduleCloudPush in cloud.js) -- sign-out is about
+   // to wipe every local trace of this character (clearLocalCharacterData
+   // below), so anything not yet pushed would otherwise just be lost rather
+   // than merely delayed. Best-effort: a failed flush (offline, etc.) still
+   // lets sign-out proceed rather than trapping the user signed in.
+   const flush=hasUnsavedWork()?saveToLibraryUnified(false).catch(e=>console.warn("final sync before sign-out",e)):Promise.resolve();
+   flush.then(()=>sb.auth.signOut()).then(()=>{
+     clearLocalCharacterData(uid);
+     AUTH_USER=null;AUTH_PROFILE=null;AUTH_PENDING=false;CAMP_CACHE=null;
+     S=freshState();APPVIEW="menu";render();
+   });}
 };
 function dl(name,content,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);
   const a=document.createElement("a");a.href=u;a.download=name;a.click();
