@@ -275,6 +275,23 @@ function deleteCampaignByIdLocal(id){
 }
 function loadCharLibLocal(){try{return JSON.parse(localStorage.getItem(CHARLIB_KEY))||[];}catch(e){return [];}}
 function saveCharLibListLocal(list){try{localStorage.setItem(CHARLIB_KEY,JSON.stringify(list));}catch(e){}}
+// Called on sign-out (APP.signOut) so a shared/public browser never keeps
+// showing "My Characters"/"Continue as X" for the account that just left --
+// character creation is gated behind sign-in (see fromMenuNew/
+// newCharacterForCampaign/the router's "character" case), so these keys
+// should be empty for anyone signed out anyway; this just guarantees it,
+// including for browsers that already had entries from before that gate
+// existed. uid, if passed, is the just-signed-out account's own id, so its
+// scratch "Continue" slot (autosaveKey() while signed in) is wiped too --
+// otherwise the character itself would be gone from My Characters but its
+// in-progress draft would still turn up next time anyone signs in as them
+// on this browser.
+function clearLocalCharacterData(uid){
+  try{localStorage.removeItem(CHARLIB_KEY);}catch(e){}
+  try{localStorage.removeItem(CAMPAIGNS_KEY);}catch(e){}
+  try{localStorage.removeItem(AUTOSAVE_KEY+":local");}catch(e){}
+  if(uid){try{localStorage.removeItem(AUTOSAVE_KEY+":"+uid);}catch(e){}}
+}
 function charsInCampaignLocal(id){return loadCharLibLocal().filter(c=>c.campaignId===id);}
 function unassignedCharsLocal(){return loadCharLibLocal().filter(c=>!c.campaignId);}
 function saveCurrentToLibraryLocal(){

@@ -117,6 +117,10 @@ async function applyRoute(route,opts){
     }
     case "character": {
       if(!route.charId){
+        // Same account gate as APP.fromMenuNew() -- otherwise pasting/
+        // bookmarking this URL would bypass the Main Menu's "sign in first"
+        // check entirely.
+        if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){redirectHome("Sign in first — creating a character needs an account.");return;}
         // A fresh cold load has nothing in memory to lose. A warm hashchange
         // (e.g. Back landing here) might: if the in-memory draft is *already*
         // the id-less one this route describes, keep it rather than wiping
