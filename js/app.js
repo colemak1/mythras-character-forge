@@ -370,20 +370,6 @@ window.APP={
  // down. No render() call needed here: the browser already opens/closes
  // the element on its own; this only has to remember that for next time.
  cstyleToggleCat(key,cat,isOpen){cstyleUI(key).openCats[cat]=isOpen;},
- // Most tables at the table roll physical dice instead of clicking this
- // app's own Roll button, so auto-checking on a Critical (and auto-flagging
- // on a Fumble) can't only key off roll()'s own outcome -- that would miss
- // most real rolls. This is the manual equivalent: report a physical-dice
- // result for a skill without the app doing any rolling itself, feeding the
- // exact same markChecked()/fumbled-flag side effects roll() triggers, plus
- // a Press Log entry so the session record stays complete either way.
- logResult(key,tier){
-   if(viewOnlyBlock()||!tier)return;
-   const em=entryMap();const e=em[key];if(!e)return;
-   if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
-   if(tier==="Critical")APP.markChecked(key);
-   S.rollLog.unshift({label:e.label+" (logged)",pct:finalPct(key),roll:"—",tier,combat:key.startsWith("style:"),oppTier:null});
-   S.rollLog=S.rollLog.slice(0,8);render();},
  /* roller */
  roll(key){const em=entryMap();const e=em[key];if(!e)return;
    PM_MSG=null;
@@ -422,9 +408,10 @@ window.APP={
  // flag clears when its Experience Roll gets spent.
  xpToggleChecked(key){const i=S.xp.checked.indexOf(key);
    if(i>=0)S.xp.checked.splice(i,1);else S.xp.checked.push(key);render();},
- // Shared by roll()/castMagic() (a Critical on the app's own roller) and
- // logResult() (a Critical reported by hand for a physical-dice roll) --
- // one place that actually sets the flag, so both paths can never drift.
+ // Auto-set path for a Critical on the app's own roller (roll()/castMagic()
+ // below) -- the ✓ flag itself is also directly toggleable by hand
+ // (xpToggleChecked above) for a physical-dice Critical or a dramatic
+ // non-crit success the app can't detect on its own.
  markChecked(key){if(!S.xp.checked.includes(key))S.xp.checked.push(key);},
  // Apply a flagged skill's free Fumble +1% on its own, without spending an
  // Experience Roll (the book grants this unconditionally, not just when a
@@ -519,22 +506,35 @@ window.APP={
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
      S._pendingClaim=(entry.ownerId==="local");
      SHEET_RETURN_VIEW="library";APPVIEW="sheet";render();window.scrollTo(0,0);});},
- playDamage(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const n=el?parseInt(el.value,10):NaN;
-   if(!Number.isFinite(n)||n<=0)return;
+ // Primary damage flow (see pmLocDetail in play.js): takes the raw damage
+ // an attack rolled and subtracts this location's armour AP automatically
+ // (core p.27) before applying it to HP, instead of making the player look
+ // up the AP and do that subtraction by hand every single hit. Sets
+ // PM_DMG_NOTE so the panel can show its work ("12 dealt − 4 AP → 8 taken")
+ // rather than just silently updating the HP number.
+ playApplyDamage(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const raw=el?parseInt(el.value,10):NaN;
+   if(!Number.isFinite(raw)||raw<=0)return;
+   const armLoc=PLAY_LIMB_BASE[loc]||loc,ap=armorApAt(armLoc);
+   const applied=Math.max(0,raw-ap);
    // Floor at -maxHP (not 0) so Major Wound (<=-max, core pp.109-111) stays
    // reachable — clamping at 0 made Major Wound permanently dead code.
-   S.play.hp[loc]=Math.max(-playMaxHP(loc),playCurHP(loc)-n);if(el)el.value="";render();},
+   S.play.hp[loc]=Math.max(-playMaxHP(loc),playCurHP(loc)-applied);
+   PM_DMG_NOTE={loc,raw,ap,applied};
+   if(el)el.value="";render();},
  playHeal(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const n=el?parseInt(el.value,10):NaN;
    if(!Number.isFinite(n)||n<=0)return;
    S.play.hp[loc]=Math.min(playMaxHP(loc),playCurHP(loc)+n);if(el)el.value="";render();},
  playSetHP(loc,v){if(viewOnlyBlock())return;S.play.hp[loc]=v;render();},
- // Quick fixed-amount damage buttons (−1/−3) on the Vitals & Armour detail
- // panel — separate from playDamage() above, which reads the adjacent
- // custom-amount input instead.
+ // Fixed-amount direct HP adjustment (−1/−3), deliberately bypassing armour
+ // entirely -- for damage that was never subject to AP in the first place
+ // (an ongoing Bleed tick, poison, fire, GM fiat), not a shortcut for a
+ // weapon hit. See the "Ignores armour" row in pmLocDetail.
  playQuickDamage(loc,n){if(viewOnlyBlock())return;S.play.hp[loc]=Math.max(-playMaxHP(loc),playCurHP(loc)-n);render();},
  // Selecting a location just opens the detail panel — read-only navigation,
- // always allowed even in a VIEW_ONLY session.
- playSelectLoc(loc){S.play.selectedLoc=(S.play.selectedLoc===loc)?null:loc;render();},
+ // always allowed even in a VIEW_ONLY session. Clears any damage-math note
+ // left over from a different location so it can never show under the
+ // wrong one.
+ playSelectLoc(loc){S.play.selectedLoc=(S.play.selectedLoc===loc)?null:loc;PM_DMG_NOTE=null;render();},
  // Clickable pip trackers (Action/Luck Points) — click a filled pip to spend
  // it and every pip after it; click a hollow pip to restore it and every pip
  // before it. Same "slide the boundary" interaction as HP-dot trackers in

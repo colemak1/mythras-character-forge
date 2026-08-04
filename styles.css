@@ -245,16 +245,25 @@ p label{display:inline-flex;align-items:center;gap:5px}
    fast click the way the old horizontal chip layout did. */
 .cstyle-traitlist,.cstyle-searchresults{display:flex;flex-direction:column;gap:1px;padding:6px}
 .cstyle-searchresults{border:1px solid var(--line-soft);border-radius:var(--r-sm);background:var(--panel3);margin-top:4px}
-.cstyle-traitrow{display:flex;align-items:flex-start;gap:9px;width:100%;text-align:left;padding:7px 8px;border-radius:var(--r-sm);border:1px solid transparent}
+/* Now a <details>/<summary> element (was a plain <button>) so the full
+   description can expand inline on click instead of only ever being
+   readable via a native title tooltip -- see the comment at cstyleTraitRow
+   (render.js) for why. Padding/border live on the outer <details> as
+   before; the flex row itself moves to <summary>, with its default
+   marker/triangle and list-item display suppressed. */
+.cstyle-traitrow{width:100%;padding:7px 8px;border-radius:var(--r-sm);border:1px solid transparent}
 .cstyle-traitrow:hover{background:var(--panel)}
 .cstyle-traitrow.on{background:rgba(60,89,54,.12);border-color:var(--verd)}
-.cstyle-traitcheck{flex:0 0 16px;height:16px;margin-top:2px;border:1px solid var(--line);border-radius:3px;background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700}
+.cstyle-traitrow>summary{display:flex;align-items:flex-start;gap:9px;width:100%;text-align:left;cursor:pointer;list-style:none}
+.cstyle-traitrow>summary::-webkit-details-marker{display:none}
+.cstyle-traitcheck{flex:0 0 16px;height:16px;margin-top:2px;border:1px solid var(--line);border-radius:3px;background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;padding:0;cursor:pointer}
 .cstyle-traitrow.on .cstyle-traitcheck{background:var(--verd);border-color:var(--verd)}
 .cstyle-traitbody{display:flex;flex-direction:column;gap:1px;min-width:0}
 .cstyle-traitbody b{font-size:13px;color:var(--ink)}
 .cstyle-traitcat{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em}
 .cstyle-traitsum{font-size:12px;color:var(--dim);line-height:1.4}
 .cstyle-traitsrc{color:var(--faint);font-style:italic}
+.cstyle-traitfull{margin:4px 0 2px 25px;padding-top:6px;border-top:1px dashed var(--line-soft);font-size:12.5px;color:var(--dim);line-height:1.5}
 
 /* ---- characteristic blocks ---- */
 .charrow{display:grid;grid-template-columns:repeat(7,1fr);gap:11px}
@@ -970,13 +979,11 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-stamp.ok{color:var(--pm-good);border-color:var(--pm-good)}
 .pm-stamp.minor{color:var(--pm-minor);border-color:var(--pm-minor)}
 .pm-stamp.major{color:var(--pm-bad);border-color:var(--pm-bad)}
-.pm-vit-total{display:flex;align-items:center;gap:10px;margin:8px 0 12px;clear:both}
-.pm-vit-total .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--pm-dim);white-space:nowrap;font-family:'Cinzel',serif}
-.pm-vit-total .num{font:700 14px var(--mono);color:var(--pm-text)}
-.pm-vit-total .num span{color:var(--pm-dim);font-weight:400;font-size:11px}
-.pm-totbar{flex:1;height:9px;border-radius:var(--pm-r-sm);background:var(--pm-panel2);border:1px solid var(--pm-line-soft);overflow:hidden}
-.pm-totbar i{display:block;height:100%;border-radius:var(--pm-r-sm);transition:width .25s ease,background .25s ease}
-.pm-vit-body{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+/* clear:both here (not margin) because .pm-stamp above is float:right --
+   this used to live on the now-removed .pm-vit-total "Total HP" bar; moved
+   here so the body diagram still drops below the floated stamp instead of
+   wrapping awkwardly beside it. */
+.pm-vit-body{display:flex;flex-direction:column;gap:4px;align-items:stretch;clear:both;margin-top:8px}
 .pm-figwrap{width:100%;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:6px}
 .pm-figwrap svg{display:block;width:100%;height:auto}
 .pm-figcap{font:9px var(--mono);color:var(--pm-dim);text-align:center;margin-top:4px;padding-top:6px;
@@ -1031,12 +1038,28 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-woundtag.serious{color:var(--pm-warn);border-color:var(--pm-warn)}
 .pm-woundtag.major{color:var(--pm-bad);border-color:var(--pm-bad);background:rgba(138,43,24,.1)}
 .pm-locdetail .fx{font-size:12px;color:var(--pm-dim);line-height:1.5;margin:6px 0 10px;font-family:var(--sans)}
-.pm-dctl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.pm-dctl input{width:46px;border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);background:var(--pm-bg);color:var(--pm-text);font-family:var(--mono);padding:3px 5px}
 .pm-sbtn{background:var(--pm-bg);border:1px solid var(--pm-line-soft);color:var(--pm-text);border-radius:var(--pm-r-sm);padding:3px 11px;font-size:10.5px;font-family:'Cinzel',serif;font-weight:600;letter-spacing:.02em;text-transform:uppercase;cursor:pointer}
 .pm-sbtn:hover{border-color:var(--pm-accent);color:var(--pm-accent-hi)}
 .pm-sbtn.dmg{border-color:var(--pm-bad);color:var(--pm-bad)}
 .pm-sbtn.dmg:hover{background:var(--pm-bad);color:#fff8e6}
+.pm-sbtn.sm{padding:2px 8px;font-size:9.5px}
+/* Damage entry (pmLocDetail in play.js) -- was ".dctl", a class the
+   stylesheet never actually defined (only ".pm-dctl" existed, unused), so
+   this whole control row silently fell back to unstyled inline-block flow
+   with no gap/alignment rules at all -- default baseline alignment put the
+   plain-text input a good 10px+ above its button siblings, which is very
+   likely the exact "off" alignment flagged in Play Mode. Rebuilt as two
+   explicit rows instead of one flat one: primary (auto-armour) damage, and
+   a visually secondary "ignores armour" row for direct HP adjustments. */
+.pm-dmgctl{margin-top:2px}
+.pm-dmgrow{display:flex;gap:6px;align-items:stretch}
+.pm-dmgrow input{width:84px;box-sizing:border-box;border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);background:var(--pm-bg);color:var(--pm-text);font-family:var(--mono);font-size:11px;padding:3px 8px}
+.pm-sbtn.dmg.primary{flex:1;background:var(--pm-bad);color:#fff8e6;font-size:11px}
+.pm-sbtn.dmg.primary:hover{background:var(--pm-accent-hi);border-color:var(--pm-accent-hi)}
+.pm-dmgnote{font:10px var(--mono);color:var(--pm-dim);margin:6px 0 8px;line-height:1.5}
+.pm-dmgnote b{color:var(--pm-text);font-weight:700}
+.pm-dmgsec{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding-top:8px;border-top:1px dashed var(--pm-line-soft)}
+.pm-dmgseclbl{font:9px var(--mono);color:var(--pm-dim);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
 
 /* center column: one continuous scrollable skills list, dot-leader index
    kept (it's a genuinely nice typographic device, not a "lab" artifact on
@@ -1062,16 +1085,18 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-skillrow.cbt{padding:7px 0}
 .pm-skillrow.cbt .nm{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;font-family:'Cinzel',serif}
 .pm-skillrow.cbt .pctval{font-size:23px;color:var(--pm-accent)}
-/* Checked-skill flag (Experience Roll eligibility) -- same icon-toggle
-   language as .pm-xpflag in the Improve Skills modal, sized down for this
-   denser row and given its own bronze accent (rather than the fumble
-   flag's amber) so the two read as distinct states when both appear near
-   each other. Physical-dice result logger sits right before the roll
-   button since they're the two ways a result gets into the row. */
+/* Checked-skill flag (Experience Roll eligibility) -- icon-toggle language
+   shared with .pm-xpflag (the fumble flag, also reused directly in this row
+   now -- see pm-skillrow .pm-xpflag override below), own bronze accent
+   (rather than the fumble flag's amber) so the two read as distinct states
+   sitting right next to each other. */
 .pm-ckflag{background:none;border:1.5px solid var(--pm-line-soft);color:var(--pm-dim);border-radius:50%;width:17px;height:17px;flex:0 0 auto;cursor:pointer;font-size:10px;line-height:1;padding:0}
 .pm-ckflag:hover{border-color:var(--pm-accent);color:var(--pm-accent-hi)}
 .pm-ckflag.on{border-color:var(--pm-accent-hi);color:var(--pm-accent-hi);background:rgba(184,121,30,.14)}
-.pm-logsel{flex:0 0 auto;font-size:9.5px;background:var(--pm-bg);border:1px solid var(--pm-line-soft);color:var(--pm-dim);border-radius:var(--pm-r-sm);padding:2px 4px;font-family:var(--sans);max-width:58px}
+/* .pm-xpflag itself (size 22px) is defined further down for the Improve
+   Skills modal's roomier rows; sized down to match .pm-ckflag here so the
+   two flags read as a matched pair in this denser row. */
+.pm-skillrow .pm-xpflag{width:17px;height:17px;font-size:10px}
 /* On-demand Difficulty Grade reference popover — opened by clicking any
    skill/style %, closed by clicking it again, clicking away, or Escape. */
 .pm-gradepop{position:fixed;z-index:600;background:var(--pm-panel);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-md);box-shadow:var(--pm-shadow-md);padding:10px 12px;font-size:12px;min-width:172px;font-family:var(--sans)}
@@ -1090,6 +1115,17 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-modal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;border-bottom:1px solid var(--pm-line-soft);padding-bottom:10px}
 .pm-modal-hd h3{font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.04em;font-size:16px;font-weight:700;color:var(--pm-accent-hi);margin:0}
 .pm-xppool{display:flex;flex-direction:column;gap:6px;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:10px 12px;margin-bottom:10px;font-size:12.5px}
+/* Experience Rolls available, laid out as one equation (banked + checked
+   skills [+/- CHA mod] = total) instead of splitting the CHA modifier onto
+   a smaller, easy-to-miss second line -- see the comment at this markup's
+   call site (xpModalHtml) for why that mattered enough to rework. */
+.pm-xpformula{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-family:var(--mono)}
+.pm-xpfterm{font-size:13px;color:var(--pm-text)}
+.pm-xpfop{color:var(--pm-dim);font-size:12px}
+.pm-xpfmod{font-size:13px;color:var(--pm-text);padding:1px 6px;border-radius:var(--pm-r-sm);background:var(--pm-panel)}
+.pm-xpfmod.neg{color:var(--pm-bad);background:rgba(138,43,24,.1)}
+.pm-xpftotal{font-size:15px}
+.pm-xpftotal b{color:var(--pm-accent-hi);font-size:19px}
 .pm-xpaward{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .pm-xplist{max-height:280px;overflow:auto;margin-top:4px;padding-right:4px}
 .pm-xprow{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px dotted var(--pm-line-soft);font-size:12.5px}
@@ -1210,9 +1246,19 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
   font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--pm-line-35,rgba(42,28,12,.4))}
 
 /* Special Effects reference tab */
-.pm-fx-list{display:flex;flex-direction:column;gap:14px}
-.pm-fx-group{display:flex;flex-direction:column;gap:6px}
-.pm-fx-grouphead{margin:0 0 3px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--pm-accent-hi);font-family:'Cinzel',serif;font-weight:700;border-bottom:1px solid var(--pm-line-soft);padding-bottom:4px}
+.pm-fx-search{width:100%;margin-bottom:12px;box-sizing:border-box;border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);background:var(--pm-bg);color:var(--pm-text);font-family:var(--sans);font-size:13px;padding:7px 10px}
+.pm-fx-search:focus{outline:none;border-color:var(--pm-accent)}
+.pm-fx-list{display:flex;flex-direction:column;gap:10px}
+/* Each group is now its own <details> (was a plain, always-expanded <div>)
+   so a player can fold away tactics they don't need instead of scrolling
+   past every group every time -- see fxGroupHTML/pmFxFilter in play.js. */
+.pm-fx-group{border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);background:var(--pm-panel2)}
+.pm-fx-grouphead{margin:0;padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--pm-accent-hi);font-family:'Cinzel',serif;font-weight:700;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pm-fx-grouphead::-webkit-details-marker{display:none}
+.pm-fx-grouphead::before{content:"\25b8";display:inline-block;margin-right:6px;transition:transform .15s ease;color:var(--pm-dim)}
+.pm-fx-group[open]>.pm-fx-grouphead::before{transform:rotate(90deg)}
+.pm-fx-groupcount{font-family:var(--mono);font-size:10px;font-weight:400;color:var(--pm-dim);letter-spacing:0;text-transform:none}
+.pm-fx-groupbody{display:flex;flex-direction:column;gap:6px;padding:0 10px 10px}
 .pm-fx-item{background:var(--pm-panel2);border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);padding:9px 12px}
 .pm-fx-item summary{cursor:pointer;font-size:13px;color:var(--pm-text);display:flex;align-items:center;gap:7px;flex-wrap:wrap;list-style:revert;font-weight:600;font-family:var(--sans)}
 .pm-fx-item p{margin-top:8px;padding-top:8px;border-top:1px dotted var(--pm-line-soft);font-size:12.5px;color:var(--pm-dim);line-height:1.55;font-family:var(--sans)}

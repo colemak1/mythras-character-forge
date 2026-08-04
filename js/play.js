@@ -7,6 +7,14 @@
 // instead of a blocking alert(). Cleared at the top of each new roll/cast
 // attempt so it never lingers past whatever prompted it.
 let PM_MSG=null;
+// Transient "here's the armour math that just happened" confirmation for
+// playApplyDamage() (see APP.playApplyDamage in app.js) -- {loc,raw,ap,
+// applied} for whichever location most recently had damage applied through
+// the auto-armour flow, or null. Ephemeral like PM_MSG above (not part of
+// character state, doesn't need to survive a reload); cleared whenever the
+// selected location changes so a stale note from a different body part can
+// never show under the wrong location's controls.
+let PM_DMG_NOTE=null;
 // Session tracking for a finished character: current HP per hit location,
 // current Luck/Magic Points, and an Action-Points-used-this-round counter.
 // All derived maxes reuse the exact same functions the sheet already uses
@@ -254,25 +262,44 @@ function pmLocRow(loc){
    +'<span class="ap" title="AP '+ap+' — '+esc(S.armor[armLoc]||"None")+'">'+PM_SHIELD_SVG+ap+'</span>'
    +'<span class="hp">'+cur+'<span>/'+max+'</span></span></div>';
 }
+// Redesigned damage entry (was a flat row of −1/−3/amount-input/−dmg/+heal/
+// full buttons, all doing raw HP arithmetic with no armour involved at all
+// -- every hit required the player to look up this location's AP and
+// subtract it by hand before typing a number in). Now split into two
+// clearly-labelled groups: a primary "Apply Damage" flow that takes the
+// raw damage a weapon/attack rolled and subtracts this location's AP
+// automatically (core p.27, "Armour Points... reduce the amount of damage
+// inflicted"), and a secondary row for adjustments that were never meant to
+// go through armour at all -- ongoing bleed/poison/fire ticks, healing,
+// GM fiat -- kept small and explicitly labelled so it reads as the
+// exception, not the default.
 function pmLocDetail(){
   const loc=S.play.selectedLoc;
   if(!loc)return '<div class="pm-locdetail"><p class="pm-empty">Click a body location for details and damage controls.</p></div>';
   const cur=playCurHP(loc),max=playMaxHP(loc),st=playHPState(loc);
-  const armLoc=PLAY_LIMB_BASE[loc]||loc;
+  const armLoc=PLAY_LIMB_BASE[loc]||loc,ap=armorApAt(armLoc);
   const idv="playdmg-"+loc.replace(/\s+/g,"_");
+  const note=PM_DMG_NOTE&&PM_DMG_NOTE.loc===loc?PM_DMG_NOTE:null;
   return '<div class="pm-locdetail">'
    +'<div class="dt"><b>'+esc(loc)+'</b><span class="d20">d20: '+hitD20For(loc)+'</span></div>'
-   +'<div class="arm">'+esc(S.armor[armLoc]||"None")+' &mdash; AP '+armorApAt(armLoc)+'</div>'
+   +'<div class="arm">'+esc(S.armor[armLoc]||"None")+' &mdash; AP '+ap+'</div>'
    +'<div class="hpline">'+cur+' <span>/ '+max+' HP</span><span class="pm-woundtag '+st.cls+'">'+st.tag+'</span></div>'
    +'<div class="fx">'+esc(playWoundEffectText(loc,st.cls))+'</div>'
-   +'<div class="dctl">'
-   +'<button class="pm-sbtn dmg" onclick="APP.playQuickDamage(\''+loc+'\',1)">&minus;1</button>'
-   +'<button class="pm-sbtn dmg" onclick="APP.playQuickDamage(\''+loc+'\',3)">&minus;3</button>'
-   +'<input type="number" id="'+idv+'" placeholder="amt" min="0">'
-   +'<button class="pm-sbtn dmg" onclick="APP.playDamage(\''+loc+'\')">&minus;dmg</button>'
-   +'<button class="pm-sbtn" onclick="APP.playHeal(\''+loc+'\')">+heal</button>'
-   +'<button class="pm-sbtn" onclick="APP.playSetHP(\''+loc+'\','+max+')">full</button>'
-   +'</div></div>';
+   +'<div class="pm-dmgctl">'
+   +'<div class="pm-dmgrow">'
+   +'<input type="number" id="'+idv+'" placeholder="damage dealt" min="0" aria-label="Incoming damage, before armour">'
+   +'<button class="pm-sbtn dmg primary" onclick="APP.playApplyDamage(\''+loc+'\')">Apply Damage</button>'
+   +'</div>'
+   +'<div class="pm-dmgnote">'+(note
+     ?'Last hit: <b>'+note.raw+'</b> dealt &minus; AP <b>'+note.ap+'</b> &rarr; <b>'+note.applied+'</b> HP taken'+(note.applied===0?' (armour stopped it)':"")
+     :'AP <b>'+ap+'</b> subtracted automatically')+'</div>'
+   +'<div class="pm-dmgsec">'
+   +'<span class="pm-dmgseclbl">Ignores armour:</span>'
+   +'<button class="pm-sbtn dmg sm" onclick="APP.playQuickDamage(\''+loc+'\',1)">&minus;1</button>'
+   +'<button class="pm-sbtn dmg sm" onclick="APP.playQuickDamage(\''+loc+'\',3)">&minus;3</button>'
+   +'<button class="pm-sbtn sm" onclick="APP.playHeal(\''+loc+'\')">+heal</button>'
+   +'<button class="pm-sbtn sm" onclick="APP.playSetHP(\''+loc+'\','+max+')">full</button>'
+   +'</div></div></div>';
 }
 // Real STANDING readout for the dateline's right-hand slot, replacing D's
 // fixed "WOUNDED — L.LEG · ACTION PHASE" sample text with the actual worst
@@ -286,13 +313,10 @@ function pmStandingText(){
   return "STANDING: "+label+" &mdash; "+pmShortName(worstLoc).toUpperCase().replace(/\s+/g,"");
 }
 function pmVitalsCard(){
-  const totCur=PLAY_HP_LOCS.reduce((a,l)=>a+Math.max(0,playCurHP(l)),0);
-  const totMax=PLAY_HP_LOCS.reduce((a,l)=>a+playMaxHP(l),0);
   const worstRank={ok:0,minor:1,serious:2,major:3};
   const worst=PLAY_HP_LOCS.reduce((w,l)=>{const st=playHPState(l).cls;return worstRank[st]>worstRank[w]?st:w;},"ok");
   const worstLoc=PLAY_HP_LOCS.find(l=>playHPState(l).cls===worst);
   const worstTag={ok:"OK",minor:"Minor Wound",serious:"Serious Wound",major:"Major Wound"}[worst];
-  const barColor=worst==="major"?"var(--pm-bad)":worst==="serious"?"var(--pm-warn)":worst==="minor"?"var(--pm-minor)":"var(--pm-good)";
   // Literal .sect-head/.ghost/.stamp from playmode-restyle-D.html — the
   // mockup's condition indicator is ONLY this rotated stamp pinned over the
   // plate (no small header badge), so it always renders, colour-coded by
@@ -303,8 +327,10 @@ function pmVitalsCard(){
    +'<div class="pm-sect-head"><span class="no">02</span> VITALS — FIG. 1, THE BODY</div>'
    +'<div class="pm-ghost">02</div>'
    +'<div class="pm-stamp '+worst+'" title="'+esc(playWoundEffectText(worstLoc,worst))+'">'+worstTag+'</div>';
-  h+='<div class="pm-vit-total"><span class="lbl">Total HP</span><div class="pm-totbar"><i style="width:'+(totMax>0?Math.max(0,Math.min(100,totCur/totMax*100)):0)+'%;background:'+barColor+'"></i></div>'
-   +'<span class="num">'+totCur+' <span>/ '+totMax+'</span></span></div>';
+  // No pooled "Total HP" bar here on purpose -- Mythras tracks Hit Points
+  // per location (core p.25), not as a single pool, so a summed total would
+  // be a non-standard number nobody at the table actually uses. The
+  // per-location list right below is the real, book-accurate readout.
   h+='<div class="pm-vit-body">'+pmBodySvg()+'<div class="pm-loclist">'+PLAY_HP_LOCS.map(pmLocRow).join("")+'</div></div>';
   h+='<div class="pm-legend"><span>Healthy</span><div class="pm-legendgrad"></div><span>Major Wound</span></div>';
   h+=pmLocDetail();
@@ -507,14 +533,37 @@ const FX_GROUPS=[
   ["Follow-up attacks & tempo",["Flurry","Rapid Reload","Duck Back"]],
   ["Battlefield theatre",["Scar Foe"]]
 ];
+// Shared by every effect row below (was duplicated verbatim between the
+// FX_GROUPS loop and the "Other" leftover bucket) -- data-search carries a
+// lowercased "name + rules text" blob for pmFxFilter() below to match
+// against without re-lowercasing on every keystroke.
+function fxItemHTML(effect){
+  const [name,off,def,weapon,roll,stack,text]=effect;
+  const badges=[off?'<span class="pm-fx-badge off">Offensive</span>':"",def?'<span class="pm-fx-badge def">Defensive</span>':"",
+    weapon?'<span class="pm-fx-badge">'+esc(weapon)+'</span>':"",roll?'<span class="pm-fx-badge roll">'+esc(roll)+'</span>':"",
+    stack?'<span class="pm-fx-badge stack">Stacks</span>':""].join("");
+  return '<details class="pm-fx-item" data-search="'+esc((name+" "+text).toLowerCase())+'"><summary>'+esc(name)+' '+badges+'</summary><p>'+esc(text)+'</p></details>';
+}
+// One tactical-intent group (see FX_GROUPS) as a collapsible <details> --
+// open by default (matches what the list always looked like before), but
+// now a player can fold away groups they don't need instead of just
+// scrolling past them, and pmFxFilter() below can hide a group outright
+// when nothing in it matches an active search.
+function fxGroupHTML(groupName,effects){
+  if(!effects.length)return "";
+  return '<details class="pm-fx-group" open><summary class="pm-fx-grouphead"><span>'+esc(groupName)+'</span><span class="pm-fx-groupcount">'+effects.length+'</span></summary>'
+   +'<div class="pm-fx-groupbody">'+effects.map(fxItemHTML).join("")+'</div></details>';
+}
 // Renders the "Special Effects" tab: the Differential Roll cheat-table
 // (how many effects a given margin of success wins), an optional-rule note
-// on Weapon Reach, and the full, book-accurate list of effects grouped by
-// tactical intent (see FX_GROUPS above) rather than alphabetically — a new
-// player thinking "I want to disarm them" can jump straight to the right
-// handful. Each effect is collapsed behind a <details> so the tab isn't an
-// intimidating wall of text; only the summary badges (Offensive/Defensive,
-// weapon restriction, roll requirement, stackable) show until expanded.
+// on Weapon Reach, a search box, and the full, book-accurate list of
+// effects grouped by tactical intent (see FX_GROUPS above) rather than
+// alphabetically — a new player thinking "I want to disarm them" can jump
+// straight to the right handful, or just type "disarm". Each effect is
+// collapsed behind its own <details> so the tab isn't an intimidating wall
+// of text; only the summary badges (Offensive/Defensive, weapon
+// restriction, roll requirement, stackable) show until expanded, and now
+// each *group* is independently collapsible too.
 function specialEffectsPanel(){
   let h='<p class="pm-notes" style="margin-bottom:10px">Whenever you and an opponent both roll an opposed Combat Style (or Combat Style vs Evade), the <b>margin</b> between your results — read off the table below — is how many Special Effects you win. Pick freely from anything you qualify for; some can be taken more than once (marked <b>stacks</b>). Losing the roll can hand your opponent effects the same way.</p>';
   h+='<table class="pm-atktable" style="margin-bottom:14px"><tr><th>You rolled</th><th>Opponent Critical</th><th>Opponent Success</th><th>Opponent Failure</th><th>Opponent Fumble</th></tr>'
@@ -533,29 +582,38 @@ function specialEffectsPanel(){
    +'<p><b>Holding them off</b> (the <i>Open Range</i> Special Effect): keeping the fight at your weapon’s longer Reach means the shorter weapon can only attack <i>your weapon itself</i> — trying to knock it aside, sunder it, grab it — not you, until they manage to close the distance.</p>'
    +(myReach.length?'<p class="pm-notes">Your weapons, shortest to longest reach: '+myReach.sort((a,b)=>REACH_ORDER.indexOf(WEAPON_MAP[a.split(" (")[0]]?.reach)-REACH_ORDER.indexOf(WEAPON_MAP[b.split(" (")[0]]?.reach)).join(", ")+'.</p>':'')
    +'</details>';
+  h+='<input type="text" class="pm-fx-search" placeholder="Search '+SPECIAL_EFFECTS.length+' Special Effects by name or effect&hellip;" oninput="pmFxFilter(this)">';
   h+='<div class="pm-fx-list">'+FX_GROUPS.map(([groupName,names])=>{
     const items=names.map(n=>SPECIAL_EFFECTS.find(e=>e[0]===n)).filter(Boolean);
-    return '<div class="pm-fx-group"><h4 class="pm-fx-grouphead">'+esc(groupName)+'</h4>'
-     +items.map(([name,off,def,weapon,roll,stack,text])=>{
-       const badges=[off?'<span class="pm-fx-badge off">Offensive</span>':"",def?'<span class="pm-fx-badge def">Defensive</span>':"",
-         weapon?'<span class="pm-fx-badge">'+esc(weapon)+'</span>':"",roll?'<span class="pm-fx-badge roll">'+esc(roll)+'</span>':"",
-         stack?'<span class="pm-fx-badge stack">Stacks</span>':""].join("");
-       return '<details class="pm-fx-item"><summary>'+esc(name)+' '+badges+'</summary><p>'+esc(text)+'</p></details>';
-     }).join("")+'</div>';
+    return fxGroupHTML(groupName,items);
   }).join("")
-   +(()=>{ // safety net: any effect not placed in a group above still shows up, so re-grouping can never silently hide one
-     const grouped=new Set(FX_GROUPS.flatMap(([,names])=>names));
-     const leftover=SPECIAL_EFFECTS.filter(e=>!grouped.has(e[0]));
-     if(!leftover.length)return "";
-     return '<div class="pm-fx-group"><h4 class="pm-fx-grouphead">Other</h4>'+leftover.map(([name,off,def,weapon,roll,stack,text])=>{
-       const badges=[off?'<span class="pm-fx-badge off">Offensive</span>':"",def?'<span class="pm-fx-badge def">Defensive</span>':"",
-         weapon?'<span class="pm-fx-badge">'+esc(weapon)+'</span>':"",roll?'<span class="pm-fx-badge roll">'+esc(roll)+'</span>':"",
-         stack?'<span class="pm-fx-badge stack">Stacks</span>':""].join("");
-       return '<details class="pm-fx-item"><summary>'+esc(name)+' '+badges+'</summary><p>'+esc(text)+'</p></details>';
-     }).join("")+'</div>';
-   })()
+   // safety net: any effect not placed in a group above still shows up, so re-grouping can never silently hide one
+   +fxGroupHTML("Other",SPECIAL_EFFECTS.filter(e=>!new Set(FX_GROUPS.flatMap(([,names])=>names)).has(e[0])))
    +'</div>';
   return h;
+}
+// Pure client-side filter for the search box above -- deliberately NOT
+// routed through APP.*/render() like the rest of this app's interactions:
+// re-rendering the whole Play Mode tree on every keystroke would tear out
+// and rebuild the <input> itself, losing focus and cursor position after
+// every character typed. This just walks the already-rendered DOM
+// directly. Groups with zero matches hide entirely rather than just
+// showing empty; groups with a match force themselves open so the result
+// is actually visible. Clearing the search (q="") restores every item's
+// visibility without touching open/closed state, so a group the player
+// manually collapsed stays collapsed rather than snapping back open.
+function pmFxFilter(input){
+  const q=input.value.trim().toLowerCase();
+  document.querySelectorAll('.pm-fx-group').forEach(group=>{
+    let anyVisible=false;
+    group.querySelectorAll('.pm-fx-item').forEach(item=>{
+      const match=!q||(item.dataset.search||"").includes(q);
+      item.style.display=match?"":"none";
+      if(match)anyVisible=true;
+    });
+    group.style.display=anyVisible?"":"none";
+    if(q&&anyVisible)group.open=true;
+  });
 }
 // Play Mode's Magic tab: everything the character knows, grouped by
 // tradition, each castable — which rolls the tradition's actual casting skill
@@ -712,29 +770,30 @@ function renderPlayView(){
     const cbt=e.grp==="Combat Style";
     const baseFmt=(e.formula||"").replace(/x(\d)/i,"×$1").toUpperCase();
     const checked=S.xp.checked.includes(e.key);
-    // Checked-skill flag (Experience Roll eligibility) -- same interaction
-    // language as the Improve Skills modal's fumble flag (.pm-xpflag), a
-    // small icon toggle rather than a native checkbox, just its own bronze
-    // accent instead of the fumble's amber so the two read as different
-    // states at a glance. Manual toggle for a dramatic non-crit success the
-    // app can't detect on its own; auto-set on a Critical (in-app roll,
-    // .pm-logsel below, or the Improve Skills modal's own copy of this).
+    const fumbled=S.xp.fumbled.includes(e.key);
+    // Checked-skill flag (Experience Roll eligibility) -- small icon toggle
+    // rather than a native checkbox, bronze accent. Manual toggle for a
+    // dramatic non-crit success the app can't detect on its own; auto-set
+    // on a Critical (in-app roll, or the Improve Skills modal's own copy).
     const ckflag='<button class="pm-ckflag'+(checked?" on":"")+'" title="'+(checked?"Checked — eligible for an Experience Roll. Click to clear.":"Mark checked (eligible for an Experience Roll)")+'" onclick="APP.xpToggleChecked(\''+jsq(e.key)+'\')">&#10003;</button>';
-    // Physical-dice result logger -- most tables roll real dice instead of
-    // clicking "roll" below, so auto-checking on a Critical can't only key
-    // off this app's own roll() outcome. Fires the same markChecked()/
-    // fumble-flag side effects roll() does, without doing a roll itself.
-    // Resets to the placeholder after firing since it's fire-and-forget,
-    // not a persistent selector.
-    const logsel='<select class="pm-logsel" title="Log a physical-dice result for this skill" onchange="if(this.value){APP.logResult(\''+jsq(e.key)+'\',this.value);}this.value=\'\'">'
-     +'<option value="">log&hellip;</option><option value="Critical">Critical</option><option value="Fumble">Fumble</option></select>';
+    // Fumble flag -- direct toggle, not a "log a result" step: most tables
+    // roll real dice instead of clicking "roll" below, so flip this the
+    // instant a physical die actually comes up a Fumble. Same flag/icon
+    // (.pm-xpflag) and same downstream effect (a free +1% next Improve
+    // Skills, via xpApplyFumble) as the Improve Skills modal's own copy —
+    // this is just a second, faster place to reach the identical S.xp.
+    // fumbled toggle, not a separate mechanic. Used to be a "log…" dropdown
+    // (Critical/Fumble options) that recorded a Press Log entry as a side
+    // effect; dropped in favour of "flip a switch when I fumble" -- Critical
+    // was always redundant with the ✓ flag above anyway, and the log entry
+    // wasn't something a physical-dice table actually wanted.
+    const fumbleflag='<button class="pm-xpflag'+(fumbled?" on":"")+'" title="'+(fumbled?"Fumbled — free +1% pending. Click to remove flag.":"Mark this skill as Fumbled (free +1% next Improve Skills)")+'" onclick="APP.xpToggleFumble(\''+jsq(e.key)+'\')">&#9873;</button>';
     return '<div class="pm-skillrow'+(cbt?" cbt":"")+'">'
-     +ckflag
+     +ckflag+fumbleflag
      +'<span class="nm">'+esc(e.label)+'</span>'
      +(baseFmt?'<span class="base">'+esc(baseFmt)+'</span>':'')
      +'<span class="lead"></span>'
      +'<span class="pctval" onclick="APP.toggleGradePop(\''+jsq(e.key)+'\',\''+jsq(e.label)+'\',event)" title="Click for Difficulty Grades">'+pctTxt+'</span>'
-     +logsel
      +'<button class="pm-btn roll" onclick="APP.roll(\''+jsq(e.key)+'\')">roll</button></div>';
   };
   h+='<div class="pm-col pm-col-skills"><div class="pm-box pm-skillsbox" style="height:100%">'
@@ -866,12 +925,27 @@ function xpModalHtml(){
      +'<button class="pm-btn sm roll" '+(canSpend?"":"disabled")+' onclick="APP.xpSpend(\''+jsq(e.key)+'\')">'+(used?"used this sitting":"spend roll")+'</button>'
      +'</div>';
   };
-  const bonusRolls=xpBonusRolls();
   let h='<div class="pm-modal-backdrop" onclick="APP.closeXP()"><div class="pm-modal" onclick="event.stopPropagation()">';
   h+='<div class="pm-modal-hd"><h3>Improve Skills — Experience Rolls</h3><button class="pm-btn sm" onclick="APP.closeXP()">&times; close</button></div>';
-  h+='<div class="pm-xppool"><div>Experience Rolls available: <b>'+xpRollsAvailable()+'</b>'
-   +' <span class="pm-empty">('+S.xp.pool+' banked + '+bonusRolls+' from checked skills)</span></div>'
-   +'<div class="pm-empty" style="margin-top:2px">Checked skills: <b>'+S.xp.checked.length+'</b> &times; 1, Experience Mod (CHA '+S.chars.CHA+'): <b>'+(xpMod(S.chars.CHA)>=0?"+":"")+xpMod(S.chars.CHA)+'</b> &rarr; '+bonusRolls+' bonus roll'+(bonusRolls===1?"":"s")+'. <i>Checked-skill formula is Myth&rsquo;s reconstruction, not yet confirmed against the book &mdash; may change.</i></div>'
+  // Laid out as one left-to-right equation, CHA modifier included inline
+  // (not on a separate, easy-to-skip line) -- the whole point is that a
+  // player with a negative CHA mod (CHA <=6, per xpMod in engine.js) can
+  // see right here that their checked-skill count doesn't translate 1:1
+  // into bonus rolls, rather than assuming it does and only finding out
+  // they miscounted once they've already spent one. .neg picks the
+  // modifier term out in the "bad" colour specifically when it's actually
+  // subtracting something.
+  const chaMod=xpMod(S.chars.CHA);
+  h+='<div class="pm-xppool">'
+   +'<div class="pm-xpformula">'
+   +'<span class="pm-xpfterm">'+S.xp.pool+' banked</span>'
+   +'<span class="pm-xpfop">+</span>'
+   +'<span class="pm-xpfterm">'+S.xp.checked.length+' checked</span>'
+   +'<span class="pm-xpfmod'+(chaMod<0?" neg":"")+'" title="Experience Modifier, from CHA '+S.chars.CHA+'">'+(chaMod>=0?"+":"")+chaMod+' CHA mod</span>'
+   +'<span class="pm-xpfop">=</span>'
+   +'<span class="pm-xpftotal"><b>'+xpRollsAvailable()+'</b> roll'+(xpRollsAvailable()===1?"":"s")+' available</span>'
+   +'</div>'
+   +'<p class="pm-empty" style="margin:0">Checked-skill formula is Myth&rsquo;s reconstruction, not yet confirmed against the book &mdash; may change.</p>'
    +'<div class="pm-xpaward">Award <input type="number" id="xpAwardN" value="3" min="1" style="width:52px"> '
    +'<button class="pm-btn sm" onclick="APP.xpAward(document.getElementById(\'xpAwardN\').value)">+ add to pool</button> '
    +'<span class="pm-empty">core book: 2&ndash;4 per sitting, GM discretion. Awarding resets the once-per-skill cap below.</span></div></div>';
@@ -974,7 +1048,7 @@ function characterSheetBody(){
    +mkv("Culture",esc(S.culture||"—"))+mkv("Career",esc(careerName||"—"))
    +mkv("Age",esc(S.concept.age||"—"))+mkv("Gender",esc(S.concept.gender||"—"))
    +mkv("Frame",esc(S.concept.frame||"—"))+mkv("Handed",esc(S.concept.handed||"—"))
-   +(()=>{const hw=heightWeight();return hw?mkv("Height",hw.m.toFixed(2)+"m ("+hw.ft+")")+mkv("Weight",hw.kg+"kg"):"";})()+'</div>';
+   +(()=>{const hw=heightWeight();return hw?mkv("Height",hw.ft)+mkv("Weight",hw.lb+" lb"):"";})()+'</div>';
   h+='<div class="mbox"><div class="mbox-t">Background, Community &amp; Family</div>'
    +mkv("Homeland",esc(S.concept.homeland||"—"))+mkv("Social class",esc(S.money.socialClass||"—"))
    +(S.archetype!=="ordinary"?mkv("Tier",esc(ARCHETYPES[S.archetype].label)):"")
