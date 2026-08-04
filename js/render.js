@@ -346,8 +346,8 @@ function stepAttrs(){
    ["Initiative Bonus",initBonus(c.INT,c.DEX),"average of DEX &amp; INT, fractions up"],
    ["Luck Points",luckFinal(c.POW)+(hasAdv("luck")?" (Advantage +"+(S.archetype==="paragon"?2:1)+")":""),"POW "+c.POW],
    ["Magic Points",c.POW,"equal to POW"],
-   ["Height",(()=>{const hw=heightWeight();return hw.m.toFixed(2)+"m";})(),(()=>{const hw=heightWeight();return hw.ft+" &mdash; SIZ "+c.SIZ+", "+esc(hw.build)+" frame";})()],
-   ["Weight",(()=>{const hw=heightWeight();return hw.kg+"kg";})(),(()=>{const hw=heightWeight();return hw.lb+" lb &mdash; SIZ "+c.SIZ;})()],
+   ["Height",(()=>{const hw=heightWeight();return hw.ft;})(),(()=>{const hw=heightWeight();return hw.m.toFixed(2)+"m &mdash; SIZ "+c.SIZ+", "+esc(hw.build)+" frame";})()],
+   ["Weight",(()=>{const hw=heightWeight();return hw.lb+" lb";})(),(()=>{const hw=heightWeight();return hw.kg+"kg &mdash; SIZ "+c.SIZ;})()],
    ["Movement Rate",moveText(),(()=>{const r=moveRate();const sp=speciesDef();
      const src=sp?sp.label+" base "+r.base+"m":"human base 6m";
      return r.notes.length?src+" &mdash; "+r.notes.join("; "):src;})()]];
@@ -419,15 +419,25 @@ let CSTYLE_UI={};
 function cstyleUI(key){return CSTYLE_UI[key]||(CSTYLE_UI[key]={search:"",openCats:{}});}
 function cstyleDomId(key){return "cstyleSearch_"+key.replace(/[^a-zA-Z0-9]/g,"_");}
 // One trait as a full-width row: name, one-line summary and category tag
-// all visible before it's ever selected (not hover/selection-gated the way
-// the old chip+tooltip version was), full text still on hover for anyone
-// who wants the complete rules text without reading the summary.
+// all visible before it's ever selected. A native title tooltip used to be
+// the only way to read the full rules text past the 100-char summary --
+// invisible on touch devices, slow to appear, and easy to never discover.
+// <details>/<summary> instead, matching the same click-to-expand pattern
+// Play Mode's Special Effects tab already uses: clicking the row's body
+// expands the full description inline; the pick/unpick toggle is its own
+// button inside <summary> with stopPropagation so it fires without also
+// expanding the row (identical trick to the "cast" button inside
+// specialEffectsPanel's magic <details>, see play.js).
 function cstyleTraitRow(styleKey,t,on){
   const summary=t.desc.length>100?t.desc.slice(0,97)+"…":t.desc;
-  return '<button class="cstyle-traitrow'+(on?" on":"")+'" onclick="APP.toggleStyleTrait(\''+jsq(styleKey)+'\',\''+jsq(t.name)+'\')" title="'+esc(t.desc)+'">'
-   +'<span class="cstyle-traitcheck">'+(on?"&#10003;":"")+'</span>'
+  return '<details class="cstyle-traitrow'+(on?" on":"")+'">'
+   +'<summary>'
+   +'<button class="cstyle-traitcheck" onclick="event.preventDefault();event.stopPropagation();APP.toggleStyleTrait(\''+jsq(styleKey)+'\',\''+jsq(t.name)+'\')" aria-label="'+(on?"Remove":"Add")+' '+esc(t.name)+'">'+(on?"&#10003;":"")+'</button>'
    +'<span class="cstyle-traitbody"><b>'+esc(t.name)+'</b><span class="cstyle-traitcat">'+esc(t.category)+' &middot; '+esc(t.source)+'</span>'
-   +'<span class="cstyle-traitsum">'+esc(summary)+'</span></span></button>';
+   +'<span class="cstyle-traitsum">'+esc(summary)+'</span></span>'
+   +'</summary>'
+   +'<p class="cstyle-traitfull">'+esc(t.desc)+'</p>'
+   +'</details>';
 }
 function combatStyleBuilderHTML(s){
   const d=styleDef(s.key),ui=cstyleUI(s.key),domId=cstyleDomId(s.key);
