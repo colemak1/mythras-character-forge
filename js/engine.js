@@ -151,8 +151,12 @@ function heightWeight(){
     ft:mToFtIn(m),lb:Math.round(kg*2.2046),species:spKey,build:S.concept.frame||"Medium"};
 }
 function mToFtIn(m){const totalIn=Math.round(m*39.3701);return Math.floor(totalIn/12)+"&prime;"+(totalIn%12)+"&Prime;";}
+// Imperial for the two personal-body stats (feet/inches, pounds) -- unlike
+// Movement, which stays in metres because that's a core Mythras mechanic
+// (encounter distances, the Movement Rate table) rather than a personal
+// stat a player thinks about in book units.
 function heightWeightText(){const hw=heightWeight();
-  return hw?(hw.m.toFixed(2)+"m / "+hw.kg+"kg"):"—";}
+  return hw?(hw.ft+" / "+hw.lb+" lb"):"—";}
 function gradedPct(key,basePct){
   const g=gradeForEntry(key);const mult=GRADE_MULT[g];
   return mult==null?{pct:null,grade:g}:{pct:Math.max(0,Math.round(basePct*mult)),grade:g};
@@ -257,13 +261,13 @@ function freshState(){return {
  // Experience Roll per session" cap — reset whenever new rolls are awarded,
  // since this app has no other concept of a game "session" boundary.
  // checked = skill keys currently flagged eligible for an Experience Roll,
- // auto-set on a Critical (in-app roll or a manually logged physical-dice
- // result — see APP.logResult) or toggled by hand for a dramatic non-crit
- // success the app can't detect algorithmically. Cleared specifically when
- // that skill's own Experience Roll is spent (xpSpend, in app.js), not on
- // any session boundary — see xpRollsAvailable()/xpBonusRolls() below for
- // how this feeds the roll-count formula (Myth's reconstruction, not yet
- // confirmed against the book).
+ // auto-set on a Critical (in-app roll — see APP.markChecked) or toggled by
+ // hand (the ✓ flag, APP.xpToggleChecked) for a physical-dice Critical or a
+ // dramatic non-crit success the app can't detect algorithmically. Cleared
+ // specifically when that skill's own Experience Roll is spent (xpSpend, in
+ // app.js), not on any session boundary — see xpRollsAvailable()/
+ // xpBonusRolls() below for how this feeds the roll-count formula (Myth's
+ // reconstruction, not yet confirmed against the book).
  xp:{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[]}
 };}
 function normalizeState(){
