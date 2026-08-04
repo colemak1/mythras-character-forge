@@ -100,6 +100,15 @@ async function onSignedIn(user){
   const {data}=await sb.from("profiles").select("id,display_name").eq("id",user.id).maybeSingle();
   AUTH_PROFILE=data||null;
   CAMP_CACHE=null;
+  // A campaign invite link clicked while signed out stashes its code (see
+  // stashPendingJoin in the invite-link section below) and parks the visitor
+  // on the Account page instead of losing the code. The moment a session
+  // actually lands -- whether from signing in in-place or completing a
+  // sign-up's email-confirmation round trip -- pick that code back up and
+  // finish the join, rather than leaving them stranded on Account with no
+  // memory of why they came.
+  const pendingCode=takePendingJoin();
+  if(pendingCode)await applyRoute({view:"join",code:pendingCode});
 }
 async function ensureProfile(name){
   if(!AUTH_USER)return;
@@ -158,6 +167,20 @@ async function cloudJoinCampaign(code){
   const {data,error}=await sb.rpc("join_campaign",{p_code:code.trim().toUpperCase()});
   if(error)throw error;
   return data&&data[0];
+}
+// ---- Invite links: "Copy Invite Link" (campaignDetailHTML) builds a
+// #/join/<code> URL around the same invite_code the plain-text code display
+// already used -- no DB change, just a shareable wrapper the router can act
+// on directly (see the "join" case in router.js). Kept in localStorage
+// rather than a module-level variable alone because the sign-up path's
+// email-confirmation link reloads the page (a plain in-place sign-in
+// doesn't, but there's no way to tell which one's coming when the code is
+// stashed), which would otherwise lose an in-memory-only value.
+const PENDING_JOIN_KEY="mythrasForgeCampaignJoin_v1";
+function stashPendingJoin(code){try{localStorage.setItem(PENDING_JOIN_KEY,code);}catch(e){}}
+function takePendingJoin(){
+  try{const code=localStorage.getItem(PENDING_JOIN_KEY);if(code)localStorage.removeItem(PENDING_JOIN_KEY);return code;}
+  catch(e){return null;}
 }
 async function cloudFetchMembers(campaignId){
   const {data,error}=await sb.from("campaign_members").select("user_id,role,joined_at").eq("campaign_id",campaignId);
@@ -714,8 +737,13 @@ function campaignDetailHTML(){
     h+='<p style="font-family:\'Cinzel\',serif;font-size:19px;letter-spacing:.03em;color:#8a5a12;text-transform:uppercase">'+esc(camp.name)+'</p>'
      +(camp.notes?'<p class="note" style="margin-top:6px">'+esc(camp.notes)+'</p>':"");
   }
-  h+='<p class="note" style="margin-top:8px">Created '+new Date(camp.created_at).toLocaleString()
-   +(cloudActive()&&isDM&&camp.invite_code?' &middot; invite code <b style="font-family:var(--mono)">'+esc(camp.invite_code)+'</b> (share this with your players)':"")+'</p>';
+  h+='<p class="note" style="margin-top:8px">Created '+new Date(camp.created_at).toLocaleString()+'</p>';
+  if(cloudActive()&&isDM&&camp.invite_code){
+    h+='<p class="note" style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+     +'invite code <b style="font-family:var(--mono)">'+esc(camp.invite_code)+'</b>'
+     +'<button class="chip sm" onclick="APP.copyInviteLink(\''+jsq(camp.invite_code)+'\',this)">Copy Invite Link</button>'
+     +'</p>';
+  }
   h+='<p style="margin-top:12px"><button class="nav primary" onclick="APP.toBoard(\''+camp.id+'\')">Live Party Board &rarr;</button>'
    +(isDM?' <button class="chip" onclick="APP.deleteCampaign()">Delete campaign</button>':'')+'</p>';
   h+='</div>';

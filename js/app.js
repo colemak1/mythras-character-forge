@@ -758,6 +758,25 @@ window.APP={
    if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){MENU_MSG="Sign in first — joining a campaign needs an account.";render();return;}
    const code=prompt("Enter the campaign's invite code:");
    if(code)APP.joinCampaign(code);},
+ // Builds the same #/join/<code> URL the router's "join" case parses (see
+ // router.js), so a clicked link lands a player directly on the join flow
+ // instead of them having to copy/retype the bare invite code. btnEl gets
+ // transient "Copied!"/"Copy failed" feedback rather than a global message,
+ // since this is a one-off per-click confirmation, not app state worth
+ // surviving a re-render.
+ copyInviteLink(code,btnEl){
+   const url=location.origin+location.pathname+"#/join/"+encodeURIComponent(code);
+   const flash=(text)=>{if(!btnEl)return;const orig=btnEl.textContent;btnEl.textContent=text;btnEl.disabled=true;
+     setTimeout(()=>{btnEl.textContent=orig;btnEl.disabled=false;},1500);};
+   if(navigator.clipboard&&navigator.clipboard.writeText){
+     navigator.clipboard.writeText(url).then(()=>flash("Copied!")).catch(()=>flash("Copy failed"));
+   }else{
+     try{
+       const ta=document.createElement("textarea");ta.value=url;ta.style.position="fixed";ta.style.opacity="0";
+       document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);
+       flash("Copied!");
+     }catch(e){flash("Copy failed");}
+   }},
  /* account */
  signIn(){
    AUTH_MSG=null;
