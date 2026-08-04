@@ -4,6 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mythras Character Forge</title>
+<!-- Icons: icons/favicon.svg is the source emblem (bronze medallion,
+     laurel wreath, "M" monogram -- matches the golden-hour palette used
+     site-wide); the PNGs are that same emblem rasterized for contexts
+     that don't support SVG favicons (Apple touch icon, older browsers). -->
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+<link rel="alternate icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/favicon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<!-- Open Graph / Twitter Card: since this is a static, hash-routed
+     GitHub Pages site (#/join/<code> etc.), link-preview crawlers never
+     see past index.html -- there's no server to vary this per campaign,
+     so every shared link (including invite links) gets this same site-wide
+     card rather than a unique one per campaign. A per-campaign dynamic
+     preview would need a backend function; out of scope here. -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://colemak1.github.io/mythras-character-forge/">
+<meta property="og:title" content="Mythras Character Forge">
+<meta property="og:description" content="Build & manage Mythras RPG characters — solo, or with your whole table.">
+<meta property="og:image" content="https://colemak1.github.io/mythras-character-forge/icons/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mythras Character Forge">
+<meta name="twitter:description" content="Build & manage Mythras RPG characters — solo, or with your whole table.">
+<meta name="twitter:image" content="https://colemak1.github.io/mythras-character-forge/icons/og-image.jpg">
 <!--
   MYTHRAS CHARACTER FORGE - self-hosted character creator, no build step.
   Static files only: index.html + styles.css + js/{data,engine,cloud,render,
