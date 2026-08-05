@@ -39,11 +39,11 @@ let MOCK_AUTH=null;      // {id,display_name} once "mock signed in", else null
 const anyAuth=()=>AUTH_USER||MOCK_AUTH;
 let CAMP_CACHE=null;     // array once loaded from the cloud, else null ("loading")
 let CAMPAIGN_VIEW=null;  // {campaign,members,chars,unassigned} for whatever campaign is open
-/* GM session tools (initiative tracker, NPC/monster quick-stats, session
-   notes) live in one jsonb column on the campaign row -- campaigns.session_state
-   -- rather than a new table, so they ride the exact same read/write/realtime
-   path as `notes` already does. Requires a DB-side migration this app can't
-   run itself (no service-role key on the client, only the anon key): run
+/* GM session tools (Combat Tracker, session notes) live in one jsonb column
+   on the campaign row -- campaigns.session_state -- rather than a new
+   table, so they ride the exact same read/write/realtime path as `notes`
+   already does. Requires a DB-side migration this app can't run itself (no
+   service-role key on the client, only the anon key): run
    `alter table campaigns add column session_state jsonb;` and, if the
    `campaigns` table isn't already in the realtime publication (`characters`
    clearly is, `campaigns` never needed live updates before now),
@@ -51,8 +51,94 @@ let CAMPAIGN_VIEW=null;  // {campaign,members,chars,unassigned} for whatever cam
    migration lands, cloud writes below fail gracefully (caught, surfaced as
    inline feedback like every other campaign write) and local-only mode
    works immediately. */
-function emptySessionState(){return {npcs:[],initiative:[],round:1,turnIdx:0,sessionNotes:""};}
-function sessionStateOf(camp){return (camp&&camp.session_state)||emptySessionState();}
+function emptySessionState(){return {combatants:[],round:1,turnIdx:0,sessionNotes:""};}
+// Migrates the old, pre-overhaul shape (separate `initiative` turn-order
+// list and `npcs` prep list, never actually linked to each other -- adding
+// an NPC to initiative got its own bare name+init entry, not whatever HP/
+// stats had been typed into the prep card) into the current unified
+// `combatants` array. Each combatant now carries its own AP, per-location
+// HP against a customizable location set, and status-effect chips directly
+// -- there's no more separate "prep before the fight" bench, matching how
+// gmAddNpcInit() already worked (one step, straight into the turn order).
+// The old `npcs` list has no reliable link back to a specific initiative
+// entry (they were never connected by id, only coincidentally both present
+// during the same session), so it's left untouched in the blob rather than
+// guessed-matched by name -- just never read by anything post-migration.
+function sessionStateOf(camp){
+  const raw=(camp&&camp.session_state)||null;
+  if(!raw)return emptySessionState();
+  if(raw.combatants)return raw; // already current shape
+  const combatants=(raw.initiative||[]).map(e=>{
+    if(e.kind==="pc")return combatantFromPc(e.ref,e.init,e.id);
+    return Object.assign(combatantFromNpc(e.name,e.init,e.id));
+  });
+  return {combatants,round:raw.round||1,turnIdx:raw.turnIdx||0,sessionNotes:raw.sessionNotes||""};
+}
+// Default hit-location preset -- same seven locations (and the same
+// Right/Left Arm|Leg -> "Each Arm"/"Each Leg" HP-sharing convention) every
+// character sheet and Play Mode already use, so an NPC starts out
+// book-standard-humanoid and only needs edits for actually inhuman anatomy.
+const COMBAT_DEFAULT_LOCS=["Head","Chest","Abdomen","Right Arm","Left Arm","Right Leg","Left Leg"];
+// One combatant per PC added to the tracker: AP and per-location HP maxes
+// are seeded from the character's OWN live numbers via charVitals (the
+// same pure, state-parameterized function Play Mode and the Party Board
+// already use -- never duplicated math, so this can't silently drift from
+// what the player's own sheet says). This is a snapshot at add-time, not a
+// live link back to the character -- the GM's copy is meant to be edited
+// directly during the session (spending AP, applying damage/effects)
+// without needing to renegotiate every change with the player's own Play
+// Mode screen, the same reasoning NPCs already got a GM-owned stat block.
+function combatantFromPc(charId,init,id){
+  const row=(BOARD_CHARS||[]).find(c=>c.id===charId);
+  const v=row?charVitals(row.state):null;
+  const hp={};
+  COMBAT_DEFAULT_LOCS.forEach(loc=>{hp[loc]={cur:v?(v.locs.find(l=>l.loc===loc)?.max??10):10,max:v?(v.locs.find(l=>l.loc===loc)?.max??10):10};});
+  return {id:id||genId(),kind:"pc",ref:charId,name:row?row.name:"(removed character)",init:init||0,
+    ap:{max:v?v.maxAP:2,used:0},locations:COMBAT_DEFAULT_LOCS.slice(),hp,effects:[],stat1:"",stat2:""};
+}
+function combatantFromNpc(name,init,id){
+  const hp={};
+  COMBAT_DEFAULT_LOCS.forEach(loc=>{hp[loc]={cur:10,max:10};});
+  return {id:id||genId(),kind:"npc",ref:null,name:name||"New NPC",init:init||0,
+    ap:{max:2,used:0},locations:COMBAT_DEFAULT_LOCS.slice(),hp,effects:[],stat1:"",stat2:""};
+}
+// The 11 Special-Effect-derived status templates the GM can attach to a
+// combatant (optionally at a specific hit location -- locHint is just which
+// way the "add effect" picker defaults, not a hard restriction, since e.g.
+// Pinned Weapon or Disarmed could plausibly still want one). mode is which
+// way the counter in the UI moves: "duration" counts down to 0 (effects
+// with a book-stated turn count -- Blindness "1d3 turns", Stun Location
+// "turns equal to damage inflicted", Overextend/Press Advantage "can't act
+// next turn"), "counter" counts up (effects that last until something
+// specific resolves them -- staunched, cut free, pulled out, stood back up
+// -- rather than expiring on a timer). Both are just a starting default;
+// the GM can flip either when applying it.
+const COMBAT_EFFECT_TYPES=[
+  {key:"bleeding",label:"Bleeding",locHint:true,mode:"counter"},
+  {key:"blinded",label:"Blinded",locHint:false,mode:"duration"},
+  {key:"disarmed",label:"Disarmed",locHint:false,mode:"counter"},
+  {key:"entangled",label:"Entangled/Gripped",locHint:true,mode:"counter"},
+  {key:"impaled",label:"Impaled",locHint:true,mode:"counter"},
+  {key:"overextended",label:"Overextended",locHint:false,mode:"duration"},
+  {key:"pinned",label:"Pinned weapon",locHint:false,mode:"counter"},
+  {key:"pressed",label:"Pressed",locHint:false,mode:"duration"},
+  {key:"prone",label:"Prone",locHint:false,mode:"counter"},
+  {key:"stunned",label:"Stunned location",locHint:true,mode:"duration"},
+  {key:"unconscious",label:"Unconscious",locHint:false,mode:"counter"}
+];
+const COMBAT_EFFECT_MAP=Object.fromEntries(COMBAT_EFFECT_TYPES.map(e=>[e.key,e]));
+// Ticks every combatant's active effects one step -- duration effects count
+// down and auto-clear at 0, counters just count up (the GM clears those by
+// hand once resolved). Fires once per actual ROUND advancing (see
+// APP.gmAdvanceTurn in app.js), not per individual turn, matching "per-round
+// cadence tied to Advance Turn" -- Reset Round deliberately does NOT call
+// this, since that's for correcting a mistake, not advancing time.
+function tickCombatEffects(combatants){
+  combatants.forEach(c=>{
+    c.effects=(c.effects||[]).map(e=>e.mode==="duration"?Object.assign({},e,{value:e.value-1}):Object.assign({},e,{value:e.value+1}))
+      .filter(e=>e.mode!=="duration"||e.value>0);
+  });
+}
 let LIB_CACHE=null;      // characters relevant to whatever's currently shown
 // Play Mode viewing someone else's character (Party Board -> click a card):
 // VIEW_ONLY disables every playXxx mutator and the cloud-push scheduler so a
@@ -941,59 +1027,83 @@ function boardHTML(){
   h+='</div>';
   return h;
 }
-/* ---- GM session tools: initiative tracker, NPC/monster quick-stats,
-   session notes. All three live in one campaigns.session_state jsonb blob
-   (see emptySessionState() near the top of this file), mutated optimistically
-   the same way campField() handles name/notes, and refreshed for every
-   viewer via the board-<id> realtime channel's campaigns listener. ---- */
+/* ---- GM Combat Tracker: per-combatant AP, per-location damage against a
+   customizable location set, and status-effect chips, plus session notes.
+   Replaces the old flat initiative list + freeform-text NPC prep cards
+   (which were never actually linked to each other -- see the migration
+   note at sessionStateOf above). Everything lives in one
+   campaigns.session_state jsonb blob, mutated optimistically the same way
+   campField() handles name/notes, and refreshed for every viewer via the
+   board-<id> realtime channel's campaigns listener. ---- */
+function combatantEffectChipHTML(combatantId,e){
+  const t=COMBAT_EFFECT_MAP[e.type];
+  return '<span class="cbt-fxchip '+e.mode+'" title="'+(e.mode==="duration"?"Counts down, clears at 0":"Counts up -- clear by hand once resolved")+'">'
+   +esc(t?t.label:e.type)+(e.loc?' <i>('+esc(e.loc)+')</i>':'')+' <b>'+e.value+'</b>'
+   +'<button onclick="APP.gmRemoveEffect(\''+combatantId+'\',\''+e.id+'\')" aria-label="remove effect">&times;</button></span>';
+}
+function combatantCardHTML(c,isActive){
+  const isPc=c.kind==="pc";
+  const apRemain=Math.max(0,c.ap.max-c.ap.used);
+  const locs=c.locations||[];
+  return '<div class="cbt-card'+(isActive?" on":"")+'">'
+   +'<div class="cbt-head"><span class="cbt-name">'+esc(c.name||"Unnamed")+' <i>'+(isPc?"PC":"NPC")+'</i></span>'
+   +'<input type="number" class="cbt-init" value="'+c.init+'" onchange="APP.gmSetInit(\''+c.id+'\',this.value)" aria-label="Initiative" title="Initiative">'
+   +'<button class="chip sm" onclick="APP.gmRemoveCombatant(\''+c.id+'\')" aria-label="remove from combat">&times;</button></div>'
+   +'<div class="cbt-ap"><span class="cbt-aplbl">AP</span>'
+   +'<button class="chip sm" onclick="APP.gmApAdj(\''+c.id+'\',-1)" '+(apRemain<=0?"disabled":"")+' title="Spend 1 AP">&minus;</button>'
+   +'<span class="cbt-apval">'+apRemain+'</span>'
+   +'<button class="chip sm" onclick="APP.gmApAdj(\''+c.id+'\',1)" '+(apRemain>=c.ap.max?"disabled":"")+' title="Restore 1 AP">+</button>'
+   +'<span class="note">/ <input type="number" class="cbt-apmax" value="'+c.ap.max+'" onchange="APP.gmSetApMax(\''+c.id+'\',this.value)" aria-label="Max AP" title="Max AP"></span></div>'
+   +'<div class="cbt-loclist">'+locs.map(loc=>{
+     const hp=(c.hp&&c.hp[loc])||{cur:0,max:0};
+     const idv="cbtdmg-"+c.id+"-"+loc.replace(/\s+/g,"_");
+     return '<div class="cbt-locrow"><span class="cbt-locname">'+esc(loc)+'</span>'
+      +'<span class="cbt-lochp">'+hp.cur+'<span> / '+hp.max+'</span></span>'
+      +'<input type="number" id="'+idv+'" class="cbt-locdmg" placeholder="dmg" min="0" aria-label="Damage to '+esc(loc)+'">'
+      +'<button class="chip sm" onclick="APP.gmDamageLoc(\''+c.id+'\',\''+jsq(loc)+'\',\''+idv+'\')">apply</button>'
+      +'<button class="chip sm" onclick="APP.gmRemoveLoc(\''+c.id+'\',\''+jsq(loc)+'\')" aria-label="remove location" title="Remove this location (e.g. anatomy doesn’t have one)">&times;</button></div>';
+   }).join("")+'</div>'
+   +'<div class="cbt-locadd">'
+   +'<input type="text" id="cbtlocname-'+c.id+'" placeholder="add location, e.g. Wing">'
+   +'<input type="number" id="cbtlochp-'+c.id+'" placeholder="max HP" style="width:64px">'
+   +'<button class="chip sm" onclick="APP.gmAddLoc(\''+c.id+'\')">+ location</button></div>'
+   +(c.effects&&c.effects.length?'<div class="cbt-fxlist">'+c.effects.map(e=>combatantEffectChipHTML(c.id,e)).join("")+'</div>':'')
+   +'<div class="cbt-fxadd">'
+   +'<select id="cbtfxtype-'+c.id+'">'+COMBAT_EFFECT_TYPES.map(t=>'<option value="'+t.key+'">'+esc(t.label)+'</option>').join("")+'</select>'
+   +'<select id="cbtfxloc-'+c.id+'"><option value="">no location</option>'+locs.map(l=>'<option value="'+esc(l)+'">'+esc(l)+'</option>').join("")+'</select>'
+   +'<select id="cbtfxmode-'+c.id+'"><option value="duration">counts down</option><option value="counter">counts up</option></select>'
+   +'<input type="number" id="cbtfxval-'+c.id+'" value="1" min="1" style="width:48px" aria-label="Starting value">'
+   +'<button class="chip sm" onclick="APP.gmAddEffect(\''+c.id+'\')">+ effect</button></div>'
+   +'<input type="text" class="cbt-statnote" value="'+esc(c.stat1||"")+'" placeholder="e.g. Combat Style 65%, Dodge 40%" onchange="APP.gmCombatantField(\''+c.id+'\',\'stat1\',this.value)">'
+   +'<input type="text" class="cbt-statnote" value="'+esc(c.stat2||"")+'" placeholder="special abilities, notes" onchange="APP.gmCombatantField(\''+c.id+'\',\'stat2\',this.value)">'
+   +'</div>';
+}
 function gmToolsHTML(camp){
   const st=sessionStateOf(camp);
-  const order=st.initiative.slice().sort((a,b)=>b.init-a.init);
+  const order=st.combatants.slice().sort((a,b)=>b.init-a.init);
   const activeId=order.length?order[Math.min(st.turnIdx,order.length-1)].id:null;
-  const inInit=new Set(st.initiative.filter(e=>e.kind==="pc").map(e=>e.ref));
-  const pcChoices=(BOARD_CHARS||[]).filter(c=>!inInit.has(c.id));
+  const inFight=new Set(st.combatants.filter(e=>e.kind==="pc").map(e=>e.ref));
+  const pcChoices=(BOARD_CHARS||[]).filter(c=>!inFight.has(c.id));
   let h=GM_SESSION_ERROR?'<p class="warn" style="margin-bottom:10px">'+esc(GM_SESSION_ERROR)+'</p>':'';
-  h+='<div class="card"><h3>Initiative &amp; Turn Order</h3>';
+  h+='<div class="card"><h3>Combat Tracker</h3>';
   h+='<div class="pb-initctl"><span class="pb-round">Round <b>'+st.round+'</b></span>'
    +'<button class="chip" onclick="APP.gmAdvanceTurn()" '+(order.length?"":"disabled")+'>Advance turn &rarr;</button>'
-   +'<button class="chip" onclick="APP.gmResetRound()" '+(order.length?"":"disabled")+'>Reset round</button></div>';
-  if(order.length){
-    h+='<div class="pb-initlist">'+order.map(e=>{
-      const isPc=e.kind==="pc";
-      const row=isPc?(BOARD_CHARS||[]).find(c=>c.id===e.ref):null;
-      const name=isPc?(row?row.name:"(removed character)"):e.name;
-      const sub=isPc?"PC":"NPC";
-      return '<div class="pb-initrow'+(e.id===activeId?" on":"")+'">'
-       +'<span class="pb-initname">'+esc(name||"Unnamed")+' <i>'+sub+'</i></span>'
-       +'<input type="number" class="pb-initval" value="'+e.init+'" onchange="APP.gmSetInit(\''+e.id+'\',this.value)" aria-label="Initiative">'
-       +'<button class="chip sm" onclick="APP.gmRemoveInit(\''+e.id+'\')" aria-label="remove from initiative">&times;</button>'
-       +'</div>';
-    }).join("")+'</div>';
-  }else{h+='<p class="note">No one in the initiative order yet — add a party character or an NPC below.</p>';}
+   +'<button class="chip" onclick="APP.gmResetRound()" '+(order.length?"":"disabled")+'>Reset round</button>'
+   +(order.length>1?'<button class="chip" onclick="APP.gmRollAllInit()" title="1d10 + Initiative Bonus for party characters, flat 1d10 for NPCs">Roll initiative for everyone</button>':'')+'</div>';
   h+='<div class="pb-initadd">'
    +'<select id="gmPcPicker"><option value="">&mdash; add a party character &mdash;</option>'
    +pcChoices.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+'</select>'
    +'<button class="chip" onclick="APP.gmAddPcInit()" '+(pcChoices.length?"":"disabled")+'>add</button>'
-   +'</div>';
+   +(pcChoices.length>1?'<button class="chip" onclick="APP.gmAddAllPcs()" title="Add every remaining party member at once">add all</button>':'')+'</div>';
   h+='<div class="pb-initadd">'
    +'<input type="text" id="gmNpcInitName" placeholder="NPC/monster name">'
    +'<input type="number" id="gmNpcInitVal" placeholder="Init" style="width:70px">'
    +'<button class="chip" onclick="APP.gmAddNpcInit()">add</button>'
-   +'</div></div>';
-  h+='<div class="card"><h3>NPCs &amp; Monsters</h3>';
-  if(st.npcs.length){
-    h+='<div class="pb-npclist">'+st.npcs.map(n=>
-      '<div class="pb-npccard">'
-       +'<div class="pb-npchead"><input type="text" class="pb-npcname" value="'+esc(n.name)+'" placeholder="Name" onchange="APP.gmNpcField(\''+n.id+'\',\'name\',this.value)">'
-       +'<button class="chip sm" onclick="APP.gmRemoveNpc(\''+n.id+'\')" aria-label="remove NPC">&times;</button></div>'
-       +'<div class="pb-npchp"><label>HP</label><input type="number" value="'+n.hpCur+'" onchange="APP.gmNpcField(\''+n.id+'\',\'hpCur\',this.value)" style="width:56px"> / '
-       +'<input type="number" value="'+n.hpMax+'" onchange="APP.gmNpcField(\''+n.id+'\',\'hpMax\',this.value)" style="width:56px"></div>'
-       +'<input type="text" class="pb-npcstat" value="'+esc(n.stat1||"")+'" placeholder="e.g. Combat Style 65%, Dodge 40%" onchange="APP.gmNpcField(\''+n.id+'\',\'stat1\',this.value)">'
-       +'<input type="text" class="pb-npcstat" value="'+esc(n.stat2||"")+'" placeholder="e.g. special abilities, notes" onchange="APP.gmNpcField(\''+n.id+'\',\'stat2\',this.value)">'
-       +'</div>'
-    ).join("")+'</div>';
-  }else{h+='<p class="note">No NPCs or monsters prepped yet.</p>';}
-  h+='<p style="margin-top:10px"><button class="chip" onclick="APP.gmAddNpc()">+ add NPC/monster</button></p></div>';
+   +'</div>';
+  if(order.length){
+    h+='<div class="cbt-list">'+order.map(c=>combatantCardHTML(c,c.id===activeId)).join("")+'</div>';
+  }else{h+='<p class="note">No one in the fight yet — add a party character or an NPC above.</p>';}
+  h+='</div>';
   h+='<div class="card"><h3>Session Notes</h3>'
    +'<p class="note" style="margin-bottom:8px">Visible only to you — not shown to players on this board.</p>'
    +'<textarea rows="6" placeholder="Scene notes, secrets, reminders for this session&hellip;" onchange="APP.gmNotes(this.value)">'+esc(st.sessionNotes||"")+'</textarea></div>';

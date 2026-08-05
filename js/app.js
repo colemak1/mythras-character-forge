@@ -699,10 +699,12 @@ window.APP={
  refreshBoard(){if(CURRENT_CAMPAIGN_ID)boardRefetch(CURRENT_CAMPAIGN_ID);},
  boardOpenChar(id,ownerName){
    APP.openCharToPlay(id,{ownerName:ownerName||null,returnTo:"board"});},
- /* GM session tools (initiative/NPCs/session notes) — one shared optimistic
-    mutate-then-save helper, same pattern as campField() above: mutate the
-    in-memory session_state, render() immediately, fire the write in the
-    background, surface a failure inline rather than losing the edit. */
+ /* GM Combat Tracker (see cloud.js: sessionStateOf/combatantFromPc/
+    combatantFromNpc/COMBAT_EFFECT_TYPES/tickCombatEffects) + session notes —
+    one shared optimistic mutate-then-save helper, same pattern as
+    campField() above: mutate the in-memory session_state, render()
+    immediately, fire the write in the background, surface a failure inline
+    rather than losing the edit. */
  setBoardTab(tab){BOARD_TAB=tab;render();},
  gmSessionMutate(mutatorFn){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
@@ -712,38 +714,93 @@ window.APP={
    GM_SESSION_ERROR=null;render();
    sessionStateCampaignUnified(camp.id,st).catch(e=>{GM_SESSION_ERROR="Could not save: "+e.message;render();});
  },
+ gmFindCombatant(st,id){return st.combatants.find(c=>c.id===id);},
  gmAddPcInit(){
    const sel=$("#gmPcPicker");if(!sel||!sel.value)return;
    const charId=sel.value;
-   APP.gmSessionMutate(st=>st.initiative.push({id:genId(),kind:"pc",ref:charId,init:0}));},
+   APP.gmSessionMutate(st=>st.combatants.push(combatantFromPc(charId,0)));},
+ // Nice-to-have: add every party member not already in the fight, in one
+ // click, instead of picking them one at a time.
+ gmAddAllPcs(){
+   const inFight=new Set(); // recomputed fresh, not reused from render, since this can run right after gmAddPcInit
+   APP.gmSessionMutate(st=>{
+     st.combatants.forEach(c=>{if(c.kind==="pc")inFight.add(c.ref);});
+     (BOARD_CHARS||[]).forEach(c=>{if(!inFight.has(c.id))st.combatants.push(combatantFromPc(c.id,0));});
+   });},
  gmAddNpcInit(){
    const nameEl=$("#gmNpcInitName"),valEl=$("#gmNpcInitVal");
    const name=(nameEl&&nameEl.value&&nameEl.value.trim())||"";
    if(!name)return;
    const init=(valEl&&parseInt(valEl.value,10))||0;
-   APP.gmSessionMutate(st=>st.initiative.push({id:genId(),kind:"npc",name,init}));},
+   APP.gmSessionMutate(st=>st.combatants.push(combatantFromNpc(name,init)));},
  gmSetInit(id,val){
    const n=parseInt(val,10)||0;
-   APP.gmSessionMutate(st=>{const e=st.initiative.find(e=>e.id===id);if(e)e.init=n;});},
- gmRemoveInit(id){
-   APP.gmSessionMutate(st=>{st.initiative=st.initiative.filter(e=>e.id!==id);});},
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(c)c.init=n;});},
+ // Nice-to-have: 1d10 + Initiative Bonus for every PC (computed off their
+ // own live INT/DEX via the state actually on their combatant entry --
+ // this doesn't re-fetch BOARD_CHARS, so it stays correct even for a PC
+ // whose sheet changed since they were added), flat 1d10 for NPCs (no
+ // characteristics on file to derive a bonus from -- the GM can still nudge
+ // it by hand afterward same as any manually-entered initiative).
+ gmRollAllInit(){
+   APP.gmSessionMutate(st=>{
+     st.combatants.forEach(c=>{
+       const row=c.kind==="pc"?(BOARD_CHARS||[]).find(b=>b.id===c.ref):null;
+       const bonus=row&&row.state&&row.state.chars?initBonus(row.state.chars.INT,row.state.chars.DEX):0;
+       c.init=d(10)+bonus;
+     });
+   });},
+ gmRemoveCombatant(id){
+   APP.gmSessionMutate(st=>{st.combatants=st.combatants.filter(c=>c.id!==id);});},
  gmAdvanceTurn(){
    APP.gmSessionMutate(st=>{
-     if(!st.initiative.length)return;
+     if(!st.combatants.length)return;
      const next=st.turnIdx+1;
-     if(next>=st.initiative.length){st.turnIdx=0;st.round=(st.round||1)+1;}
-     else st.turnIdx=next;
+     if(next>=st.combatants.length){
+       st.turnIdx=0;st.round=(st.round||1)+1;
+       tickCombatEffects(st.combatants); // per-ROUND cadence, not per turn -- see tickCombatEffects
+     }else st.turnIdx=next;
    });},
  gmResetRound(){APP.gmSessionMutate(st=>{st.round=1;st.turnIdx=0;});},
- gmAddNpc(){
-   APP.gmSessionMutate(st=>st.npcs.push({id:genId(),name:"New NPC",hpCur:10,hpMax:10,stat1:"",stat2:""}));},
- gmRemoveNpc(id){
-   APP.gmSessionMutate(st=>{st.npcs=st.npcs.filter(n=>n.id!==id);});},
- gmNpcField(id,f,v){
-   APP.gmSessionMutate(st=>{
-     const n=st.npcs.find(n=>n.id===id);if(!n)return;
-     n[f]=(f==="hpCur"||f==="hpMax")?(parseInt(v,10)||0):v;
-   });},
+ gmApAdj(id,delta){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c)return;
+     c.ap.used=Math.max(0,Math.min(c.ap.max,c.ap.used-delta));});},
+ gmSetApMax(id,val){
+   const n=Math.max(0,parseInt(val,10)||0);
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(c){c.ap.max=n;c.ap.used=Math.min(c.ap.used,n);}});},
+ gmDamageLoc(id,loc,inputId){
+   const el=$("#"+inputId);const n=el?parseInt(el.value,10):NaN;
+   if(!Number.isFinite(n)||n<=0)return;
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.hp[loc])return;
+     c.hp[loc].cur=Math.max(-c.hp[loc].max,c.hp[loc].cur-n);});
+   if(el)el.value="";},
+ gmAddLoc(id){
+   const nameEl=$("#cbtlocname-"+id),hpEl=$("#cbtlochp-"+id);
+   const name=(nameEl&&nameEl.value&&nameEl.value.trim())||"";if(!name)return;
+   const max=Math.max(1,parseInt(hpEl&&hpEl.value,10)||10);
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||c.locations.includes(name))return;
+     c.locations.push(name);c.hp[name]={cur:max,max};});
+   if(nameEl)nameEl.value="";if(hpEl)hpEl.value="";},
+ // Removing a location also drops any effect anchored to it -- an effect
+ // referencing a hit location that no longer exists on this combatant has
+ // nothing left to mean.
+ gmRemoveLoc(id,loc){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c)return;
+     c.locations=c.locations.filter(l=>l!==loc);delete c.hp[loc];
+     c.effects=(c.effects||[]).filter(e=>e.loc!==loc);});},
+ gmAddEffect(id){
+   const typeEl=$("#cbtfxtype-"+id),locEl=$("#cbtfxloc-"+id),modeEl=$("#cbtfxmode-"+id),valEl=$("#cbtfxval-"+id);
+   const type=typeEl&&typeEl.value;if(!type)return;
+   const loc=(locEl&&locEl.value)||null;
+   const mode=(modeEl&&modeEl.value)==="counter"?"counter":"duration";
+   const value=Math.max(1,parseInt(valEl&&valEl.value,10)||1);
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c)return;
+     (c.effects=c.effects||[]).push({id:genId(),type,loc,mode,value});});},
+ gmRemoveEffect(combatantId,effectId){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,combatantId);if(!c)return;
+     c.effects=(c.effects||[]).filter(e=>e.id!==effectId);});},
+ gmCombatantField(id,f,v){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(c)c[f]=v;});},
  gmNotes(v){APP.gmSessionMutate(st=>{st.sessionNotes=v;});},
  setCampaign(id){
    // cloudUpsertCharacter()'s UPDATE path deliberately never writes
