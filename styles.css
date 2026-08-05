@@ -1181,7 +1181,7 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
    disable every control that would mutate play state. The click handlers
    also self-guard via viewOnlyBlock() as a second layer, but this keeps the
    UI honest about what's actually clickable. */
-.play-mode.view-only .pm-sbtn,.play-mode.view-only .pm-pip,.play-mode.view-only .pm-fatsel,.play-mode.view-only .pm-dctl input,
+.play-mode.view-only .pm-sbtn,.play-mode.view-only .pm-pip,.play-mode.view-only .pm-fatsel,.play-mode.view-only .pm-dmgrow input,
 .play-mode.view-only .pm-tk .adj button,.play-mode.view-only .pm-act,.play-mode.view-only .pm-newround{pointer-events:none;opacity:.4;cursor:not-allowed}
 /* col 4, sect B (tabs): rounded tab buttons instead of a red
    text+underline treatment. */
@@ -1207,6 +1207,19 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-act .note{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.02em;color:var(--pm-dim);font-weight:400;margin-top:1px}
 .pm-act .cost{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;background:var(--pm-panel2);border:1px solid var(--pm-line-soft);color:var(--pm-accent-hi);border-radius:var(--pm-r-sm);padding:2px 9px;white-space:nowrap}
 .pm-act .cost.free{background:none;color:var(--pm-dim);border:1px solid var(--pm-line-soft)}
+/* Root cause of the reported overflow in the right-hand Combat column: a
+   plain <table> defaults to table-layout:auto, where width:100% is only a
+   starting point, not a ceiling -- if the columns' content can't shrink to
+   fit (the Differential Roll table's 5 columns of unbreakable "Opponent
+   X" headers are the one that actually hits this, at the ~900-1120px
+   range where .pm-col-right's own breakpoint squeezes it into a narrower
+   flex row), the table just grows past its container instead of wrapping,
+   pushing text past the card border. Every .pm-atktable use (this one,
+   plus the two Inventory-tab tables) now sits in this scrolling wrapper,
+   so a table that genuinely can't fit scrolls horizontally within its own
+   card instead of breaking the surrounding layout -- covers any future
+   .pm-atktable content this wide too, not just the one instance reported. */
+.pm-tablewrap{overflow-x:auto}
 .pm-atktable{width:100%;border-collapse:collapse;font-size:12.5px}
 .pm-atktable th{text-align:left;font-family:'Cinzel',serif;text-transform:uppercase;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--pm-accent-hi);border-bottom:1px solid var(--pm-line-soft);padding:6px 8px}
 .pm-atktable td{padding:6px 8px;border-bottom:1px dotted var(--pm-line-soft);color:var(--pm-text)}
