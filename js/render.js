@@ -519,7 +519,19 @@ function profPickers(which,offers,slots){
     h+='<div style="display:flex;gap:8px;align-items:center;margin:5px 0;flex-wrap:wrap">'
      +'<span class="note" style="width:18px">'+(i+1)+'.</span>'
      +'<select onchange="APP.pickProf(\''+which+'\','+i+',this.value)"><option value="">&mdash; choose &mdash;</option>'
-     +parsed.filter(o=>o.name===cur||!picks.some((p,j)=>j!==i&&p===o.name)).map(o=>'<option value="'+esc(o.name)+'" '+(cur===o.name?"selected":"")+'>'+esc(o.name+(hintFor(o.name)?" ("+hintFor(o.name)+")":""))+'</option>').join("")+'</select>'
+     // Each <option>'s label uses its OWN parsed hint (o.hint), not
+     // hintFor(o.name) -- a career can offer the same base skill twice
+     // with two different hints (e.g. Warrior's "Lore (Military History)"
+     // and "Lore (Strategy and Tactics)", both really just two suggested
+     // framings for the one Lore slot a Warrior can pick), and hintFor()
+     // looks up by name, which always resolves to whichever of the two
+     // comes first in the offers list -- so the second entry silently
+     // rendered as an exact, indistinguishable duplicate of the first
+     // instead of showing its own hint. value stays o.name either way
+     // (selecting either still just picks "Lore"; the filter below already
+     // stops the same base name being pickable in two slots at once), only
+     // the label text was wrong.
+     +parsed.filter(o=>o.name===cur||!picks.some((p,j)=>j!==i&&p===o.name)).map(o=>'<option value="'+esc(o.name)+'" '+(cur===o.name?"selected":"")+'>'+esc(o.name+(o.hint?" ("+o.hint+")":""))+'</option>').join("")+'</select>'
      +(hint?'<input type="text" value="'+esc(specs[i])+'" placeholder="speciality: '+esc(hint)+'" style="flex:1;min-width:160px" onchange="APP.profSpec(\''+which+'\','+i+',this.value)">':"")
      +'</div>';
   }

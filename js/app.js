@@ -592,7 +592,14 @@ window.APP={
    // keep meaningful). MOCK_AUTH still bypasses it, matching the carve-out
    // newCampaign()/homeJoinCampaign() already give the local-only test
    // identity elsewhere in this file.
-   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){MENU_MSG="Sign in first — creating a character needs an account.";render();return;}
+   // This handler is reachable from two views -- the Main Menu's own
+   // button (reads MENU_MSG) and My Characters' "Create New Character"
+   // empty-state button (reads CAMP_MSG, same as its delete-error
+   // messages) -- so the gate has to set whichever message variable the
+   // CURRENT view actually renders, or clicking it from My Characters
+   // silently does nothing: the message lands in a variable nobody's
+   // reading, no navigation happens either. Setting both costs nothing.
+   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){MENU_MSG="Sign in first — creating a character needs an account.";CAMP_MSG=MENU_MSG;render();return;}
    if(hasUnsavedWork()&&!confirm("Start a new character? This clears the one currently loaded (autosave and exports are unaffected until overwritten)."))return;
    S=freshState();APPVIEW="character";render();window.scrollTo(0,0);},
  fromMenuContinue(){
