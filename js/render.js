@@ -428,15 +428,32 @@ function cstyleDomId(key){return "cstyleSearch_"+key.replace(/[^a-zA-Z0-9]/g,"_"
 // button inside <summary> with stopPropagation so it fires without also
 // expanding the row (identical trick to the "cast" button inside
 // specialEffectsPanel's magic <details>, see play.js).
+//
+// The full description used to live in a <p> *after* </summary> -- but a
+// <summary>'s own content never hides when its <details> opens (that's the
+// whole mechanism <details> relies on), so that truncated one-line summary
+// stayed on screen right above the newly-revealed full paragraph: for any
+// trait long enough to actually get truncated, the reader saw the same
+// opening text twice; for one short enough that the "summary" already was
+// the full description, they saw it twice verbatim. It also sat at a
+// different left indent than the summary text above it (a sibling of
+// <summary> picking up only the row's own padding, not the flex offset
+// .cstyle-traitbody gets from sitting after the checkbox+gap inside
+// <summary>), which read as inconsistent indentation on top of the
+// duplication. Fixed by making both spans genuine siblings inside the same
+// .cstyle-traitbody flex column -- guaranteed identical left edge, no
+// magic-number margin to keep in sync -- and letting CSS show exactly one
+// of the two based on the <details>'s own [open] state (see
+// .cstyle-traitrow[open] in styles.css) instead of showing both at once.
 function cstyleTraitRow(styleKey,t,on){
   const summary=t.desc.length>100?t.desc.slice(0,97)+"…":t.desc;
   return '<details class="cstyle-traitrow'+(on?" on":"")+'">'
    +'<summary>'
    +'<button class="cstyle-traitcheck" onclick="event.preventDefault();event.stopPropagation();APP.toggleStyleTrait(\''+jsq(styleKey)+'\',\''+jsq(t.name)+'\')" aria-label="'+(on?"Remove":"Add")+' '+esc(t.name)+'">'+(on?"&#10003;":"")+'</button>'
    +'<span class="cstyle-traitbody"><b>'+esc(t.name)+'</b><span class="cstyle-traitcat">'+esc(t.category)+' &middot; '+esc(t.source)+'</span>'
-   +'<span class="cstyle-traitsum">'+esc(summary)+'</span></span>'
+   +'<span class="cstyle-traitsum">'+esc(summary)+'</span>'
+   +'<span class="cstyle-traitfull">'+esc(t.desc)+'</span></span>'
    +'</summary>'
-   +'<p class="cstyle-traitfull">'+esc(t.desc)+'</p>'
    +'</details>';
 }
 function combatStyleBuilderHTML(s){

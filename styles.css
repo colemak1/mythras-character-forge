@@ -263,7 +263,16 @@ p label{display:inline-flex;align-items:center;gap:5px}
 .cstyle-traitcat{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em}
 .cstyle-traitsum{font-size:12px;color:var(--dim);line-height:1.4}
 .cstyle-traitsrc{color:var(--faint);font-style:italic}
-.cstyle-traitfull{margin:4px 0 2px 25px;padding-top:6px;border-top:1px dashed var(--line-soft);font-size:12.5px;color:var(--dim);line-height:1.5}
+/* .cstyle-traitsum (truncated preview) and .cstyle-traitfull (complete
+   text) are genuine siblings inside .cstyle-traitbody's flex column now,
+   not one inside <summary> and one after it -- so they share the exact
+   same left edge with no margin-matching required, and exactly one of the
+   two is ever visible at a time, keyed off the <details>'s own open state,
+   instead of the full text just appending below an unchanged summary
+   line. */
+.cstyle-traitfull{display:none;font-size:12.5px;color:var(--dim);line-height:1.5;margin-top:4px}
+.cstyle-traitrow[open] .cstyle-traitsum{display:none}
+.cstyle-traitrow[open] .cstyle-traitfull{display:block}
 
 /* ---- characteristic blocks ---- */
 .charrow{display:grid;grid-template-columns:repeat(7,1fr);gap:11px}
