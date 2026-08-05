@@ -70,7 +70,15 @@ h1,h2,h3,.smallcaps{font-family:var(--serif);text-transform:uppercase;letter-spa
 h1{font-weight:800}
 button{font:inherit;cursor:pointer;color:inherit;background:none;border:none;transition:background-color .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .1s ease}
 input,select,textarea{font:15px/1.4 var(--sans);color:var(--ink);background:var(--panel3);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 12px;transition:border-color .15s ease,box-shadow .15s ease}
-select{min-height:38px;cursor:pointer}
+/* min-width:0 here, not decorative -- a <select>'s default automatic
+   minimum width is wide enough to show its longest selected option in
+   full (e.g. "Natural/Cured (furs, hides)" in the Armour picker's .grid3),
+   which a flex/grid parent can't override on its own. Without it, one
+   select with a long option selected forces its whole row/grid wider than
+   the layout actually has room for, at any width -- global, not scoped to
+   one picker, since the same failure mode applies to every <select> in the
+   app, not just this one reported instance. */
+select{min-height:38px;cursor:pointer;min-width:0}
 input:hover,select:hover,textarea:hover{border-color:var(--bronze)}
 input:focus,select:focus,textarea:focus,button:focus-visible{outline:none;border-color:var(--bronze);box-shadow:var(--focus)}
 input[type=number]{width:76px;font-family:var(--mono)}
@@ -98,7 +106,15 @@ input[type=number]{-moz-appearance:textfield}
 .railstep:hover:not(.active){color:var(--ink);background:rgba(154,116,15,.08)}
 
 /* ---- main ---- */
-#main{padding:26px 32px calc(var(--foot-h, 90px) + 24px);max-width:960px;margin-inline:auto}
+/* min-width:0 -- #main is a grid item of .app (grid-template-columns:232px
+   minmax(0,1fr) 296px). The track itself already being minmax(0,1fr) turns
+   out not to be enough on its own: a grid ITEM's own automatic minimum
+   width still defaults to its min-content size (deeply wide content like
+   table.rt/.alloc, several levels down through .card) unless the item
+   explicitly overrides it, so #main was still rendering at its content's
+   preferred width and overflowing past .app's own (correctly 375px-capped)
+   box at phone widths, rather than actually shrinking into the track. */
+#main{padding:26px 32px calc(var(--foot-h, 90px) + 24px);max-width:960px;margin-inline:auto;min-width:0}
 .stephead{margin-bottom:14px;font-size:29px;color:var(--ink);letter-spacing:.03em;position:relative;padding-bottom:14px}
 /* Diamond-rule divider under every step title -- same device as
    .myth-home-rule on the home screen (a diamond glyph, then a line fading
@@ -222,7 +238,15 @@ p label{display:inline-flex;align-items:center;gap:5px}
 .okmsg{color:var(--verd);font-size:13px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 18px}
-.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+/* min-width:0 here too, not just on select itself (see the comment at that
+   rule) -- .field sits between the select and .grid3/.grid2 as their
+   actual grid item, and a grid item's own automatic minimum size is what
+   the grid track sizing algorithm consults, not its descendants'. Without
+   this, select{min-width:0} alone did nothing observable: .field (a
+   column-flex box) was still reporting its widest child's full preferred
+   width as its own min-content contribution, so the 1fr track never
+   shrank below that regardless of what the select itself was allowed to do. */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;min-width:0}
 .field label{font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
 
 /* ---- Combat Style builder (weapons + traits) ---- */
@@ -902,7 +926,6 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
    trick, not a golden-hour one; surname now just sits at a lighter weight
    in the accent bronze instead. */
 .pm-mast-name .outline{color:var(--pm-accent-hi);-webkit-text-stroke:0;font-weight:600}
-.pm-mast-name .fin{font-size:.4em;color:var(--pm-accent-hi);-webkit-text-stroke:0;letter-spacing:0;vertical-align:middle}
 .pm-dateline{display:flex;justify-content:center;align-items:baseline;flex-wrap:wrap;gap:8px;
   padding:8px 0 0;font-family:var(--sans);font-style:italic;font-size:16px;letter-spacing:.02em;color:var(--pm-dim);text-align:center}
 .pm-dateline .sep{color:var(--pm-accent-hi);margin:0 8px;font-style:normal}
@@ -941,9 +964,11 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .pm-col-right .pm-box:last-child{margin-bottom:0}
 
 /* ============ CHARACTERISTIC RAIL (col 1) ============ */
-.pm-rail-head{padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--pm-line-soft);
-  font-family:'Cinzel',serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:center;color:var(--pm-accent-hi)}
-.pm-rail-head .red{color:var(--pm-accent-hi)}
+/* Header is .pm-sect-head.bar now (see pmCharacteristicRail in play.js) --
+   matches the COMBAT panel's tab-style look instead of its own plain
+   underlined-label treatment, and drops the "01" numeral entirely rather
+   than just visually hiding it the way .pm-sect-head .no already does for
+   the other panels. */
 .pm-chx{position:relative;text-align:center;background-color:var(--pm-panel2);border:1px solid var(--pm-accent-hi);border-radius:var(--pm-r-sm);padding:15px 8px 9px;margin:12px 0 0;
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 22 L2 8 Q2 2 8 2 L22 2' fill='none' stroke='%238a5511' stroke-width='2'/%3E%3C/svg%3E"),
@@ -1309,11 +1334,45 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 }
 @media (max-width:760px){
   .app{grid-template-columns:1fr}
+  /* table.rt/.alloc (species characteristics reference, Age/XP table,
+     Culture/Career point-allocation) are genuinely multi-column data
+     tables with real minimum widths (the species table alone needs
+     ~429px for its 8 columns) -- at a phone-class width there's no
+     shrinking that without truncating actual numbers, so let them scroll
+     horizontally within their own card instead of forcing the whole .app
+     grid wider than the viewport. display:block puts the table itself in
+     the scroll container instead of needing a wrapper div at each of the
+     8 call sites across render.js; row/cell display stays table-row/
+     table-cell as normal since only the outer <table> box's display
+     changes. Scoped to this breakpoint, not global -- at 760px and up
+     these tables already fit without scrolling, confirmed by testing.
+     This alone wasn't sufficient, though -- see #main's margin-inline:0
+     override just below, which turned out to be the actual load-bearing
+     fix; kept here too since a table that can't scroll within its own
+     card is still worth avoiding regardless. */
+  table.rt,.alloc{display:block;overflow-x:auto;max-width:100%}
   #rail{display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid var(--line-soft);padding:6px 8px}
   .railstep{flex:0 0 auto;border-left:none;border-bottom:3px solid transparent;padding:6px 10px}
   .railstep.active{border-bottom-color:var(--bronze)}
   .railstep .lbl{display:none}
-  #main{padding:14px 14px calc(var(--foot-h, 140px) + 24px)}
+  /* This margin-inline:0 is the actual fix for the reported overflow, not
+     the table.rt/.alloc rule above -- #main's base rule sets
+     margin-inline:auto (to center its max-width:960px column within
+     .app's wider desktop track), and a grid item with any auto margin
+     doesn't get the default stretch alignment: per spec it sizes to its
+     own content instead and tries to center THAT within the track. At
+     this breakpoint .app collapses to a single grid-template-columns:1fr
+     track, so #main was sizing to its widest descendant's preferred width
+     (505px, driven by table.rt.speciestbl et al even after they gained
+     their own overflow-x:auto above) and overflowing past the 375px
+     track/viewport instead of actually filling it. Zeroing the margin
+     removes the auto-margin/stretch conflict entirely -- there's no extra
+     track space to center within at this width anyway -- so #main
+     genuinely fills the track, and the tables' own overflow-x:auto can
+     then do its job inside a properly-constrained parent. min-width:0 on
+     #main (set unconditionally, not just here) turned out NOT to be the
+     missing piece; confirmed by testing before adding this. */
+  #main{padding:14px 14px calc(var(--foot-h, 140px) + 24px);margin-inline:0}
   .charrow{grid-template-columns:repeat(4,1fr)}
   .grid2,.grid3{grid-template-columns:1fr}
   .skgrid{grid-template-columns:1fr}
