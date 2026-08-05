@@ -7,6 +7,30 @@
 // instead of a blocking alert(). Cleared at the top of each new roll/cast
 // attempt so it never lingers past whatever prompted it.
 let PM_MSG=null;
+// Masthead campaign label (see pmCampaignLabel below, used in place of D's
+// fabricated "No. 042" edition number). Keyed by campaignId so switching
+// between characters linked to different campaigns (or the same one
+// again) never shows a stale name, without refetching one already
+// resolved this session. Ephemeral, like PM_MSG above -- not part of
+// character state, resets on reload.
+let PM_CAMPAIGN_NAME_CACHE={};
+// Resolves S.campaignId to that campaign's name for the masthead, via the
+// same loadCampaignRowUnified() the Party Board's own refetch already uses
+// (cloud row or local-storage record, whichever mode is active) -- Play
+// Mode's render() is synchronous and can't await a fetch mid-render, so
+// this kicks the fetch off on first call for a given id and returns null
+// (caller falls back to a neutral label) until it resolves, at which point
+// it re-renders once with the real name cached for next time.
+function pmCampaignLabel(){
+  if(!S.campaignId)return "";
+  if(S.campaignId in PM_CAMPAIGN_NAME_CACHE)return PM_CAMPAIGN_NAME_CACHE[S.campaignId];
+  PM_CAMPAIGN_NAME_CACHE[S.campaignId]=null;
+  loadCampaignRowUnified(S.campaignId).then(camp=>{
+    PM_CAMPAIGN_NAME_CACHE[S.campaignId]=camp?camp.name:"";
+    if(APPVIEW==="play")render();
+  });
+  return null;
+}
 // Transient "here's the armour math that just happened" confirmation for
 // playApplyDamage() (see APP.playApplyDamage in app.js) -- {loc,raw,ap,
 // applied} for whichever location most recently had damage applied through
@@ -324,7 +348,7 @@ function pmVitalsCard(){
   // red should read as "something's wrong" the way it does everywhere else
   // on this sheet).
   let h='<div class="pm-box" id="pm-vitals" style="height:100%">'
-   +'<div class="pm-sect-head"><span class="no">02</span> VITALS — FIG. 1, THE BODY</div>'
+   +'<div class="pm-sect-head"><span class="no">02</span> VITALS</div>'
    +'<div class="pm-ghost">02</div>'
    +'<div class="pm-stamp '+worst+'" title="'+esc(playWoundEffectText(worstLoc,worst))+'">'+worstTag+'</div>';
   // No pooled "Total HP" bar here on purpose -- Mythras tracks Hit Points
@@ -349,7 +373,7 @@ function pmCharacteristicRail(){
   const c=S.chars;
   const order=["STR","CON","SIZ","DEX","INT","POW","CHA"];
   const maxVal=Math.max.apply(null,order.map(k=>c[k]));
-  let h='<div class="pm-rail-head"><span class="red">01</span> CHAR.</div>';
+  let h='<div class="pm-sect-head bar">CHAR.</div>';
   h+=order.map(k=>{
     const v=c[k],x5=v*5,tickw=Math.max(0,Math.min(100,x5-3));
     return '<div class="pm-chx'+(v===maxVal?" hi":"")+'"><div class="row1"><span class="lbl">'+k+'</span><span class="idx">/07</span></div>'
@@ -565,8 +589,7 @@ function fxGroupHTML(groupName,effects){
 // restriction, roll requirement, stackable) show until expanded, and now
 // each *group* is independently collapsible too.
 function specialEffectsPanel(){
-  let h='<p class="pm-notes" style="margin-bottom:10px">Whenever you and an opponent both roll an opposed Combat Style (or Combat Style vs Evade), the <b>margin</b> between your results — read off the table below — is how many Special Effects you win. Pick freely from anything you qualify for; some can be taken more than once (marked <b>stacks</b>). Losing the roll can hand your opponent effects the same way.</p>';
-  h+='<div class="pm-tablewrap" style="margin-bottom:14px"><table class="pm-atktable"><tr><th>You rolled</th><th>Opponent Critical</th><th>Opponent Success</th><th>Opponent Failure</th><th>Opponent Fumble</th></tr>'
+  let h='<div class="pm-tablewrap" style="margin-bottom:14px"><table class="pm-atktable"><tr><th>You rolled</th><th>Opponent Critical</th><th>Opponent Success</th><th>Opponent Failure</th><th>Opponent Fumble</th></tr>'
    +["Critical","Success","Failure","Fumble"].map(mine=>'<tr><td><b>'+mine+'</b></td>'
      +["Critical","Success","Failure","Fumble"].map(theirs=>{const n=playEffectsWon(mine,theirs);
        return '<td>'+(n>0?'You win '+n:(n<0?'Opponent wins '+(-n):'No benefit'))+'</td>';}).join("")+'</tr>').join("")
@@ -727,16 +750,16 @@ function renderPlayView(){
   const nameParts=name.trim().split(/\s+/);
   const firstName=nameParts.length>1?nameParts.slice(0,-1).join(" "):nameParts[0];
   const surname=nameParts.length>1?nameParts[nameParts.length-1]:"";
-  // literal 3-part .mast-top from D: barcode+brand (left) · "VOL. II — PLAY
-  // MODE" (center) · red issue no. + season/round (right). The issue/season/
-  // round text is D's own fabricated flavour copy, not live character data —
-  // per instruction it's fine to keep as a fixed stylistic constant rather
-  // than strip it just because there's no real round tracker.
+  // barcode+brand (left) · campaign name in place of D's fabricated "No.
+  // 042" issue number, falling back to "Unaffiliated" when the character
+  // isn't linked to one (or the lookup hasn't resolved yet -- see
+  // pmCampaignLabel above) · "SEASON OF FIRE · ROUND 3" stays as fixed
+  // flavour copy, same reasoning as before (no live season/round to report).
+  const campLabel=pmCampaignLabel();
   h+='<div class="pm-mast">';
   h+='<div class="pm-mast-top"><span><span class="pm-barcode"></span>MYTHRAS CHARACTER FORGE</span>'
-   +'<span>VOL. II &mdash; PLAY MODE</span>'
-   +'<span><span class="red">No. 042</span> &middot; SEASON OF FIRE &middot; ROUND 3</span></div>';
-  h+='<h1 class="pm-mast-name">'+esc(firstName)+(surname?' <span class="outline">'+esc(surname)+'</span>':'')+' <span class="fin">&#9646;</span></h1>';
+   +'<span><span class="red">'+esc(campLabel||"Unaffiliated")+'</span> &middot; SEASON OF FIRE &middot; ROUND 3</span></div>';
+  h+='<h1 class="pm-mast-name">'+esc(firstName)+(surname?' <span class="outline">'+esc(surname)+'</span>':'')+'</h1>';
   // dateline: left = bold epithet chain (culture/career/archetype) with red
   // "/" separators, matching D's "Barbarian/Hunter/Wolf-Brother..." line;
   // right = a real derived STANDING readout instead of D's fixed "WOUNDED —
