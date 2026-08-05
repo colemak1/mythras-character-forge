@@ -566,11 +566,11 @@ function fxGroupHTML(groupName,effects){
 // each *group* is independently collapsible too.
 function specialEffectsPanel(){
   let h='<p class="pm-notes" style="margin-bottom:10px">Whenever you and an opponent both roll an opposed Combat Style (or Combat Style vs Evade), the <b>margin</b> between your results — read off the table below — is how many Special Effects you win. Pick freely from anything you qualify for; some can be taken more than once (marked <b>stacks</b>). Losing the roll can hand your opponent effects the same way.</p>';
-  h+='<table class="pm-atktable" style="margin-bottom:14px"><tr><th>You rolled</th><th>Opponent Critical</th><th>Opponent Success</th><th>Opponent Failure</th><th>Opponent Fumble</th></tr>'
+  h+='<div class="pm-tablewrap" style="margin-bottom:14px"><table class="pm-atktable"><tr><th>You rolled</th><th>Opponent Critical</th><th>Opponent Success</th><th>Opponent Failure</th><th>Opponent Fumble</th></tr>'
    +["Critical","Success","Failure","Fumble"].map(mine=>'<tr><td><b>'+mine+'</b></td>'
      +["Critical","Success","Failure","Fumble"].map(theirs=>{const n=playEffectsWon(mine,theirs);
        return '<td>'+(n>0?'You win '+n:(n<0?'Opponent wins '+(-n):'No benefit'))+'</td>';}).join("")+'</tr>').join("")
-   +'</table>';
+   +'</table></div>';
   // Optional Reach rule callout, made concrete using this character's own
   // equipped melee/shield weapons where possible instead of just abstract
   // categories.
@@ -856,8 +856,8 @@ function renderPlayView(){
         return '<span class="pm-stylechip">'+esc(s.name)+' <b onclick="APP.toggleGradePop(\''+jsq(s.key)+'\',\''+jsq(s.name)+'\',event)" title="Click for Difficulty Grades">'+pct+'</b> <button class="pm-btn roll" onclick="APP.roll(\''+jsq(s.key)+'\')">roll</button></span>';}).join("")+'</div>';
     }
   }else if(tab==="inventory"){
-    h+='<table class="pm-atktable"><tr><th>Location</th><th>Armour</th><th>AP</th></tr>'
-     +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(S.armor[l])+'</td><td>'+armorApAt(l)+'</td></tr>').join("")+'</table>';
+    h+='<div class="pm-tablewrap"><table class="pm-atktable"><tr><th>Location</th><th>Armour</th><th>AP</th></tr>'
+     +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(S.armor[l])+'</td><td>'+armorApAt(l)+'</td></tr>').join("")+'</table></div>';
     h+='<p class="pm-invmeta">Gear ENC '+gearEncTotal()+' / '+(encLimit()??"—")+' unencumbered'+(S.money.dice.length?(' &middot; '+moneyRemaining()+' / '+moneyTotal()+' sp'):"")+'</p>';
     if(inventoryBlock()){
       // Plain party-member view of a teammate's sheet: static list, no controls.
@@ -865,14 +865,14 @@ function renderPlayView(){
     }else{
       // Editable for the owner always, and for the DM viewing a player's
       // character (VIEW_ONLY_IS_DM) as a narrow loot/gear exception. Deliberately
-      // avoids the .pm-sbtn/.pm-pip/.pm-fatsel/.pm-dctl input classes that the
+      // avoids the .pm-sbtn/.pm-pip/.pm-fatsel/.pm-dmgrow input classes that the
       // .view-only CSS rule disables, since this stays live under VIEW_ONLY for a DM.
-      h+='<table class="pm-atktable"><tr><th>Item</th><th>Qty</th><th>ENC ea</th><th></th></tr>'
+      h+='<div class="pm-tablewrap"><table class="pm-atktable"><tr><th>Item</th><th>Qty</th><th>ENC ea</th><th></th></tr>'
        +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.playInv('+i+',\'name\',this.value)"></td>'
         +'<td><input type="number" value="'+it.qty+'" style="width:56px" onchange="APP.playInv('+i+',\'qty\',this.value)"></td>'
         +'<td><input type="number" step="0.5" value="'+it.enc+'" style="width:56px" onchange="APP.playInv('+i+',\'enc\',this.value)"></td>'
         +'<td><button class="chip" aria-label="remove item" onclick="APP.playInvDel('+i+')">&times;</button></td></tr>').join("")
-       +'</table><p style="margin-top:8px"><button class="chip" onclick="APP.playInvAdd()">+ add item</button></p>';
+       +'</table></div><p style="margin-top:8px"><button class="chip" onclick="APP.playInvAdd()">+ add item</button></p>';
     }
   }else if(tab==="features"){
     h+=combatStylesReadOnlyHTML();
