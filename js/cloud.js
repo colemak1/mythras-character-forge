@@ -868,6 +868,7 @@ function menuHTML(){
   // (or a stale pre-gate) character name advertised on a shared browser.
   const canContinue=auto&&(!CLOUD_ENABLED||AUTH_USER||MOCK_AUTH);
   if(canContinue)h+='<button class="myth-home-continue" onclick="APP.fromMenuContinue()">Continue as '+esc(auto.name)+' &rarr;</button>';
+  h+='<button class="myth-home-continue" onclick="APP.toWiki()">Rules Wiki &rarr;</button>';
   if(MENU_MSG)h+='<p class="warn" style="margin-top:10px;text-align:center">'+esc(MENU_MSG)+'</p>';
   h+='</div>'; // /myth-home-stack
   h+='</div>'; // /myth-home
