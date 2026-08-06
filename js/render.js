@@ -29,6 +29,7 @@ function renderInner(){
   if(APPVIEW==="board"){renderBoardView();return;}
   if(APPVIEW==="play"){renderPlayView();saveAutosave();return;}
   if(APPVIEW==="sheet"){renderSheetView();return;}
+  if(APPVIEW==="wiki"){renderWikiView();return;}
   document.body.classList.remove("menu-mode","play-mode","sheet-mode");
   renderRail();renderMain();renderLedger();renderFoot();saveAutosave();
   document.title=(S.concept.name?S.concept.name+" — ":"")+"Mythras Character Forge";}

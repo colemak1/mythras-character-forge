@@ -46,6 +46,7 @@ function currentRoute(){
   if(APPVIEW==="character")return S._libId?"/character/"+encodeURIComponent(S._libId):"/character/new";
   if(APPVIEW==="play")return S._libId?"/character/"+encodeURIComponent(S._libId)+"/play":"/character/new";
   if(APPVIEW==="sheet")return S._libId?"/character/"+encodeURIComponent(S._libId)+"/sheet":"/character/new";
+  if(APPVIEW==="wiki")return WIKI_CHAPTER?"/wiki/"+encodeURIComponent(WIKI_CHAPTER):"/wiki";
   return "/"; // menu
 }
 function syncRouteFromState(){
@@ -66,6 +67,8 @@ function parseRoute(hash){
   if((m=path.match(/^\/character\/([^/]+)\/sheet$/)))return {view:"sheet",charId:decodeURIComponent(m[1])};
   if((m=path.match(/^\/character\/([^/]+)$/)))return {view:"character",charId:decodeURIComponent(m[1])};
   if((m=path.match(/^\/join\/([^/]+)$/)))return {view:"join",code:decodeURIComponent(m[1])};
+  if(path==="/wiki")return {view:"wiki",chapterId:null};
+  if((m=path.match(/^\/wiki\/([^/]+)$/)))return {view:"wiki",chapterId:decodeURIComponent(m[1])};
   return null;
 }
 // Loads a character by id into S, same normalization every existing opener
@@ -191,6 +194,7 @@ async function applyRoute(route,opts){
       }catch(e){redirectHome("Could not join campaign: "+e.message);}
       break;
     }
+    case "wiki": APPVIEW="wiki";WIKI_CHAPTER=route.chapterId||null;render();break;
   }
 }
 window.addEventListener("hashchange",()=>{

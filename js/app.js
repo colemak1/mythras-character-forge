@@ -585,6 +585,18 @@ window.APP={
  clearAutosave(){try{localStorage.removeItem(autosaveKey());}catch(e){}updateAutosaveTag();},
  /* main menu */
  toMenu(){APPVIEW="menu";MENU_MSG=null;render();window.scrollTo(0,0);},
+ /* Rules Wiki -- see wiki.js/wiki-data.js. wikiOpen with just a chapterId
+    opens that chapter at the top; passed a sectionId too (from a search
+    result several subsections deep) it also scrolls to that heading once
+    the chapter's HTML has actually landed in the DOM. */
+ toWiki(){APPVIEW="wiki";WIKI_CHAPTER=null;render();window.scrollTo(0,0);},
+ wikiOpen(chapterId,sectionId){
+   WIKI_CHAPTER=chapterId;APPVIEW="wiki";render();
+   if(sectionId&&sectionId!==chapterId){
+     setTimeout(()=>{const el=document.getElementById("wsec-"+sectionId);if(el)el.scrollIntoView({block:"start"});},30);
+   }else window.scrollTo(0,0);
+ },
+ wikiBack(){WIKI_CHAPTER=null;render();window.scrollTo(0,0);},
  fromMenuNew(){
    // Character creation requires a real account once cloud sync is
    // configured -- no more "build anonymously, sign in later" limbo (see
