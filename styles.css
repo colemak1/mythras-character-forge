@@ -378,6 +378,11 @@ table.rt tr:nth-child(odd):not(:first-child) td{background:rgba(201,185,141,.16)
 .choicechips .chip::before{content:"\2713";font-weight:700;opacity:0;margin-right:1px}
 .choicechips .chip.on::before{opacity:1}
 .chip.sm{min-height:24px;padding:2px 10px;font-size:11.5px}
+/* Marks a weapon/armour/spell chip as campaign homebrew (see cloud.js:
+   allWeapons/allArmorMaterialsFor/allFolkSpells) rather than core-rulebook
+   content -- used inside the normal Builder chip pickers, so kept neutral
+   rather than tied to the parchment .pb-wrap palette below. */
+.hbmark{font-style:normal;color:var(--bronze-hi);font-size:10px;vertical-align:1px}
 /* action chips: functional buttons (clear/fill/min/max/etc) get a solid
    filled look so they read as "do something" controls rather than the
    outline toggle-selection look of a plain .chip (same corner radius as
@@ -726,6 +731,18 @@ body.play-mode #rail,body.play-mode #ledger,body.play-mode .foot{display:none}
 .cbt-fxchip button:hover{opacity:1}
 .cbt-fxadd{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .cbt-statnote{width:100%;font-size:12.5px}
+/* Homebrew tab (campaign custom content) -- same .card/parchment language
+   as the Combat Tracker above; .hb-form is the "add new" form beneath each
+   section's existing-items list, .hb-list/.hb-row are those existing items. */
+.hb-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.hb-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid rgba(107,74,30,.3);border-radius:3px;background:rgba(255,248,232,.5);padding:6px 10px}
+.hb-row b{color:#241706;font-family:'Cormorant Garamond',serif;font-size:14px}
+.hb-form{display:flex;flex-direction:column;gap:8px;padding-top:8px;border-top:1px dashed rgba(107,74,30,.35)}
+.hb-form>input[type=text],.hb-form>select{width:100%}
+.hb-dice{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0}
+.hb-diebtn{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:12px;color:#241706}
+.hb-diebtn b{min-width:26px;text-align:center}
+.hb-checkrow{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#241706}
 @media (max-width:880px){
   .mmenu-hero{grid-template-columns:1fr}
   .mmenu-hero-left h1{font-size:34px}

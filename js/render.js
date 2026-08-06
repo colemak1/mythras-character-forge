@@ -459,8 +459,8 @@ function cstyleTraitRow(styleKey,t,on){
 function combatStyleBuilderHTML(s){
   const d=styleDef(s.key),ui=cstyleUI(s.key),domId=cstyleDomId(s.key);
   let h='<div class="field"><label>Weapons ('+d.weapons.length+' selected)</label><div class="choicechips">'
-   +WEAPONS.map(w=>'<button class="chip '+(d.weapons.includes(w.name)?"on":"")+'" onclick="APP.toggleStyleWeapon(\''+jsq(s.key)+'\',\''+jsq(w.name)+'\')" title="'
-     +esc(w.group+" · "+w.dmg+" · Size "+w.size+" · Reach "+w.reach+(w.traits?" · "+w.traits:""))+'">'+esc(w.name)+'</button>').join("")+'</div></div>';
+   +allWeapons().map(w=>'<button class="chip '+(d.weapons.includes(w.name)?"on":"")+'" onclick="APP.toggleStyleWeapon(\''+jsq(s.key)+'\',\''+jsq(w.name)+'\')" title="'
+     +esc(w.group+" · "+w.dmg+" · Size "+w.size+" · Reach "+w.reach+(w.traits?" · "+w.traits:""))+'">'+esc(w.name)+(w.custom?' <i class="hbmark" title="Homebrew">&#9733;</i>':"")+'</button>').join("")+'</div></div>';
   h+='<div class="field"><label>Combat Style Traits ('+d.traits.length+' selected)</label>';
   if(d.traits.length)h+='<div class="cstyle-selectedbar">'+d.traits.map(tn=>'<button class="chip on sm" onclick="APP.toggleStyleTrait(\''+jsq(s.key)+'\',\''+jsq(tn)+'\')" title="Click to remove">'+esc(tn)+' &times;</button>').join("")+'</div>';
   h+='<input type="text" class="cstyle-search" id="'+domId+'" placeholder="Search '+COMBAT_TRAITS.length+' Combat Style Traits by name or effect&hellip;" value="'+esc(ui.search)+'" oninput="APP.cstyleSearch(\''+jsq(s.key)+'\',this.value)">';
@@ -673,13 +673,14 @@ function folkMagicPicker(){
   let h='<p><button class="chip actionchip" onclick="APP.rollStartingFolk()">roll 1d4+1 starting spells</button>'
    +(known.length?' <button class="chip" onclick="APP.clearFolk()">clear all</button>':"")
    +' <span class="note">Magicians begin with 1d4+1 spells; more cost 3 Experience Rolls and a week&rsquo;s study each.</span></p>';
-  h+='<div class="field"><label>Spells known ('+known.length+' of '+FOLK_MAGIC.length+')</label><div class="choicechips">'
-   +FOLK_MAGIC.map(s=>'<button class="chip '+(known.some(k=>k.name===s.n)?"on":"")+'" title="'
-     +esc(s.t.join(", ")+" — "+s.d.slice(0,220)+(s.d.length>220?"…":""))+'" onclick="APP.toggleFolkSpell(\''+jsq(s.n)+'\')">'+esc(s.n)+'</button>').join("")
+  const allSpells=allFolkSpells();
+  h+='<div class="field"><label>Spells known ('+known.length+' of '+allSpells.length+')</label><div class="choicechips">'
+   +allSpells.map(s=>'<button class="chip '+(known.some(k=>k.name===s.n)?"on":"")+'" title="'
+     +esc(s.t.join(", ")+" — "+s.d.slice(0,220)+(s.d.length>220?"…":""))+'" onclick="APP.toggleFolkSpell(\''+jsq(s.n)+'\')">'+esc(s.n)+(s.custom?' <i class="hbmark" title="Homebrew">&#9733;</i>':"")+'</button>').join("")
    +'</div></div>';
   if(known.length){
     h+='<div class="spelllist">'+known.map(k=>{
-      const s=FOLK_MAGIC_MAP[k.name];if(!s)return "";
+      const s=folkSpellByName(k.name);if(!s)return "";
       return '<div class="spellrow"><div class="sh"><b>'+esc(magicLabel({tradition:"folk",name:k.name,spec:k.spec}))+'</b>'
        +s.t.map(tr=>'<span class="spelltrait" title="'+esc(MAGIC_TRAITS[tr]||"")+'">'+esc(tr)+'</span>').join("")
        +'<button class="chip" onclick="APP.toggleFolkSpell(\''+jsq(k.name)+'\')" aria-label="forget spell">&times;</button></div>'
@@ -776,15 +777,15 @@ function passionVal(p){
 // pass fabricated one) — real weapon stats are Damage, Size, Reach, Combat
 // Effects, ENC, the weapon's own AP/HP, Traits, Milieu and Cost, all now
 // transcribed from the book (see the WEAPONS data-block comment above).
-function weaponsEnc(){return S.gearWeapons.reduce((a,n)=>{const w=WEAPON_MAP[n];return a+(w?w.enc:0);},0);}
-function weaponsCost(){return S.gearWeapons.reduce((a,n)=>{const w=WEAPON_MAP[n];return a+(w?w.cost:0);},0);}
+function weaponsEnc(){return S.gearWeapons.reduce((a,n)=>{const w=weaponByName(n);return a+(w?w.enc:0);},0);}
+function weaponsCost(){return S.gearWeapons.reduce((a,n)=>{const w=weaponByName(n);return a+(w?w.cost:0);},0);}
 // Armour Table (p.58) only gives cost as a full 7-location suit total (the
 // middle figure in ARMOR_MATERIALS' "suit" string, e.g. Half Plate's
 // "28/3500/6" = ENC/Cost/Armour Penalty) -- there's no per-location cost
 // column in the book. Divided by 7 and weighted the same way armorEncAt/
 // armorLocWeight already do for ENC, so a "Each Arm"/"Each Leg" pick still
 // counts as the two physical locations it represents.
-function armorCostAt(loc){const m=ARMOR_MAP[S.armor[loc]]||ARMOR_MAP.None;
+function armorCostAt(loc){const m=armorMaterialByName(S.armor[loc]);
   const suitCost=parseFloat((m.suit||"0/0/0").split("/")[1])||0;
   return suitCost/7;}
 function armorCostTotal(){return ARMOR_LOCATIONS.reduce((a,l)=>a+armorCostAt(l)*armorLocWeight(l),0);}
@@ -798,10 +799,10 @@ function gearCostTotal(){return Math.round(weaponsCost()+armorCostTotal());}
 // confirmed against page image). "Each Arm"/"Each Leg" are single pickers
 // covering two physical locations apiece, so they're weighted x2 here to
 // match the book's 7-location totals (Head, Chest, Abdomen, R/L Arm, R/L Leg).
-function armorEncAt(loc){const m=ARMOR_MAP[S.armor[loc]]||ARMOR_MAP.None;return m.encPerLoc*0.5;}
+function armorEncAt(loc){const m=armorMaterialByName(S.armor[loc]);return m.encPerLoc*0.5;}
 function armorLocWeight(loc){return (loc==="Each Arm"||loc==="Each Leg")?2:1;}
 function armorEncTotal(){return ARMOR_LOCATIONS.reduce((a,l)=>a+armorEncAt(l)*armorLocWeight(l),0);}
-function armorApAt(loc){const m=ARMOR_MAP[S.armor[loc]]||ARMOR_MAP.None;return m.ap;}
+function armorApAt(loc){const m=armorMaterialByName(S.armor[loc]);return m.ap;}
 function gearEncTotal(){return S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.enc||0),0)+weaponsEnc()+armorEncTotal();}
 // Armour Penalty to Initiative (core rulebook, p.58, confirmed against page
 // image): sum the FULL (unhalved) ENC of every worn armour location, divide
@@ -809,7 +810,7 @@ function gearEncTotal(){return S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.enc|
 // a full Plated Mail suit (ENC 6/location x 7 locations = 42) => 42/5 = 8.4,
 // rounded up to 9 => Initiative Penalty -9.
 function armourPenaltyToInit(){
-  const total=ARMOR_LOCATIONS.reduce((a,l)=>{const m=ARMOR_MAP[S.armor[l]]||ARMOR_MAP.None;return a+m.encPerLoc*armorLocWeight(l);},0);
+  const total=ARMOR_LOCATIONS.reduce((a,l)=>{const m=armorMaterialByName(S.armor[l]);return a+m.encPerLoc*armorLocWeight(l);},0);
   return total<=0?0:Math.ceil(total/5);
 }
 // Encumbrance (core rulebook, Encumbrance section, confirmed against page
@@ -890,15 +891,15 @@ function stepMoney(){
    +'<p class="note">Roll picks the class name automatically; use the free-text field if your Games Master gives you a specific title or a different Money Modifier.</p>')
    +'</div>';
   h+='<div class="card"><h3>Weapons</h3><p class="note">One-Handed, Two-Handed, Shield and Ranged tables (Economics &amp; Equipment, pp.63&ndash;66). No weapon has a STR/DEX minimum in Mythras.</p>'
-   +'<div class="choicechips">'+WEAPONS.map(w=>'<button class="chip '+(S.gearWeapons.includes(w.name)?"on":"")+'" onclick="APP.toggleWeapon(\''+jsq(w.name)+'\')" title="'+esc(w.group+" · "+w.dmg+" · Size "+w.size+" · Reach "+w.reach+" · "+w.effects+" · ENC "+w.enc+" · AP/HP "+w.apHp+(w.traits?" · "+w.traits:"")+" · "+w.cost+"sp")+'">'+esc(w.name)+'</button>').join("")+'</div>'
+   +'<div class="choicechips">'+allWeapons().map(w=>'<button class="chip '+(S.gearWeapons.includes(w.name)?"on":"")+'" onclick="APP.toggleWeapon(\''+jsq(w.name)+'\')" title="'+esc(w.group+" · "+w.dmg+" · Size "+w.size+" · Reach "+w.reach+" · "+w.effects+" · ENC "+w.enc+" · AP/HP "+w.apHp+(w.traits?" · "+w.traits:"")+" · "+w.cost+"sp")+'">'+esc(w.name)+(w.custom?' <i class="hbmark" title="Homebrew">&#9733;</i>':"")+'</button>').join("")+'</div>'
    +(S.gearWeapons.length?'<table class="alloc" style="margin-top:8px"><tr><th>Weapon</th><th>Damage</th><th>Reach</th><th>Effects</th><th class="num">ENC</th><th>AP/HP</th></tr>'
-     +S.gearWeapons.map(n=>{const w=WEAPON_MAP[n];if(!w)return"";
+     +S.gearWeapons.map(n=>{const w=weaponByName(n);if(!w)return"";
        return '<tr><td>'+esc(w.name)+' <span class="note">('+esc(w.group)+')</span></td><td class="num">'+esc(w.dmg)+'</td><td>'+esc(w.reach)+'</td><td class="note">'+esc(w.effects)+'</td><td class="num">'+w.enc+'</td>'
         +'<td class="note">'+esc(w.apHp)+'</td></tr>';}).join("")+'</table>':"")
    +'</div>';
   h+='<div class="card"><h3>Armour</h3><p class="note">Armour Table (Economics &amp; Equipment, p.58). Armour Points (AP) reduce damage to that location; worn armour counts as half its packed ENC, and total worn ENC also reduces Initiative (see below).</p>'
    +'<div class="grid3">'+ARMOR_LOCATIONS.map(loc=>fld(loc,'<select onchange="APP.setArmor(\''+jsq(loc)+'\',this.value)">'
-     +ARMOR_MATERIALS.map(m=>'<option value="'+esc(m.name)+'" '+(S.armor[loc]===m.name?"selected":"")+'>'+esc(m.name)+' (AP '+m.ap+')</option>').join("")+'</select>')).join("")+'</div>'
+     +allArmorMaterialsFor(loc).map(m=>'<option value="'+esc(m.name)+'" '+(S.armor[loc]===m.name?"selected":"")+'>'+esc(m.name)+(m.custom?" ★":"")+' (AP '+m.ap+')</option>').join("")+'</select>')).join("")+'</div>'
    +'<p class="note" style="margin-top:6px">Armour ENC (worn, halved): <b style="font-family:var(--mono)">'+armorEncTotal()+'</b> &nbsp;&middot;&nbsp; Armour Penalty to Initiative: <b style="font-family:var(--mono)">-'+armourPenaltyToInit()+'</b></p></div>';
   h+='<div class="card"><h3>Inventory</h3><table class="alloc"><tr><th>Item</th><th class="num">Qty</th><th class="num">ENC each</th><th></th></tr>'
    +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.inv('+i+',\'name\',this.value)"></td>'
