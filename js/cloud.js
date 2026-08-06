@@ -394,6 +394,130 @@ function saveCurrentToLibraryLocal(){
   return entry;
 }
 
+/* ================= CAMPAIGN CUSTOM CONTENT (homebrew) =================
+   Custom weapons/armor/spells belong to a specific campaign, not a global
+   per-account library -- a GM's homebrew for one campaign should never
+   bleed into another, and every member of that campaign should see it in
+   their equipment/weapon/spell pickers automatically. Requires a DB-side
+   migration this app can't run itself (no service-role key is ever shipped
+   client-side) -- see the campaign_custom_content migration SQL flagged in
+   the PR/report that introduced this. Until that migration is run,
+   cloudFetchCustomContent below just returns [] (table doesn't exist yet),
+   so campaigns keep working exactly as before; local (signed-out) mode
+   needs no migration at all since it never touches Supabase.
+   Row shape (cloud and local both normalize to this): {id,campaign_id,
+   type:"weapon"|"armor"|"spell",name,data:{...typed fields per type},
+   created_at}. */
+async function cloudFetchCustomContent(campaignId){
+  const {data,error}=await sb.from("campaign_custom_content").select("*").eq("campaign_id",campaignId).order("created_at",{ascending:true});
+  return error?[]:data;
+}
+async function cloudCreateCustomContent(campaignId,type,name,data){
+  const {data:row,error}=await sb.from("campaign_custom_content")
+   .insert({campaign_id:campaignId,type,name,data,created_by:AUTH_USER.id}).select().single();
+  if(error)throw error;
+  return row;
+}
+async function cloudDeleteCustomContent(id){
+  const {error}=await sb.from("campaign_custom_content").delete().eq("id",id);
+  if(error)throw error;
+}
+const CUSTOM_CONTENT_KEY="mythrasForgeCustomContent_v1";
+function loadCustomContentLocal(){try{return JSON.parse(localStorage.getItem(CUSTOM_CONTENT_KEY))||[];}catch(e){return [];}}
+function saveCustomContentListLocal(list){try{localStorage.setItem(CUSTOM_CONTENT_KEY,JSON.stringify(list));}catch(e){}}
+function customContentForCampaignLocal(campaignId){return loadCustomContentLocal().filter(c=>c.campaign_id===campaignId);}
+function createCustomContentLocal(campaignId,type,name,data){
+  const row={id:genId(),campaign_id:campaignId,type,name,data,created_at:new Date().toISOString()};
+  const list=loadCustomContentLocal();list.push(row);saveCustomContentListLocal(list);
+  return row;
+}
+function deleteCustomContentLocal(id){saveCustomContentListLocal(loadCustomContentLocal().filter(c=>c.id!==id));}
+async function fetchCustomContentUnified(campaignId){
+  if(cloudActive())return cloudFetchCustomContent(campaignId);
+  return customContentForCampaignLocal(campaignId);
+}
+async function createCustomContentUnified(campaignId,type,name,data){
+  if(cloudActive())return cloudCreateCustomContent(campaignId,type,name,data);
+  return createCustomContentLocal(campaignId,type,name,data);
+}
+async function deleteCustomContentUnified(id,campaignId){
+  if(cloudActive())return cloudDeleteCustomContent(id);
+  return deleteCustomContentLocal(id);
+}
+// Keyed by campaignId -> array once loaded, or null while a fetch is in
+// flight -- same "populate then re-render" shape as CAMP_CACHE/BOARD_CHARS
+// elsewhere in this file. Custom content is supplementary to the core data
+// tables (never the only source of a picker's options), so callers treat a
+// still-loading/absent cache entry as "no homebrew yet" rather than
+// blocking the whole picker on it.
+const CUSTOM_CONTENT_CACHE={};
+async function refreshCustomContent(campaignId){
+  if(!campaignId)return;
+  CUSTOM_CONTENT_CACHE[campaignId]=await fetchCustomContentUnified(campaignId);
+  render();
+}
+function ensureCustomContentLoaded(campaignId){
+  if(!campaignId||CUSTOM_CONTENT_CACHE[campaignId]!==undefined)return;
+  CUSTOM_CONTENT_CACHE[campaignId]=null;
+  refreshCustomContent(campaignId);
+}
+function customContentByType(type){
+  const cid=S.campaignId;if(!cid)return [];
+  ensureCustomContentLoaded(cid);
+  return (CUSTOM_CONTENT_CACHE[cid]||[]).filter(c=>c.type===type);
+}
+// Dice-pool builder for homebrew weapon damage: counts per die size plus a
+// flat modifier, rendered the same way the core WEAPONS table's "dmg"
+// strings read (e.g. "1d6+1d4+2"). Multiple die sizes in one pool has no
+// core-rulebook precedent (real weapons only ever use one die size) but the
+// spec calls for a general-purpose pool builder, so this supports it.
+const CUSTOM_DICE_STEPS=[2,3,4,6,8,10];
+// The Mythras Special Effect / spell trait vocabulary the homebrew spell
+// form offers as toggle chips -- a deliberate subset of MAGIC_TRAITS (skips
+// "Special Duration" and "Resist (Special)", both open-ended/described-in-
+// prose traits that don't fit a fixed chip).
+const CUSTOM_SPELL_TRAITS=["Concentration","Instant","Ranged","Resist (Endurance)","Resist (Evade)","Resist (Willpower)","Touch"];
+function customDiceLabel(dice,flatMod){
+  const parts=CUSTOM_DICE_STEPS.filter(n=>dice&&dice["d"+n]>0).map(n=>dice["d"+n]+"d"+n);
+  let label=parts.join("+")||"0";
+  const m=parseInt(flatMod,10)||0;
+  if(m>0)label+="+"+m;else if(m<0)label+=String(m);
+  return label;
+}
+function customWeaponShape(row){
+  const d=row.data||{};
+  return {name:row.name,group:d.group||"Custom",dmg:customDiceLabel(d.dice,d.flatMod),
+   size:d.size||"",reach:d.reach||"",range:d.range||"",load:d.load||"",effects:d.effects||"",
+   enc:Number(d.enc)||0,apHp:d.apHp||"",traits:d.traits||"",milieu:"Custom",cost:Number(d.cost)||0,
+   custom:true,customId:row.id};
+}
+function customArmorShape(row){
+  const d=row.data||{};
+  return {name:row.name,ap:Number(d.ap)||0,encPerLoc:Number(d.encPerLoc)||0,
+   locations:Array.isArray(d.locations)?d.locations:[],custom:true,customId:row.id};
+}
+// spec mirrors FOLK_MAGIC's own convention: a non-empty string turns on the
+// "speciality" text input on the known-spell row, using that string as its
+// placeholder (see folkMagicPicker in render.js).
+function customSpellShape(row){
+  const d=row.data||{};
+  return {n:row.name,t:Array.isArray(d.traits)?d.traits:[],d:d.desc||"",
+   spec:d.hasSpec?(d.specLabel||"specialization"):"",custom:true,customId:row.id};
+}
+function allWeapons(){return WEAPONS.concat(customContentByType("weapon").map(customWeaponShape));}
+function weaponByName(name){return WEAPON_MAP[name]||allWeapons().find(w=>w.name===name);}
+function allArmorMaterialsFor(loc){
+  const custom=customContentByType("armor").map(customArmorShape)
+   .filter(a=>!a.locations.length||a.locations.includes(loc));
+  return ARMOR_MATERIALS.concat(custom);
+}
+function armorMaterialByName(name){
+  if(ARMOR_MAP[name])return ARMOR_MAP[name];
+  return customContentByType("armor").map(customArmorShape).find(a=>a.name===name)||ARMOR_MAP.None;
+}
+function allFolkSpells(){return FOLK_MAGIC.concat(customContentByType("spell").map(customSpellShape));}
+function folkSpellByName(name){return FOLK_MAGIC_MAP[name]||allFolkSpells().find(s=>s.n===name);}
+
 /* ================= UNIFIED DATA LAYER (routes to cloud or local) =================
    Every view below reads from these — never from the Local/cloudFetch*
    functions directly — so the same rendering code works whether or not
@@ -895,8 +1019,20 @@ function renderCampaignView(){
    Play Mode itself uses — so the board can never show a different wound
    tier or HP total than the character's own Play Mode screen would. */
 let BOARD_CHARS=null;          // array of {id,name,tier,culture,career,owner_id,owner_name,campaign_id,state,updated_at}, or null while loading
-let BOARD_TAB="status";        // "status" (live character grid) or "gm" (initiative/NPCs/notes, DM-only)
+let BOARD_TAB="status";        // "status" (live character grid), "gm" (Combat Tracker, DM-only), or "homebrew" (custom content, DM-only)
 let GM_SESSION_ERROR=null;     // set when a GM-tools save fails, cleared on the next successful edit
+let HB_ERROR=null;             // set when a homebrew add/delete fails, cleared on the next successful action
+// In-progress "new item" forms for the Homebrew tab -- one draft per type,
+// reset to freshHbDraft() after a successful add. Kept separate from the
+// saved rows (CUSTOM_CONTENT_CACHE) since a draft is local UI state that's
+// never itself persisted until the DM clicks "add".
+function freshHbDraft(type){
+  if(type==="weapon")return {name:"",group:"One-Handed",dice:{d2:0,d3:0,d4:0,d6:0,d8:0,d10:0},flatMod:0,
+   size:"M",reach:"M",effects:"",enc:0,apHp:"",traits:"",cost:0};
+  if(type==="armor")return {name:"",ap:0,encPerLoc:0,locations:[]};
+  return {name:"",traits:[],hasSpec:false,specLabel:"",desc:""};
+}
+let HB_DRAFT={weapon:freshHbDraft("weapon"),armor:freshHbDraft("armor"),spell:freshHbDraft("spell")};
 let BOARD_SUB=null,BOARD_LIVE=false;
 let BOARD_REFETCH_TIMER=null,BOARD_TICK_TIMER=null,BOARD_POLL_TIMER=null;
 // Cloud rows already carry `state` + owner_name from cloudFetchCharacters();
@@ -1014,9 +1150,11 @@ function boardHTML(){
   h+='<div class="menuhead"><h1>Party Board'+(camp?" — "+esc(camp.name):"")+'</h1><p>Live status for every character linked to this campaign. Click a card to open it in Play Mode.</p></div>';
   if(isDM&&camp){
     h+='<p class="pb-tabs"><button class="chip'+(BOARD_TAB==="status"?" on":"")+'" onclick="APP.setBoardTab(\'status\')">Live Status</button> '
-     +'<button class="chip'+(BOARD_TAB==="gm"?" on":"")+'" onclick="APP.setBoardTab(\'gm\')">GM Tools</button></p>';
+     +'<button class="chip'+(BOARD_TAB==="gm"?" on":"")+'" onclick="APP.setBoardTab(\'gm\')">GM Tools</button> '
+     +'<button class="chip'+(BOARD_TAB==="homebrew"?" on":"")+'" onclick="APP.setBoardTab(\'homebrew\')">Homebrew</button></p>';
   }
   if(BOARD_TAB==="gm"&&isDM&&camp){h+=gmToolsHTML(camp);h+='</div>';return h;}
+  if(BOARD_TAB==="homebrew"&&isDM&&camp){h+=homebrewHTML(camp);h+='</div>';return h;}
   if(BOARD_CHARS===null){h+='<p class="note" style="text-align:center">Loading party&hellip;</p></div>';return h;}
   if(!BOARD_CHARS.length){h+='<p class="note" style="text-align:center">No characters linked to this campaign yet.</p></div>';return h;}
   const sorted=BOARD_CHARS.slice().sort((a,b)=>{
@@ -1107,6 +1245,93 @@ function gmToolsHTML(camp){
   h+='<div class="card"><h3>Session Notes</h3>'
    +'<p class="note" style="margin-bottom:8px">Visible only to you — not shown to players on this board.</p>'
    +'<textarea rows="6" placeholder="Scene notes, secrets, reminders for this session&hellip;" onchange="APP.gmNotes(this.value)">'+esc(st.sessionNotes||"")+'</textarea></div>';
+  return h;
+}
+/* ---- Homebrew (campaign custom content): custom weapons, armor and
+   spells that belong to this campaign specifically. Any member sees them
+   merged into their own weapon/armor/spell pickers in the Builder (see
+   allWeapons/allArmorMaterialsFor/allFolkSpells in the Campaign Custom
+   Content section above); only the DM can add or remove them here. ---- */
+function hbDiceRowHTML(){
+  const d=HB_DRAFT.weapon;
+  return '<div class="hb-dice">'+CUSTOM_DICE_STEPS.map(n=>
+    '<span class="hb-diebtn"><button class="chip sm" onclick="APP.hbDiceAdj('+n+',-1)" '+(d.dice["d"+n]<=0?"disabled":"")+' aria-label="remove d'+n+'">&minus;</button>'
+    +'<b>'+d.dice["d"+n]+'d'+n+'</b>'
+    +'<button class="chip sm" onclick="APP.hbDiceAdj('+n+',1)" aria-label="add d'+n+'">+</button></span>').join("")
+   +'<span class="hb-diebtn"><button class="chip sm" onclick="APP.hbFlatAdj(-1)" aria-label="lower flat modifier">&minus;</button>'
+   +'<b>'+(d.flatMod>0?"+":"")+d.flatMod+'</b>'
+   +'<button class="chip sm" onclick="APP.hbFlatAdj(1)" aria-label="raise flat modifier">+</button></span>'
+   +'<span class="note">= '+esc(customDiceLabel(d.dice,d.flatMod))+'</span></div>';
+}
+function hbWeaponFormHTML(){
+  const d=HB_DRAFT.weapon;
+  return '<div class="hb-form">'
+   +'<input type="text" placeholder="Weapon name" value="'+esc(d.name)+'" onchange="APP.hbField(\'weapon\',\'name\',this.value)">'
+   +'<select onchange="APP.hbField(\'weapon\',\'group\',this.value)">'
+    +["One-Handed","Two-Handed","Shield","Ranged"].map(g=>'<option value="'+g+'" '+(d.group===g?"selected":"")+'>'+g+'</option>').join("")+'</select>'
+   +'<label class="note">Damage'+hbDiceRowHTML()+'</label>'
+   +'<div class="grid3">'
+    +fld("Size",'<select onchange="APP.hbField(\'weapon\',\'size\',this.value)">'+["S","M","L","H","E"].map(s=>'<option '+(d.size===s?"selected":"")+'>'+s+'</option>').join("")+'</select>')
+    +fld("Reach",'<select onchange="APP.hbField(\'weapon\',\'reach\',this.value)">'+["S","M","T","L","VL"].map(s=>'<option '+(d.reach===s?"selected":"")+'>'+s+'</option>').join("")+'</select>')
+    +fld("ENC",'<input type="number" min="0" value="'+d.enc+'" onchange="APP.hbField(\'weapon\',\'enc\',this.value)">')
+   +'</div>'
+   +'<div class="grid3">'
+    +fld("Combat Effects",'<input type="text" placeholder="Bleed, Impale" value="'+esc(d.effects)+'" onchange="APP.hbField(\'weapon\',\'effects\',this.value)">')
+    +fld("AP/HP",'<input type="text" placeholder="6/8" value="'+esc(d.apHp)+'" onchange="APP.hbField(\'weapon\',\'apHp\',this.value)">')
+    +fld("Cost (sp)",'<input type="number" min="0" value="'+d.cost+'" onchange="APP.hbField(\'weapon\',\'cost\',this.value)">')
+   +'</div>'
+   +fld("Traits",'<input type="text" placeholder="Thrown, Entrapping" value="'+esc(d.traits)+'" onchange="APP.hbField(\'weapon\',\'traits\',this.value)">')
+   +'<button class="chip actionchip" onclick="APP.hbSubmit(\'weapon\')" '+(d.name.trim()?"":"disabled")+'>+ add weapon</button>'
+   +'</div>';
+}
+function hbArmorFormHTML(){
+  const d=HB_DRAFT.armor;
+  return '<div class="hb-form">'
+   +'<input type="text" placeholder="Armour name, e.g. Chitin Plating" value="'+esc(d.name)+'" onchange="APP.hbField(\'armor\',\'name\',this.value)">'
+   +'<div class="grid3">'
+    +fld("AP",'<input type="number" min="0" value="'+d.ap+'" onchange="APP.hbField(\'armor\',\'ap\',this.value)">')
+    +fld("ENC / location",'<input type="number" min="0" value="'+d.encPerLoc+'" onchange="APP.hbField(\'armor\',\'encPerLoc\',this.value)">')
+   +'</div>'
+   +'<div class="field"><label>Hit-location coverage (none checked = fits any location)</label><div class="choicechips">'
+    +ARMOR_LOCATIONS.map(l=>'<button class="chip '+(d.locations.includes(l)?"on":"")+'" onclick="APP.hbToggleArmorLoc(\''+jsq(l)+'\')">'+esc(l)+'</button>').join("")+'</div></div>'
+   +'<button class="chip actionchip" onclick="APP.hbSubmit(\'armor\')" '+(d.name.trim()?"":"disabled")+'>+ add armour</button>'
+   +'</div>';
+}
+function hbSpellFormHTML(){
+  const d=HB_DRAFT.spell;
+  return '<div class="hb-form">'
+   +'<input type="text" placeholder="Spell name" value="'+esc(d.name)+'" onchange="APP.hbField(\'spell\',\'name\',this.value)">'
+   +'<div class="field"><label>Traits</label><div class="choicechips">'
+    +CUSTOM_SPELL_TRAITS.map(t=>'<button class="chip '+(d.traits.includes(t)?"on":"")+'" title="'+esc(MAGIC_TRAITS[t]||"")+'" onclick="APP.hbToggleSpellTrait(\''+jsq(t)+'\')">'+esc(t)+'</button>').join("")+'</div></div>'
+   +'<label class="hb-checkrow"><input type="checkbox" '+(d.hasSpec?"checked":"")+' onchange="APP.hbField(\'spell\',\'hasSpec\',this.checked)"> Has specializations (e.g. Find (X))</label>'
+   +(d.hasSpec?'<input type="text" placeholder="speciality prompt, e.g. what it finds" value="'+esc(d.specLabel)+'" onchange="APP.hbField(\'spell\',\'specLabel\',this.value)">':"")
+   +fld("Description",'<textarea rows="3" placeholder="What the spell does&hellip;" onchange="APP.hbField(\'spell\',\'desc\',this.value)">'+esc(d.desc)+'</textarea>')
+   +'<button class="chip actionchip" onclick="APP.hbSubmit(\'spell\')" '+(d.name.trim()?"":"disabled")+'>+ add spell</button>'
+   +'</div>';
+}
+function hbListRowHTML(row){
+  const d=row.data||{};
+  let summary="";
+  if(row.type==="weapon")summary=customDiceLabel(d.dice,d.flatMod)+" · "+(d.group||"Custom")+(d.effects?" · "+d.effects:"");
+  else if(row.type==="armor")summary="AP "+(Number(d.ap)||0)+" · ENC "+(Number(d.encPerLoc)||0)+"/loc"+(d.locations&&d.locations.length?" · "+d.locations.join(", "):" · any location");
+  else summary=(Array.isArray(d.traits)?d.traits.join(", "):"")||"—";
+  return '<div class="hb-row"><div><b>'+esc(row.name)+'</b><div class="note">'+esc(summary)+'</div></div>'
+   +'<button class="chip sm" onclick="APP.hbDelete(\''+row.id+'\',\''+row.type+'\')" aria-label="delete">&times;</button></div>';
+}
+function hbSectionHTML(camp,type,title,rulesnote){
+  const rows=(CUSTOM_CONTENT_CACHE[camp.id]||[]).filter(c=>c.type===type);
+  const form=type==="weapon"?hbWeaponFormHTML():type==="armor"?hbArmorFormHTML():hbSpellFormHTML();
+  return '<div class="card"><h3>'+esc(title)+'</h3><p class="note">'+esc(rulesnote)+'</p>'
+   +(rows.length?'<div class="hb-list">'+rows.map(hbListRowHTML).join("")+'</div>':'<p class="note">None yet.</p>')
+   +form+'</div>';
+}
+function homebrewHTML(camp){
+  ensureCustomContentLoaded(camp.id);
+  let h=HB_ERROR?'<p class="warn" style="margin-bottom:10px">'+esc(HB_ERROR)+'</p>':'';
+  h+='<p class="note" style="margin-bottom:10px">Homebrew content belongs to this campaign only — every member sees it merged into their own weapon/armour/spell pickers in the Builder; only you can add or remove it here.</p>';
+  h+=hbSectionHTML(camp,"weapon","Custom Weapons","Shows up in Money & Gear's weapon picker and the Combat Style weapon list, marked with a ★.");
+  h+=hbSectionHTML(camp,"armor","Custom Armour","Shows up as a material option in Money & Gear's armour picker, restricted to whichever locations it covers.");
+  h+=hbSectionHTML(camp,"spell","Custom Folk Magic Spells","Shows up alongside core Folk Magic in the Magic step's spell picker.");
   return h;
 }
 function renderBoardView(){

@@ -432,7 +432,7 @@ function pmCombatSection(){
   // the table instead of sitting inert in character data.
   const stylesFor=n=>stylesList().filter(s=>styleDef(s.key).weapons.includes(n)).map(s=>s.name);
   if(S.gearWeapons.length){
-    h+=S.gearWeapons.map(n=>{const w=WEAPON_MAP[n];if(!w)return"";
+    h+=S.gearWeapons.map(n=>{const w=weaponByName(n);if(!w)return"";
       const meta=(w.group==="Ranged"
         ?"RANGE "+esc(w.range||"—")+" &middot; LOAD "+esc(String(w.load||"—"))+(String(w.load).match(/^\d+$/)?"AP":"")
         :"SIZE "+esc(w.size||"—")+" &middot; REACH "+esc(w.reach||"—"))
@@ -597,13 +597,13 @@ function specialEffectsPanel(){
   // Optional Reach rule callout, made concrete using this character's own
   // equipped melee/shield weapons where possible instead of just abstract
   // categories.
-  const myReach=(S.gearWeapons||[]).map(nm=>WEAPON_MAP[nm]).filter(w=>w&&REACH_ORDER.includes(w.reach))
+  const myReach=(S.gearWeapons||[]).map(nm=>weaponByName(nm)).filter(w=>w&&REACH_ORDER.includes(w.reach))
     .map(w=>w.name+" ("+REACH_NAME[w.reach]+")");
   h+='<details class="pm-fx-item" style="margin-bottom:14px"><summary>Optional Rule: Closing &amp; Opening Range <span class="pm-fx-badge">p.106</span></summary>'
    +'<p>Weapons have a Reach — Touch, Short, Medium, Long, or Very Long, shortest to longest ('+REACH_ORDER.map(r=>REACH_NAME[r]).join(" &lt; ")+') — shown on every melee weapon and shield on your character sheet. Before anyone swings, combatants can jockey for range:</p>'
    +'<p><b>Closing in</b> (the <i>Close Range</i> Special Effect, or simple GM-adjudicated positioning): moving inside a longer weapon’s Reach means that weapon can no longer parry, and its effective blocking Size drops by <b>two categories</b> for as long as the fight stays that close — a spear or halberd becomes clumsy up close against a dagger or shortsword.</p>'
    +'<p><b>Holding them off</b> (the <i>Open Range</i> Special Effect): keeping the fight at your weapon’s longer Reach means the shorter weapon can only attack <i>your weapon itself</i> — trying to knock it aside, sunder it, grab it — not you, until they manage to close the distance.</p>'
-   +(myReach.length?'<p class="pm-notes">Your weapons, shortest to longest reach: '+myReach.sort((a,b)=>REACH_ORDER.indexOf(WEAPON_MAP[a.split(" (")[0]]?.reach)-REACH_ORDER.indexOf(WEAPON_MAP[b.split(" (")[0]]?.reach)).join(", ")+'.</p>':'')
+   +(myReach.length?'<p class="pm-notes">Your weapons, shortest to longest reach: '+myReach.sort((a,b)=>REACH_ORDER.indexOf((weaponByName(a.split(" (")[0])||{}).reach)-REACH_ORDER.indexOf((weaponByName(b.split(" (")[0])||{}).reach)).join(", ")+'.</p>':'')
    +'</details>';
   h+='<input type="text" class="pm-fx-search" placeholder="Search '+SPECIAL_EFFECTS.length+' Special Effects by name or effect&hellip;" oninput="pmFxFilter(this)">';
   h+='<div class="pm-fx-list">'+FX_GROUPS.map(([groupName,names])=>{
@@ -851,8 +851,8 @@ function renderPlayView(){
     const styleTxt=styles.length?styles.map(s=>esc(s.name)+" "+s.pct).join(", "):"No combat style yet";
     h+='<p class="pm-notes" style="margin-bottom:10px">Combat Styles: '+styleTxt+'</p>';
     const maxAPnow=playMaxAP(),usedAPnow=Math.min(S.play.apUsed,maxAPnow),remainAPnow=maxAPnow-usedAPnow;
-    const reloadWeaponName=(S.gearWeapons||[]).find(n=>WEAPON_MAP[n]&&WEAPON_MAP[n].group==="Ranged"&&typeof WEAPON_MAP[n].load==="number");
-    const reloadCost=reloadWeaponName?WEAPON_MAP[reloadWeaponName].load:null;
+    const reloadWeaponName=(S.gearWeapons||[]).find(n=>weaponByName(n)&&weaponByName(n).group==="Ranged"&&typeof weaponByName(n).load==="number");
+    const reloadCost=reloadWeaponName?weaponByName(reloadWeaponName).load:null;
     const ACTIONS=[
       {nm:"Attack",ap:1,note:"Proactive · core rules p.91"},
       {nm:"Cast a Spell",ap:1,note:"Proactive, Cast Magic · p.91"},
@@ -1135,8 +1135,8 @@ function characterSheetBody(){
 
   // ---- weapons row ----
   h+='<div class="mweapons-grid">';
-  const meleeWps=S.gearWeapons.map(n=>WEAPON_MAP[n]).filter(w=>w&&w.group!=="Ranged");
-  const rangedWps=S.gearWeapons.map(n=>WEAPON_MAP[n]).filter(w=>w&&w.group==="Ranged");
+  const meleeWps=S.gearWeapons.map(n=>weaponByName(n)).filter(w=>w&&w.group!=="Ranged");
+  const rangedWps=S.gearWeapons.map(n=>weaponByName(n)).filter(w=>w&&w.group==="Ranged");
   h+='<div class="mbox"><div class="mbox-t">Melee &amp; Shield Weapons</div>'
    +(meleeWps.length?'<table class="mtiny"><tr><th>Weapon</th><th>Damage</th><th>Reach</th><th>Effects</th><th class="num">ENC</th><th>AP/HP</th></tr>'
      +meleeWps.map(w=>'<tr><td>'+esc(w.name)+'</td><td class="num">'+esc(w.dmg)+'</td><td>'+esc(w.reach)+'</td><td>'+esc(w.effects)+'</td><td class="num">'+w.enc+'</td><td>'+esc(w.apHp)+'</td></tr>').join("")+'</table>'

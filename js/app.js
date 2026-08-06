@@ -70,7 +70,7 @@ window.APP={
  // Magicians begin with 1d4+1 spells; this rolls that number and fills them
  // at random for a player who'd rather not pick.
  rollStartingFolk(){
-   const n=d(4)+1;const pool=FOLK_MAGIC.slice();const picked=[];
+   const n=d(4)+1;const pool=allFolkSpells();const picked=[];
    for(let i=0;i<n&&pool.length;i++)picked.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
    S.magic.folk=picked.map(s=>({name:s.n,spec:""}));render();},
  clearFolk(){S.magic.folk=[];render();},
@@ -802,6 +802,43 @@ window.APP={
  gmCombatantField(id,f,v){
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(c)c[f]=v;});},
  gmNotes(v){APP.gmSessionMutate(st=>{st.sessionNotes=v;});},
+ /* Homebrew (campaign custom content) -- see cloud.js: HB_DRAFT/
+    freshHbDraft/customContentByType/allWeapons/allArmorMaterialsFor/
+    allFolkSpells. Drafts are plain in-memory form state until hbSubmit
+    persists them; hbDelete removes a saved row outright (no in-place edit
+    in this first pass -- delete and re-add covers mistakes). */
+ hbField(type,field,v){
+   const d=HB_DRAFT[type];if(!d)return;
+   const numFields={weapon:["enc","cost"],armor:["ap","encPerLoc"],spell:[]};
+   if((numFields[type]||[]).includes(field))d[field]=Math.max(0,parseFloat(v)||0);
+   else if(field==="hasSpec")d[field]=!!v;
+   else d[field]=v;
+   render();},
+ hbDiceAdj(die,delta){
+   const dice=HB_DRAFT.weapon.dice;dice["d"+die]=Math.max(0,(dice["d"+die]||0)+delta);render();},
+ hbFlatAdj(delta){HB_DRAFT.weapon.flatMod=(HB_DRAFT.weapon.flatMod||0)+delta;render();},
+ hbToggleArmorLoc(loc){
+   const locs=HB_DRAFT.armor.locations;const i=locs.indexOf(loc);
+   if(i>=0)locs.splice(i,1);else locs.push(loc);render();},
+ hbToggleSpellTrait(t){
+   const tr=HB_DRAFT.spell.traits;const i=tr.indexOf(t);
+   if(i>=0)tr.splice(i,1);else tr.push(t);render();},
+ hbSubmit(type){
+   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
+   const d=HB_DRAFT[type];const name=(d.name||"").trim();if(!name)return;
+   const data=type==="weapon"?{group:d.group,dice:d.dice,flatMod:d.flatMod,size:d.size,reach:d.reach,effects:d.effects,enc:d.enc,apHp:d.apHp,traits:d.traits,cost:d.cost}
+    :type==="armor"?{ap:d.ap,encPerLoc:d.encPerLoc,locations:d.locations.slice()}
+    :{traits:d.traits.slice(),hasSpec:d.hasSpec,specLabel:d.specLabel,desc:d.desc};
+   HB_ERROR=null;
+   createCustomContentUnified(camp.id,type,name,data).then(()=>{
+     HB_DRAFT[type]=freshHbDraft(type);
+     return refreshCustomContent(camp.id);
+   }).catch(e=>{HB_ERROR="Could not save: "+e.message;render();});},
+ hbDelete(id,type){
+   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
+   HB_ERROR=null;
+   deleteCustomContentUnified(id,camp.id).then(()=>refreshCustomContent(camp.id))
+    .catch(e=>{HB_ERROR="Could not delete: "+e.message;render();});},
  setCampaign(id){
    // cloudUpsertCharacter()'s UPDATE path deliberately never writes
    // campaign_id (see the comment there) to stop the debounced autosave
@@ -965,7 +1002,7 @@ function buildMD(){
       return "| "+magicLabel(m)+" | "+t.label+" | "+t.castSkill+" | "+cost+" |";}).join("\n")+"\n\n";
   if(S.passions.length)md+="## Passions\n\n| Passion | % |\n|---|---|\n"+S.passions.map(p=>"| "+(p.name||"(unnamed)")+" | "+passionVal(p)+"% |").join("\n")+"\n\n";
   if(S.gearWeapons.length)md+="## Weapons\n\n| Weapon | Damage | Reach | Effects | ENC | AP/HP |\n|---|---|---|---|---|---|\n"
-    +S.gearWeapons.map(nm=>{const w=WEAPON_MAP[nm];return w?"| "+w.name+" | "+w.dmg+" | "+w.reach+" | "+w.effects+" | "+w.enc+" | "+w.apHp+" |":"";}).filter(Boolean).join("\n")+"\n\n";
+    +S.gearWeapons.map(nm=>{const w=weaponByName(nm);return w?"| "+w.name+" | "+w.dmg+" | "+w.reach+" | "+w.effects+" | "+w.enc+" | "+w.apHp+" |":"";}).filter(Boolean).join("\n")+"\n\n";
   md+="## Armour\n\n| Location | Construction | AP |\n|---|---|---|\n"+ARMOR_LOCATIONS.map(l=>"| "+l+" | "+S.armor[l]+" | "+armorApAt(l)+" |").join("\n")
     +"\n\nArmour Penalty to Initiative: -"+armourPenaltyToInit()+"\n\n";
   if(S.money.dice.length)md+="## Money\n\nStarting: "+moneyTotal()+" sp — remaining: "+moneyRemaining()+" sp\n\n";

@@ -551,7 +551,7 @@ function devotionalCur(){return Math.max(0,devotionalMax()-(S.magic.devotionalUs
 // Play Mode's Magic tab.
 function allMagic(){
   const out=S.magic.folk.map(f=>({tradition:"folk",name:f.name,spec:f.spec||"",
-    spell:FOLK_MAGIC_MAP[f.name]||null}));
+    spell:folkSpellByName(f.name)||null}));
   return out.concat(S.magic.known.map(m=>Object.assign({},m)));
 }
 function magicLabel(m){
