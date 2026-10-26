@@ -35,7 +35,10 @@ let AUTH_PENDING=false;  // true while a magic link has been sent, awaiting clic
 // (createCampaignUnified/loadCampaignsUnified already fall back to
 // localStorage whenever cloudActive() is false), so Campaign features are
 // genuinely exercisable end-to-end, just scoped to this browser only.
-let MOCK_AUTH=null;      // {id,display_name} once "mock signed in", else null
+// Guest sessions are explicitly local-only. Restore the marker on reload so
+// users can resume characters, but never pass a guest identity to Supabase.
+const GUEST_SESSION_KEY="mythrasForgeGuestMode_v1";
+let MOCK_AUTH=(()=>{try{return localStorage.getItem(GUEST_SESSION_KEY)==="1"?{id:"guest-local",display_name:"Guest"}:null;}catch(e){return null;}})();
 const anyAuth=()=>AUTH_USER||MOCK_AUTH;
 let CAMP_CACHE=null;     // array once loaded from the cloud, else null ("loading")
 let CAMPAIGN_VIEW=null;  // {campaign,members,chars,unassigned} for whatever campaign is open
@@ -92,9 +95,9 @@ function combatantFromPc(charId,init,id){
   const row=(BOARD_CHARS||[]).find(c=>c.id===charId);
   const v=row?charVitals(row.state):null;
   const hp={};
-  COMBAT_DEFAULT_LOCS.forEach(loc=>{hp[loc]={cur:v?(v.locs.find(l=>l.loc===loc)?.max??10):10,max:v?(v.locs.find(l=>l.loc===loc)?.max??10):10};});
+  COMBAT_DEFAULT_LOCS.forEach(loc=>{hp[loc]={cur:v?(v.locs.find(l=>l.loc===loc)?.cur??10):10,max:v?(v.locs.find(l=>l.loc===loc)?.max??10):10};});
   return {id:id||genId(),kind:"pc",ref:charId,name:row?row.name:"(removed character)",init:init||0,
-    ap:{max:v?v.maxAP:2,used:0},locations:COMBAT_DEFAULT_LOCS.slice(),hp,effects:[],stat1:"",stat2:""};
+    ap:{max:v?v.maxAP:2,used:v?v.apUsed:0},locations:COMBAT_DEFAULT_LOCS.slice(),hp,effects:[],stat1:"",stat2:""};
 }
 function combatantFromNpc(name,init,id){
   const hp={};
@@ -133,9 +136,14 @@ const COMBAT_EFFECT_MAP=Object.fromEntries(COMBAT_EFFECT_TYPES.map(e=>[e.key,e])
 // APP.gmAdvanceTurn in app.js), not per individual turn, matching "per-round
 // cadence tied to Advance Turn" -- Reset Round deliberately does NOT call
 // this, since that's for correcting a mistake, not advancing time.
-function tickCombatEffects(combatants){
+function tickCombatEffects(combatants,unit="round"){
   combatants.forEach(c=>{
-    c.effects=(c.effects||[]).map(e=>e.mode==="duration"?Object.assign({},e,{value:e.value-1}):Object.assign({},e,{value:e.value+1}))
+    c.effects=(c.effects||[]).map(e=>{
+      // Existing counters remain round-based; existing timed effects are
+      // turn-based, matching the tracker templates and Core p.96.
+      if((e.unit||(e.mode==="duration"?"turn":"round"))!==unit)return e;
+      return Object.assign({},e,{value:e.value+(e.mode==="duration"?-1:1)});
+    })
       .filter(e=>e.mode!=="duration"||e.value>0);
   });
 }
@@ -282,7 +290,8 @@ async function cloudFetchCharacters(filter){
   if(filter&&filter.campaignId)q=q.eq("campaign_id",filter.campaignId);
   if(filter&&filter.mine)q=q.eq("owner_id",AUTH_USER.id);
   const {data,error}=await q.order("updated_at",{ascending:false});
-  if(error||!data)return [];
+  if(error)throw error;
+  if(!data)return [];
   const ownerIds=[...new Set(data.map(c=>c.owner_id))];
   let names={};
   if(ownerIds.length){
@@ -341,6 +350,23 @@ const AUTOSAVE_KEY="mythrasForgeAutosave_v1";
 // abandoned work could end up offered to -- and then silently attached to
 // -- whoever happens to be signed in next.
 function autosaveKey(){return AUTOSAVE_KEY+":"+(AUTH_USER?AUTH_USER.id:"local");}
+// Refuse malformed and library-backup JSON before it reaches normalization.
+// Old character exports remain compatible without requiring a version tag.
+function characterImportProblem(value){
+  if(!value||typeof value!=="object"||Array.isArray(value))return "expected a character object";
+  if(value.format==="mythras-forge-guest-backup")return "this is a library backup; use Import Guest Backup instead";
+  if(!value.concept||typeof value.concept!=="object"||Array.isArray(value.concept))return "missing character concept";
+  if(typeof value.concept.name!=="string")return "missing character name";
+  if(value.chars&&(!value.chars||typeof value.chars!=="object"||Array.isArray(value.chars)))return "invalid characteristics";
+  for(const field of ["age","magic","money","alloc","play","xp","community"]){
+    if(value[field]!==undefined&&(!value[field]||typeof value[field]!=="object"||Array.isArray(value[field])))return "invalid "+field+" information";
+  }
+  for(const field of ["passions","inventory","gearWeapons"]){
+    if(value[field]!==undefined&&!Array.isArray(value[field]))return "invalid "+field+" list";
+  }
+  if(value.magic&&value.magic.known!==undefined&&!Array.isArray(value.magic.known))return "invalid magic list";
+  return null;
+}
 /* ================= CAMPAIGNS & CHARACTER LIBRARY (localStorage) =================
    The autosave above is a single scratch slot for whatever's currently being
    edited. Campaigns need to reference multiple *saved* characters, so this is
@@ -351,7 +377,12 @@ function autosaveKey(){return AUTOSAVE_KEY+":"+(AUTH_USER?AUTH_USER.id:"local");
 const CAMPAIGNS_KEY="mythrasForgeCampaigns_v1", CHARLIB_KEY="mythrasForgeCharLib_v1";
 const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 function loadCampaignsLocal(){try{return JSON.parse(localStorage.getItem(CAMPAIGNS_KEY))||[];}catch(e){return [];}}
-function saveCampaignsListLocal(list){try{localStorage.setItem(CAMPAIGNS_KEY,JSON.stringify(list));}catch(e){}}
+function saveVerifiedLocal(key,list){
+  const serialized=JSON.stringify(list);
+  localStorage.setItem(key,serialized);
+  if(localStorage.getItem(key)!==serialized)throw new Error("Browser storage did not retain the save. Export a backup before leaving.");
+}
+function saveCampaignsListLocal(list){saveVerifiedLocal(CAMPAIGNS_KEY,list);}
 function getCampaignLocal(id){return loadCampaignsLocal().find(c=>c.id===id)||null;}
 function upsertCampaignLocal(camp){const list=loadCampaignsLocal();const i=list.findIndex(c=>c.id===camp.id);
   if(i>=0)list[i]=camp;else list.push(camp);saveCampaignsListLocal(list);}
@@ -360,7 +391,14 @@ function deleteCampaignByIdLocal(id){
   saveCharLibListLocal(loadCharLibLocal().map(c=>c.campaignId===id?Object.assign({},c,{campaignId:null}):c));
 }
 function loadCharLibLocal(){try{return JSON.parse(localStorage.getItem(CHARLIB_KEY))||[];}catch(e){return [];}}
-function saveCharLibListLocal(list){try{localStorage.setItem(CHARLIB_KEY,JSON.stringify(list));}catch(e){}}
+function saveCharLibListLocal(list){
+  // Do not silently claim a successful library write when browser storage
+  // rejected it (private mode, quota limits, or disabled storage).
+  const serialized=JSON.stringify(list);
+  localStorage.setItem(CHARLIB_KEY,serialized);
+  if(localStorage.getItem(CHARLIB_KEY)!==serialized)
+    throw new Error("Character library save could not be verified");
+}
 // Called on sign-out (APP.signOut) so a shared/public browser never keeps
 // showing "My Characters"/"Continue as X" for the account that just left --
 // character creation is gated behind sign-in (see fromMenuNew/
@@ -373,9 +411,7 @@ function saveCharLibListLocal(list){try{localStorage.setItem(CHARLIB_KEY,JSON.st
 // in-progress draft would still turn up next time anyone signs in as them
 // on this browser.
 function clearLocalCharacterData(uid){
-  try{localStorage.removeItem(CHARLIB_KEY);}catch(e){}
-  try{localStorage.removeItem(CAMPAIGNS_KEY);}catch(e){}
-  try{localStorage.removeItem(AUTOSAVE_KEY+":local");}catch(e){}
+  // Guest records belong to this device, not the account signing out.
   if(uid){try{localStorage.removeItem(AUTOSAVE_KEY+":"+uid);}catch(e){}}
 }
 function charsInCampaignLocal(id){return loadCharLibLocal().filter(c=>c.campaignId===id);}
@@ -383,10 +419,13 @@ function unassignedCharsLocal(){return loadCharLibLocal().filter(c=>!c.campaignI
 function saveCurrentToLibraryLocal(){
   const lib=loadCharLibLocal();
   const id=S._libId||genId();
+  // Include the assigned ID in the persisted snapshot, without changing
+  // the live actor ID until the browser confirms the write succeeded.
+  const state=JSON.parse(JSON.stringify(S));state._libId=id;
   const entry={id,campaignId:S.campaignId||null,name:S.concept.name||"Unnamed Character",
     tier:S.archetype,culture:S.culture||"",
     career:(S.customCareer&&S.customCareer.isCustom?S.customCareer.name:S.career)||"",
-    savedAt:Date.now(),state:JSON.parse(JSON.stringify(S))};
+    savedAt:Date.now(),state};
   const i=lib.findIndex(c=>c.id===id);
   if(i>=0)lib[i]=entry;else lib.push(entry);
   saveCharLibListLocal(lib);
@@ -424,7 +463,7 @@ async function cloudDeleteCustomContent(id){
 }
 const CUSTOM_CONTENT_KEY="mythrasForgeCustomContent_v1";
 function loadCustomContentLocal(){try{return JSON.parse(localStorage.getItem(CUSTOM_CONTENT_KEY))||[];}catch(e){return [];}}
-function saveCustomContentListLocal(list){try{localStorage.setItem(CUSTOM_CONTENT_KEY,JSON.stringify(list));}catch(e){}}
+function saveCustomContentListLocal(list){saveVerifiedLocal(CUSTOM_CONTENT_KEY,list);}
 function customContentForCampaignLocal(campaignId){return loadCustomContentLocal().filter(c=>c.campaign_id===campaignId);}
 function createCustomContentLocal(campaignId,type,name,data){
   const row={id:genId(),campaign_id:campaignId,type,name,data,created_at:new Date().toISOString()};
@@ -543,12 +582,17 @@ async function loadCampaignsUnified(){
 // localCharShape() already normalizes local library entries to the same
 // {id,name,tier,culture,career,updated_at,...} shape cloudFetchCharacters
 // returns, so the list view doesn't need to branch on cloud vs. local.
+let LIB_LOAD_ERROR="";
 async function loadLibraryUnified(){
-  if(cloudActive()){LIB_CACHE=await cloudFetchCharacters({mine:true});}
-  else{LIB_CACHE=loadCharLibLocal().map(localCharShape);}
+  LIB_LOAD_ERROR="";
+  try{
+    if(cloudActive()){await flushCloudSaves();LIB_CACHE=await cloudFetchCharacters({mine:true});}
+    else{LIB_CACHE=loadCharLibLocal().map(localCharShape);}
+  }catch(e){LIB_LOAD_ERROR="Could not load your characters: "+e.message+". Your saved characters have not been deleted.";}
   render();
 }
 async function loadCampaignViewUnified(id){
+ try{
   if(cloudActive()){
     const [campRes,members,chars,mine]=await Promise.all([
       sb.from("campaigns").select("*").eq("id",id).maybeSingle(),
@@ -571,6 +615,7 @@ async function loadCampaignViewUnified(id){
       unassigned:campaign?unassignedCharsLocal().map(localCharShape):[]};
   }
   render();
+ }catch(e){CAMP_MSG="Could not load campaign: "+e.message;CAMPAIGN_VIEW={campaign:null,members:[],chars:[],unassigned:[]};render();}
 }
 async function createCampaignUnified(name){
   if(cloudActive())return cloudCreateCampaign(name);
@@ -610,27 +655,38 @@ async function deleteCampaignUnified(id){
 // row that was never created, and the character would never actually reach
 // the cloud at all (silently — the debounced push swallows the error).
 function isUuid(s){return typeof s==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);}
-async function saveToLibraryUnified(explicit){
-  if(cloudActive()){
-    // A character loaded from somewhere not yet verified as belonging to
-    // whoever is currently signed in (S._pendingClaim -- the autosave slot,
-    // a "local" My-Characters entry, or a JSON import) may only ever be
-    // attached to the cloud by an explicit "Save to Library" click, never
-    // by this function's other caller, the debounced background push.
-    // Without this, opening someone else's abandoned local character (or
-    // the account-agnostic old "Continue" prompt) while signed in would
-    // silently upload their data to whoever happens to be signed in the
-    // next time the debounced push fires -- no click, no confirmation.
-    if(!explicit&&S._pendingClaim&&!isUuid(S._libId))return null;
+// Serialize writes per character. Capture the actor before awaiting the server:
+// a response for character A must never assign its ID to character B.
+const CHARACTER_SAVE_QUEUES=new WeakMap();
+const CLOUD_SAVE_JOBS=new Set();
+const CLOUD_FAILED_ACTORS=new Map();
+let CLOUD_SAVE_ERROR="", CLOUD_LAST_SAVED=null;
+async function saveToLibraryUnified(explicit,actor=S){
+  if(!cloudActive())return Promise.resolve(saveCurrentToLibraryLocal());
+  if(!explicit&&actor._pendingClaim&&!isUuid(actor._libId))return Promise.resolve(null);
+  const owner=AUTH_USER.id;
+  const snapshot=JSON.parse(JSON.stringify(actor));
+  const previous=CHARACTER_SAVE_QUEUES.get(actor)||Promise.resolve();
+  const job=previous.catch(()=>{}).then(async()=>{
+    if(!AUTH_USER||AUTH_USER.id!==owner)throw new Error("Account changed before saving. Reopen the original account to recover the draft.");
     const saved=await cloudUpsertCharacter({
-      id:isUuid(S._libId)?S._libId:undefined,campaignId:S.campaignId||null,name:S.concept.name||"Unnamed Character",
-      tier:S.archetype,culture:S.culture||"",
-      career:(S.customCareer&&S.customCareer.isCustom?S.customCareer.name:S.career)||"",
-      state:JSON.parse(JSON.stringify(S))});
-    S._libId=saved.id;S._pendingClaim=false;return saved;
-  }
-  return saveCurrentToLibraryLocal();
+      id:isUuid(actor._libId)?actor._libId:undefined,campaignId:snapshot.campaignId||null,
+      name:snapshot.concept.name||"Unnamed Character",tier:snapshot.archetype,culture:snapshot.culture||"",
+      career:(snapshot.customCareer&&snapshot.customCareer.isCustom?snapshot.customCareer.name:snapshot.career)||"",
+      state:snapshot});
+    actor._libId=saved.id;actor._pendingClaim=false;
+    CLOUD_LAST_SAVED=Date.now();CLOUD_FAILED_ACTORS.delete(actor);
+    CLOUD_SAVE_ERROR=[...CLOUD_FAILED_ACTORS.values()].join(" ");
+    return saved;
+  });
+  CHARACTER_SAVE_QUEUES.set(actor,job);CLOUD_SAVE_JOBS.add(job);
+  job.then(()=>{CLOUD_SAVE_JOBS.delete(job);updateSaveStatus();},e=>{
+    CLOUD_SAVE_JOBS.delete(job);CLOUD_FAILED_ACTORS.set(actor,"Cloud save failed for "+snapshot.concept.name+": "+e.message+". Keep this tab open and retry; export JSON for a backup.");
+    CLOUD_SAVE_ERROR=[...CLOUD_FAILED_ACTORS.values()].join(" ");updateSaveStatus();
+  });
+  updateSaveStatus();return job;
 }
+
 async function unassignCharUnified(id){
   if(cloudActive()){const {error}=await sb.from("characters").update({campaign_id:null}).eq("id",id);if(error)throw error;return;}
   const lib=loadCharLibLocal();const e=lib.find(c=>c.id===id);if(!e)return;e.campaignId=null;saveCharLibListLocal(lib);
@@ -665,26 +721,47 @@ let CLOUD_PUSH_TIMER=null;
 // request per click; the Party Board's own realtime subscription then picks
 // up the change and refetches. Never fires for a VIEW_ONLY session (someone
 // looking at a teammate's sheet from the board).
+const CLOUD_PENDING_ACTORS=new Map();
+const CLOUD_SEEN_STATE=new WeakMap();
 function scheduleCloudPush(){
-  // This fires as long as there's real work worth saving (hasUnsavedWork()
-  // — same gate the local-mirror path already used), regardless of whether
-  // S._libId is set yet: a brand-new character (started fresh, never
-  // touched local storage) auto-creates its cloud row on the first
-  // debounced push without ever requiring the Save button, so it can't
-  // silently disappear if the player forgets to click Save.
-  //
-  // The one thing this must never do is silently claim a character that
-  // came from somewhere not yet verified as belonging to whoever is
-  // currently signed in — S._pendingClaim marks exactly that (autosave
-  // resume, a "local" My-Characters entry, a JSON import). saveToLibraryUnified()
-  // itself enforces the actual rule (only an explicit Save click may claim
-  // pending content); this function doesn't need its own copy of that
-  // check, just to know it isn't skipping the debounce for no reason when
-  // that guard quietly no-ops the push.
   if(!cloudActive()||VIEW_ONLY||!hasUnsavedWork())return;
-  clearTimeout(CLOUD_PUSH_TIMER);
-  CLOUD_PUSH_TIMER=setTimeout(()=>{saveToLibraryUnified(false).catch(e=>console.warn("cloud sync",e));},1500);
+  const actor=S;
+  if(actor._pendingClaim&&!isUuid(actor._libId))return;
+  const signature=JSON.stringify(actor);
+  if(CLOUD_SEEN_STATE.get(actor)===signature)return;
+  CLOUD_SEEN_STATE.set(actor,signature);
+  const old=CLOUD_PENDING_ACTORS.get(actor);if(old)clearTimeout(old);
+  const timer=setTimeout(()=>{
+    CLOUD_PENDING_ACTORS.delete(actor);
+    saveToLibraryUnified(false,actor).catch(()=>{CLOUD_SEEN_STATE.delete(actor);});
+  },1500);
+  CLOUD_PENDING_ACTORS.set(actor,timer);updateSaveStatus();
 }
+async function flushCloudSaves(){
+  const actors=[...new Set([...CLOUD_PENDING_ACTORS.keys(),...CLOUD_FAILED_ACTORS.keys()])];
+  for(const timer of CLOUD_PENDING_ACTORS.values())clearTimeout(timer);
+  CLOUD_PENDING_ACTORS.clear();
+  const jobs=actors.map(actor=>saveToLibraryUnified(false,actor));
+  await Promise.all([...CLOUD_SAVE_JOBS,...jobs]);
+  updateSaveStatus();
+}
+function updateSaveStatus(){
+  const status=document.getElementById("forgeSaveStatus");
+  if(status){
+    const pending=CLOUD_PENDING_ACTORS.size||CLOUD_SAVE_JOBS.size;
+    status.textContent=LOCAL_SAVE_ERROR?"Not saved — export a backup":cloudActive()?
+      (CLOUD_SAVE_ERROR?"Cloud save failed":pending?"Saving to account…":CLOUD_LAST_SAVED?"Saved to account":"Account connected"):
+      "Saved on this device · export a backup";
+    status.dataset.error=String(!!(LOCAL_SAVE_ERROR||CLOUD_SAVE_ERROR));
+  }
+  const warning=document.getElementById("localSaveWarning");
+  if(warning){warning.textContent=LOCAL_SAVE_ERROR||CLOUD_SAVE_ERROR||(APPVIEW==="board"?BOARD_LOAD_ERROR:"");warning.hidden=!warning.textContent;}
+}
+window.addEventListener("beforeunload",e=>{
+  if(CLOUD_PENDING_ACTORS.size||CLOUD_SAVE_JOBS.size||CLOUD_SAVE_ERROR||LOCAL_SAVE_ERROR){e.preventDefault();e.returnValue="";}
+});
+window.addEventListener("online",()=>{if(cloudActive()&&!VIEW_ONLY){CLOUD_SEEN_STATE.delete(S);scheduleCloudPush();}});
+
 let DM_INV_PUSH_TIMER=null;
 // Separate debounced push for the DM-editing-a-player's-inventory case.
 // scheduleCloudPush() above deliberately never fires under VIEW_ONLY (the DM
@@ -698,8 +775,10 @@ function scheduleDmInventoryPush(){
     cloudDmUpdateCharacterInventory(S._libId,S.inventory).catch(e=>console.warn("dm inventory sync",e));
   },1500);
 }
+let LOCAL_SAVE_ERROR="";
 function saveAutosave(){
-  try{localStorage.setItem(autosaveKey(),JSON.stringify({S,ts:Date.now()}));}catch(e){/* storage unavailable — silently skip */}
+  try{localStorage.setItem(autosaveKey(),JSON.stringify({S,ts:Date.now()}));LOCAL_SAVE_ERROR="";}
+  catch(e){LOCAL_SAVE_ERROR="This browser could not save the character. Export JSON now to avoid losing changes (storage may be full or disabled).";}
   // Also keep the character library (mythrasForgeCharLib_v1) in sync on
   // every autosave, not just on an explicit "Save to Library" click. The
   // library already existed as infrastructure for Campaigns, but until now
@@ -717,12 +796,16 @@ function saveAutosave(){
   // a real row id, but it's still cleaner not to manufacture it in the first
   // place — cloud mode has its own real source of truth (the debounced push
   // below, plus the explicit "Save to Library" button).
-  if(!cloudActive()&&hasUnsavedWork()){try{saveCurrentToLibraryLocal();}catch(e){/* best-effort */}}
+  if(!cloudActive()&&hasUnsavedWork()){
+    try{saveCurrentToLibraryLocal();}
+    catch(e){LOCAL_SAVE_ERROR="The character library could not save. Export JSON now to protect your character.";}
+  }
   scheduleCloudPush();
   scheduleDmInventoryPush();
   updateAutosaveTag();
 }
 function updateAutosaveTag(){
+  updateSaveStatus();
   const el=$("#autosaveTag");if(!el)return;
   try{const raw=localStorage.getItem(autosaveKey());
     if(raw){const t=JSON.parse(raw).ts;el.textContent="autosaved "+new Date(t).toLocaleTimeString()+" (click to clear)";el.onclick=APP.clearAutosave;el.style.cursor="pointer";}
@@ -782,6 +865,12 @@ function accountHTML(){
   let h='<div class="mmenu"><div class="mmenu-topbar"><span class="mmenu-brandmark">Mythras</span><span class="mmenu-branddiv">&middot;</span><span class="mmenu-brandsub">Character Forge</span>'
    +'<button class="mmenu-acctbtn" onclick="APP.toMenu()">&#8592; Main Menu</button></div>';
   h+='<div class="mmenu-pagehead"><h1>Account</h1><p>Sign in to sync Campaigns between people and devices.</p></div>';
+  if(!AUTH_USER){
+    h+='<div class="mmenu-panel" style="margin-bottom:16px"><div class="mmenu-panel-eyebrow">Try without an account</div>'
+     +'<p class="note">Guest mode works without Supabase. Characters and campaigns are saved only in this browser on this device, not synced or backed up. Export your character before clearing website data or changing devices.</p>'
+     +(MOCK_AUTH?'<button class="chip" onclick="APP.mockSignOut()">Leave guest mode</button>':'<button class="mmenu-cta-primary" onclick="APP.mockSignIn()">Continue as Guest &rarr;</button>')
+     +'</div>';
+  }
   h+='<div class="mmenu-authgrid">';
   h+='<div class="mmenu-panel mmenu-authpanel">';
   if(!CLOUD_ENABLED){
@@ -850,6 +939,11 @@ function menuHTML(){
   h+='<div class="myth-home-colcap l" aria-hidden="true"></div><div class="myth-home-colcap r" aria-hidden="true"></div>';
   h+='<div class="myth-home-colbase l" aria-hidden="true"></div><div class="myth-home-colbase r" aria-hidden="true"></div>';
   h+=signInButtonHTML();
+  if(!AUTH_USER){
+    h+='<div class="guest-access-banner">'
+      +(MOCK_AUTH?'<span>Guest mode · Saved on this device only</span>':'<button onclick="APP.mockSignIn()">Continue as Guest &rarr;</button>')
+      +'</div>';
+  }
   h+='<div class="myth-home-stack">';
   h+='<div class="myth-home-title">Mythras</div>';
   h+='<div class="myth-home-rule"></div>';
@@ -868,7 +962,13 @@ function menuHTML(){
   // (or a stale pre-gate) character name advertised on a shared browser.
   const canContinue=auto&&(!CLOUD_ENABLED||AUTH_USER||MOCK_AUTH);
   if(canContinue)h+='<button class="myth-home-continue" onclick="APP.fromMenuContinue()">Continue as '+esc(auto.name)+' &rarr;</button>';
+  h+='<button class="myth-home-continue" onclick="APP.chooseImport()">Import character JSON &rarr;</button>';
+  if(!cloudActive()){
+    h+='<button class="myth-home-continue" onclick="APP.exportGuestBackup()">Back up all guest characters &rarr;</button>';
+    h+='<button class="myth-home-continue" onclick="APP.chooseGuestBackupImport()">Restore guest backup &rarr;</button>';
+  }
   h+='<button class="myth-home-continue" onclick="APP.toWiki()">Rules Wiki &rarr;</button>';
+  if(LOCAL_SAVE_ERROR)h+='<p class="warn" role="alert">'+esc(LOCAL_SAVE_ERROR)+'</p>';
   if(MENU_MSG)h+='<p class="warn" style="margin-top:10px;text-align:center">'+esc(MENU_MSG)+'</p>';
   h+='</div>'; // /myth-home-stack
   h+='</div>'; // /myth-home
@@ -879,9 +979,9 @@ function menuHTML(){
 // plain Sign In pill when signed out entirely. Always routes to the
 // standalone Account page rather than opening a form inline.
 function signInButtonHTML(){
-  if(!CLOUD_ENABLED)return "";
+  if(!CLOUD_ENABLED&&!MOCK_AUTH)return "";
   let label,cls="myth-home-signin";
-  if(MOCK_AUTH){label="Test: "+esc(MOCK_AUTH.display_name);cls+=" is-active is-mock";}
+  if(MOCK_AUTH){label="Guest";cls+=" is-active is-mock";}
   else if(AUTH_USER&&AUTH_PROFILE){label=esc(AUTH_PROFILE.display_name);cls+=" is-active";}
   else if(AUTH_USER){label="Finish sign-in";}
   else{label="Sign In";}
@@ -920,8 +1020,10 @@ function renderCampaignsView(){
 function libraryHTML(){
   let h='<div class="mmenu"><div class="mmenu-topbar"><span class="mmenu-brandmark">Mythras</span><span class="mmenu-branddiv">&middot;</span><span class="mmenu-brandsub">Character Forge</span>'
    +'<button class="mmenu-acctbtn" onclick="APP.toMenu()">&#8592; Main Menu</button></div>';
-  h+='<div class="mmenu-pagehead"><h1>My Characters</h1><p>'+(cloudActive()?"Every character saved to your account.":"Every character autosaved in this browser.")+'</p></div>';
+  h+='<div class="mmenu-pagehead"><h1>My Characters</h1><p>'+(cloudActive()?"Every character saved to your account.":"Every character autosaved in this browser.")+'</p>'
+    +'<button class="mmenu-cta-secondary" onclick="APP.chooseImport()">Import character JSON</button></div>';
   if(CAMP_MSG)h+='<p class="warn" style="margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
+  if(LIB_LOAD_ERROR){h+='<p class="warn" role="alert">'+esc(LIB_LOAD_ERROR)+'</p><button class="chip" onclick="loadLibraryUnified()">Retry loading characters</button></div>';return h;}
   if(LIB_CACHE===null){h+='<p class="note">Loading&hellip;</p></div>';return h;}
   if(!LIB_CACHE.length){
     h+='<div class="mmenu-panel"><p class="note">No characters saved yet — start one from the Main Menu and it&rsquo;ll show up here automatically as you build it.</p>'
@@ -1080,16 +1182,20 @@ function boardUnsubscribe(){
 function boardRefetch(campaignId){
   clearTimeout(BOARD_REFETCH_TIMER);
   BOARD_REFETCH_TIMER=setTimeout(async()=>{
+    try{
     const [chars,camp]=await Promise.all([loadBoardUnified(campaignId),loadCampaignRowUnified(campaignId)]);
     BOARD_CHARS=chars;
     if(camp&&CAMPAIGN_VIEW)CAMPAIGN_VIEW.campaign=camp;
     BOARD_LAST_FETCH=Date.now();
+    BOARD_LOAD_ERROR="";
+    }catch(e){BOARD_LOAD_ERROR="Party update failed: "+e.message;}
     if(APPVIEW==="board")render();
   },300);
 }
-let BOARD_LAST_FETCH=null;
+let BOARD_LAST_FETCH=null,BOARD_LOAD_ERROR="";
 async function boardLoad(campaignId){
-  BOARD_CHARS=await loadBoardUnified(campaignId);
+  try{BOARD_CHARS=await loadBoardUnified(campaignId);BOARD_LOAD_ERROR="";}
+  catch(e){BOARD_LOAD_ERROR="Could not load the party: "+e.message;BOARD_CHARS=[];}
   BOARD_LAST_FETCH=Date.now();
   if(APPVIEW==="board")render();
   boardSubscribe(campaignId);
@@ -1177,7 +1283,7 @@ function boardHTML(){
 function combatantEffectChipHTML(combatantId,e){
   const t=COMBAT_EFFECT_MAP[e.type];
   return '<span class="cbt-fxchip '+e.mode+'" title="'+(e.mode==="duration"?"Counts down, clears at 0":"Counts up -- clear by hand once resolved")+'">'
-   +esc(t?t.label:e.type)+(e.loc?' <i>('+esc(e.loc)+')</i>':'')+' <b>'+e.value+'</b>'
+   +esc(t?t.label:e.type)+(e.loc?' <i>('+esc(e.loc)+')</i>':'')+' <b>'+e.value+'</b> '+esc(e.unit||(e.mode==="duration"?"turn":"round"))+'(s)'
    +'<button onclick="APP.gmRemoveEffect(\''+combatantId+'\',\''+e.id+'\')" aria-label="remove effect">&times;</button></span>';
 }
 function combatantCardHTML(c,isActive){
@@ -1211,6 +1317,7 @@ function combatantCardHTML(c,isActive){
    +'<select id="cbtfxtype-'+c.id+'">'+COMBAT_EFFECT_TYPES.map(t=>'<option value="'+t.key+'">'+esc(t.label)+'</option>').join("")+'</select>'
    +'<select id="cbtfxloc-'+c.id+'"><option value="">no location</option>'+locs.map(l=>'<option value="'+esc(l)+'">'+esc(l)+'</option>').join("")+'</select>'
    +'<select id="cbtfxmode-'+c.id+'"><option value="duration">counts down</option><option value="counter">counts up</option></select>'
+   +'<select id="cbtfxunit-'+c.id+'" aria-label="Effect timing"><option value="turn">affected character turns</option><option value="round">combat rounds</option></select>'
    +'<input type="number" id="cbtfxval-'+c.id+'" value="1" min="1" style="width:48px" aria-label="Starting value">'
    +'<button class="chip sm" onclick="APP.gmAddEffect(\''+c.id+'\')">+ effect</button></div>'
    +'<input type="text" class="cbt-statnote" value="'+esc(c.stat1||"")+'" placeholder="e.g. Combat Style 65%, Dodge 40%" onchange="APP.gmCombatantField(\''+c.id+'\',\'stat1\',this.value)">'
@@ -1225,9 +1332,11 @@ function gmToolsHTML(camp){
   const pcChoices=(BOARD_CHARS||[]).filter(c=>!inFight.has(c.id));
   let h=GM_SESSION_ERROR?'<p class="warn" style="margin-bottom:10px">'+esc(GM_SESSION_ERROR)+'</p>':'';
   h+='<div class="card"><h3>Combat Tracker</h3>';
+  h+='<p class="note">GM working copy: HP and AP start from the saved character, then remain separate from the player sheet. Record final changes on the player sheet. Apply damage here after armour. End the active character&rsquo;s turn with Advance turn; start a new round only when the round is complete.</p>';
   h+='<div class="pb-initctl"><span class="pb-round">Round <b>'+st.round+'</b></span>'
+   +'<span class="note">Cycle '+(st.cycle||1)+'</span>'
    +'<button class="chip" onclick="APP.gmAdvanceTurn()" '+(order.length?"":"disabled")+'>Advance turn &rarr;</button>'
-   +'<button class="chip" onclick="APP.gmResetRound()" '+(order.length?"":"disabled")+'>Reset round</button>'
+   +'<button class="chip" onclick="APP.gmNewRound()" '+(order.length?"":"disabled")+'>New round · restore AP</button>'
    +(order.length>1?'<button class="chip" onclick="APP.gmRollAllInit()" title="1d10 + Initiative Bonus for party characters, flat 1d10 for NPCs">Roll initiative for everyone</button>':'')+'</div>';
   h+='<div class="pb-initadd">'
    +'<select id="gmPcPicker"><option value="">&mdash; add a party character &mdash;</option>'

@@ -12,7 +12,7 @@ window.APP={
    if(i>S.step){for(let s=S.step;s<i;s++){if(!stepPassed(s)){S.step=s;render();window.scrollTo(0,0);return;}}}
    S.step=i;render();window.scrollTo(0,0);},
  override(step,v){S.overrides[step]=v;render();},
- set(obj,f,v){S[obj][f]=v;renderLedger();},
+ set(obj,f,v){S[obj][f]=v;renderLedger();saveAutosave();},
  set2(f,v){S[f]=v;render();},
  /* characteristics */
  mode(m){S.charMode=m;
@@ -79,32 +79,130 @@ window.APP={
  // and rebuilt this button) -- these sit right next to Miracle/spell name
  // and stat fields, so they're just as exposed to it.
  addMagic(tradition){debounceFire('addMagic',()=>{
-   S.magic.known.push({tradition,name:"",notes:"",cost:1,intensity:1,pow:0,cha:0,shapings:[]});
+   S.magic.known.push({tradition,name:"",notes:"",cost:1,intensity:1,pow:0,cha:0,spiritStatus:"unbound",spiritContact:"unknown",spiritAttitude:"neutral",spiritMP:null,spiritCombatNote:"",bindingType:"none",shapings:[],shapingLevels:{},combineExtra:0,active:false,durationTurns:0,remainingTurns:0});
    render();});},
+ // Update 17: Spirit negotiation, ritual outcome and spirit-combat bookkeeping.
+ // The GM confirms contact, bargains and bindings; these controls never invent a successful ritual.
+ spiritSelect(i,field,value){if(viewOnlyBlock())return;const m=S.magic.known[i];
+   if(!m||m.tradition!=="animism")return;
+   const allowed={spiritContact:["unknown","located","contacted"],spiritAttitude:["friendly","neutral","hostile"],bindingType:["none","fetish","location","creature"]};
+   if(!allowed[field]||!allowed[field].includes(value))return;
+   m[field]=value;render();},
+ spiritMP(i,raw){if(viewOnlyBlock())return;const m=S.magic.known[i];
+   if(!m||m.tradition!=="animism")return;
+   const n=Number(String(raw).trim());
+   if(!String(raw).trim()||!Number.isSafeInteger(n)||n<0||n>999){PM_MSG="Spirit Magic Points must be a whole number from 0 to 999.";render();return;}
+   m.spiritMP=n;render();},
+ spiritMPAdjust(idx,delta){if(viewOnlyBlock())return;
+   const m=spiritRecordByMagicIndex(idx);
+   if(!m){PM_MSG="Select a recorded spirit.";render();return;}
+   if(!Number.isSafeInteger(m.spiritMP)){PM_MSG="Enter the spirit's current Magic Points on its Magic entry first.";render();return;}
+   const next=m.spiritMP+delta;
+   if(!Number.isSafeInteger(delta)||next<0||next>999){PM_MSG="Spirit Magic Points must remain between 0 and 999.";render();return;}
+   m.spiritMP=next;PM_MSG="Spirit combat bookkeeping: "+m.name+" has "+next+" MP. Resolve attacks, defense and effects with your GM (Core pp.137–139).";render();},
+ spiritCombatNote(i,v){if(viewOnlyBlock())return;const m=S.magic.known[i];if(m&&m.tradition==="animism"){m.spiritCombatNote=String(v).slice(0,800);render();}},
+ spiritStatus(i,status){if(viewOnlyBlock())return;const m=S.magic.known[i];
+   if(!m||m.tradition!=="animism"||!["bound","unbound"].includes(status))return;
+   m.spiritStatus=status;render();},
  magicField(i,f,v){const m=S.magic.known[i];if(!m)return;
-   m[f]=(f==="name"||f==="notes")?v:(parseInt(v,10)||0);render();},
- toggleShaping(i,name){const m=S.magic.known[i];if(!m)return;
-   m.shapings=m.shapings||[];toggleInList(m.shapings,name);render();},
+   if(f==="name"||f==="notes")m[f]=v;
+   else {const raw=String(v).trim();const n=Number(raw);
+     if(!raw||!Number.isInteger(n)||n<0){PM_MSG="Magic values must be non-negative whole numbers.";render();return;}
+     if(m.tradition==="animism"&&f==="intensity"&&n<1){PM_MSG="Spirit Intensity must be at least 1.";render();return;}
+     m[f]=n;}
+   render();},
+ shapingLevel(i,name,raw){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;
+   if(!["Duration","Range","Targets","Magnitude","Intensity"].includes(name))return;
+   const n=Number(raw);if(!Number.isInteger(n)||n<0||n>100){PM_MSG="Shaping level must be a whole number from 0 to 100.";render();return;}
+   m.shapingLevels=sorceryLevels(m);if(n)m.shapingLevels[name]=n;else delete m.shapingLevels[name];
+   m.shapings=Object.keys(m.shapingLevels);render();},
+ talentDuration(i,raw){const m=S.magic.known[i];if(!m||m.tradition!=="mysticism")return;
+   const str=String(raw).trim(),n=Number(str);
+   if(str===""||!Number.isSafeInteger(n)||n<0||n>9999){PM_MSG="Talent duration must be a whole number of turns (0 means GM-managed).";render();return;}
+   m.durationTurns=n;if(m.active)m.remainingTurns=n;render();},
+ talentTurn(i){if(viewOnlyBlock())return;const m=S.magic.known[i];if(!m||m.tradition!=="mysticism"||!m.active)return;
+   if(m.durationTurns===0){PM_MSG="Duration is GM-managed for this Talent.";render();return;}
+   m.remainingTurns=Math.max(0,(m.remainingTurns||0)-1);
+   if(m.remainingTurns===0)m.active=false;
+   render();},
+ combineExtra(i,raw){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;
+   const n=Number(raw);if(!Number.isInteger(n)||n<0||n>20){PM_MSG="Extra combined spells must be a whole number from 0 to 20.";render();return;}
+   m.combineExtra=n;render();},
+ toggleTalent(i){if(viewOnlyBlock())return;const m=S.magic.known[i];if(!m||m.tradition!=="mysticism")return;
+   if(m.active){m.active=false;m.remainingTurns=0;render();return;}
+   const limits=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
+   const err=mysticismActivationCheck(S.magic.known,i,limits.individual,limits.combined);
+   if(err){PM_MSG=err;render();return;}
+   m.active=true;m.remainingTurns=m.durationTurns||0;render();},
+ sorceryCancel(){if(viewOnlyBlock())return;S.play.sorceryCasting=null;PM_MSG="Sorcery invocation cancelled; no Invocation roll was made.";render();},
  delMagic(i){debounceFire('delMagic'+i,()=>{S.magic.known.splice(i,1);render();});},
  devotional(v){S.magic.devotional=Math.max(0,parseInt(v,10)||0);
    S.magic.devotionalUsed=Math.min(S.magic.devotionalUsed,S.magic.devotional);render();},
  devotionalAdj(n){if(viewOnlyBlock())return;
    S.magic.devotionalUsed=Math.max(0,Math.min(devotionalMax(),(S.magic.devotionalUsed||0)-n));render();},
  devotionalReset(){if(viewOnlyBlock())return;S.magic.devotionalUsed=0;render();},
+ // Core p.136: Calling upon a bound spirit is its own Binding action.
+ // GM still adjudicates the spirit's action, POW restrictions, and possible
+ // continued resistance. No generic spell or spirit combat automation.
+ commandSpirit(idx){
+   if(viewOnlyBlock())return;
+   PM_MSG=null;
+   const m=spiritRecordByMagicIndex(idx);
+   const err=spiritCommandPreflight(m,playCurMagic());
+   if(err){PM_MSG=err;render();return;}
+   const key=magicSkillKey("Binding");
+   if(!key){PM_MSG="Binding is not available on this character's sheet.";render();return;}
+   const g=gradedPct(key,finalPct(key));
+   if(g.pct===null){PM_MSG="Resolve this Binding action with your GM at the selected difficulty.";render();return;}
+   const r=d100(),tier=resolveRoll(r,g.pct),out=spiritCommandOutcome(tier);
+   if(!out){PM_MSG="Unknown Binding result; resolve with your GM.";render();return;}
+   if(out.cost)S.play.magic=playCurMagic()-out.cost;
+   if(out.broken)m.spiritStatus="unbound";
+   if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
+   if(tier==="Critical")APP.markChecked(key);
+   S.rollLog.unshift({label:"Bound spirit: "+m.name+" — Binding",pct:g.pct,roll:r===100?"00":r,tier,combat:false,oppTier:null,magic:"Command "+(out.obeyed?"succeeded":"failed")+", "+out.cost+" MP"+(out.broken?"; binding broken":"")});
+   S.rollLog=S.rollLog.slice(0,8);
+   PM_MSG=out.broken?"Fumble: the binding is broken. The spirit is now marked unbound; resolve its departure or hostility with the GM (Core p.136).":out.obeyed?"Binding succeeded. Resolve the spirit's specific action with the GM (Core p.136).":"Binding failed. The spirit ignores the command; resolve any consequences with the GM (Core p.136).";
+   render();
+ },
  // Cast a known piece of magic: roll the tradition's casting skill through
  // the same graded pipeline as any other roll, then apply the cost.
  //
  // Folk Magic's cost is the book's own result table — Critical costs nothing,
  // Success and Failure both cost 1 Magic Point (failure still burns the
  // point), Fumble costs 1d3. The other traditions use the entry's own
- // recorded cost, spent only when the casting succeeds, since their cost
- // rules live in the player's rulebook and guessing a failure cost would be
- // an invention.
+ // recorded cost where specific failure tables are unverified; Sorcery
+ // specifically uses the Core Invocation cost table on p.165.
  castMagic(idx){
    if(viewOnlyBlock())return;
    PM_MSG=null;
    const m=allMagic()[idx];if(!m)return;
    const trad=MAGIC_TRAD_MAP[m.tradition];if(!trad)return;
+   if(m.tradition==="animism"){
+     PM_MSG="Animism requires a specific action: Trance, summoning (Core p.137), Binding, or spirit combat. Use the recorded spirit as a reference and resolve the action with your GM; generic spell casting is disabled to avoid inaccurate results.";
+     render();return;
+   }
+   // Core p.165: Invocation roll takes place on the final turn of casting.
+   // A Sorcery click starts/advances a tracker until that final turn. It does
+   // not automatically spend action points or assume uninterrupted casting.
+   if(m.tradition==="sorcery"){
+     const total=sorceryCost(m).turns;
+     const pending=S.play.sorceryCasting;
+     if(pending && (pending.index!==idx || pending.name!==m.name || pending.total!==total)){
+       PM_MSG="Another Sorcery invocation is underway. Cancel it before changing spells or shaping.";render();return;
+     }
+     if(total>1 && !pending){
+       const err=magicCastPreflight(m,playCurMagic(),devotionalCur());
+       if(err){PM_MSG=err;render();return;}
+       S.play.sorceryCasting={index:idx,name:m.name,total,completed:1};
+       PM_MSG="Sorcery casting turn 1 of "+total+" recorded. Advance on the next casting turn; roll Invocation only on the last turn (Core p.165).";render();return;
+     }
+     if(pending && pending.completed+1<pending.total){
+       pending.completed++;PM_MSG="Sorcery casting turn "+pending.completed+" of "+pending.total+" recorded. No Invocation roll yet.";render();return;
+     }
+   }
+   const blocking=magicCastPreflight(m,playCurMagic(),devotionalCur());
+   if(blocking){PM_MSG=blocking;render();return;}
    const key=magicSkillKey(trad.castSkill);
    if(!key){PM_MSG="This character doesn't have the "+trad.castSkill+" skill, so there's nothing to roll. Add it as a Professional Skill first.";render();return;}
    const base=finalPct(key);const g=gradedPct(key,base);
@@ -115,20 +213,30 @@ window.APP={
    let costTxt="",worked=(tier==="Critical"||tier==="Success");
    if(m.tradition==="folk"){
      const mp=tier==="Critical"?0:(tier==="Fumble"?d(3):1);
-     if(mp>0)S.play.magic=Math.max(0,playCurMagic()-mp);
-     costTxt=mp===0?"no Magic Points (Critical)":mp+" Magic Point"+(mp>1?"s":"");
-   }else if(worked){
-     const cost=magicEntryCost(m);
+     // A fumble may demand more MP than remain; only deduct points owned.
+     const paid=Math.min(mp,playCurMagic());
+     if(paid>0)S.play.magic=playCurMagic()-paid;
+     costTxt=mp===0?"no Magic Points (Critical)":paid+" Magic Point"+(paid!==1?"s":"")
+       +(paid<mp?" ("+mp+" indicated by fumble; only "+paid+" available)":"");
+   }else if(m.tradition!=="animism"){
+     // Each tradition has its own spending outcome (Core pp.156, 165, 181).
+     // Animism is not modeled as a generic spell cast; its Binding roll and
+     // any spirit-summoning costs require the actual ritual context.
+     const cost=m.tradition==="sorcery"?sorceryOutcomeCost(m,tier)
+       :m.tradition==="theism"?theismOutcomeCost(m,tier)
+       :m.tradition==="mysticism"?mysticismOutcomeCost(m,tier)
+       :magicEntryCost(m);
      if(trad.pool==="devotional"){
        if(cost>devotionalCur()){PM_MSG="Not enough left in the Devotional Pool ("+devotionalCur()+" of "+devotionalMax()+") to invoke that.";render();return;}
        S.magic.devotionalUsed=(S.magic.devotionalUsed||0)+cost;
        costTxt=cost+" from the Devotional Pool";
      }else if(trad.pool==="mp"&&cost>0){
-       S.play.magic=Math.max(0,playCurMagic()-cost);
+       S.play.magic=playCurMagic()-cost;
        costTxt=cost+" Magic Point"+(cost>1?"s":"");
      }else costTxt="no point cost";
    }else costTxt="nothing spent";
    const tag=g.grade!=="standard"?" ("+GRADE_LABEL[g.grade]+")":"";
+   if(m.tradition==="sorcery")S.play.sorceryCasting=null;
    S.rollLog.unshift({label:magicLabel(m)+" — "+trad.castSkill+tag,pct:g.pct,
      roll:r===100?"00":r,tier,combat:false,oppTier:null,
      magic:(worked?"cast":"failed")+", "+costTxt});
@@ -153,11 +261,27 @@ window.APP={
    S.age.years=t;S.concept.age=String(t);render();},
  ageYears(v){const n=parseInt(v,10);S.age.years=Number.isFinite(n)?n:null;
    S.concept.age=Number.isFinite(n)?String(n):"";render();},
+ // Official Core Background Events: keep rolled d100 results and a player's
+ // brief summary, rather than reproducing the copyrighted table in the app.
+ rollCoreBackgroundEvents(){
+   const count=coreBackgroundRollCount();
+   const saved=S.age.coreEvents||[];
+   if(saved.length && !confirm("Replace your existing official Background Event rolls and notes?"))return;
+   S.age.coreEvents=Array.from({length:count},()=>({roll:d100(),summary:""}));render();
+ },
+ editCoreBackgroundEvent(i,v){
+   if(!S.age.coreEvents||!S.age.coreEvents[i])return;
+   S.age.coreEvents[i].summary=String(v).slice(0,500);render();
+ },
+ clearCoreBackgroundEvents(){
+   if(S.age.coreEvents?.length && !confirm("Clear official Background Event rolls and notes?"))return;
+   S.age.coreEvents=[];render();
+ },
  // Life Events: one per age band above Young (a Young character has barely
  // had time for any). House content, clearly flagged as such in the UI.
  rollLifeEvents(){
    const n=AGE_CATEGORIES.findIndex(a=>a.key===S.age.category);
-   const count=Math.max(1,n);
+   const count=Math.max(0,n);
    const pool=LIFE_EVENTS.slice();const picked=[];
    for(let i=0;i<count&&pool.length;i++)picked.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
    S.age.events=picked.map(e=>({t:e.t,effect:e.effect,applied:false}));
@@ -189,6 +313,7 @@ window.APP={
  // rolled or built is meaningless afterwards — same reasoning, and the same
  // confirmation, as switching character tier.
  pickSpecies(key){
+   if(key!=="human" && key!=="" && key!==null && S.species!==key){alert("This species is legacy non-Core content and cannot be selected in Core-first mode.");return;}
    const nw=(key==="human"||!key)?(key||null):key;
    if(S.species===nw)return;
    if(charsReady()&&!confirm("Switching species resets your characteristics — each species rolls its own characteristic dice. Continue?"))return;
@@ -243,7 +368,7 @@ window.APP={
    render();},
  cultStyle(on){S.cultStyleOn=on;if(!on){delete S.alloc.culture["style:cult"];delete S.alloc.career["style:cult"];delete S.alloc.bonus["style:cult"];
    S.carStyles.forEach(cs=>{if(cs&&cs.mode==="link")cs.mode="new";});}
-   else S.alloc.culture["style:cult"]=5;
+   else S.alloc.culture["style:cult"]=0;
    render();},
  pickProf(which,i,name){
    const picks=which==="cult"?S.cultProf:(which==="car"?S.carProf:S.qProf),
@@ -298,14 +423,28 @@ window.APP={
    if(v<0||v>max)return;
    if(dir>0&&aSum(ph)>=pool)return;
    S.alloc[ph][key]=v;render();},
+ cultStyleSmallAlloc(v){S.cultStyleSmallAlloc=!!v;render();},
  aSet(ph,key,val){const {pool,max}=phaseLimits(ph);
    let v=Math.max(0,Math.min(max,parseInt(val,10)||0));
    const others=aSum(ph)-aGet(ph,key);
    v=Math.min(v,pool-others);
    S.alloc[ph][key]=v;render();},
  /* bonus */
- hobby(name){if(S.hobby){delete S.alloc.bonus[profKey(S.hobby,S.hobbySpec)];}
+ hobby(name){if(S.hobby){delete S.alloc.bonus[S.hobby==="__combat_style__"?"style:hobby":profKey(S.hobby,S.hobbySpec)];}
    S.hobby=name||null;S.hobbySpec="";render();},
+ /* Core Culture & Community, pp.21–25: narrative choices, not free mechanical bonuses. */
+ communityField(key,value){
+   if(!["family","parents","siblings","reputation","partyTie","resources"].includes(key))return;
+   S.community[key]=String(value).slice(0,2000);render();
+ },
+ communityAdd(){debounceFire("communityAdd",()=>{S.community.connections.push({type:"Contact",name:"",notes:""});render();});},
+ communityRemove(i){debounceFire("communityRemove"+i,()=>{if(i>=0&&i<S.community.connections.length)S.community.connections.splice(i,1);render();});},
+ communityConnection(i,key,value){
+   const row=S.community.connections[i];if(!row)return;
+   if(key==="type")row.type=["Ally","Contact","Rival","Enemy"].includes(value)?value:"Contact";
+   else if(key==="name"||key==="notes")row[key]=String(value).slice(0,key==="name"?160:1000);
+   render();
+ },
  /* cult & community */
  pickCult(key){S.cultMembership.archetype=(S.cultMembership.archetype===key)?null:key;
    if(S.cultMembership.archetype&&!S.cultMembership.rank)S.cultMembership.rank=0;render();},
@@ -336,15 +475,25 @@ window.APP={
    render();},
  /* money & inventory */
  rollMoney(){S.money.dice=[d(6),d(6),d(6),d(6)];render();},
- mon(f,v){S.money[f]=(f==="socialClass")?v:(parseFloat(v)||0);render();},
+ mon(f,v){
+   if(f==="socialClass"){S.money[f]=v;render();return;}
+   const n=Number(v);
+   // Refuse invalid, negative or implausible currency entries rather than
+   // silently converting them to zero and losing the player's input.
+   if(!Number.isFinite(n)||n<0||(f==="mod"&&n===0))return;
+   S.money[f]=n;render();},
  pickSocialClass(name){if(!name)return;const list=SOCIAL_CLASSES[S.culture]||[];
    const opt=list.find(([n])=>n===name);if(!opt)return;
    S.money.socialClass=opt[0];S.money.mod=opt[1];render();},
  // Same stale-DOM-click race addPas() guards against below -- these sit
  // right next to the item name/qty/enc fields in the Inventory table.
- invAdd(){debounceFire('invAdd',()=>{S.inventory.push({name:"",qty:1,enc:0});render();});},
+ invAdd(){debounceFire('invAdd',()=>{S.inventory.push({name:"",qty:1,enc:0,cost:0});render();});},
  invDel(i){debounceFire('invDel'+i,()=>{S.inventory.splice(i,1);render();});},
- inv(i,f,v){S.inventory[i][f]=(f==="name")?v:(parseFloat(v)||0);render();},
+ inv(i,f,v){
+   const it=S.inventory[i];if(!it)return;
+   if(f==="name")it.name=v;
+   else{const n=Number(v);if(!Number.isFinite(n)||n<0||(f==="qty"&&!Number.isInteger(n)))return;it[f]=n;}
+   render();},
  /* weapons & armour */
  toggleWeapon(name){const i=S.gearWeapons.indexOf(name);
    if(i>=0)S.gearWeapons.splice(i,1);else S.gearWeapons.push(name);render();},
@@ -396,7 +545,7 @@ window.APP={
  openXP(){XP_OPEN=true;render();},
  closeXP(){XP_OPEN=false;render();},
  xpAward(v){const n=parseInt(v,10);if(!Number.isFinite(n)||n===0)return;
-   S.xp.pool=Math.max(0,S.xp.pool+n);
+   S.xp.pool=Math.max(0,S.xp.pool+n+(n>0?xpMod(S.chars.CHA):0));
    if(n>0)S.xp.usedThisRun=[]; // a fresh award = a new "sitting" for the once-per-skill cap
    render();},
  xpToggleFumble(key){const i=S.xp.fumbled.indexOf(key);
@@ -445,8 +594,8 @@ window.APP={
    const success=total>=target;
    const gain=success?(d(4)+1):1;
    S.xp.bonus[key]=(S.xp.bonus[key]||0)+gain;
-   if(S.xp.checked.includes(key))S.xp.checked=S.xp.checked.filter(k=>k!==key);
-   else S.xp.pool=Math.max(0,S.xp.pool-1);
+   S.xp.checked=S.xp.checked.filter(k=>k!==key);
+   S.xp.pool=Math.max(0,S.xp.pool-1);
    S.xp.usedThisRun.push(key);
    S.xp.history.unshift({type:"roll",key,label:e.label,roll:r===100?"00":r,int:S.chars.INT,total,target,success,gain,fumbleApplied,newPct:finalPct(key)});
    S.xp.history=S.xp.history.slice(0,25);render();},
@@ -502,7 +651,7 @@ window.APP={
  // My Characters card → Print: loads the character (same loader as Play/Edit)
  // then jumps straight to the sheet view instead of Play Mode or the builder.
  openCharToSheet(id){
-   openCharUnified(id).then(entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);normalizeState();
+   openCharUnified(id).then(entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);if(!Object.prototype.hasOwnProperty.call(entry.state,"_creationFlowVersion"))S._creationFlowVersion=1;normalizeState();
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
      S._pendingClaim=(entry.ownerId==="local");
      SHEET_RETURN_VIEW="library";APPVIEW="sheet";render();window.scrollTo(0,0);});},
@@ -512,8 +661,8 @@ window.APP={
  // up the AP and do that subtraction by hand every single hit. Sets
  // PM_DMG_NOTE so the panel can show its work ("12 dealt − 4 AP → 8 taken")
  // rather than just silently updating the HP number.
- playApplyDamage(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const raw=el?parseInt(el.value,10):NaN;
-   if(!Number.isFinite(raw)||raw<=0)return;
+ playApplyDamage(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const raw=el?Number(el.value):NaN;
+   if(!Number.isSafeInteger(raw)||raw<=0)return;
    const armLoc=PLAY_LIMB_BASE[loc]||loc,ap=armorApAt(armLoc);
    const applied=Math.max(0,raw-ap);
    // Floor at -maxHP (not 0) so Major Wound (<=-max, core pp.109-111) stays
@@ -521,13 +670,13 @@ window.APP={
    S.play.hp[loc]=Math.max(-playMaxHP(loc),playCurHP(loc)-applied);
    PM_DMG_NOTE={loc,raw,ap,applied};
    if(el)el.value="";render();},
- playHeal(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const n=el?parseInt(el.value,10):NaN;
-   if(!Number.isFinite(n)||n<=0)return;
+ playHeal(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const n=el?Number(el.value):NaN;
+   if(!Number.isSafeInteger(n)||n<=0)return;
    S.play.hp[loc]=Math.min(playMaxHP(loc),playCurHP(loc)+n);if(el)el.value="";render();},
- playSetHP(loc,v){if(viewOnlyBlock())return;S.play.hp[loc]=v;render();},
+ playSetHP(loc,v){if(viewOnlyBlock())return;S.play.hp[loc]=playValidHP(v,playMaxHP(loc));render();},
  // Fixed-amount direct HP adjustment (−1/−3), deliberately bypassing armour
  // entirely -- for damage that was never subject to AP in the first place
- // (an ongoing Bleed tick, poison, fire, GM fiat), not a shortcut for a
+ // (poison, fire, GM fiat), not a shortcut for a
  // weapon hit. See the "Ignores armour" row in pmLocDetail.
  playQuickDamage(loc,n){if(viewOnlyBlock())return;S.play.hp[loc]=Math.max(-playMaxHP(loc),playCurHP(loc)-n);render();},
  // Selecting a location just opens the detail panel — read-only navigation,
@@ -558,7 +707,7 @@ window.APP={
    const newCur=i<cur?i:i+1;
    S.play.luck=Math.max(0,Math.min(max,newCur));render();},
  playMagicAdj(d){if(viewOnlyBlock())return;S.play.magic=Math.max(0,Math.min(playMaxMagic(),playCurMagic()+d));render();},
- playSetFatigue(v){if(viewOnlyBlock())return;S.play.fatigue=v;render();},
+ playSetFatigue(v){if(viewOnlyBlock())return;if(!FATIGUE_MAP[v])return;S.play.fatigue=v;render();},
  // Step one level up or down the Fatigue track — the common case in play is
  // "failed an Endurance roll, take a level", not picking off a dropdown.
  playFatigueAdj(d){if(viewOnlyBlock())return;
@@ -568,9 +717,13 @@ window.APP={
  // and, as a narrow exception, for the campaign DM (VIEW_ONLY_IS_DM), for
  // loot distribution / adding or removing gear mid-session. Blocked for a
  // plain party member looking at a teammate's sheet. See inventoryBlock().
- playInvAdd(){if(inventoryBlock())return;S.inventory.push({name:"",qty:1,enc:0});render();},
+ playInvAdd(){if(inventoryBlock())return;S.inventory.push({name:"",qty:1,enc:0,cost:0});render();},
  playInvDel(i){if(inventoryBlock())return;S.inventory.splice(i,1);render();},
- playInv(i,f,v){if(inventoryBlock())return;S.inventory[i][f]=(f==="name")?v:(parseFloat(v)||0);render();},
+ playInv(i,f,v){if(inventoryBlock())return;
+   const it=S.inventory[i];if(!it)return;
+   if(f==="name")it.name=v;
+   else {const n=Number(v);if(!Number.isFinite(n)||n<0||(f==="qty"&&!Number.isInteger(n)))return;it[f]=n;}
+   render();},
  // Switching tabs (Actions/Special Effects/Inventory/Features/Notes) is
  // read-only navigation, always allowed even in a VIEW_ONLY session.
  playTab(t){S.play.tab=t;render();},
@@ -578,6 +731,84 @@ window.APP={
  exportJSON(){const data=JSON.stringify(S,null,2);
    dl((S.concept.name||"character").replace(/\s+/g,"_")+".mythras.json",data,"application/json");},
  exportMD(){dl((S.concept.name||"character").replace(/\s+/g,"_")+".md",buildMD(),"text/markdown");},
+ // A downloaded JSON file is a portable backup. Import creates a separate
+ // character, never silently claims an existing cloud or local library ID.
+ chooseImport(){const input=document.getElementById("characterImportFile");if(input){input.value="";input.click();}},
+ async importCharacterFile(input){
+   const file=input&&input.files&&input.files[0];if(!file)return;
+   const fromLibrary=APPVIEW==="library";
+   const showError=msg=>{if(fromLibrary)CAMP_MSG=msg;else MENU_MSG=msg;render();};
+   if(file.size>2*1024*1024){showError("Import failed: file exceeds the 2 MB character limit.");return;}
+   let imported;
+   try{imported=JSON.parse(await file.text());}catch(e){showError("Import failed: this is not valid JSON.");return;}
+   const problem=characterImportProblem(imported);
+   if(problem){showError("Import failed: "+problem);return;}
+   if(hasUnsavedWork()&&!confirm("Import this character? The current character will remain in My Characters, but the character open on screen will change. Export a backup first if needed."))return;
+   const blank=freshState(),restored=freshState();
+   for(const key of Object.keys(blank))if(Object.prototype.hasOwnProperty.call(imported,key)){
+     // Older exports may omit fields added in subsequent releases. Keep
+     // newer defaults without discarding values the player actually saved.
+     const incoming=imported[key],defaults=blank[key];
+     restored[key]=(incoming&&defaults&&typeof incoming==="object"&&typeof defaults==="object"&&!Array.isArray(incoming)&&!Array.isArray(defaults))
+       ?Object.assign({},defaults,incoming):incoming;
+   }
+   if(!Object.prototype.hasOwnProperty.call(imported,"_creationFlowVersion"))restored._creationFlowVersion=1;
+   // Never reuse an identity from the export: that could overwrite another
+   // character or make a browser guest appear to own a cloud row.
+   restored._libId=null;restored._ownerId=null;restored.campaignId=null;
+   restored._libLastSaved=null;restored._pendingClaim=true;
+   const previous=S;
+   try{
+     S=restored;normalizeState();
+     if(!cloudActive())saveCurrentToLibraryLocal();
+     APPVIEW="character";MENU_MSG=null;CAMP_MSG=null;
+     render();window.scrollTo(0,0);
+   }catch(e){
+     // Failed imports must preserve the character already open on screen.
+     S=previous;APPVIEW=fromLibrary?"library":"menu";
+     showError("Import failed: the data was invalid or could not be saved. Your previous character was preserved.");
+   }
+ },
+ chooseGuestBackupImport(){const input=document.getElementById("guestBackupImportFile");if(input){input.value="";input.click();}},
+ async importGuestBackupFile(input){
+   const file=input&&input.files&&input.files[0];if(!file)return;
+   const fail=msg=>{MENU_MSG=msg;APPVIEW="menu";render();};
+   if(cloudActive()){fail("Guest backups cannot be imported during a signed-in cloud session.");return;}
+   if(file.size>10*1024*1024){fail("Guest backup is larger than the 10 MB limit.");return;}
+   let backup;
+   try{backup=JSON.parse(await file.text());}catch(e){fail("Guest backup is not valid JSON.");return;}
+   if(!backup||backup.format!=="mythras-forge-guest-backup"||backup.version!==1||!Array.isArray(backup.characters)){
+     fail("That file is not a supported Forge guest backup.");return;
+   }
+   if(backup.characters.length>100){fail("Backup contains more than 100 characters; split it into smaller backups.");return;}
+   for(const entry of backup.characters){
+     if(!entry||typeof entry!=="object"||characterImportProblem(entry.state)){
+       fail("The backup contains an invalid character; nothing was imported.");return;
+     }
+   }
+   if(!confirm("Restore "+backup.characters.length+" guest characters? They will be added as NEW local copies; existing characters will not be replaced."))return;
+   const oldLib=loadCharLibLocal();
+   const added=backup.characters.map(e=>{
+     const state=JSON.parse(JSON.stringify(e.state));
+     state._libId=null;state._ownerId=null;state.campaignId=null;state._libLastSaved=null;state._pendingClaim=true;
+     const id=genId();state._libId=id;
+     return {id,campaignId:null,name:state.concept.name||"Unnamed Character",tier:state.archetype||"ordinary",
+       culture:state.culture||"",career:state.career||"",savedAt:Date.now(),state};
+   });
+   try{saveCharLibListLocal(oldLib.concat(added));
+     // Verify persistence before promising restore succeeded (Safari private
+     // mode and storage quotas can reject or discard large writes).
+     if(loadCharLibLocal().length!==oldLib.length+added.length)throw new Error("storage rejected backup");
+     MENU_MSG="Imported "+added.length+" guest characters into My Characters. Existing characters were preserved.";
+   }catch(e){fail("Restore failed: browser storage may be full or disabled. Your previous characters remain intact.");return;}
+   APPVIEW="menu";render();
+ },
+ exportGuestBackup(){
+   if(cloudActive()){MENU_MSG="Use character Export JSON for cloud characters. Guest backups only include local characters.";render();return;}
+   const chars=loadCharLibLocal();
+   if(!chars.length){MENU_MSG="No locally saved characters to back up yet.";render();return;}
+   dl("mythras-guest-backup-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify({format:"mythras-forge-guest-backup",version:1,exportedAt:new Date().toISOString(),characters:chars},null,2),"application/json");
+ },
  newCharacter(){
    const hasWork=S.concept.name||charsReady()||S.culture||S.career;
    if(hasWork&&!confirm("Start a new character? This clears the current one from the screen (autosave and any exported files are unaffected until overwritten)."))return;
@@ -626,12 +857,12 @@ window.APP={
    const info=getAutosaveInfo();if(!info)return;
    if(hasUnsavedWork()&&!confirm("Load the autosaved character? This replaces what's currently loaded."))return;
    try{const raw=localStorage.getItem(autosaveKey());const saved=JSON.parse(raw);
-     S=Object.assign(freshState(),saved.S);normalizeState();S._pendingClaim=true;APPVIEW="character";render();window.scrollTo(0,0);
+     S=Object.assign(freshState(),saved.S);if(!Object.prototype.hasOwnProperty.call(saved.S,"_creationFlowVersion"))S._creationFlowVersion=1;normalizeState();S._pendingClaim=true;APPVIEW="character";render();window.scrollTo(0,0);
    }catch(e){MENU_MSG="Could not load the autosaved character.";render();}},
  /* my characters */
  toLibrary(){APPVIEW="library";LIB_CACHE=null;CAMP_MSG=null;render();loadLibraryUnified();window.scrollTo(0,0);},
  openCharToPlay(id,opts){
-   openCharUnified(id).then(async entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);normalizeState();
+   openCharUnified(id).then(async entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);if(!Object.prototype.hasOwnProperty.call(entry.state,"_creationFlowVersion"))S._creationFlowVersion=1;normalizeState();
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
      S._pendingClaim=(entry.ownerId==="local");
      const viewingOther=cloudActive()&&entry.ownerId!=null&&entry.ownerId!==AUTH_USER.id;
@@ -641,7 +872,7 @@ window.APP={
      PLAY_RETURN_VIEW=(opts&&opts.returnTo)||"menu";
      APPVIEW="play";XP_OPEN=false;render();window.scrollTo(0,0);});},
  openCharToEdit(id){
-   openCharUnified(id).then(entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);normalizeState();
+   openCharUnified(id).then(entry=>{if(!entry)return;S=Object.assign(freshState(),entry.state);if(!Object.prototype.hasOwnProperty.call(entry.state,"_creationFlowVersion"))S._creationFlowVersion=1;normalizeState();
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
      S._pendingClaim=(entry.ownerId==="local");
      APPVIEW="character";render();window.scrollTo(0,0);});},
@@ -652,10 +883,16 @@ window.APP={
  /* account */
  toAccount(){APPVIEW="account";AUTH_MSG=null;render();window.scrollTo(0,0);},
  mockSignIn(){
-   const el=$("#mockName");const name=(el&&el.value&&el.value.trim())||"Test DM";
-   MOCK_AUTH={id:"mock-"+genId(),display_name:name};
-   CAMP_CACHE=null;render();},
- mockSignOut(){MOCK_AUTH=null;CAMP_CACHE=null;render();},
+   // This is a browser-only guest, not a Supabase user or fake cloud identity.
+   MOCK_AUTH={id:"guest-local",display_name:"Guest"};
+   try{localStorage.setItem(GUEST_SESSION_KEY,"1");}catch(e){}
+   MENU_MSG=null;CAMP_MSG=null;CAMP_CACHE=null;
+   APPVIEW="menu";render();},
+ mockSignOut(){
+   // Leave locally saved characters intact; exiting guest mode isn't deletion.
+   MOCK_AUTH=null;
+   try{localStorage.removeItem(GUEST_SESSION_KEY);}catch(e){}
+   CAMP_CACHE=null;APPVIEW="menu";render();},
  /* campaigns */
  toCampaigns(){APPVIEW="campaigns";CAMP_CACHE=null;CAMP_MSG=null;render();loadCampaignsUnified();window.scrollTo(0,0);},
  newCampaign(){
@@ -689,7 +926,7 @@ window.APP={
    if(hasUnsavedWork()&&!confirm("Open this character? This replaces what's currently loaded."))return;
    openCharUnified(id).then(entry=>{
      if(!entry)return;
-     S=Object.assign(freshState(),entry.state);normalizeState();
+     S=Object.assign(freshState(),entry.state);if(!Object.prototype.hasOwnProperty.call(entry.state,"_creationFlowVersion"))S._creationFlowVersion=1;normalizeState();
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
      APPVIEW="character";render();window.scrollTo(0,0);
    }).catch(e=>{CAMP_MSG="Could not open character: "+e.message;render();});},
@@ -767,13 +1004,19 @@ window.APP={
  gmAdvanceTurn(){
    APP.gmSessionMutate(st=>{
      if(!st.combatants.length)return;
+     const order=st.combatants.slice().sort((a,b)=>b.init-a.init);
+     tickCombatEffects([order[Math.min(st.turnIdx,order.length-1)]],"turn");
      const next=st.turnIdx+1;
      if(next>=st.combatants.length){
-       st.turnIdx=0;st.round=(st.round||1)+1;
-       tickCombatEffects(st.combatants); // per-ROUND cadence, not per turn -- see tickCombatEffects
+       st.turnIdx=0;st.cycle=(st.cycle||1)+1;
      }else st.turnIdx=next;
    });},
- gmResetRound(){APP.gmSessionMutate(st=>{st.round=1;st.turnIdx=0;});},
+ gmNewRound(){APP.gmSessionMutate(st=>{
+   st.round=(st.round||1)+1;st.cycle=1;st.turnIdx=0;
+   st.combatants.forEach(c=>{c.ap.used=0;});
+   tickCombatEffects(st.combatants,"round");
+ });},
+ gmResetRound(){APP.gmSessionMutate(st=>{st.round=1;st.cycle=1;st.turnIdx=0;});},
  gmApAdj(id,delta){
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c)return;
      c.ap.used=Math.max(0,Math.min(c.ap.max,c.ap.used-delta));});},
@@ -807,7 +1050,9 @@ window.APP={
    const mode=(modeEl&&modeEl.value)==="counter"?"counter":"duration";
    const value=Math.max(1,parseInt(valEl&&valEl.value,10)||1);
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c)return;
-     (c.effects=c.effects||[]).push({id:genId(),type,loc,mode,value});});},
+     const unitEl=$("#cbtfxunit-"+id);
+     const unit=unitEl&&unitEl.value==="round"?"round":"turn";
+     (c.effects=c.effects||[]).push({id:genId(),type,loc,mode,value,unit});});},
  gmRemoveEffect(combatantId,effectId){
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,combatantId);if(!c)return;
      c.effects=(c.effects||[]).filter(e=>e.id!==effectId);});},
@@ -951,20 +1196,26 @@ window.APP={
    const el=$("#authName");const name=el&&el.value&&el.value.trim();
    if(!name)return;
    ensureProfile(name).then(render).catch(e=>{AUTH_MSG={text:"Could not save name: "+e.message};render();});},
+ retryCloudSave(){
+   CLOUD_SEEN_STATE.delete(S);
+   flushCloudSaves().then(()=>{if(cloudActive()&&!VIEW_ONLY&&hasUnsavedWork())return saveToLibraryUnified(false);}).catch(()=>{});
+ },
  signOut(){
    const uid=AUTH_USER&&AUTH_USER.id;
-   // Force the same final cloud push the debounced autosave would otherwise
-   // handle ~1.5s later (scheduleCloudPush in cloud.js) -- sign-out is about
-   // to wipe every local trace of this character (clearLocalCharacterData
-   // below), so anything not yet pushed would otherwise just be lost rather
-   // than merely delayed. Best-effort: a failed flush (offline, etc.) still
-   // lets sign-out proceed rather than trapping the user signed in.
-   const flush=hasUnsavedWork()?saveToLibraryUnified(false).catch(e=>console.warn("final sync before sign-out",e)):Promise.resolve();
-   flush.then(()=>sb.auth.signOut()).then(()=>{
+   // Never erase a recovery draft after a failed final upload.
+   flushCloudSaves().then(()=>{
+     if(!VIEW_ONLY&&hasUnsavedWork())return saveToLibraryUnified(false);
+   }).then(()=>sb.auth.signOut()).then(result=>{
+     if(result&&result.error)throw result.error;
      clearLocalCharacterData(uid);
      AUTH_USER=null;AUTH_PROFILE=null;AUTH_PENDING=false;CAMP_CACHE=null;
+     CLOUD_SAVE_ERROR="";CLOUD_LAST_SAVED=null;
      S=freshState();APPVIEW="menu";render();
+   }).catch(e=>{
+     AUTH_MSG={text:"Sign-out paused because saving failed: "+e.message+". Your draft is retained. Retry or export your character first."};
+     render();
    });}
+
 };
 function dl(name,content,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);
   const a=document.createElement("a");a.href=u;a.download=name;a.click();
@@ -1012,6 +1263,15 @@ function buildMD(){
         :m.tradition==="animism"?("POW "+(m.pow||0)+", CHA "+(m.cha||0))
         :((m.cost||0)+(t.pool==="devotional"?" pool":" MP"));
       return "| "+magicLabel(m)+" | "+t.label+" | "+t.castSkill+" | "+cost+" |";}).join("\n")+"\n\n";
+  if(S.community){
+    const c=S.community;
+    const fields=[["Family",c.family],["Parents",c.parents],["Siblings",c.siblings],["Family reputation",c.reputation],["Background resources",c.resources],["Party connection",c.partyTie]];
+    const nonempty=fields.filter(([,value])=>String(value||"").trim());
+    if(nonempty.length||c.connections.length){
+      md+="## Community\n\n"+nonempty.map(([key,value])=>"**"+key+":** "+String(value).replace(/\n/g," ")).join("\n\n")+"\n\n";
+      if(c.connections.length)md+="### Allies, Contacts, Rivals and Enemies\n\n"+c.connections.map(x=>"- **"+x.type+":** "+x.name+(x.notes?" — "+x.notes.replace(/\n/g," "):"")).join("\n")+"\n\n";
+    }
+  }
   if(S.passions.length)md+="## Passions\n\n| Passion | % |\n|---|---|\n"+S.passions.map(p=>"| "+(p.name||"(unnamed)")+" | "+passionVal(p)+"% |").join("\n")+"\n\n";
   if(S.gearWeapons.length)md+="## Weapons\n\n| Weapon | Damage | Reach | Effects | ENC | AP/HP |\n|---|---|---|---|---|---|\n"
     +S.gearWeapons.map(nm=>{const w=weaponByName(nm);return w?"| "+w.name+" | "+w.dmg+" | "+w.reach+" | "+w.effects+" | "+w.enc+" | "+w.apHp+" |":"";}).filter(Boolean).join("\n")+"\n\n";

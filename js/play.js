@@ -59,12 +59,34 @@ const PLAY_LIMB_BASE={"Right Arm":"Each Arm","Left Arm":"Each Arm","Right Leg":"
 // loaded into S) using the exact same math Play Mode uses on its own
 // character — the two can never drift apart on wound-tier thresholds,
 // HP totals, or resource maxes, because they're the same code path.
+// Core and Companion-derived bonuses belong to the character being inspected,
+// not whichever character the GM currently has open in the editor.
+function playStateHasAdv(state,id){return state.archetype!=="ordinary"&&Array.isArray(state.archAdvantages)&&state.archAdvantages.includes(id);}
+function playStateHPMax(state){
+  const base=hpLocs(state.chars.CON,state.chars.SIZ);
+  return playStateHasAdv(state,"hp")?base.map(([name,hp])=>[name,hp+(state.archetype==="paragon"?2:1)]):base;
+}
+function playStateLuckMax(state){
+  let v=luckPts(state.chars.POW);
+  if(playStateHasAdv(state,"luck"))v+=state.archetype==="paragon"?2:1;
+  return v;
+}
+function playStateAPMax(state){
+  let v=apCalc(state.chars.INT,state.chars.DEX,state.fixedAP);
+  if(playStateHasAdv(state,"ap"))v++;
+  return v;
+}
+function playValidHP(value,max){
+  if(value==null)return max;
+  const v=Number(value);
+  return Number.isFinite(v)?Math.max(-max,Math.min(max,Math.trunc(v))):max;
+}
 function charVitals(state){
   state=state||S;
   const c=state.chars;
   const locs=PLAY_HP_LOCS.map(loc=>{
     const key=PLAY_LIMB_BASE[loc]||loc;
-    const row=hpLocsFinal(c.CON,c.SIZ).find(x=>x[0]===key);
+    const row=playStateHPMax(state).find(x=>x[0]===key);
     const max=row?row[1]:0;
     let v=state.play.hp[loc];
     if(v==null){
@@ -75,7 +97,7 @@ function charVitals(state){
       const legacyKey=PLAY_LIMB_BASE[loc];
       if(legacyKey&&state.play.hp[legacyKey]!=null)v=state.play.hp[legacyKey];
     }
-    const cur=v==null?max:Math.min(v,max);
+    const cur=playValidHP(v,max);
     // Wound tiers per the core rulebook's "Damage and Wound Levels" (Combat
     // chapter): based on the location's own current remaining Hit Points
     // compared to its starting max, to zero, and to the negative of that
@@ -97,8 +119,8 @@ function charVitals(state){
   const worstLoc=locs.find(l=>l.cls===worst)||null;
   const hpCur=locs.reduce((a,l)=>a+Math.max(0,l.cur),0);
   const hpMax=locs.reduce((a,l)=>a+l.max,0);
-  const maxLuck=luckFinal(c.POW), curLuck=state.play.luck==null?maxLuck:Math.min(state.play.luck,maxLuck);
-  const maxMagic=c.POW, curMagic=state.play.magic==null?maxMagic:Math.min(state.play.magic,maxMagic);
+  const maxLuck=playStateLuckMax(state), curLuck=state.play.luck==null?maxLuck:Math.max(0,Math.min(Number(state.play.luck)||0,maxLuck));
+  const maxMagic=c.POW, curMagic=state.play.magic==null?maxMagic:Math.max(0,Math.min(Number(state.play.magic)||0,maxMagic));
   const fatigue=state.play.fatigue||"Fresh";
   // Fatigue's Action Point column is a real penalty off the maximum (-1 at
   // Exhausted, -2 Debilitated, -3 Incapacitated, no actions at all beyond
@@ -106,9 +128,9 @@ function charVitals(state){
   // reporting the character's own rested AP while Play Mode reports what they
   // can actually spend this round. Never drops below 0.
   const fRow=FATIGUE_MAP[fatigue]||FATIGUE_MAP.Fresh;
-  const baseAP=apFinal(c.INT,c.DEX,state.fixedAP);
+  const baseAP=playStateAPMax(state);
   const maxAP=fRow.act===false?0:Math.max(0,baseAP+(fRow.ap||0));
-  const apUsed=Math.min(state.play.apUsed||0,maxAP);
+  const apUsed=Math.max(0,Math.min(Number(state.play.apUsed)||0,maxAP));
   return {locs,worst,worstLoc,hpCur,hpMax,maxLuck,curLuck,maxMagic,curMagic,
     maxAP,baseAP,apUsed,fatigue,fatigueRow:fRow};
 }
@@ -135,6 +157,19 @@ function playWoundEffectText(loc,cls){
       ? "Limb is severed/shattered/ripped off — you drop prone; Endurance test vs the attack roll or you black out from the agony; untreated within 5× Healing Rate minutes, you die of blood loss."
       : "Endurance test vs the attack roll or it's instant, gruesome death; even if you pass, untreated within 2× Healing Rate rounds you still die of blood loss.")
     +" Needs surgery or major magic to ever heal properly.";
+}
+// Core p.110: the displayed wound category follows remaining location HP.
+// These checks are *not* resolved by HP arithmetic; record the opposed
+// Endurance roll, incapacitation and first aid at the table.
+function playWoundActionText(loc,cls){
+  const limb=PLAY_LIMB_LOCS.includes(loc);
+  if(cls==="serious")return limb
+    ? "GM check: Opposed Endurance versus the attack roll. On failure the limb becomes useless; for a leg fall prone, for an arm drop held items."
+    : "GM check: Opposed Endurance versus the attack roll. On failure lose consciousness for minutes equal to the damage from this attack.";
+  if(cls==="major")return limb
+    ? "URGENT: Opposed Endurance; on failure unconscious. Treat within 5 × Healing Rate minutes or death from blood loss and shock may result."
+    : "URGENT: Opposed Endurance; on failure death. If successful, treat within 2 × Healing Rate combat rounds or death may result.";
+  return "";
 }
 function playMaxLuck(state){return charVitals(state).maxLuck;}
 function playCurLuck(state){return charVitals(state).curLuck;}
@@ -309,6 +344,7 @@ function pmLocDetail(){
    +'<div class="arm">'+esc(S.armor[armLoc]||"None")+' &mdash; AP '+ap+'</div>'
    +'<div class="hpline">'+cur+' <span>/ '+max+' HP</span><span class="pm-woundtag '+st.cls+'">'+st.tag+'</span></div>'
    +'<div class="fx">'+esc(playWoundEffectText(loc,st.cls))+'</div>'
+   +(playWoundActionText(loc,st.cls)?'<p class="pm-notes" role="status">'+esc(playWoundActionText(loc,st.cls))+'</p>':'')
    +'<div class="pm-dmgctl">'
    +'<div class="pm-dmgrow">'
    +'<input type="number" id="'+idv+'" placeholder="damage dealt" min="0" aria-label="Incoming damage, before armour">'
@@ -318,12 +354,12 @@ function pmLocDetail(){
      ?'Last hit: <b>'+note.raw+'</b> dealt &minus; AP <b>'+note.ap+'</b> &rarr; <b>'+note.applied+'</b> HP taken'+(note.applied===0?' (armour stopped it)':"")
      :'AP <b>'+ap+'</b> subtracted automatically')+'</div>'
    +'<div class="pm-dmgsec">'
-   +'<span class="pm-dmgseclbl">Ignores armour:</span>'
+   +'<span class="pm-dmgseclbl" title="For direct HP effects (poison, fire, GM rulings). Bleed Special Effect causes Fatigue loss instead; see Core p.96.">Ignores armour (direct HP only):</span>'
    +'<button class="pm-sbtn dmg sm" onclick="APP.playQuickDamage(\''+loc+'\',1)">&minus;1</button>'
    +'<button class="pm-sbtn dmg sm" onclick="APP.playQuickDamage(\''+loc+'\',3)">&minus;3</button>'
    +'<button class="pm-sbtn sm" onclick="APP.playHeal(\''+loc+'\')">+heal</button>'
    +'<button class="pm-sbtn sm" onclick="APP.playSetHP(\''+loc+'\','+max+')">full</button>'
-   +'</div></div></div>';
+   +'<p class="pm-notes">Bleed Special Effect: lose Fatigue levels, not HP (Core p.96). Use the Fatigue tracker.</p>'+'</div></div></div>';
 }
 // Real STANDING readout for the dateline's right-hand slot, replacing D's
 // fixed "WOUNDED — L.LEG · ACTION PHASE" sample text with the actual worst
@@ -434,7 +470,7 @@ function pmCombatSection(){
   if(S.gearWeapons.length){
     h+=S.gearWeapons.map(n=>{const w=weaponByName(n);if(!w)return"";
       const meta=(w.group==="Ranged"
-        ?"RANGE "+esc(w.range||"—")+" &middot; LOAD "+esc(String(w.load||"—"))+(String(w.load).match(/^\d+$/)?"AP":"")
+        ?"RANGE "+esc(w.range||"—")+" &middot; FORCE "+esc(w.reach||"—")+" &middot; DM "+esc(w.dmgMod||"—")+" &middot; LOAD "+esc(String(w.load??"—"))+(typeof w.load==="number"?" AP":"")+(w.impaleSize?" &middot; IMPALE SIZE "+esc(w.impaleSize):"")
         :"SIZE "+esc(w.size||"—")+" &middot; REACH "+esc(w.reach||"—"))
        +" &middot; AP/HP "+esc(w.apHp||"—")
        +(w.effects&&w.effects!=="—"?" &middot; "+esc(w.effects).toUpperCase():"");
@@ -492,15 +528,15 @@ function playEffectsWon(mine,theirs){return DIFF_TABLE[mine]?.[theirs] ?? 0;}
 const SPECIAL_EFFECTS=[
 ["Accidental Injury",0,1,"","Attacker Fumbles",0,"The defender deflects or twists the attack so it fumbles, injuring the attacker instead. Roll damage against the attacker in a random hit location using the weapon used to strike; if unarmed, it's an internal injury that ignores armour."],
 ["Arise",0,1,"","",0,"Lets the defender use a momentary opening to roll back up onto their feet."],
-["Bash",1,0,"Shields or Bludgeoning","",0,"Bashes the opponent off balance. Shields knock them back 1m per 2 points of damage rolled (before reductions); bludgeoning weapons knock back 1m per 3 points. Forced backward into an obstacle: Hard Athletics/Acrobatics roll or fall/trip."],
-["Bleed",1,0,"Cutting Weapons","",0,"Attacker opens a major vessel. If the blow overcomes Armour Points and wounds the target, the defender makes an opposed Endurance roll vs the original attack roll or starts bleeding: loses 1 HP from that location each round until staunched with a First Aid roll, and can't do anything strenuous or violent without reopening it."],
+["Bash",1,0,"Shields or Bludgeoning","",0,"Bashes the opponent off balance. Shields knock them back 1m per 2 points of damage rolled (before reductions); bludgeoning weapons knock back 1m per 3 points. Bash only works against creatures of at most twice the attacker’s SIZ. Forced backward into an obstacle: Hard Athletics/Acrobatics roll or fall/trip."],
+["Bleed",1,0,"Cutting Weapons","",0,"Attacker opens a major vessel. If the blow penetrates armour and wounds the target, the defender opposes the attack roll with Endurance. On failure, they lose one level of Fatigue at the start of each Combat Round until collapse and possible death. First Aid can stop the bleeding, but strenuous or violent activity reopens the wound. Core p.96 (Blood Loss p.71). Bleeding does NOT automatically subtract 1 location HP each round."],
 ["Blind Opponent",0,1,"","Defender Criticals",0,"On a critical, the defender briefly blinds the attacker (thrown sand, a mirror-flash off a shield, etc). The attacker must win an opposed Evade (or Weapon style if using a shield) vs the defender's original parry roll, or suffer the Blindness penalty for the next 1d3 turns."],
 ["Bypass Armour",1,0,"","Attacker Criticals",1,"On a critical, the attacker finds a gap in the defender's armour. If the defender has both natural and worn armour, the attacker chooses which is bypassed — this can be stacked to bypass both. Magical protection counts as worn armour."],
 ["Choose Location",1,0,"","See Description",0,"With hand-to-hand weapons the attacker may freely pick the hit location within reach. With ranged weapons this needs a Critical, unless the target is at Close Range and either stationary or unaware of the attacker."],
 ["Circumvent Cover",1,0,"Ranged Weapons","",0,"Lets the shooter fire around or through the target's cover — a trick shot such as a ricochet, requiring a Critical for anything beyond a modest reduction in the cover's protection."],
 ["Circumvent Parry",1,0,"","Attacker Criticals",0,"On a critical, the attacker completely bypasses an otherwise-successful parry."],
 ["Close Range",1,1,"","",0,"Automatically changes the engagement range between the two combatants so they end up at the range favoured by the shorter weapon. Under the optional Closing & Opening Range rule (p.106, see the note above), closing inside a longer weapon's Reach also negates that weapon's ability to parry and drops its effective blocking Size by two categories until the range changes again."],
-["Compel Surrender",1,1,"","",0,"Forces the chance of surrender from a helpless or disadvantaged opponent (disarmed, prone and unable to regain footing, seriously — or worse — wounded, and so on). The target makes an opposed Willpower roll vs the original attack/parry roll or capitulates. GMs may wish to reserve this for NPCs only."],
+["Compel Surrender",1,1,"","",0,"Forces the chance of surrender from a helpless or disadvantaged opponent (disarmed, prone and unable to regain footing, seriously — or worse — wounded, and so on). No damage is inflicted: the target is threatened rather than struck. If the target can understand the demand, it makes an opposed Willpower roll vs the original attack/parry roll or capitulates. GMs may wish to reserve this for NPCs only."],
 ["Damage Weapon",1,1,"","",0,"Permits the character to damage the opponent's weapon as part of an attack or parry, applying the damage roll to the targeted weapon rather than its wielder. The weapon uses its own Armour Points to resist; reduced to zero Hit Points, it breaks."],
 ["Disarm Opponent",1,1,"","",0,"Knocks, yanks, or twists the opponent's weapon out of their hand. The opponent must make an opposed roll of their Combat Style against the character's original roll; if they lose, the weapon is flung a distance equal to the disarmer's Damage Modifier in metres (or drops at their feet with no Damage Modifier). Relative weapon size shifts the roll's difficulty grade. Only works on creatures up to twice the attacker's STR."],
 ["Drop Foe",1,0,"Ranged Weapons","",0,"Assuming the target suffers at least a minor wound, they're forced into an opposed test of Endurance against the attacker's hit roll. Failure means they succumb to shock and pain, becoming incapacitated. First Aid or technological/narcotic aid can end incapacitation early; otherwise it lasts one hour divided by the target's Healing Rate."],
@@ -527,7 +563,7 @@ const SPECIAL_EFFECTS=[
 ["Select Target",0,1,"","Attacker Fumbles",0,"When an attacker fumbles, the defender may manoeuvre or deflect the blow in such a way that it hits an adjacent bystander instead. This requires that the new target be within reach of the attacker's close combat weapon, or in the case of a ranged attack, standing along the line of fire. The new victim is taken completely by surprise and has no chance to avoid the attack, which automatically hits — but in compensation, they suffer no Special Effect from it."],
 ["Slip Free",0,1,"","Defender Criticals",0,"On a critical, the defender can automatically escape being Entangled, Gripped, or Pinned."],
 ["Stand Fast",0,1,"","",0,"The defender braces themselves against the force of an attack, allowing them to avoid the Knockback effects of any damage received."],
-["Stun Location",1,0,"Bludgeoning Weapons","",0,"The attacker can use a bludgeoning weapon to temporarily stun the body part struck. If the blow overcomes Armour Points and injures the target, the defender must make an opposed roll of Endurance vs the original attack roll. If the defender fails, the Hit Location is incapacitated for a number of turns equal to the damage inflicted. A blow to the head causes the defender to stagger, winded, only able to defend."],
+["Stun Location",1,0,"Bludgeoning Weapons","",0,"The attacker can use a bludgeoning weapon to temporarily stun the body part struck. If the blow overcomes Armour Points and injures the target, the defender must make an opposed roll of Endurance vs the original attack roll. If the defender fails, the Hit Location is incapacitated for a number of turns equal to the damage inflicted. A torso hit (chest or abdomen) leaves the defender staggered and winded, able only to defend. A head hit renders the defender briefly insensible. Core p.100."],
 ["Sunder",1,0,"Axes, Two Handed Weapons","",0,"The attacker may use a suitable weapon to damage the armour or natural protection of an opponent. Any weapon damage, after reductions for parrying or magic, is applied against the Armour Points value of the protection. Surplus damage in excess of the Armour Points is then used to reduce the AP value of that armoured location — ripping straps, bursting rings, creasing plates, or tearing away scales/chitin. If any damage remains after the protection has been reduced to zero AP, it carries over to the Hit Points of the location struck."],
 ["Take Weapon",1,1,"Unarmed","",0,"Allows an unarmed character to yank or twist an opponent's weapon out of their hand. The opponent must make an opposed roll of their Combat Style against the character's original Unarmed roll. If the target loses, their weapon is taken and from that moment on may be used by the character instead. Take Weapon differs from Disarm Opponent in that the Size of the weapon is largely irrelevant. However, the technique only works on creatures of up to twice the attacker's STR."],
 ["Trip Opponent",1,1,"","",0,"The character attempts to overbalance or throw their opponent to the ground. The opponent must make an opposed roll of their Brawn, Evade, or Acrobatics against the character's original roll. If the target fails, they fall prone. Quadrupeds (or creatures with even more legs) may substitute their Athletics skill for Evade, and treat the roll as one difficulty grade easier."],
@@ -663,18 +699,27 @@ function magicPanel(){
     h+=items.map(({m,idx})=>{
       let meta="";
       if(t.key==="folk"&&m.spell)meta=m.spell.t.join(", ");
-      else if(t.key==="sorcery"){const c=sorceryCost(m);meta=c.mp+" MP · "+c.turns+" turn"+(c.turns>1?"s":"")+(c.shapings?" · "+m.shapings.join(", "):" · unshaped");}
-      else if(t.key==="animism")meta="POW "+(m.pow||0)+" · CHA "+(m.cha||0);
-      else meta=(m.cost||0)+(t.pool==="devotional"?" from pool":" MP")+" · Intensity "+(m.intensity||1);
+      else if(t.key==="sorcery"){const c=sorceryCost(m);meta=c.mp+" MP · "+c.turns+" turn"+(c.turns>1?"s":"")+(c.shapings?" · "+Object.entries(sorceryLevels(m)).map(([k,v])=>k+" "+v).join(", "):" · unshaped")+(c.combinedSpells?" · +"+c.combinedSpells+" combined":"");}
+      else if(t.key==="animism")meta="POW "+(m.pow||0)+" · CHA "+(m.cha||0)+" · Intensity "+(m.intensity||1)+" · "+(m.spiritStatus==="bound"?"BOUND":"UNBOUND")+(Number.isInteger(m.spiritMP)?" · spirit MP "+m.spiritMP:"");
+      else meta=(m.cost||0)+(t.pool==="devotional"?" from pool":" MP")+" · Intensity "+(m.intensity||1)+(t.key==="mysticism"&&m.active?" · ACTIVE":"");
       const body=(t.key==="folk"&&m.spell)?m.spell.d:(m.notes||"");
+      if(t.key==="sorcery"&&S.play.sorceryCasting && S.play.sorceryCasting.index===idx){
+        meta+=" · CASTING "+S.play.sorceryCasting.completed+"/"+S.play.sorceryCasting.total;
+      }
+      if(t.key==="mysticism"&&m.active&&m.durationTurns>0)meta+=" · "+(m.remainingTurns||0)+" turns left";
       return '<details class="pm-fx-item"><summary>'+esc(magicLabel(m))
        +' <span class="pm-fx-badge">'+esc(meta)+'</span>'
-       +'<button class="pm-btn roll" onclick="event.preventDefault();event.stopPropagation();APP.castMagic('+idx+')">cast</button></summary>'
+       +'<button class="pm-btn roll" onclick="event.preventDefault();event.stopPropagation();'+(t.key==="animism"?'APP.commandSpirit('+idx+')':'APP.castMagic('+idx+')')+'">'+(t.key==="animism"?"Command spirit":"cast")+'</button></summary>'
+       +(t.key==="animism"?'<div class="pm-fx-resolve">Contact: '+esc(m.spiritContact||"unknown")+' · Attitude: '+esc(m.spiritAttitude||"neutral")+' · Vessel: '+esc(m.bindingType||"none")+'. Summoning and ritual binding require GM resolution (Core pp.134–137).</div>'
+        +'<div class="pm-fx-resolve">Spirit combat MP (manual): '+(Number.isInteger(m.spiritMP)?m.spiritMP:'not tracked')+' <button class="pm-btn sm" onclick="APP.spiritMPAdjust('+idx+',-1)">−1</button> <button class="pm-btn sm" onclick="APP.spiritMPAdjust('+idx+',1)">+1</button></div>'
+        +(m.spiritCombatNote?'<p>'+esc(m.spiritCombatNote)+'</p>':''): '')
+       +(t.key==="sorcery"&&S.play.sorceryCasting&&S.play.sorceryCasting.index===idx?'<button class="pm-btn sm" onclick="APP.sorceryCancel()">Cancel invocation</button>':'')
+       +(t.key==="mysticism"&&m.active&&m.durationTurns>0?'<button class="pm-btn sm" onclick="APP.talentTurn('+ (idx-S.magic.folk.length) +')">Advance Talent 1 turn</button>':'')
        +(body?'<p>'+esc(body)+'</p>':'<p class="pm-empty">No effect text recorded — add it on the Magic step.</p>')+'</details>';
     }).join("");
     h+='</div>';
   });
-  h+='<p class="pm-empty" style="margin-top:10px">Folk Magic follows the book&rsquo;s own result table: a Critical costs nothing, a Success or a Failure both cost 1 Magic Point, a Fumble costs 1d3. The other traditions deduct the cost you recorded, and only when the casting succeeds.</p>';
+  h+='<p class="pm-empty" style="margin-top:10px">Multi-turn Sorcery uses an explicit turn tracker; the Invocation roll happens on the final turn, and AP/interruption are still GM-managed. Mysticism duration counters are optional manual tracking aids. Casting is blocked if you lack the minimum available points. Folk Magic, Sorcery, Mysticism, and Theism use distinct result-dependent costs (Core pp.122, 156, 165, 181). Animism has separate bound-spirit commands and manual tracking for spirit contact, binding vessel, and spirit-combat MP (Core pp.134–139); summoning, ritual Binding and spirit combat outcomes still require GM resolution. For advanced rituals, recorded entries are tracking aids: consult Mythras Core and your GM to resolve specific casting, spirit, ritual, resistance, and replenishment rules. Successful rolls alone do not establish that every prerequisite has been met.</p>';
   return h;
 }
 // A roll-log row. Combat Style rolls that beat a Success (i.e. Critical or
@@ -758,7 +803,7 @@ function renderPlayView(){
   const campLabel=pmCampaignLabel();
   h+='<div class="pm-mast">';
   h+='<div class="pm-mast-top"><span><span class="pm-barcode"></span>MYTHRAS CHARACTER FORGE</span>'
-   +'<span><span class="red">'+esc(campLabel||"Unaffiliated")+'</span> &middot; SEASON OF FIRE &middot; ROUND 3</span></div>';
+   +'<span><span class="red">'+esc(campLabel||"Unaffiliated")+'</span> &middot; PLAY MODE</span></div>';
   h+='<h1 class="pm-mast-name">'+esc(firstName)+(surname?' <span class="outline">'+esc(surname)+'</span>':'')+'</h1>';
   // dateline: left = bold epithet chain (culture/career/archetype) with red
   // "/" separators, matching D's "Barbarian/Hunter/Wolf-Brother..." line;
@@ -798,7 +843,7 @@ function renderPlayView(){
     // rather than a native checkbox, bronze accent. Manual toggle for a
     // dramatic non-crit success the app can't detect on its own; auto-set
     // on a Critical (in-app roll, or the Improve Skills modal's own copy).
-    const ckflag='<button class="pm-ckflag'+(checked?" on":"")+'" title="'+(checked?"Checked — eligible for an Experience Roll. Click to clear.":"Mark checked (eligible for an Experience Roll)")+'" onclick="APP.xpToggleChecked(\''+jsq(e.key)+'\')">&#10003;</button>';
+    const ckflag='<button class="pm-ckflag'+(checked?" on":"")+'" title="'+(checked?"Checked (note only). Click to clear.":"Mark checked (note only)")+'" onclick="APP.xpToggleChecked(\''+jsq(e.key)+'\')">&#10003;</button>';
     // Fumble flag -- direct toggle, not a "log a result" step: most tables
     // roll real dice instead of clicking "roll" below, so flip this the
     // instant a physical die actually comes up a Fumble. Same flag/icon
@@ -851,14 +896,17 @@ function renderPlayView(){
     const styleTxt=styles.length?styles.map(s=>esc(s.name)+" "+s.pct).join(", "):"No combat style yet";
     h+='<p class="pm-notes" style="margin-bottom:10px">Combat Styles: '+styleTxt+'</p>';
     const maxAPnow=playMaxAP(),usedAPnow=Math.min(S.play.apUsed,maxAPnow),remainAPnow=maxAPnow-usedAPnow;
-    const reloadWeaponName=(S.gearWeapons||[]).find(n=>weaponByName(n)&&weaponByName(n).group==="Ranged"&&typeof weaponByName(n).load==="number");
-    const reloadCost=reloadWeaponName?weaponByName(reloadWeaponName).load:null;
+    // Reload is weapon-specific; using the first equipped ranged weapon silently
+    // charged the wrong AP whenever a character carried two different launchers.
+    const reloadActions=(S.gearWeapons||[]).map(n=>weaponByName(n))
+      .filter(w=>w&&w.group==="Ranged"&&Number.isInteger(w.load)&&w.load>0)
+      .map(w=>({nm:"Reload: "+w.name,ap:w.load,note:"Proactive · Core p.109; "+w.name+" reload takes "+w.load+" AP total"}));
     const ACTIONS=[
       {nm:"Attack",ap:1,note:"Proactive · core rules p.91"},
       {nm:"Cast a Spell",ap:1,note:"Proactive, Cast Magic · p.91"},
       {nm:"Change Combat Stance",ap:1,note:"= Change Range (close/open/disengage) · p.106 — “stance” isn’t a named action, this maps to the real Change Range action"},
       {nm:"Ready / Draw / Sheathe Weapon",ap:1,note:"Proactive, Ready Weapon · p.92"},
-      {nm:"Reload Ranged Weapon",ap:reloadCost||1,note:reloadCost?("Proactive · Reload table p.109 — "+reloadWeaponName+" takes "+reloadCost+" AP"):"Proactive · p.109 — varies 1–4 AP by weapon (no ranged weapon equipped, defaulting to 1)"},
+      ...reloadActions,
       {nm:"Full Move",ap:1,note:"Proactive, Move · p.91"},
       {nm:"Shove / Grapple",ap:1,note:"Not extra AP beyond an Attack — Grapple is declared as your Attack (Unarmed) action · p.106. “Shove” isn’t independently named in the core rules; closest analog is the Bash Special Effect."},
       {nm:"Parry",ap:1,note:"Reactive · p.93 — corrected from “Free”"},
@@ -890,10 +938,11 @@ function renderPlayView(){
       // character (VIEW_ONLY_IS_DM) as a narrow loot/gear exception. Deliberately
       // avoids the .pm-sbtn/.pm-pip/.pm-fatsel/.pm-dmgrow input classes that the
       // .view-only CSS rule disables, since this stays live under VIEW_ONLY for a DM.
-      h+='<div class="pm-tablewrap"><table class="pm-atktable"><tr><th>Item</th><th>Qty</th><th>ENC ea</th><th></th></tr>'
+      h+='<div class="pm-tablewrap"><table class="pm-atktable"><tr><th>Item</th><th>Qty</th><th>ENC ea</th><th>sp ea</th><th></th></tr>'
        +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.playInv('+i+',\'name\',this.value)"></td>'
         +'<td><input type="number" value="'+it.qty+'" style="width:56px" onchange="APP.playInv('+i+',\'qty\',this.value)"></td>'
-        +'<td><input type="number" step="0.5" value="'+it.enc+'" style="width:56px" onchange="APP.playInv('+i+',\'enc\',this.value)"></td>'
+        +'<td><input type="number" min="0" step="0.5" value="'+it.enc+'" style="width:56px" onchange="APP.playInv('+i+',\'enc\',this.value)"></td>'
+        +'<td><input type="number" min="0" step="0.01" value="'+(it.cost||0)+'" style="width:64px" onchange="APP.playInv('+i+',\'cost\',this.value)"></td>' 
         +'<td><button class="chip" aria-label="remove item" onclick="APP.playInvDel('+i+')">&times;</button></td></tr>').join("")
        +'</table></div><p style="margin-top:8px"><button class="chip" onclick="APP.playInvAdd()">+ add item</button></p>';
     }
@@ -941,7 +990,7 @@ function xpModalHtml(){
     const canSpend=xpRollsAvailable()>0&&!used;
     return '<div class="pm-xprow">'
      +'<button class="pm-xpflag'+(flagged?" on":"")+'" title="'+(flagged?"Fumbled — free +1% pending. Click to remove flag.":"Mark this skill as Fumbled (free +1%)")+'" onclick="APP.xpToggleFumble(\''+jsq(e.key)+'\')">&#9873;</button>'
-     +'<button class="pm-ckflag'+(checked?" on":"")+'" title="'+(checked?"Checked — eligible for an Experience Roll. Click to clear.":"Mark checked (eligible for an Experience Roll)")+'" onclick="APP.xpToggleChecked(\''+jsq(e.key)+'\')">&#10003;</button>'
+     +'<button class="pm-ckflag'+(checked?" on":"")+'" title="'+(checked?"Checked (note only). Click to clear.":"Mark checked (note only)")+'" onclick="APP.xpToggleChecked(\''+jsq(e.key)+'\')">&#10003;</button>'
      +'<span class="nm">'+esc(e.label)+'</span>'
      +'<span class="pctval">'+pct+'%</span>'
      +(flagged?'<button class="pm-btn sm" onclick="APP.xpApplyFumble(\''+jsq(e.key)+'\')">apply +1%</button>':'')
@@ -950,29 +999,15 @@ function xpModalHtml(){
   };
   let h='<div class="pm-modal-backdrop" onclick="APP.closeXP()"><div class="pm-modal" onclick="event.stopPropagation()">';
   h+='<div class="pm-modal-hd"><h3>Improve Skills — Experience Rolls</h3><button class="pm-btn sm" onclick="APP.closeXP()">&times; close</button></div>';
-  // Laid out as one left-to-right equation, CHA modifier included inline
-  // (not on a separate, easy-to-skip line) -- the whole point is that a
-  // player with a negative CHA mod (CHA <=6, per xpMod in engine.js) can
-  // see right here that their checked-skill count doesn't translate 1:1
-  // into bonus rolls, rather than assuming it does and only finding out
-  // they miscounted once they've already spent one. .neg picks the
-  // modifier term out in the "bad" colour specifically when it's actually
-  // subtracting something.
-  const chaMod=xpMod(S.chars.CHA);
-  h+='<div class="pm-xppool">'
-   +'<div class="pm-xpformula">'
-   +'<span class="pm-xpfterm">'+S.xp.pool+' banked</span>'
-   +'<span class="pm-xpfop">+</span>'
-   +'<span class="pm-xpfterm">'+S.xp.checked.length+' checked</span>'
-   +'<span class="pm-xpfmod'+(chaMod<0?" neg":"")+'" title="Experience Modifier, from CHA '+S.chars.CHA+'">'+(chaMod>=0?"+":"")+chaMod+' CHA mod</span>'
+  h+='<div class="pm-xppool"><div class="pm-xpformula">'
+   +'<span class="pm-xpfterm">'+S.xp.pool+' banked (GM-awarded)</span>'
    +'<span class="pm-xpfop">=</span>'
    +'<span class="pm-xpftotal"><b>'+xpRollsAvailable()+'</b> roll'+(xpRollsAvailable()===1?"":"s")+' available</span>'
-   +'</div>'
-   +'<p class="pm-empty" style="margin:0">Checked-skill formula is Myth&rsquo;s reconstruction, not yet confirmed against the book &mdash; may change.</p>'
+   +'</div><p class="pm-empty" style="margin:0">Core rules: the GM awards Experience Rolls; the CHA Experience Modifier applies to the award. Checked skills are notes only and do not add rolls.</p>'
    +'<div class="pm-xpaward">Award <input type="number" id="xpAwardN" value="3" min="1" style="width:52px"> '
    +'<button class="pm-btn sm" onclick="APP.xpAward(document.getElementById(\'xpAwardN\').value)">+ add to pool</button> '
-   +'<span class="pm-empty">core book: 2&ndash;4 per sitting, GM discretion. Awarding resets the once-per-skill cap below.</span></div></div>';
-  h+='<p class="pm-empty">Spend 1 roll on a skill: roll 1d100, add INT ('+S.chars.INT+'). Total meets or beats the skill&rsquo;s current % &rarr; <b>+1d4+1%</b>. Total falls short &rarr; still <b>+1%</b> (an Experience Roll never fails outright). A skill flagged &#9873; got a Fumble since the last sitting and gets a free <b>+1%</b> (applied before any roll spent on it, doesn&rsquo;t stack) &mdash; this flags automatically when you roll a Fumble in Play Mode, or click the flag by hand. A skill flagged &#10003; is checked (eligible for an Experience Roll of its own) &mdash; automatic on a Critical, in-app or logged by hand for a physical-dice roll, or click the flag yourself for a dramatic success the app can&rsquo;t detect; spending its roll clears that flag specifically. Only one Experience Roll per skill per sitting.</p>';
+   +'<span class="pm-empty">core book: 2&ndash;4 per sitting, GM discretion. CHA Experience Modifier applies once to each positive award. Awarding resets the once-per-skill cap below.</span></div></div>';
+  h+='<p class="pm-empty">Spend 1 roll on a skill: roll 1d100, add INT ('+S.chars.INT+'). Total meets or beats the skill&rsquo;s current % &rarr; <b>+1d4+1%</b>. Total falls short &rarr; still <b>+1%</b> (an Experience Roll never fails outright). A skill flagged &#9873; got a Fumble since the last sitting and gets a free <b>+1%</b> (applied before any roll spent on it, doesn&rsquo;t stack) &mdash; this flags automatically when you roll a Fumble in Play Mode, or click the flag by hand. A skill flagged &#10003; is marked for reference only; it does not grant a free Experience Roll. Only one Experience Roll per skill per sitting.</p>';
   h+='<div class="pm-xplist">';
   h+='<div class="pm-skillgroup"><h4>Standard</h4>'+grp("Standard").map(row).join("")+'</div>';
   if(grp("Professional").length)h+='<div class="pm-skillgroup"><h4>Professional</h4>'+grp("Professional").map(row).join("")+'</div>';
@@ -1075,10 +1110,15 @@ function characterSheetBody(){
   h+='<div class="mbox"><div class="mbox-t">Background, Community &amp; Family</div>'
    +mkv("Homeland",esc(S.concept.homeland||"—"))+mkv("Social class",esc(S.money.socialClass||"—"))
    +(S.archetype!=="ordinary"?mkv("Tier",esc(ARCHETYPES[S.archetype].label)):"")
+   +((S.community&&S.community.family)?mkv('Family',esc(S.community.family)):'')
+   +((S.community&&S.community.reputation)?mkv('Reputation',esc(S.community.reputation)):'')
+   +((S.community&&S.community.partyTie)?mkv('Party tie',esc(S.community.partyTie)):'')
    +'<div class="mnotesmini">'+(S.concept.notes?esc(S.concept.notes):'<span class="note">No background notes yet.</span>')+'</div></div>';
   h+='<div class="mtitlepanel"><div class="logo">Mythra<span>S</span></div><div class="sub2">Character Record</div></div>';
   h+='<div class="mbox"><div class="mbox-t">Passions (Contacts, Allies &amp; Ties)</div>'
-   +(S.passions.length?S.passions.map(p=>mkv(esc(p.name||"(unnamed)"),passionVal(p)+"%")).join(""):'<span class="note">None recorded.</span>')+'</div>';
+   +(S.passions.length?S.passions.map(p=>mkv(esc(p.name||"(unnamed)"),passionVal(p)+"%")).join(""):'<span class="note">No Passions recorded.</span>')
+   +(S.community&&S.community.connections&&S.community.connections.length?'<div class="mnotesmini">'
+     +S.community.connections.map(x=>'<div><b>'+esc(x.type)+':</b> '+esc(x.name)+(x.notes?' — '+esc(x.notes):'')+'</div>').join('')+'</div>':'')+'</div>';
   h+='<div class="mbox"><div class="mbox-t">Equipment &amp; Armour</div>'
    +'<table class="mtiny"><tr><th>Loc</th><th>Armour</th><th class="num">AP</th></tr>'
    +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(S.armor[l])+'</td><td class="num">'+armorApAt(l)+'</td></tr>').join("")+'</table>'
@@ -1142,8 +1182,8 @@ function characterSheetBody(){
      +meleeWps.map(w=>'<tr><td>'+esc(w.name)+'</td><td class="num">'+esc(w.dmg)+'</td><td>'+esc(w.reach)+'</td><td>'+esc(w.effects)+'</td><td class="num">'+w.enc+'</td><td>'+esc(w.apHp)+'</td></tr>').join("")+'</table>'
      :'<p class="note">None carried &mdash; add some on the Money &amp; Gear step.</p>')+'</div>';
   h+='<div class="mbox"><div class="mbox-t">Ranged Weapons</div>'
-   +(rangedWps.length?'<table class="mtiny"><tr><th>Weapon</th><th>Damage</th><th>Range</th><th>Effects</th><th class="num">ENC</th><th>AP/HP</th></tr>'
-     +rangedWps.map(w=>'<tr><td>'+esc(w.name)+'</td><td class="num">'+esc(w.dmg)+'</td><td>'+esc(w.range||"—")+'</td><td>'+esc(w.effects)+'</td><td class="num">'+w.enc+'</td><td>'+esc(w.apHp)+'</td></tr>').join("")+'</table>'
+   +(rangedWps.length?'<table class="mtiny"><tr><th>Weapon</th><th>Damage</th><th>Range</th><th>Force</th><th>DM</th><th>Load</th><th>Impale</th><th>Effects</th><th class="num">ENC</th><th>AP/HP</th></tr>'
+     +rangedWps.map(w=>'<tr><td>'+esc(w.name)+'</td><td class="num">'+esc(w.dmg)+'</td><td>'+esc(w.range||"—")+'</td><td>'+esc(w.reach||"—")+'</td><td>'+esc(w.dmgMod||"—")+'</td><td>'+esc(typeof w.load==="number"?String(w.load)+" AP":"—")+'</td><td>'+esc(w.impaleSize||"—")+'</td><td>'+esc(w.effects)+'</td><td class="num">'+w.enc+'</td><td>'+esc(w.apHp)+'</td></tr>').join("")+'</table>'
      :'<p class="note">None carried.</p>')+'</div>';
   h+='</div>'; // /mweapons-grid
 
@@ -1241,7 +1281,7 @@ function rulesNotes(){
   +'<li>Attribute tables (Action Points, Damage Modifier, Experience Modifier, Healing Rate, Luck Points, Initiative, Hit Points per location, Humanoid Hit Location d20 table) checked against core pp.9&ndash;10 and p.109 page images. Damage Modifier&rsquo;s lowest band is &minus;1D8 (an earlier text-extraction pass had misread this as &minus;1D6).</li>'
   +'<li>Skill base formulas from the workbook character sheet and core skill chapter. <b>Quirk:</b> the workbook&rsquo;s allocation worksheet misprints Locale as DEX+POW and Perception as CHA+POW; the core rulebook and the workbook&rsquo;s own sheet give Locale INT&times;2 and Perception INT+POW &mdash; the core values are used here.</li>'
   +'<li><b>Quirk:</b> culture tables print the skill as &ldquo;Navigate&rdquo;; the skills chapter defines &ldquo;Navigation (INT+POW)&rdquo; &mdash; normalised to Navigation.</li>'
-  +'<li>Culture: 100 points, every listed/chosen skill 5&ndash;15. Career: 100 points, max 15, &ldquo;not all of the available skills need to be improved.&rdquo; Bonus: 150 points, max 15, one hobby professional skill. Customs &amp; Native Tongue +40% each. All confirmed against the Character Creation Summary (core p.27) page image.</li>'
+  +'<li>Culture: 100 points, every required cultural skill 5&ndash;15; optional cultural Combat Style may stay at 0. Career: 100 points, max 15, &ldquo;not all of the available skills need to be improved.&rdquo; Bonus: 150 points, max 15, one hobby Professional Skill or Combat Style. Customs &amp; Native Tongue +40% each. All confirmed against the Character Creation Summary (core p.27) page image.</li>'
   +'<li>Passions starting values per the Passions Table (Culture &amp; Community, p.23), confirmed against the page image: a person (romantic/familial) 30 + loved one&rsquo;s POW+CHA; a person (platonic or averse) 30 + own POW + subject&rsquo;s CHA; an organisation, place or concept 30 + POW+INT; a race/species or an object 30 + POW&times;2.</li>'
   +'<li>Starting money per culture (Barbarian 4d6&times;50, Civilised 4d6&times;75, Nomadic 4d6&times;25, Primitive 4d6&times;10 silver) and the Social Class / Money Modifier tables (Culture &amp; Community, p.24, four per-culture tables: Barbarian, Civilised, Nomad, Primitive) are transcribed and confirmed against page images &mdash; no longer a reconstruction. The free-text Social Class field and Money Modifier number still let you override with a house rule if your table plays it differently.</li>'
   +'<li>Success tiers (Skills chapter, p.37&ndash;38, confirmed against page image): critical = one tenth of skill, fractions rounded up; 01&ndash;05 always succeeds; 96&ndash;00 always fails, regardless of skill value; fumble on 99&ndash;00, or only 00 for skills over 100. (Mythras has four tiers &mdash; no &ldquo;special&rdquo; tier.)</li>'
@@ -1250,18 +1290,18 @@ function rulesNotes(){
   +'<li><b>Quick Character</b> (Character Creation Workbook, Attribute Summary): a single 100-point pool spent across all Standard Skills, three chosen Professional Skills, and an optional Combat Style, replacing the Culture/Career/Bonus pipeline entirely. 5&ndash;15 points on any skill you invest in (0 is fine for the rest &mdash; with 20+ eligible skills, a mandatory 5 on literally every one wouldn&rsquo;t fit in 100 points). Characteristics still use the normal roll or 80-point build; there&rsquo;s no per-culture money multiplier in this mode, so enter one manually on the Money &amp; Gear step.</li>'
   +'<li><b>Pulp Hero &amp; Paragon</b> (Mythras Companion, &ldquo;Pyramids, Pulp, &amp; Paragons&rdquo;, pp.54&ndash;55, verified against page scans): different characteristic dice/point pools, 2 or 3 non-stacking Advantages, and extra Bonus Skill Points at a higher per-skill cap (Pulp +50 pts/20% cap, Paragon +100 pts/40% cap). <b>Quirk:</b> the book&rsquo;s Paragon bonus-points line is literally labelled &ldquo;Heroic characters&rdquo; rather than &ldquo;Paragon characters&rdquo; &mdash; preserved as printed.</li>'
   +'<li>Grade-easier Advantages (Endurance/Stealth/Willpower) are flagged on the Attributes step rather than converted into a flat percentage, since Mythras Grades are a situational roll modifier, not a skill bonus &mdash; baking in a number would be a guess, not a rule.</li>'
-  +'<li>The doubled Healing Rate for Pulp/Paragon (Minor or Serious Wounds only, Major Wounds unaffected) is noted next to Healing Rate rather than computed, since this build doesn&rsquo;t track wound severity.</li>'
+  +'<li>The doubled Healing Rate for Pulp/Paragon (Minor or Serious Wounds only, Major Wounds unaffected) is noted next to Healing Rate rather than computed, since automatic recovery also requires knowing the treatment history.</li>'
   +'<li><b>Difficulty Grade</b> (core rulebook, Skills chapter, p.38, confirmed against page image): Very Easy doubles the skill, Easy adds half again, Standard is unchanged, Hard cuts it by a third, Formidable halves it, Herculean drops it to a tenth; Automatic needs no roll and Hopeless allows none. The selector on the Sheet step applies this to every skill % and to the roll button. Rounding direction isn&rsquo;t specified in the book for this table, so results are rounded to the nearest whole percent.</li>'
   +'<li><b>Cult &amp; Community</b> (Cults &amp; Brotherhoods chapter, pp.196&ndash;200, confirmed against page images): the five organisation types (Theist Cult, Animist/Spirit Cult, Sorcery Order, Mystical Order, Brotherhood) and their rank titles &mdash; Common/Dedicated/Proven/Overseer/Leader &mdash; are the book&rsquo;s own, as are the per-rank Requirements (years of membership + a minimum number of cult skills at a minimum %) and Training Discount (0/25/50/75/100%). <b>Correction:</b> rank does not grant a flat skill % bonus &mdash; an earlier pass invented that mechanic; it has been removed. What stays intentionally setting-specific, per the book&rsquo;s own design (cults are meant to be campaign-defined), is which nine archetypes exist for Sit&#39;ota, their names/blurbs, and which skill each one teaches.</li>'
   +'<li><b>Encumbrance</b> (core rulebook, Encumbrance section, confirmed against page image): unencumbered up to STR&times;2. Over STR&times;2 (&ldquo;Burdened&rdquo;): STR/DEX-based skills, including Combat Styles, are one Grade harder, Movement &minus;2m, no sprinting. Over STR&times;3 (&ldquo;Overloaded&rdquo;): two Grades harder, Movement halved, walk-only. STR&times;4 is a hard cap &mdash; flagged but not blocked by this tool. Worn armour counts at half its packed ENC toward these totals; carried (unworn) armour counts full ENC. <b>These penalties are now applied, not just described:</b> a skill counts as STR/DEX-based if its base formula contains STR or DEX (which is every Combat Style), and the Grade shift feeds the same <code>gradeForEntry()</code> the skill list, sheet, Play Mode and every roll button already use. Until this pass the warning text promised a penalty that never reached a roll.</li>'
   +'<li><b>Fatigue</b> (Fatigue Levels table). Each level sets an <i>absolute</i> Skill Grade for all rolls (Winded/Tired Hard, Wearied/Exhausted Formidable, Debilitated/Incapacitated Herculean, Semi-Conscious and beyond Hopeless), plus Movement, Initiative and Action Point penalties, and a Recovery Period that is divided by the character&rsquo;s Healing Rate. All of it is applied automatically now; the track used to be a picker that stored a string and changed nothing. Because the table states a grade rather than a shift, Fatigue acts as a <i>floor</i> on difficulty and takes the harsher of itself and any Encumbrance shift, rather than stacking with it &mdash; the book gives no stacking rule, and summing them would be an invention. Table transcribed from the <a href="https://srd.mythras.net/" target="_blank" rel="noopener">Mythras Imperative SRD</a>, published by The Design Mechanism under the ORC License, which reproduces the core rulebook&rsquo;s own Fatigue table.</li>'
   +'<li><b>Age bands</b> (Experience Table, &ldquo;Creating Experienced Characters&rdquo;). Age was free text with no mechanical effect; it now sets the Bonus Skill Points pool and the per-skill cap &mdash; Young 100/+10, Adult 150/+15, Middle Aged 200/+20, Senior 250/+25, Old 300/+30 &mdash; with the age dice (10+1d6 up to 60+5d6) rollable. Adult is 150/+15, exactly what the app previously hardcoded, so a default character is unaffected. Composing this with the character tiers: the Pulp/Paragon extra points are additive, and for the cap an <i>Ordinary</i> character simply takes their age band&rsquo;s (the tier table&rsquo;s 15 is not a permission, it is just the Adult row restated), while Pulp and Paragon genuinely raise the ceiling and so take whichever of the two caps is more generous. The table carries no characteristic modifiers for age &mdash; a common assumption from other d100 games, but not something this table does &mdash; so none are applied. Transcribed from the <a href="https://srd.mythras.net/" target="_blank" rel="noopener">Mythras Imperative SRD</a> (The Design Mechanism, ORC License).</li>'
-  +'<li><b>Life events are house content and are labelled as such in the app.</b> The core rulebook ties age to the Experience Table and stops there; it ships no background-events roll table, and this repo has no verified transcription of one from any supplement. Rather than invent a table and present it as rules, the generator is an openly-flagged backstory prompt &mdash; but every event carrying a mechanical consequence applies it through a system the app already models correctly (a Passion at its proper book-derived starting value, an inventory row, or a percentage change to starting silver that scales with culture and social class). No new mechanic is invented, and every result stays editable.</li>'
+  +'<li><b>Life events are house content and are labelled as such in the app.</b> Core p.18 contains an official Background Events table, with age-based rolls on p.34. This optional house-event generator is separate from that table. Rather than invent a table and present it as rules, the generator is an openly-flagged backstory prompt &mdash; but every event carrying a mechanical consequence applies it through a system the app already models correctly (a Passion at its proper book-derived starting value, an inventory row, or a percentage change to starting silver that scales with culture and social class). No new mechanic is invented, and every result stays editable.</li>'
   +'<li><b>Height &amp; Weight</b> used to be a text reminder on the Concept step that never computed anything. It is now derived from SIZ, species and body frame and flows to the ledger, the Attributes step, the sheet and the Markdown export. <b>Provenance, stated plainly:</b> the core rulebook&rsquo;s Height &amp; Weight table (p.9) is <i>not</i> reproduced &mdash; this app has no verified transcription of it, and inventing one and presenting it as the book&rsquo;s table would repeat exactly the kind of fabrication that had to be scrubbed out of the weapons table. What runs instead is an explicit model: weight = mass-per-SIZ &times; SIZ (SIZ being a measure of mass), height = a species anchor scaled by the cube root of SIZ and adjusted by build (same mass, taller if Lithe, shorter if Heavy). It is pinned to the standard adult figure for an average-SIZ human and, for each demi-human, to the height its own species description states. Both figures have override boxes: type the printed table&rsquo;s value in and it wins outright.</li>'
   +'<li><b>Non-human species.</b> Picking a species on the Concept step swaps in that species&rsquo; characteristic dice (which drive the roller, the Points Build bounds and the pool), its Movement Rate, and its racial traits; everything downstream &mdash; Culture, Career, skills, Attributes, Hit Points &mdash; runs unchanged, which is how the rules handle it. The Racial Characteristics Table, Movement Rates and racial special rules come from the <a href="https://cfi-srd.mythras.net/" target="_blank" rel="noopener">Classic Fantasy Imperative SRD</a> (The Design Mechanism, ORC License) &mdash; the same engine, and the only open Mythras-family source for playable non-human dice. Its Human row is identical to core Mythras (3d6 / 2d6+6), which is the cross-check that the two agree. <b>Two seams worth knowing:</b> (1) Points Build keeps the core rulebook&rsquo;s flat 80/90/100 pool for humans but uses the species rules&rsquo; &ldquo;racial averages + 6&rdquo; for demi-humans, because a flat 80 would put a dwarf below its own species average; (2) CFI&rsquo;s &ldquo;humans get +1 Luck Point&rdquo; balance perk is <i>not</i> applied, since it is a Classic Fantasy rule rather than core Mythras and would silently inflate every human character. Racial traits are all situational Grade shifts or narrative rules, so they are recorded on the sheet rather than folded into a percentage &mdash; the same treatment the Pulp/Paragon Grade-easier Advantages already get.</li>'
   +'<li><b>Movement Rate</b> was hardcoded as the string &ldquo;6m&rdquo; in five places. It now comes from the species template (core: &ldquo;Movement is not calculated from Characteristics but is a default value which differs from species to species. The base Movement Rate for humans is 6 metres&rdquo;) and is reduced by Fatigue and Encumbrance. Gaits are Walk / Run &times;3 / Sprint &times;5; sprinting is lost while Burdened and everything above a walk while Overloaded.</li>'
-  +'<li><b>Magic.</b> The app has always had the magic <i>skills</i>; the Magic step is where a caster now gets magic to spend them on, castable from Play Mode with the tradition&rsquo;s own skill rolled through the same Difficulty Grade pipeline as everything else and the cost taken from the right pool. <b>Folk Magic is complete and verbatim</b> &mdash; all 23 spells with their traits and full rules text &mdash; reproduced from the ORC-licensed Mythras Imperative SRD; casting follows the book&rsquo;s own result table (Critical free, Success 1 Magic Point, Failure 1 Magic Point anyway, Fumble 1d3), a magician begins with 1d4+1 spells, and further spells cost 3 Experience Rolls and a week&rsquo;s study. <b>Theism, Sorcery, Animism and Mysticism content is deliberately absent:</b> the miracle lists, grimoires, spirit rosters and talents are Reserved Material in the core rulebook, this repo has no verified transcription of any of them, and fabricating spell lists would be far worse than a stated gap. What ships for those four is the working mechanics &mdash; Theism&rsquo;s Devotional Pool invoked with Exhort, Sorcery&rsquo;s shaping calculator (1 Magic Point for the spell plus one per shaping applied, and a casting turn each the same way; it reproduces the worked example in <code>docs/mythras-rules-reference.md</code> &sect;5 exactly at 4 MP and 4 turns), Animism&rsquo;s bound spirits with their own POW and CHA, Mysticism&rsquo;s Talents &mdash; with you entering the magic your own rulebook and GM allow.</li>'
-  +'<li><b>ORC License attribution.</b> The Folk Magic spell list and rules text, the Fatigue Levels table and the Experience Table are taken from <i>Mythras Imperative</i>; the Racial Characteristics Table, Movement Rates and racial traits from <i>Classic Fantasy Imperative</i>. Both are published by The Design Mechanism under the ORC License. Based on Mythras Imperative, written by Pete Nash and Lawrence Whitaker, published by The Design Mechanism, Copyright 2023. Mythras and Classic Fantasy, published by The Design Mechanism, are Reserved Material under that licence and are not reproduced here.</li>'
+  +'<li><b>Magic.</b> The app has always had the magic <i>skills</i>; the Magic step is where a caster now gets magic to spend them on, castable from Play Mode with the tradition&rsquo;s own skill rolled through the same Difficulty Grade pipeline as everything else and the cost taken from the right pool. <b>Core-first magic:</b> the unverified Imperative spell catalogue is removed. Record Core-verified magic with your GM; consult Core pp.121&ndash;129 for Folk Magic details. <b>Theism, Sorcery, Animism and Mysticism content is deliberately absent:</b> the miracle lists, grimoires, spirit rosters and talents are Reserved Material in the core rulebook, this repo has no verified transcription of any of them, and fabricating spell lists would be far worse than a stated gap. What ships for those four is partial tracking support, requiring GM adjudication &mdash; Theism&rsquo;s Devotional Pool invoked with Exhort, Sorcery&rsquo;s per-component Shaping point and Combine cost tracker (GM confirms legal point limits and effects), Animism&rsquo;s bound spirits with their own POW and CHA, Mysticism&rsquo;s Talents &mdash; with you entering the magic your own rulebook and GM allow.</li>'
+  +'<li><b>Historical ORC attribution.</b> Earlier project versions contained Imperative-derived text, including a Folk Magic catalogue that has now been removed. The provenance of any remaining tables must be audited before publication: the Racial Characteristics Table, Movement Rates and racial traits from <i>Classic Fantasy Imperative</i>. Both are published by The Design Mechanism under the ORC License. Based on Mythras Imperative, written by Pete Nash and Lawrence Whitaker, published by The Design Mechanism, Copyright 2023. Mythras and Classic Fantasy, published by The Design Mechanism, are Reserved Material under that licence and are not reproduced here.</li>'
   +'</ul></div></details>';
 }
 

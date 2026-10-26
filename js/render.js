@@ -9,6 +9,7 @@ function render(){
   // cloud.js) the first time a brand-new character is touched. Syncing
   // before that would still be reading the old, not-yet-identified state.
   syncRouteFromState();
+  updateSaveStatus();
 }
 function renderInner(){
   // The Difficulty Grade popover lives outside #main (see toggleGradePop),
@@ -132,8 +133,8 @@ function archetypeCard(){
 function speciesCard(){
   const cur=S.species||"human";
   let h='<div class="card"><h3>Species</h3>'
-   +'<p class="note">Non-human characters are built exactly like humans &mdash; same Culture, Career, skills and Attributes &mdash; but roll their own characteristic dice and have their own Movement Rate. Everything downstream adapts automatically.</p>'
-   +'<div class="pickgrid pickgrid-sm">'+SPECIES.map(sp=>
+   +'<p class="note">Core-first mode: only the Core human template is available for new characters. Non-Core species templates are preserved for existing saves but are not offered as standard options.</p>'
+   +'<div class="pickgrid pickgrid-sm">'+SPECIES.filter(sp=>sp.key==="human"||sp.key===cur).map(sp=>
      '<button class="pick '+(cur===sp.key?"on":"")+'" onclick="APP.pickSpecies(\''+sp.key+'\')">'
      +'<span class="pn">'+esc(sp.label)+'</span>'
      +'<div class="pd">'+esc(sp.blurb)+'</div>'
@@ -152,7 +153,7 @@ function speciesCard(){
      +sp.traits.map(([n,d])=>'<p class="note"><b>'+esc(n)+'</b> &mdash; '+esc(d)+'</p>').join("")
      +'<p class="note"><i>These are situational Grade shifts and narrative rules, so &mdash; exactly as with the Pulp/Paragon Grade-easier Advantages &mdash; they are recorded on your sheet rather than folded into a percentage. Characteristic dice and Movement Rate are applied automatically.</i></p></div>';
   }
-  h+='<p class="note rulesrc">Characteristic dice, Movement Rates and racial traits from the <a href="https://cfi-srd.mythras.net/" target="_blank" rel="noopener">Classic Fantasy Imperative SRD</a> (The Design Mechanism, ORC License). Its Human row matches core Mythras exactly.</p>';
+  h+='<p class="note rulesrc">Default human characteristics and Movement: Mythras Core pp. 7&ndash;10. Existing non-human saves are legacy, non-Core content and require GM review.</p>';
   return h+'</div>';
 }
 // Age band (Experience Table). Age used to be a free-text box with no
@@ -177,15 +178,35 @@ function ageCard(){
    +fld("Resulting Bonus Skill Points",'<div class="agetotal">'+bonusPool()+' points &middot; max '+bonusCap()+' per skill</div>')
    +'</div>';
   if(sp)h+='<p class="note">A '+esc(sp.label)+' lives '+esc(sp.lifespan)+', so these bands describe a very different span of life than they do for a human &mdash; the categories are about accumulated experience, not calendar years. Adjust the exact age to suit.</p>';
-  h+='<p class="note rulesrc">Experience Table from the <a href="https://srd.mythras.net/" target="_blank" rel="noopener">Mythras Imperative SRD</a> (The Design Mechanism, ORC License), which reproduces the core rulebook&rsquo;s table. The book notes the age bonus &ldquo;should be treated as approximate, as campaigns advance at different rates&rdquo;. The table gives no characteristic modifiers for age, so none are applied.</p>';
+  h+='<p class="note rulesrc">Age and Bonus Skill Points: Mythras Core p.34. Older characters are also subject to the optional ageing procedure (Core p.70).</p>';
+  h+=coreBackgroundEventsBlock();
   h+=lifeEventsBlock();
+  return h+'</div>';
+}
+// Core p.18 background-events table is copyrighted; the wizard generates
+// accurate rolls and saves player-entered results without copying its text.
+function coreBackgroundEventsBlock(){
+  const count=coreBackgroundRollCount(),events=S.age.coreEvents||[];
+  let h='<div class="lifeev"><h4>Background Events <span class="rulesrc">Mythras Core</span></h4>'
+   +'<p class="note">Core pp.18–20, 34: your age category gives <b>'+count+'</b> official Background Event roll'+(count===1?'':'s')+'. Roll d100 here, consult the corresponding entry in your copy of Core, and record a short summary. The separate generator below is house content, not part of the official table.</p>';
+  if(events.length!==count){
+    h+='<p class="note" role="status">'+(events.length?'Your age category changed; the saved rolls no longer match its required number. Re-roll when ready.':'No official rolls recorded yet.')+'</p>';
+  }
+  if(count>0)h+='<button class="chip actionchip" onclick="APP.rollCoreBackgroundEvents()">'+(events.length?'reroll official events':'roll '+count+' official event'+(count===1?'':'s'))+'</button>';
+  if(events.length)h+=' <button class="chip" onclick="APP.clearCoreBackgroundEvents()">clear</button>';
+  if(count===0&&!events.length)h+='<p class="note">Young characters receive no Background Event rolls.</p>';
+  for(let i=0;i<events.length;i++){
+    const ev=events[i];h+='<div class="lifeevrow"><div class="t">Roll '+(i+1)+': <b>'+Number(ev.roll)+'</b> (d100)</div>'
+      +'<div class="fx"><label for="coreevent'+i+'">Result from Core table:</label> '
+      +'<input id="coreevent'+i+'" type="text" maxlength="500" placeholder="Your short event summary" value="'+esc(ev.summary||'')+'" onchange="APP.editCoreBackgroundEvent('+i+',this.value)"></div></div>';
+  }
   return h+'</div>';
 }
 // Life Events. Openly labelled house content — see the LIFE_EVENTS comment in
 // data.js for why this isn't presented as a book table.
 function lifeEventsBlock(){
   let h='<div class="lifeev"><h4>Life events <span class="housetag">house content</span></h4>'
-   +'<p class="note">The rules tie age to the Experience Table above and stop there &mdash; there is no background-events table in the core book, and this app has no verified transcription of one from a supplement. So this is a backstory prompt generator, not a rules table. Every event that carries a mechanical consequence applies it through something the app already models properly: a Passion at its correct starting value, an inventory item, or a change to starting silver.</p>'
+   +'<p class="note">The Core Rulebook includes Background Events on page 18, with age-dependent roll counts on page 34. This custom generator is NOT that official table. So this is a backstory prompt generator, not a rules table. Every event that carries a mechanical consequence applies it through something the app already models properly: a Passion at its correct starting value, an inventory item, or a change to starting silver.</p>'
    +'<p><button class="chip actionchip" onclick="APP.rollLifeEvents()">'+(S.age.events.length?"reroll events":"roll life events")+'</button>'
    +(S.age.events.length?' <button class="chip" onclick="APP.clearLifeEvents()">clear</button>':"")+'</p>';
   if(!S.age.events.length)return h+'</div>';
@@ -388,7 +409,8 @@ function allocTable(phase,rows,pool,min,max,quote,groupOrder){
    +'<table class="alloc"><tr><th>Skill</th><th class="num">Base</th><th>'+phase+' pts</th><th class="num">Total %</th></tr>'
    +rows.map((r,i)=>{
      const v=aGet(phase,r.key);
-     const bad=(v>max)||(min?(v>0&&v<min):(v<0));
+     const styleException=phase==="culture"&&r.key==="style:cult"&&S.cultStyleSmallAlloc;
+     const bad=(v>max)||(min?((v>0||phase==="culture"&&r.required&&r.key!=="style:cult")&&v<min&&!styleException):(v<0));
      const groupHead=(groupOrder&&(i===0||rows[i-1].grp!==r.grp))
        ?'<tr class="allocgrp"><td colspan="4">'+esc(r.grp||"")+'</td></tr>':"";
      return groupHead+'<tr class="'+(bad?"bad ":"")+(r.required?"req":"")+'"><td>'+esc(r.label)+'</td><td class="num">'+r.base+(r.plus40?" +40":"")+'</td>'
@@ -497,9 +519,10 @@ function stepCulture(){
    +'<p class="note">Examples for '+S.culture+': '+esc(c.styles)+'</p>'
    +(S.cultStyleOn?combatStyleBuilderHTML({key:"style:cult",name:S.cultStyleName||"Cultural Combat Style"}):"")
    +'</div>';
+  if(S.cultStyleOn)h+='<p class="note"><label><input type="checkbox" '+(S.cultStyleSmallAlloc?'checked':'')+' onchange="APP.cultStyleSmallAlloc(this.checked)"> Allow 1–4 cultural points in this Combat Style <b>(Sit’ota house rule)</b></label><br>Mythras Core p.13 requires a minimum 5 points when investing in a skill; zero points in a cultural Combat Style is expressly allowed. Uncheck for strict Core allocation.</p>';
   const rows=cultureReqKeys().map(k=>rowFor(k,true)).filter(Boolean);
   h+='<div class="card"><h3>Allocate 100 cultural points</h3>'
-   +allocTable("culture",rows,100,5,15,"&ldquo;Distribute 100 points amongst the listed Standard Skills, the chosen Professional Skills, and the Combat Style (if selected)&hellip; each skill must receive a minimum of 5% and cannot receive more than 15%.&rdquo;")+'</div>';
+   +allocTable("culture",rows,100,5,15,"Mythras Core p.13: spend 100 points; developed skills receive 5–15 points, and a cultural Combat Style may receive zero. The optional Sit’ota house rule above also permits 1–4 style points.")+'</div>';
   h+='<div class="card"><h3>Cultural passions</h3><p class="note">Suggested for '+S.culture+': '+c.passions.map(esc).join(" &middot; ")+' &mdash; set values at the Passions step.</p></div>';
   return h;
 }
@@ -532,7 +555,7 @@ function profPickers(which,offers,slots){
      // (selecting either still just picks "Lore"; the filter below already
      // stops the same base name being pickable in two slots at once), only
      // the label text was wrong.
-     +parsed.filter(o=>o.name===cur||!picks.some((p,j)=>j!==i&&p===o.name)).map(o=>'<option value="'+esc(o.name)+'" '+(cur===o.name?"selected":"")+'>'+esc(o.name+(o.hint?" ("+o.hint+")":""))+'</option>').join("")+'</select>'
+     +parsed.filter(o=>o.name===cur||hintFor(o.name)||!picks.some((p,j)=>j!==i&&p===o.name)).map(o=>'<option value="'+esc(o.name)+'" '+(cur===o.name?"selected":"")+'>'+esc(o.name+(o.hint?" ("+o.hint+")":""))+'</option>').join("")+'</select>'
      +(hint?'<input type="text" value="'+esc(specs[i])+'" placeholder="speciality: '+esc(hint)+'" style="flex:1;min-width:160px" onchange="APP.profSpec(\''+which+'\','+i+',this.value)">':"")
      +'</div>';
   }
@@ -586,7 +609,7 @@ function stepCareer(){
     h+='<p class="note">&ldquo;Choosing a Style or Professional Skill previously gained via cultural background simply allows the character to further apply some of their career skill points.&rdquo;</p></div>';
   }
   const carProfOffers=S.customCareer.isCustom?Object.keys(PROF).sort():k.prof;
-  h+='<div class="card"><h3>Up to three professional skills</h3>'+profPickers("car",carProfOffers,3)+'</div>';
+  h+='<div class="card"><h3>Up to three professional skills</h3><p class="note">Different specialities of Lore, Craft, or other specialised skills may be selected separately. The same skill and speciality cannot be selected twice.</p>'+profPickers("car",carProfOffers,3)+'</div>';
   const rows=careerKeys().map(key=>rowFor(key,false)).filter(Boolean);
   h+='<div class="card"><h3>Allocate 100 career points</h3>'
    +allocTable("career",rows,100,0,15,"&ldquo;Distribute 100 points amongst the career&rsquo;s listed Standard Skills and whatever Professional Skills were chosen&hellip; Not all of the available skills need to be improved, but no individual skill can receive more than 15%.&rdquo;")+'</div>';
@@ -596,19 +619,20 @@ function stepCareer(){
 /* ---- step: bonus ---- */
 function stepBonus(){
   const pool=bonusPool(),cap=bonusCap(),tierExtra=ARCHETYPES[S.archetype].bonusExtra||0;
-  let h=head("Bonus Skill Points","Free development: "+pool+" points across anything the character knows, no more than "+cap+"% to any one skill &mdash; plus one extra Professional Skill as a hobby.");
+  let h=head("Bonus Skill Points","Free development: "+pool+" points across anything the character knows, no more than "+cap+"% to any one skill &mdash; plus one extra Professional Skill or Combat Style as a hobby.");
   const hobOff=Object.keys(PROF).sort();
   const band=ageBand();
   h+='<div class="card"><h3>Hobby skill</h3>'
-   +'<div class="rulequote">&ldquo;Default characters have 150 points with a limit of assigning no more than 15 points per skill. Choose one additional Professional skill as a hobby speciality.&rdquo;'
+   +'<div class="rulequote">&ldquo;Default characters have 150 points with a limit of assigning no more than 15 points per skill. Choose one additional Professional Skill or Combat Style as a hobby speciality.&rdquo;'
    +(tierExtra?' &mdash; '+ARCHETYPES[S.archetype].label+' adds +'+tierExtra+' points and raises the per-skill cap to '+cap+'% (Mythras Companion, pp.54&ndash;55).':"")+'</div>'
    +'<p class="note">Your pool comes from the Experience Table&rsquo;s age band: <b>'+esc(band.label)+'</b> gives <b>'+band.bonus+'</b> points at a cap of <b>+'+band.cap+'</b> per skill'
    +(tierExtra?', plus '+ARCHETYPES[S.archetype].label+'&rsquo;s +'+tierExtra+' (the more generous of the two caps applies, so '+cap+' here)':"")
    +'. Change it on the Concept step.</p>'
    +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
    +'<select onchange="APP.hobby(this.value)"><option value="">&mdash; choose a hobby skill &mdash;</option>'
+   +'<option value="__combat_style__" '+(S.hobby==="__combat_style__"?"selected":"")+'>Combat Style</option>'
    +hobOff.map(n=>'<option '+(S.hobby===n?"selected":"")+'>'+n+'</option>').join("")+'</select>'
-   +(S.hobby?'<input type="text" value="'+esc(S.hobbySpec)+'" placeholder="speciality (if any)" onchange="APP.set2(\'hobbySpec\',this.value)">':"")
+   +(S.hobby?'<input type="text" value="'+esc(S.hobbySpec)+'" placeholder="speciality / combat style name" onchange="APP.set2(\'hobbySpec\',this.value)">':"")
    +'</div></div>';
   const es=allEntries();
   h+='<div class="card"><h3>Allocate '+pool+' bonus points</h3>'
@@ -671,7 +695,7 @@ function stepMagic(){
 }
 function folkMagicPicker(){
   const known=S.magic.folk;
-  let h='<p><button class="chip actionchip" onclick="APP.rollStartingFolk()">roll 1d4+1 starting spells</button>'
+  let h='<p><button class="chip actionchip" '+(allFolkSpells().length?'':'disabled title="No verified spell entries available"')+' onclick="APP.rollStartingFolk()">roll 1d4+1 starting spells</button>'
    +(known.length?' <button class="chip" onclick="APP.clearFolk()">clear all</button>':"")
    +' <span class="note">Magicians begin with 1d4+1 spells; more cost 3 Experience Rolls and a week&rsquo;s study each.</span></p>';
   const allSpells=allFolkSpells();
@@ -689,7 +713,7 @@ function folkMagicPicker(){
        +'<div class="sd">'+esc(s.d)+'</div></div>';
     }).join("")+'</div>';
   }
-  h+='<p class="note rulesrc">Folk Magic spells, traits and rules text reproduced from the <a href="https://srd.mythras.net/" target="_blank" rel="noopener">Mythras Imperative SRD</a>, published by The Design Mechanism under the ORC License. Based on Mythras Imperative, written by Pete Nash and Lawrence Whitaker, published by The Design Mechanism, Copyright 2023.</p>';
+  h+='<p class="note rulesrc">Core-first mode: the unverified Imperative spell catalogue has been removed. Your GM may add verified custom spells. Folk Magic chapter: Mythras Core pp.121&ndash;129.</p>'; 
   return h;
 }
 function knownMagicEditor(t){
@@ -701,6 +725,10 @@ function knownMagicEditor(t){
      +fld("Currently available",'<div class="agetotal">'+devotionalCur()+' / '+devotionalMax()+'</div>')
      +'</div>';
   }
+  if(t.key==="mysticism"){
+    const lim=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
+    h+='<p class="note rulesrc">Core pp.156–157: One preparation turn per Intensity. Individual Intensity ceiling: '+lim.individual+'; combined active Intensity ceiling: '+lim.combined+'. Currently active: '+mysticismActiveTotal(S.magic.known)+' / '+lim.combined+'. Activation is a tracking marker only; casting and effects still require normal resolution.</p>';
+  }
   h+=rows.map(({m,i})=>{
     let r='<div class="magicrow">'
      +'<input type="text" class="mname" value="'+esc(m.name)+'" placeholder="'+esc(t.key==="animism"?"spirit name":t.key==="theism"?"miracle name":t.key==="mysticism"?"talent name":"spell name")+'" onchange="APP.magicField('+i+',\'name\',this.value)">';
@@ -708,10 +736,31 @@ function knownMagicEditor(t){
       r+='<label class="mnum">'+esc(label)+'<input type="number" min="0" value="'+(m[f]||0)+'" onchange="APP.magicField('+i+',\''+f+'\',this.value)"></label>';
     });
     if(t.shaping){
-      const c=sorceryCost(m);
-      r+='<div class="mshaping"><span class="note">Shaping applied:</span>'
-       +t.shaping.map(sn=>'<button class="chip '+((m.shapings||[]).includes(sn)?"on":"")+'" onclick="APP.toggleShaping('+i+',\''+jsq(sn)+'\')">'+esc(sn)+'</button>').join("")
-       +'<span class="mcost">'+c.mp+' MP &middot; '+c.turns+' turn'+(c.turns>1?"s":"")+' to cast</span></div>';
+      const c=sorceryCost(m),levels=sorceryLevels(m);
+      r+='<div class="mshaping"><span class="note">Core pp.164–165: Allocate Shaping points by component (0 = unchanged). Each altered category adds 1 MP and 1 casting Turn; higher levels change effect, not base cost. GM must confirm available Shaping points and spell traits.</span>'
+       +t.shaping.map(sn=>'<label class="mnum">'+esc(sn)+'<input aria-label="'+esc(sn)+' Shaping points" type="number" min="0" max="100" value="'+(levels[sn]||0)+'" onchange="APP.shapingLevel('+i+',\''+jsq(sn)+'\',this.value)"></label>').join("")
+       +'<label class="mnum">Additional combined spells<input aria-label="Additional combined spells" type="number" min="0" max="20" value="'+(m.combineExtra||0)+'" onchange="APP.combineExtra('+i+',this.value)"></label>'
+       +'<span class="mcost">'+c.mp+' MP &middot; '+c.turns+' turn'+(c.turns>1?"s":"")+' to cast · '+c.shapingPoints+' Shaping points</span></div>';
+    }
+    if(t.key==="animism"){
+      r+='<label class="mnum">Spirit Intensity<input type="number" min="1" max="100" value="'+(m.intensity||1)+'" onchange="APP.magicField('+i+',\'intensity\',this.value)"></label>'
+       +'<label class="mnum">Binding status<select aria-label="Spirit binding status" onchange="APP.spiritStatus('+i+',this.value)">'
+       +'<option value="unbound" '+(m.spiritStatus!=="bound"?'selected':'')+'>Not bound / unconfirmed</option>'
+       +'<option value="bound" '+(m.spiritStatus==="bound"?'selected':'')+'>Bound (GM confirmed)</option></select></label>';
+      r+='<label class="mnum">Spirit contact<select onchange="APP.spiritSelect('+i+',\'spiritContact\',this.value)">'
+       +["unknown","located","contacted"].map(v=>'<option value="'+v+'" '+(m.spiritContact===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label>'
+       +'<label class="mnum">Attitude<select onchange="APP.spiritSelect('+i+',\'spiritAttitude\',this.value)">'
+       +["friendly","neutral","hostile"].map(v=>'<option value="'+v+'" '+(m.spiritAttitude===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label>'
+       +'<label class="mnum">Binding vessel (GM confirmed)<select onchange="APP.spiritSelect('+i+',\'bindingType\',this.value)">'
+       +["none","fetish","location","creature"].map(v=>'<option value="'+v+'" '+(m.bindingType===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label>'
+       +'<label class="mnum">Spirit current MP (manual)<input type="number" min="0" max="999" placeholder="not tracked" value="'+(Number.isInteger(m.spiritMP)?m.spiritMP:'')+'" onchange="APP.spiritMP('+i+',this.value)"></label>'
+       +'<label class="mnum">Negotiation / spirit combat notes<input type="text" maxlength="800" value="'+esc(m.spiritCombatNote||'')+'" onchange="APP.spiritCombatNote('+i+',this.value)"></label>'
+       +'<p class="note rulesrc">Core pp.134–139: locating, negotiation, binding and spirit combat have separate prerequisites. Use these GM-confirmed record fields; recording a contact or vessel does not automatically bind the spirit.</p>';
+    }
+    if(t.key==="mysticism"){
+      r+='<label class="mnum">Duration (turns; 0 = GM)<input type="number" min="0" max="9999" value="'+(m.durationTurns||0)+'" onchange="APP.talentDuration('+i+',this.value)"></label>'
+       +'<button class="chip '+(m.active?'on':'')+'" onclick="APP.toggleTalent('+i+')">'+(m.active?'Active — end Talent':'Mark active')+'</button>'
+       +(m.active&&m.durationTurns>0?'<span class="mcost">'+(m.remainingTurns||0)+' turns left</span><button class="chip" onclick="APP.talentTurn('+i+')">Advance 1 turn</button>':'');
     }
     r+='<button class="chip mdel" onpointerdown="APP.delMagic('+i+')" onclick="APP.delMagic('+i+')" aria-label="remove">&times;</button>'
      +'<textarea class="mnotes" rows="2" placeholder="effect / notes from your rulebook" onchange="APP.magicField('+i+',\'notes\',this.value)">'+esc(m.notes||"")+'</textarea>'
@@ -720,6 +769,37 @@ function knownMagicEditor(t){
   }).join("");
   const noun=t.key==="animism"?"spirit":t.key==="theism"?"Miracle":t.key==="mysticism"?"Talent":"spell";
   h+='<p><button class="chip actionchip" onpointerdown="APP.addMagic(\''+t.key+'\')" onclick="APP.addMagic(\''+t.key+'\')">+ add '+noun+'</button></p>';
+  return h;
+}
+/* ---- step: Core Community (Core pp.21–25) ---- */
+function stepCommunity(){
+  const c=S.community||{connections:[]};
+  let h=head("Community & Connections","Mythras Core, pp.21–25: develop your family, personal ties and resources. These are narrative records, not automatic bonuses. You can leave sections blank and develop them during play.");
+  h+='<div class="card"><h3>Family & community</h3>'
+    +'<p class="note">Core p.22 has optional d100 family tables for parents, siblings, family reputation and connections. Consult the book to roll, or agree on details with your GM.</p>';
+  for(const [key,label,placeholder] of [
+    ["family","Family / household","Family members, home, lineage"],
+    ["parents","Parents","Family status or d100 result"],
+    ["siblings","Siblings","Names or number of siblings"],
+    ["reputation","Family reputation","Reputation, allies, family history"],
+    ["resources","Background resources","Mounts, lodging, retainers or other available support"]
+  ])h+=fld(label,'<input type="text" value="'+esc(c[key]||'')+'" placeholder="'+esc(placeholder)+'" onchange="APP.communityField(\''+key+'\',this.value)">');
+  h+='</div><div class="card"><h3>Allies, Contacts, Rivals & Enemies</h3>'
+    +'<p class="note">Core p.22 distinguishes allies who actively help, contacts who might help, rivals who compete, and enemies who mean harm. Describe people or organisations without assigning mechanical bonuses.</p>';
+  (c.connections||[]).forEach((x,i)=>{
+    h+='<div style="border:1px solid var(--line-soft);border-radius:6px;padding:10px;margin-bottom:8px">'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      +'<select aria-label="Relationship type" onchange="APP.communityConnection('+i+',\'type\',this.value)">'
+      +["Ally","Contact","Rival","Enemy"].map(t=>'<option value="'+t+'" '+(x.type===t?'selected':'')+'>'+t+'</option>').join('')+'</select>'
+      +'<input type="text" aria-label="Name" style="flex:1;min-width:140px" maxlength="160" value="'+esc(x.name||'')+'" placeholder="Person or organisation" onchange="APP.communityConnection('+i+',\'name\',this.value)">'
+      +'<button class="chip" onpointerdown="APP.communityRemove('+i+')" onclick="APP.communityRemove('+i+')">remove</button></div>'
+      +'<input type="text" aria-label="Relationship notes" style="width:100%;margin-top:8px" value="'+esc(x.notes||'')+'" placeholder="How you know them, what they want" onchange="APP.communityConnection('+i+',\'notes\',this.value)">'
+      +'</div>';
+  });
+  h+='<button class="chip" onpointerdown="APP.communityAdd()" onclick="APP.communityAdd()">+ Add a connection</button></div>';
+  h+='<div class="card"><h3>Why this party?</h3>'
+    +'<p class="note">Core p.22 suggests each character establish a relationship with another member of the party.</p>'
+    +fld('Connection to a fellow PC','<input type="text" value="'+esc(c.partyTie||'')+'" placeholder="What brought your characters together?" onchange="APP.communityField(\'partyTie\',this.value)">')+'</div>';
   return h;
 }
 /* ---- step: cult & community ---- */
@@ -780,12 +860,10 @@ function passionVal(p){
 // transcribed from the book (see the WEAPONS data-block comment above).
 function weaponsEnc(){return S.gearWeapons.reduce((a,n)=>{const w=weaponByName(n);return a+(w?w.enc:0);},0);}
 function weaponsCost(){return S.gearWeapons.reduce((a,n)=>{const w=weaponByName(n);return a+(w?w.cost:0);},0);}
-// Armour Table (p.58) only gives cost as a full 7-location suit total (the
-// middle figure in ARMOR_MATERIALS' "suit" string, e.g. Half Plate's
-// "28/3500/6" = ENC/Cost/Armour Penalty) -- there's no per-location cost
-// column in the book. Divided by 7 and weighted the same way armorEncAt/
-// armorLocWeight already do for ENC, so a "Each Arm"/"Each Leg" pick still
-// counts as the two physical locations it represents.
+// Armour Table (Core p.58) explicitly lists cost PER LOCATION and also
+// total suit cost. ARMOR_MATERIALS stores the printed full-suit totals,
+// so divide the suit cost by seven to recover the printed per-location
+// cost. "Each Arm"/"Each Leg" selections represent two locations.
 function armorCostAt(loc){const m=armorMaterialByName(S.armor[loc]);
   const suitCost=parseFloat((m.suit||"0/0/0").split("/")[1])||0;
   return suitCost/7;}
@@ -804,7 +882,9 @@ function armorEncAt(loc){const m=armorMaterialByName(S.armor[loc]);return m.encP
 function armorLocWeight(loc){return (loc==="Each Arm"||loc==="Each Leg")?2:1;}
 function armorEncTotal(){return ARMOR_LOCATIONS.reduce((a,l)=>a+armorEncAt(l)*armorLocWeight(l),0);}
 function armorApAt(loc){const m=armorMaterialByName(S.armor[loc]);return m.ap;}
-function gearEncTotal(){return S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.enc||0),0)+weaponsEnc()+armorEncTotal();}
+function inventoryEncTotal(){return S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.enc||0),0);}
+function inventoryCostTotal(){return S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.cost||0),0);}
+function gearEncTotal(){return inventoryEncTotal()+weaponsEnc()+armorEncTotal();}
 // Armour Penalty to Initiative (core rulebook, p.58, confirmed against page
 // image): sum the FULL (unhalved) ENC of every worn armour location, divide
 // by 5, round up, subtract from Initiative Bonus. Worked example in the book:
@@ -861,15 +941,15 @@ function baseMult(){
 function moneyTotal(){const base=S.money.dice.reduce((a,b)=>a+b,0);
   return Math.round(base*baseMult()*(S.money.mod||1));}
 // Total silver spent: auto-summed weapon/armour cost plus whatever's in
-// S.money.spent (manual/inventory spending, and the +/- adjustments life
+// S.money.spent (miscellaneous spending, and the +/- adjustments life
 // events apply directly to that field). Every "remaining silver" display
 // in the app (ledger, Play Mode, sheet export) should read through this
 // rather than re-deriving it, now that gear cost isn't purely manual.
-function moneySpentTotal(){return gearCostTotal()+(S.money.spent||0);}
+function moneySpentTotal(){return gearCostTotal()+inventoryCostTotal()+(S.money.spent||0);}
 function moneyRemaining(){return moneyTotal()-moneySpentTotal();}
 function stepMoney(){
   const mult=S.creationMode==="quick"?S.money.quickMult:(S.culture?CULTURES[S.culture].money:null);
-  let h=head("Money & Gear","Starting silver comes from culture and social class; weapon and armour cost is totalled automatically as you pick gear. Encumbrance is totted up and flagged against your STR&times;2 limit, but not enforced &mdash; nothing here blocks you from carrying more.");
+  let h=head("Money & Gear","Starting silver comes from culture and social class; weapon and armour cost is totalled automatically as you pick gear. Encumbrance is calculated automatically; excessive load and the STR&times;4 carrying limit are validated before completion.");
   h+='<div class="card"><h3>Starting money</h3>'
    +'<div class="rulequote">&ldquo;Barbarians: 4d6 &times;50 &middot; Civilised: 4d6 &times;75 &middot; Nomadic: 4d6 &times;25 &middot; Primitive: 4d6 &times;10 silver pieces. Multiply the character&rsquo;s starting money by the Money Modifier to determine the available cash&hellip;&rdquo;</div>'
    +(S.creationMode==="quick"?fld("Money multiplier (no culture in Quick Character &mdash; pick one to match the concept, e.g. 50)",'<input type="number" value="'+mult+'" onchange="APP.mon(\'quickMult\',this.value)">'):"")
@@ -881,33 +961,34 @@ function stepMoney(){
    +'<div class="grid3" style="margin-top:8px">'
    +fld("Social class (free text, overrides the picker above)",'<input type="text" value="'+esc(S.money.socialClass)+'" placeholder="e.g. Freeman" onchange="APP.mon(\'socialClass\',this.value)">')
    +fld("Money modifier (from your social class table)",'<input type="number" step="0.5" value="'+S.money.mod+'" onchange="APP.mon(\'mod\',this.value)">')
-   +fld("Additional silver spent (inventory, misc.)",'<input type="number" value="'+S.money.spent+'" onchange="APP.mon(\'spent\',this.value)">')
+   +fld("Additional silver spent (miscellaneous only; inventory costs below are automatic)",'<input type="number" value="'+S.money.spent+'" onchange="APP.mon(\'spent\',this.value)">')
    +'</div>'
-   +(()=>{const gc=gearCostTotal(),extra=S.money.spent||0,spent=gc+extra,total=moneyTotal(),remaining=total-spent,over=remaining<0;
+   +(()=>{const gc=gearCostTotal(),ic=inventoryCostTotal(),extra=S.money.spent||0,spent=gc+ic+extra,total=moneyTotal(),remaining=total-spent,over=remaining<0;
      return (S.money.dice.length?'<p style="margin-top:6px">Starting money: <b style="font-family:var(--mono);color:var(--bronze-hi)">'+total+' sp</b>'
-       +' &nbsp;&middot;&nbsp; weapons &amp; armour: <b style="font-family:var(--mono)">'+gc+' sp</b>'
+       +' &nbsp;&middot;&nbsp; weapons &amp; armour: <b style="font-family:var(--mono)">'+gc+' sp</b>'+' &nbsp;&middot;&nbsp; inventory: <b style="font-family:var(--mono)">'+ic+' sp</b>'
        +(extra?' &nbsp;&middot;&nbsp; additional: <b style="font-family:var(--mono)">'+extra+' sp</b>':'')
        +' &nbsp;&middot;&nbsp; remaining: <b class="'+(over?"warn":"")+'" style="font-family:var(--mono)">'+remaining+' sp</b></p>':'')
      +(over?'<p class="warn" style="margin-top:4px">Over budget by '+(-remaining)+' sp &mdash; drop some gear or reduce additional spending before this step will pass.</p>':'');})()
-   +'<p class="note">Roll picks the class name automatically; use the free-text field if your Games Master gives you a specific title or a different Money Modifier.</p>')
+   +'<p class="note">The 4d6 roll determines starting silver, not social class. The Core p.24 social-class tables use a separate d100 roll or GM-approved choice. Select a class above and check its modifier.</p>')
    +'</div>';
   h+='<div class="card"><h3>Weapons</h3><p class="note">One-Handed, Two-Handed, Shield and Ranged tables (Economics &amp; Equipment, pp.63&ndash;66). No weapon has a STR/DEX minimum in Mythras.</p>'
-   +'<div class="choicechips">'+allWeapons().map(w=>'<button class="chip '+(S.gearWeapons.includes(w.name)?"on":"")+'" onclick="APP.toggleWeapon(\''+jsq(w.name)+'\')" title="'+esc(w.group+" · "+w.dmg+" · Size "+w.size+" · Reach "+w.reach+" · "+w.effects+" · ENC "+w.enc+" · AP/HP "+w.apHp+(w.traits?" · "+w.traits:"")+" · "+w.cost+"sp")+'">'+esc(w.name)+(w.custom?' <i class="hbmark" title="Homebrew">&#9733;</i>':"")+'</button>').join("")+'</div>'
+   +'<div class="choicechips">'+allWeapons().map(w=>'<button class="chip '+(S.gearWeapons.includes(w.name)?"on":"")+'" onclick="APP.toggleWeapon(\''+jsq(w.name)+'\')" title="'+esc(w.group+" · "+w.dmg+(w.group==="Ranged"?" · Range "+(w.range||"—")+" · Force "+w.reach+" · DM "+(w.dmgMod||"—")+" · Load "+(w.load??"—")+" · Impale "+(w.impaleSize||"—"):" · Size "+w.size+" · Reach "+w.reach)+" · "+w.effects+" · ENC "+w.enc+" · AP/HP "+w.apHp+(w.traits?" · "+w.traits:"")+" · "+w.cost+"sp")+'">'+esc(w.name)+(w.custom?' <i class="hbmark" title="Homebrew">&#9733;</i>':"")+'</button>').join("")+'</div>'
    +(S.gearWeapons.length?'<table class="alloc" style="margin-top:8px"><tr><th>Weapon</th><th>Damage</th><th>Reach</th><th>Effects</th><th class="num">ENC</th><th>AP/HP</th></tr>'
      +S.gearWeapons.map(n=>{const w=weaponByName(n);if(!w)return"";
        return '<tr><td>'+esc(w.name)+' <span class="note">('+esc(w.group)+')</span></td><td class="num">'+esc(w.dmg)+'</td><td>'+esc(w.reach)+'</td><td class="note">'+esc(w.effects)+'</td><td class="num">'+w.enc+'</td>'
-        +'<td class="note">'+esc(w.apHp)+'</td></tr>';}).join("")+'</table>':"")
+        +'<td class="note">'+esc(w.apHp)+(w.group==="Ranged"?'<div class="note">Range '+esc(w.range||"—")+' · DM '+esc(w.dmgMod||"—")+' · Load '+esc(typeof w.load==="number"?String(w.load)+" AP":"—")+(w.impaleSize?' · Impale '+esc(w.impaleSize):'')+'</div>':'')+'</td></tr>';}).join("")+'</table>':"")
    +'</div>';
   h+='<div class="card"><h3>Armour</h3><p class="note">Armour Table (Economics &amp; Equipment, p.58). Armour Points (AP) reduce damage to that location; worn armour counts as half its packed ENC, and total worn ENC also reduces Initiative (see below).</p>'
    +'<div class="grid3">'+ARMOR_LOCATIONS.map(loc=>fld(loc,'<select onchange="APP.setArmor(\''+jsq(loc)+'\',this.value)">'
      +allArmorMaterialsFor(loc).map(m=>'<option value="'+esc(m.name)+'" '+(S.armor[loc]===m.name?"selected":"")+'>'+esc(m.name)+(m.custom?" ★":"")+' (AP '+m.ap+')</option>').join("")+'</select>')).join("")+'</div>'
    +'<p class="note" style="margin-top:6px">Armour ENC (worn, halved): <b style="font-family:var(--mono)">'+armorEncTotal()+'</b> &nbsp;&middot;&nbsp; Armour Penalty to Initiative: <b style="font-family:var(--mono)">-'+armourPenaltyToInit()+'</b></p></div>';
-  h+='<div class="card"><h3>Inventory</h3><table class="alloc"><tr><th>Item</th><th class="num">Qty</th><th class="num">ENC each</th><th></th></tr>'
+  h+='<div class="card"><h3>Inventory</h3><table class="alloc"><tr><th>Item</th><th class="num">Qty</th><th class="num">ENC each</th><th class="num">sp each</th><th></th></tr>'
    +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.inv('+i+',\'name\',this.value)"></td>'
     +'<td class="num"><input type="number" value="'+it.qty+'" onchange="APP.inv('+i+',\'qty\',this.value)"></td>'
-    +'<td class="num"><input type="number" step="0.5" value="'+it.enc+'" onchange="APP.inv('+i+',\'enc\',this.value)"></td>'
+    +'<td class="num"><input type="number" min="0" step="0.5" value="'+it.enc+'" onchange="APP.inv('+i+',\'enc\',this.value)"></td>'
+    +'<td class="num"><input type="number" min="0" step="0.01" value="'+(it.cost||0)+'" onchange="APP.inv('+i+',\'cost\',this.value)"></td>'
     +'<td><button class="chip" aria-label="remove item" onpointerdown="APP.invDel('+i+')" onclick="APP.invDel('+i+')">&times;</button></td></tr>').join("")
-   +'</table><p style="margin-top:8px"><button class="chip" onpointerdown="APP.invAdd()" onclick="APP.invAdd()">+ add item</button> &nbsp;<span class="note">Inventory ENC: <b style="font-family:var(--mono)">'+S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.enc||0),0)+'</b> &nbsp;&middot;&nbsp; Total gear ENC (weapons + armour + inventory): <b style="font-family:var(--mono)">'+gearEncTotal()+'</b>'
+   +'</table><p style="margin-top:8px"><button class="chip" onpointerdown="APP.invAdd()" onclick="APP.invAdd()">+ add item</button> &nbsp;<span class="note">Inventory ENC: <b style="font-family:var(--mono)">'+inventoryEncTotal()+'</b> &nbsp;&middot;&nbsp; Total gear ENC (weapons + armour + inventory): <b style="font-family:var(--mono)">'+gearEncTotal()+'</b>'
    +(encLimit()!==null?' &nbsp;&middot;&nbsp; Unencumbered limit (STR&times;2): <b style="font-family:var(--mono)">'+encLimit()+'</b>':"")+'</span>'
    +(encStatus()&&encStatus().level!=="ok"?'<p class="'+(encStatus().level==="bad"?"warn":"note")+'" style="margin-top:4px">'+encStatus().msg+'</p>'+encEffectPanel():"")+'</p></div>';
   return h;

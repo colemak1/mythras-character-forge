@@ -122,7 +122,12 @@ function moveRate(){
 // and everything above a walk is unavailable while Overloaded.
 function moveGaits(){
   const r=moveRate();
-  return {walk:r.m,run:r.walkOnly?null:r.m*3,sprint:(r.walkOnly||r.noSprint)?null:r.m*5,info:r};
+  // Core p.39: each full 25% Athletics adds 0.5m to the base
+  // running rate or 1m to the base sprinting rate, before multipliers.
+  const athletics=Math.max(0,finalPct("std:Athletics"));
+  const steps=Math.floor(athletics/25);
+  return {walk:r.m,run:r.walkOnly?null:(r.m+steps*0.5)*3,
+    sprint:(r.walkOnly||r.noSprint)?null:(r.m+steps)*5,info:r};
 }
 const moveText=()=>{const r=moveRate();return r.immobile?"0m":(r.m+"m");};
 
@@ -197,7 +202,7 @@ function freshState(){return {
  species:null,
  // Age band (Experience Table). `years` is the rolled or typed age; `events`
  // holds generated Life Events and whether each has been applied.
- age:{category:"adult",years:null,events:[]},
+ age:{category:"adult",years:null,events:[],coreEvents:[]},
  // Magic the character actually knows. `folk` holds Folk Magic spell names
  // (plus a speciality for Find (X)); `known` holds entries for the four
  // traditions whose content lives in the player's own rulebook. `devotional`
@@ -222,7 +227,7 @@ function freshState(){return {
  chars:{STR:null,CON:null,SIZ:null,DEX:null,INT:null,POW:null,CHA:null},
  charMode:"roll", poolA:[], poolB:[], assignA:{}, assignB:{}, fixedAP:0,
  culture:null, cultChoice:[], cultProf:[null,null,null], cultProfSpec:["","",""],
- cultStyleOn:false, cultStyleName:"",
+ cultStyleOn:false, cultStyleName:"", cultStyleSmallAlloc:true,
  // Combat Style composition — weapons and Combat Style Traits attached to
  // each named style, keyed by the same style key stylesList()/S.alloc
  // already use ("style:cult", "style:k"+i, "style:quick"). Kept separate
@@ -233,6 +238,8 @@ function freshState(){return {
  customCareer:{isCustom:false,name:"",std:[],prof:[],styleSlots:0},
  hobby:null, hobbySpec:"",
  cultMembership:{archetype:null,name:"",rank:0},
+ community:{family:"",parents:"",siblings:"",reputation:"",connections:[],partyTie:"",resources:""},
+ _creationFlowVersion:2,
  qProf:[null,null,null], qProfSpec:["","",""], qStyleOn:false, qStyleName:"",
  alloc:{culture:{},career:{},bonus:{},quick:{}},
  passions:[],
@@ -249,9 +256,9 @@ function freshState(){return {
  // start at null, meaning "at max" — they're only written once the player
  // actually spends/takes damage, so a freshly-finished character always
  // shows full without needing an extra initialization step.
- play:{hp:{},luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null},
+ play:{hp:{},luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null},
  // Experience Rolls (core rulebook pp.71-73, cross-checked against the
- // Mythras Imperative SRD "Character Improvement" section — see chat for
+ // Mythras Core pp.71–72, checked against the uploaded rulebook — see audit for
  // citations). pool = banked, unspent Experience Rolls. fumbled = skill
  // keys currently flagged for their free +1% (auto-set on a Fumble roll in
  // Play Mode, or toggled by hand), cleared once applied. bonus = cumulative
@@ -276,6 +283,22 @@ function normalizeState(){
   // after calling this, based on where the data came from. This just keeps
   // the field boolean if something ever skips that.
   S._pendingClaim=!!S._pendingClaim;
+  // Migrate wizard navigation without shifting the meaning of saved steps.
+  // Update 05 inserts Community immediately before Passions in both modes.
+  if((S._creationFlowVersion||1)<2){
+    const insertedAt=S.creationMode==="quick"?4:6;
+    if(Number.isInteger(S.step)&&S.step>=insertedAt)S.step++;
+    const old=S.overrides||{};S.overrides={};
+    Object.entries(old).forEach(([key,value])=>{const n=Number(key);if(Number.isInteger(n))S.overrides[n>=insertedAt?n+1:n]=value;});
+    S._creationFlowVersion=2;
+  }
+  S.community=S.community||{};
+  for(const key of ["family","parents","siblings","reputation","partyTie","resources"]){
+    if(typeof S.community[key]!=="string")S.community[key]="";
+  }
+  S.community.connections=Array.isArray(S.community.connections)?S.community.connections.filter(x=>x&&typeof x==="object"):[];
+  S.community.connections=S.community.connections.map(x=>({type:["Ally","Contact","Rival","Enemy"].includes(x.type)?x.type:"Contact",name:String(x.name||"").slice(0,160),notes:String(x.notes||"").slice(0,1000)}));
+  if(S.cultStyleSmallAlloc===undefined)S.cultStyleSmallAlloc=true; // existing guests keep requested Sit’ota style allocation behavior
   S.alloc=S.alloc||{};S.alloc.culture=S.alloc.culture||{};S.alloc.career=S.alloc.career||{};
   S.gearWeapons=S.gearWeapons||[];
   S.armor=S.armor||{};ARMOR_LOCATIONS.forEach(l=>{if(!S.armor[l])S.armor[l]="None";});
@@ -285,8 +308,35 @@ function normalizeState(){
   S.age=S.age||{category:"adult",years:null,events:[]};
   if(!AGE_MAP[S.age.category])S.age.category="adult";
   S.age.events=S.age.events||[];
+  S.age.coreEvents=Array.isArray(S.age.coreEvents)?S.age.coreEvents:[];
   S.magic=S.magic||{folk:[],known:[],devotional:0,devotionalUsed:0};
   S.magic.folk=S.magic.folk||[];S.magic.known=S.magic.known||[];
+  // Legacy versions stored Sorcery shaping as an array of selected names.
+  // Preserve those records, upgrading each selected component to one point.
+  for(const m of S.magic.known){
+    if(m.tradition==="sorcery"){
+      if(!m.shapingLevels || typeof m.shapingLevels!=="object"){
+        m.shapingLevels={};for(const name of (Array.isArray(m.shapings)?m.shapings:[]))m.shapingLevels[name]=1;
+      }
+      m.combineExtra=Math.max(0,Math.floor(Number(m.combineExtra)||0));
+    }
+    if(m.tradition==="animism"){
+      // Older records had no binding status. Do not silently assume the spirit
+      // is bound: an explicit GM/player confirmation is required.
+      if(!["bound","unbound"].includes(m.spiritStatus))m.spiritStatus="unbound";
+      if(!Number.isSafeInteger(m.intensity)||m.intensity<1)m.intensity=1;
+      if(!["unknown","located","contacted"].includes(m.spiritContact))m.spiritContact="unknown";
+      if(!["friendly","neutral","hostile"].includes(m.spiritAttitude))m.spiritAttitude="neutral";
+      if(!["none","fetish","location","creature"].includes(m.bindingType))m.bindingType="none";
+      if(!Number.isSafeInteger(m.spiritMP)||m.spiritMP<0||m.spiritMP>999)m.spiritMP=null;
+      m.spiritCombatNote=String(m.spiritCombatNote||"").slice(0,800);
+    }
+    if(m.tradition==="mysticism"){
+      m.active=!!m.active;
+      m.durationTurns=Number.isInteger(Number(m.durationTurns))&&Number(m.durationTurns)>=0?Number(m.durationTurns):0;
+      m.remainingTurns=m.active&&Number.isInteger(Number(m.remainingTurns))&&Number(m.remainingTurns)>=0?Number(m.remainingTurns):0;
+    }
+  }
   if(typeof S.magic.devotional!=="number")S.magic.devotional=0;
   if(typeof S.magic.devotionalUsed!=="number")S.magic.devotionalUsed=0;
   if(S.concept&&S.concept.heightM===undefined)S.concept.heightM="";
@@ -300,9 +350,22 @@ function normalizeState(){
   if(S.money&&S.money.quickMult==null)S.money.quickMult=50;
   S.play=S.play||{hp:{},luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null};
   S.play.hp=S.play.hp||{};
+  // A multi-turn invocation is a manual tracker, never an automatic spell effect.
+  if(S.play.sorceryCasting && (!Number.isInteger(S.play.sorceryCasting.index) ||
+      !Number.isInteger(S.play.sorceryCasting.completed) ||
+      !Number.isInteger(S.play.sorceryCasting.total) ||
+      S.play.sorceryCasting.completed<1 ||
+      S.play.sorceryCasting.total<2 ||
+      S.play.sorceryCasting.completed>=S.play.sorceryCasting.total))S.play.sorceryCasting=null;
   if(typeof S.play.apUsed!=="number")S.play.apUsed=0;
   if(!S.play.tab)S.play.tab="actions";
-  if(!S.play.fatigue)S.play.fatigue="Fresh";
+  if(!FATIGUE_MAP[S.play.fatigue])S.play.fatigue="Fresh";
+  if(!Number.isFinite(S.play.apUsed)||S.play.apUsed<0)S.play.apUsed=0;
+  if(!Number.isFinite(S.play.luck)||S.play.luck<0)S.play.luck=null;
+  if(!Number.isFinite(S.play.magic)||S.play.magic<0)S.play.magic=null;
+  for(const [loc,hp] of Object.entries(S.play.hp)){
+    if(!Number.isFinite(hp))delete S.play.hp[loc];
+  }
   if(S.play.selectedLoc===undefined)S.play.selectedLoc=null;
   S.xp=S.xp||{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[]};
   S.xp.fumbled=S.xp.fumbled||[];S.xp.bonus=S.xp.bonus||{};
@@ -316,15 +379,17 @@ function normalizeState(){
 // a one-line change in each array to bring back.
 function currentSteps(){
   return S.creationMode==="quick"
-   ?["Concept","Characteristics","Attributes","Quick Skills","Passions","Magic","Money & Gear","Finish"]
-   :["Concept","Characteristics","Attributes","Culture","Career","Bonus Skills","Passions","Magic","Money & Gear","Finish"];
+   ?["Concept","Characteristics","Attributes","Quick Skills","Community","Passions","Magic","Money & Gear","Finish"]
+   :["Concept","Characteristics","Attributes","Culture","Career","Bonus Skills","Community","Passions","Magic","Money & Gear","Finish"];
 }
 function stepFns(){
   return S.creationMode==="quick"
-   ?[stepConcept,stepChars,stepAttrs,stepQuickSkills,stepPassions,stepMagic,stepMoney,stepFinish]
-   :[stepConcept,stepChars,stepAttrs,stepCulture,stepCareer,stepBonus,stepPassions,stepMagic,stepMoney,stepFinish];
+   ?[stepConcept,stepChars,stepAttrs,stepQuickSkills,stepCommunity,stepPassions,stepMagic,stepMoney,stepFinish]
+   :[stepConcept,stepChars,stepAttrs,stepCulture,stepCareer,stepBonus,stepCommunity,stepPassions,stepMagic,stepMoney,stepFinish];
 }
 function ageBand(){return AGE_MAP[(S.age&&S.age.category)||"adult"]||AGE_MAP.adult;}
+function coreBackgroundRollCount(){return Math.max(0,AGE_CATEGORIES.findIndex(a=>a.key===ageBand().key));}
+function coreBackgroundRollsValid(){return (S.age.coreEvents||[]).length===coreBackgroundRollCount();}
 // Bonus Skill Points now come from the Experience Table's age band rather than
 // a hardcoded 150/15. Adult is 150/+15, which is exactly what was hardcoded,
 // so nothing changes for a default character.
@@ -422,7 +487,7 @@ function acquiredProfs(){
   }else{
     S.cultProf.forEach((p,i)=>{if(p)add(p,S.cultProfSpec[i],"culture");});
     S.carProf.forEach((p,i)=>{if(p)add(p,S.carProfSpec[i],"career");});
-    if(S.hobby)add(S.hobby,S.hobbySpec,"hobby");
+    if(S.hobby&&S.hobby!=="__combat_style__")add(S.hobby,S.hobbySpec,"hobby");
   }
   const ca=cultArch();if(ca)add(ca.skill,S.cultMembership.name||ca.name,"cult");
   return [...out.values()];
@@ -435,6 +500,7 @@ function stylesList(){
   }
   const out=[];
   if(S.cultStyleOn)out.push({key:"style:cult",name:S.cultStyleName||"Cultural Combat Style",src:"culture"});
+  if(S.hobby==="__combat_style__"&&(S.hobbySpec||"").trim())out.push({key:"style:hobby",name:S.hobbySpec.trim(),src:"hobby"});
   S.carStyles.forEach((cs,i)=>{
     if(!cs||cs.mode==="off")return;
     if(cs.mode==="link"){if(!out.some(s=>s.key===cs.link))return;/* linked to culture style */}
@@ -496,18 +562,11 @@ function finalPct(key){const em=entryMap();const e=em[key];if(!e)return 0;
 // that reads a skill's % — Play Mode list, Actions tab, Sheet, roll log —
 // reflects Experience improvement with no extra plumbing.
 function xpBonus(key){return (S.xp&&S.xp.bonus&&S.xp.bonus[key])||0;}
-// Checked-skill Experience Rolls, on top of the manually-awarded S.xp.pool.
-// Myth's best reconstruction of the rule, NOT independently verified against
-// the book -- ship it, but every surface that shows this number says so.
-// One checked skill = one roll opportunity, shifted up or down by the
-// character's Experience Mod (xpMod(CHA), unchanged/confirmed-correct on its
-// own). Floored at 0 so a low-CHA character never has this go negative.
-function xpBonusRolls(){return Math.max(0,(S.xp.checked||[]).length+xpMod(S.chars.CHA));}
-// Total Experience Rolls available to spend right now: the manual pool plus
-// the checked-skill bonus above. This is the single number every "can I
-// spend a roll" check and every UI count should read, so the two pools
-// never have to be reasoned about separately by a player.
-function xpRollsAvailable(){return S.xp.pool+xpBonusRolls();}
+// Core pp.71–72: checked skill flags are observational only and do not
+// award Experience Rolls. A GM award is stored in the banked pool.
+function xpBonusRolls(){return 0;}
+// Experience Modifier is applied when the GM awards rolls (APP.xpAward).
+function xpRollsAvailable(){return Math.max(0,S.xp.pool||0);}
 /* ================= MAGIC =================
    Which magic skills the character actually acquired, so the Magic step can
    show the traditions they can use and flag the ones they can't yet. Magic
@@ -531,12 +590,91 @@ function traditionStatus(t){
   return {available:cast,castPct:magicSkillPct(t.castSkill),support};
 }
 function knownOf(traditionKey){return S.magic.known.filter(m=>m.tradition===traditionKey);}
-// Sorcery cost model (see MAGIC_TRADITIONS.sorcery.summary and §5 of
-// docs/mythras-rules-reference.md): one Magic Point for the spell itself plus
-// one per shaping category applied, and one casting turn each the same way.
+// Core pp.164–165: Shaping points can be split among components.
+// Each distinct altered component costs one MP and one casting Turn.
+// Combine costs one additional MP per extra spell but does NOT add casting
+// Turns for each extra spell (the Combine exception in Invocation Time).
+function sorceryLevels(entry){
+  if(entry.shapingLevels && typeof entry.shapingLevels==="object"){
+    const out={};
+    for(const k of ["Duration","Range","Targets","Magnitude","Intensity"]){
+      const n=Number(entry.shapingLevels[k]);if(Number.isInteger(n)&&n>0)out[k]=n;
+    }
+    return out;
+  }
+  const out={};for(const k of (Array.isArray(entry.shapings)?entry.shapings:[])){
+    if(["Duration","Range","Targets","Magnitude","Intensity"].includes(k))out[k]=1;
+  }return out;
+}
 function sorceryCost(entry){
-  const n=(entry.shapings||[]).length;
-  return {mp:1+n,turns:1+n,shapings:n};
+  const levels=sorceryLevels(entry);
+  const categories=Object.keys(levels).length;
+  const points=Object.values(levels).reduce((a,b)=>a+b,0);
+  const extra=Math.max(0,Math.floor(Number(entry.combineExtra)||0));
+  return {mp:1+categories+extra,turns:1+categories,shapings:categories,
+    shapingPoints:points,combinedSpells:extra};
+}
+function mysticismActiveTotal(entries){
+  return entries.filter(m=>m.tradition==="mysticism"&&m.active)
+    .reduce((total,m)=>total+Math.max(0,Math.floor(Number(m.intensity)||0)),0);
+}
+function mysticismActivationCheck(entries,index,individual,combined){
+  const m=entries[index];if(!m||m.tradition!=="mysticism")return "Not a Mysticism Talent.";
+  if(m.active)return null;
+  const intensity=Number(m.intensity);
+  if(!Number.isInteger(intensity)||intensity<1)return "Intensity must be a positive whole number.";
+  if(intensity>individual)return "This Talent exceeds the individual Intensity limit ("+individual+").";
+  const other=mysticismActiveTotal(entries);
+  if(other+intensity>combined)return "Active Talents would exceed the combined Intensity limit ("+combined+").";
+  return null;
+}
+// Core p.165 Invocation Costs: success/full, critical/half, failure/zero,
+// fumble/full. Half points are rounded up to a payable integer.
+function sorceryOutcomeCost(entry,tier){
+  const full=sorceryCost(entry).mp;
+  if(tier==="Failure")return 0;
+  if(tier==="Critical")return Math.ceil(full/2);
+  return full;
+}
+// Core p.181: Exhort spends 0 on Critical or Failure, full on Success,
+// and precisely 1 Devotional Pool MP on Fumble (regardless of miracle rank).
+function theismOutcomeCost(entry,tier){
+  const full=Math.max(0,Number(entry.cost)||0);
+  if(tier==="Critical"||tier==="Failure")return 0;
+  if(tier==="Fumble")return 1;
+  return full;
+}
+// Core p.156: Mysticism spends half on Critical, full on Success/Fumble,
+// and exactly 1 MP on Failure. Keep the talent cost explicitly recorded
+// because different talent categories have different base costs.
+function mysticismOutcomeCost(entry,tier){
+  const full=Math.max(0,Number(entry.cost)||0);
+  if(tier==="Failure")return 1;
+  if(tier==="Critical")return Math.ceil(full/2);
+  return full;
+}
+// Core p.156 & 157: maximum individual Intensity = floor(Mysticism/20);
+// simultaneous total Intensity <= floor(Meditation/10).
+function mysticismLimits(mysticismPct,meditationPct){
+  return {individual:Math.max(0,Math.floor(Number(mysticismPct||0)/20)),
+    combined:Math.max(0,Math.floor(Number(meditationPct||0)/10))};
+}
+// Core p.136: Calling upon a binding costs an Action and uses Binding.
+// Critical: no MP; success: 1 MP; failure: 1 MP; fumble: binding broken.
+// This deliberately does NOT resolve spirit obedience, hostility, or powers.
+function spiritCommandOutcome(tier){
+  if(tier==="Critical")return {cost:0,broken:false,obeyed:true};
+  if(tier==="Success")return {cost:1,broken:false,obeyed:true};
+  if(tier==="Failure")return {cost:1,broken:false,obeyed:false};
+  if(tier==="Fumble")return {cost:1,broken:true,obeyed:false};
+  return null;
+}
+function spiritCommandPreflight(m,mp){
+  if(!m || m.tradition!=="animism")return "Select an Animism spirit.";
+  if(!String(m.name||"").trim())return "Name the spirit before attempting a command.";
+  if(m.spiritStatus!=="bound")return "This spirit is not marked as bound. Confirm its binding with your GM first.";
+  if(!Number.isFinite(mp)||mp<1)return "You need at least 1 Magic Point available to attempt a bound-spirit command.";
+  return null;
 }
 function magicEntryCost(entry){
   if(entry.tradition==="sorcery")return sorceryCost(entry).mp;
@@ -545,6 +683,26 @@ function magicEntryCost(entry){
 // Devotional Pool: Magic Points a theist has offered to their deity. It is a
 // separate reserve from general Magic Points, which is why it is tracked on
 // its own rather than coming out of playCurMagic().
+// Update 11: never attempt a magic roll when its minimum known resource
+// requirement cannot be paid.  Only a known, named entry may be invoked.
+// This is a user-interface safety check, not an override of the GM's
+// judgement about ritual conditions, spirit powers, or spell availability.
+function magicCastPreflight(entry, availableMP, availableDevotion){
+  if(!entry || !MAGIC_TRAD_MAP[entry.tradition])return "Unknown magical tradition.";
+  if(!String(entry.name||"").trim())return "Name this spell, spirit, miracle, or talent before using it.";
+  const mp=Math.max(0,Number(availableMP)||0);
+  const dp=Math.max(0,Number(availableDevotion)||0);
+  const t=MAGIC_TRAD_MAP[entry.tradition];
+  if(entry.tradition==="folk" && mp<1)return "Not enough Magic Points to attempt Folk Magic (minimum 1 MP).";
+  const cost=magicEntryCost(entry);
+  if(t.pool==="mp" && entry.tradition!=="folk" && (!Number.isInteger(cost)||cost<1))
+    return "Set a valid positive Magic Point cost from the Core rulebook.";
+  if(t.pool==="devotional" && (!Number.isInteger(Number(entry.cost))||Number(entry.cost)<1))
+    return "Set a valid positive Devotional Pool cost from the Core rulebook.";
+  if(t.pool==="mp" && mp<cost)return "Not enough Magic Points: need "+cost+", have "+mp+".";
+  if(t.pool==="devotional" && dp<cost)return "Not enough Devotional Pool points: need "+cost+", have "+dp+".";
+  return null;
+}
 function devotionalMax(){return Math.max(0,parseInt(S.magic.devotional,10)||0);}
 function devotionalCur(){return Math.max(0,devotionalMax()-(S.magic.devotionalUsed||0));}
 // Every piece of magic the character knows, in one list, for the sheet and
@@ -553,6 +711,13 @@ function allMagic(){
   const out=S.magic.folk.map(f=>({tradition:"folk",name:f.name,spec:f.spec||"",
     spell:folkSpellByName(f.name)||null}));
   return out.concat(S.magic.known.map(m=>Object.assign({},m)));
+}
+// allMagic returns presentation copies; mutations MUST use the saved record.
+function spiritRecordByMagicIndex(idx){
+  if(!Number.isInteger(idx))return null;
+  const i=idx-S.magic.folk.length;
+  const m=S.magic.known[i];
+  return m&&m.tradition==="animism"?m:null;
 }
 function magicLabel(m){
   if(m.tradition==="folk")return m.spec?m.name.replace(/\(X\)/,"("+m.spec+")"):m.name;
@@ -565,7 +730,7 @@ function cultureReqKeys(){
   const c=CULTURES[S.culture];const keys=c.std.map(n=>"std:"+n);
   S.cultChoice.forEach(n=>keys.push("std:"+n));
   S.cultProf.forEach((p,i)=>{if(p)keys.push(profKey(p,S.cultProfSpec[i]));});
-  if(S.cultStyleOn)keys.push("style:cult");
+  if(S.cultStyleOn)keys.push("style:cult"); // Optional; zero cultural points is legal.
   return keys;
 }
 function careerKeys(){
@@ -577,6 +742,40 @@ function careerKeys(){
     keys.push(cs&&cs.mode==="link"?"style:cult":"style:k"+i);});
   S.carProf.forEach((p,i)=>{if(p)keys.push(profKey(p,S.carProfSpec[i]));});
   return [...new Set(keys)];
+}
+// Validate selectable Professional Skills independently of the browser's dropdown.
+// Different named specialities of a skill (for example Lore (Primary) and
+// Lore (Secondary)) are separate skills; an identical skill+speciality isn't.
+function professionalPicksError(picks,specs,offers,required,kind){
+  const allowed=new Set(offers.map(o=>parseOffer(o).name));
+  const used=new Set();
+  const selected=picks.filter(Boolean).length;
+  if(required!==null&&selected!==required)return kind+" needs exactly "+required+" Professional Skills.";
+  if(selected>3)return kind+" may select at most three Professional Skills.";
+  for(let i=0;i<picks.length;i++){
+    const name=picks[i];if(!name)continue;
+    if(!allowed.has(name))return name+" is not an available "+kind+" Professional Skill.";
+    const offered=offers.map(parseOffer).filter(o=>o.name===name);
+    const hint=(offered.find(o=>o.hint)||{}).hint||QUICK_SPEC_HINTS[name];
+    const spec=String(specs[i]||"").trim();
+    if(hint&&!spec)return "Give "+name+" a speciality ("+hint+").";
+    const id=profKey(name,spec);
+    if(used.has(id))return "You selected "+profLabel(name,spec)+" twice. Choose a different Professional Skill or speciality.";
+    used.add(id);
+  }
+  return null;
+}
+// Imported/old saves can contain invalid values even when on-screen inputs
+// clamp values; reject these instead of accepting a seemingly valid total.
+function allocationError(phase,allowed,cap){
+  const eligible=new Set(allowed);
+  for(const [key,value] of Object.entries(S.alloc[phase]||{})){
+    if(typeof value!=="number"||!Number.isInteger(value)||value<0)
+      return "Invalid "+phase+" allocation for "+key+": enter a non-negative whole number.";
+    if(value>0&&!eligible.has(key))return "Points remain on an unavailable "+phase+" skill: "+key+".";
+    if(value>cap)return "No "+phase+" skill may receive more than "+cap+" points ("+key+").";
+  }
+  return null;
 }
 function validate(step){
   const ok=m=>({ok:true,msg:m||""}), bad=m=>({ok:false,msg:m});
@@ -613,10 +812,14 @@ function validate(step){
     for(let i=0;i<3;i++){const p=S.cultProf[i];if(!p)continue;
       const off=c.prof.map(parseOffer).find(o=>o.name===p);
       if(off&&off.hint&&!S.cultProfSpec[i].trim())return bad("Give "+p+" a speciality ("+off.hint+").");}
+    const professionError=professionalPicksError(S.cultProf,S.cultProfSpec,c.prof,3,"Culture");
+    if(professionError)return bad(professionError);
     const req=cultureReqKeys();
+    const allocationProblem=allocationError("culture",req,15);
+    if(allocationProblem)return bad(allocationProblem);
     for(const k of Object.keys(S.alloc.culture)){if(aGet("culture",k)>0&&!req.includes(k))return bad("Cultural points were left on a skill no longer in your culture list — remove them.");}
     for(const k of req){const v=aGet("culture",k);
-      if(v<5||v>15){const em=entryMap();return bad((em[k]?em[k].label:k)+" must receive between 5 and 15 cultural points (has "+v+").");}}
+      if((k!=="style:cult"&&v<5)||v>15||(k==="style:cult"&&v>0&&v<5&&!S.cultStyleSmallAlloc)){const em=entryMap();return bad((em[k]?em[k].label:k)+" must receive "+(k==="style:cult"&&S.cultStyleSmallAlloc?"0–15":"5–15")+" cultural points (has "+v+").");}}
     const s=aSum("culture");
     if(s!==100)return bad("Spend exactly 100 cultural points ("+s+" spent).");
     return ok();}
@@ -637,7 +840,12 @@ function validate(step){
       const off=k?k.prof.map(parseOffer).find(o=>o.name===p):null;
       const hint=(off&&off.hint)?off.hint:QUICK_SPEC_HINTS[p];
       if(hint&&!S.carProfSpec[i].trim())return bad("Give "+p+" a speciality ("+hint+").");}
+    const careerOffers=S.customCareer.isCustom?Object.keys(PROF):k.prof;
+    const professionError=professionalPicksError(S.carProf,S.carProfSpec,careerOffers,null,"Career");
+    if(professionError)return bad(professionError);
     const allowed=careerKeys();
+    const allocationProblem=allocationError("career",allowed,15);
+    if(allocationProblem)return bad(allocationProblem);
     for(const key of Object.keys(S.alloc.career)){if(aGet("career",key)>0&&!allowed.includes(key))return bad("Career points were left on a skill outside this career — remove them.");}
     for(const key of allowed){const v=aGet("career",key);
       if(v<0||v>15){const em=entryMap();return bad((em[key]?em[key].label:key)+" cannot receive more than 15 career points.");}}
@@ -649,7 +857,11 @@ function validate(step){
     for(let i=0;i<3;i++){const p=S.qProf[i];if(!p)continue;
       const hint=QUICK_SPEC_HINTS[p];
       if(hint&&!S.qProfSpec[i].trim())return bad("Give "+p+" a speciality (e.g. "+hint+").");}
+    const professionError=professionalPicksError(S.qProf,S.qProfSpec,Object.keys(PROF),3,"Quick Character");
+    if(professionError)return bad(professionError);
     const req=quickKeys();
+    const allocationProblem=allocationError("quick",req,15);
+    if(allocationProblem)return bad(allocationProblem);
     for(const k of Object.keys(S.alloc.quick)){if(aGet("quick",k)>0&&!req.includes(k))return bad("Points were left on a skill no longer selected — remove them.");}
     // The 5-15 band binds on whichever skills you actually invest in, not on
     // every eligible skill at once — with 22 Standard Skills plus 3
@@ -663,13 +875,23 @@ function validate(step){
     if(s!==100)return bad("Spend exactly 100 points ("+s+" spent).");
     return ok();}
    case "Bonus Skills":{
-    if(!S.hobby)return bad("Pick a hobby Professional Skill — the book allocates one alongside the bonus points.");
+    if(!S.hobby)return bad("Choose a hobby Professional Skill or Combat Style.");
+    if(S.hobby==="__combat_style__"&&!(S.hobbySpec||"").trim())return bad("Name your hobby Combat Style.");
     const pool=bonusPool(),cap=bonusCap();
     const keys=allEntries().map(e=>e.key);
+    const allocationProblem=allocationError("bonus",keys,cap);
+    if(allocationProblem)return bad(allocationProblem);
     for(const key of Object.keys(S.alloc.bonus)){if(aGet("bonus",key)>0&&!keys.includes(key))return bad("Bonus points rest on a removed skill — clear them.");}
     for(const key of keys){if(aGet("bonus",key)>cap)return bad("No skill may receive more than "+cap+" bonus points.");}
     const s=aSum("bonus");
     if(s!==pool)return bad("Spend exactly "+pool+" bonus points ("+s+" spent).");
+    return ok();}
+   case "Community":{
+    const c=S.community;
+    for(const x of c.connections){
+      if(!["Ally","Contact","Rival","Enemy"].includes(x.type))return bad("A community connection has an invalid relationship type.");
+      if(!String(x.name||"").trim())return bad("Name every added ally, contact, rival or enemy (or remove the blank row).");
+    }
     return ok();}
    case "Money & Gear":{
     // Every other pool (Culture/Career/Bonus) hard-blocks overspending; this
@@ -677,7 +899,13 @@ function validate(step){
     // anyway. gearCostTotal() (weapons + armour, auto-summed) plus whatever
     // manual "additional" spending is entered must not exceed starting money
     // -- going under budget is fine, only going over blocks the step.
-    const total=moneyTotal(),spent=gearCostTotal()+(S.money.spent||0);
+    if(!Number.isFinite(S.money.spent)||S.money.spent<0)return bad("Additional spending must be zero or a positive amount.");
+    if(!Number.isFinite(S.money.mod)||S.money.mod<=0)return bad("Money modifier must be positive.");
+    if(S.money.dice.length&& (S.money.dice.length!==4||S.money.dice.some(x=>!Number.isInteger(x)||x<1||x>6)))return bad("Starting money must use four valid six-sided dice.");
+    if(S.inventory.some(it=>!Number.isInteger(it.qty)||it.qty<0||!Number.isFinite(it.enc)||it.enc<0||!Number.isFinite(Number(it.cost||0))||Number(it.cost||0)<0))return bad("Inventory needs whole nonnegative quantities, nonnegative ENC and nonnegative prices.");
+    if(!S.money.dice.length)return bad("Roll your starting money before completing Money & Gear.");
+    if(typeof gearEncTotal==="function"&&Number.isFinite(S.chars.STR)&&S.chars.STR>0&&gearEncTotal()>S.chars.STR*4)return bad("Your gear exceeds STR × 4 ENC, the carrying limit in Mythras Core p.77.");
+    const total=moneyTotal(),spent=moneySpentTotal();
     if(spent>total)return bad("You've spent "+spent+" sp but only have "+total+" sp — reduce gear or additional spending by "+(spent-total)+" sp.");
     return ok();}
    default:return ok();

@@ -1,11 +1,10 @@
 "use strict";
 /* ================= RULES WIKI (render) =================
-   Data lives in wiki-data.js (WIKI_IMPERATIVE, WIKI_CORE_ONLY, WIKI_ORC_NOTICE)
+   Data lives in wiki-data.js (Core chapter index and its source notice)
    -- see the licensing note at the top of that file. This file is just the
    browsing/search UI over it: a chapter grid, a recursively-rendered
    chapter article (headings/paragraphs/lists/tables), and a live search box.
-   WIKI_CHAPTER holds the open chapter id (an Imperative chapter or a
-   WIKI_CORE_ONLY stub id), or null for the chapter grid. */
+   WIKI_CHAPTER holds the open Core chapter id, or null for the chapter grid. */
 let WIKI_CHAPTER=null;
 function wikiAllChapters(){
   return WIKI_IMPERATIVE.map(c=>({id:c.id,title:c.title,source:"imperative",node:c}))
@@ -130,7 +129,7 @@ function wikiHTML(){
   let h='<div class="menuwrap wiki-wrap">';
   h+='<p style="text-align:center"><button class="nav" onclick="APP.toMenu()">&#8592; Main Menu</button>'
    +(WIKI_CHAPTER?' <button class="nav" onclick="APP.wikiBack()">&#8592; All Chapters</button>':'')+'</p>';
-  h+='<div class="menuhead"><h1>Rules Wiki</h1><p>A quick reference for Mythras rules, built into the app.</p></div>';
+  h+='<div class="menuhead"><h1>Rules Wiki</h1><p>Search the verified Core chapter index and look up the corresponding rule in your rulebook.</p></div>';
   h+='<input type="text" class="wiki-search" id="wikiSearchBox" placeholder="Search the rules&hellip;" oninput="wikiSearch(this.value)">';
   h+='<div id="wikiSearchResults" class="wiki-results" style="display:none"></div>';
   h+='<div id="wikiBrowseArea">';
