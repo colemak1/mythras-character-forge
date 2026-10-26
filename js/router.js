@@ -84,7 +84,7 @@ async function loadCharacterInto(charId){
   if(S._libId&&S._libId===charId)return true;
   const entry=await openCharUnified(charId);
   if(!entry)return false;
-  S=Object.assign(freshState(),entry.state);normalizeState();
+  S=Object.assign(freshState(),entry.state);if(!Object.prototype.hasOwnProperty.call(entry.state,"_creationFlowVersion"))S._creationFlowVersion=1;normalizeState();
   S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
   S._pendingClaim=(entry.ownerId==="local");
   return true;

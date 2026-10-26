@@ -337,26 +337,28 @@ const WEAPONS=[
  {name:"Pike / Sarissa",group:"Two-Handed",dmg:"1d10+2",size:"L",reach:"VL",effects:"Impale",enc:4,apHp:"4/12",traits:"Set",milieu:"A-M",cost:90},
  {name:"Quarterstaff",group:"Two-Handed",dmg:"1d8",size:"M",reach:"L",effects:"Stun Location",enc:2,apHp:"4/8",traits:"Defensive",milieu:"All",cost:20},
  {name:"Xyston",group:"Two-Handed",dmg:"1d10",size:"L",reach:"VL",effects:"Impale",enc:3,apHp:"4/10",traits:"Set, Double Ended",milieu:"A",cost:100},
- // Ranged Weapons (p.65-66). "reach" holds Force (S/M/L/H/E) for these.
+ // Ranged Weapons (Core p.65). "reach" holds Force (S/M/L/H/E) for these.
+ // impaleSize is the distinct Impale Size column, not the Force/size of the projectile.
+ // Numeric load values are Action Points, whereas em dash indicates no reload action.
  {name:"Atlatl",group:"Ranged",dmg:"—",dmgMod:"—",size:"",reach:"+1 Step",range:"0+/25+/75+",load:1,effects:"—",enc:1,apHp:"1/4",traits:"",milieu:"P",cost:10},
  {name:"Blowgun",group:"Ranged",dmg:"—",dmgMod:"N",size:"",reach:"—",range:"10/20/30",load:2,effects:"—",enc:0,apHp:"1/4",traits:"",milieu:"P",cost:30},
  {name:"Bolas",group:"Ranged",dmg:"1d4",dmgMod:"N",size:"",reach:"—",range:"10/25/50",load:"—",effects:"Entangle",enc:0,apHp:"2/2",traits:"",milieu:"P-A",cost:10},
- {name:"Dagger (thrown)",group:"Ranged",dmg:"1d4",dmgMod:"Y",size:"S",reach:"S",range:"5/10/20",load:"—",effects:"Impale",enc:1,apHp:"6/8",traits:"",milieu:"All",cost:30},
- {name:"Dart",group:"Ranged",dmg:"1d4",dmgMod:"Y",size:"S",reach:"S",range:"5/10/20",load:"—",effects:"Impale",enc:0,apHp:"2/1",traits:"",milieu:"P-A",cost:10},
+ {name:"Dagger (thrown)",group:"Ranged",impaleSize:"S",dmg:"1d4",dmgMod:"Y",size:"S",reach:"S",range:"5/10/20",load:"—",effects:"Impale",enc:1,apHp:"6/8",traits:"",milieu:"All",cost:30},
+ {name:"Dart",group:"Ranged",impaleSize:"S",dmg:"1d4",dmgMod:"Y",size:"S",reach:"S",range:"5/10/20",load:"—",effects:"Impale",enc:0,apHp:"2/1",traits:"",milieu:"P-A",cost:10},
  {name:"Discus",group:"Ranged",dmg:"1d4+1",dmgMod:"Y",size:"L",reach:"L",range:"5/20/40",load:"—",effects:"Stun Location",enc:0,apHp:"2/3",traits:"",milieu:"A",cost:30},
  {name:"Hatchet (thrown)",group:"Ranged",dmg:"1d6",dmgMod:"Y",size:"S",reach:"S",range:"10/20/30",load:"—",effects:"Bleed",enc:1,apHp:"4/6",traits:"",milieu:"All",cost:25},
- {name:"Heavy crossbow",group:"Ranged",dmg:"1d10",dmgMod:"N",size:"H",reach:"H",range:"20/150/300",load:4,effects:"Impale, Sunder",enc:2,apHp:"4/8",traits:"",milieu:"M-E",cost:350},
- {name:"Javelin",group:"Ranged",dmg:"1d8+1",dmgMod:"Y",size:"H",reach:"H",range:"10/20/50",load:"—",effects:"Impale, Pin Weapon (Shield)",enc:1,apHp:"3/8",traits:"",milieu:"A-M",cost:20},
- {name:"Light crossbow",group:"Ranged",dmg:"1d8",dmgMod:"N",size:"L",reach:"L",range:"20/100/200",load:3,effects:"Impale",enc:1,apHp:"4/5",traits:"",milieu:"M-E",cost:150},
- {name:"Long bow",group:"Ranged",dmg:"1d8",dmgMod:"Y",size:"H",reach:"H",range:"15/125/250",load:2,effects:"Impale",enc:1,apHp:"4/7",traits:"",milieu:"M",cost:200},
+ {name:"Heavy crossbow",group:"Ranged",impaleSize:"S",dmg:"1d10",dmgMod:"N",size:"H",reach:"H",range:"20/150/300",load:4,effects:"Impale, Sunder",enc:2,apHp:"4/8",traits:"",milieu:"M-E",cost:350},
+ {name:"Javelin",group:"Ranged",impaleSize:"M",dmg:"1d8+1",dmgMod:"Y",size:"H",reach:"H",range:"10/20/50",load:"—",effects:"Impale, Pin Weapon (Shield)",enc:1,apHp:"3/8",traits:"",milieu:"A-M",cost:20},
+ {name:"Light crossbow",group:"Ranged",impaleSize:"S",dmg:"1d8",dmgMod:"N",size:"L",reach:"L",range:"20/100/200",load:3,effects:"Impale",enc:1,apHp:"4/5",traits:"",milieu:"M-E",cost:150},
+ {name:"Long bow",group:"Ranged",impaleSize:"S",dmg:"1d8",dmgMod:"Y",size:"H",reach:"H",range:"15/125/250",load:2,effects:"Impale",enc:1,apHp:"4/7",traits:"",milieu:"M",cost:200},
  {name:"Net (thrown)",group:"Ranged",dmg:"—",dmgMod:"N",size:"",reach:"—",range:"3/5/10",load:"—",effects:"Entangle",enc:3,apHp:"2/20",traits:"",milieu:"All",cost:20},
- {name:"Recurve bow",group:"Ranged",dmg:"1d8",dmgMod:"Y",size:"H",reach:"H",range:"15/125/250",load:2,effects:"Impale",enc:1,apHp:"4/8",traits:"",milieu:"A-M",cost:225},
- {name:"Short bow",group:"Ranged",dmg:"1d6",dmgMod:"Y",size:"L",reach:"L",range:"15/100/200",load:2,effects:"Impale",enc:1,apHp:"4/4",traits:"",milieu:"P-M",cost:75},
- {name:"Shortspear (thrown)",group:"Ranged",dmg:"1d8",dmgMod:"Y",size:"L",reach:"L",range:"10/15/30",load:"—",effects:"Impale",enc:1,apHp:"4/5",traits:"",milieu:"All",cost:20},
+ {name:"Recurve bow",group:"Ranged",impaleSize:"S",dmg:"1d8",dmgMod:"Y",size:"H",reach:"H",range:"15/125/250",load:2,effects:"Impale",enc:1,apHp:"4/8",traits:"",milieu:"A-M",cost:225},
+ {name:"Short bow",group:"Ranged",impaleSize:"S",dmg:"1d6",dmgMod:"Y",size:"L",reach:"L",range:"15/100/200",load:2,effects:"Impale",enc:1,apHp:"4/4",traits:"",milieu:"P-M",cost:75},
+ {name:"Shortspear (thrown)",group:"Ranged",impaleSize:"M",dmg:"1d8",dmgMod:"Y",size:"L",reach:"L",range:"10/15/30",load:"—",effects:"Impale",enc:1,apHp:"4/5",traits:"",milieu:"All",cost:20},
  {name:"Sling",group:"Ranged",dmg:"1d8",dmgMod:"N",size:"L",reach:"L",range:"10/150/300",load:3,effects:"Stun Location",enc:0,apHp:"1/2",traits:"",milieu:"P-M",cost:5},
  {name:"Staff sling",group:"Ranged",dmg:"2d6",dmgMod:"N",size:"E",reach:"E",range:"5/25/50",load:4,effects:"Stun Location",enc:2,apHp:"3/6",traits:"",milieu:"A-M",cost:20},
  {name:"Stone/Rock",group:"Ranged",dmg:"1d3",dmgMod:"Y",size:"S",reach:"S",range:"5/10/20",load:"—",effects:"Stun Location",enc:0,apHp:"—",traits:"",milieu:"All",cost:0},
- {name:"Trident (thrown)",group:"Ranged",dmg:"1d8",dmgMod:"Y",size:"L",reach:"L",range:"10/15/30",load:"—",effects:"Barbed, Impale",enc:2,apHp:"4/10",traits:"",milieu:"A-M",cost:155}
+ {name:"Trident (thrown)",group:"Ranged",impaleSize:"M",dmg:"1d8",dmgMod:"Y",size:"L",reach:"L",range:"10/15/30",load:"—",effects:"Barbed, Impale",enc:2,apHp:"4/10",traits:"",milieu:"A-M",cost:155}
 ];
 const WEAPON_MAP=Object.fromEntries(WEAPONS.map(w=>[w.name,w]));
 
@@ -622,12 +624,9 @@ const ARCHETYPES={
 
    WHAT IS AND ISN'T REPRODUCED HERE, because the difference matters:
 
-   - FOLK MAGIC below is complete and verbatim — spell names, traits and full
-     rules text — from the Mythras Imperative SRD (srd.mythras.net), published
-     by The Design Mechanism under the ORC License, which explicitly permits
-     this reuse. The Imperative calls the casting skill "Magic"; in full
-     Mythras the same spells are the Folk Magic list, cast off the Folk Magic
-     skill, which is what this app uses.
+   - FOLK MAGIC catalogue is disabled until each spell is independently verified
+     against Mythras Core (p.123 onward) and licensed for republication.
+     Custom spell entries remain available for GM-curated content.
 
    - THEISM, SORCERY, ANIMISM and MYSTICISM content — the miracle lists, the
      grimoires, the spirit rosters, the talents — is Reserved Material in the
@@ -654,32 +653,7 @@ const MAGIC_TRAITS={
 // Unless a spell has Concentration or Instant, it lasts the whole scene or
 // action it was used for. All Folk Magic spells are Intensity and Magnitude 1
 // by their minor nature.
-const FOLK_MAGIC=[
- {n:"Alarm",t:["Special Duration"],d:"Casting Alarm on a location such as a room or small clearing creates a temporary psychic bond between the area and the caster. If the area is accessed by a living creature with a SIZ greater than 1, the caster is automatically made aware that something has transgressed no matter how great the distance. The Alarm is usually a distinct tingling sensation or mental twinge which will awaken the caster. Alarm can also be used on an individual object, triggering when touched or moved."},
- {n:"Avert",t:["Instant","Ranged"],d:"Avert is used to dismiss another spell within range. Avert can be cast reactively to neutralize offensive spells, by using the Counter Magic Reactive Action."},
- {n:"Befuddle",t:["Ranged","Resist (Willpower)"],d:"Befuddle causes confusion within the mind of a corporeal target. The subject of the spell has difficulty thinking straight, forgetting where it is, what it is doing and why — often lapsing into disassociated lines of thought. Befuddled targets can still act in self defense, but cannot initiate any constructive activity until the spell ends. Any sort of attack or threatening action instantly breaks the spell, whether or not it was directed specifically at the befuddled target."},
- {n:"Bladesharp",t:["Touch"],d:"Bladesharp is cast on edged and piercing melee weapons. It increases the damage of a weapon by one dice step and incidentally leaves the edge honed after the spell concludes. This spell is often used on tools such as logging axes, plows, and razors. Thus, casting this spell on a dagger increases it to 1d6+1 damage, whereas the same spell on a great axe would increase it to 2d8+2 damage. (1d4→1d6→1d8→1d10→2d6→2d8→2d10)."},
- {n:"Bludgeon",t:["Touch"],d:"Bludgeon is like Bladesharp but used on weapons and tools that deal blunt-force trauma rather than cutting or piercing damage. It is normally used to aid with threshing grain, fulling wool, or similar heavy-duty work."},
- {n:"Breath",t:["Touch"],d:"Breath permits the recipient to hold their breath for an extended period, so that they can temporarily venture into harmful environments, such as underwater; or atmospheres tainted by rock dust, gases, smoke, or poisons. The spell lasts for a maximum of half the caster's POW in minutes, during which time the recipient cannot speak, or the breath is lost, and they must immediately begin to breathe from their environment suffering any present risks — be that asphyxiation, drowning, poisoning, etc."},
- {n:"Calm",t:["Ranged","Resist (Willpower)"],d:"Calm attempts to dampen down the passions of the target, perhaps ensuring that a lovesick paramour doesn't press his suit, a frightened rival doesn't scream for help or that weapons are not drawn in anger. A calmed person is not otherwise mentally affected; thus, any sort of assault or threatening action still permits the target to defend themselves and even attack, albeit they will do so in a calm and level-headed manner."},
- {n:"Chill",t:["Instant","Touch"],d:"Chill dramatically reduces the temperature of small objects (no larger than the caster's hand) down to the temperature of ice water. Useful for rapidly cooling hot items, chilling drinks, and so forth. The spell does not freeze an object and neither does it cause any damage to its structure: it merely renders it very cold."},
- {n:"Darkness",t:["Concentration","Ranged"],d:"Darkness creates an area of shadow, equal to POW in square metres, which suppresses all light within it. This is enough volume to fill a modest room, a length of corridor or form a small cloud if cast outside. All non-magical light, including sunlight, passing into or present within the boundary is reduced to the equivalent of a dim glow."},
- {n:"Disruption",t:["Instant","Ranged","Resist (Endurance)"],d:"Disruption is used for damaging or disassembling physical objects without the need for tools. It is commonly employed to drive off or kill living creatures, such as birds or vermin. When successfully cast, Disruption inflicts 1d3 damage to a single random Hit Location or the overall Hit Points of an object. In both cases the damage ignores any armor or natural protection."},
- {n:"Extinguish",t:["Instant","Ranged"],d:"Extinguish immediately quenches flames and small fires of modest size and heat. It is useful for dousing candles, lanterns, torches, or small cook fires, but it will not work on magical or larger, more ferocious conflagrations such as pyres, burning houses or dragon flames."},
- {n:"Find (X)",t:["Concentration","Ranged","Resist (Special)"],d:"Find has many variations; always specific and learned as separate spells. It works by attuning to the natural emanations of a creature or thing, alerting the caster to its presence within the spell's range. Find can be blocked by dense or thick materials such as metal, or earth and stone at least one metre thick. The spell cannot discern emotions or thoughts. Common examples: Find Arrows (locates ammunition shot by hunters which missed its target); Find Flaw (identifies flaws in an object, such as hidden imperfections or physical damage); Find Livestock (locates a particular type of animal — can be resisted with Willpower); Find Loot (locates precious metals and gems); Find Object (locates a lost personal possession); Find Sickness (identifies the existence of disease and illness, whether magical or mundane).",spec:"what it finds, e.g. Loot"},
- {n:"Firearrow",t:["Touch"],d:"Firearrow causes all missiles thrown or fired by the recipient to burst into flame when released. Ostensibly created to act as a signal flare, it has since evolved into a combat magic. Missiles under its effect add an additional 1d3 damage but are extinguished if they impale flesh. Those that strike flammable material have a chance equal to the caster's Folk Magic skill of setting alight whatever they lodge in, such as wooden shields, thatched roofs and so on. Wooden ammunition is consumed as part of the spell."},
- {n:"Fireblade",t:["Touch"],d:"Fireblade is like Firearrow but is instead cast on hand tools and melee weapons. The original purpose of the spell is to sterilize surgical equipment, aid in slash and burn agriculture or provide illumination during darkness without the need to carry an additional light source. If cast on a weapon it inflicts an additional 1d3 damage, and has the chance of setting flammable materials alight if held to them for several rounds. Wooden hafted weapons under the effects of Fireblade will be consumed as part of the spell."},
- {n:"Glue",t:["Touch"],d:"Glue cements together two solid, inanimate objects for the duration of the spell, for example a cartwheel to its axle or a door to its frame. Whilst under the effects of the spell the items, no matter how disparate, cannot be parted unless something actively tries to wrench them apart. In this circumstance the spell has a Brawn skill equal to five times the caster's POW and fails when a superior Brawn is set against it, defeating it in an Opposed Roll. Once the spell concludes or fails, the items part completely unharmed."},
- {n:"Heal",t:["Instant","Touch"],d:"Heal has several different effects depending on the nature of the ailment it is being used on. If the subject is suffering from a minor complaint such as a headache, back pain, hangover, cold, warts and so on, then the symptoms are immediately lifted. Cast on a location suffering a Minor Wound it restores all lost Hit Points instantly. Against Serious or Major Wounds no Hit Points are recovered. However, the spell will stabilize locations, stop all bleeding and prevent imminent death from inattention."},
- {n:"Ignite",t:["Instant","Ranged"],d:"Ignite only works on flammable inorganic matter, causing a small object or hand-sized area to burst into flame. Depending on what was set alight, once burning, the flames may then spread unless quenched or countered in some way. This spell is normally used to light candles, torches, or lanterns from afar. It can also be used to start a camp or cooking fire in adverse conditions, such as using damp kindling or in strong winds."},
- {n:"Knock",t:["Instant","Touch"],d:"Knock magically unfastens any device that is currently secured with a mechanical bar or lock. It does not work on magically locked objects, only mundane ones. The spell only affects a single fastening, so if there are several locks and bars securing the object, the spell will need to be recast for each one."},
- {n:"Light",t:["Concentration","Ranged"],d:"Light must be cast on an inanimate object (this could be a branch, sword blade, spear point, torch and so on). It produces enough light to illuminate an area as though with a lantern. It can also be cast directly against a Darkness spell to counter it. In this case both spells are consumed, leaving the ambient light to illuminate the area."},
- {n:"Lock",t:["Special Duration","Touch"],d:"Lock magically secures any device that already has a mechanical bar or lock present. A Locked device can be opened only by the caster and cannot be picked by mundane means (such as by a thief using lock-picks) since the magic renders the mechanism immobile; however, it could still be forced open by breaking the object the lock is set into. The magic remains in place until opened by the caster, after which the device must be subject to a further casting of Lock to restore the enchantment. The Magic Point used to cast Lock does not recover until the spell is dismissed or concludes naturally.",holdsMp:true},
- {n:"Phantasm",t:["Concentration","Ranged"],d:"Phantasm allows the caster to weave together insubstantial or near weightless objects so that they take a shape or ghostly form. Thus, a spectral figure could be woven from a naturally occurring mist, or a face formed in a pile of dead leaves. Beyond this the spell has little effect, save to frighten, intrigue, or disconcert those that view it."},
- {n:"Sleep",t:["Resist (Endurance)","Touch"],d:"Sleep sends its recipient into a deep, peaceful sleep. It has no effect on creatures with a SIZ greater than the caster's POW. Unless the target resists, it slumbers for a number of hours equal to half the caster's POW. However, the spell takes 1d3 Rounds to take effect before the target falls unconscious. Any attempt to cast this spell in a combat situation automatically fails."},
- {n:"Vigor",t:["Touch"],d:"Vigor makes the recipient feel alive and energetic, being used to offset the effects of strenuous physical labor. For the spell's duration, all Fatigue effects gained from laborious activity are ignored (but return on the spell's dismissal)."},
- {n:"Witchsight",t:["Ranged","Resist (Willpower)"],d:"Witchsight allows the caster to see active magic, enchanted items, and invisible entities (although such things are simply shadowy representations) that lie within range and line of sight. It can also penetrate illusions or discern the true guise of shapeshifted creatures. Beings which wish to remain hidden or disguised must win an Opposed Roll of their Willpower versus the casting roll."}
-];
+const FOLK_MAGIC=[]; // Core-first: do not use the Imperative-derived spell catalogue.
 const FOLK_MAGIC_MAP=Object.fromEntries(FOLK_MAGIC.map(s=>[s.n,s]));
 
 /* The four traditions whose content is Reserved Material. Each entry records
@@ -694,22 +668,22 @@ const MAGIC_TRADITIONS=[
   fields:[]},
  {key:"theism",label:"Theism (Miracles)",castSkill:"Exhort",pool:"devotional",hasContent:false,
   summary:"Divine magic granted by a deity. The worshipper invests Magic Points into a Devotional Pool dedicated to their god (governed by the Devotion skill), and invokes Miracles from that pool using Exhort. A successfully exhorted Miracle manifests at its full Magnitude and Intensity.",
-  costRule:"Roll Exhort to invoke. The cost is drawn from the Devotional Pool rather than from general Magic Points — set your pool below, and record each Miracle's cost from your rulebook.",
+  costRule:"Core p.181: Exhort Critical and Failure spend 0 points; Success spends the miracle's full rank cost (Initiate 1, Acolyte 2, Priest 3); Fumble spends 1 point. Pool replenishment requires worship or other divine sources.",
   fields:[["cost","Pool cost",1],["intensity","Intensity",1]],
   contentNote:"Miracle lists are specific to each deity and cult and are Reserved Material in the core rulebook — add the Miracles your cult grants you."},
  {key:"sorcery",label:"Sorcery (Grimoire)",castSkill:"Invocation",pool:"mp",hasContent:false,
-  summary:"Learned, manipulable magic from a grimoire. Invocation casts the spell; Shaping manipulates it — a caster spends Magic Points on the spell itself plus one more per shaping category applied (Duration, Range, Targets, Magnitude, Intensity), and each additional shaping also costs an extra turn to cast.",
-  costRule:"The shaping calculator below computes both numbers: 1 Magic Point for the spell plus 1 per shaping applied, and casting turns to match.",
+  summary:"Learned magic from a grimoire. Invocation casts, Shaping alters spell components. Multiple Shaping points can modify one component; each distinct altered category increases MP cost and casting Turns by one. Combine adds one MP per extra spell (without an extra casting Turn for each).",
+  costRule:"Core pp.164–165: Critical costs half (rounded up); Success full; Failure none; Fumble full. Supports per-component Shaping levels and Combine cost; GM confirms legal limits, spell-specific restrictions and actual effects.",
   fields:[],shaping:["Duration","Range","Targets","Magnitude","Intensity"],
   contentNote:"Grimoire spell lists are Reserved Material in the core rulebook — add the spells in the grimoire your character has studied."},
  {key:"animism",label:"Animism (Spirits)",castSkill:"Binding",pool:"none",hasContent:false,
   summary:"Shamanic magic worked through spirits rather than spells. Binding binds a spirit into service or into a fetish; Trance lets the shaman discorporate into the spirit world. A bound spirit's abilities are what the animist actually brings to bear.",
-  costRule:"Roll Binding to bind or command a spirit; Trance to discorporate. Spirits are tracked below with their own POW and CHA, which is what spirit combat is fought with.",
+  costRule:"Core pp.130–143: Trance, summoning, Binding and spirit combat are distinct actions. Summoning requires MP equal to spirit Intensity and a Binding roll; consult Core p.137. Use entries as references rather than one-click generic spell casting.",
   fields:[["pow","Spirit POW",0],["cha","Spirit CHA",0]],
   contentNote:"Spirit types and their abilities are Reserved Material in the core rulebook — record the spirits your character has bound."},
  {key:"mysticism",label:"Mysticism (Talents)",castSkill:"Mysticism",pool:"mp",hasContent:false,
   summary:"Mind over the matter of one's own body. A mystic develops Talents that push a personal capability past normal limits, sustained by Magic Points; Meditation supports the discipline. Simple in structure, but expensive to run.",
-  costRule:"Roll Mysticism to invoke a Talent, paying its Magic Point cost. Record each Talent's Intensity and cost from your rulebook.",
+  costRule:"Core pp.156–157: Critical spends half the talent cost (rounded up); Success and Fumble spend full cost; Failure spends 1 MP. Talent preparation takes one turn per Intensity; individual Intensity cannot exceed floor(Mysticism/20) and combined active Intensity cannot exceed floor(Meditation/10).",
   fields:[["cost","Magic Point cost",1],["intensity","Intensity",1]],
   contentNote:"Talent lists are Reserved Material in the core rulebook — add the Talents your character has developed."}
 ];
@@ -722,8 +696,7 @@ const MAGIC_TRAD_MAP=Object.fromEntries(MAGIC_TRADITIONS.map(t=>[t.key,t]));
    +15 — is the default every other part of this app was already hardcoded to,
    so an Adult character's numbers are unchanged by this table arriving.
 
-   Transcribed from the Mythras Imperative SRD (srd.mythras.net, The Design
-   Mechanism, ORC License), whose Experience Table is the core rulebook's.
+   Checked against the Age Table in Mythras Core, p.34.
 
    The book's own caveat, worth repeating in the UI: "the noted Age Bonus
    should be treated as approximate, as campaigns advance at different rates".
@@ -747,7 +720,7 @@ const AGE_MAP=Object.fromEntries(AGE_CATEGORIES.map(a=>[a.key,a]));
 /* ---- Life Events ----
    HOUSE CONTENT, NOT A BOOK TABLE — flagged as such in the UI. The core
    rulebook ties age to the Experience Table above; it does not ship a
-   background-events roll table, and this app has no verified transcription of
+   background-events table (p.18), but this app has no verified transcription of
    one from any supplement. Rather than fabricate a table and present it as
    rules, this is an openly-labelled generator whose only job is to prompt
    backstory — but every entry that has a mechanical consequence expresses it
