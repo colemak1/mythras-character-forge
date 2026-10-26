@@ -12,6 +12,10 @@ function render(){
   updateSaveStatus();
 }
 function renderInner(){
+  if(!AUTH_USER&&!MOCK_AUTH&&!["menu","account","wiki"].includes(APPVIEW)){
+    APPVIEW="account";
+    AUTH_MSG={text:"Sign in to create and manage your characters and campaigns."};
+  }
   // The Difficulty Grade popover lives outside #main (see toggleGradePop),
   // so it isn't wiped by the innerHTML rebuild below — close it explicitly
   // on every render so it can never go stale against whatever just changed

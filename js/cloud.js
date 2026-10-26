@@ -38,7 +38,9 @@ let AUTH_PENDING=false;  // true while a magic link has been sent, awaiting clic
 // Guest sessions are explicitly local-only. Restore the marker on reload so
 // users can resume characters, but never pass a guest identity to Supabase.
 const GUEST_SESSION_KEY="mythrasForgeGuestMode_v1";
-let MOCK_AUTH=(()=>{try{return localStorage.getItem(GUEST_SESSION_KEY)==="1"?{id:"guest-local",display_name:"Guest"}:null;}catch(e){return null;}})();
+// Enable only in a dedicated test deployment; never in the public build.
+const GUEST_TEST_ENABLED=false;
+let MOCK_AUTH=(()=>{try{return GUEST_TEST_ENABLED&&localStorage.getItem(GUEST_SESSION_KEY)==="1"?{id:"guest-local",display_name:"Guest"}:null;}catch(e){return null;}})();
 const anyAuth=()=>AUTH_USER||MOCK_AUTH;
 let CAMP_CACHE=null;     // array once loaded from the cloud, else null ("loading")
 let CAMPAIGN_VIEW=null;  // {campaign,members,chars,unassigned} for whatever campaign is open
@@ -751,9 +753,13 @@ function updateSaveStatus(){
     const pending=CLOUD_PENDING_ACTORS.size||CLOUD_SAVE_JOBS.size;
     status.textContent=LOCAL_SAVE_ERROR?"Not saved — export a backup":cloudActive()?
       (CLOUD_SAVE_ERROR?"Cloud save failed":pending?"Saving to account…":CLOUD_LAST_SAVED?"Saved to account":"Account connected"):
-      "Saved on this device · export a backup";
+      (MOCK_AUTH?"Test guest · stored in this browser":"Sign in to save characters");
     status.dataset.error=String(!!(LOCAL_SAVE_ERROR||CLOUD_SAVE_ERROR));
   }
+  const retry=document.getElementById("forgeRetrySave");
+  if(retry){retry.hidden=!CLOUD_SAVE_ERROR||!cloudActive();retry.disabled=!!CLOUD_SAVE_JOBS.size;}
+  const backup=document.getElementById("forgeExportRecovery");
+  if(backup)backup.hidden=!(LOCAL_SAVE_ERROR||CLOUD_SAVE_ERROR);
   const warning=document.getElementById("localSaveWarning");
   if(warning){warning.textContent=LOCAL_SAVE_ERROR||CLOUD_SAVE_ERROR||(APPVIEW==="board"?BOARD_LOAD_ERROR:"");warning.hidden=!warning.textContent;}
 }
@@ -865,7 +871,7 @@ function accountHTML(){
   let h='<div class="mmenu"><div class="mmenu-topbar"><span class="mmenu-brandmark">Mythras</span><span class="mmenu-branddiv">&middot;</span><span class="mmenu-brandsub">Character Forge</span>'
    +'<button class="mmenu-acctbtn" onclick="APP.toMenu()">&#8592; Main Menu</button></div>';
   h+='<div class="mmenu-pagehead"><h1>Account</h1><p>Sign in to sync Campaigns between people and devices.</p></div>';
-  if(!AUTH_USER){
+  if(GUEST_TEST_ENABLED&&!AUTH_USER){
     h+='<div class="mmenu-panel" style="margin-bottom:16px"><div class="mmenu-panel-eyebrow">Try without an account</div>'
      +'<p class="note">Guest mode works without Supabase. Characters and campaigns are saved only in this browser on this device, not synced or backed up. Export your character before clearing website data or changing devices.</p>'
      +(MOCK_AUTH?'<button class="chip" onclick="APP.mockSignOut()">Leave guest mode</button>':'<button class="mmenu-cta-primary" onclick="APP.mockSignIn()">Continue as Guest &rarr;</button>')
@@ -874,7 +880,7 @@ function accountHTML(){
   h+='<div class="mmenu-authgrid">';
   h+='<div class="mmenu-panel mmenu-authpanel">';
   if(!CLOUD_ENABLED){
-    h+='<div class="mmenu-panel-eyebrow">Cloud sign-in</div><p class="note">Cloud sync isn&rsquo;t configured for this copy of the app, so Campaigns stay local to this browser — no account needed.</p>';
+    h+='<div class="mmenu-panel-eyebrow">Sign-in unavailable</div><p class="note">The sign-in service could not load. Check your connection and reload the page. Your saved data has not been removed.</p>';
   }else if(AUTH_RECOVERY){
     h+='<div class="mmenu-panel-eyebrow">Reset password</div><div class="mmenu-authhead"><b>Choose a new password</b>'
      +'<span>You clicked a password-reset link. Set a new password below to finish.</span></div>'
@@ -939,7 +945,7 @@ function menuHTML(){
   h+='<div class="myth-home-colcap l" aria-hidden="true"></div><div class="myth-home-colcap r" aria-hidden="true"></div>';
   h+='<div class="myth-home-colbase l" aria-hidden="true"></div><div class="myth-home-colbase r" aria-hidden="true"></div>';
   h+=signInButtonHTML();
-  if(!AUTH_USER){
+  if(GUEST_TEST_ENABLED&&!AUTH_USER){
     h+='<div class="guest-access-banner">'
       +(MOCK_AUTH?'<span>Guest mode · Saved on this device only</span>':'<button onclick="APP.mockSignIn()">Continue as Guest &rarr;</button>')
       +'</div>';
@@ -960,14 +966,8 @@ function menuHTML(){
   // suspenders alongside the same check in APP.fromMenuContinue(): this is
   // what actually stops a signed-out visitor from seeing another account's
   // (or a stale pre-gate) character name advertised on a shared browser.
-  const canContinue=auto&&(!CLOUD_ENABLED||AUTH_USER||MOCK_AUTH);
+  const canContinue=auto&&(AUTH_USER||MOCK_AUTH);
   if(canContinue)h+='<button class="myth-home-continue" onclick="APP.fromMenuContinue()">Continue as '+esc(auto.name)+' &rarr;</button>';
-  h+='<button class="myth-home-continue" onclick="APP.chooseImport()">Import character JSON &rarr;</button>';
-  if(!cloudActive()){
-    h+='<button class="myth-home-continue" onclick="APP.exportGuestBackup()">Back up all guest characters &rarr;</button>';
-    h+='<button class="myth-home-continue" onclick="APP.chooseGuestBackupImport()">Restore guest backup &rarr;</button>';
-  }
-  h+='<button class="myth-home-continue" onclick="APP.toWiki()">Rules Wiki &rarr;</button>';
   if(LOCAL_SAVE_ERROR)h+='<p class="warn" role="alert">'+esc(LOCAL_SAVE_ERROR)+'</p>';
   if(MENU_MSG)h+='<p class="warn" style="margin-top:10px;text-align:center">'+esc(MENU_MSG)+'</p>';
   h+='</div>'; // /myth-home-stack
@@ -979,7 +979,6 @@ function menuHTML(){
 // plain Sign In pill when signed out entirely. Always routes to the
 // standalone Account page rather than opening a form inline.
 function signInButtonHTML(){
-  if(!CLOUD_ENABLED&&!MOCK_AUTH)return "";
   let label,cls="myth-home-signin";
   if(MOCK_AUTH){label="Guest";cls+=" is-active is-mock";}
   else if(AUTH_USER&&AUTH_PROFILE){label=esc(AUTH_PROFILE.display_name);cls+=" is-active";}

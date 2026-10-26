@@ -1261,7 +1261,7 @@ function combatStylesReadOnlyHTML(){
   }).join("")+'</div>';
 }
 function campaignCard(){
-  if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){
+  if(!AUTH_USER&&!MOCK_AUTH){
     return '<div class="card"><h3>Campaign</h3><p class="note">Sign in from the Main Menu to link this character to a campaign and save it to your account.</p></div>';
   }
   if(CAMP_CACHE===null){loadCampaignsUnified();return '<div class="card"><h3>Campaign</h3><p class="note">Loading campaigns&hellip;</p></div>';}

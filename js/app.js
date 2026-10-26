@@ -733,8 +733,9 @@ window.APP={
  exportMD(){dl((S.concept.name||"character").replace(/\s+/g,"_")+".md",buildMD(),"text/markdown");},
  // A downloaded JSON file is a portable backup. Import creates a separate
  // character, never silently claims an existing cloud or local library ID.
- chooseImport(){const input=document.getElementById("characterImportFile");if(input){input.value="";input.click();}},
+ chooseImport(){if(!AUTH_USER&&!MOCK_AUTH){APP.toAccount();return;}const input=document.getElementById("characterImportFile");if(input){input.value="";input.click();}},
  async importCharacterFile(input){
+   if(!AUTH_USER&&!MOCK_AUTH){APP.toAccount();return;}
    const file=input&&input.files&&input.files[0];if(!file)return;
    const fromLibrary=APPVIEW==="library";
    const showError=msg=>{if(fromLibrary)CAMP_MSG=msg;else MENU_MSG=msg;render();};
@@ -842,7 +843,7 @@ window.APP={
    // CURRENT view actually renders, or clicking it from My Characters
    // silently does nothing: the message lands in a variable nobody's
    // reading, no navigation happens either. Setting both costs nothing.
-   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){MENU_MSG="Sign in first — creating a character needs an account.";CAMP_MSG=MENU_MSG;render();return;}
+   if(!AUTH_USER&&!MOCK_AUTH){MENU_MSG="Sign in first — creating a character needs an account.";CAMP_MSG=MENU_MSG;render();return;}
    if(hasUnsavedWork()&&!confirm("Start a new character? This clears the one currently loaded (autosave and exports are unaffected until overwritten)."))return;
    S=freshState();APPVIEW="character";render();window.scrollTo(0,0);},
  fromMenuContinue(){
@@ -853,7 +854,7 @@ window.APP={
    // builder this way still calls saveAutosave() on every render, which
    // re-writes the very ":local" slot this reads from (see cloud.js), so
    // the loophole would keep recreating itself even after a sign-out wipe.
-   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){MENU_MSG="Sign in first — creating a character needs an account.";render();return;}
+   if(!AUTH_USER&&!MOCK_AUTH){MENU_MSG="Sign in first — creating a character needs an account.";render();return;}
    const info=getAutosaveInfo();if(!info)return;
    if(hasUnsavedWork()&&!confirm("Load the autosaved character? This replaces what's currently loaded."))return;
    try{const raw=localStorage.getItem(autosaveKey());const saved=JSON.parse(raw);
@@ -883,6 +884,7 @@ window.APP={
  /* account */
  toAccount(){APPVIEW="account";AUTH_MSG=null;render();window.scrollTo(0,0);},
  mockSignIn(){
+   if(!GUEST_TEST_ENABLED){APP.toAccount();return;}
    // This is a browser-only guest, not a Supabase user or fake cloud identity.
    MOCK_AUTH={id:"guest-local",display_name:"Guest"};
    try{localStorage.setItem(GUEST_SESSION_KEY,"1");}catch(e){}
@@ -896,7 +898,7 @@ window.APP={
  /* campaigns */
  toCampaigns(){APPVIEW="campaigns";CAMP_CACHE=null;CAMP_MSG=null;render();loadCampaignsUnified();window.scrollTo(0,0);},
  newCampaign(){
-   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){CAMP_MSG="Sign in first — campaigns need an account once cloud sync is on.";render();return;}
+   if(!AUTH_USER&&!MOCK_AUTH){CAMP_MSG="Sign in first — campaigns need an account once cloud sync is on.";render();return;}
    createCampaignUnified("New Campaign").then(camp=>{
      CURRENT_CAMPAIGN_ID=camp.id;APPVIEW="campaign";CAMPAIGN_VIEW=null;render();
      loadCampaignViewUnified(camp.id);window.scrollTo(0,0);
@@ -914,7 +916,7 @@ window.APP={
    deleteCampaignUnified(camp.id).then(()=>{APPVIEW="campaigns";CAMP_CACHE=null;render();loadCampaignsUnified();})
      .catch(e=>{CAMP_MSG="Could not delete campaign: "+e.message;render();});},
  newCharacterForCampaign(){
-   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){CAMP_MSG="Sign in first — creating a character needs an account.";render();return;}
+   if(!AUTH_USER&&!MOCK_AUTH){CAMP_MSG="Sign in first — creating a character needs an account.";render();return;}
    if(hasUnsavedWork()&&!confirm("Start a new character for this campaign? This clears the one currently loaded (autosave and exports are unaffected until overwritten)."))return;
    const cid=CURRENT_CAMPAIGN_ID;S=freshState();S.campaignId=cid;APPVIEW="character";render();window.scrollTo(0,0);},
  assignPicked(){
@@ -1129,7 +1131,7 @@ window.APP={
      loadCampaignViewUnified(res.id);window.scrollTo(0,0);
    }).catch(e=>{MENU_MSG="Could not join campaign: "+e.message;render();});},
  homeJoinCampaign(){
-   if(CLOUD_ENABLED&&!AUTH_USER&&!MOCK_AUTH){MENU_MSG="Sign in first — joining a campaign needs an account.";render();return;}
+   if(!AUTH_USER&&!MOCK_AUTH){MENU_MSG="Sign in first — joining a campaign needs an account.";render();return;}
    const code=prompt("Enter the campaign's invite code:");
    if(code)APP.joinCampaign(code);},
  // Builds the same #/join/<code> URL the router's "join" case parses (see
