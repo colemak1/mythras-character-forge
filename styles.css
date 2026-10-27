@@ -707,6 +707,8 @@ body.play-mode #rail,body.play-mode #ledger,body.play-mode .foot{display:none}
 .cbt-list{display:flex;flex-direction:column;gap:12px;margin-bottom:4px}
 .cbt-card{border:1px solid rgba(107,74,30,.35);border-radius:3px;background:rgba(255,248,232,.5);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .cbt-card.on{border-color:#8a5a12;background:rgba(138,90,18,.14);box-shadow:0 0 0 1px #8a5a12}
+.cbt-turnread{font-size:13px;color:#241706;flex-basis:100%}
+.cbt-active{font:700 11px var(--mono);color:#6b4a12;letter-spacing:.04em;margin-left:8px}
 .cbt-head{display:flex;align-items:center;gap:8px}
 .cbt-name{flex:1;min-width:0;font-size:13.5px;color:#241706;font-family:'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cbt-name i{font-style:normal;color:rgba(42,28,12,.55);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;margin-left:6px}
