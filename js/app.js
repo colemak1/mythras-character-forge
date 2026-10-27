@@ -727,6 +727,13 @@ window.APP={
  // Switching tabs (Actions/Special Effects/Inventory/Features/Notes) is
  // read-only navigation, always allowed even in a VIEW_ONLY session.
  playTab(t){S.play.tab=t;render();},
+ // Keep the next step of a combat roll visible after the sheet redraws.
+ playJumpToEffects(){S.play.tab="effects";render();requestAnimationFrame(()=>{
+   const panel=$("#pm-actions");if(panel)panel.scrollIntoView({block:"start"});
+ });},
+ playJumpToInjury(){requestAnimationFrame(()=>{
+   const panel=$("#pm-vitals");if(panel)panel.scrollIntoView({block:"start"});
+ });},
  /* export / import */
  exportJSON(){const data=JSON.stringify(S,null,2);
    dl((S.concept.name||"character").replace(/\s+/g,"_")+".mythras.json",data,"application/json");},
