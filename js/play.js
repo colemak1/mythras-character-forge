@@ -334,7 +334,7 @@ function pmLocRow(loc){
 // exception, not the default.
 function pmLocDetail(){
   const loc=S.play.selectedLoc;
-  if(!loc)return '<div class="pm-locdetail"><p class="pm-empty">Click a body location for details and damage controls.</p></div>';
+  if(!loc)return '<div class="pm-locdetail"><p class="pm-empty">Choose a body location above to record an injury.</p></div>';
   const cur=playCurHP(loc),max=playMaxHP(loc),st=playHPState(loc);
   const armLoc=PLAY_LIMB_BASE[loc]||loc,ap=armorApAt(armLoc);
   const idv="playdmg-"+loc.replace(/\s+/g,"_");
@@ -748,9 +748,11 @@ function playRollLogRow(r,i){
         '<button class="pm-btn sm" onclick="APP.playSetOpponentTier('+i+',\''+t+'\')">'+t+'</button>').join("")+'</div>';
     }else{
       const n=playEffectsWon(r.tier,r.oppTier);
-      row+='<div class="pm-fx-resolve">'+(n>0?'vs opponent '+r.oppTier+' &rarr; <b>you win '+n+' Special Effect'+(n>1?"s":"")+'</b> — pick from the Special Effects tab.'
+      row+='<div class="pm-fx-resolve">'+(n>0?'vs opponent '+r.oppTier+' &rarr; <b>you win '+n+' Special Effect'+(n>1?"s":"")+'</b>.'
         :n<0?'vs opponent '+r.oppTier+' &rarr; <b>opponent wins '+(-n)+' Special Effect'+(-n>1?"s":"")+'</b> against you.'
-        :'vs opponent '+r.oppTier+' &rarr; no Special Effects either way.')+'</div>';
+        :'vs opponent '+r.oppTier+' &rarr; no Special Effects either way.')
+        +(n!==0?' <button class="pm-btn sm" onclick="APP.playJumpToEffects()">View Special Effects</button>':'')
+        +' <button class="pm-btn sm" onclick="APP.playJumpToInjury()">Record injury</button></div>';
     }
   }
   return row+'</div>';
@@ -880,7 +882,7 @@ function renderPlayView(){
   const tabs=[["actions","Actions"],["effects","Special Effects"]]
    .concat(allMagic().length?[["magic","Magic"]]:[])
    .concat([["inventory","Inventory"],["features","Features"],["notes","Notes"]]);
-  h+='<div class="pm-box" style="padding:0;overflow:hidden"><div class="pm-tabs" style="padding:0 14px;margin-top:2px">'+tabs.map(([k,l])=>'<button class="pm-tabbtn '+(tab===k?"on":"")+'" onclick="APP.playTab(\''+k+'\')">'+l+'</button>').join("")+'</div>';
+  h+='<div class="pm-box" id="pm-actions" style="padding:0;overflow:hidden"><div class="pm-tabs" style="padding:0 14px;margin-top:2px">'+tabs.map(([k,l])=>'<button class="pm-tabbtn '+(tab===k?"on":"")+'" onclick="APP.playTab(\''+k+'\')">'+l+'</button>').join("")+'</div>';
   h+='<div class="pm-tabpanel" style="border:none;border-radius:0">';
   if(tab==="actions"){
     // Weapon-by-weapon hit/damage now lives permanently in the 04 Combat
