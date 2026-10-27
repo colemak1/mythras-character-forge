@@ -524,6 +524,20 @@ const DIFF_TABLE={
   Fumble:{Critical:-3,Success:-2,Failure:0,Fumble:0}
 };
 function playEffectsWon(mine,theirs){return DIFF_TABLE[mine]?.[theirs] ?? 0;}
+let PM_EFFECT_ROLL_INDEX=null;
+let PM_FX_SEARCH="";
+function selectedEffectRoll(){
+  const r=S.rollLog[PM_EFFECT_ROLL_INDEX];
+  return r&&r.combat&&r.oppTier&&playEffectsWon(r.tier,r.oppTier)>0?r:null;
+}
+function canPickEffectForRoll(effect,r){
+  if(!effect||!effect[1]||!r)return false;
+  const requirement=effect[4]||"";
+  if(/Critical/.test(requirement)&&r.tier!=="Critical")return false;
+  if(requirement==="Opponent Fumbles"&&r.oppTier!=="Fumble")return false;
+  if(requirement==="Attacker Fumbles"&&r.tier!=="Fumble")return false;
+  return true;
+}
 // [name, offensive, defensive, weapon restriction, specific roll requirement, stackable, description]
 const SPECIAL_EFFECTS=[
 ["Accidental Injury",0,1,"","Attacker Fumbles",0,"The defender deflects or twists the attack so it fumbles, injuring the attacker instead. Roll damage against the attacker in a random hit location using the weapon used to strike; if unarmed, it's an internal injury that ignores armour."],
@@ -599,10 +613,14 @@ const FX_GROUPS=[
 // against without re-lowercasing on every keystroke.
 function fxItemHTML(effect){
   const [name,off,def,weapon,roll,stack,text]=effect;
+  const selected=selectedEffectRoll(), picked=selected?.effectsPicked||[];
+  const count=picked.filter(n=>n===name).length;
+  const canChoose=canPickEffectForRoll(effect,selected)&&picked.length<playEffectsWon(selected.tier,selected.oppTier)&&(!count||stack)&&!VIEW_ONLY;
+  const choose=canChoose?'<button type="button" class="pm-btn sm pm-fx-choose" onclick="event.preventDefault();event.stopPropagation();APP.playChooseEffect('+SPECIAL_EFFECTS.indexOf(effect)+')">Choose</button>':"";
   const badges=[off?'<span class="pm-fx-badge off">Offensive</span>':"",def?'<span class="pm-fx-badge def">Defensive</span>':"",
     weapon?'<span class="pm-fx-badge">'+esc(weapon)+'</span>':"",roll?'<span class="pm-fx-badge roll">'+esc(roll)+'</span>':"",
     stack?'<span class="pm-fx-badge stack">Stacks</span>':""].join("");
-  return '<details class="pm-fx-item" data-search="'+esc((name+" "+text).toLowerCase())+'"><summary>'+esc(name)+' '+badges+'</summary><p>'+esc(text)+'</p></details>';
+  return '<details class="pm-fx-item" data-search="'+esc((name+" "+text).toLowerCase())+'"><summary>'+esc(name)+' '+badges+choose+'</summary><p>'+esc(text)+'</p></details>';
 }
 // One tactical-intent group (see FX_GROUPS) as a collapsible <details> --
 // open by default (matches what the list always looked like before), but
@@ -626,7 +644,14 @@ function fxGroupHTML(groupName,effects){
 // each *group* is independently collapsible too.
 function specialEffectsPanel(){
   let h='<p class="pm-notes">Choose an effect below. Open it for its requirements and outcome; your roll result tells you how many you may choose.</p>';
-  h+='<input type="text" class="pm-fx-search" aria-label="Search Special Effects" placeholder="Search '+SPECIAL_EFFECTS.length+' Special Effects by name or effect&hellip;" oninput="pmFxFilter(this)">';
+  const r=selectedEffectRoll();
+  if(r){
+    const picked=r.effectsPicked||[], limit=playEffectsWon(r.tier,r.oppTier);
+    h+='<div class="pm-fx-selection"><b>'+esc(r.label)+': '+picked.length+'/'+limit+' chosen</b>'
+      +(picked.length?'<div class="pm-fx-picks">'+picked.map((name,i)=>'<button type="button" class="pm-btn sm" title="Remove '+esc(name)+'" onclick="APP.playRemoveEffectChoice('+i+')">'+esc(name)+' &times;</button>').join("")+'</div>':"")
+      +'<span>Check weapon and roll requirements before choosing. Selection records the choice; resolve its outcome at the table.</span></div>';
+  }
+  h+='<input type="text" class="pm-fx-search" aria-label="Search Special Effects" value="'+esc(PM_FX_SEARCH)+'" placeholder="Search '+SPECIAL_EFFECTS.length+' Special Effects by name or effect&hellip;" oninput="pmFxFilter(this)">';
   h+='<div class="pm-fx-list">'+FX_GROUPS.map(([groupName,names])=>{
     const items=names.map(n=>SPECIAL_EFFECTS.find(e=>e[0]===n)).filter(Boolean);
     return fxGroupHTML(groupName,items);
@@ -663,6 +688,7 @@ function specialEffectsPanel(){
 // manually collapsed stays collapsed rather than snapping back open.
 function pmFxFilter(input){
   const q=input.value.trim().toLowerCase();
+  PM_FX_SEARCH=input.value;
   document.querySelectorAll('.pm-fx-group').forEach(group=>{
     let anyVisible=false;
     group.querySelectorAll('.pm-fx-item').forEach(item=>{
@@ -751,7 +777,8 @@ function playRollLogRow(r,i){
       row+='<div class="pm-fx-resolve">'+(n>0?'vs opponent '+r.oppTier+' &rarr; <b>you win '+n+' Special Effect'+(n>1?"s":"")+'</b>.'
         :n<0?'vs opponent '+r.oppTier+' &rarr; <b>opponent wins '+(-n)+' Special Effect'+(-n>1?"s":"")+'</b> against you.'
         :'vs opponent '+r.oppTier+' &rarr; no Special Effects either way.')
-        +(n!==0?' <button class="pm-btn sm" onclick="APP.playJumpToEffects()">View Special Effects</button>':'')
+        +(n>0?' <button class="pm-btn sm" onclick="APP.playJumpToEffects('+i+')">'+((r.effectsPicked||[]).length?'Change':'Choose')+' Special Effects</button>':n<0?' <button class="pm-btn sm" onclick="APP.playJumpToEffects()">View Special Effects</button>':'')
+        +((r.effectsPicked||[]).length?'<span>Chosen: '+esc(r.effectsPicked.join(', '))+'</span>':'')
         +' <button class="pm-btn sm" onclick="APP.playJumpToInjury()">Record injury</button></div>';
     }
   }
@@ -979,6 +1006,7 @@ function renderPlayView(){
   h+='</div>';
   if(XP_OPEN&&!VIEW_ONLY)h+=xpModalHtml();
   $("#main").innerHTML=h;
+  if(S.play.tab==="effects"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
 }
 // ---- Improve Skills modal (Experience Rolls, core rulebook pp.71-73) ----
 function xpModalHtml(){
