@@ -1367,6 +1367,10 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 
 /* Special Effects reference tab */
 .pm-fx-search{width:100%;margin-bottom:12px;box-sizing:border-box;border:1px solid var(--pm-line-soft);border-radius:var(--pm-r-sm);background:var(--pm-bg);color:var(--pm-text);font-family:var(--sans);font-size:13px;padding:7px 10px}
+.pm-fx-selection{border:1px solid var(--pm-accent);border-radius:var(--pm-r-sm);padding:10px 12px;margin:0 0 12px;display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.4}
+.pm-fx-selection span{color:var(--pm-dim)}
+.pm-fx-picks{display:flex;gap:6px;flex-wrap:wrap}
+.pm-fx-item summary .pm-fx-choose{margin-left:auto;font-size:12px}
 .pm-fx-search:focus{outline:none;border-color:var(--pm-accent)}
 .pm-fx-list{display:flex;flex-direction:column;gap:10px}
 /* Each group is now its own <details> (was a plain, always-expanded <div>)
