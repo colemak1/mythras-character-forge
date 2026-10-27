@@ -39,4 +39,6 @@ run('VIEW_ONLY=true;APP.playRemoveEffectChoice(0);APP.playChooseEffect(0);');
 assert.equal(run('S.rollLog[0].effectsPicked.length'),2,'read-only view cannot edit picks');
 run('VIEW_ONLY=false;APP.playSetOpponentTier(0,"Critical");');
 assert.equal(run('selectedEffectRoll()'),null,'tied result has no selection context');
+run('S=freshState();S.rollLog=[{label:"Other character",tier:"Critical",oppTier:"Failure",combat:true}];');
+assert.equal(run('selectedEffectRoll()'),null,'selection context does not cross characters');
 console.log('PASS effect selection, limits, removal, changed result, and read-only guard');
