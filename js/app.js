@@ -538,7 +538,7 @@ window.APP={
    // contradiction of the note above.
    if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
    if(tier==="Critical")APP.markChecked(key);
-   PM_EFFECT_ROLL_INDEX=null;
+   PM_EFFECT_ROLL_REF=null;
    S.rollLog.unshift({label:e.label+tag,pct,roll:r===100?"00":r,tier,combat:key.startsWith("style:"),oppTier:null});
    S.rollLog=S.rollLog.slice(0,8);render();},
  playSetOpponentTier(i,tier){if(VIEW_ONLY||!S.rollLog[i]||!["Critical","Success","Failure","Fumble"].includes(tier))return;
@@ -738,7 +738,7 @@ window.APP={
  // read-only navigation, always allowed even in a VIEW_ONLY session.
  playTab(t){S.play.tab=t;render();},
  // Keep the next step of a combat roll visible after the sheet redraws.
- playJumpToEffects(i=null){PM_EFFECT_ROLL_INDEX=Number.isInteger(i)?i:null;PM_FX_SEARCH="";S.play.tab="effects";render();requestAnimationFrame(()=>{
+ playJumpToEffects(i=null){PM_EFFECT_ROLL_REF=Number.isInteger(i)?S.rollLog[i]||null:null;PM_FX_SEARCH="";S.play.tab="effects";render();requestAnimationFrame(()=>{
    const panel=$("#pm-actions");if(panel)panel.scrollIntoView({block:"start"});
  });},
  playJumpToInjury(){requestAnimationFrame(()=>{
