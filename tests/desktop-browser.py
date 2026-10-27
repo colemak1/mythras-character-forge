@@ -7,7 +7,7 @@ import json, re
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[1]
 ORDER=['data','engine','cloud','wiki-data','wiki','render','router','play','app']
-raw=(ROOT/'index.html').read_text()
+raw=(ROOT/'forge.html').read_text()
 raw=re.sub(r'<script[^>]+src="[^"]+"[^>]*></script>','',raw)
 raw=re.sub(r'<link[^>]+(?:href="[^"]+\.css"|href="https://fonts[^"]+")[^>]*>','',raw)
 raw=re.sub(r'<link[^>]+rel="preconnect"[^>]*>','',raw)

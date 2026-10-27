@@ -512,7 +512,7 @@ test('Update 18: malformed and backup payloads are refused as characters',()=>{
  }
 });
 test('Update 18: independent character and guest backup import/export controls exist',()=>{
- const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ const html=fs.readFileSync(path.join(root,'forge.html'),'utf8');
  const app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');
  for(const marker of ['characterImportFile','guestBackupImportFile','localSaveWarning'])assert(html.includes(marker),marker);
  for(const action of ['importCharacterFile(input)','importGuestBackupFile(input)','exportGuestBackup()','chooseImport()'])assert(app.includes(action),action);
