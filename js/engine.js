@@ -223,7 +223,7 @@ function freshState(){return {
  _pendingClaim:false,
  // heightM / weightKg are optional hand-typed overrides — blank means "use
  // the figure derived from SIZ, species and build" (see heightWeight()).
- concept:{name:"",player:"",gender:"",age:"",frame:"Medium",handed:"Right",homeland:"",notes:"",heightM:"",weightKg:""},
+ concept:{name:"",player:"",gender:"",age:"",frame:"Medium",handed:"Right",homeland:"",notes:"",heightM:"",weightKg:"",portrait:""},
  chars:{STR:null,CON:null,SIZ:null,DEX:null,INT:null,POW:null,CHA:null},
  charMode:"roll", poolA:[], poolB:[], assignA:{}, assignB:{}, fixedAP:0,
  culture:null, cultChoice:[], cultProf:[null,null,null], cultProfSpec:["","",""],
@@ -278,6 +278,8 @@ function freshState(){return {
  xp:{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[]}
 };}
 function normalizeState(){
+  S.concept=S.concept||{};
+  if(typeof S.concept.portrait!=="string"||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]{1,200000}$/.test(S.concept.portrait))S.concept.portrait="";
   // Defensive coercion only -- every actual load path (openCharToPlay/Edit/
   // Sheet, fromMenuContinue, import) sets the real value explicitly right
   // after calling this, based on where the data came from. This just keeps

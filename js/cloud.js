@@ -304,7 +304,7 @@ async function cloudFetchCharacters(filter){
 }
 function localCharShape(c){
   return {id:c.id,owner_id:"local",owner_name:"You",campaign_id:c.campaignId,name:c.name,
-    tier:c.tier,culture:c.culture,career:c.career,updated_at:new Date(c.savedAt).toISOString()};
+    tier:c.tier,culture:c.culture,career:c.career,state:c.state,updated_at:new Date(c.savedAt).toISOString()};
 }
 async function cloudUpsertCharacter(entry){
   // Insert and update are deliberately separate paths (not a single upsert)
@@ -1035,7 +1035,7 @@ function libraryHTML(){
     const tierLabel=c.tier&&c.tier!=="ordinary"&&ARCHETYPES[c.tier]?ARCHETYPES[c.tier].label:null;
     const meta=[c.culture,c.career,tierLabel].filter(Boolean).join(" &middot; ")||"Concept only, so far";
     return '<div class="mmenu-charcard"><div class="mmenu-preview-head">'
-     +'<div class="mmenu-preview-portrait">'+esc(initials)+'</div><div>'
+     +'<div class="mmenu-preview-portrait">'+(c.state?.concept?.portrait&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]{1,200000}$/.test(c.state.concept.portrait)?'<img src="'+c.state.concept.portrait+'" alt="">':esc(initials))+'</div><div>'
      +'<div class="mmenu-preview-name">'+esc(c.name||"Unnamed Character")+'</div>'
      +'<div class="mmenu-preview-meta">'+meta+'</div></div></div>'
      +'<div class="mmenu-charcard-ts">Saved '+new Date(c.updated_at).toLocaleString()+'</div>'

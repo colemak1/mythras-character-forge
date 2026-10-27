@@ -264,6 +264,11 @@ function stepConcept(){
   +'<div class="card"><div class="grid2">'
   +fld("Character name",tIn("concept","name",c.name,"e.g. Anathaym"))
   +fld("Player",tIn("concept","player",c.player,""))
+  +'<div class="portrait-field"><label for="characterPortrait">Character portrait (optional)</label>'
+  +(c.portrait?'<img class="character-portrait" src="'+esc(c.portrait)+'" alt="Portrait of '+esc(c.name||'this character')+'">':'')
+  +'<input id="characterPortrait" type="file" accept="image/jpeg,image/png,image/webp" onchange="APP.setPortrait(this)">'
+  +'<span class="note">Upload your own image. It is resized and saved with this character.</span>'
+  +(c.portrait?'<button type="button" class="chip" onclick="APP.clearPortrait()">Remove portrait</button>':'')+'</div>'
   +fld("Gender",tIn("concept","gender",c.gender,""))
   +fld("Age",'<div class="agemini">'+esc(S.age.years==null?"—":String(S.age.years))+' <span class="note">'+esc(ageBand().label)+' &mdash; set in the Age card below</span></div>')
   +fld("Homeland",tIn("concept","homeland",c.homeland,"e.g. a region of Sit'ota"))
