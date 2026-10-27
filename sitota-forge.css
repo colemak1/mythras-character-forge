@@ -12,6 +12,7 @@ body,body.menu-mode:not(.sheet-mode),body.play-mode{background:#171712;backgroun
 .sitota-header a:focus-visible{outline:2px solid #d7b884;outline-offset:4px}
 body.menu-mode .app{min-height:calc(100vh - 89px);background:#171712}
 body.menu-mode .mmenu{max-width:1160px;min-height:0;margin:48px auto 80px;padding:46px 54px 65px;background:#e4d6b9;border:1px solid #74694f;box-shadow:0 22px 65px #0005}
+body.menu-mode .menuwrap{min-height:0;margin:48px auto 80px;padding:46px 54px 65px;background:#e4d6b9;border:1px solid #74694f;box-shadow:0 22px 65px #0005}
 body.menu-mode .myth-home{min-height:calc(100vh - 89px);background:#171712;color:#eee6d7}
 .myth-home-sunglow,.myth-home-marble,.myth-home-col,.myth-home-colcap,.myth-home-colbase{display:none}
 .myth-home-title{font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;text-transform:none;letter-spacing:-.04em;color:#eee6d7;text-shadow:none}
@@ -22,6 +23,6 @@ body.menu-mode .myth-home{min-height:calc(100vh - 89px);background:#171712;color
 body:not(.menu-mode):not(.play-mode):not(.sheet-mode) .app{background:#e4d6b9;max-width:1680px}
 body.play-mode .app{background:#e4d6b9}
 body.sheet-mode .sitota-header{display:none}
-@media(max-width:800px){.sitota-header-inner{width:calc(100% - 36px);min-height:75px;flex-wrap:wrap;gap:14px;padding:15px 0}.sitota-header nav{margin-left:0;gap:15px}.sitota-header nav a{font-size:11px}body.menu-mode .mmenu{width:calc(100% - 28px);margin:24px auto;padding:25px 20px}}
+@media(max-width:800px){.sitota-header-inner{width:calc(100% - 36px);min-height:75px;flex-wrap:wrap;gap:14px;padding:15px 0}.sitota-header nav{margin-left:0;gap:15px}.sitota-header nav a{font-size:11px}body.menu-mode .mmenu,body.menu-mode .menuwrap{width:calc(100% - 28px);margin:24px auto;padding:25px 20px}}
 @media print{.sitota-header{display:none}}
 .portrait-field{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}.portrait-field label{font-weight:600}.portrait-field input{max-width:100%;font-size:12px}.character-portrait{width:116px;height:116px;object-fit:cover;border:1px solid #8b7858}.mmenu-preview-portrait img{width:100%;height:100%;object-fit:cover;border-radius:50%}
