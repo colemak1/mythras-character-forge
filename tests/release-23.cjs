@@ -19,6 +19,31 @@ run('render=()=>{};syncRouteFromState=()=>{};');
 let passed=0;
 async function test(name,fn){await fn();console.log('PASS '+name);passed++;}
 (async()=>{
+ await test('failed campaign reads show recovery instead of an empty account',async()=>{
+  run('AUTH_USER={id:"qa"};var originalFetch=cloudFetchCampaigns;cloudFetchCampaigns=async()=>{throw Error("connection lost")};');
+  await run('loadCampaignsUnified()');
+  assert.match(run('campaignsHTML()'),/Retry loading campaigns/);
+  assert(!run('campaignsHTML()').includes('No campaigns yet'));
+  run('cloudFetchCampaigns=async()=>[]');await run('loadCampaignsUnified()');
+  assert.equal(run('CAMP_LOAD_ERROR'),'');
+  assert(run('campaignsHTML()').includes('No campaigns yet'));
+  run('cloudFetchCampaigns=originalFetch;AUTH_USER=null;');
+ });
+ await test('public homepage omits guest entry and added utility links',()=>{
+  run('AUTH_USER=null;MOCK_AUTH=null;');
+  assert(!run('menuHTML()').includes('APP.mockSignIn()'));
+  assert(!run('menuHTML()').includes('APP.exportGuestBackup()'));
+  assert(!run('menuHTML()').includes('APP.chooseImport()'));
+  assert(run('signInButtonHTML()').includes('APP.toAccount()'));
+  assert(!fs.readFileSync(path.join(root,'index.html'),'utf8').includes('forge-releasebar'));
+ });
+ await test('guest entry and protected deep links require an account',async()=>{
+  run('APP.mockSignIn();');assert.equal(run('MOCK_AUTH'),null);
+  for(const view of ['character','library','campaigns','board','play','sheet']){
+   await run('applyRoute({view:'+JSON.stringify(view)+'})');
+   assert.equal(run('APPVIEW'),'account');
+  }
+ });
  await test('failed campaign and homebrew writes are reported',()=>{
   const original=context.localStorage.setItem;context.localStorage.setItem=()=>{throw Error('quota');};
   assert.throws(()=>run('saveCampaignsListLocal([])'),/quota/);
@@ -69,8 +94,12 @@ async function test(name,fn){await fn();console.log('PASS '+name);passed++;}
   run('cloudUpsertCharacter=async()=>{throw Error("offline")};');
   await assert.rejects(run('saveToLibraryUnified(true)'),/offline/);
   assert.match(run('CLOUD_SAVE_ERROR'),/offline/);
+  assert.equal(element('forgeRetrySave').hidden,false);
+  assert.equal(element('forgeExportRecovery').hidden,false);
   run('cloudUpsertCharacter=async()=>({id:"22222222-2222-4222-8222-222222222222"});');
   await run('flushCloudSaves()');assert.equal(run('CLOUD_SAVE_ERROR'),'');
+  assert.equal(element('forgeRetrySave').hidden,true);
+  assert.equal(element('forgeExportRecovery').hidden,true);
  });
  await test('failed sign-out upload retains session and recovery draft',async()=>{
   run('localStorage.setItem(AUTOSAVE_KEY+":user","recover");cloudUpsertCharacter=async()=>{throw Error("offline")};APP.signOut();');
@@ -78,6 +107,13 @@ async function test(name,fn){await fn();console.log('PASS '+name);passed++;}
   assert.equal(run('AUTH_USER.id'),'user');
   assert.equal(run('localStorage.getItem(AUTOSAVE_KEY+":user")'),'recover');
   assert.match(run('AUTH_MSG.text'),/Sign-out paused/);
+ });
+ await test('cold password recovery redirect opens the new-password form',async()=>{
+  run('AUTH_USER=null;AUTH_RECOVERY=false;APPVIEW="menu";location.hash="#/account";onSignedIn=async()=>{};sb.auth.onAuthStateChange=cb=>{globalThis.recoveryListener=cb};sb.auth.getSession=async()=>{recoveryListener("PASSWORD_RECOVERY",{user:{id:"qa"}});return {data:{session:{user:{id:"qa"}}}}};');
+  await run('boot()');
+  assert.equal(run('AUTH_RECOVERY'),true);
+  assert.equal(run('APPVIEW'),'account');
+  assert.match(run('accountHTML()'),/Choose a new password/);
  });
  console.log(`${passed} release regression tests passed`);
 })().catch(e=>{console.error(e);process.exitCode=1;});
