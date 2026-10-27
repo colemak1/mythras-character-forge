@@ -56,7 +56,7 @@ let CAMPAIGN_VIEW=null;  // {campaign,members,chars,unassigned} for whatever cam
    migration lands, cloud writes below fail gracefully (caught, surfaced as
    inline feedback like every other campaign write) and local-only mode
    works immediately. */
-function emptySessionState(){return {combatants:[],round:1,turnIdx:0,sessionNotes:""};}
+function emptySessionState(){return {combatants:[],round:1,turnIdx:0,activeId:null,sessionNotes:""};}
 // Migrates the old, pre-overhaul shape (separate `initiative` turn-order
 // list and `npcs` prep list, never actually linked to each other -- adding
 // an NPC to initiative got its own bare name+init entry, not whatever HP/
@@ -77,7 +77,7 @@ function sessionStateOf(camp){
     if(e.kind==="pc")return combatantFromPc(e.ref,e.init,e.id);
     return Object.assign(combatantFromNpc(e.name,e.init,e.id));
   });
-  return {combatants,round:raw.round||1,turnIdx:raw.turnIdx||0,sessionNotes:raw.sessionNotes||""};
+  return {combatants,round:raw.round||1,turnIdx:raw.turnIdx||0,activeId:null,sessionNotes:raw.sessionNotes||""};
 }
 // Default hit-location preset -- same seven locations (and the same
 // Right/Left Arm|Leg -> "Each Arm"/"Each Leg" HP-sharing convention) every
@@ -1290,7 +1290,7 @@ function combatantCardHTML(c,isActive){
   const apRemain=Math.max(0,c.ap.max-c.ap.used);
   const locs=c.locations||[];
   return '<div class="cbt-card'+(isActive?" on":"")+'">'
-   +'<div class="cbt-head"><span class="cbt-name">'+esc(c.name||"Unnamed")+' <i>'+(isPc?"PC":"NPC")+'</i></span>'
+   +'<div class="cbt-head"><span class="cbt-name">'+esc(c.name||"Unnamed")+' <i>'+(isPc?"PC":"NPC")+'</i>'+(isActive?' <strong class="cbt-active">ACTING NOW</strong>':'')+'</span>'
    +'<input type="number" class="cbt-init" value="'+c.init+'" onchange="APP.gmSetInit(\''+c.id+'\',this.value)" aria-label="Initiative" title="Initiative">'
    +'<button class="chip sm" onclick="APP.gmRemoveCombatant(\''+c.id+'\')" aria-label="remove from combat">&times;</button></div>'
    +'<div class="cbt-ap"><span class="cbt-aplbl">AP</span>'
@@ -1326,7 +1326,8 @@ function combatantCardHTML(c,isActive){
 function gmToolsHTML(camp){
   const st=sessionStateOf(camp);
   const order=st.combatants.slice().sort((a,b)=>b.init-a.init);
-  const activeId=order.length?order[Math.min(st.turnIdx,order.length-1)].id:null;
+  const activeId=order.length?(order.some(c=>c.id===st.activeId)?st.activeId:order[Math.min(st.turnIdx,order.length-1)].id):null;
+  const acting=order.find(c=>c.id===activeId),next=order.length>1?order[(order.findIndex(c=>c.id===activeId)+1)%order.length]:null;
   const inFight=new Set(st.combatants.filter(e=>e.kind==="pc").map(e=>e.ref));
   const pcChoices=(BOARD_CHARS||[]).filter(c=>!inFight.has(c.id));
   let h=GM_SESSION_ERROR?'<p class="warn" style="margin-bottom:10px">'+esc(GM_SESSION_ERROR)+'</p>':'';
@@ -1334,6 +1335,7 @@ function gmToolsHTML(camp){
   h+='<p class="note">GM working copy: HP and AP start from the saved character, then remain separate from the player sheet. Record final changes on the player sheet. Apply damage here after armour. End the active character&rsquo;s turn with Advance turn; start a new round only when the round is complete.</p>';
   h+='<div class="pb-initctl"><span class="pb-round">Round <b>'+st.round+'</b></span>'
    +'<span class="note">Cycle '+(st.cycle||1)+'</span>'
+   +(acting?'<span class="cbt-turnread" role="status"><b>Acting:</b> '+esc(acting.name||"Unnamed")+(next?' &middot; <b>Next:</b> '+esc(next.name||"Unnamed"):'')+'</span>':'')
    +'<button class="chip" onclick="APP.gmAdvanceTurn()" '+(order.length?"":"disabled")+'>Advance turn &rarr;</button>'
    +'<button class="chip" onclick="APP.gmNewRound()" '+(order.length?"":"disabled")+'>New round · restore AP</button>'
    +(order.length>1?'<button class="chip" onclick="APP.gmRollAllInit()" title="1d10 + Initiative Bonus for party characters, flat 1d10 for NPCs">Roll initiative for everyone</button>':'')+'</div>';
