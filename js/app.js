@@ -967,7 +967,12 @@ window.APP={
  gmSessionMutate(mutatorFn){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
    const st=sessionStateOf(camp);
+   const before=st.combatants.slice().sort((a,b)=>b.init-a.init);
+   if(!st.activeId&&before.length)st.activeId=before[Math.min(st.turnIdx,before.length-1)].id;
    mutatorFn(st);
+   const after=st.combatants.slice().sort((a,b)=>b.init-a.init);
+   if(!after.some(c=>c.id===st.activeId))st.activeId=after.length?after[0].id:null;
+   st.turnIdx=Math.max(0,after.findIndex(c=>c.id===st.activeId));
    camp.session_state=st;
    GM_SESSION_ERROR=null;render();
    sessionStateCampaignUnified(camp.id,st).catch(e=>{GM_SESSION_ERROR="Could not save: "+e.message;render();});
@@ -1009,23 +1014,30 @@ window.APP={
      });
    });},
  gmRemoveCombatant(id){
-   APP.gmSessionMutate(st=>{st.combatants=st.combatants.filter(c=>c.id!==id);});},
+   APP.gmSessionMutate(st=>{
+     const order=st.combatants.slice().sort((a,b)=>b.init-a.init);
+     if(st.activeId===id){const i=order.findIndex(c=>c.id===id);
+       st.activeId=order.length>1?order[(i+1)%order.length].id:null;}
+     st.combatants=st.combatants.filter(c=>c.id!==id);
+   });},
  gmAdvanceTurn(){
    APP.gmSessionMutate(st=>{
      if(!st.combatants.length)return;
      const order=st.combatants.slice().sort((a,b)=>b.init-a.init);
-     tickCombatEffects([order[Math.min(st.turnIdx,order.length-1)]],"turn");
-     const next=st.turnIdx+1;
-     if(next>=st.combatants.length){
-       st.turnIdx=0;st.cycle=(st.cycle||1)+1;
-     }else st.turnIdx=next;
+     const current=Math.max(0,order.findIndex(c=>c.id===st.activeId));
+     tickCombatEffects([order[current]],"turn");
+     const next=(current+1)%order.length;
+     if(next===0)st.cycle=(st.cycle||1)+1;
+     st.activeId=order[next].id;
    });},
  gmNewRound(){APP.gmSessionMutate(st=>{
    st.round=(st.round||1)+1;st.cycle=1;st.turnIdx=0;
+   const order=st.combatants.slice().sort((a,b)=>b.init-a.init);st.activeId=order.length?order[0].id:null;
    st.combatants.forEach(c=>{c.ap.used=0;});
    tickCombatEffects(st.combatants,"round");
  });},
- gmResetRound(){APP.gmSessionMutate(st=>{st.round=1;st.cycle=1;st.turnIdx=0;});},
+ gmResetRound(){APP.gmSessionMutate(st=>{st.round=1;st.cycle=1;st.turnIdx=0;
+   const order=st.combatants.slice().sort((a,b)=>b.init-a.init);st.activeId=order.length?order[0].id:null;});},
  gmApAdj(id,delta){
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c)return;
      c.ap.used=Math.max(0,Math.min(c.ap.max,c.ap.used-delta));});},
