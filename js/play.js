@@ -524,10 +524,10 @@ const DIFF_TABLE={
   Fumble:{Critical:-3,Success:-2,Failure:0,Fumble:0}
 };
 function playEffectsWon(mine,theirs){return DIFF_TABLE[mine]?.[theirs] ?? 0;}
-let PM_EFFECT_ROLL_INDEX=null;
+let PM_EFFECT_ROLL_REF=null;
 let PM_FX_SEARCH="";
 function selectedEffectRoll(){
-  const r=S.rollLog[PM_EFFECT_ROLL_INDEX];
+  const r=S.rollLog.includes(PM_EFFECT_ROLL_REF)?PM_EFFECT_ROLL_REF:null;
   return r&&r.combat&&r.oppTier&&playEffectsWon(r.tier,r.oppTier)>0?r:null;
 }
 function canPickEffectForRoll(effect,r){
