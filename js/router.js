@@ -212,12 +212,15 @@ window.addEventListener("hashchange",()=>{
 // (depending on how permissive an anonymous read is) either get rejected or,
 // worse, show someone else's character for a moment while auth catches up.
 async function boot(){
+  // Supabase can resolve an email recovery redirect while getSession() is
+  // running. Subscribe first so PASSWORD_RECOVERY is not lost on cold load.
+  initAuth();
   if(CLOUD_ENABLED){
     try{
       const {data}=await sb.auth.getSession();
       if(data&&data.session)await onSignedIn(data.session.user);
     }catch(e){/* best-effort -- initAuth's own listener still catches a later resolution */}
   }
-  initAuth();
+  if(AUTH_RECOVERY){APPVIEW="account";render();return;}
   await applyRoute(parseRoute(location.hash),{cold:true});
 }
