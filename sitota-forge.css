@@ -24,3 +24,4 @@ body.play-mode .app{background:#e4d6b9}
 body.sheet-mode .sitota-header{display:none}
 @media(max-width:800px){.sitota-header-inner{width:calc(100% - 36px);min-height:75px;flex-wrap:wrap;gap:14px;padding:15px 0}.sitota-header nav{margin-left:0;gap:15px}.sitota-header nav a{font-size:11px}body.menu-mode .mmenu{width:calc(100% - 28px);margin:24px auto;padding:25px 20px}}
 @media print{.sitota-header{display:none}}
+.portrait-field{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}.portrait-field label{font-weight:600}.portrait-field input{max-width:100%;font-size:12px}.character-portrait{width:116px;height:116px;object-fit:cover;border:1px solid #8b7858}.mmenu-preview-portrait img{width:100%;height:100%;object-fit:cover;border-radius:50%}
