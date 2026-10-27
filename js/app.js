@@ -13,6 +13,22 @@ window.APP={
    S.step=i;render();window.scrollTo(0,0);},
  override(step,v){S.overrides[step]=v;render();},
  set(obj,f,v){S[obj][f]=v;renderLedger();saveAutosave();},
+ async setPortrait(input){
+   const file=input.files&&input.files[0];if(!file)return;
+   if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>5*1024*1024){showError("Choose a JPEG, PNG, or WebP image under 5 MB.");input.value="";return;}
+   const actor=S;
+   try{
+     const image=await createImageBitmap(file);
+     const scale=Math.min(1,512/Math.max(image.width,image.height));
+     const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));
+     const ctx=canvas.getContext("2d");ctx.fillStyle="#e4d6b9";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);image.close();
+     const portrait=canvas.toDataURL("image/jpeg",.76);
+     if(portrait.length>200024)throw Error("Image is too large after resizing. Try a smaller image.");
+     if(actor!==S)return;
+     S.concept.portrait=portrait;render();
+   }catch(e){showError("Portrait could not be saved: "+e.message);input.value="";}
+ },
+ clearPortrait(){S.concept.portrait="";render();},
  set2(f,v){S[f]=v;render();},
  /* characteristics */
  mode(m){S.charMode=m;

@@ -1,0 +1,27 @@
+/* The Forge remains a functional application. This shared frame carries the
+   public site's visual language into its account, library, campaign, rules,
+   builder, and play routes without touching saved data or routing logic. */
+body,body.menu-mode:not(.sheet-mode),body.play-mode{background:#171712;background-image:none;background-attachment:initial}
+.sitota-header{background:#171712;color:#eee6d7;border-bottom:1px solid #555044;font:12px/1.5 'DM Sans',Arial,sans-serif;position:relative;z-index:25}
+.sitota-header-inner{width:min(1160px,calc(100% - 64px));min-height:88px;margin:auto;display:flex;align-items:center;gap:48px}
+.sitota-brand{font:500 34px/1 'Cormorant Garamond',Georgia,serif;color:#eee6d7;text-decoration:none;white-space:nowrap;letter-spacing:.01em}
+.sitota-brand small{display:block;font:500 10px/1.5 'DM Sans',Arial,sans-serif;letter-spacing:.19em;text-transform:uppercase;color:#b9ad98;margin-top:5px}
+.sitota-header nav{margin-left:auto;display:flex;gap:31px;align-items:center;flex-wrap:wrap}
+.sitota-header nav a{color:#b9ad98;text-decoration:none;font:12px 'DM Sans',Arial,sans-serif}
+.sitota-header nav a:hover{color:#eee6d7;text-decoration:underline;text-underline-offset:8px;text-decoration-color:#d7b884}
+.sitota-header a:focus-visible{outline:2px solid #d7b884;outline-offset:4px}
+body.menu-mode .app{min-height:calc(100vh - 89px);background:#171712}
+body.menu-mode .mmenu{max-width:1160px;min-height:0;margin:48px auto 80px;padding:46px 54px 65px;background:#e4d6b9;border:1px solid #74694f;box-shadow:0 22px 65px #0005}
+body.menu-mode .myth-home{min-height:calc(100vh - 89px);background:#171712;color:#eee6d7}
+.myth-home-sunglow,.myth-home-marble,.myth-home-col,.myth-home-colcap,.myth-home-colbase{display:none}
+.myth-home-title{font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;text-transform:none;letter-spacing:-.04em;color:#eee6d7;text-shadow:none}
+.myth-home-rule{background:#71644d}.myth-home-rule::before{background:#171712;color:#d7b884}
+.myth-home-mbtn,.myth-home-signin{font-family:'DM Sans',Arial,sans-serif;font-size:12px;letter-spacing:0;text-transform:none;border:1px solid #947f5c;color:#eee6d7;background:#22221c}
+.myth-home-mbtn:hover,.myth-home-signin:hover{background:#353025;color:#fff}
+.myth-home-signin{right:32px;top:25px}.myth-home-continue{color:#d7b884}.myth-home-continue:hover{color:#fff}
+body:not(.menu-mode):not(.play-mode):not(.sheet-mode) .app{background:#e4d6b9;max-width:1680px}
+body.play-mode .app{background:#e4d6b9}
+body.sheet-mode .sitota-header{display:none}
+@media(max-width:800px){.sitota-header-inner{width:calc(100% - 36px);min-height:75px;flex-wrap:wrap;gap:14px;padding:15px 0}.sitota-header nav{margin-left:0;gap:15px}.sitota-header nav a{font-size:11px}body.menu-mode .mmenu{width:calc(100% - 28px);margin:24px auto;padding:25px 20px}}
+@media print{.sitota-header{display:none}}
+.portrait-field{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}.portrait-field label{font-weight:600}.portrait-field input{max-width:100%;font-size:12px}.character-portrait{width:116px;height:116px;object-fit:cover;border:1px solid #8b7858}.mmenu-preview-portrait img{width:100%;height:100%;object-fit:cover;border-radius:50%}
