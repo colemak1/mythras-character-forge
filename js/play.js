@@ -625,11 +625,19 @@ function fxGroupHTML(groupName,effects){
 // restriction, roll requirement, stackable) show until expanded, and now
 // each *group* is independently collapsible too.
 function specialEffectsPanel(){
-  let h='<div class="pm-tablewrap" style="margin-bottom:14px"><table class="pm-atktable"><tr><th>You rolled</th><th>Opponent Critical</th><th>Opponent Success</th><th>Opponent Failure</th><th>Opponent Fumble</th></tr>'
+  let h='<p class="pm-notes">Choose an effect below. Open it for its requirements and outcome; your roll result tells you how many you may choose.</p>';
+  h+='<input type="text" class="pm-fx-search" aria-label="Search Special Effects" placeholder="Search '+SPECIAL_EFFECTS.length+' Special Effects by name or effect&hellip;" oninput="pmFxFilter(this)">';
+  h+='<div class="pm-fx-list">'+FX_GROUPS.map(([groupName,names])=>{
+    const items=names.map(n=>SPECIAL_EFFECTS.find(e=>e[0]===n)).filter(Boolean);
+    return fxGroupHTML(groupName,items);
+  }).join("")
+   +fxGroupHTML("Other",SPECIAL_EFFECTS.filter(e=>!new Set(FX_GROUPS.flatMap(([,names])=>names)).has(e[0])))
+   +'</div>';
+  h+='<details class="pm-fx-item" style="margin-top:14px"><summary>How many Special Effects? <span class="pm-fx-badge">Roll comparison</span></summary><div class="pm-tablewrap"><table class="pm-atktable"><tr><th>You rolled</th><th>Opponent Critical</th><th>Opponent Success</th><th>Opponent Failure</th><th>Opponent Fumble</th></tr>'
    +["Critical","Success","Failure","Fumble"].map(mine=>'<tr><td><b>'+mine+'</b></td>'
      +["Critical","Success","Failure","Fumble"].map(theirs=>{const n=playEffectsWon(mine,theirs);
        return '<td>'+(n>0?'You win '+n:(n<0?'Opponent wins '+(-n):'No benefit'))+'</td>';}).join("")+'</tr>').join("")
-   +'</table></div>';
+   +'</table></div></details>';
   // Optional Reach rule callout, made concrete using this character's own
   // equipped melee/shield weapons where possible instead of just abstract
   // categories.
@@ -641,14 +649,6 @@ function specialEffectsPanel(){
    +'<p><b>Holding them off</b> (the <i>Open Range</i> Special Effect): keeping the fight at your weapon’s longer Reach means the shorter weapon can only attack <i>your weapon itself</i> — trying to knock it aside, sunder it, grab it — not you, until they manage to close the distance.</p>'
    +(myReach.length?'<p class="pm-notes">Your weapons, shortest to longest reach: '+myReach.sort((a,b)=>REACH_ORDER.indexOf((weaponByName(a.split(" (")[0])||{}).reach)-REACH_ORDER.indexOf((weaponByName(b.split(" (")[0])||{}).reach)).join(", ")+'.</p>':'')
    +'</details>';
-  h+='<input type="text" class="pm-fx-search" placeholder="Search '+SPECIAL_EFFECTS.length+' Special Effects by name or effect&hellip;" oninput="pmFxFilter(this)">';
-  h+='<div class="pm-fx-list">'+FX_GROUPS.map(([groupName,names])=>{
-    const items=names.map(n=>SPECIAL_EFFECTS.find(e=>e[0]===n)).filter(Boolean);
-    return fxGroupHTML(groupName,items);
-  }).join("")
-   // safety net: any effect not placed in a group above still shows up, so re-grouping can never silently hide one
-   +fxGroupHTML("Other",SPECIAL_EFFECTS.filter(e=>!new Set(FX_GROUPS.flatMap(([,names])=>names)).has(e[0])))
-   +'</div>';
   return h;
 }
 // Pure client-side filter for the search box above -- deliberately NOT
