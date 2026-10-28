@@ -371,21 +371,21 @@ window.APP={
    S.qProf=[null,null,null];S.qProfSpec=["","",""];S.qStyleOn=false;S.qStyleName="";
    S.alloc={culture:{},career:{},bonus:{},quick:{}};
    S.step=0;render();window.scrollTo(0,0);},
- qStyle(on){S.qStyleOn=on;if(on)S.alloc.quick["style:quick"]=5;else delete S.alloc.quick["style:quick"];render();},
+ qStyle(on){S.qStyleOn=on;if(on)S.alloc.quick["style:quick"]=5;else delete S.alloc.quick["style:quick"];this.skillsChanged();},
  /* culture */
  pickCulture(n){if(S.culture===n)return;S.culture=n;S.cultChoice=[];
    S.cultProf=[null,null,null];S.cultProfSpec=["","",""];S.alloc.culture={};
    CULTURES[n].std.forEach(sk=>{S.alloc.culture["std:"+sk]=5;});
-   render();},
+   this.skillsChanged();},
  cultChoice(sk){const c=CULTURES[S.culture];const i=S.cultChoice.indexOf(sk);
    if(i>=0){S.cultChoice.splice(i,1);delete S.alloc.culture["std:"+sk];}
    else{if(S.cultChoice.length>=c.choice.pick){const removed=S.cultChoice.shift();delete S.alloc.culture["std:"+removed];}
      S.cultChoice.push(sk);S.alloc.culture["std:"+sk]=5;}
-   render();},
+   this.skillsChanged();},
  cultStyle(on){S.cultStyleOn=on;if(!on){delete S.alloc.culture["style:cult"];delete S.alloc.career["style:cult"];delete S.alloc.bonus["style:cult"];
    S.carStyles.forEach(cs=>{if(cs&&cs.mode==="link")cs.mode="new";});}
    else S.alloc.culture["style:cult"]=0;
-   render();},
+   this.skillsChanged();},
  pickProf(which,i,name){
    const picks=which==="cult"?S.cultProf:(which==="car"?S.carProf:S.qProf),
      specs=which==="cult"?S.cultProfSpec:(which==="car"?S.carProfSpec:S.qProfSpec);
@@ -393,14 +393,14 @@ window.APP={
    if(picks[i]){delete S.alloc[ph][profKey(picks[i],specs[i])];}
    picks[i]=name||null;specs[i]="";
    if(name&&(which==="cult"||which==="quick"))S.alloc[ph][profKey(name,"")]=5;
-   render();},
+   this.skillsChanged();},
  profSpec(which,i,v){
    const picks=which==="cult"?S.cultProf:(which==="car"?S.carProf:S.qProf),
      specs=which==="cult"?S.cultProfSpec:(which==="car"?S.carProfSpec:S.qProfSpec);
    const ph=which==="cult"?"culture":(which==="car"?"career":"quick");
    const old=profKey(picks[i],specs[i]);const nw=profKey(picks[i],v);
    if(S.alloc[ph][old]!==undefined&&old!==nw){S.alloc[ph][nw]=S.alloc[ph][old];delete S.alloc[ph][old];}
-   specs[i]=v;render();},
+   specs[i]=v;this.skillsChanged();},
  /* career */
  pickCareer(n){
    if(n==="__custom__"){
@@ -408,31 +408,34 @@ window.APP={
      S.customCareer.isCustom=true;S.career=null;
      S.carProf=[null,null,null];S.carProfSpec=["","",""];S.alloc.career={};
      S.carStyles=Array(S.customCareer.styleSlots).fill(null).map(()=>({mode:"new",name:""}));
-     render();
+     this.skillsChanged();
    }else{
      if(S.career===n&&!S.customCareer.isCustom)return;
      S.customCareer.isCustom=false;S.career=n;
      S.carProf=[null,null,null];S.carProfSpec=["","",""];S.alloc.career={};
-     S.carStyles=CAREERS[n].styleSlots.map(()=>({mode:"new",name:""}));render();
+     S.carStyles=CAREERS[n].styleSlots.map(()=>({mode:"new",name:""}));this.skillsChanged();
    }
  },
  customCareerName(v){S.customCareer.name=v;
    if(v.trim()){S.career="__custom__";}else{S.career=null;}
-   render();},
+   this.skillsChanged();},
  editCustomCareer(){if(S.customCareer.isCustom)S.career=null;render();window.scrollTo(0,0);},
  customCareerStd(skill){const i=S.customCareer.std.indexOf(skill);
    if(i>=0)S.customCareer.std.splice(i,1);
    else S.customCareer.std.push(skill);
-   render();},
+   this.skillsChanged();},
  customCareerStyles(n){S.customCareer.styleSlots=n;
    const old=S.carStyles.length;
    if(n<old)S.carStyles=S.carStyles.slice(0,n);
    else for(let i=old;i<n;i++)S.carStyles.push({mode:"new",name:""});
-   render();},
+   this.skillsChanged();},
  carStyleMode(i,m){const cs=S.carStyles[i];
    delete S.alloc.career[cs.mode==="link"?"style:cult":"style:k"+i];
-   cs.mode=m;render();},
- carStyleName(i,v){S.carStyles[i].name=v;render();},
+   cs.mode=m;this.skillsChanged();},
+ carStyleName(i,v){S.carStyles[i].name=v;this.skillsChanged();},
+ skillsChanged(){reconcileSkillAllocations();render();},
+ hobbySpec(v){S.hobbySpec=v;this.skillsChanged();},
+ clearAllocation(phase,key){if(VIEW_ONLY)return;delete S.alloc[phase][key];render();},
  /* allocations */
  aAdj(ph,key,dir){const {pool,max}=phaseLimits(ph);
    const v=aGet(ph,key)+dir;
@@ -447,7 +450,7 @@ window.APP={
    S.alloc[ph][key]=v;render();},
  /* bonus */
  hobby(name){if(S.hobby){delete S.alloc.bonus[S.hobby==="__combat_style__"?"style:hobby":profKey(S.hobby,S.hobbySpec)];}
-   S.hobby=name||null;S.hobbySpec="";render();},
+   S.hobby=name||null;S.hobbySpec="";this.skillsChanged();},
  /* Core Culture & Community, pp.21–25: narrative choices, not free mechanical bonuses. */
  communityField(key,value){
    if(!["family","parents","siblings","reputation","partyTie","resources"].includes(key))return;
@@ -570,9 +573,8 @@ window.APP={
  /* ---- Experience Rolls / Improve Skills (core rulebook pp.71-73) ---- */
  openXP(){XP_OPEN=true;render();},
  closeXP(){XP_OPEN=false;render();},
- xpAward(v){const n=parseInt(v,10);if(!Number.isFinite(n)||n===0)return;
-   S.xp.pool=Math.max(0,S.xp.pool+n+(n>0?xpMod(S.chars.CHA):0));
-   if(n>0)S.xp.usedThisRun=[]; // a fresh award = a new "sitting" for the once-per-skill cap
+ xpAward(v,applyModifier=false){if(VIEW_ONLY)return;const n=parseInt(v,10);if(!Number.isFinite(n)||n===0)return;
+   S.xp.pool=Math.max(0,S.xp.pool+n+(n>0&&applyModifier?xpMod(S.chars.CHA):0));
    render();},
  xpToggleFumble(key){const i=S.xp.fumbled.indexOf(key);
    if(i>=0)S.xp.fumbled.splice(i,1);else S.xp.fumbled.push(key);render();},
@@ -597,17 +599,9 @@ window.APP={
    S.xp.fumbled=S.xp.fumbled.filter(k=>k!==key);
    S.xp.history.unshift({type:"fumble",key,label:e.label,newPct:finalPct(key)});
    S.xp.history=S.xp.history.slice(0,25);render();},
- // Spend one Experience Roll on a skill: 1d100 + INT vs current %
- // (equal-or-beat = +1d4+1%, otherwise still +1%). If the skill is flagged
- // Fumbled, that free +1% is applied first per the book, then the roll is
- // made against the now-updated %. One roll per skill per sitting.
- // Draws from xpRollsAvailable() (the manually-awarded pool plus checked-
- // skill bonus rolls, see engine.js), not S.xp.pool alone -- if this skill
- // is itself checked, spending consumes THAT flag specifically (checked
- // skills are self-contained roll opportunities, same relationship a
- // fumble flag already has to its own +1%); otherwise it draws from the
- // shared manual pool.
- xpSpend(key){if(VIEW_ONLY||xpRollsAvailable()<=0||S.xp.usedThisRun.includes(key))return;
+ // Core p.72: each banked roll buys an improvement attempt at the current %.
+ // Apply a pending fumble bonus before determining that current percentage.
+ xpSpend(key){if(VIEW_ONLY||xpRollsAvailable()<=0)return;
    const e=entryMap()[key];if(!e)return;
    let fumbleApplied=false;
    if(S.xp.fumbled.includes(key)){
@@ -622,7 +616,6 @@ window.APP={
    S.xp.bonus[key]=(S.xp.bonus[key]||0)+gain;
    S.xp.checked=S.xp.checked.filter(k=>k!==key);
    S.xp.pool=Math.max(0,S.xp.pool-1);
-   S.xp.usedThisRun.push(key);
    S.xp.history.unshift({type:"roll",key,label:e.label,roll:r===100?"00":r,int:S.chars.INT,total,target,success,gain,fumbleApplied,newPct:finalPct(key)});
    S.xp.history=S.xp.history.slice(0,25);render();},
  // On-demand Difficulty Grade reference popover (Play Mode). Deliberately
@@ -681,7 +674,7 @@ window.APP={
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
      S._pendingClaim=(entry.ownerId==="local");
      SHEET_RETURN_VIEW="library";APPVIEW="sheet";render();window.scrollTo(0,0);});},
- // Primary damage flow (see pmLocDetail in play.js): takes the raw damage
+ // Primary damage flow (see pmLocDetail in play.js): takes damage after parry
  // an attack rolled and subtracts this location's armour AP automatically
  // (core p.27) before applying it to HP, instead of making the player look
  // up the AP and do that subtraction by hand every single hit. Sets

@@ -415,6 +415,7 @@ function allocTable(phase,rows,pool,min,max,quote,groupOrder){
   return '<div class="pool"><span>Points</span><span class="pv '+(spent===pool?"ok":(spent>pool?"bad":""))+'">'+spent+' / '+pool+'</span>'
    +'<div class="pbar"><i style="width:'+Math.min(100,spent/pool*100)+'%"></i></div><span class="note">'+rem+' left'+(min?' &middot; '+min+'&ndash;'+max+' each':' &middot; max '+max+' each')+'</span></div>'
    +(quote?'<div class="rulequote">'+quote+'</div>':"")
+   +Object.keys(S.alloc[phase]).filter(k=>aGet(phase,k)>0&&!seen.has(k)).map(k=>'<p class="note">Unavailable skill: '+esc(k)+' ('+aGet(phase,k)+' points). <button type="button" onclick="APP.clearAllocation(\''+phase+'\',\''+jsq(k)+'\')">Return points to pool</button></p>').join('')
    +'<table class="alloc"><tr><th>Skill</th><th class="num">Base</th><th>'+phase+' pts</th><th class="num">Total %</th></tr>'
    +rows.map((r,i)=>{
      const v=aGet(phase,r.key);
@@ -641,7 +642,7 @@ function stepBonus(){
    +'<select onchange="APP.hobby(this.value)"><option value="">&mdash; choose a hobby skill &mdash;</option>'
    +'<option value="__combat_style__" '+(S.hobby==="__combat_style__"?"selected":"")+'>Combat Style</option>'
    +hobOff.map(n=>'<option '+(S.hobby===n?"selected":"")+'>'+n+'</option>').join("")+'</select>'
-   +(S.hobby?'<input type="text" value="'+esc(S.hobbySpec)+'" placeholder="speciality / combat style name" onchange="APP.set2(\'hobbySpec\',this.value)">':"")
+   +(S.hobby?'<input type="text" value="'+esc(S.hobbySpec)+'" placeholder="speciality / combat style name" onchange="APP.hobbySpec(this.value)">':"")
    +'</div></div>';
   const es=allEntries();
   h+='<div class="card"><h3>Allocate '+pool+' bonus points</h3>'

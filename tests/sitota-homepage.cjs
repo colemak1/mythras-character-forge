@@ -9,7 +9,7 @@ for(const script of [...original.matchAll(/<script src="(js\/[^"?]+)[^"]*"/g)].m
  assert(forge.includes(`<script src="${script}?`),'Forge application script missing: '+script);
 assert.match(forge,/sitota-forge\.css/);
 assert.match(forge,/class="sitota-header"/);
-assert.match(forge,/sitota-forge\.css\?v=2/);
+assert.match(forge,/sitota-forge\.css\?v=\d+/);
 assert.match(home,/Welcome to<br><em>New Sit’ota/);
 assert.match(home,/href="#\/world\/welcome"/);
 for(const route of ['my-characters','my-campaigns','wiki','character/new','account'])

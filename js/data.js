@@ -719,10 +719,10 @@ const AGE_MAP=Object.fromEntries(AGE_CATEGORIES.map(a=>[a.key,a]));
 
 /* ---- Life Events ----
    HOUSE CONTENT, NOT A BOOK TABLE — flagged as such in the UI. The core
-   rulebook ties age to the Experience Table above; it does not ship a
-   background-events table (p.18), but this app has no verified transcription of
-   one from any supplement. Rather than fabricate a table and present it as
-   rules, this is an openly-labelled generator whose only job is to prompt
+   rulebook provides official Background Events on pp.18-20, with age-based
+   rolls on p.34; the separate Core workflow records those rolls and notes.
+   This optional house generator is not a transcription of that table.
+   It is an openly-labelled generator whose only job is to prompt
    backstory — but every entry that has a mechanical consequence expresses it
    through something the app already models properly (a Passion at its correct
    book-derived starting value, an inventory item, a change to starting
