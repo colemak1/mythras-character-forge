@@ -146,7 +146,7 @@ function playWoundEffectText(loc,cls){
   if(cls==="ok")return "Undamaged — no mechanical penalty.";
   if(cls==="minor")return "Minor Wound: no mechanical penalty, but the location is damaged — a follow-up hit here has less HP to work through before it becomes a Serious Wound.";
   if(cls==="serious"){
-    return "Serious Wound: permanently scarred; can't attack or start casting for 1d3 rounds (can still parry/evade). "
+    return "Serious Wound: permanently scarred; can't attack or start casting for 1d3 turns (can still parry/evade). "
       +(isLimb
         ? "Endurance test vs the attacker's roll or the limb goes useless until healed above 0 (leg: drop prone; arm: drop whatever it's holding)."
         : "Endurance test vs the attacker's roll or you're knocked out for minutes equal to the damage just taken.")
@@ -196,7 +196,7 @@ function fatigueRecoveryText(){
   const hr=charsReady()?Math.max(1,healRate(S.chars.CON)):1;
   const t=mins/hr;
   const txt=t<60?(Math.round(t)+" minutes"):((Math.round(t/6)/10)+" hours");
-  return txt+" of complete rest to shed this level ("+r.recovery+" ÷ Healing Rate "+hr+").";
+  return "Physical exertion only: "+txt+" of complete rest to shed this level ("+r.recovery+" ÷ Healing Rate "+hr+"). Blood loss: one level per day, starting the day after bleeding stops. Asphyxiation: normally one level per minute after it ends; the GM may limit full recovery (Core pp.71,79).";
 }
 function gradedPassivePct(key){const g=gradedPct(key,finalPct(key));return g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%";}
 function hitD20For(loc){const e=HIT_D20.find(x=>x[1]===loc);return e?e[0].replace("-","–"):"—";}
@@ -345,9 +345,10 @@ function pmLocDetail(){
    +'<div class="hpline">'+cur+' <span>/ '+max+' HP</span><span class="pm-woundtag '+st.cls+'">'+st.tag+'</span></div>'
    +'<div class="fx">'+esc(playWoundEffectText(loc,st.cls))+'</div>'
    +(playWoundActionText(loc,st.cls)?'<p class="pm-notes" role="status">'+esc(playWoundActionText(loc,st.cls))+'</p>':'')
+   +'<p class="pm-notes">Enter damage after parry and other reductions, before armour. Forge subtracts location AP (Core p.110).</p>'
    +'<div class="pm-dmgctl">'
    +'<div class="pm-dmgrow">'
-   +'<input type="number" id="'+idv+'" placeholder="damage dealt" min="0" aria-label="Incoming damage, before armour">'
+   +'<input type="number" id="'+idv+'" placeholder="damage after parry" min="0" aria-label="Damage after parry and other reductions, before armour">'
    +'<button class="pm-sbtn dmg primary" onclick="APP.playApplyDamage(\''+loc+'\')">Apply Damage</button>'
    +'</div>'
    +'<div class="pm-dmgnote">'+(note
@@ -1016,15 +1017,14 @@ function xpModalHtml(){
     const pct=finalPct(e.key);
     const flagged=S.xp.fumbled.includes(e.key);
     const checked=S.xp.checked.includes(e.key);
-    const used=S.xp.usedThisRun.includes(e.key);
-    const canSpend=xpRollsAvailable()>0&&!used;
+    const canSpend=xpRollsAvailable()>0;
     return '<div class="pm-xprow">'
      +'<button class="pm-xpflag'+(flagged?" on":"")+'" title="'+(flagged?"Fumbled — free +1% pending. Click to remove flag.":"Mark this skill as Fumbled (free +1%)")+'" onclick="APP.xpToggleFumble(\''+jsq(e.key)+'\')">&#9873;</button>'
      +'<button class="pm-ckflag'+(checked?" on":"")+'" title="'+(checked?"Checked (note only). Click to clear.":"Mark checked (note only)")+'" onclick="APP.xpToggleChecked(\''+jsq(e.key)+'\')">&#10003;</button>'
      +'<span class="nm">'+esc(e.label)+'</span>'
      +'<span class="pctval">'+pct+'%</span>'
      +(flagged?'<button class="pm-btn sm" onclick="APP.xpApplyFumble(\''+jsq(e.key)+'\')">apply +1%</button>':'')
-     +'<button class="pm-btn sm roll" '+(canSpend?"":"disabled")+' onclick="APP.xpSpend(\''+jsq(e.key)+'\')">'+(used?"used this sitting":"spend roll")+'</button>'
+     +'<button class="pm-btn sm roll" '+(canSpend?"":"disabled")+' onclick="APP.xpSpend(\''+jsq(e.key)+'\')">spend roll</button>'
      +'</div>';
   };
   let h='<div class="pm-modal-backdrop" onclick="APP.closeXP()"><div class="pm-modal" onclick="event.stopPropagation()">';
@@ -1033,11 +1033,12 @@ function xpModalHtml(){
    +'<span class="pm-xpfterm">'+S.xp.pool+' banked (GM-awarded)</span>'
    +'<span class="pm-xpfop">=</span>'
    +'<span class="pm-xpftotal"><b>'+xpRollsAvailable()+'</b> roll'+(xpRollsAvailable()===1?"":"s")+' available</span>'
-   +'</div><p class="pm-empty" style="margin:0">Core rules: the GM awards Experience Rolls; the CHA Experience Modifier applies to the award. Checked skills are notes only and do not add rolls.</p>'
+   +'</div><p class="pm-empty" style="margin:0">Core rules: the GM awards Experience Rolls; apply the CHA Experience Modifier only when the GM confirms that influence can help or hinder. Checked skills are notes only and do not add rolls.</p>'
+   +'<label><input type="checkbox" id="xpApplyModifier"> Apply Experience Modifier (GM approval)</label>'
    +'<div class="pm-xpaward">Award <input type="number" id="xpAwardN" value="3" min="1" style="width:52px"> '
-   +'<button class="pm-btn sm" onclick="APP.xpAward(document.getElementById(\'xpAwardN\').value)">+ add to pool</button> '
-   +'<span class="pm-empty">core book: 2&ndash;4 per sitting, GM discretion. CHA Experience Modifier applies once to each positive award. Awarding resets the once-per-skill cap below.</span></div></div>';
-  h+='<p class="pm-empty">Spend 1 roll on a skill: roll 1d100, add INT ('+S.chars.INT+'). Total meets or beats the skill&rsquo;s current % &rarr; <b>+1d4+1%</b>. Total falls short &rarr; still <b>+1%</b> (an Experience Roll never fails outright). A skill flagged &#9873; got a Fumble since the last sitting and gets a free <b>+1%</b> (applied before any roll spent on it, doesn&rsquo;t stack) &mdash; this flags automatically when you roll a Fumble in Play Mode, or click the flag by hand. A skill flagged &#10003; is marked for reference only; it does not grant a free Experience Roll. Only one Experience Roll per skill per sitting.</p>';
+   +'<button class="pm-btn sm" onclick="APP.xpAward(document.getElementById(\'xpAwardN\').value,document.getElementById(\'xpApplyModifier\').checked)">+ add to pool</button> '
+   +'<span class="pm-empty">core book: 2&ndash;4 per sitting, GM discretion. The optional CHA adjustment applies once to a positive award when selected.</span></div></div>';
+  h+='<p class="pm-empty">Spend 1 roll on a skill: roll 1d100, add INT ('+S.chars.INT+'). Total meets or beats the skill&rsquo;s current % &rarr; <b>+1d4+1%</b>. Total falls short &rarr; still <b>+1%</b> (an Experience Roll never fails outright). A skill flagged &#9873; got a Fumble since the last sitting and gets a free <b>+1%</b> (applied before any roll spent on it, doesn&rsquo;t stack) &mdash; this flags automatically when you roll a Fumble in Play Mode, or click the flag by hand. A skill flagged &#10003; is marked for reference only; it does not grant a free Experience Roll. You may spend additional banked rolls on the same skill; each uses its updated percentage.</p>';
   h+='<div class="pm-xplist">';
   h+='<div class="pm-skillgroup"><h4>Standard</h4>'+grp("Standard").map(row).join("")+'</div>';
   if(grp("Professional").length)h+='<div class="pm-skillgroup"><h4>Professional</h4>'+grp("Professional").map(row).join("")+'</div>';
@@ -1101,7 +1102,7 @@ function characterSheetBody(){
     else if(g.grade!=="standard")valueHtml='<span class="pct" title="'+esc(whyTxt)+'">'+g.pct+'%</span> <span class="note" style="text-decoration:line-through">'+base+'%</span>'+(shifted?' <span class="note" title="'+esc(whyTxt||"Grade shifted")+'">&#9733;</span>':"");
     else valueHtml='<span class="pct">'+base+'%</span>';
     const dot='<span class="trdot" style="color:'+(e.trained?"var(--verd)":"var(--faint)")+'" title="'+(e.trained?"Trained":"Base only, no points invested")+'">'+(e.trained?"&#9679;":"&#9675;")+'</span>';
-    return '<div class="skrow"><span>'+dot+esc(e.label)+(e.provisional?' <span class="warn" title="Combat Style base % uses STR+DEX as a working default, same formula as Athletics/Swim/Unarmed — the book leaves each style&#39;s exact base characteristics to the Games Master/setting">&#9888;</span>':"")+'</span><span>'+valueHtml+' <button class="rollb" onclick="APP.roll(\''+jsq(e.key)+'\')">roll</button></span></div>';
+    return '<div class="skrow"><span>'+dot+esc(e.label)+'</span><span>'+valueHtml+' <button class="rollb" onclick="APP.roll(\''+jsq(e.key)+'\')">roll</button></span></div>';
   }).join("");
   let h=head("Character Sheet","A printable reference sheet — same numbers as Play Mode. Roll skills straight off it if you like; this browser autosaves as you go either way.");
   h+='<div class="card"><h3>Difficulty Grade</h3><p class="note">Shifts every skill %, and what the roll button uses, until you set it back to Standard.'

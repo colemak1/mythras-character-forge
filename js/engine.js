@@ -264,17 +264,7 @@ function freshState(){return {
  // Play Mode, or toggled by hand), cleared once applied. bonus = cumulative
  // % gained per skill key from this system, folded into finalPct() so every
  // existing display (skill list, sheet, roll log) picks it up automatically.
- // usedThisRun tracks the "same skill may not benefit from more than one
- // Experience Roll per session" cap — reset whenever new rolls are awarded,
- // since this app has no other concept of a game "session" boundary.
- // checked = skill keys currently flagged eligible for an Experience Roll,
- // auto-set on a Critical (in-app roll — see APP.markChecked) or toggled by
- // hand (the ✓ flag, APP.xpToggleChecked) for a physical-dice Critical or a
- // dramatic non-crit success the app can't detect algorithmically. Cleared
- // specifically when that skill's own Experience Roll is spent (xpSpend, in
- // app.js), not on any session boundary — see xpRollsAvailable()/
- // xpBonusRolls() below for how this feeds the roll-count formula (Myth's
- // reconstruction, not yet confirmed against the book).
+ // Legacy usedThisRun is retained for save compatibility and no longer limits improvement.
  xp:{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[]}
 };}
 function normalizeState(){
@@ -545,7 +535,7 @@ function allEntries(){
     e.push({key,label:n,base:baseOf(f),formula:f,grp:"Standard",
       trained:hasInvestment(key)||key==="std:Customs"||key==="std:Native Tongue"});});
   acquiredProfs().forEach(p=>e.push({key:p.key,label:profLabel(p.name,p.spec),base:baseOf(PROF[p.name]||"INTx2"),formula:PROF[p.name],grp:MAGIC.has(p.name)?"Magic":"Professional",trained:true}));
-  stylesList().forEach(s=>e.push({key:s.key,label:s.name,base:baseOf("STR+DEX"),formula:"STR+DEX",grp:"Combat Style",provisional:true,trained:true}));
+  stylesList().forEach(s=>e.push({key:s.key,label:s.name,base:baseOf("STR+DEX"),formula:"STR+DEX",grp:"Combat Style",trained:true}));
   return e;
 }
 const entryMap=()=>Object.fromEntries(allEntries().map(x=>[x.key,x]));
@@ -744,6 +734,15 @@ function careerKeys(){
     keys.push(cs&&cs.mode==="link"?"style:cult":"style:k"+i);});
   S.carProf.forEach((p,i)=>{if(p)keys.push(profKey(p,S.carProfSpec[i]));});
   return [...new Set(keys)];
+}
+// Selection edits return points from unavailable skills to their original pool.
+// Existing/imported saves retain their allocations until the player edits or clears them.
+function reconcileSkillAllocations(){
+  const allowed={culture:cultureReqKeys(),career:careerKeys(),quick:quickKeys(),bonus:allEntries().map(e=>e.key)};
+  for(const [phase,keys] of Object.entries(allowed)){
+    const keep=new Set(keys);
+    for(const key of Object.keys(S.alloc[phase]))if(!keep.has(key))delete S.alloc[phase][key];
+  }
 }
 // Validate selectable Professional Skills independently of the browser's dropdown.
 // Different named specialities of a skill (for example Lore (Primary) and
