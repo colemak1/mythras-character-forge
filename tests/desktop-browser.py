@@ -6,8 +6,8 @@ from pathlib import Path
 import json, re
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[1]
-ORDER=['data','engine','cloud','wiki-data','wiki','render','router','play','app']
-raw=(ROOT/'forge.html').read_text()
+ORDER=['data','engine','cloud','wiki-data','wiki','sitota','render','router','play','app']
+raw=(ROOT/'index.html').read_text()
 raw=re.sub(r'<script[^>]+src="[^"]+"[^>]*></script>','',raw)
 raw=re.sub(r'<link[^>]+(?:href="[^"]+\.css"|href="https://fonts[^"]+")[^>]*>','',raw)
 raw=re.sub(r'<link[^>]+rel="preconnect"[^>]*>','',raw)
@@ -23,9 +23,13 @@ with sync_playwright() as p:
  errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.set_content(raw,wait_until='domcontentloaded')
  page.add_style_tag(content=(ROOT/'styles.css').read_text())
+ page.add_style_tag(content=(ROOT/'sitota-forge.css').read_text())
+ page.add_style_tag(content=(ROOT/'sitota-public.css').read_text())
  page.evaluate('''() => { const store=new Map(); Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem:k=>store.has(k)?store.get(k):null,setItem:(k,v)=>store.set(String(k),String(v)),removeItem:k=>store.delete(k),clear:()=>store.clear(),key:i=>Array.from(store.keys())[i]||null,get length(){return store.size}}});window.scrollTo=()=>{};window.confirm=()=>true;window.alert=()=>{}; }''')
  for n in ORDER:
-  page.add_script_tag(content=(ROOT/'js'/f'{n}.js').read_text())
+  source=(ROOT/'js'/f'{n}.js').read_text()
+  if n=='cloud':source=source.replace('const GUEST_TEST_ENABLED=false;','const GUEST_TEST_ENABLED=true;')
+  page.add_script_tag(content=source)
  page.wait_for_timeout(350)
  check('Application starts',lambda: page.title())
  check('No startup JavaScript exceptions',lambda: (_ for _ in ()).throw(AssertionError('; '.join(errors))) if errors else 'none')
@@ -179,13 +183,14 @@ with sync_playwright() as p:
    if(finalPct(key)<=before)throw Error('Skill not improved');
    const improved=finalPct(key);
    APP.xpSpend(key);
-   if(S.xp.pool!==bank-1)throw Error('Skill improperly improved twice in same award');
+   if(S.xp.pool!==bank-2)throw Error('Second improvement did not spend another roll');
+   const twiceImproved=finalPct(key);
    saveCurrentToLibraryLocal();
    const saved=loadCharLibLocal().find(x=>x.name==='Full Creation QA');
    if(!saved)throw Error('missing XP save');
    S=Object.assign(freshState(),saved.state);normalizeState();
-   if(finalPct(key)!==improved)throw Error('Experience improvement not persistent');
-   return 'GM award, roll expenditure, skill bonus, once-per-award limit, save/reopen';
+   if(finalPct(key)!==twiceImproved)throw Error('Experience improvement not persistent');
+   return 'GM award, repeated roll expenditure, skill bonus, save/reopen';
   }""")
  check('Experience advancement and persistence',advancement_flow)
  def quick_legal_character():
