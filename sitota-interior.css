@@ -1,0 +1,514 @@
+/* NEW SIT’OTA / INTERIOR DESIGN SYSTEM
+   A dark editorial shell, warm paper for dense rules and game data.
+   Only view-aware presentation changes; no game logic or saved data. */
+:root {
+  --sitota-night:#0b0e10;
+  --sitota-surface:#15191c;
+  --sitota-raised:#1d2225;
+  --sitota-edge:#41403c;
+  --sitota-cream:#f0e7da;
+  --sitota-muted:#c2b4a5;
+  --sitota-gold:#dda660;
+  --sitota-paper:#f0e7d8;
+  --sitota-ink:#29251e;
+  --sitota-display:'Cormorant Garamond',Georgia,serif;
+  --sitota-ui:'DM Sans',Arial,sans-serif;
+}
+body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) {
+  background-color:var(--sitota-night);
+  background-image:none;
+}
+body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-header{
+  background:#0b0d10;
+  border-bottom:1px solid #292d30;
+}
+body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-header-inner{
+  width:min(1478px,calc(100% - 96px));
+  max-width:1478px;
+  min-height:72px;
+  padding:11px 0;
+  gap:26px;
+}
+body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-brand{
+  font:400 34px/.95 var(--sitota-display);
+  letter-spacing:.09em;
+  font-variant:small-caps;
+  color:var(--sitota-cream);
+}
+body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-brand small{
+  font:500 10px/1.4 var(--sitota-ui);
+  letter-spacing:.27em;
+  text-transform:uppercase;
+  color:#bcb3aa;
+  margin-top:5px;
+}
+body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-header nav{gap:29px}
+body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-header nav a{
+  font:17px/1.2 var(--sitota-display);
+  color:#e2d8cf;
+  text-decoration:none;
+}
+body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-header nav a:hover,
+body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-header nav a[aria-current=page]{
+  color:var(--sitota-gold);
+  text-decoration:underline;
+  text-decoration-color:#c79a5a;
+  text-decoration-thickness:1px;
+  text-underline-offset:17px;
+}
+body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) #siteAccount{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+}
+body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) #siteAccount svg{
+  width:20px;height:20px;
+  stroke:currentColor;fill:none;stroke-width:1.7;
+}
+/* Pages with small data inventories use the dark site shell. */
+body[data-sitota-view="account"] .app,
+body[data-sitota-view="library"] .app,
+body[data-sitota-view="campaigns"] .app,
+body[data-sitota-view="campaign"] .app,
+body[data-sitota-view="board"] .app,
+body[data-sitota-view="wiki"] .app{
+  background:var(--sitota-night);
+  min-height:calc(100vh - 85px);
+}
+body:is([data-sitota-view="account"],[data-sitota-view="library"],[data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .mmenu,
+body:is([data-sitota-view="account"],[data-sitota-view="library"],[data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap{
+  background:transparent;
+  color:var(--sitota-cream);
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  min-height:0;
+  width:min(1240px,calc(100% - 72px));
+  max-width:1240px;
+  margin:0 auto;
+  padding:45px 0 90px;
+}
+body[data-sitota-view="account"] .mmenu,
+body[data-sitota-view="library"] .mmenu{max-width:1180px}
+body[data-sitota-view="account"] .mmenu-topbar,
+body[data-sitota-view="library"] .mmenu-topbar{
+  min-height:25px;
+  border-bottom:1px solid var(--sitota-edge);
+  padding:0 130px 16px 0;
+  margin-bottom:31px;
+  position:relative;
+}
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-brandmark,
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-branddiv,
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-brandsub{display:none}
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-topbar::before{
+  content:'NEW SIT’OTA  /  VALESHAR';
+  display:inline-block;
+  font:600 10px var(--sitota-ui);
+  letter-spacing:.17em;
+  color:var(--sitota-gold);
+}
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-acctbtn{
+  right:0;top:-8px;
+  border:1px solid #75654c;
+  background:transparent;
+  color:var(--sitota-cream);
+  border-radius:3px;
+  padding:8px 14px;
+  font:500 12px var(--sitota-ui);
+  text-transform:none;
+  letter-spacing:0;
+}
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-acctbtn:hover{
+  background:var(--sitota-raised);
+  border-color:var(--sitota-gold);
+}
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-pagehead{
+  border-bottom:1px solid var(--sitota-edge);
+  margin:0 0 28px;
+  padding:0 0 26px;
+}
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-pagehead h1,
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuhead h1{
+  font:400 clamp(52px,6vw,80px)/.98 var(--sitota-display);
+  letter-spacing:-.025em;
+  color:var(--sitota-cream);
+  text-transform:none;
+}
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-pagehead p,
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuhead p{
+  font:19px/1.4 var(--sitota-display);
+  font-style:normal;
+  color:var(--sitota-muted);
+}
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuhead{
+  text-align:left;
+  padding-bottom:27px;
+  border-bottom:1px solid var(--sitota-edge);
+  margin-bottom:26px;
+}
+/* Account, character library: dark inset surfaces, not glossy cards. */
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-panel,
+body[data-sitota-view="library"] .mmenu-charcard{
+  background:var(--sitota-surface);
+  color:var(--sitota-cream);
+  border:1px solid #474442;
+  border-radius:4px;
+  box-shadow:none;
+}
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-panel{
+  padding:26px 28px;
+}
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-panel-eyebrow{
+  font:600 11px var(--sitota-ui);
+  letter-spacing:.16em;
+  color:var(--sitota-gold);
+}
+body[data-sitota-view="account"] .mmenu .note,
+body[data-sitota-view="account"] .mmenu-authhead span,
+body[data-sitota-view="library"] .mmenu .note,
+body[data-sitota-view="library"] .mmenu-preview-meta,
+body[data-sitota-view="library"] .mmenu-charcard-ts{
+  color:var(--sitota-muted);
+  font:14px/1.6 var(--sitota-ui);
+}
+body[data-sitota-view="account"] .mmenu-authhead b,
+body[data-sitota-view="library"] .mmenu-preview-name{
+  color:var(--sitota-cream);
+  font:500 29px/1.08 var(--sitota-display);
+  letter-spacing:0;
+  text-transform:none;
+}
+body[data-sitota-view="library"] .mmenu-charlist{
+  gap:17px;
+}
+body[data-sitota-view="library"] .mmenu-preview-portrait{
+  border:1px solid #6d604b;
+  background:#293039;
+  color:#e9c18b;
+}
+body[data-sitota-view="library"] .mmenu-charcard{
+  padding:20px;
+}
+body[data-sitota-view="library"] .mmenu-charcard-actions{
+  border-top-color:var(--sitota-edge);
+}
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-cta-primary,
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-cta-secondary,
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-cta-ghost,
+body[data-sitota-view="account"] .mmenu .chip,
+body[data-sitota-view="library"] .mmenu .chip{
+  background:transparent;
+  border:1px solid #77654a;
+  border-radius:3px;
+  color:var(--sitota-cream);
+  text-transform:none;
+  letter-spacing:0;
+  font:500 12px var(--sitota-ui);
+  padding:10px 15px;
+  box-shadow:none;
+}
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-cta-primary,
+body[data-sitota-view="library"] .mmenu-cta-secondary{
+  background:#67461d;
+  border-color:#c9944e;
+  color:#fff1db;
+}
+body:is([data-sitota-view="account"],[data-sitota-view="library"]) :is(.mmenu-cta-primary,.mmenu-cta-secondary,.mmenu-cta-ghost,.chip):hover:not(:disabled){
+  border-color:var(--sitota-gold);
+  background:#353027;
+  color:#fff1db;
+}
+body[data-sitota-view="account"] .mmenu :is(input,select,textarea){
+  background:#0c1115;
+  color:var(--sitota-cream);
+  border:1px solid #71614e;
+  border-radius:3px;
+  min-height:41px;
+}
+body[data-sitota-view="account"] .mmenu :is(input,select,textarea)::placeholder{
+  color:#b2a69b;
+}
+body[data-sitota-view="account"] .mmenu :is(input,select,textarea):focus{
+  outline:2px solid var(--sitota-gold);outline-offset:2px;
+  border-color:var(--sitota-gold);
+}
+body[data-sitota-view="account"] .mmenu-authgrid{max-width:950px;grid-template-columns:minmax(0,1fr)}
+/* The library reuses the homepage's portrait-first visual language. */
+body[data-sitota-view="library"] .mmenu-charcard{gap:14px}
+body[data-sitota-view="library"] .mmenu-preview-head{align-items:center;gap:18px}
+body[data-sitota-view="library"] .mmenu-preview-portrait{
+  width:80px;height:92px;
+  border:1px solid #75624c;
+  border-radius:3px;
+  overflow:hidden;
+  flex:none;
+  font:500 30px var(--sitota-display);
+}
+body[data-sitota-view="library"] .mmenu-preview-portrait img{
+  width:100%;height:100%;border-radius:0;object-fit:cover;
+}
+body[data-sitota-view="library"] .mmenu-charcard-del{
+  color:#e2aca2;
+  border:1px solid transparent;
+  border-radius:3px;
+}
+body[data-sitota-view="library"] .mmenu-charcard-del:hover{
+  color:#ffe3db;
+  background:#67352d;
+}
+/* Campaign and rules indexes: a small collection of deliberate actions. */
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menutile,
+body[data-sitota-view="wiki"] .wiki-resrow{
+  background:var(--sitota-surface);
+  color:var(--sitota-cream);
+  border:1px solid #474442;
+  box-shadow:none;
+  border-radius:4px;
+  padding:19px 22px;
+}
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menutile:hover:not(:disabled),
+body[data-sitota-view="wiki"] .wiki-resrow:hover{
+  background:var(--sitota-raised);
+  border-color:#b98b50;
+  box-shadow:none;
+  transform:none;
+}
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menutile .mt-title,
+body[data-sitota-view="wiki"] .wiki-restitle{
+  font:500 28px/1.08 var(--sitota-display);
+  letter-spacing:0;
+  text-transform:none;
+  color:var(--sitota-cream);
+}
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menutile .mt-desc,
+body[data-sitota-view="wiki"] .wiki-rescrumb{
+  font:15px/1.4 var(--sitota-display);
+  color:var(--sitota-muted);
+  font-style:normal;
+}
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap > p > .nav,
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap > p > .chip{
+  background:transparent;
+  border:1px solid #786448;
+  color:var(--sitota-cream);
+  border-radius:3px;
+  font:500 12px var(--sitota-ui);
+  letter-spacing:0;
+  text-transform:none;
+}
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap > p > .nav:hover{
+  border-color:var(--sitota-gold);
+  background:var(--sitota-raised);
+}
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap > .note{
+  font:15px var(--sitota-ui);
+  color:var(--sitota-muted);
+}
+body[data-sitota-view="wiki"] .wiki-search{
+  display:block;
+  margin:8px 0 27px;
+  max-width:680px;
+  background:var(--sitota-surface);
+  border:1px solid #79654d;
+  border-radius:3px;
+  color:var(--sitota-cream);
+  font:15px var(--sitota-ui);
+  min-height:49px;
+}
+body[data-sitota-view="wiki"] .wiki-search::placeholder{color:#c1b3a2}
+body[data-sitota-view="wiki"] .wiki-search:focus{outline:2px solid var(--sitota-gold);outline-offset:2px}
+body[data-sitota-view="wiki"] .wiki-results{margin:0 0 28px;max-width:780px}
+/* Long rules chapters and campaign details stay paper-toned for readability. */
+body:is([data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap .card,
+body[data-sitota-view="wiki"] .wiki-article,
+body[data-sitota-view="wiki"] .wiki-corestub{
+  background:var(--sitota-paper);
+  background-image:none;
+  color:var(--sitota-ink);
+  border:1px solid #b6a48b;
+  border-radius:3px;
+  box-shadow:none;
+}
+body:is([data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap .card::before{content:none}
+body:is([data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap :is(.card h3,.card h4),
+body[data-sitota-view="wiki"] .wiki-article :is(h1,h2,h3,h4,h5){
+  color:#4f371c;
+  font-family:var(--sitota-display);
+  text-transform:none;
+  letter-spacing:0;
+}
+body:is([data-sitota-view="campaign"],[data-sitota-view="board"]) .menuwrap .card h3{
+  font-size:27px;
+  font-weight:500;
+}
+body[data-sitota-view="wiki"] .wiki-article h1{font-size:42px}
+body[data-sitota-view="wiki"] .wiki-article h3{font-size:29px}
+body[data-sitota-view="wiki"] .wiki-article{max-width:950px;padding:36px 48px 48px}
+body[data-sitota-view="wiki"] .wiki-corenote{border-left-color:#9e7034;background:#e7d8bb}
+body[data-sitota-view="wiki"] .rulesrc{color:var(--sitota-muted)}
+body[data-sitota-view="wiki"] .wiki-article .rulesrc{color:#5e5448}
+/* Campaign board lists retain their white-paper controls and status colours. */
+body[data-sitota-view="board"] .pb-card{
+  border:1px solid #aa977b;
+  background:#f1e9dc;
+  box-shadow:none;
+}
+body:is([data-sitota-view="campaign"],[data-sitota-view="board"]) .menuwrap .nav,
+body:is([data-sitota-view="campaign"],[data-sitota-view="board"]) .menuwrap .chip{
+  font-family:var(--sitota-ui);
+  letter-spacing:0;
+  text-transform:none;
+  border-radius:3px;
+}
+body:is([data-sitota-view="campaign"],[data-sitota-view="board"]) .menuwrap input,
+body:is([data-sitota-view="campaign"],[data-sitota-view="board"]) .menuwrap select,
+body:is([data-sitota-view="campaign"],[data-sitota-view="board"]) .menuwrap textarea{
+  background:#fff9ef;
+  border:1px solid #99876d;
+  color:#231e17;
+}
+/* Character builder: paper in the reading area, night in the nav and ledger. */
+body[data-sitota-view="character"] .app{
+  background:var(--sitota-paper);
+  max-width:1680px;
+  border-inline:1px solid #33373a;
+  min-height:calc(100vh - 84px);
+}
+body[data-sitota-view="character"] #main{
+  background:var(--sitota-paper);
+  color:var(--sitota-ink);
+}
+body[data-sitota-view="character"] #rail{
+  background:#11171b;
+  border-right:1px solid #5c5449;
+}
+body[data-sitota-view="character"] #rail .railstep{
+  color:#c7bcad;
+  border-radius:3px;
+  font:500 13px/1.25 var(--sitota-ui);
+}
+body[data-sitota-view="character"] #rail .railstep:hover{
+  background:#263039;
+  color:#f4e8d7;
+}
+body[data-sitota-view="character"] #rail .railstep.active{
+  background:#302a22;
+  color:#fff0da;
+  box-shadow:none;
+  border-left:2px solid var(--sitota-gold);
+}
+body[data-sitota-view="character"] #rail .railstep .n{
+  background:#21272b;
+  color:#d2c0a8;
+  border-color:#6e614f;
+}
+body[data-sitota-view="character"] #rail .railstep.active .n{
+  background:#90652b;
+  color:#fff2dc;
+  border-color:#d1a568;
+}
+body[data-sitota-view="character"] #ledger{
+  background:#171d21;
+  color:#e9e0d1;
+  border-left:1px solid #5b5247;
+}
+body[data-sitota-view="character"] #ledger h3{
+  color:var(--sitota-gold);
+  border-bottom:1px solid #554d44;
+  font:600 11px var(--sitota-ui);
+  letter-spacing:.12em;
+}
+body[data-sitota-view="character"] #ledger :is(.ledrow,.ledhp td){color:#e4d8c7;border-color:#554d44}
+body[data-sitota-view="character"] #ledger .ledchars .lc{
+  background:#272e32;
+  color:#fff0d8;
+  border:1px solid #534a41;
+}
+body[data-sitota-view="character"] #main .stephead{
+  font:500 clamp(39px,3.8vw,59px)/1.02 var(--sitota-display);
+  color:#2c251b;
+  letter-spacing:-.022em;
+  text-transform:none;
+}
+body[data-sitota-view="character"] #main .steplede{
+  font:17px/1.55 'Spectral',Georgia,serif;
+  color:#615444;
+}
+body[data-sitota-view="character"] #main .stephead::before,
+body[data-sitota-view="character"] #main .stephead::after{display:none}
+body[data-sitota-view="character"] #main .stephead{
+  padding-bottom:13px;
+  border-bottom:1px solid #ac967a;
+}
+body[data-sitota-view="character"] #main :is(.card,.pick,.charbox){
+  background-image:none;
+  box-shadow:none;
+  border-radius:3px;
+}
+body[data-sitota-view="character"] #main :is(.card,.pick,.charbox)::before{content:none}
+body[data-sitota-view="character"] #main .card{
+  border:1px solid #b6a58a;
+  background:#fbf5e9;
+}
+body[data-sitota-view="character"] #main .card h3{
+  font:500 27px/1.1 var(--sitota-display);
+  color:#633f1e;
+  letter-spacing:0;
+  text-transform:none;
+}
+body[data-sitota-view="character"] .foot{
+  background:#11171b;
+  border-top:1px solid #716149;
+  color:#ece0cf;
+  box-shadow:0 -4px 20px #0003;
+}
+body[data-sitota-view="character"] .foot .nav{
+  color:#f0e3cd;
+  background:#23272a;
+  border:1px solid #75644d;
+  border-radius:3px;
+  font:500 13px var(--sitota-ui);
+  text-transform:none;
+  letter-spacing:0;
+}
+body[data-sitota-view="character"] .foot .nav.primary{
+  background:#7c541f;
+  color:#fff1d9;
+  border-color:#c79550;
+}
+body[data-sitota-view="character"] .foot .vmsg{color:#e5d8c6}
+body[data-sitota-view="character"] .foot .warn{color:#f2b8a6}
+body[data-sitota-view="character"] .foot :is(.okmsg,label){color:#d3ddc6}
+/* World guide: same book, now with the common site header. */
+body[data-sitota-view="world"] .st-world-intro h1{letter-spacing:-.04em}
+body[data-sitota-view="world"] .st-guide article{
+  border:1px solid #8e7f68;
+  box-shadow:none;
+  background:#eee5d5;
+}
+body[data-sitota-view="world"] .st-chapters a[aria-current="page"]{
+  border-left:2px solid var(--sitota-gold);
+  padding-left:12px;
+}
+body[data-sitota-view="world"] .st-copy{color:#2d2922}
+/* Keep the printable sheet on paper, even though the rest is cinematic. */
+@media(max-width:900px){
+  body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-header-inner{width:calc(100% - 40px);gap:15px}
+  body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-header nav{gap:16px}
+  body:is([data-sitota-view="account"],[data-sitota-view="library"],[data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .mmenu,
+  body:is([data-sitota-view="account"],[data-sitota-view="library"],[data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap{
+    width:calc(100% - 40px);
+    padding:30px 0 70px;
+  }
+  body[data-sitota-view="wiki"] .wiki-article{padding:25px}
+}
+@media(max-width:600px){
+  body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-header nav a{font-size:15px}
+  body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-topbar{padding-right:0;gap:12px;align-items:flex-start;min-height:58px}
+  body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-acctbtn{top:auto;bottom:11px;right:0}
+  body[data-sitota-view="character"] #rail .railstep{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  body[data-sitota-view="library"] .mmenu-charcard{transition:none}
+}

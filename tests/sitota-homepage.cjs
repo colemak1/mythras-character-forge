@@ -9,9 +9,17 @@ for(const route of ['my-characters','my-campaigns','wiki','character/new','accou
 assert.equal((home.match(/<header\b/g)||[]).length,1);
 assert(!home.includes('forge.html'),'normal navigation must stay in the unified application');
 assert(!/Open (?:Mythras )?Forge/.test(home+publicViews),'no second landing-page destination');
-assert.match(publicViews,/Welcome to<br><em>New Sit’ota/);
+assert.match(publicViews,/st-home-16x9/);
+assert.match(home,/js\/sitota\.js\?v=5/,'home renderer cache version must advance with the redesign');
+assert.match(home,/sitota-home-16x9\.css\?v=3/,'painted homepage CSS cache version must advance');
+assert.match(publicViews,/Art: Richard Wright/);
+assert.match(publicViews, /class="st-world-link" href="#\/world\/welcome"/, 'hero must use the quieter editorial link');
+assert(!/class="st-button st-primary" href="#\/world\/welcome"/.test(publicViews),'remove ornate homepage CTA');
 for(const action of ['APP.newCampaign()','APP.homeJoinCampaign()','APP.fromMenuContinue()','APP.fromMenuNew()'])assert(publicViews.includes(action),action);
-assert(!/data:image\/(jpeg|png);base64|<img\b|[✦⚔✧]/u.test(home+publicViews),'public design is art-free');
+assert(!/data:image\/(jpeg|png);base64/u.test(home+publicViews),'no inline AI or sample images');
+assert(home.includes('sitota-home-16x9.css'),'16:9 stylesheet missing');
+assert(fs.existsSync(path.join(root,'assets/sitota-hero.avif')),'original painted hero is missing');
+assert(fs.existsSync(path.join(root,'assets/sitota-hero.webp')),'fallback painted hero is missing');
 assert(!legacy.includes('<script src='),'legacy entry must redirect before starting a second runtime');
 const redirect=legacy.match(/<script>([\s\S]*?)<\/script>/)[1];
 for(const [search,hash] of [
