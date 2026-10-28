@@ -96,5 +96,12 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   run('APP.exportSavedCharacter("saved-id")');assert.equal(JSON.parse(run('exportedBackup.content')).concept.name,'Saved character');assert.equal(JSON.parse(run('exportedBackup.content')).concept.portrait,'data:image/jpeg;base64,AAAA');assert.equal(run('S.concept.name'),'Open character');
   ctx.importFile={size:run('exportedBackup.content.length'),text:async()=>run('exportedBackup.content')};await run('APP.importCharacterFile({files:[importFile]})');assert.equal(run('S.concept.name'),'Saved character');assert.equal(run('S.concept.portrait'),'data:image/jpeg;base64,AAAA');assert.notEqual(run('S._libId'),'saved-id');
  });
+ await test('Sorcery rechecks shaping and applies Combine difficulty to the final roll',async()=>{
+  run('S=freshState(); S.magic.known=[{tradition:"sorcery",name:"Ward",shapingLevels:{Combine:1},combineExtra:0}]; S.play.magic=20; APPVIEW="play"; allMagic=()=>S.magic.known; magicSkillKey=()=>"invocation"; magicSkillPct=()=>47; finalPct=()=>90; gradeForEntry=()=>"standard"; playCurMagic=()=>S.play.magic; Math.random=()=>0.49; viewOnlyBlock=()=>false; render=()=>{};');
+  run('APP.castMagic(0)'); assert.equal(run('S.play.sorceryCasting.completed'),1);
+  run('S.magic.known[0].shapingLevels.Combine=6;APP.castMagic(0)'); assert.match(run('PM_MSG'),/exceeds/);assert.equal(run('S.rollLog.length'),0);
+  run('S.magic.known[0].shapingLevels.Combine=1;APP.castMagic(0)');assert.equal(run('S.rollLog[0].pct'),60);assert.equal(run('S.rollLog[0].tier'),'Success');assert.equal(run('S.play.sorceryCasting'),null);
+  run('S.magic.known[0].shapingLevels={Combine:2};APP.castMagic(0);APP.castMagic(0)');assert.equal(run('S.rollLog[0].pct'),45);assert.equal(run('S.rollLog[0].tier'),'Failure');
+ });
  console.log(passed+' unified route/workflow tests passed (Supabase calls stubbed; no live account writes)');
 })().catch(e=>{console.error(e);process.exitCode=1;});

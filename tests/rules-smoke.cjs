@@ -345,9 +345,11 @@ test('Update 11: no magic casting on an unnamed entry',()=>{
  assert(/Name this/.test(evalRule('magicCastPreflight({tradition:"sorcery",name:"",shapings:[]},10,10)')));
 });
 test('Update 11: low MP stops Folk Magic and Sorcery before dice roll',()=>{
+ evalRule('var originalMagicSkillPct=magicSkillPct;magicSkillPct=()=>50');
  assert(/Not enough Magic Points/.test(evalRule('magicCastPreflight({tradition:"folk",name:"Light"},0,0)')));
  assert(/Not enough Magic Points/.test(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapings:["Range","Duration"]},2,0)')));
  assert.equal(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapings:["Range","Duration"]},3,0)'),null);
+ evalRule('magicSkillPct=originalMagicSkillPct');
 });
 test('Update 11: devotional cost cannot exceed remaining pool',()=>{
  assert(/Not enough Devotional Pool/.test(evalRule('magicCastPreflight({tradition:"theism",name:"Bless",cost:3},20,2)')));
@@ -413,8 +415,37 @@ test('Update 14: Shaping levels preserve cost by distinct modified categories',(
 });
 test('Update 14: Combine adds one MP per extra spell, not casting turns',()=>{
  const e='{shapingLevels:{Range:3},combineExtra:2}';
- assert.equal(evalRule('sorceryCost('+e+').mp'),4);
- assert.equal(evalRule('sorceryCost('+e+').turns'),2);
+ assert.equal(evalRule('sorceryCost('+e+').mp'),5);
+ assert.equal(evalRule('sorceryCost('+e+').turns'),3);
+});
+test('Core p.162: Shaping budget, legacy review and Combine difficulty',()=>{
+ evalRule('var oldShapingPct=magicSkillPct;magicSkillPct=()=>47');
+ assert.equal(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Range:3,Combine:2}},20,0)'),null);
+ assert.match(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Range:4,Combine:2}},20,0)'),/exceeds/);
+ assert.match(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Intensity:1}},20,0)'),/Intensity/);
+ assert.match(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Range:1.5}},20,0)'),/Invalid Shaping/);
+ assert.match(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{},combineExtra:1},20,0)'),/legacy/);
+ evalRule('magicSkillPct=()=>null');
+ assert.equal(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{}},20,0)'),null);
+ assert.match(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Range:1}},20,0)'),/exceeds/);
+ evalRule('magicSkillPct=oldShapingPct;ACTIVE_GRADE="standard";S.play.fatigue="Fresh";encGradeSteps=()=>0');
+ assert.equal(evalRule('sorceryInvocationGrade("test",90,1).grade'), 'hard');
+ assert.equal(evalRule('sorceryInvocationGrade("test",90,2).pct'),45);
+});
+test('Draft Shaping rounding behavior at boundaries is explicit',()=>{
+ evalRule('var savedMagicSkillPct=magicSkillPct');
+ for(const [skill,allowed] of [[1,1],[10,1],[11,2],[19,2],[20,2],[21,3],[47,5]]){
+  evalRule('magicSkillPct=()=>'+skill);
+  assert.equal(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Range:'+allowed+'}},50,0)'),null);
+  assert.match(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Range:'+(allowed+1)+'}},50,0)'),/exceeds/);
+ }
+ evalRule('magicSkillPct=savedMagicSkillPct');
+});
+test('Legacy sorcery data survives normalization and JSON round trip',()=>{
+ evalRule('S=freshState();S.magic.known=[{tradition:"sorcery",name:"Legacy",shapingLevels:{Intensity:2,Range:1},combineExtra:2}];normalizeState();S=JSON.parse(JSON.stringify(S));normalizeState()');
+ assert.equal(evalRule('S.magic.known[0].shapingLevels.Intensity'),2);
+ assert.equal(evalRule('S.magic.known[0].combineExtra'),2);
+ assert.match(evalRule('magicCastPreflight(S.magic.known[0],30,0)'),/Intensity/);
 });
 test('Update 14: old shaping chip arrays remain supported',()=>{
  assert.equal(evalRule('sorceryCost({shapings:["Range","Duration"]}).mp'),3);

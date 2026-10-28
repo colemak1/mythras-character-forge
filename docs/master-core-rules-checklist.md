@@ -114,6 +114,10 @@ These four reports are targeted subsystem audits, **not** an exhaustive comparis
 Each time a PR merges, update this document: check off completed issue IDs, record PR URL, merge SHA and test results, and add any newly discovered failure under the appropriate tier. **Do not claim a task completed merely because code exists**—mark it done only after the behavior is tested and the user's production/merge approval is respected.
 
 
-## Batch 1 implementation awaiting review
+## Batch 1 status
 
-MCR-05, 06, 09, minimum 10, minimum 17, 27, and 28 are implemented on `fix/core-batch-1`. They remain unchecked pending PR review, merge approval and production verification. The skill-allocation soft lock is also fixed in this branch. See `CHANGELOG-CORE-BATCH-1.md` for verification and limits.
+MCR-05, 06, 09, minimum 10, minimum 17, 27, and 28 were merged in PR #30. Production verification and checklist reconciliation remain to be confirmed. The skill-allocation soft lock was also addressed in that branch.
+
+## Sorcery repair — implementation awaiting review
+
+MCR-01, 02 and 03 are implemented on `fix/core-sorcery`, subject to PR review and production verification. Legacy Intensity and combined-spell records require explicit review. Core p.162 and p.165 were checked against the scanned rulebook; legacy casting trackers must be cancelled and restarted. Combined-spell identity, common targets and differing Invocation skills remain GM checks. Rounding at values other than the printed 47% example needs verification.

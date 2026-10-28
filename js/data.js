@@ -674,7 +674,7 @@ const MAGIC_TRADITIONS=[
  {key:"sorcery",label:"Sorcery (Grimoire)",castSkill:"Invocation",pool:"mp",hasContent:false,
   summary:"Learned magic from a grimoire. Invocation casts, Shaping alters spell components. Multiple Shaping points can modify one component; each distinct altered category increases MP cost and casting Turns by one. Combine adds one MP per extra spell (without an extra casting Turn for each).",
   costRule:"Core pp.164–165: Critical costs half (rounded up); Success full; Failure none; Fumble full. Supports per-component Shaping levels and Combine cost; GM confirms legal limits, spell-specific restrictions and actual effects.",
-  fields:[],shaping:["Duration","Range","Targets","Magnitude","Intensity"],
+  fields:[],shaping:["Combine","Duration","Magnitude","Range","Targets"],
   contentNote:"Grimoire spell lists are Reserved Material in the core rulebook — add the spells in the grimoire your character has studied."},
  {key:"animism",label:"Animism (Spirits)",castSkill:"Binding",pool:"none",hasContent:false,
   summary:"Shamanic magic worked through spirits rather than spells. Binding binds a spirit into service or into a fetish; Trance lets the shaman discorporate into the spirit world. A bound spirit's abilities are what the animist actually brings to bear.",
