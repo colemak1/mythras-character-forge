@@ -18,6 +18,31 @@
 .sitota-public .st-hero-aside strong{display:block;font:500 10px var(--st-sans);letter-spacing:.18em;color:var(--st-gold);text-transform:uppercase;margin-bottom:13px}
 .sitota-public .st-hero-aside p{margin:0}
 .sitota-public .st-table{padding:65px 0 90px}
+.sitota-public .st-characters{padding:40px 0 46px;border-bottom:1px solid var(--st-line);background:#13130f}
+.sitota-public .st-characters-head{display:flex;align-items:baseline;justify-content:space-between;gap:24px;margin-bottom:22px}
+.sitota-public .st-characters-head h2{font:500 31px/1.1 var(--st-serif);text-transform:none;letter-spacing:0;color:var(--st-ink);margin:0}
+.sitota-public .st-characters-head>a{font:12px var(--st-sans);color:var(--st-gold);text-decoration:none;white-space:nowrap}
+.sitota-public .st-characters-head>a:hover{text-decoration:underline;text-underline-offset:4px}
+.sitota-public .st-character-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px;align-items:stretch}
+.sitota-public .st-character-card{position:relative;display:flex;flex-direction:column;min-width:0;min-height:300px;overflow:hidden;border:1px solid #766345;border-radius:5px;background:#222019;text-decoration:none;transition:border-color .15s,background .15s}
+.sitota-public .st-character-card:hover{border-color:var(--st-gold);background:#2b271e}
+.sitota-public .st-character-portrait{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(155deg,#35332b,#1c1d18)}
+.sitota-public .st-character-portrait img{width:100%;height:100%;object-fit:cover;object-position:center 25%}
+.sitota-public .st-character-portrait:after{content:"";position:absolute;inset:25% 0 0;background:linear-gradient(transparent,#11120ee8 68%,#11120e)}
+.sitota-public .st-character-initials{align-self:start;margin-top:38px;color:#cbb58e;font:500 64px var(--st-serif);letter-spacing:.04em}
+.sitota-public .st-character-caption{position:relative;margin-top:auto;padding:100px 18px 18px}
+.sitota-public .st-character-caption h3{font:500 25px/1.05 var(--st-serif);text-transform:none;letter-spacing:0;color:var(--st-ink);margin:0 0 8px;overflow-wrap:anywhere}
+.sitota-public .st-character-caption p{font:11px/1.5 var(--st-sans);color:var(--st-muted);margin:0 0 18px}
+.sitota-public .st-character-open{font:10px var(--st-sans);color:var(--st-gold)}
+.sitota-public .st-character-create{align-items:center;justify-content:center;gap:22px;background:transparent;text-align:center;color:var(--st-ink);font:500 17px/1.4 var(--st-serif);border-color:var(--st-line);padding:24px}
+.sitota-public .st-create-mark{display:grid;place-items:center;width:54px;height:54px;border:1px solid #65583e;border-radius:50%;color:var(--st-gold);font:300 32px var(--st-serif)}
+.sitota-public .st-character-message{color:var(--st-muted);font-size:12px;margin:0 0 20px}
+.sitota-public .st-character-message a,.sitota-public .st-character-message button{color:var(--st-gold);text-underline-offset:4px}
+.sitota-public .st-character-message button{border:0;background:none;padding:0;text-decoration:underline}
+.sitota-public .st-character-empty{grid-column:span 2;align-self:center;font:400 28px/1.2 var(--st-serif);color:var(--st-ink);margin:0;padding-right:24px}
+.sitota-public .st-character-empty span{display:block;color:var(--st-muted);font:12px/1.7 var(--st-sans);margin-top:14px}
+@media(max-width:800px){.sitota-public .st-character-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.sitota-public .st-character-card{min-height:280px}}
+@media(max-width:500px){.sitota-public .st-character-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sitota-public .st-character-card{min-height:250px}.sitota-public .st-character-caption{padding:80px 12px 14px}.sitota-public .st-character-caption h3{font-size:23px}.sitota-public .st-character-empty{grid-column:auto;font-size:25px;padding:0}}
 .sitota-public .st-section-head{display:flex;align-items:baseline;justify-content:space-between;gap:20px;border-bottom:1px solid var(--st-line);padding-bottom:20px}
 .sitota-public .st-section-head h2{font:400 52px/.9 var(--st-serif);text-transform:none;letter-spacing:0;margin:0;color:var(--st-ink)}
 .sitota-public .st-section-head p{color:var(--st-muted);margin:0;font-size:12px}
