@@ -707,17 +707,18 @@ function stepMagic(){
 }
 function folkMagicPicker(){
   const known=S.magic.folk;
-  let h='<p><button class="chip actionchip" '+(allFolkSpells().length?'':'disabled title="No verified spell entries available"')+' onclick="APP.rollStartingFolk()">roll 1d4+1 starting spells</button>'
-   +(known.length?' <button class="chip" onclick="APP.clearFolk()">clear all</button>':"")
-   +' <span class="note">Magicians begin with 1d4+1 spells; more cost 3 Experience Rolls and a week&rsquo;s study each.</span></p>';
+  const pct=magicSkillPct("Folk Magic"),standard=pct==null?0:Math.ceil(Math.max(0,pct)/20);
+  let h='<p class="note">Core pp.118, 121: starting characters normally know one spell per 20% (or part) of Folk Magic: '+standard+' at '+(pct==null?'no acquired skill':pct+'%')+'. Folk Magic specialist careers may start with one tenth of their skill; confirm the career, rounding and allowance with the GM. Existing or later-learned spells are not removed.</p>'
+   +'<div class="field"><label for="folkManualName">Add a GM-approved spell name</label><input id="folkManualName" type="text" maxlength="120"><button class="chip actionchip" onclick="APP.addFolkManual()">Add spell</button></div>'
+   +(known.length?' <button class="chip" onclick="APP.clearFolk()">clear all</button>':"");
   const allSpells=allFolkSpells();
-  h+='<div class="field"><label>Spells known ('+known.length+' of '+allSpells.length+')</label><div class="choicechips">'
+  h+='<div class="field"><label>Spells known ('+known.length+')</label><div class="choicechips">'
    +allSpells.map(s=>'<button class="chip '+(known.some(k=>k.name===s.n)?"on":"")+'" title="'
      +esc(s.t.join(", ")+" — "+s.d.slice(0,220)+(s.d.length>220?"…":""))+'" onclick="APP.toggleFolkSpell(\''+jsq(s.n)+'\')">'+esc(s.n)+(s.custom?' <i class="hbmark" title="Homebrew">&#9733;</i>':"")+'</button>').join("")
    +'</div></div>';
   if(known.length){
     h+='<div class="spelllist">'+known.map(k=>{
-      const s=folkSpellByName(k.name);if(!s)return "";
+      const s=folkSpellByName(k.name);if(!s)return '<div class="spellrow"><div class="sh"><b>'+esc(k.name)+'</b><button class="chip" onclick="APP.toggleFolkSpell(\''+jsq(k.name)+'\')" aria-label="forget spell">&times;</button></div><div class="note">Player-recorded spell; consult the Core Rulebook and GM.</div></div>';
       return '<div class="spellrow"><div class="sh"><b>'+esc(magicLabel({tradition:"folk",name:k.name,spec:k.spec}))+'</b>'
        +s.t.map(tr=>'<span class="spelltrait" title="'+esc(MAGIC_TRAITS[tr]||"")+'">'+esc(tr)+'</span>').join("")
        +'<button class="chip" onclick="APP.toggleFolkSpell(\''+jsq(k.name)+'\')" aria-label="forget spell">&times;</button></div>'
@@ -739,7 +740,7 @@ function knownMagicEditor(t){
   }
   if(t.key==="mysticism"){
     const lim=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
-    h+='<p class="note rulesrc">Core pp.156–157: One preparation turn per Intensity. Individual Intensity ceiling: '+lim.individual+'; combined active Intensity ceiling: '+lim.combined+'. Currently active: '+mysticismActiveTotal(S.magic.known)+' / '+lim.combined+'. Activation is a tracking marker only; casting and effects still require normal resolution.</p>';
+    h+='<p class="note rulesrc">Core pp.155–157: One preparation turn per Intensity. Individual Intensity ceiling: '+lim.individual+'; combined active Intensity ceiling: '+lim.combined+'. The book confirms 34% permits Intensity 2; other rounding boundaries require GM confirmation. Currently active: '+mysticismActiveTotal(S.magic.known)+' / '+lim.combined+'. Activation is a tracking marker only; casting and effects still require normal resolution.</p>';
   }
   h+=rows.map(({m,i})=>{
     let r='<div class="magicrow">'

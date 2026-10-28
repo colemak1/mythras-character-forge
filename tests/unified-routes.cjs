@@ -70,7 +70,7 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   run('AUTH_USER=null;AUTH_RECOVERY=false;MOCK_AUTH={id:"local"};S=freshState();S.concept.name="Portable";S._libId="old-id";S.inventory=[{name:"Rope",qty:1,enc:1,cost:2}];var exported;dl=(name,content,type)=>{exported={name,content,type};};APP.exportJSON();');
   const payload=run('exported.content');assert.equal(JSON.parse(payload).concept.name,'Portable');
   ctx.importFile={size:payload.length,text:async()=>payload};await run('APP.importCharacterFile({files:[importFile]})');
-  assert.equal(run('S.concept.name'),'Portable');assert.notEqual(run('S._libId'),'old-id');assert.equal(run('S.inventory[0].name'),'Rope');assert.equal(run('APPVIEW'),'character');
+  assert.equal(run('S._libId'),'old-id');assert.equal(run('S.inventory[0].name'),'Rope');assert.equal(run('APPVIEW'),'library');assert.equal(run('LIB_CACHE[0].name'),'Portable');assert.notEqual(run('LIB_CACHE[0].id'),'old-id');
  });
  await test('portrait upload survives an immediate cloud reopen and appears on Home',async()=>{
   const originalCreate=ctx.document.createElement;
@@ -96,7 +96,20 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   await run('APP.loadAccountBackups()');assert.match(run('accountHTML()'),/Download backup/);
   run('APP.exportAccountCharacter("saved-id")');assert.equal(JSON.parse(run('exportedBackup.content')).concept.name,'Saved character');assert.equal(JSON.parse(run('exportedBackup.content')).concept.portrait,'data:image/jpeg;base64,AAAA');assert.equal(run('S.concept.name'),'Open character');
   run('AUTH_USER={id:"other",email:"other@example.test"};');assert.doesNotMatch(run('accountHTML()'),/Saved character/);run('AUTH_USER={id:"owner",email:"x@example.test"};');
-  ctx.importFile={size:run('exportedBackup.content.length'),text:async()=>run('exportedBackup.content')};await run('APP.importCharacterFile({files:[importFile]})');assert.equal(run('S.concept.name'),'Saved character');assert.equal(run('S.concept.portrait'),'data:image/jpeg;base64,AAAA');assert.notEqual(run('S._libId'),'saved-id');
+  run('cloudUpsertCharacter=async entry=>{if(entry.id)throw Error("must insert");backupRows.push({id:"new-copy",owner_id:"owner",name:entry.name,state:entry.state,updated_at:new Date().toISOString()});return {id:"new-copy"};};');
+  ctx.importFile={size:run('exportedBackup.content.length'),text:async()=>run('exportedBackup.content')};await run('APP.importCharacterFile({files:[importFile]})');assert.equal(run('S.concept.name'),'Open character');assert.equal(run('APPVIEW'),'library');assert.equal(run('LIB_CACHE.find(x=>x.id==="new-copy").state.concept.portrait'),'data:image/jpeg;base64,AAAA');
+ });
+ await test('failed cloud import leaves the open character and account view intact',async()=>{
+  run('AUTH_USER={id:"owner"};MOCK_AUTH=null;APPVIEW="account";S=freshState();S.concept.name="Keep me";var attempted=false;cloudUpsertCharacter=async()=>{attempted=true;throw Error("offline")};');
+  const payload=run('JSON.stringify(freshState())');ctx.importFile={size:payload.length,text:async()=>payload};
+  await run('APP.importCharacterFile({files:[importFile]})');assert.equal(run('attempted'),true);assert.equal(run('S.concept.name'),'Keep me');assert.equal(run('APPVIEW'),'account');assert.match(run('AUTH_MSG.text'),/Import failed/);
+ });
+ await test('folk magic supports manually recorded spells and skill-based starting guidance',async()=>{
+  run('S=freshState();magicSkillPct=()=>41;');
+  assert.match(run('folkMagicPicker()'),/3 at 41%/);assert.doesNotMatch(run('folkMagicPicker()'),/1d4\+1/);
+  const oldGet=ctx.document.getElementById;ctx.document.getElementById=id=>id==='folkManualName'?{value:'Light'}:null;
+  run('APP.addFolkManual()');assert.equal(run('S.magic.folk[0].name'),'Light');assert.match(run('folkMagicPicker()'),/Player-recorded spell/);
+  run('APP.addFolkManual()');assert.equal(run('S.magic.folk.length'),1);ctx.document.getElementById=oldGet;
  });
  await test('Sorcery rechecks shaping and applies Combine difficulty to the final roll',async()=>{
   run('S=freshState(); S.magic.known=[{tradition:"sorcery",name:"Ward",shapingLevels:{Combine:1},combineExtra:0}]; S.play.magic=20; APPVIEW="play"; allMagic=()=>S.magic.known; magicSkillKey=()=>"invocation"; magicSkillPct=()=>47; finalPct=()=>90; gradeForEntry=()=>"standard"; playCurMagic=()=>S.play.magic; Math.random=()=>0.49; viewOnlyBlock=()=>false; render=()=>{};');

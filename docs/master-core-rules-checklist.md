@@ -121,3 +121,7 @@ MCR-05, 06, 09, minimum 10, minimum 17, 27, and 28 were merged in PR #30. Produc
 ## Sorcery repair — merged, rounding verification outstanding
 
 MCR-01, 02 and 03 were merged in PR #34 (merge `bfc26497b2a441c0de760435af70c49b07665347`), with automated tests passing. Legacy Intensity and combined-spell records require explicit review. Core pp.161–162 and p.165 were checked against the scanned rulebook; legacy casting trackers must be cancelled and restarted. Combined-spell identity, common targets and differing Invocation skills remain GM checks. The app rounds Shaping up; rounding at values other than the printed 47% example remains unverified and the items stay unchecked pending resolution and production testing.
+
+## Mysticism and Folk Magic — review pending
+
+MCR-04 and MCR-07 have proposed changes. Visually checked uploaded Core pp.118, 121, 155 and 157: the general starting allowance counts each 20% or part, specialist Folk careers use one tenth, and Mysticism 34% has individual Intensity 2. Rounding at other Mysticism and specialist Folk boundaries remains unverified; specialist allowance is GM-managed. Automated tests cover the book's example, default allowance guidance, and manually recorded spells. Leave items unchecked pending review and production verification.

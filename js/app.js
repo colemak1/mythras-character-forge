@@ -87,12 +87,9 @@ window.APP={
    else S.magic.folk.push({name,spec:""});
    render();},
  folkSpec(name,v){const f=S.magic.folk.find(x=>x.name===name);if(f)f.spec=v;render();},
- // Magicians begin with 1d4+1 spells; this rolls that number and fills them
- // at random for a player who'd rather not pick.
- rollStartingFolk(){
-   const n=d(4)+1;const pool=allFolkSpells();const picked=[];
-   for(let i=0;i<n&&pool.length;i++)picked.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
-   S.magic.folk=picked.map(s=>({name:s.n,spec:""}));render();},
+ addFolkManual(){const input=document.getElementById("folkManualName");const name=String(input?.value||"").trim().slice(0,120);if(!name)return;
+   if(S.magic.folk.some(f=>f.name.toLowerCase()===name.toLowerCase())){PM_MSG="That Folk Magic spell is already listed.";render();return;}
+   S.magic.folk.push({name,spec:""});render();},
  clearFolk(){S.magic.folk=[];render();},
  // Same stale-DOM-click race addPas() guards against below (a click
  // landing right after a preceding field's onchange/blur already tore down
@@ -795,14 +792,15 @@ window.APP={
  async importCharacterFile(input){
    if(!AUTH_USER&&!MOCK_AUTH){APP.toAccount();return;}
    const file=input&&input.files&&input.files[0];if(!file)return;
-   const fromLibrary=APPVIEW==="library";
-   const showError=msg=>{if(fromLibrary)CAMP_MSG=msg;else MENU_MSG=msg;render();};
+   const owner=AUTH_USER?AUTH_USER.id:"local";
+   const fromLibrary=APPVIEW==="library",fromAccount=APPVIEW==="account";
+   const showError=msg=>{if(fromAccount)AUTH_MSG={level:"warn",text:msg};else if(fromLibrary)CAMP_MSG=msg;else MENU_MSG=msg;render();};
    if(file.size>2*1024*1024){showError("Import failed: file exceeds the 2 MB character limit.");return;}
    let imported;
    try{imported=JSON.parse(await file.text());}catch(e){showError("Import failed: this is not valid JSON.");return;}
+   if((AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null)!==owner)return;
    const problem=characterImportProblem(imported);
    if(problem){showError("Import failed: "+problem);return;}
-   if(hasUnsavedWork()&&!confirm("Import this character? The current character will remain in My Characters, but the character open on screen will change. Export a backup first if needed."))return;
    const blank=freshState(),restored=freshState();
    for(const key of Object.keys(blank))if(Object.prototype.hasOwnProperty.call(imported,key)){
      // Older exports may omit fields added in subsequent releases. Keep
@@ -816,15 +814,16 @@ window.APP={
    // character or make a browser guest appear to own a cloud row.
    restored._libId=null;restored._ownerId=null;restored.campaignId=null;
    restored._libLastSaved=null;restored._pendingClaim=true;
-   const previous=S;
+   const previous=S;let normalized;
    try{
-     S=restored;normalizeState();
-     if(!cloudActive())saveCurrentToLibraryLocal();
-     APPVIEW="character";MENU_MSG=null;CAMP_MSG=null;
-     render();window.scrollTo(0,0);
+     S=restored;try{normalizeState();normalized=S;}finally{S=previous;}
+     if(cloudActive())await cloudUpsertCharacter({name:normalized.concept.name||"Unnamed Character",tier:normalized.archetype,culture:normalized.culture||"",career:(normalized.customCareer&&normalized.customCareer.isCustom?normalized.customCareer.name:normalized.career)||"",campaignId:null,state:JSON.parse(JSON.stringify(normalized))});
+     else {S=normalized;try{saveCurrentToLibraryLocal();}finally{S=previous;}}
+     if((AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null)!==owner)return;
+     ACCOUNT_BACKUPS=null;AUTH_MSG=null;MENU_MSG=null;CAMP_MSG=null;
+     APPVIEW="library";LIB_CACHE=null;render();await loadLibraryUnified();window.scrollTo(0,0);
    }catch(e){
      // Failed imports must preserve the character already open on screen.
-     S=previous;APPVIEW=fromLibrary?"library":"menu";
      showError("Import failed: the data was invalid or could not be saved. Your previous character was preserved.");
    }
  },
