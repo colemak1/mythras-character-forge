@@ -423,6 +423,7 @@ test('Core p.162: Shaping budget, legacy review and Combine difficulty',()=>{
  assert.equal(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Range:3,Combine:2}},20,0)'),null);
  assert.match(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Range:4,Combine:2}},20,0)'),/exceeds/);
  assert.match(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Intensity:1}},20,0)'),/Intensity/);
+ assert.match(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Range:1.5}},20,0)'),/Invalid Shaping/);
  assert.match(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{},combineExtra:1},20,0)'),/legacy/);
  evalRule('magicSkillPct=()=>null');
  assert.equal(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{}},20,0)'),null);

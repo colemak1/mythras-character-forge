@@ -690,6 +690,10 @@ function magicCastPreflight(entry, availableMP, availableDevotion){
   if(entry.tradition==="sorcery"){
     if(Number(entry.shapingLevels?.Intensity)>0 || entry.shapings?.includes("Intensity"))return "Legacy Intensity shaping needs review before casting.";
     if(Number(entry.combineExtra)>0)return "Review the legacy combined-spell count before casting.";
+    for(const [name,value] of Object.entries(entry.shapingLevels||{})){
+      if(!["Combine","Duration","Magnitude","Range","Targets"].includes(name) || !Number.isInteger(Number(value)) || Number(value)<0)
+        return "Invalid Shaping value for "+name+"; review this entry before casting.";
+    }
     const points=sorceryCost(entry).shapingPoints, skill=magicSkillPct("Shaping");
     const limit=skill==null?0:Math.ceil(Math.max(0,skill)/10);
     if(points>limit)return "Shaping allocation exceeds your limit ("+points+" / "+limit+").";
