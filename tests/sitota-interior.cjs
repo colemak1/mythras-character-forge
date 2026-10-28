@@ -23,7 +23,7 @@ assert(css.includes(':not([data-sitota-view="play"])'),'shared styles must expli
 assert(!css.includes('@media print'),'leave existing print and sheet styles untouched');
 assert(!/data-sitota-view="play"\] \.pm-/.test(css),'no Play Mode selectors');
 assert.match(css,/body\[data-sitota-view="wiki"\] \.wiki-article/);
-assert.match(css,/@media print\s*\{/);
+assert(!css.includes('@media print'),'preserve existing Play Mode and sheet print rules');
 assert(!css.includes('data-sitota-view="sheet"] .app'),'Printable sheet should not be themed as a dark app');
 assert(!css.includes('assets/sitota-hero'),'Interior must not duplicate the licensed painting');
 assert(homeCss.includes('assets/sitota-hero.avif'),'Homepage asset must remain intact');
