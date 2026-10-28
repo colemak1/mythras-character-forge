@@ -10,11 +10,56 @@ const WORLD_CHAPTERS=[
  {id:'names',label:'Names & terms',heading:'Names & terms',deck:'A short index.',body:'<p>Sit’ota — the world.<br>Valeshar — a country.<br>Shamur — its capital.</p>'}
 ];
 let WORLD_CHAPTER='welcome',WORLD_SEARCH='';
+let HOME_CHARACTERS=null,HOME_CHARACTERS_OWNER=null,HOME_CHARACTERS_ERROR='',HOME_CHARACTERS_PENDING=null,SITE_HOME_ACTIVE=false;
+
+function homeCharacterOwner(){return AUTH_USER?AUTH_USER.id:(MOCK_AUTH?'local':null);}
+async function loadHomeCharacters(){
+ const owner=homeCharacterOwner();
+ if(!owner)return;
+ const request={owner};
+ HOME_CHARACTERS_PENDING=request;
+ HOME_CHARACTERS_OWNER=owner;HOME_CHARACTERS=null;HOME_CHARACTERS_ERROR='';
+ try{
+  await Promise.resolve(); // Keep local and cloud loading asynchronous during render.
+  if(cloudActive())await flushCloudSaves();
+  if(homeCharacterOwner()!==owner||HOME_CHARACTERS_PENDING!==request)return;
+  const rows=cloudActive()?await cloudFetchCharacters({mine:true}):loadCharLibLocal().map(localCharShape);
+  if(homeCharacterOwner()!==owner||HOME_CHARACTERS_PENDING!==request)return;
+  HOME_CHARACTERS=rows.slice().sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at)).slice(0,4);
+ }catch(e){
+  if(homeCharacterOwner()!==owner||HOME_CHARACTERS_PENDING!==request)return;
+  HOME_CHARACTERS_ERROR='Your characters could not be loaded. Please try again.';
+ }finally{
+  if(HOME_CHARACTERS_PENDING===request){
+   HOME_CHARACTERS_PENDING=null;
+   if(APPVIEW==='menu'&&homeCharacterOwner()===owner)render();
+  }
+ }
+}
+function homeCharactersHTML(){
+ const owner=homeCharacterOwner();
+ let h='<section class="st-characters" aria-labelledby="homeCharactersTitle"><div class="st-frame"><div class="st-characters-head"><h2 id="homeCharactersTitle">Your Characters</h2><a href="#/my-characters">View All <span aria-hidden="true">→</span></a></div>';
+ if(!owner)h+='<p class="st-character-message"><a href="#/account">Sign in</a> to see your characters here.</p>';
+ else if(HOME_CHARACTERS_OWNER!==owner||HOME_CHARACTERS===null&&!HOME_CHARACTERS_ERROR)h+='<p class="st-character-message" role="status">Loading your characters…</p>';
+ else if(HOME_CHARACTERS_ERROR)h+='<p class="st-character-message" role="alert">'+esc(HOME_CHARACTERS_ERROR)+' <button type="button" onclick="loadHomeCharacters();render()">Retry</button></p>';
+ const rows=owner&&HOME_CHARACTERS_OWNER===owner&&!HOME_CHARACTERS_ERROR?HOME_CHARACTERS||[]:[];
+ h+='<div class="st-character-grid">'+rows.map(c=>{
+  const name=c.name||'Unnamed Character';
+  const portrait=c.state?.concept?.portrait;
+  const safePortrait=typeof portrait==='string'&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]{1,200000}$/.test(portrait);
+  const initials=((name.match(/\b[A-Za-z]/g)||['?']).slice(0,2).join('')).toUpperCase();
+  const meta=[c.culture,c.career].filter(Boolean).map(esc).join(' · ')||'Character in progress';
+  return '<a class="st-character-card" href="#/character/'+esc(encodeURIComponent(c.id))+'/play" aria-label="Open '+esc(name)+'"><div class="st-character-portrait">'+(safePortrait?'<img src="'+portrait+'" alt="" loading="lazy">':'<span class="st-character-initials" aria-hidden="true">'+esc(initials)+'</span>')+'</div><div class="st-character-caption"><h3>'+esc(name)+'</h3><p>'+meta+'</p><span class="st-character-open">Open character <span aria-hidden="true">→</span></span></div></a>';
+ }).join('');
+ if(owner&&HOME_CHARACTERS_OWNER===owner&&HOME_CHARACTERS?.length===0&&!HOME_CHARACTERS_ERROR)h+='<p class="st-character-empty">Your next story starts here.<span>Create your first character to keep their sheet close at hand.</span></p>';
+ return h+'<a class="st-character-card st-character-create" href="#/character/new" onclick="return siteStartCharacter(event)"><span class="st-create-mark" aria-hidden="true">+</span><span>Create a<br>New Character</span></a></div></div></section>';
+}
 
 function sitotaHomeHTML(){
  const auto=(AUTH_USER||MOCK_AUTH)?getAutosaveInfo():null;
  return '<div class="sitota-public">'
   +'<section class="st-hero"><div class="st-frame st-hero-layout"><div><div class="st-eyebrow">Our campaign, our table</div><h1>Welcome to<br><em>New Sit’ota.</em></h1><p class="st-lede">A place to keep the world close between sessions.</p><div class="st-links"><a class="st-button st-primary" href="#/world/welcome">Explore Sit’ota</a><a class="st-button" href="#/my-characters">My characters</a></div></div><aside class="st-hero-aside"><strong>At the table</strong><p>Characters, campaign notes, and the places we’ve discovered together. Pick up where you left off.</p></aside></div></section>'
+  +homeCharactersHTML()
   +'<section class="st-table"><div class="st-frame"><div class="st-section-head"><h2>At the Table</h2><p>The working parts of our table</p></div>'
   +(MENU_MSG?'<p class="st-message" role="status">'+esc(MENU_MSG)+'</p>':'')
   +(LOCAL_SAVE_ERROR?'<p class="st-message" role="alert">'+esc(LOCAL_SAVE_ERROR)+'</p>':'')
@@ -56,6 +101,8 @@ function siteStartCharacter(event){
  return false;
 }
 function updateSiteHeader(){
+ SITE_HOME_ACTIVE=APPVIEW==='menu';
+ if(!homeCharacterOwner()){HOME_CHARACTERS=null;HOME_CHARACTERS_OWNER=null;HOME_CHARACTERS_ERROR='';HOME_CHARACTERS_PENDING=null;}
  const publicView=APPVIEW==='menu'||APPVIEW==='world';
  document.body.classList.toggle('sitota-public-view',publicView);
  const footer=document.getElementById('siteFooter');if(footer)footer.hidden=!publicView;
