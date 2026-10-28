@@ -25,7 +25,7 @@ window.APP={
      const portrait=canvas.toDataURL("image/jpeg",.76);
      if(portrait.length>200024)throw Error("Image is too large after resizing. Try a smaller image.");
      if(actor!==S)return;
-     S.concept.portrait=portrait;render();
+     S.concept.portrait=portrait;saveAutosave();render();     if(cloudActive())await flushCloudSaves();
    }catch(e){showError("Portrait could not be saved: "+e.message);input.value="";}
  },
  clearPortrait(){S.concept.portrait="";render();},
