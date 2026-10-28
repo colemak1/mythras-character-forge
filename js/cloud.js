@@ -931,6 +931,7 @@ function signInButtonHTML(){
   return '<button class="'+cls+'" onclick="APP.toAccount()">'+label+'</button>';
 }
 function renderMenuView(){
+  if(typeof loadHomeCharacters==='function'&&homeCharacterOwner()&&(!SITE_HOME_ACTIVE||HOME_CHARACTERS_OWNER!==homeCharacterOwner())&&(!HOME_CHARACTERS_PENDING||HOME_CHARACTERS_PENDING.owner!==homeCharacterOwner()))loadHomeCharacters();
   document.body.classList.remove("play-mode");
   document.body.classList.remove("sheet-mode");
   document.body.classList.add("menu-mode");
