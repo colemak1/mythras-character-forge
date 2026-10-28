@@ -62,7 +62,7 @@ function sitotaHomeHTML(){
  return '<div class="sitota-public st-home st-home-16x9">'
  +'<section class="st-hero"><div class="st-hero-art" aria-hidden="true"></div><div class="st-frame st-hero-layout"><div class="st-hero-copy">'
  +'<div class="st-eyebrow">Valeshar Campaign</div><h1>New Sit’ota</h1><p class="st-lede">The world guide, characters, and everything<br class="st-desktop-break"> we need for the campaign.</p>'
- +'<div class="st-links"><a class="st-button st-primary" href="#/world/welcome"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M24 10C17 6 10 6 4 9v28c7-3 13-2 20 2 7-4 13-5 20-2V9c-6-3-13-3-20 1Zm0 0v29"/></svg><span>Explore Sit’ota</span><span class="st-arrow" aria-hidden="true">→</span></a></div>'
+ +'<div class="st-links"><a class="st-world-link" href="#/world/welcome">Explore Sit’ota <span class="st-arrow" aria-hidden="true">→</span></a></div>'
  +'</div></div><span class="st-hero-credit">Art: Richard Wright · © Wizards of the Coast</span></section>'
  +(MENU_MSG?'<p class="st-frame st-message" role="status">'+esc(MENU_MSG)+'</p>':'')
  +(LOCAL_SAVE_ERROR?'<p class="st-frame st-message" role="alert">'+esc(LOCAL_SAVE_ERROR)+'</p>':'')
@@ -103,6 +103,8 @@ function siteStartCharacter(event){
  return false;
 }
 function updateSiteHeader(){
+ // Semantic view marker for scoped visual design; no routing or data changes.
+ document.body.dataset.sitotaView=APPVIEW;
  SITE_HOME_ACTIVE=APPVIEW==='menu';
  if(!homeCharacterOwner()){HOME_CHARACTERS=null;HOME_CHARACTERS_OWNER=null;HOME_CHARACTERS_ERROR='';HOME_CHARACTERS_PENDING=null;}
  const publicView=APPVIEW==='menu'||APPVIEW==='world';
