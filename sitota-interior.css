@@ -14,54 +14,54 @@
   --sitota-display:'Cormorant Garamond',Georgia,serif;
   --sitota-ui:'DM Sans',Arial,sans-serif;
 }
-body:not(.sheet-mode) {
+body:not(.sheet-mode):not([data-sitota-view="menu"]) {
   background-color:var(--sitota-night);
   background-image:none;
 }
-body:not(.sheet-mode) .sitota-header{
+body:not(.sheet-mode):not([data-sitota-view="menu"]) .sitota-header{
   background:#0b0d10;
   border-bottom:1px solid #292d30;
 }
-body:not(.sheet-mode) .sitota-header-inner{
+body:not(.sheet-mode):not([data-sitota-view="menu"]) .sitota-header-inner{
   width:min(1478px,calc(100% - 96px));
   max-width:1478px;
   min-height:72px;
   padding:11px 0;
   gap:26px;
 }
-body:not(.sheet-mode) .sitota-brand{
+body:not(.sheet-mode):not([data-sitota-view="menu"]) .sitota-brand{
   font:400 34px/.95 var(--sitota-display);
   letter-spacing:.09em;
   font-variant:small-caps;
   color:var(--sitota-cream);
 }
-body:not(.sheet-mode) .sitota-brand small{
+body:not(.sheet-mode):not([data-sitota-view="menu"]) .sitota-brand small{
   font:500 10px/1.4 var(--sitota-ui);
   letter-spacing:.27em;
   text-transform:uppercase;
   color:#bcb3aa;
   margin-top:5px;
 }
-body:not(.sheet-mode) .sitota-header nav{gap:29px}
-body:not(.sheet-mode) .sitota-header nav a{
+body:not(.sheet-mode):not([data-sitota-view="menu"]) .sitota-header nav{gap:29px}
+body:not(.sheet-mode):not([data-sitota-view="menu"]) .sitota-header nav a{
   font:17px/1.2 var(--sitota-display);
   color:#e2d8cf;
   text-decoration:none;
 }
-body:not(.sheet-mode) .sitota-header nav a:hover,
-body:not(.sheet-mode) .sitota-header nav a[aria-current=page]{
+body:not(.sheet-mode):not([data-sitota-view="menu"]) .sitota-header nav a:hover,
+body:not(.sheet-mode):not([data-sitota-view="menu"]) .sitota-header nav a[aria-current=page]{
   color:var(--sitota-gold);
   text-decoration:underline;
   text-decoration-color:#c79a5a;
   text-decoration-thickness:1px;
   text-underline-offset:17px;
 }
-body:not(.sheet-mode) #siteAccount{
+body:not(.sheet-mode):not([data-sitota-view="menu"]) #siteAccount{
   display:inline-flex;
   align-items:center;
   gap:10px;
 }
-body:not(.sheet-mode) #siteAccount svg{
+body:not(.sheet-mode):not([data-sitota-view="menu"]) #siteAccount svg{
   width:20px;height:20px;
   stroke:currentColor;fill:none;stroke-width:1.7;
 }
@@ -512,8 +512,8 @@ body[data-sitota-view="world"] .st-copy{color:#2d2922}
   body[data-sitota-view="play"] .pm-box{box-shadow:none}
 }
 @media(max-width:900px){
-  body:not(.sheet-mode) .sitota-header-inner{width:calc(100% - 40px);gap:15px}
-  body:not(.sheet-mode) .sitota-header nav{gap:16px}
+  body:not(.sheet-mode):not([data-sitota-view="menu"]) .sitota-header-inner{width:calc(100% - 40px);gap:15px}
+  body:not(.sheet-mode):not([data-sitota-view="menu"]) .sitota-header nav{gap:16px}
   body:is([data-sitota-view="account"],[data-sitota-view="library"],[data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .mmenu,
   body:is([data-sitota-view="account"],[data-sitota-view="library"],[data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap{
     width:calc(100% - 40px);
@@ -522,7 +522,7 @@ body[data-sitota-view="world"] .st-copy{color:#2d2922}
   body[data-sitota-view="wiki"] .wiki-article{padding:25px}
 }
 @media(max-width:600px){
-  body:not(.sheet-mode) .sitota-header nav a{font-size:15px}
+  body:not(.sheet-mode):not([data-sitota-view="menu"]) .sitota-header nav a{font-size:15px}
   body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-topbar{padding-right:0;gap:12px;align-items:flex-start;min-height:58px}
   body:is([data-sitota-view="account"],[data-sitota-view="library"]) .mmenu-acctbtn{top:auto;bottom:11px;right:0}
   body[data-sitota-view="character"] #rail .railstep{font-size:12px}
