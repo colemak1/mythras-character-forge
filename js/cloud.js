@@ -842,6 +842,8 @@ let CAMP_MSG=null;
 // Account page (sign-in/sign-up/password errors, plus success messages like
 // "Reset email sent" and "Password updated" that used to be a bare alert()).
 let AUTH_MSG=null;
+let ACCOUNT_BACKUPS=null;
+let ACCOUNT_BACKUP_MSG="";
 let XP_OPEN=false; // Improve Skills modal visibility — ephemeral UI state, not saved character data
 let SHEET_RETURN_VIEW="play"; // where APP.backFromSheet() sends you back to — set by whoever opened the sheet view
 function getAutosaveInfo(){
@@ -909,7 +911,16 @@ function accountHTML(){
   }
   if(AUTH_MSG)h+='<p class="'+(AUTH_MSG.level||"warn")+'" style="margin-top:8px">'+esc(AUTH_MSG.text)+'</p>';
   h+='</div>';
-  h+='</div></div>';
+  h+='</div>';
+  if(AUTH_USER||MOCK_AUTH){
+    const owner=AUTH_USER?AUTH_USER.id:"local", cache=ACCOUNT_BACKUPS&&ACCOUNT_BACKUPS.owner===owner?ACCOUNT_BACKUPS.rows:null;
+    h+='<details class="mmenu-panel" style="margin-top:16px"'+(cache||ACCOUNT_BACKUP_MSG?' open':'')+'><summary>Advanced / Backup</summary><p class="note">Import a character as a new copy, or load your saved characters to download a backup.</p><button class="mmenu-cta-secondary" onclick="APP.chooseImport()">Import character backup</button> <button class="mmenu-cta-secondary" onclick="APP.loadAccountBackups()">Load saved characters</button>';
+    if(ACCOUNT_BACKUP_MSG)h+='<p class="warn">'+esc(ACCOUNT_BACKUP_MSG)+'</p>';
+    if(cache)h+=cache.length?cache.map(c=>'<p>'+esc(c.name||"Unnamed Character")+' <button class="mmenu-cta-ghost sm" onclick="APP.exportAccountCharacter(\''+jsq(c.id)+'\')">Download backup</button></p>').join(''):'<p class="note">No saved characters.</p>';
+    if(MOCK_AUTH&&!cloudActive())h+='<p class="note">Guest library backups apply only to characters saved in this browser.</p><button class="mmenu-cta-secondary" onclick="APP.exportGuestBackup()">Export guest library</button> <button class="mmenu-cta-secondary" onclick="APP.chooseGuestBackupImport()">Import guest library</button>';
+    h+='</details>';
+  }
+  h+='</div>';
   return h;
 }
 function renderAccountView(){
@@ -968,9 +979,6 @@ function libraryHTML(){
   let h='<div class="mmenu"><div class="mmenu-topbar"><span class="mmenu-brandmark">Mythras</span><span class="mmenu-branddiv">&middot;</span><span class="mmenu-brandsub">Character Forge</span>'
    +'<button class="mmenu-acctbtn" onclick="APP.toMenu()">&#8592; Main Menu</button></div>';
   h+='<div class="mmenu-pagehead"><h1>My Characters</h1><p>'+(cloudActive()?"Every character saved to your account.":"Every character autosaved in this browser.")+'</p></div>';
-  h+='<details class="mmenu-panel" style="margin-bottom:20px"><summary>Advanced / Backup</summary><p class="note">Import a character backup as a new copy. To export a saved character, use Backup on its card below.</p>'
-    +'<button class="mmenu-cta-secondary" onclick="APP.chooseImport()">Import character backup</button>'
-    +(MOCK_AUTH&&!cloudActive()?'<p class="note">Guest library backups apply only to characters saved in this browser.</p><button class="mmenu-cta-secondary" onclick="APP.exportGuestBackup()">Export guest library</button> <button class="mmenu-cta-secondary" onclick="APP.chooseGuestBackupImport()">Import guest library</button>':'')+'</details>';
   if(CAMP_MSG)h+='<p class="warn" style="margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
   if(LIB_LOAD_ERROR){h+='<p class="warn" role="alert">'+esc(LIB_LOAD_ERROR)+'</p><button class="chip" onclick="loadLibraryUnified()">Retry loading characters</button></div>';return h;}
   if(LIB_CACHE===null){h+='<p class="note">Loading&hellip;</p></div>';return h;}
@@ -994,7 +1002,7 @@ function libraryHTML(){
      +'<button class="mmenu-cta-ghost sm" onclick="APP.openCharToEdit(\''+c.id+'\')">Edit</button>'
      +'<button class="mmenu-cta-ghost sm" onclick="APP.openCharToSheet(\''+c.id+'\')">Print</button>'
      +'<button class="mmenu-charcard-del" onclick="APP.deleteLibChar(\''+c.id+'\',\''+jsq(c.name||"this character")+'\')" title="Delete">&times;</button>'
-     +'</div><details><summary>Backup</summary><button class="mmenu-cta-ghost sm" onclick="APP.exportSavedCharacter(\''+jsq(c.id)+'\')">Download character backup</button></details></div>';
+     +'</div></div>';
   }).join("")+'</div>';
   h+='</div>';
   return h;

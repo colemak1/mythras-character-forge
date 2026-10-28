@@ -766,6 +766,21 @@ window.APP={
  /* export / import */
  exportJSON(){const data=JSON.stringify(S,null,2);
    dl((S.concept.name||"character").replace(/\s+/g,"_")+".mythras.json",data,"application/json");},
+ async loadAccountBackups(){
+   if(!AUTH_USER&&!MOCK_AUTH){APP.toAccount();return;}
+   const owner=AUTH_USER?AUTH_USER.id:"local";ACCOUNT_BACKUPS=null;ACCOUNT_BACKUP_MSG="Loading saved characters…";render();
+   try{if(cloudActive())await flushCloudSaves();const rows=cloudActive()?await cloudFetchCharacters({mine:true}):loadCharLibLocal().map(localCharShape);
+     if((AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null)!==owner)return;
+     ACCOUNT_BACKUPS={owner,rows};ACCOUNT_BACKUP_MSG="";
+   }catch(e){if((AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null)!==owner)return;ACCOUNT_BACKUP_MSG="Could not load saved characters: "+e.message;}
+   if(APPVIEW==="account")render();
+ },
+ exportAccountCharacter(id){
+   const owner=AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null;
+   const entry=owner&&ACCOUNT_BACKUPS?.owner===owner?ACCOUNT_BACKUPS.rows.find(c=>c.id===id):null;
+   if(!entry||!entry.state||typeof entry.state!=="object"||(cloudActive()&&entry.owner_id!==owner)){showError("Character backup is unavailable. Load your saved characters and try again.");return;}
+   dl((entry.state.concept?.name||entry.name||"character").replace(/\s+/g,"_")+".mythras.json",JSON.stringify(entry.state,null,2),"application/json");
+ },
  exportSavedCharacter(id){
    if(!AUTH_USER&&!MOCK_AUTH){APP.toAccount();return;}
    const entry=(LIB_CACHE||[]).find(c=>c.id===id);

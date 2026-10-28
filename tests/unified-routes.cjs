@@ -90,10 +90,12 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   assert.equal((await run('openCharUnified(S._libId)')).state.concept.portrait,'');
   ctx.document.createElement=originalCreate;
  });
- await test('library backups export the selected saved character without replacing the open character',async()=>{
-  run('AUTH_USER={id:"owner"};MOCK_AUTH=null;S=freshState();S.concept.name="Open character";var backupState=freshState();backupState.concept.name="Saved character";backupState.concept.portrait="data:image/jpeg;base64,AAAA";LIB_CACHE=[{id:"saved-id",owner_id:"owner",name:"Saved character",state:backupState,updated_at:new Date().toISOString()}];var exportedBackup=null;dl=(name,content,type)=>{exportedBackup={name,content,type};};');
-  assert.match(run('libraryHTML()'),/Advanced \/ Backup/);assert.match(run('libraryHTML()'),/Download character backup/);
-  run('APP.exportSavedCharacter("saved-id")');assert.equal(JSON.parse(run('exportedBackup.content')).concept.name,'Saved character');assert.equal(JSON.parse(run('exportedBackup.content')).concept.portrait,'data:image/jpeg;base64,AAAA');assert.equal(run('S.concept.name'),'Open character');
+ await test('account backups export the selected saved character without replacing the open character',async()=>{
+  run('AUTH_USER={id:"owner",email:"x@example.test"};AUTH_PROFILE={display_name:"Player"};MOCK_AUTH=null;S=freshState();S.concept.name="Open character";var backupState=freshState();backupState.concept.name="Saved character";backupState.concept.portrait="data:image/jpeg;base64,AAAA";var backupRows=[{id:"saved-id",owner_id:"owner",name:"Saved character",state:backupState,updated_at:new Date().toISOString()}];LIB_CACHE=backupRows;cloudFetchCharacters=async()=>backupRows;var exportedBackup=null;dl=(name,content,type)=>{exportedBackup={name,content,type};};');
+  assert.doesNotMatch(run('libraryHTML()'),/Advanced \/ Backup|Download character backup/);assert.match(run('accountHTML()'),/Advanced \/ Backup/);
+  await run('APP.loadAccountBackups()');assert.match(run('accountHTML()'),/Download backup/);
+  run('APP.exportAccountCharacter("saved-id")');assert.equal(JSON.parse(run('exportedBackup.content')).concept.name,'Saved character');assert.equal(JSON.parse(run('exportedBackup.content')).concept.portrait,'data:image/jpeg;base64,AAAA');assert.equal(run('S.concept.name'),'Open character');
+  run('AUTH_USER={id:"other",email:"other@example.test"};');assert.doesNotMatch(run('accountHTML()'),/Saved character/);run('AUTH_USER={id:"owner",email:"x@example.test"};');
   ctx.importFile={size:run('exportedBackup.content.length'),text:async()=>run('exportedBackup.content')};await run('APP.importCharacterFile({files:[importFile]})');assert.equal(run('S.concept.name'),'Saved character');assert.equal(run('S.concept.portrait'),'data:image/jpeg;base64,AAAA');assert.notEqual(run('S._libId'),'saved-id');
  });
  await test('Sorcery rechecks shaping and applies Combine difficulty to the final roll',async()=>{

@@ -118,6 +118,6 @@ Each time a PR merges, update this document: check off completed issue IDs, reco
 
 MCR-05, 06, 09, minimum 10, minimum 17, 27, and 28 were merged in PR #30. Production verification and checklist reconciliation remain to be confirmed. The skill-allocation soft lock was also addressed in that branch.
 
-## Sorcery repair — implementation awaiting review
+## Sorcery repair — merged, rounding verification outstanding
 
-MCR-01, 02 and 03 are implemented on `fix/core-sorcery`, subject to PR review and production verification. Legacy Intensity and combined-spell records require explicit review. Core p.162 and p.165 were checked against the scanned rulebook; legacy casting trackers must be cancelled and restarted. Combined-spell identity, common targets and differing Invocation skills remain GM checks. Rounding at values other than the printed 47% example needs verification.
+MCR-01, 02 and 03 were merged in PR #34 (merge `bfc26497b2a441c0de760435af70c49b07665347`), with automated tests passing. Legacy Intensity and combined-spell records require explicit review. Core pp.161–162 and p.165 were checked against the scanned rulebook; legacy casting trackers must be cancelled and restarted. Combined-spell identity, common targets and differing Invocation skills remain GM checks. The app rounds Shaping up; rounding at values other than the printed 47% example remains unverified and the items stay unchecked pending resolution and production testing.
