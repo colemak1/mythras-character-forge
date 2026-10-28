@@ -1,0 +1,61 @@
+/* Public home/guide only. No root variables or generic app control selectors. */
+.sitota-public{--st-bg:#171712;--st-panel:#22221c;--st-line:#555044;--st-ink:#eee6d7;--st-muted:#b9ad98;--st-gold:#d7b884;--st-serif:'Cormorant Garamond',Georgia,serif;--st-sans:'DM Sans',Arial,sans-serif;background:var(--st-bg);color:var(--st-ink);font:14px/1.6 var(--st-sans)}
+.st-frame{width:min(1160px,calc(100% - 64px));margin:auto}
+.sitota-public a{color:inherit}.sitota-public a:focus-visible,.sitota-public button:focus-visible,.sitota-public input:focus-visible{outline:2px solid var(--st-gold);outline-offset:4px}
+.sitota-public button,.sitota-public input{font:inherit}.sitota-public button{cursor:pointer}
+.sitota-public .st-eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--st-gold);font-weight:600}
+.sitota-public .st-hero{padding:98px 0 108px;border-bottom:1px solid var(--st-line);background:radial-gradient(ellipse 80% 90% at 85% 10%,#29271e 0%,transparent 70%)}
+.sitota-public .st-hero-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,.6fr);gap:70px;align-items:end}
+.sitota-public .st-hero h1{font:400 clamp(75px,9vw,135px)/.78 var(--st-serif);text-transform:none;letter-spacing:-.055em;margin:25px 0 30px;max-width:780px;color:var(--st-ink)}
+.sitota-public .st-hero h1 em{font-weight:400;color:var(--st-gold)}
+.sitota-public .st-lede{font:400 25px/1.25 var(--st-serif);color:#d9cbb3;margin:0 0 31px}
+.sitota-public .st-links{display:flex;gap:12px;flex-wrap:wrap}
+.sitota-public .st-button{display:inline-block;border:1px solid #947f5c;padding:12px 20px;text-decoration:none;color:var(--st-ink);font-size:12px}
+.sitota-public .st-button:hover{background:#353025}
+.sitota-public .st-button.st-primary{background:var(--st-gold);color:#222018;border-color:var(--st-gold);font-weight:600}
+.sitota-public .st-button.st-primary:hover{background:#edcd98}
+.sitota-public .st-hero-aside{border-left:1px solid #8c795c;padding:0 0 0 24px;color:var(--st-muted);font:18px/1.35 var(--st-serif)}
+.sitota-public .st-hero-aside strong{display:block;font:500 10px var(--st-sans);letter-spacing:.18em;color:var(--st-gold);text-transform:uppercase;margin-bottom:13px}
+.sitota-public .st-hero-aside p{margin:0}
+.sitota-public .st-table{padding:65px 0 90px}
+.sitota-public .st-section-head{display:flex;align-items:baseline;justify-content:space-between;gap:20px;border-bottom:1px solid var(--st-line);padding-bottom:20px}
+.sitota-public .st-section-head h2{font:400 52px/.9 var(--st-serif);text-transform:none;letter-spacing:0;margin:0;color:var(--st-ink)}
+.sitota-public .st-section-head p{color:var(--st-muted);margin:0;font-size:12px}
+.sitota-public .st-table-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:80px;margin-top:35px}
+.sitota-public .st-link-list{border-top:1px solid var(--st-line)}
+.sitota-public .st-link-list a{display:flex;justify-content:space-between;align-items:baseline;gap:24px;border-bottom:1px solid var(--st-line);padding:19px 0;text-decoration:none}
+.sitota-public .st-link-list a:hover .st-link-title{color:var(--st-gold)}
+.sitota-public .st-link-title{font:400 29px var(--st-serif)}
+.sitota-public .st-link-desc{color:var(--st-muted);font-size:11px;text-align:right}
+.sitota-public .st-table-note{border-top:1px solid #977d58;padding-top:23px;color:var(--st-muted)}
+.sitota-public .st-table-note p{font:21px/1.3 var(--st-serif);color:var(--st-ink);margin:16px 0}
+.sitota-public .st-table-note a{font-size:12px;color:var(--st-gold);text-underline-offset:4px}
+.sitota-public .st-table-note .st-small{font-size:11px;color:var(--st-muted);font-family:var(--st-sans)}
+.sitota-public .st-actions{display:flex;gap:12px 24px;align-items:baseline;flex-wrap:wrap;margin-top:26px}
+.sitota-public .st-actions button,.sitota-public .st-actions a,.sitota-public .st-continue{background:none;border:0;border-radius:0;padding:0;color:var(--st-gold);font:12px var(--st-sans);text-decoration:underline;text-underline-offset:4px}
+.sitota-public .st-actions button:hover,.sitota-public .st-actions a:hover,.sitota-public .st-continue:hover{color:var(--st-ink)}
+.sitota-public .st-continue{display:block;margin-top:26px;font:italic 20px var(--st-serif)}
+.sitota-public .st-message{border-left:2px solid var(--st-gold);padding:10px 16px;color:var(--st-ink);background:var(--st-panel);margin:24px 0 0}
+.sitota-public.st-world{padding:60px 0 100px}
+.sitota-public .st-back{font-size:12px;color:var(--st-gold);text-decoration:none}
+.sitota-public .st-back:hover{text-decoration:underline}
+.sitota-public .st-world-intro{padding:65px 0 55px;border-bottom:1px solid var(--st-line)}
+.sitota-public .st-world-intro h1{font:400 clamp(70px,11vw,140px)/.9 var(--st-serif);text-transform:none;letter-spacing:-.06em;margin:14px 0;color:var(--st-ink)}
+.sitota-public .st-world-intro p{font:24px var(--st-serif);margin:0;color:var(--st-muted)}
+.sitota-public .st-guide{display:grid;grid-template-columns:260px minmax(0,1fr);gap:70px;padding-top:45px}
+.sitota-public .st-guide aside{align-self:start;position:sticky;top:30px}
+.sitota-public .st-guide label{display:block;font-size:10px;letter-spacing:.17em;text-transform:uppercase;color:var(--st-gold);margin-bottom:12px}
+.sitota-public .st-guide input{width:100%;border:1px solid var(--st-line);background:var(--st-panel);padding:11px;color:var(--st-ink);border-radius:0}
+.sitota-public .st-chapters{display:grid;margin-top:25px;border-top:1px solid var(--st-line)}
+.sitota-public .st-chapters a{background:none;color:var(--st-muted);border:0;border-bottom:1px solid var(--st-line);text-align:left;padding:13px 0;text-decoration:none}
+.sitota-public .st-chapters a:hover,.sitota-public .st-chapters a[aria-current=page]{color:var(--st-gold)}
+.sitota-public .st-guide article{background:#e4d6b9;color:#302c24;min-height:490px;padding:55px min(6vw,75px) 70px}
+.sitota-public .st-guide article h2{font:400 clamp(45px,6vw,68px)/.95 var(--st-serif);text-transform:none;letter-spacing:0;margin:18px 0 12px;color:inherit}
+.sitota-public .st-guide article .st-eyebrow{color:#715837}
+.sitota-public .st-guide article .st-deck{font:24px/1.2 var(--st-serif);margin:0 0 28px}
+.sitota-public .st-copy{font:18px/1.5 var(--st-serif);max-width:65ch}
+.sitota-public .st-copy p{margin:0 0 17px}
+.sitota-public .st-copy h3{font:500 30px var(--st-serif);text-transform:none;letter-spacing:0;margin:28px 0 4px;border-top:1px solid #9d8c6d;padding-top:20px;color:inherit}
+.sitota-public .st-kind{font:600 10px var(--st-sans);letter-spacing:.12em;text-transform:uppercase;color:#715837}
+@media(max-width:800px){.st-frame{width:calc(100% - 36px)}.sitota-public .st-hero{padding:70px 0}.sitota-public .st-hero-layout,.sitota-public .st-table-grid{grid-template-columns:1fr;gap:34px}.sitota-public .st-hero-aside{max-width:400px}.sitota-public .st-guide{grid-template-columns:1fr;gap:30px}.sitota-public .st-guide aside{position:static}.sitota-public .st-chapters{grid-template-columns:repeat(2,1fr);gap:0 16px}.sitota-public .st-world-intro{padding:45px 0 30px}.sitota-public .st-guide article{padding:35px 28px}.sitota-public .st-section-head{display:block}.sitota-public .st-section-head p{margin-top:12px}}
+@media(max-width:500px){.sitota-public .st-hero h1{font-size:76px}.sitota-public .st-lede{font-size:22px}.sitota-public .st-hero-aside{display:none}.sitota-public .st-link-list a{display:block}.sitota-public .st-link-desc{display:block;text-align:left;margin-top:3px}.sitota-footer .st-frame{display:block}}
