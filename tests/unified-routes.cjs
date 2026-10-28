@@ -90,5 +90,11 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   assert.equal((await run('openCharUnified(S._libId)')).state.concept.portrait,'');
   ctx.document.createElement=originalCreate;
  });
+ await test('library backups export the selected saved character without replacing the open character',async()=>{
+  run('AUTH_USER={id:"owner"};MOCK_AUTH=null;S=freshState();S.concept.name="Open character";var backupState=freshState();backupState.concept.name="Saved character";backupState.concept.portrait="data:image/jpeg;base64,AAAA";LIB_CACHE=[{id:"saved-id",owner_id:"owner",name:"Saved character",state:backupState,updated_at:new Date().toISOString()}];var exportedBackup=null;dl=(name,content,type)=>{exportedBackup={name,content,type};};');
+  assert.match(run('libraryHTML()'),/Advanced \/ Backup/);assert.match(run('libraryHTML()'),/Download character backup/);
+  run('APP.exportSavedCharacter("saved-id")');assert.equal(JSON.parse(run('exportedBackup.content')).concept.name,'Saved character');assert.equal(JSON.parse(run('exportedBackup.content')).concept.portrait,'data:image/jpeg;base64,AAAA');assert.equal(run('S.concept.name'),'Open character');
+  ctx.importFile={size:run('exportedBackup.content.length'),text:async()=>run('exportedBackup.content')};await run('APP.importCharacterFile({files:[importFile]})');assert.equal(run('S.concept.name'),'Saved character');assert.equal(run('S.concept.portrait'),'data:image/jpeg;base64,AAAA');assert.notEqual(run('S._libId'),'saved-id');
+ });
  console.log(passed+' unified route/workflow tests passed (Supabase calls stubbed; no live account writes)');
 })().catch(e=>{console.error(e);process.exitCode=1;});

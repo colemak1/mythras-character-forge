@@ -760,6 +760,13 @@ window.APP={
  /* export / import */
  exportJSON(){const data=JSON.stringify(S,null,2);
    dl((S.concept.name||"character").replace(/\s+/g,"_")+".mythras.json",data,"application/json");},
+ exportSavedCharacter(id){
+   if(!AUTH_USER&&!MOCK_AUTH){APP.toAccount();return;}
+   const entry=(LIB_CACHE||[]).find(c=>c.id===id);
+   if(!entry||!entry.state||typeof entry.state!=="object"){showError("Character backup is unavailable. Reload your library and try again.");return;}
+   if(cloudActive()&&entry.owner_id!==AUTH_USER.id){showError("Only your own characters can be exported here.");return;}
+   dl((entry.state.concept?.name||entry.name||"character").replace(/\s+/g,"_")+".mythras.json",JSON.stringify(entry.state,null,2),"application/json");
+ },
  exportMD(){dl((S.concept.name||"character").replace(/\s+/g,"_")+".md",buildMD(),"text/markdown");},
  // A downloaded JSON file is a portable backup. Import creates a separate
  // character, never silently claims an existing cloud or local library ID.

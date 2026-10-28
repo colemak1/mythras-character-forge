@@ -967,8 +967,10 @@ function renderCampaignsView(){
 function libraryHTML(){
   let h='<div class="mmenu"><div class="mmenu-topbar"><span class="mmenu-brandmark">Mythras</span><span class="mmenu-branddiv">&middot;</span><span class="mmenu-brandsub">Character Forge</span>'
    +'<button class="mmenu-acctbtn" onclick="APP.toMenu()">&#8592; Main Menu</button></div>';
-  h+='<div class="mmenu-pagehead"><h1>My Characters</h1><p>'+(cloudActive()?"Every character saved to your account.":"Every character autosaved in this browser.")+'</p>'
-    +'<button class="mmenu-cta-secondary" onclick="APP.chooseImport()">Import character JSON</button></div>';
+  h+='<div class="mmenu-pagehead"><h1>My Characters</h1><p>'+(cloudActive()?"Every character saved to your account.":"Every character autosaved in this browser.")+'</p></div>';
+  h+='<details class="mmenu-panel" style="margin-bottom:20px"><summary>Advanced / Backup</summary><p class="note">Import a character backup as a new copy. To export a saved character, use Backup on its card below.</p>'
+    +'<button class="mmenu-cta-secondary" onclick="APP.chooseImport()">Import character backup</button>'
+    +(MOCK_AUTH&&!cloudActive()?'<p class="note">Guest library backups apply only to characters saved in this browser.</p><button class="mmenu-cta-secondary" onclick="APP.exportGuestBackup()">Export guest library</button> <button class="mmenu-cta-secondary" onclick="APP.chooseGuestBackupImport()">Import guest library</button>':'')+'</details>';
   if(CAMP_MSG)h+='<p class="warn" style="margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
   if(LIB_LOAD_ERROR){h+='<p class="warn" role="alert">'+esc(LIB_LOAD_ERROR)+'</p><button class="chip" onclick="loadLibraryUnified()">Retry loading characters</button></div>';return h;}
   if(LIB_CACHE===null){h+='<p class="note">Loading&hellip;</p></div>';return h;}
@@ -992,7 +994,7 @@ function libraryHTML(){
      +'<button class="mmenu-cta-ghost sm" onclick="APP.openCharToEdit(\''+c.id+'\')">Edit</button>'
      +'<button class="mmenu-cta-ghost sm" onclick="APP.openCharToSheet(\''+c.id+'\')">Print</button>'
      +'<button class="mmenu-charcard-del" onclick="APP.deleteLibChar(\''+c.id+'\',\''+jsq(c.name||"this character")+'\')" title="Delete">&times;</button>'
-     +'</div></div>';
+     +'</div><details><summary>Backup</summary><button class="mmenu-cta-ghost sm" onclick="APP.exportSavedCharacter(\''+jsq(c.id)+'\')">Download character backup</button></details></div>';
   }).join("")+'</div>';
   h+='</div>';
   return h;
