@@ -6,46 +6,63 @@
 <meta name="theme-color" content="#171712">
 <meta name="description" content="New Sit’ota: our table, our characters, and a guide to the world.">
 <title>New Sit’ota</title>
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+<link rel="alternate icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/favicon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://colemak1.github.io/mythras-character-forge/">
+<meta property="og:title" content="New Sit’ota">
+<meta property="og:description" content="Our table, our characters, and a guide to the world.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="New Sit’ota">
+<meta name="twitter:description" content="Our table, our characters, and a guide to the world.">
+<!-- Ordered scripts preserve the existing static Forge runtime. The previous
+     homepage and application host remain at rollback/pre-unified-sitota-2026-10-27.
+     ORC LICENSE ATTRIBUTION: Folk Magic spells, Fatigue Levels and Experience
+     Table: Mythras Imperative; racial characteristics, movement and traits:
+     Classic Fantasy Imperative. Published by The Design Mechanism under ORC.
+     Based on Mythras Imperative, written by Pete Nash and Lawrence Whitaker,
+     published by The Design Mechanism, Copyright 2023. Mythras and Classic
+     Fantasy are Reserved Material. See in-app Rules Notes for source details. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#171712;--panel:#22221c;--line:#555044;--ink:#eee6d7;--muted:#b9ad98;--gold:#d7b884;--paper:#e4d6b9;--paper-ink:#302c24;--serif:'Cormorant Garamond',Georgia,serif;--sans:'DM Sans',Arial,sans-serif}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 var(--sans)}a{color:inherit}a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:4px}button,input{font:inherit}button{cursor:pointer}[hidden]{display:none!important}.frame{width:min(1160px,calc(100% - 64px));margin:auto}
-.site-header{border-bottom:1px solid var(--line);background:var(--bg)}.header-inner{height:88px;display:flex;align-items:center;gap:48px}.brand{font:500 34px/1 var(--serif);text-decoration:none;white-space:nowrap;letter-spacing:.01em}.brand small{display:block;font:500 10px/1.5 var(--sans);letter-spacing:.19em;text-transform:uppercase;color:var(--muted);margin-top:5px}.nav{display:flex;align-items:center;gap:32px;margin-left:auto}.nav a{font-size:12px;text-decoration:none;color:var(--muted)}.nav a:hover,.nav a[aria-current=page]{color:var(--ink);text-decoration:underline;text-underline-offset:8px;text-decoration-color:var(--gold)}.nav .nav-forge{border:1px solid #8b7858;color:var(--ink);padding:9px 16px;text-decoration:none}.nav .nav-forge:hover{background:#302b22;text-decoration:none}
-.eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:600}.hero{padding:98px 0 108px;border-bottom:1px solid var(--line);background:radial-gradient(ellipse 80% 90% at 85% 10%,#29271e 0%,transparent 70%)}.hero-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,.6fr);gap:70px;align-items:end}.hero h1{font:400 clamp(75px,9vw,135px)/.78 var(--serif);letter-spacing:-.055em;margin:25px 0 30px;max-width:780px}.hero h1 em{font-weight:400;color:var(--gold)}.lede{font:400 25px/1.25 var(--serif);color:#d9cbb3;margin:0 0 31px}.links{display:flex;gap:12px;flex-wrap:wrap}.button-link{display:inline-block;border:1px solid #947f5c;padding:12px 20px;text-decoration:none;color:var(--ink);font-size:12px}.button-link:hover{background:#353025}.button-link.primary{background:var(--gold);color:#222018;border-color:var(--gold);font-weight:600}.button-link.primary:hover{background:#edcd98}.hero-aside{border-left:1px solid #8c795c;padding:0 0 0 24px;color:var(--muted);font:18px/1.35 var(--serif)}.hero-aside strong{display:block;font:500 10px var(--sans);letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin-bottom:13px}.hero-aside p{margin:0}
-.table-section{padding:65px 0 90px}.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line);padding-bottom:20px}.section-head h2{font:400 52px/.9 var(--serif);margin:0}.section-head p{color:var(--muted);margin:0;font-size:12px}.table-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:80px;margin-top:35px}.table-grid h3{font:400 29px var(--serif);margin:0 0 17px}.link-list{border-top:1px solid var(--line)}.link-list a{display:flex;justify-content:space-between;align-items:baseline;gap:24px;border-bottom:1px solid var(--line);padding:19px 0;text-decoration:none}.link-list a:hover .link-title{color:var(--gold)}.link-title{font:400 29px var(--serif)}.link-desc{color:var(--muted);font-size:11px;text-align:right}.table-note{border-top:1px solid #977d58;padding-top:23px;color:var(--muted)}.table-note p{font:21px/1.3 var(--serif);color:var(--ink);margin:16px 0}.table-note a{font-size:12px;color:var(--gold);text-underline-offset:4px}.table-note .small{font-size:11px;color:var(--muted);font-family:var(--sans)}
-.world{padding:60px 0 100px}.back{font-size:12px;color:var(--gold);text-decoration:none}.back:hover{text-decoration:underline}.world-intro{padding:65px 0 55px;border-bottom:1px solid var(--line)}.world-intro h1{font:400 clamp(70px,11vw,140px)/.9 var(--serif);letter-spacing:-.06em;margin:14px 0}.world-intro p{font:24px var(--serif);margin:0;color:var(--muted)}.guide{display:grid;grid-template-columns:260px minmax(0,1fr);gap:70px;padding-top:45px}.guide aside{align-self:start;position:sticky;top:30px}.guide label{display:block;font-size:10px;letter-spacing:.17em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}.guide input{width:100%;border:1px solid var(--line);background:var(--panel);padding:11px;color:var(--ink);border-radius:0}.chapters{display:grid;margin-top:25px;border-top:1px solid var(--line)}.chapters button{background:none;color:var(--muted);border:0;border-bottom:1px solid var(--line);text-align:left;padding:13px 0}.chapters button:hover,.chapters button[aria-current=page]{color:var(--gold)}.guide article{background:var(--paper);color:var(--paper-ink);min-height:490px;padding:55px min(6vw,75px) 70px}.guide article h2{font:400 clamp(45px,6vw,68px)/.95 var(--serif);margin:18px 0 12px}.guide article .eyebrow{color:#715837}.guide article .deck{font:24px/1.2 var(--serif);margin:0 0 28px}.guide article .copy{font:18px/1.5 var(--serif);max-width:65ch}.guide article .copy p{margin:0 0 17px}.guide article .copy h3{font:500 30px var(--serif);margin:28px 0 4px;border-top:1px solid #9d8c6d;padding-top:20px}.guide article .copy .kind{font:600 10px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:#715837}.site-footer{border-top:1px solid var(--line);padding:26px 0 35px;color:var(--muted);font-size:11px}.site-footer .frame{display:flex;justify-content:space-between;gap:20px}.site-footer a{color:var(--gold)}
-@media(max-width:800px){.frame{width:calc(100% - 36px)}.header-inner{height:auto;min-height:75px;flex-wrap:wrap;gap:15px;padding:15px 0}.nav{gap:17px;flex-wrap:wrap;margin-left:0}.hero{padding:70px 0}.hero-layout,.table-grid{grid-template-columns:1fr;gap:34px}.hero-aside{max-width:400px}.guide{grid-template-columns:1fr;gap:30px}.guide aside{position:static}.chapters{grid-template-columns:repeat(2,1fr);gap:0 16px}.world-intro{padding:45px 0 30px}.guide article{padding:35px 28px}.section-head{display:block}.section-head p{margin-top:12px}}@media(max-width:500px){.nav{width:100%;gap:13px}.nav a{font-size:11px}.nav .nav-forge{padding:6px 9px}.hero h1{font-size:76px}.lede{font-size:22px}.hero-aside{display:none}.link-list a{display:block}.link-desc{display:block;text-align:left;margin-top:3px}.site-footer .frame{display:block}}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Special+Elite&family=Arvo:ital,wght@0,400;0,700;1,400&family=Archivo:wght@400;500;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@600;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="stylesheet" href="styles.css?v=30">
+<link rel="stylesheet" href="sitota-forge.css?v=4">
+<link rel="stylesheet" href="sitota-public.css?v=1">
 </head>
 <body>
-<header class="site-header"><div class="frame header-inner"><a class="brand" href="#/">New Sit’ota<small>The table · Mythras Forge</small></a><nav class="nav" aria-label="Main navigation"><a href="#/" data-home>Home</a><a href="#/world/welcome" data-world>World guide</a><a href="forge.html#/my-characters">Characters</a><a href="forge.html#/my-campaigns">Campaigns</a><a class="nav-forge" href="forge.html#/account">Open Forge</a></nav></div></header>
-<main>
-<div id="home">
-<section class="hero"><div class="frame hero-layout"><div><div class="eyebrow">Our campaign, our table</div><h1>Welcome to<br><em>New Sit’ota.</em></h1><p class="lede">A place to keep the world close between sessions.</p><div class="links"><a class="button-link primary" href="#/world/welcome">Explore Sit’ota</a><a class="button-link" href="forge.html#/my-characters">My characters</a></div></div><aside class="hero-aside"><strong>At the table</strong><p>Characters, campaign notes, and the places we’ve discovered together. Pick up where you left off.</p></aside></div></section>
-<section class="table-section"><div class="frame"><div class="section-head"><h2>For the next session</h2><p>The working parts of our table</p></div><div class="table-grid"><div><h3>Mythras Forge</h3><div class="link-list"><a href="forge.html#/my-characters"><span class="link-title">Your characters</span><span class="link-desc">Your saved sheets</span></a><a href="forge.html#/my-campaigns"><span class="link-title">Our campaign</span><span class="link-desc">Campaigns and party board</span></a><a href="forge.html#/character/new"><span class="link-title">Create a character</span><span class="link-desc">Start a new sheet</span></a><a href="forge.html#/wiki"><span class="link-title">Rules reference</span><span class="link-desc">The in-app guide</span></a></div></div><aside class="table-note"><div class="eyebrow">From the GM</div><p>Welcome to New Sit’ota. This space is ours.</p><p class="small">The world guide is public. Your characters and campaign still live behind your usual Forge sign-in.</p><a href="#/world/welcome">Read the world guide</a></aside></div></div></section>
+<a class="sitota-skip" href="#main" onclick="document.getElementById('main').focus();return false">Skip to content</a>
+<header class="sitota-header"><div class="sitota-header-inner"><a class="sitota-brand" href="#/">New Sit’ota<small>The table · Mythras Forge</small></a><nav aria-label="Site navigation">
+<a href="#/" data-site-view="menu">Home</a>
+<a href="#/my-characters" data-site-view="library">Characters</a>
+<a href="#/my-campaigns" data-site-view="campaigns">Campaigns</a>
+<a href="#/character/new" data-site-view="character" onclick="return siteStartCharacter(event)">Create Character</a>
+<a href="#/wiki" data-site-view="wiki">Rules</a>
+<a href="#/world/welcome" data-site-view="world">Explore Sit’ota</a>
+<a href="#/account" data-site-view="account" id="siteAccount">Account</a>
+</nav></div></header>
+<div class="app">
+  <nav id="rail" aria-label="Creation steps"></nav>
+  <main id="main" tabindex="-1"></main>
+  <aside id="ledger" aria-label="Character ledger"></aside>
 </div>
-<section class="world" id="world" hidden><div class="frame"><a class="back" href="#/">← Back to the table</a><div class="world-intro"><div class="eyebrow">A guide for the players</div><h1>Sit’ota</h1><p>Places, people, and history as we discover them.</p></div><div class="guide"><aside><label for="worldSearch">Search the guide</label><input id="worldSearch" type="search" autocomplete="off" placeholder="Search chapters"><nav class="chapters" id="worldChapterNav" aria-label="Guide chapters"></nav></aside><article aria-live="polite" id="worldArticle"></article></div></div></section>
-</main>
-<footer class="site-footer"><div class="frame"><span>New Sit’ota · Our Mythras table</span><a href="forge.html#/">Open Mythras Forge</a></div></footer>
-<script>
-(()=>{'use strict';
-const params=new URLSearchParams(location.search),path=location.hash;
-if(['code','token_hash','error','error_code','error_description','type'].some(x=>params.has(x))||(path&&path!=='#'&&path!=='#/'&&!/^#\/world(?:\/[a-z-]+)?$/.test(path))){location.replace('forge.html'+location.search+location.hash);return;}
-const chapters=[
-{id:'welcome',label:'Start here',heading:'A book of the world',deck:'The places, people, and history around our story.',body:'<p>Use this guide when a name or place comes up at the table. These pages contain information intended for players, and will grow with the campaign.</p>'},
-{id:'places',label:'Lands & places',heading:'Lands & places',deck:'The map begins here.',body:'<span class="kind">Nation</span><h3>Valeshar</h3><p>A country in Sit’ota.</p><span class="kind">Capital</span><h3>Shamur</h3><p>The capital of Valeshar.</p>'},
-{id:'cultures',label:'Peoples & cultures',heading:'Peoples & cultures',deck:'The lives and customs of the world.',body:'<p>This chapter is awaiting its first entries.</p>'},
-{id:'faith',label:'Faith & belief',heading:'Faith & belief',deck:'Beliefs and sacred traditions.',body:'<p>This chapter is awaiting its first entries.</p>'},
-{id:'history',label:'History',heading:'History',deck:'Events that shaped Sit’ota.',body:'<p>This chapter is awaiting its first entries.</p>'},
-{id:'names',label:'Names & terms',heading:'Names & terms',deck:'A short index.',body:'<p>Sit’ota — the world.<br>Valeshar — a country.<br>Shamur — its capital.</p>'}
-];
-const $=s=>document.querySelector(s);let current='welcome';
-function chapter(){let c=chapters.find(x=>x.id===current)||chapters[0];$('#worldArticle').innerHTML=`<div class="eyebrow">The Sit’ota world guide</div><h2>${c.heading}</h2><p class="deck">${c.deck}</p><div class="copy">${c.body}</div>`;let q=$('#worldSearch').value.toLowerCase().trim();$('#worldChapterNav').innerHTML=chapters.filter(x=>(x.label+' '+x.heading+' '+x.deck+' '+x.body.replace(/<[^>]*>/g,' ')).toLowerCase().includes(q)).map(x=>`<button type="button" data-chapter="${x.id}" ${x.id===current?'aria-current="page"':''}>${x.label}</button>`).join('')||'<p>No chapters found.</p>';}
-function render(){let world=/^#\/world(?:\/|$)/.test(location.hash),m=location.hash.match(/^#\/world\/([a-z-]+)$/);if(m&&chapters.some(x=>x.id===m[1]))current=m[1];$('#home').hidden=world;$('#world').hidden=!world;$('[data-home]').setAttribute('aria-current',world?'false':'page');$('[data-world]').setAttribute('aria-current',world?'page':'false');if(world)chapter();window.scrollTo(0,0);}
-document.addEventListener('click',e=>{let b=e.target.closest('[data-chapter]');if(b)location.hash='#/world/'+b.dataset.chapter});$('#worldSearch').addEventListener('input',chapter);window.addEventListener('hashchange',render);render();
-})();
-</script>
+<div id="localSaveWarning" class="save-warning" role="alert" hidden></div>
+<footer class="foot" id="foot"></footer>
+<footer class="sitota-footer" id="siteFooter" hidden><div class="st-frame"><span>New Sit’ota · Our Mythras table</span><a href="#/account">Account</a></div></footer>
+<input id="characterImportFile" type="file" accept=".json,application/json" hidden onchange="APP.importCharacterFile(this)">
+<input id="guestBackupImportFile" type="file" accept=".json,application/json" hidden onchange="APP.importGuestBackupFile(this)">
+<script src="js/data.js?v=33"></script>
+<script src="js/engine.js?v=33"></script>
+<script src="js/cloud.js?v=34"></script>
+<script src="js/wiki-data.js?v=24"></script>
+<script src="js/wiki.js?v=24"></script>
+<script src="js/sitota.js?v=1"></script>
+<script src="js/render.js?v=34"></script>
+<script src="js/router.js?v=34"></script>
+<script src="js/play.js?v=33"></script>
+<script src="js/app.js?v=33"></script>
 </body>
 </html>

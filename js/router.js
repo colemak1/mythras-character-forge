@@ -20,6 +20,7 @@
    Route scheme (deliberately one URL per *major screen*, not per wizard
    step -- see PR description):
      #/                              home / main menu
+     #/world/<chapter>               public Sit’ota world guide
      #/account                       account / sign in
      #/my-characters                 "My Characters" library
      #/my-campaigns                  "My Campaigns" list
@@ -38,6 +39,7 @@
 */
 
 function currentRoute(){
+  if(APPVIEW==="world")return "/world/"+encodeURIComponent(WORLD_CHAPTER);
   if(APPVIEW==="account")return "/account";
   if(APPVIEW==="library")return "/my-characters";
   if(APPVIEW==="campaigns")return "/my-campaigns";
@@ -57,6 +59,8 @@ function parseRoute(hash){
   const path=(hash||"").replace(/^#/,"")||"/";
   let m;
   if(path==="/")return {view:"menu"};
+  if(path==="/world")return {view:"world",chapterId:"welcome"};
+  if((m=path.match(/^\/world\/([a-z-]+)$/)))return {view:"world",chapterId:m[1]};
   if(path==="/account")return {view:"account"};
   if(path==="/my-characters")return {view:"library"};
   if(path==="/my-campaigns")return {view:"campaigns"};
@@ -95,11 +99,14 @@ function redirectHome(msg){
 async function applyRoute(route,opts){
   opts=opts||{};
   if(!route){redirectHome("That link doesn't match anything in the app.");return;}
-  if(!AUTH_USER&&!MOCK_AUTH&&!["menu","account","wiki","join"].includes(route.view)){
+  if(!AUTH_USER&&!MOCK_AUTH&&!["menu","account","wiki","world","join"].includes(route.view)){
     APPVIEW="account";AUTH_MSG={text:"Sign in to create and manage your characters and campaigns."};render();return;
   }
   switch(route.view){
     case "menu": APPVIEW="menu";render();break;
+    case "world":
+      WORLD_CHAPTER=WORLD_CHAPTERS.some(c=>c.id===route.chapterId)?route.chapterId:"welcome";
+      APPVIEW="world";render();window.scrollTo(0,0);break;
     case "account": APPVIEW="account";render();break;
     case "library": APPVIEW="library";LIB_CACHE=null;render();loadLibraryUnified();break;
     case "campaigns": APPVIEW="campaigns";CAMP_CACHE=null;render();loadCampaignsUnified();break;

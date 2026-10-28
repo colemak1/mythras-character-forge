@@ -9,7 +9,7 @@ const context={console,setTimeout,clearTimeout,setInterval,clearInterval,URL,Dat
  requestAnimationFrame(){},confirm:()=>true};
 context.window=context;context.addEventListener=()=>{};context.scrollTo=()=>{};
 vm.createContext(context);
-for(const name of ['data','engine','cloud','render','router','play','app']){
+for(const name of ['data','engine','cloud','sitota','render','router','play','app']){
  let src=fs.readFileSync(path.join(root,'js',name+'.js'),'utf8');
  if(name==='app')src=src.replace(/boot\(\);\s*$/,'');
  vm.runInContext(src,context,{filename:name+'.js'});

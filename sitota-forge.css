@@ -3,12 +3,12 @@
    builder, and play routes without touching saved data or routing logic. */
 body,body.menu-mode:not(.sheet-mode),body.play-mode{background:#171712;background-image:none;background-attachment:initial}
 .sitota-header{background:#171712;color:#eee6d7;border-bottom:1px solid #555044;font:12px/1.5 'DM Sans',Arial,sans-serif;position:relative;z-index:25}
-.sitota-header-inner{width:min(1160px,calc(100% - 64px));min-height:88px;margin:auto;display:flex;align-items:center;gap:48px}
+.sitota-header-inner{width:min(1360px,calc(100% - 64px));min-height:88px;margin:auto;display:flex;align-items:center;gap:36px;flex-wrap:wrap;padding-block:18px}
 .sitota-brand{font:500 34px/1 'Cormorant Garamond',Georgia,serif;color:#eee6d7;text-decoration:none;white-space:nowrap;letter-spacing:.01em}
 .sitota-brand small{display:block;font:500 10px/1.5 'DM Sans',Arial,sans-serif;letter-spacing:.19em;text-transform:uppercase;color:#b9ad98;margin-top:5px}
-.sitota-header nav{margin-left:auto;display:flex;gap:31px;align-items:center;flex-wrap:wrap}
+.sitota-header nav{margin-left:auto;display:flex;gap:24px;align-items:center;flex-wrap:wrap}
 .sitota-header nav a{color:#b9ad98;text-decoration:none;font:12px 'DM Sans',Arial,sans-serif}
-.sitota-header nav a:hover{color:#eee6d7;text-decoration:underline;text-underline-offset:8px;text-decoration-color:#d7b884}
+.sitota-header nav a:hover,.sitota-header nav a[aria-current=page]{color:#eee6d7;text-decoration:underline;text-underline-offset:8px;text-decoration-color:#d7b884}
 .sitota-header a:focus-visible{outline:2px solid #d7b884;outline-offset:4px}
 body.menu-mode .app{min-height:calc(100vh - 89px);background:#171712}
 body.menu-mode .mmenu{max-width:1160px;min-height:0;margin:48px auto 80px;padding:46px 54px 65px;background:#e4d6b9;border:1px solid #74694f;box-shadow:0 22px 65px #0005}
@@ -25,4 +25,12 @@ body.play-mode .app{background:#e4d6b9}
 body.sheet-mode .sitota-header{display:none}
 @media(max-width:800px){.sitota-header-inner{width:calc(100% - 36px);min-height:75px;flex-wrap:wrap;gap:14px;padding:15px 0}.sitota-header nav{margin-left:0;gap:15px}.sitota-header nav a{font-size:11px}body.menu-mode .mmenu,body.menu-mode .menuwrap{width:calc(100% - 28px);margin:24px auto;padding:25px 20px}}
 @media print{.sitota-header{display:none}}
+.sitota-skip{position:fixed;left:20px;top:-100px;z-index:100;background:#d7b884;color:#222018;padding:10px 18px}.sitota-skip:focus{top:12px}
+body.sitota-public-view .app{min-height:0}
+body.sitota-public-view #main{outline:none}
+.sitota-footer{border-top:1px solid #555044;padding:26px 0 35px;background:#171712;color:#b9ad98;font:11px/1.6 'DM Sans',Arial,sans-serif}
+.sitota-footer[hidden]{display:none}
+.sitota-footer .st-frame{display:flex;justify-content:space-between;gap:20px}
+.sitota-footer a{color:#d7b884}
+@media print{.sitota-footer,.sitota-skip{display:none}}
 .portrait-field{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}.portrait-field label{font-weight:600}.portrait-field input{max-width:100%;font-size:12px}.character-portrait{width:116px;height:116px;object-fit:cover;border:1px solid #8b7858}.mmenu-preview-portrait img{width:100%;height:100%;object-fit:cover;border-radius:50%}
