@@ -10,6 +10,8 @@ assert.equal((home.match(/<header\b/g)||[]).length,1);
 assert(!home.includes('forge.html'),'normal navigation must stay in the unified application');
 assert(!/Open (?:Mythras )?Forge/.test(home+publicViews),'no second landing-page destination');
 assert.match(publicViews,/st-home-16x9/);
+assert.match(home,/js\/sitota\.js\?v=3/,'home renderer cache version must advance with the redesign');
+assert.match(home,/sitota-home-16x9\.css\?v=2/,'painted homepage CSS cache version must advance');
 assert.match(publicViews,/Art: Richard Wright/);
 for(const action of ['APP.newCampaign()','APP.homeJoinCampaign()','APP.fromMenuContinue()','APP.fromMenuNew()'])assert(publicViews.includes(action),action);
 assert(!/data:image\/(jpeg|png);base64/u.test(home+publicViews),'no inline AI or sample images');
