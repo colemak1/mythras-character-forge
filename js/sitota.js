@@ -38,7 +38,7 @@ async function loadHomeCharacters(){
 }
 function homeCharactersHTML(){
  const owner=homeCharacterOwner();
- let h='<section class="st-characters" aria-labelledby="homeCharactersTitle"><div class="st-frame"><div class="st-characters-head"><h2 id="homeCharactersTitle">Your Characters</h2><a href="#/my-characters">View All <span aria-hidden="true">→</span></a></div>';
+ let h='<section class="st-characters" aria-labelledby="homeCharactersTitle"><div class="st-frame"><div class="st-characters-head"><h2 id="homeCharactersTitle">Your characters</h2><a href="#/my-characters">View all characters <span aria-hidden="true">→</span></a></div>';
  if(!owner)h+='<p class="st-character-message"><a href="#/account">Sign in</a> to see your characters here.</p>';
  else if(HOME_CHARACTERS_OWNER!==owner||HOME_CHARACTERS===null&&!HOME_CHARACTERS_ERROR)h+='<p class="st-character-message" role="status">Loading your characters…</p>';
  else if(HOME_CHARACTERS_ERROR)h+='<p class="st-character-message" role="alert">'+esc(HOME_CHARACTERS_ERROR)+' <button type="button" onclick="loadHomeCharacters();render()">Retry</button></p>';
@@ -52,27 +52,29 @@ function homeCharactersHTML(){
   return '<a class="st-character-card" href="#/character/'+esc(encodeURIComponent(c.id))+'/play" aria-label="Open '+esc(name)+'"><div class="st-character-portrait">'+(safePortrait?'<img src="'+portrait+'" alt="" loading="lazy">':'<span class="st-character-initials" aria-hidden="true">'+esc(initials)+'</span>')+'</div><div class="st-character-caption"><h3>'+esc(name)+'</h3><p>'+meta+'</p><span class="st-character-open">Open character <span aria-hidden="true">→</span></span></div></a>';
  }).join('');
  if(owner&&HOME_CHARACTERS_OWNER===owner&&HOME_CHARACTERS?.length===0&&!HOME_CHARACTERS_ERROR)h+='<p class="st-character-empty">Your next story starts here.<span>Create your first character to keep their sheet close at hand.</span></p>';
- return h+'<a class="st-character-card st-character-create" href="#/character/new" onclick="return siteStartCharacter(event)"><span class="st-create-mark" aria-hidden="true">+</span><span>Create a<br>New Character</span></a></div></div></section>';
+ return h+'<a class="st-character-card st-character-create" href="#/character/new" onclick="return siteStartCharacter(event)"><span class="st-create-mark" aria-hidden="true">+</span><span>Create character</span></a></div></div></section>';
 }
 
+
+/* This view follows the owner-approved 16:9 reference. Other app views unchanged. */
 function sitotaHomeHTML(){
  const auto=(AUTH_USER||MOCK_AUTH)?getAutosaveInfo():null;
- return '<div class="sitota-public">'
-  +'<section class="st-hero"><div class="st-frame st-hero-layout"><div><div class="st-eyebrow">Our campaign, our table</div><h1>Welcome to<br><em>New Sit’ota.</em></h1><p class="st-lede">A place to keep the world close between sessions.</p><div class="st-links"><a class="st-button st-primary" href="#/world/welcome">Explore Sit’ota</a><a class="st-button" href="#/my-characters">My characters</a></div></div><aside class="st-hero-aside"><strong>At the table</strong><p>Characters, campaign notes, and the places we’ve discovered together. Pick up where you left off.</p></aside></div></section>'
-  +homeCharactersHTML()
-  +'<section class="st-table"><div class="st-frame"><div class="st-section-head"><h2>At the Table</h2><p>The working parts of our table</p></div>'
-  +(MENU_MSG?'<p class="st-message" role="status">'+esc(MENU_MSG)+'</p>':'')
-  +(LOCAL_SAVE_ERROR?'<p class="st-message" role="alert">'+esc(LOCAL_SAVE_ERROR)+'</p>':'')
-  +'<div class="st-table-grid"><div><div class="st-link-list">'
-  +'<a href="#/my-characters"><span class="st-link-title">Your characters</span><span class="st-link-desc">Your saved sheets</span></a>'
-  +'<a href="#/my-campaigns"><span class="st-link-title">Our campaign</span><span class="st-link-desc">Campaigns and party board</span></a>'
-  +'<a href="#/character/new" onclick="return siteStartCharacter(event)"><span class="st-link-title">Create a character</span><span class="st-link-desc">Start a new sheet</span></a>'
-  +'<a href="#/wiki"><span class="st-link-title">Rules reference</span><span class="st-link-desc">The in-app guide</span></a></div>'
-  +'<div class="st-actions"><button type="button" onclick="APP.newCampaign()">Create a campaign</button><button type="button" onclick="APP.homeJoinCampaign()">Join a campaign</button><a href="#/account">Account</a></div>'
-  +(auto?'<button class="st-continue" type="button" onclick="APP.fromMenuContinue()">Continue as '+esc(auto.name)+' →</button>':'')
-  +(GUEST_TEST_ENABLED&&!AUTH_USER?'<button type="button" class="st-continue" onclick="APP.mockSignIn()">Continue as Guest</button>':'')
-  +'</div><aside class="st-table-note"><div class="st-eyebrow">From the GM</div><p>Welcome to New Sit’ota. This space is ours.</p><p class="st-small">The world guide is public. Sign in to keep your characters and campaign close between sessions.</p><a href="#/world/welcome">Read the world guide</a></aside></div></div></section></div>';
+ return '<div class="sitota-public st-home st-home-16x9">'
+ +'<section class="st-hero"><div class="st-hero-art" aria-hidden="true"></div><div class="st-frame st-hero-layout"><div class="st-hero-copy">'
+ +'<div class="st-eyebrow">Valeshar Campaign</div><h1>New Sit’ota</h1><p class="st-lede">The world guide, characters, and everything<br class="st-desktop-break"> we need for the campaign.</p>'
+ +'<div class="st-links"><a class="st-button st-primary" href="#/world/welcome"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M24 10C17 6 10 6 4 9v28c7-3 13-2 20 2 7-4 13-5 20-2V9c-6-3-13-3-20 1Zm0 0v29"/></svg><span>Explore Sit’ota</span><span class="st-arrow" aria-hidden="true">→</span></a></div>'
+ +'</div></div><span class="st-hero-credit">Art: Richard Wright · © Wizards of the Coast</span></section>'
+ +(MENU_MSG?'<p class="st-frame st-message" role="status">'+esc(MENU_MSG)+'</p>':'')
+ +(LOCAL_SAVE_ERROR?'<p class="st-frame st-message" role="alert">'+esc(LOCAL_SAVE_ERROR)+'</p>':'')
+ +(auto?'<div class="st-frame"><button class="st-continue" type="button" onclick="APP.fromMenuContinue()">Continue '+esc(auto.name)+' →</button></div>':'')
+ +homeCharactersHTML()
+ +'<section class="st-home-tools" aria-label="Campaign tools"><div class="st-frame st-home-tools-inner">'
+ +'<div class="st-home-tool"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="24" cy="11" r="6"/><path d="M12 39v-5c0-8 5-12 12-12s12 4 12 12v5H12ZM9 18a5 5 0 1 1 0-10m0 15c-6 1-8 5-8 11v5h8m30-21a5 5 0 1 0 0-10m0 15c6 1 8 5 8 11v5h-8"/></svg><div><h2>Campaign</h2><p>Party board, sessions, and shared notes.</p><a href="#/my-campaigns">Open campaign →</a><div class="st-tool-secondary"><button type="button" onclick="APP.newCampaign()">Create campaign</button><button type="button" onclick="APP.homeJoinCampaign()">Join campaign</button></div></div></div>'
+ +'<div class="st-home-tool"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M24 10C17 6 10 6 4 9v28c7-3 13-2 20 2 7-4 13-5 20-2V9c-6-3-13-3-20 1Zm0 0v29"/></svg><div><h2>Rules reference</h2><p>Search the Mythras rules.</p><a href="#/wiki">Browse rules →</a></div></div>'
+ +'<div class="st-home-tool"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10 18 5l13 5 13-5v32l-13 5-13-5-14 5V10Zm14-5v32m13-27v32"/></svg><div><h2>World guide</h2><p>People, places, and history of Sit’ota.</p><a href="#/world/welcome">Explore the world →</a></div></div>'
+ +'</div></section></div>';
 }
+
 function worldChapterNavHTML(){
  const q=WORLD_SEARCH.toLowerCase().trim();
  return WORLD_CHAPTERS.filter(c=>(c.label+' '+c.heading+' '+c.deck+' '+c.body.replace(/<[^>]*>/g,' ')).toLowerCase().includes(q))
