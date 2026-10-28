@@ -163,16 +163,16 @@ window.APP={
    S.magic.devotionalUsed=Math.max(0,Math.min(devotionalMax(),(S.magic.devotionalUsed||0)-n));render();},
  devotionalReset(){if(viewOnlyBlock())return;S.magic.devotionalUsed=0;render();},
  // Core p.136: Calling upon a bound spirit is its own Binding action.
- // GM still adjudicates the spirit's action, POW restrictions, and possible
+ // GM still adjudicates the spirit's action and possible
  // continued resistance. No generic spell or spirit combat automation.
  commandSpirit(idx){
    if(viewOnlyBlock())return;
    PM_MSG=null;
    const m=spiritRecordByMagicIndex(idx);
-   const err=spiritCommandPreflight(m,playCurMagic());
-   if(err){PM_MSG=err;render();return;}
    const key=magicSkillKey("Binding");
    if(!key){PM_MSG="Binding is not available on this character's sheet.";render();return;}
+   const err=spiritCommandPreflight(m,playCurMagic(),finalPct(key));
+   if(err){PM_MSG=err;render();return;}
    const g=gradedPct(key,finalPct(key));
    if(g.pct===null){PM_MSG="Resolve this Binding action with your GM at the selected difficulty.";render();return;}
    const r=d100(),tier=resolveRoll(r,g.pct),out=spiritCommandOutcome(tier);

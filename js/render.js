@@ -733,6 +733,7 @@ function knownMagicEditor(t){
   const rows=S.magic.known.map((m,i)=>({m,i})).filter(x=>x.m.tradition===t.key);
   let h='<div class="reservednote">'+esc(t.contentNote)+'</div>';
   if(t.key==="theism"){
+    h+='<p class="note rulesrc">Core p.180: each cult has a separate pool. Maximum pool by cult rank: Lay Member none, Initiate ¼ POW, Acolyte ½ POW, Priest ¾ POW, High Priest full POW. Combined pools cannot exceed POW. This tracker does not yet enforce rank or multiple-cult limits; confirm your pool with the GM.</p>';
     h+='<div class="grid2">'
      +fld("Devotional Pool (Magic Points offered up)",'<input type="number" min="0" value="'+devotionalMax()+'" onchange="APP.devotional(this.value)">')
      +fld("Currently available",'<div class="agetotal">'+devotionalCur()+' / '+devotionalMax()+'</div>')
@@ -769,7 +770,7 @@ function knownMagicEditor(t){
        +["none","fetish","location","creature"].map(v=>'<option value="'+v+'" '+(m.bindingType===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label>'
        +'<label class="mnum">Spirit current MP (manual)<input type="number" min="0" max="999" placeholder="not tracked" value="'+(Number.isInteger(m.spiritMP)?m.spiritMP:'')+'" onchange="APP.spiritMP('+i+',this.value)"></label>'
        +'<label class="mnum">Negotiation / spirit combat notes<input type="text" maxlength="800" value="'+esc(m.spiritCombatNote||'')+'" onchange="APP.spiritCombatNote('+i+',this.value)"></label>'
-       +'<p class="note rulesrc">Core pp.134–139: locating, negotiation, binding and spirit combat have separate prerequisites. Use these GM-confirmed record fields; recording a contact or vessel does not automatically bind the spirit.</p>';
+       +'<p class="note rulesrc">Core pp.131, 134–139: Spirit POW is required to command a bound spirit; it cannot exceed three times your Binding critical range. Locating, negotiation, binding and spirit combat have separate prerequisites. Recording a contact or vessel does not automatically bind the spirit.</p>';
     }
     if(t.key==="mysticism"){
       r+='<label class="mnum">Duration (turns; 0 = GM)<input type="number" min="0" max="9999" value="'+(m.durationTurns||0)+'" onchange="APP.talentDuration('+i+',this.value)"></label>'

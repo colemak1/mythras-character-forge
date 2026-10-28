@@ -493,7 +493,9 @@ test('Update 16: command outcomes follow Core p.136',()=>{
 test('Update 16: unbound spirits and insufficient MP cannot be commanded',()=>{
  assert(/not marked as bound/.test(evalRule('spiritCommandPreflight({tradition:"animism",name:"Shade",spiritStatus:"unbound"},5)')));
  assert(/at least 1 Magic Point/.test(evalRule('spiritCommandPreflight({tradition:"animism",name:"Shade",spiritStatus:"bound"},0)')));
- assert.equal(evalRule('spiritCommandPreflight({tradition:"animism",name:"Shade",spiritStatus:"bound"},2)'),null);
+ assert.equal(evalRule('spiritCommandPreflight({tradition:"animism",name:"Shade",spiritStatus:"bound",pow:15},2,45)'),null);
+ assert.match(evalRule('spiritCommandPreflight({tradition:"animism",name:"Shade",spiritStatus:"bound",pow:16},2,45)'),/exceeds/);
+ assert.match(evalRule('spiritCommandPreflight({tradition:"animism",name:"Shade",spiritStatus:"bound",pow:0},2,45)'),/POW/);
 });
 test('Update 16: old Animism saves are safely marked unbound',()=>{
  evalRule('S=freshState();S.magic.known=[{tradition:"animism",name:"Shade",pow:10,cha:9}];normalizeState();');

@@ -118,5 +118,10 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   run('S.magic.known[0].shapingLevels.Combine=1;APP.castMagic(0)');assert.equal(run('S.rollLog[0].pct'),60);assert.equal(run('S.rollLog[0].tier'),'Success');assert.equal(run('S.play.sorceryCasting'),null);
   run('S.magic.known[0].shapingLevels={Combine:2};APP.castMagic(0);APP.castMagic(0)');assert.equal(run('S.rollLog[0].pct'),45);assert.equal(run('S.rollLog[0].tier'),'Failure');
  });
+ await test('bound spirit POW over Binding limit cannot roll or spend points',async()=>{
+  run('S=freshState();S.play.magic=10;S.magic.known=[{tradition:"animism",name:"Shade",pow:16,spiritStatus:"bound"}];S.magic.folk=[];magicSkillKey=()=>"binding";finalPct=()=>45;playCurMagic=()=>S.play.magic;viewOnlyBlock=()=>false;render=()=>{};');
+  run('APP.commandSpirit(0)');assert.match(run('PM_MSG'),/exceeds/);assert.equal(run('S.play.magic'),10);assert.equal(run('S.rollLog.length'),0);
+  run('S.magic.known[0].pow=15;APP.commandSpirit(0)');assert.equal(run('S.rollLog.length'),1);
+ });
  console.log(passed+' unified route/workflow tests passed (Supabase calls stubbed; no live account writes)');
 })().catch(e=>{console.error(e);process.exitCode=1;});
