@@ -698,6 +698,9 @@ async function assignCharUnified(id,campaignId){
   const lib=loadCharLibLocal();const e=lib.find(c=>c.id===id);if(!e)return;e.campaignId=campaignId;saveCharLibListLocal(lib);
 }
 async function openCharUnified(id){
+  // Finish pending edits before reading the cloud row back into the builder.
+  // Otherwise a quick return to Edit can overwrite a newly uploaded portrait.
+  if(cloudActive())await flushCloudSaves();
   // Returns campaignId/ownerId straight from the DB row (or the local
   // library entry), NOT from whatever was embedded in the saved state blob
   // at last-save time — the blob can be stale if a DM unassigned/reassigned
