@@ -9,16 +9,19 @@ const sitota=fs.readFileSync(path.join(root,'js/sitota.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'sitota-interior.css'),'utf8');
 const homeCss=fs.readFileSync(path.join(root,'sitota-home-16x9.css'),'utf8');
 assert(html.includes('sitota-interior.css?v=1'),'Interior theme must be linked');
-assert(html.includes('js/sitota.js?v=4'),'Site script must bust older cached renderer');
-assert(html.indexOf('sitota-interior.css?v=1')>html.indexOf('sitota-home-16x9.css?v=2'),'Interior theme should load after home styles');
+assert(html.includes('js/sitota.js?v=5'),'Site script must bust older cached renderer');
+assert(html.indexOf('sitota-interior.css?v=1')>html.indexOf('sitota-home-16x9.css?v=3'),'Interior theme should load after home styles');
 assert.match(sitota,/document\.body\.dataset\.sitotaView\s*=\s*APPVIEW/,'Site view flag missing');
 new vm.Script(sitota,{filename:'js/sitota.js'});
-for (const view of ['account','library','campaigns','campaign','board','wiki','character','play','world']) {
+for (const view of ['account','library','campaigns','campaign','board','wiki','character','world']) {
   assert(css.includes('data-sitota-view="'+view+'"'),'Missing view: '+view);
 }
 assert.match(css,/body\[data-sitota-view="character"\] #rail/);
 assert.match(css,/body\[data-sitota-view="character"\] #ledger/);
-assert.match(css,/body\[data-sitota-view="play"\] \.pm-mast/);
+assert(!css.includes('body[data-sitota-view="play"]'),'Play Mode must not be restyled');
+assert(css.includes(':not([data-sitota-view="play"])'),'shared styles must explicitly exclude Play Mode');
+assert(!css.includes('@media print'),'leave existing print and sheet styles untouched');
+assert(!/data-sitota-view="play"\] \.pm-/.test(css),'no Play Mode selectors');
 assert.match(css,/body\[data-sitota-view="wiki"\] \.wiki-article/);
 assert.match(css,/@media print\s*\{/);
 assert(!css.includes('data-sitota-view="sheet"] .app'),'Printable sheet should not be themed as a dark app');
