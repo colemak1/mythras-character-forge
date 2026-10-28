@@ -166,6 +166,10 @@ function gradedPct(key,basePct){
   const g=gradeForEntry(key);const mult=GRADE_MULT[g];
   return mult==null?{pct:null,grade:g}:{pct:Math.max(0,Math.round(basePct*mult)),grade:g};
 }
+function sorceryInvocationGrade(key,basePct,extra){
+  const grade=shiftGradeHarder(gradeForEntry(key),extra),mult=GRADE_MULT[grade];
+  return {grade,pct:mult==null?null:Math.max(0,Math.round(basePct*mult))};
+}
 // Reference table for the on-demand Difficulty Grade popover in Play Mode —
 // every Grade's effect on one skill's % at a glance, independent of whatever
 // ACTIVE_GRADE is currently set. Automatic/Hopeless have no %, just a note.
@@ -589,20 +593,21 @@ function knownOf(traditionKey){return S.magic.known.filter(m=>m.tradition===trad
 function sorceryLevels(entry){
   if(entry.shapingLevels && typeof entry.shapingLevels==="object"){
     const out={};
-    for(const k of ["Duration","Range","Targets","Magnitude","Intensity"]){
+    for(const k of ["Combine","Duration","Range","Targets","Magnitude"]){
       const n=Number(entry.shapingLevels[k]);if(Number.isInteger(n)&&n>0)out[k]=n;
     }
+    if(!Object.hasOwn(entry.shapingLevels,"Combine") && Number(entry.combineExtra)>0)out.Combine=Math.floor(Number(entry.combineExtra));
     return out;
   }
   const out={};for(const k of (Array.isArray(entry.shapings)?entry.shapings:[])){
-    if(["Duration","Range","Targets","Magnitude","Intensity"].includes(k))out[k]=1;
-  }return out;
+    if(["Combine","Duration","Range","Targets","Magnitude"].includes(k))out[k]=1;
+  }if(!out.Combine && Number(entry.combineExtra)>0)out.Combine=Math.floor(Number(entry.combineExtra));return out;
 }
 function sorceryCost(entry){
   const levels=sorceryLevels(entry);
   const categories=Object.keys(levels).length;
   const points=Object.values(levels).reduce((a,b)=>a+b,0);
-  const extra=Math.max(0,Math.floor(Number(entry.combineExtra)||0));
+  const extra=levels.Combine||0;
   return {mp:1+categories+extra,turns:1+categories,shapings:categories,
     shapingPoints:points,combinedSpells:extra};
 }
@@ -682,6 +687,13 @@ function magicEntryCost(entry){
 function magicCastPreflight(entry, availableMP, availableDevotion){
   if(!entry || !MAGIC_TRAD_MAP[entry.tradition])return "Unknown magical tradition.";
   if(!String(entry.name||"").trim())return "Name this spell, spirit, miracle, or talent before using it.";
+  if(entry.tradition==="sorcery"){
+    if(Number(entry.shapingLevels?.Intensity)>0 || entry.shapings?.includes("Intensity"))return "Legacy Intensity shaping needs review before casting.";
+    if(Number(entry.combineExtra)>0)return "Review the legacy combined-spell count before casting.";
+    const points=sorceryCost(entry).shapingPoints, skill=magicSkillPct("Shaping");
+    const limit=skill==null?0:Math.ceil(Math.max(0,skill)/10);
+    if(points>limit)return "Shaping allocation exceeds your limit ("+points+" / "+limit+").";
+  }
   const mp=Math.max(0,Number(availableMP)||0);
   const dp=Math.max(0,Number(availableDevotion)||0);
   const t=MAGIC_TRAD_MAP[entry.tradition];

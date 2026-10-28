@@ -128,10 +128,14 @@ window.APP={
      m[f]=n;}
    render();},
  shapingLevel(i,name,raw){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;
-   if(!["Duration","Range","Targets","Magnitude","Intensity"].includes(name))return;
+   if(!["Combine","Duration","Range","Targets","Magnitude"].includes(name))return;
+   if(Number(m.combineExtra)>0){PM_MSG="Review the legacy combined-spell count before editing Shaping.";render();return;}
    const n=Number(raw);if(!Number.isInteger(n)||n<0||n>100){PM_MSG="Shaping level must be a whole number from 0 to 100.";render();return;}
-   m.shapingLevels=sorceryLevels(m);if(n)m.shapingLevels[name]=n;else delete m.shapingLevels[name];
+   const legacy=m.shapingLevels?.Intensity;m.shapingLevels=sorceryLevels(m);if(legacy)m.shapingLevels.Intensity=legacy;if(n)m.shapingLevels[name]=n;else delete m.shapingLevels[name];
+   m.combineExtra=0;if(name==="Combine"&&!n)m.shapingLevels.Combine=0;
    m.shapings=Object.keys(m.shapingLevels);render();},
+ clearLegacyIntensity(i){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;if(!confirm("Remove the old Intensity Shaping value after reviewing it?"))return;if(m.shapingLevels)delete m.shapingLevels.Intensity;m.shapings=(m.shapings||[]).filter(x=>x!=="Intensity");render();},
+ reviewLegacyCombine(i){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery"||!m.combineExtra)return;if(Number(m.shapingLevels?.Combine)>0){PM_MSG="This entry contains both a legacy combined-spell count and Combine points. Export it and review with the GM before resolving the conflict.";render();return;}if(!confirm("Use the old additional-spell count as Combine points? Review the resulting allocation."))return;m.shapingLevels=m.shapingLevels||{};m.shapingLevels.Combine=m.combineExtra;m.combineExtra=0;render();},
  talentDuration(i,raw){const m=S.magic.known[i];if(!m||m.tradition!=="mysticism")return;
    const str=String(raw).trim(),n=Number(str);
    if(str===""||!Number.isSafeInteger(n)||n<0||n>9999){PM_MSG="Talent duration must be a whole number of turns (0 means GM-managed).";render();return;}
@@ -202,15 +206,16 @@ window.APP={
    // A Sorcery click starts/advances a tracker until that final turn. It does
    // not automatically spend action points or assume uninterrupted casting.
    if(m.tradition==="sorcery"){
+     const err=magicCastPreflight(m,playCurMagic(),devotionalCur());
+     if(err){PM_MSG=err;render();return;}
      const total=sorceryCost(m).turns;
      const pending=S.play.sorceryCasting;
-     if(pending && (pending.index!==idx || pending.name!==m.name || pending.total!==total)){
+     const shaping=JSON.stringify(sorceryLevels(m));
+     if(pending && (pending.index!==idx || pending.name!==m.name || pending.total!==total || pending.shaping!==shaping)){
        PM_MSG="Another Sorcery invocation is underway. Cancel it before changing spells or shaping.";render();return;
      }
      if(total>1 && !pending){
-       const err=magicCastPreflight(m,playCurMagic(),devotionalCur());
-       if(err){PM_MSG=err;render();return;}
-       S.play.sorceryCasting={index:idx,name:m.name,total,completed:1};
+       S.play.sorceryCasting={index:idx,name:m.name,total,completed:1,shaping};
        PM_MSG="Sorcery casting turn 1 of "+total+" recorded. Advance on the next casting turn; roll Invocation only on the last turn (Core p.165).";render();return;
      }
      if(pending && pending.completed+1<pending.total){
@@ -221,7 +226,8 @@ window.APP={
    if(blocking){PM_MSG=blocking;render();return;}
    const key=magicSkillKey(trad.castSkill);
    if(!key){PM_MSG="This character doesn't have the "+trad.castSkill+" skill, so there's nothing to roll. Add it as a Professional Skill first.";render();return;}
-   const base=finalPct(key);const g=gradedPct(key,base);
+   const base=finalPct(key);let g=gradedPct(key,base);
+   if(m.tradition==="sorcery" && sorceryCost(m).combinedSpells)g=sorceryInvocationGrade(key,base,sorceryCost(m).combinedSpells);
    if(g.pct===null){PM_MSG=g.grade==="automatic"?"Automatic — the magic simply works.":"Hopeless — no casting can be attempted at this Grade.";render();return;}
    const r=d100();const tier=resolveRoll(r,g.pct);
    if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
