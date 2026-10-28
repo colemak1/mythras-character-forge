@@ -916,64 +916,8 @@ function renderAccountView(){
   document.title="Account — Mythras Character Forge";
   $("#main").innerHTML=accountHTML();
 }
-// ---- Main menu, v2 ----
-// Full rebuild (not a margin/width patch on v1). v1 was a single narrow
-// column (max-width:840px) centered in whatever viewport width was
-// available, which on any real desktop monitor left large dead margins on
-// both sides — the page never used the width it had. This version composes
-// like an actual landing page at desktop width: a small wordmark, then an
-// asymmetric two-column hero (headline/CTA on the left, a real content
-// panel — not decoration — filling the right column), then a proper
-// multi-column secondary section below instead of a single stacked list.
-// Home screen — "Aegean golden hour": the approved mockup
-// (docs/homepage-mockup-approved.html) after a long round of iteration.
-// Deliberately minimal by design (5 actions + sign-in, nothing else) rather
-// than the earlier landing-page-style menu this replaced; every action
-// routes to the same real handlers that page used, just reached through a
-// plain button instead of a card with preview content. The one addition
-// beyond the mockup itself is a small "Continue as X" link, shown only
-// when there's an autosaved character to resume — dropping that outright
-// would have quietly removed a real feature rather than just simplified
-// the page, so it's kept but deliberately unobtrusive rather than styled
-// as one of the five primary actions.
-function menuHTML(){
-  const auto=getAutosaveInfo();
-  let h='<div class="myth-home">';
-  h+='<div class="myth-home-sunglow" aria-hidden="true"></div>';
-  h+='<div class="myth-home-marble" aria-hidden="true"></div>';
-  h+='<div class="myth-home-col l" aria-hidden="true"></div><div class="myth-home-col r" aria-hidden="true"></div>';
-  h+='<div class="myth-home-colcap l" aria-hidden="true"></div><div class="myth-home-colcap r" aria-hidden="true"></div>';
-  h+='<div class="myth-home-colbase l" aria-hidden="true"></div><div class="myth-home-colbase r" aria-hidden="true"></div>';
-  h+=signInButtonHTML();
-  if(GUEST_TEST_ENABLED&&!AUTH_USER){
-    h+='<div class="guest-access-banner">'
-      +(MOCK_AUTH?'<span>Guest mode · Saved on this device only</span>':'<button onclick="APP.mockSignIn()">Continue as Guest &rarr;</button>')
-      +'</div>';
-  }
-  h+='<div class="myth-home-stack">';
-  h+='<div class="myth-home-title">Mythras</div>';
-  h+='<div class="myth-home-rule"></div>';
-  h+='<div class="myth-home-menu">'
-   +'<button class="myth-home-mbtn" onclick="APP.fromMenuNew()">Create a character</button>'
-   +'<button class="myth-home-mbtn" onclick="APP.newCampaign()">Create a campaign</button>'
-   +'<button class="myth-home-mbtn" onclick="APP.homeJoinCampaign()">Join a campaign</button>'
-   +'<button class="myth-home-mbtn" onclick="APP.toLibrary()">My characters</button>'
-   +'<button class="myth-home-mbtn" onclick="APP.toCampaigns()">My campaigns</button>'
-   +'</div>';
-  // Same account gate as the "Create a character" tile above -- signed out
-  // (with cloud sync configured), there's nothing valid for this link to
-  // resume, so it shouldn't even be offered. Hiding it here is belt-and-
-  // suspenders alongside the same check in APP.fromMenuContinue(): this is
-  // what actually stops a signed-out visitor from seeing another account's
-  // (or a stale pre-gate) character name advertised on a shared browser.
-  const canContinue=auto&&(AUTH_USER||MOCK_AUTH);
-  if(canContinue)h+='<button class="myth-home-continue" onclick="APP.fromMenuContinue()">Continue as '+esc(auto.name)+' &rarr;</button>';
-  if(LOCAL_SAVE_ERROR)h+='<p class="warn" role="alert">'+esc(LOCAL_SAVE_ERROR)+'</p>';
-  if(MENU_MSG)h+='<p class="warn" style="margin-top:10px;text-align:center">'+esc(MENU_MSG)+'</p>';
-  h+='</div>'; // /myth-home-stack
-  h+='</div>'; // /myth-home
-  return h;
-}
+// Home is the New Sit’ota table; actions retain their existing APP handlers.
+function menuHTML(){return sitotaHomeHTML();}
 // Top-right sign-in affordance: reflects real Supabase auth if present,
 // otherwise a distinct "Test" indicator when a mock session is active, or a
 // plain Sign In pill when signed out entirely. Always routes to the
@@ -990,7 +934,7 @@ function renderMenuView(){
   document.body.classList.remove("play-mode");
   document.body.classList.remove("sheet-mode");
   document.body.classList.add("menu-mode");
-  document.title="Mythras Character Forge";
+  document.title="New Sit’ota";
   $("#main").innerHTML=menuHTML();
 }
 /* ---- campaign list ---- */

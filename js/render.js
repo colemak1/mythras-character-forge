@@ -2,6 +2,7 @@
 /* ================= RENDER: FRAME ================= */
 function render(){
   renderInner();
+  if(typeof updateSiteHeader==="function")updateSiteHeader();
   // Keep the URL in sync with whatever was just drawn -- see router.js. Runs
   // after renderInner(), not before: several branches below call
   // saveAutosave() as their last step, and in local/signed-out mode that's
@@ -12,7 +13,7 @@ function render(){
   updateSaveStatus();
 }
 function renderInner(){
-  if(!AUTH_USER&&!MOCK_AUTH&&!["menu","account","wiki"].includes(APPVIEW)){
+  if(!AUTH_USER&&!MOCK_AUTH&&!["menu","account","wiki","world"].includes(APPVIEW)){
     APPVIEW="account";
     AUTH_MSG={text:"Sign in to create and manage your characters and campaigns."};
   }
@@ -27,6 +28,7 @@ function renderInner(){
   // renders after the user has left the page.
   if(APPVIEW!=="board")boardUnsubscribe();
   if(APPVIEW==="menu"){renderMenuView();return;}
+  if(APPVIEW==="world"){renderWorldView();return;}
   if(APPVIEW==="library"){renderLibraryView();return;}
   if(APPVIEW==="account"){renderAccountView();return;}
   if(APPVIEW==="campaigns"){renderCampaignsView();return;}
