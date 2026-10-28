@@ -72,5 +72,23 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   ctx.importFile={size:payload.length,text:async()=>payload};await run('APP.importCharacterFile({files:[importFile]})');
   assert.equal(run('S.concept.name'),'Portable');assert.notEqual(run('S._libId'),'old-id');assert.equal(run('S.inventory[0].name'),'Rope');assert.equal(run('APPVIEW'),'character');
  });
+ await test('portrait upload survives an immediate cloud reopen and appears on Home',async()=>{
+  const originalCreate=ctx.document.createElement;
+  ctx.createImageBitmap=async()=>({width:512,height:512,close(){}});
+  ctx.document.createElement=()=>({getContext:()=>({fillRect(){},drawImage(){}}),toDataURL:()=> 'data:image/jpeg;base64,AAAA'});
+  run('MOCK_AUTH=null;AUTH_USER={id:"portrait-user"};APPVIEW="character";VIEW_ONLY=false;S=freshState();S.concept.name="Portrait Hero";S._libId="11111111-1111-4111-8111-111111111111";var portraitRow={id:S._libId,name:S.concept.name,owner_id:AUTH_USER.id,state:JSON.parse(JSON.stringify(S))};cloudUpsertCharacter=async entry=>{await new Promise(r=>setTimeout(r,10));portraitRow={...portraitRow,...entry};return {id:portraitRow.id};};sb.from=()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:portraitRow})})})});');
+  const upload=run('APP.setPortrait({files:[{type:"image/png",size:1000}]})');
+  await upload;
+  assert.equal(run('portraitRow.state.concept.portrait'),'data:image/jpeg;base64,AAAA');
+  run('S.concept.portrait="data:image/jpeg;base64,BBBB";saveAutosave();');
+  const reopened=await run('openCharUnified(S._libId)');
+  assert.equal(reopened.state.concept.portrait,'data:image/jpeg;base64,BBBB');
+  run('S=JSON.parse(JSON.stringify(portraitRow.state));normalizeState();cloudFetchCharacters=async()=>[portraitRow];APPVIEW="menu";');
+  await run('loadHomeCharacters()');
+  assert.match(run('homeCharactersHTML()'),/data:image\/jpeg;base64,BBBB/);
+  await run('APP.clearPortrait()');
+  assert.equal((await run('openCharUnified(S._libId)')).state.concept.portrait,'');
+  ctx.document.createElement=originalCreate;
+ });
  console.log(passed+' unified route/workflow tests passed (Supabase calls stubbed; no live account writes)');
 })().catch(e=>{console.error(e);process.exitCode=1;});
