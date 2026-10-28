@@ -234,6 +234,29 @@ body[data-sitota-view="account"] .mmenu :is(input,select,textarea):focus{
   border-color:var(--sitota-gold);
 }
 body[data-sitota-view="account"] .mmenu-authgrid{max-width:950px;grid-template-columns:minmax(0,1fr)}
+/* The library reuses the homepage's portrait-first visual language. */
+body[data-sitota-view="library"] .mmenu-charcard{gap:14px}
+body[data-sitota-view="library"] .mmenu-preview-head{align-items:center;gap:18px}
+body[data-sitota-view="library"] .mmenu-preview-portrait{
+  width:80px;height:92px;
+  border:1px solid #75624c;
+  border-radius:3px;
+  overflow:hidden;
+  flex:none;
+  font:500 30px var(--sitota-display);
+}
+body[data-sitota-view="library"] .mmenu-preview-portrait img{
+  width:100%;height:100%;border-radius:0;object-fit:cover;
+}
+body[data-sitota-view="library"] .mmenu-charcard-del{
+  color:#e2aca2;
+  border:1px solid transparent;
+  border-radius:3px;
+}
+body[data-sitota-view="library"] .mmenu-charcard-del:hover{
+  color:#ffe3db;
+  background:#67352d;
+}
 /* Campaign and rules indexes: a small collection of deliberate actions. */
 body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menutile,
 body[data-sitota-view="wiki"] .wiki-resrow{
