@@ -625,6 +625,15 @@ window.APP={
    S.xp.pool=Math.max(0,S.xp.pool-1);
    S.xp.history.unshift({type:"roll",key,label:e.label,roll:r===100?"00":r,int:S.chars.INT,total,target,success,gain,fumbleApplied,newPct:finalPct(key)});
    S.xp.history=S.xp.history.slice(0,25);render();},
+ // Core p.72: Passions improve using the same experience roll as skills.
+ xpSpendPassion(i){if(VIEW_ONLY||xpRollsAvailable()<=0||!Number.isInteger(i))return;
+   const p=S.passions[i];if(!p)return;
+   const target=passionVal(p);if(typeof target!=="number"||!Number.isFinite(target))return;
+   const r=d100(),total=r+S.chars.INT,success=total>=target,gain=success?(d(4)+1):1;
+   p.xpBonus=(Number(p.xpBonus)||0)+gain;
+   S.xp.pool=Math.max(0,S.xp.pool-1);
+   S.xp.history.unshift({type:"roll",label:p.name||"(unnamed Passion)",roll:r===100?"00":r,int:S.chars.INT,total,target,success,gain,newPct:passionVal(p)});
+   S.xp.history=S.xp.history.slice(0,25);render();},
  // On-demand Difficulty Grade reference popover (Play Mode). Deliberately
  // bypasses render() — it's transient UI state, not character state, so it's
  // built/positioned/torn down directly against the DOM rather than round-

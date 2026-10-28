@@ -1028,7 +1028,7 @@ function xpModalHtml(){
      +'</div>';
   };
   let h='<div class="pm-modal-backdrop" onclick="APP.closeXP()"><div class="pm-modal" onclick="event.stopPropagation()">';
-  h+='<div class="pm-modal-hd"><h3>Improve Skills — Experience Rolls</h3><button class="pm-btn sm" onclick="APP.closeXP()">&times; close</button></div>';
+  h+='<div class="pm-modal-hd"><h3>Improve Skills &amp; Passions — Experience Rolls</h3><button class="pm-btn sm" onclick="APP.closeXP()">&times; close</button></div>';
   h+='<div class="pm-xppool"><div class="pm-xpformula">'
    +'<span class="pm-xpfterm">'+S.xp.pool+' banked (GM-awarded)</span>'
    +'<span class="pm-xpfop">=</span>'
@@ -1044,6 +1044,7 @@ function xpModalHtml(){
   if(grp("Professional").length)h+='<div class="pm-skillgroup"><h4>Professional</h4>'+grp("Professional").map(row).join("")+'</div>';
   if(grp("Magic").length)h+='<div class="pm-skillgroup"><h4>Magic</h4>'+grp("Magic").map(row).join("")+'</div>';
   if(grp("Combat Style").length)h+='<div class="pm-skillgroup"><h4>Combat Styles</h4>'+grp("Combat Style").map(row).join("")+'</div>';
+  if(S.passions.length)h+='<div class="pm-skillgroup"><h4>Passions</h4>'+S.passions.map((p,i)=>'<div class="pm-xprow"><span class="nm">'+esc(p.name||"(unnamed)")+'</span><span class="pctval">'+passionVal(p)+'%</span><button class="pm-btn sm roll" '+(xpRollsAvailable()>0&&typeof passionVal(p)==="number"?"":"disabled")+' onclick="APP.xpSpendPassion('+i+')">spend roll</button></div>').join("")+'<p class="pm-empty">Passion fumble increases and GM-approved reductions are handled manually.</p></div>';
   h+='</div>';
   h+='<div class="pm-xplog"><h4>Results</h4>'+(S.xp.history.length?S.xp.history.map(xpLogRow).join(""):'<p class="pm-empty">No rolls yet.</p>')+'</div>';
   h+='</div></div>';

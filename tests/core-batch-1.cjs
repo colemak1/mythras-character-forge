@@ -32,6 +32,20 @@ test('Core p.72: repeated skill improvement spends rolls against updated percent
  const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
  assert.equal(run('S.xp.pool'),0);assert.equal(run('S.xp.bonus["std:Athletics"]'),2);
 });
+test('Core p.72: Passion improvement spends rolls, persists, and respects access',()=>{
+ reset();run('S.passions=[{name:"Loyalty",type:"org"},{name:"Love",type:"species"}];S.xp.pool=2;Math.random=()=>0;');
+ const start=run('passionVal(S.passions[0])');
+ assert.match(run('xpModalHtml()'),/Passions/);
+ run('APP.xpSpendPassion(0);APP.xpSpendPassion(0);');
+ assert.equal(run('S.xp.pool'),0);assert.equal(run('passionVal(S.passions[0])'),start+2);
+ assert.equal(run('S.xp.history[0].target'),start+1);
+ assert.equal(run('passionVal(S.passions[1])'),54);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
+ assert.equal(run('passionVal(S.passions[0])'),start+2);
+ run('S.xp.pool=1;VIEW_ONLY=true;APP.xpSpendPassion(0);');assert.equal(run('S.xp.pool'),1);
+ run('VIEW_ONLY=false;APP.xpSpendPassion(99);');assert.equal(run('S.xp.pool'),1);
+ run('Math.random=()=>0.99;APP.xpSpendPassion(1);');assert.equal(run('passionVal(S.passions[1])'),59);
+});
 test('Core pp.71,79,110: damage and recovery guidance',()=>{
  reset();run('S.play.fatigue="Winded";');
  assert.match(run('playWoundEffectText("Right Arm","serious")'),/1d3 turns/);

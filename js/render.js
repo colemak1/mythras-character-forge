@@ -859,12 +859,14 @@ function stepPassions(){
 }
 function passionVal(p){
   if(!charsReady())return "?";const c=S.chars;
+  let base;
   switch(p.type){
-   case "romantic":return 30+(+p.subjPOW||0)+(+p.subjCHA||0);
-   case "platonic":case "averse":return 30+c.POW+(+p.subjCHA||0);
-   case "org":case "place":return 30+c.POW+c.INT;
-   case "species":case "object":return 30+c.POW*2;
-  }return 30;
+   case "romantic":base=30+(+p.subjPOW||0)+(+p.subjCHA||0);break;
+   case "platonic":case "averse":base=30+c.POW+(+p.subjCHA||0);break;
+   case "org":case "place":base=30+c.POW+c.INT;break;
+   case "species":case "object":base=30+c.POW*2;break;
+   default:base=30;
+  }return base+(Number(p.xpBonus)||0);
 }
 
 /* ---- weapons & armour helpers ---- */
