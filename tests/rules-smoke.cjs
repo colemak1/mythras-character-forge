@@ -432,6 +432,21 @@ test('Core p.162: Shaping budget, legacy review and Combine difficulty',()=>{
  assert.equal(evalRule('sorceryInvocationGrade("test",90,1).grade'), 'hard');
  assert.equal(evalRule('sorceryInvocationGrade("test",90,2).pct'),45);
 });
+test('Draft Shaping rounding behavior at boundaries is explicit',()=>{
+ evalRule('var savedMagicSkillPct=magicSkillPct');
+ for(const [skill,allowed] of [[1,1],[10,1],[11,2],[19,2],[20,2],[21,3],[47,5]]){
+  evalRule('magicSkillPct=()=>'+skill);
+  assert.equal(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Range:'+allowed+'}},50,0)'),null);
+  assert.match(evalRule('magicCastPreflight({tradition:"sorcery",name:"Ward",shapingLevels:{Range:'+(allowed+1)+'}},50,0)'),/exceeds/);
+ }
+ evalRule('magicSkillPct=savedMagicSkillPct');
+});
+test('Legacy sorcery data survives normalization and JSON round trip',()=>{
+ evalRule('S=freshState();S.magic.known=[{tradition:"sorcery",name:"Legacy",shapingLevels:{Intensity:2,Range:1},combineExtra:2}];normalizeState();S=JSON.parse(JSON.stringify(S));normalizeState()');
+ assert.equal(evalRule('S.magic.known[0].shapingLevels.Intensity'),2);
+ assert.equal(evalRule('S.magic.known[0].combineExtra'),2);
+ assert.match(evalRule('magicCastPreflight(S.magic.known[0],30,0)'),/Intensity/);
+});
 test('Update 14: old shaping chip arrays remain supported',()=>{
  assert.equal(evalRule('sorceryCost({shapings:["Range","Duration"]}).mp'),3);
 });
