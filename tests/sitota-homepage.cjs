@@ -14,6 +14,8 @@ assert.match(publicViews,/Art: Richard Wright/);
 for(const action of ['APP.newCampaign()','APP.homeJoinCampaign()','APP.fromMenuContinue()','APP.fromMenuNew()'])assert(publicViews.includes(action),action);
 assert(!/data:image\/(jpeg|png);base64/u.test(home+publicViews),'no inline AI or sample images');
 assert(home.includes('sitota-home-16x9.css'),'16:9 stylesheet missing');
+assert(fs.existsSync(path.join(root,'assets/sitota-hero.avif')),'original painted hero is missing');
+assert(fs.existsSync(path.join(root,'assets/sitota-hero.webp')),'fallback painted hero is missing');
 assert(!legacy.includes('<script src='),'legacy entry must redirect before starting a second runtime');
 const redirect=legacy.match(/<script>([\s\S]*?)<\/script>/)[1];
 for(const [search,hash] of [
