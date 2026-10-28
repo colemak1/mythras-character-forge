@@ -103,6 +103,8 @@ function siteStartCharacter(event){
  return false;
 }
 function updateSiteHeader(){
+ // Semantic view marker for scoped visual design; no routing or data changes.
+ document.body.dataset.sitotaView=APPVIEW;
  SITE_HOME_ACTIVE=APPVIEW==='menu';
  if(!homeCharacterOwner()){HOME_CHARACTERS=null;HOME_CHARACTERS_OWNER=null;HOME_CHARACTERS_ERROR='';HOME_CHARACTERS_PENDING=null;}
  const publicView=APPVIEW==='menu'||APPVIEW==='world';
