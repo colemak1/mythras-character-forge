@@ -653,7 +653,7 @@ function mysticismOutcomeCost(entry,tier){
 // Core p.156 & 157: maximum individual Intensity = floor(Mysticism/20);
 // simultaneous total Intensity <= floor(Meditation/10).
 function mysticismLimits(mysticismPct,meditationPct){
-  return {individual:Math.max(0,Math.floor(Number(mysticismPct||0)/20)),
+  return {individual:Math.max(0,Math.ceil(Number(mysticismPct||0)/20)),
     combined:Math.max(0,Math.floor(Number(meditationPct||0)/10))};
 }
 // Core p.136: Calling upon a binding costs an Action and uses Binding.
