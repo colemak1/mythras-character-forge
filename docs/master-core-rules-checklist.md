@@ -118,9 +118,9 @@ Each time a PR merges, update this document: check off completed issue IDs, reco
 
 MCR-05, 06, 09, minimum 10, minimum 17, 27, and 28 were merged in PR #30. Production verification and checklist reconciliation remain to be confirmed. The skill-allocation soft lock was also addressed in that branch.
 
-## Passion advancement — review pending
+## Passion advancement — merged, production verification pending
 
-MCR-23: Core p.72 confirms Passions can increase by the same Experience Roll procedure as skills. Proposed support stores each gain on its Passion, preserving older records and character exports. A separate manual change supports GM-directed changes during play (p.82) without spending rolls. The GM determines event-driven adjustments; automatic fumble tracking and Experience Roll-based reductions remain unimplemented. Production verification is pending.
+MCR-23: PR #43 (merge ac1b6c707ddaeac34eb1a9c74d4b7a05396405e3) adds Passion Experience Roll improvements using Core p.72, preserving older records and character exports. A separate manual change supports GM-directed changes during play (p.82) without spending rolls. The GM determines event-driven adjustments; automatic fumble tracking and Experience Roll-based reductions remain unimplemented. Production verification is pending.
 
 ## Sorcery repair — merged, rounding verification outstanding
 
@@ -137,3 +137,7 @@ MCR-11: bound-spirit command check merged in PR #42 (merge e9e66b5c02adbded2cdaf
 ## Mysticism preparation — review pending
 
 MCR-13: Core p.156 was visually checked. Proposed tracker records one preparation turn per Intensity, rolls on the last turn and rechecks recorded individual and combined limits. Cancellation, edited entries and reloads are supported. Active markers remain manual and a failed roll does not set one. GM must manage interruption, action points and Talent category/cost. Limits use existing calculations whose rounding remains under review. Category-specific cost validation and production verification remain unfinished.
+
+## Starting magic guidance — merged, production verification pending
+
+MCR-15: Core pp.118,155,163,179 were visually checked. PR #44 (merge f03f21f4367172cc0559f0e8e590092f89ba31dd) added creator guidance showing the general skill-based allowance and tradition-specific starting restrictions; excess named records for mysticism, sorcery and theism prompt GM review. This does not track whether abilities were learned later and does not enforce prerequisites or delete records. Animism spirit-record counts cannot reliably identify starting abilities. Creation-mode validation and GM override remain unfinished.
