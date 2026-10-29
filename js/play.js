@@ -719,6 +719,8 @@ function magicPanel(){
      +'<button class="pm-btn sm" onclick="APP.devotionalReset()">refill</button></span>';
   }
   h+='</div>'+prep;
+  const poolLimit=devotionalRankLimit();
+  if(Number.isInteger(poolLimit)&&devotionalMax()>poolLimit)h+='<p class="warn" role="alert">The recorded Devotional Pool exceeds the confirmed rank limit ('+poolLimit+'). Review it in the builder before casting; saved points are preserved.</p>';
   MAGIC_TRADITIONS.forEach(t=>{
     const items=all.map((m,idx)=>({m,idx})).filter(x=>x.m.tradition===t.key);
     if(!items.length)return;

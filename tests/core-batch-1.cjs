@@ -66,6 +66,19 @@ test('Core p.118: starting magic guidance uses the correct skill and preserves r
  assert.match(run('knownMagicEditor(MAGIC_TRADITIONS.find(t=>t.key==="sorcery"))'),/Invocation: 2 at 40%/);
  run('magicSkillPct=oldMagicSkillPct;');
 });
+test('Core p.180: explicitly confirmed pool rank limits are non-destructive',()=>{
+ reset();run('S.magic.devotional=0;APP.devotionalRank("initiate");');
+ assert.equal(run('devotionalRankLimit()'),3);
+ run('APP.devotional("4")');assert.equal(run('devotionalMax()'),0);assert.match(run('DEVOTIONAL_MSG'),/rank limit/);
+ run('APP.devotional("3");S.magic.devotional=12;APP.devotionalRank("initiate");');
+ assert.equal(run('devotionalMax()'),12);assert.match(run('knownMagicEditor(MAGIC_TRADITIONS.find(t=>t.key==="theism"))'),/points are preserved/);
+ run('APP.devotional("9");');assert.equal(run('devotionalMax()'),9);
+ run('S.chars.POW=13;');assert.equal(run('devotionalRankLimit()'),3.25);
+ assert.match(run('knownMagicEditor(MAGIC_TRADITIONS.find(t=>t.key==="theism"))'),/confirm rounding/);
+ run('S.chars.POW=12;APP.devotionalRank("lay");');assert.equal(run('devotionalRankLimit()'),0);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
+ assert.equal(run('S.magic.devotionalRank'),"lay");assert.equal(run('devotionalMax()'),9);
+});
 test('Core pp.71,79,110: damage and recovery guidance',()=>{
  reset();run('S.play.fatigue="Winded";');
  assert.match(run('playWoundEffectText("Right Arm","serious")'),/1d3 turns/);
