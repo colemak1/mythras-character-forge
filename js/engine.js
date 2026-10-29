@@ -260,7 +260,7 @@ function freshState(){return {
  // start at null, meaning "at max" — they're only written once the player
  // actually spends/takes damage, so a freshly-finished character always
  // shows full without needing an extra initialization step.
- play:{hp:{},luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null},
+ play:{hp:{},luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null},
  // Experience Rolls (core rulebook pp.71-73, cross-checked against the
  // Mythras Core pp.71–72, checked against the uploaded rulebook — see audit for
  // citations). pool = banked, unspent Experience Rolls. fumbled = skill
@@ -355,6 +355,8 @@ function normalizeState(){
       S.play.sorceryCasting.completed>=S.play.sorceryCasting.total))S.play.sorceryCasting=null;
   const mc=S.play.mysticismCasting;
   if(mc && (!Number.isInteger(mc.index)||mc.index<0||!Number.isInteger(mc.completed)||!Number.isInteger(mc.total)||mc.completed<1||mc.total<2||mc.completed>=mc.total||typeof mc.signature!=="string"))S.play.mysticismCasting=null;
+  const tc=S.play.theismCasting;
+  if(tc && (!Number.isInteger(tc.index)||tc.index<0||!Number.isInteger(tc.completed)||!Number.isInteger(tc.total)||tc.completed<1||tc.total<2||tc.completed>=tc.total||typeof tc.signature!=="string"))S.play.theismCasting=null;
   if(typeof S.play.apUsed!=="number")S.play.apUsed=0;
   if(!S.play.tab)S.play.tab="actions";
   if(!FATIGUE_MAP[S.play.fatigue])S.play.fatigue="Fresh";
@@ -637,8 +639,14 @@ function sorceryOutcomeCost(entry,tier){
 }
 // Core p.181: Exhort spends 0 on Critical or Failure, full on Success,
 // and precisely 1 Devotional Pool MP on Fumble (regardless of miracle rank).
+function theismDetails(entry){
+  const level=Number(entry.miracleLevel),instances=Number(entry.miracleInstances);
+  if(!Number.isInteger(level)||level<1||level>3||!Number.isInteger(instances)||instances<1||instances>100)return null;
+  return {cost:level*instances,turns:level+instances-1};
+}
+function theismCostLabel(entry){const d=theismDetails(entry);return d?d.cost+" pool / "+d.turns+" turns":"level needs review";}
 function theismOutcomeCost(entry,tier){
-  const full=Math.max(0,Number(entry.cost)||0);
+  const details=theismDetails(entry),full=details?details.cost:Math.max(0,Number(entry.cost)||0);
   if(tier==="Critical"||tier==="Failure")return 0;
   if(tier==="Fumble")return 1;
   return full;
@@ -682,6 +690,7 @@ function spiritCommandPreflight(m,mp,bindingPct){
 }
 function magicEntryCost(entry){
   if(entry.tradition==="sorcery")return sorceryCost(entry).mp;
+  if(entry.tradition==="theism")return theismDetails(entry)?.cost||0;
   return Math.max(0,parseInt(entry.cost,10)||0);
 }
 // Devotional Pool: Magic Points a theist has offered to their deity. It is a
@@ -708,11 +717,12 @@ function magicCastPreflight(entry, availableMP, availableDevotion){
   const mp=Math.max(0,Number(availableMP)||0);
   const dp=Math.max(0,Number(availableDevotion)||0);
   const t=MAGIC_TRAD_MAP[entry.tradition];
+  if(entry.tradition==="theism"&&!theismDetails(entry))return "Confirm this miracle's cult level and number of instances before casting (Core p.181).";
   if(entry.tradition==="folk" && mp<1)return "Not enough Magic Points to attempt Folk Magic (minimum 1 MP).";
   const cost=magicEntryCost(entry);
   if(t.pool==="mp" && entry.tradition!=="folk" && (!Number.isInteger(cost)||cost<1))
     return "Set a valid positive Magic Point cost from the Core rulebook.";
-  if(t.pool==="devotional" && (!Number.isInteger(Number(entry.cost))||Number(entry.cost)<1))
+  if(t.pool==="devotional" && (!Number.isInteger(cost)||cost<1))
     return "Set a valid positive Devotional Pool cost from the Core rulebook.";
   if(t.pool==="mp" && mp<cost)return "Not enough Magic Points: need "+cost+", have "+mp+".";
   if(t.pool==="devotional" && dp<cost)return "Not enough Devotional Pool points: need "+cost+", have "+dp+".";

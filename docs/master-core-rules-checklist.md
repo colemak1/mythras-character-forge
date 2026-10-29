@@ -141,3 +141,7 @@ MCR-13: Core p.156 was visually checked. Proposed tracker records one preparatio
 ## Starting magic guidance — merged, production verification pending
 
 MCR-15: Core pp.118,155,163,179 were visually checked. PR #44 (merge f03f21f4367172cc0559f0e8e590092f89ba31dd) added creator guidance showing the general skill-based allowance and tradition-specific starting restrictions; excess named records for mysticism, sorcery and theism prompt GM review. This does not track whether abilities were learned later and does not enforce prerequisites or delete records. Animism spirit-record counts cannot reliably identify starting abilities. Creation-mode validation and GM override remain unfinished.
+
+## Theism exhortation — review pending
+
+MCR-14: Core p.181 was visually checked. Proposed flow records the miracle's cult level and number of instances, calculates full cost and turns, and rolls on the last turn. Legacy costs are preserved and require review before casting. GM manages interruptions and confirms access. Rank-based pool caps, multiple-cult tracking, signed-in persistence, and production verification remain unfinished. Keep the item unchecked pending review and live testing.

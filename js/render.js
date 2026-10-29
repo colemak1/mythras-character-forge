@@ -753,8 +753,16 @@ function knownMagicEditor(t){
     let r='<div class="magicrow">'
      +'<input type="text" class="mname" value="'+esc(m.name)+'" placeholder="'+esc(t.key==="animism"?"spirit name":t.key==="theism"?"miracle name":t.key==="mysticism"?"talent name":"spell name")+'" onchange="APP.magicField('+i+',\'name\',this.value)">';
     (t.fields||[]).forEach(([f,label])=>{
+      if(t.key==="theism"&&f==="cost")return;
       r+='<label class="mnum">'+esc(label)+'<input type="number" min="0" value="'+(m[f]||0)+'" onchange="APP.magicField('+i+',\''+f+'\',this.value)"></label>';
     });
+    if(t.key==="theism"){
+      const det=theismDetails(m);
+      r+='<label class="mnum">Miracle level<select onchange="APP.miracleLevel('+i+',this.value)"><option value="" '+(!m.miracleLevel?'selected':'')+'>Confirm with GM</option>'
+       +[[1,"Initiate"],[2,"Acolyte"],[3,"Priest"]].map(([v,label])=>'<option value="'+v+'" '+(Number(m.miracleLevel)===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'
+       +'<label class="mnum">Instances<input type="number" min="1" max="100" value="'+(m.miracleInstances||1)+'" onchange="APP.miracleInstances('+i+',this.value)"></label>'
+       +(det?'<span class="mcost">'+det.cost+' pool points · '+det.turns+' turns</span>':'<span class="warn">Confirm the miracle level with your GM before casting. Previously recorded cost: '+esc(String(m.cost||0))+'; preserved for review.</span>');
+    }
     if(t.shaping){
       const c=sorceryCost(m),levels=sorceryLevels(m);
       r+='<div class="mshaping"><span class="note">Core pp.162, 165: Allocate up to '+(magicSkillPct("Shaping")==null?0:Math.ceil(Math.max(0,magicSkillPct("Shaping"))/10))+' Shaping points. The app rounds fractions up; the book confirms 47% gives 5 points, but other rounding boundaries need GM confirmation. Each altered component adds 1 MP and 1 turn; each extra combined spell adds 1 MP and makes Invocation one grade harder. Combined spells must be different and share targets; use the lowest Invocation skill when sources differ.</span>'
