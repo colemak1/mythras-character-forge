@@ -106,6 +106,19 @@ test('Core p.58: legacy armour migrates and limbs can differ without changing to
  ctx.document.querySelector=()=>({value:"4"});run('APP.playApplyDamage("Right Arm");APP.playApplyDamage("Left Arm");');
  assert.equal(run('S.play.hp["Right Arm"]'),4);assert.equal(run('S.play.hp["Left Arm"]'),0);ctx.document.querySelector=()=>null;
 });
+test('Core p.80: natural recovery uses current severity and requires Major treatment',()=>{
+ reset();run('S.play.hp.Head=0;');assert.equal(run('naturalRecoveryInfo("Head").interval'),"week");
+ run('APP.playNaturalRecovery("Head",0,false)');assert.equal(run('S.play.hp.Head'),2);assert.equal(run('naturalRecoveryInfo("Head").interval'),"day");
+ run('S.play.hp.Head=-playMaxHP("Head");');const before=run('S.play.hp.Head');
+ assert.equal(run('naturalRecoveryInfo("Head").interval'),"month");run('APP.playNaturalRecovery("Head",0,false)');assert.equal(run('S.play.hp.Head'),before);
+ run('APP.playNaturalRecovery("Head",1,true)');assert.equal(run('S.play.hp.Head'),before+1);
+ run('VIEW_ONLY=true;APP.playNaturalRecovery("Head",0,true)');assert.equal(run('S.play.hp.Head'),before+1);
+});
+test('Core p.71: fatigue guidance distinguishes recovery causes',()=>{
+ reset();run('S.play.fatigue="Tired";APP.playFatigueCause("blood");');assert.match(run('fatigueRecoveryText(S.play.fatigueCause)'),/day after bleeding stops/);
+ run('APP.playFatigueCause("asphyxiation")');assert.match(run('fatigueRecoveryText(S.play.fatigueCause)'),/minute after it ends/);
+ run('APP.playFatigueCause("exertion")');assert.match(run('fatigueRecoveryText(S.play.fatigueCause)'),/complete rest/);
+});
 test('Core pp.71,79,110: damage and recovery guidance',()=>{
  reset();run('S.play.fatigue="Winded";');
  assert.match(run('playWoundEffectText("Right Arm","serious")'),/1d3 turns/);

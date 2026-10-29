@@ -156,7 +156,7 @@ function playWoundEffectText(loc,cls){
     +(isLimb
       ? "Limb is severed/shattered/ripped off — you drop prone; Endurance test vs the attack roll or you black out from the agony; untreated within 5× Healing Rate minutes, you die of blood loss."
       : "Endurance test vs the attack roll or it's instant, gruesome death; even if you pass, untreated within 2× Healing Rate rounds you still die of blood loss.")
-    +" Needs surgery or major magic to ever heal properly.";
+    +" Natural healing requires successful treatment with the Healing skill; consult the GM for lasting injuries (Core p.80).";
 }
 // Core p.110: the displayed wound category follows remaining location HP.
 // These checks are *not* resolved by HP arithmetic; record the opposed
@@ -190,13 +190,21 @@ function playMaxAP(state){return charVitals(state).maxAP;}
 // a second, independent copy of the level names that could drift from it.
 const FATIGUE_LEVELS=FATIGUE_TABLE.map(f=>f.name);
 // Recovery Period / Healing Rate, rendered as human-readable rest time.
-function fatigueRecoveryText(){
+function fatigueRecoveryText(cause){
   const r=fatigueRow();const mins=FATIGUE_RECOVERY_MINUTES[r.name];
   if(!mins)return r.name==="Dead"?"Never.":"No rest needed.";
+  if(cause==="blood")return "Blood loss: one level per day, starting the day after bleeding stops (Core p.71).";
+  if(cause==="asphyxiation")return "Asphyxiation: normally one level per minute after it ends; the GM may limit full recovery (Core p.71).";
   const hr=charsReady()?Math.max(1,healRate(S.chars.CON)):1;
   const t=mins/hr;
   const txt=t<60?(Math.round(t)+" minutes"):((Math.round(t/6)/10)+" hours");
+  if(cause==="exertion")return "Physical exertion: "+txt+" of complete rest to shed this level ("+r.recovery+" ÷ Healing Rate "+hr+").";
   return "Physical exertion only: "+txt+" of complete rest to shed this level ("+r.recovery+" ÷ Healing Rate "+hr+"). Blood loss: one level per day, starting the day after bleeding stops. Asphyxiation: normally one level per minute after it ends; the GM may limit full recovery (Core pp.71,79).";
+}
+function naturalRecoveryInfo(loc){
+  const max=playMaxHP(loc),cur=playCurHP(loc),cls=playHPState(loc).cls;
+  if(!max||cur>=max||!["minor","serious","major"].includes(cls))return null;
+  return {cls,interval:cls==="minor"?"day":cls==="serious"?"week":"month",rate:charsReady()?healRate(S.chars.CON):0};
 }
 function gradedPassivePct(key){const g=gradedPct(key,finalPct(key));return g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%";}
 function hitD20For(loc){const e=HIT_D20.find(x=>x[1]===loc);return e?e[0].replace("-","–"):"—";}
@@ -338,7 +346,7 @@ function pmLocDetail(){
   const cur=playCurHP(loc),max=playMaxHP(loc),st=playHPState(loc);
   const armLoc=loc,ap=armorApAt(armLoc);
   const idv="playdmg-"+loc.replace(/\s+/g,"_");
-  const note=PM_DMG_NOTE&&PM_DMG_NOTE.loc===loc?PM_DMG_NOTE:null;
+  const note=PM_DMG_NOTE&&PM_DMG_NOTE.loc===loc?PM_DMG_NOTE:null, recovery=naturalRecoveryInfo(loc);
   return '<div class="pm-locdetail">'
    +'<div class="dt"><b>'+esc(loc)+'</b><span class="d20">d20: '+hitD20For(loc)+'</span></div>'
    +'<div class="arm">'+esc(armorNameAt(armLoc))+' &mdash; AP '+ap+'</div>'
@@ -360,6 +368,7 @@ function pmLocDetail(){
    +'<button class="pm-sbtn dmg sm" onclick="APP.playQuickDamage(\''+loc+'\',3)">&minus;3</button>'
    +'<button class="pm-sbtn sm" onclick="APP.playHeal(\''+loc+'\')">+heal</button>'
    +'<button class="pm-sbtn sm" onclick="APP.playSetHP(\''+loc+'\','+max+')">full</button>'
+   +(recovery?'<div class="pm-notes"><p>Natural recovery: after one '+recovery.interval+', recover up to '+recovery.rate+' HP (Core p.80). Recheck severity for the next interval. Strenuous activity can reduce the rate; enter the GM-confirmed reduction. Pulp/Paragon healing modifiers are GM-managed.</p><label>Rate reduction <input type="number" id="naturalReduction" min="0" max="3" value="0" style="width:55px"></label> '+(recovery.cls==="major"?'<label><input type="checkbox" id="naturalTreated"> GM confirms successful treatment</label> ':'')+'<button class="pm-btn sm" onclick="APP.playNaturalRecovery(\''+loc+'\',document.getElementById(\'naturalReduction\').value,document.getElementById(\'naturalTreated\')?.checked||false)">Apply one '+recovery.interval+'</button></div>':'')
    +'<p class="pm-notes">Bleed Special Effect: lose Fatigue levels, not HP (Core p.96). Use the Fatigue tracker.</p>'+'</div></div></div>';
 }
 // Real STANDING readout for the dateline's right-hand slot, replacing D's
@@ -504,7 +513,7 @@ function pmFatiguePanel(){
     if(r.init)bits.push('<span>Initiative <b>'+r.init+'</b></span>');
     if(r.ap)bits.push('<span>Action Points <b>'+r.ap+'</b> (now '+v.maxAP+'/'+v.baseAP+')</span>');
     if(r.act===false)bits.push('<span class="fx-bad"><b>No activities possible</b></span>');
-    h+='<div class="pm-fatfx">'+bits.join("")+'<span class="pm-fatrec">'+esc(fatigueRecoveryText())+'</span></div>';
+    h+='<div class="pm-fatfx">'+bits.join("")+'<label>Recovery cause <select onchange="APP.playFatigueCause(this.value)"><option value="" '+(!S.play.fatigueCause?'selected':'')+'>All guidance</option><option value="exertion" '+(S.play.fatigueCause==='exertion'?'selected':'')+'>Physical exertion</option><option value="blood" '+(S.play.fatigueCause==='blood'?'selected':'')+'>Blood loss</option><option value="asphyxiation" '+(S.play.fatigueCause==='asphyxiation'?'selected':'')+'>Asphyxiation</option></select></label><span class="pm-fatrec">'+esc(fatigueRecoveryText(S.play.fatigueCause))+'</span></div>';
   }
   return h;
 }
