@@ -29,6 +29,13 @@ async function test(name,fn){await fn();console.log('PASS '+name);passed++;}
   assert(run('campaignsHTML()').includes('No campaigns yet'));
   run('cloudFetchCampaigns=originalFetch;AUTH_USER=null;');
  });
+ await test('campaign loads do not cross account changes',async()=>{
+  run('AUTH_USER={id:"first"};var releaseCampaign;cloudFetchCampaigns=()=>new Promise(r=>releaseCampaign=r);');
+  const pending=run('loadCampaignsUnified()');
+  run('AUTH_USER={id:"second"};releaseCampaign([{id:"first-private"}]);');await pending;
+  assert.equal(run('CAMP_CACHE'),null);
+  run('cloudFetchCampaigns=originalFetch;AUTH_USER=null;');
+ });
  await test('public homepage omits guest entry and added utility links',()=>{
   run('AUTH_USER=null;MOCK_AUTH=null;');
   assert(!run('menuHTML()').includes('APP.mockSignIn()'));
@@ -117,7 +124,7 @@ async function test(name,fn){await fn();console.log('PASS '+name);passed++;}
  });
  await test('combat roll result offers direct effect and injury controls',()=>{
   const row=run('playRollLogRow({roll:21,label:"Sword",pct:60,tier:"Success",combat:true,oppTier:"Failure"},0)');
-  assert.match(row,/APP\.playJumpToEffects\(\)/);
+  assert.match(row,/APP\.playJumpToEffects\(0\)/);
   assert.match(row,/APP\.playJumpToInjury\(\)/);
   assert.match(fs.readFileSync(path.join(root,'js','play.js'),'utf8'),/id="pm-actions"/);
  });
