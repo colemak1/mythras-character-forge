@@ -297,7 +297,10 @@ function normalizeState(){
   if(S.cultStyleSmallAlloc===undefined)S.cultStyleSmallAlloc=true; // existing guests keep requested Sit’ota style allocation behavior
   S.alloc=S.alloc||{};S.alloc.culture=S.alloc.culture||{};S.alloc.career=S.alloc.career||{};
   S.gearWeapons=S.gearWeapons||[];
-  S.armor=S.armor||{};ARMOR_LOCATIONS.forEach(l=>{if(!S.armor[l])S.armor[l]="None";});
+  S.armor=S.armor||{};
+  for(const [loc,old] of [["Right Arm","Each Arm"],["Left Arm","Each Arm"],["Right Leg","Each Leg"],["Left Leg","Each Leg"]])
+    if(S.armor[loc]==null)S.armor[loc]=S.armor[old]||"None";
+  ARMOR_LOCATIONS.forEach(l=>{if(!S.armor[l])S.armor[l]="None";});
   S.alloc.bonus=S.alloc.bonus||{};S.alloc.quick=S.alloc.quick||{};
   S.creationMode=S.creationMode||"full";S.archetype=S.archetype||"ordinary";
   if(S.species===undefined)S.species=null;

@@ -92,6 +92,20 @@ test('Core pp.34,70–71: ageing review tracks human bands without changing char
  }
  run('S.species="other";S.age.category="senior";');assert.equal(run('humanAgeingInfo()'),null);assert.match(run('ageingReviewBlock()'),/may not apply/);
 });
+test('Core p.58: legacy armour migrates and limbs can differ without changing totals',()=>{
+ reset();run('S.armor={Head:"None",Chest:"None",Abdomen:"None","Each Arm":"Half Plate (hoplite plate)","Each Leg":"None"};normalizeState();');
+ const right=run('S.armor["Right Arm"]');assert.equal(run('S.armor["Left Arm"]'),right);
+ const enc=run('armorEncTotal()'),cost=run('armorCostTotal()');run('normalizeState()');
+ assert.equal(enc,4);assert.equal(cost,1000);assert.equal(run('armourPenaltyToInit()'),2);
+ assert.equal(run('armorEncTotal()'),enc);assert.equal(run('armorCostTotal()'),cost);
+ run('APP.setArmor("Right Arm","None");');assert.equal(run('armorApAt("Right Arm")'),0);assert.equal(run('S.armor["Left Arm"]'),right);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
+ assert.equal(run('armorApAt("Right Arm")'),0);assert.equal(run('S.armor["Left Arm"]'),right);
+ run('APP.setArmor("Each Arm","None")');assert.equal(run('armorApAt("Left Arm")'),0);
+ run('APP.setArmor("Right Arm","Half Plate (hoplite plate)");S.play.hp["Right Arm"]=4;S.play.hp["Left Arm"]=4;');
+ ctx.document.querySelector=()=>({value:"4"});run('APP.playApplyDamage("Right Arm");APP.playApplyDamage("Left Arm");');
+ assert.equal(run('S.play.hp["Right Arm"]'),4);assert.equal(run('S.play.hp["Left Arm"]'),0);ctx.document.querySelector=()=>null;
+});
 test('Core pp.71,79,110: damage and recovery guidance',()=>{
  reset();run('S.play.fatigue="Winded";');
  assert.match(run('playWoundEffectText("Right Arm","serious")'),/1d3 turns/);

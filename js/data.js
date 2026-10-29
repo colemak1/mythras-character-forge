@@ -493,7 +493,7 @@ const ARMOR_MATERIALS=[
  {name:"Articulated Plate (gothic plate)",ap:8,encPerLoc:7,suit:"49/16800/10"}
 ];
 const ARMOR_MAP=Object.fromEntries(ARMOR_MATERIALS.map(a=>[a.name,a]));
-const ARMOR_LOCATIONS=["Head","Chest","Abdomen","Each Arm","Each Leg"];
+const ARMOR_LOCATIONS=["Head","Chest","Abdomen","Right Arm","Left Arm","Right Leg","Left Leg"];
 // Material Types Table (p.58) — ENC multiplier layered on top of the base
 // Construction ENC above, if you want to track a specific material. Not
 // wired into the AP/ENC picker (would double the picker surface for a
