@@ -260,7 +260,7 @@ function freshState(){return {
  // start at null, meaning "at max" — they're only written once the player
  // actually spends/takes damage, so a freshly-finished character always
  // shows full without needing an extra initialization step.
- play:{hp:{},luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null},
+ play:{hp:{},luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null},
  // Experience Rolls (core rulebook pp.71-73, cross-checked against the
  // Mythras Core pp.71–72, checked against the uploaded rulebook — see audit for
  // citations). pool = banked, unspent Experience Rolls. fumbled = skill
@@ -353,6 +353,8 @@ function normalizeState(){
       S.play.sorceryCasting.completed<1 ||
       S.play.sorceryCasting.total<2 ||
       S.play.sorceryCasting.completed>=S.play.sorceryCasting.total))S.play.sorceryCasting=null;
+  const mc=S.play.mysticismCasting;
+  if(mc && (!Number.isInteger(mc.index)||mc.index<0||!Number.isInteger(mc.completed)||!Number.isInteger(mc.total)||mc.completed<1||mc.total<2||mc.completed>=mc.total||typeof mc.signature!=="string"))S.play.mysticismCasting=null;
   if(typeof S.play.apUsed!=="number")S.play.apUsed=0;
   if(!S.play.tab)S.play.tab="actions";
   if(!FATIGUE_MAP[S.play.fatigue])S.play.fatigue="Fresh";
@@ -650,8 +652,9 @@ function mysticismOutcomeCost(entry,tier){
   if(tier==="Critical")return Math.ceil(full/2);
   return full;
 }
-// Core p.156 & 157: maximum individual Intensity = floor(Mysticism/20);
-// simultaneous total Intensity <= floor(Meditation/10).
+// Core pp.155–157: individual Intensity uses Mysticism, concurrent Intensity
+// uses Meditation. The printed 34% example gives 2; other individual rounding
+// boundaries remain unverified and should be confirmed with the GM.
 function mysticismLimits(mysticismPct,meditationPct){
   return {individual:Math.max(0,Math.ceil(Number(mysticismPct||0)/20)),
     combined:Math.max(0,Math.floor(Number(meditationPct||0)/10))};

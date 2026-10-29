@@ -683,7 +683,7 @@ const MAGIC_TRADITIONS=[
   contentNote:"Spirit types and their abilities are Reserved Material in the core rulebook — record the spirits your character has bound."},
  {key:"mysticism",label:"Mysticism (Talents)",castSkill:"Mysticism",pool:"mp",hasContent:false,
   summary:"Mind over the matter of one's own body. A mystic develops Talents that push a personal capability past normal limits, sustained by Magic Points; Meditation supports the discipline. Simple in structure, but expensive to run.",
-  costRule:"Core pp.156–157: Critical spends half the talent cost (rounded up); Success and Fumble spend full cost; Failure spends 1 MP. Talent preparation takes one turn per Intensity; individual Intensity cannot exceed floor(Mysticism/20) and combined active Intensity cannot exceed floor(Meditation/10).",
+  costRule:"Core pp.156–157: Critical spends half the talent cost (rounded up); Success and Fumble spend full cost; Failure spends 1 MP. Talent preparation takes one turn per Intensity. Individual and combined Intensity limits use Mysticism and Meditation; the book's 34% example permits Intensity 2, while other individual rounding boundaries need GM confirmation.",
   fields:[["cost","Magic Point cost",1],["intensity","Intensity",1]],
   contentNote:"Talent lists are Reserved Material in the core rulebook — add the Talents your character has developed."}
 ];

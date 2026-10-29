@@ -134,6 +134,10 @@ MCR-04 and MCR-07 changes were merged in PR #41 (`add8c44c5042d522b2b96bc46957e9
 
 MCR-11: bound-spirit command check merged in PR #42 (merge e9e66b5c02adbded2cdafd78e9283a8ae00aa51a) verifies POW against three times the Binding critical range, with missing POW requiring review. Visually checked Core pp.38, 131 and 136. MCR-12: guidance based on Core p.180 was merged; rank-specific caps and multiple pools are not yet modeled or enforced. Existing pools are unchanged. MCR-15 remains unfinished. Keep items unchecked pending production testing.
 
-## Starting magic guidance — review pending
+## Mysticism preparation — review pending
 
-MCR-15: Core pp.118,155,163,179 were visually checked. Proposed creator guidance shows the general skill-based allowance and tradition-specific starting restrictions; excess named records for mysticism, sorcery and theism prompt GM review. This does not track whether abilities were learned later and does not enforce prerequisites or delete records. Animism spirit-record counts cannot reliably identify starting abilities. Creation-mode validation and GM override remain unfinished.
+MCR-13: Core p.156 was visually checked. Proposed tracker records one preparation turn per Intensity, rolls on the last turn and rechecks recorded individual and combined limits. Cancellation, edited entries and reloads are supported. Active markers remain manual and a failed roll does not set one. GM must manage interruption, action points and Talent category/cost. Limits use existing calculations whose rounding remains under review. Category-specific cost validation and production verification remain unfinished.
+
+## Starting magic guidance — merged, production verification pending
+
+MCR-15: Core pp.118,155,163,179 were visually checked. PR #44 (merge f03f21f4367172cc0559f0e8e590092f89ba31dd) added creator guidance showing the general skill-based allowance and tradition-specific starting restrictions; excess named records for mysticism, sorcery and theism prompt GM review. This does not track whether abilities were learned later and does not enforce prerequisites or delete records. Animism spirit-record counts cannot reliably identify starting abilities. Creation-mode validation and GM override remain unfinished.
