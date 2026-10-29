@@ -666,11 +666,15 @@ function spiritCommandOutcome(tier){
   if(tier==="Fumble")return {cost:1,broken:true,obeyed:false};
   return null;
 }
-function spiritCommandPreflight(m,mp){
+function spiritCommandPreflight(m,mp,bindingPct){
   if(!m || m.tradition!=="animism")return "Select an Animism spirit.";
   if(!String(m.name||"").trim())return "Name the spirit before attempting a command.";
   if(m.spiritStatus!=="bound")return "This spirit is not marked as bound. Confirm its binding with your GM first.";
   if(!Number.isFinite(mp)||mp<1)return "You need at least 1 Magic Point available to attempt a bound-spirit command.";
+  if(!Number.isFinite(bindingPct)||bindingPct<=0)return "Add the Binding skill before commanding a spirit.";
+  if(!Number.isSafeInteger(Number(m.pow))||Number(m.pow)<1)return "Enter the spirit's POW before attempting a command; consult your GM if unknown.";
+  const limit=3*Math.ceil(bindingPct/10);
+  if(Number(m.pow)>limit)return "The spirit's POW exceeds your Binding limit ("+limit+"); the command fails (Core pp.131, 136).";
   return null;
 }
 function magicEntryCost(entry){
