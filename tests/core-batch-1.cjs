@@ -58,6 +58,14 @@ test('Core p.82: GM-directed Passion changes persist without spending experience
  const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
  assert.equal(run('passionVal(S.passions[0])'),start+5);assert.equal(run('passionVal(S.passions[1])'),54);
 });
+test('Core p.118: starting magic guidance uses the correct skill and preserves records',()=>{
+ reset();run('var oldMagicSkillPct=magicSkillPct;magicSkillPct=n=>n==="Devotion"?41:n==="Exhort"?80:40;S.magic.known=[{tradition:"theism",name:"A"},{tradition:"theism",name:"B"},{tradition:"theism",name:"C"},{tradition:"theism",name:"D"}];');
+ const html=run('knownMagicEditor(MAGIC_TRADITIONS.find(t=>t.key==="theism"))');
+ assert.match(html,/Devotion: 3 at 41%/);assert.match(html,/4 named abilities/);assert.match(html,/cult rank/);
+ assert.equal(run('S.magic.known.length'),4);
+ assert.match(run('knownMagicEditor(MAGIC_TRADITIONS.find(t=>t.key==="sorcery"))'),/Invocation: 2 at 40%/);
+ run('magicSkillPct=oldMagicSkillPct;');
+});
 test('Core pp.71,79,110: damage and recovery guidance',()=>{
  reset();run('S.play.fatigue="Winded";');
  assert.match(run('playWoundEffectText("Right Arm","serious")'),/1d3 turns/);

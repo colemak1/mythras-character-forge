@@ -732,6 +732,12 @@ function folkMagicPicker(){
 function knownMagicEditor(t){
   const rows=S.magic.known.map((m,i)=>({m,i})).filter(x=>x.m.tradition===t.key);
   let h='<div class="reservednote">'+esc(t.contentNote)+'</div>';
+  const abilitySkill=t.key==="theism"?"Devotion":t.castSkill;
+  const skill=magicSkillPct(abilitySkill),starting=skill==null?null:Math.ceil(Math.max(0,skill)/20);
+  const named=rows.filter(({m})=>String(m.name||"").trim()).length;
+  const restriction={mysticism:'Starting mystics choose one path; talents must be available to a novice of that path (Core p.155).',sorcery:'Starting sorcerers choose one school and its source; starting spells come from that school (Core p.163).',theism:'Starting theists choose one cult; miracles must be available at their cult rank (Core p.179).',animism:'Confirm starting spirit access with your GM; recorded spirits may include encounters or spirits acquired later.'}[t.key]||'';
+  h+='<p class="note rulesrc">Core p.118: a starting magician normally knows one relevant ability per 20% (or part) of '+esc(abilitySkill)+': '+(starting===null?'confirm the skill with your GM':starting+' at '+skill+'%')+'. '+esc(restriction)+' This is starting-character guidance, not a limit on experienced or imported characters; GM decisions and later learning are not tracked here.</p>';
+  if(t.key!=="animism"&&starting!==null&&named>starting)h+='<p class="note">'+named+' named abilities are recorded, more than the general starting allowance of '+starting+'. If this is a new character, review the choices with the GM; existing abilities are preserved.</p>';
   if(t.key==="theism"){
     h+='<p class="note rulesrc">Core p.180: each cult has a separate pool. Maximum pool by cult rank: Lay Member none, Initiate ¼ POW, Acolyte ½ POW, Priest ¾ POW, High Priest full POW. Combined pools cannot exceed POW. This tracker does not yet enforce rank or multiple-cult limits; confirm your pool with the GM.</p>';
     h+='<div class="grid2">'
