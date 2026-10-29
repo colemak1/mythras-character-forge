@@ -269,7 +269,7 @@ function freshState(){return {
  // % gained per skill key from this system, folded into finalPct() so every
  // existing display (skill list, sheet, roll log) picks it up automatically.
  // Legacy usedThisRun is retained for save compatibility and no longer limits improvement.
- xp:{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[]}
+ xp:{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[],learnedProfs:[]}
 };}
 function normalizeState(){
   S.concept=S.concept||{};
@@ -374,6 +374,7 @@ function normalizeState(){
   S.xp.fumbled=S.xp.fumbled||[];S.xp.bonus=S.xp.bonus||{};
   S.xp.usedThisRun=S.xp.usedThisRun||[];S.xp.history=S.xp.history||[];
   S.xp.checked=S.xp.checked||[];
+  if(!Array.isArray(S.xp.learnedProfs))S.xp.learnedProfs=[];
   if(typeof S.xp.pool!=="number")S.xp.pool=0;
 }
 // Cult & Community is temporarily pulled out of the flow (user's own call,
@@ -502,6 +503,7 @@ function acquiredProfs(){
     if(S.hobby&&S.hobby!=="__combat_style__")add(S.hobby,S.hobbySpec,"hobby");
   }
   const ca=cultArch();if(ca)add(ca.skill,S.cultMembership.name||ca.name,"cult");
+  (S.xp?.learnedProfs||[]).forEach(p=>{if(p&&Object.hasOwn(PROF,p.name)&&typeof p.spec==="string")add(p.name,p.spec,"learned");});
   return [...out.values()];
 }
 // Combat styles: culture style + career slots (a slot may link to an existing

@@ -185,3 +185,7 @@ MCR-10: fatigue recovery guidance can be filtered by cause; the player/GM still 
 ## Contested-roll calculator — ready for review
 
 MCR-19: Core pp.50–51 visually checked. An optional calculator accepts both modified skills and rolls, applies the shared excess over 100 before resolving either roll, and reports both opposed and differential results. It leaves the combat roll log and manual tier entry unchanged; applying its result to combat remains manual. The optional rounded subtraction rule is not applied. Real-account and production verification remain outstanding.
+
+## Learning professional skills — implementation in review
+
+MCR-24: Core p.73 visually checked. The advancement screen can add a GM-approved Professional Skill after a confirmed month of study, spending 3 banked Experience Rolls and preserving creation allocations. Specialities remain distinct, duplicates are rejected, and normal skill displays and improvement use the characteristic base. Education, money and prerequisites are confirmed at the table; live signed-in persistence is not yet verified.

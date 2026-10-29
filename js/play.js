@@ -1050,6 +1050,7 @@ function renderPlayView(){
   if(S.play.tab==="effects"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
 }
 // ---- Improve Skills modal (Experience Rolls, core rulebook pp.71-73) ----
+let XP_LEARN_MSG="";
 function xpModalHtml(){
   const es=allEntries();
   const grp=g=>es.filter(e=>e.grp===g).sort((a,b)=>a.label.localeCompare(b.label));
@@ -1079,6 +1080,7 @@ function xpModalHtml(){
    +'<button class="pm-btn sm" onclick="APP.xpAward(document.getElementById(\'xpAwardN\').value,document.getElementById(\'xpApplyModifier\').checked)">+ add to pool</button> '
    +'<span class="pm-empty">core book: 2&ndash;4 per sitting, GM discretion. The optional CHA adjustment applies once to a positive award when selected.</span></div></div>';
   h+='<p class="pm-empty">Spend 1 roll on a skill: roll 1d100, add INT ('+S.chars.INT+'). Total meets or beats the skill&rsquo;s current % &rarr; <b>+1d4+1%</b>. Total falls short &rarr; still <b>+1%</b> (an Experience Roll never fails outright). A skill flagged &#9873; got a Fumble since the last sitting and gets a free <b>+1%</b> (applied before any roll spent on it, doesn&rsquo;t stack) &mdash; this flags automatically when you roll a Fumble in Play Mode, or click the flag by hand. A skill flagged &#10003; is marked for reference only; it does not grant a free Experience Roll. You may spend additional banked rolls on the same skill; each uses its updated percentage.</p>';
+  h+='<details class="pm-fx-item"><summary>Learn a new Professional Skill <span class="pm-fx-badge">Core p.73</span></summary><p>Find a source of education, complete a month of study and practice, and obtain your GM’s approval. Learning costs 3 Experience Rolls plus any in-game costs. Confirm any additional cult, magic or other prerequisites with your GM.</p><label>Skill <select id="xpLearnName">'+Object.keys(PROF).sort().map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("")+'</select></label> <label>Speciality or tradition, if applicable <input id="xpLearnSpec" type="text" maxlength="100"></label><br><label><input id="xpLearnConfirmed" type="checkbox"> Education, month of study and GM approval confirmed</label> <button class="pm-btn sm" type="button" onclick="APP.xpLearnProfessional(document.getElementById(\'xpLearnName\').value,document.getElementById(\'xpLearnSpec\').value,document.getElementById(\'xpLearnConfirmed\').checked)">Learn for 3 rolls</button><p class="pm-empty">Specialities are required for Art, Binding, Craft, Culture, Devotion, Invocation, Language and Lore.</p><p role="status">'+esc(XP_LEARN_MSG)+'</p></details>';
   h+='<div class="pm-xplist">';
   h+='<div class="pm-skillgroup"><h4>Standard</h4>'+grp("Standard").map(row).join("")+'</div>';
   if(grp("Professional").length)h+='<div class="pm-skillgroup"><h4>Professional</h4>'+grp("Professional").map(row).join("")+'</div>';
@@ -1091,6 +1093,7 @@ function xpModalHtml(){
   return h;
 }
 function xpLogRow(r){
+  if(r.type==="learn")return '<div class="pm-xplogrow">'+esc(r.label)+' — learned for 3 Experience Rolls &rarr; starting at <b>'+r.newPct+'%</b></div>';
   if(r.type==="passion-adjustment")return '<div class="pm-xplogrow">'+esc(r.label)+' — manual change <b>'+(r.delta>0?"+":"")+r.delta+'%</b> &rarr; now <b>'+r.newPct+'%</b></div>';
   if(r.type==="fumble")return '<div class="pm-xplogrow fumble">'+esc(r.label)+' — Fumble bonus <b>+1%</b> &rarr; now <b>'+r.newPct+'%</b></div>';
   return '<div class="pm-xplogrow'+(r.success?" ok":"")+'">'+esc(r.label)+' — d100 '+r.roll+' + INT '+r.int+' = <b>'+r.total+'</b> vs '+r.target+'% &rarr; '
