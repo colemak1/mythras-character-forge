@@ -1044,13 +1044,14 @@ function xpModalHtml(){
   if(grp("Professional").length)h+='<div class="pm-skillgroup"><h4>Professional</h4>'+grp("Professional").map(row).join("")+'</div>';
   if(grp("Magic").length)h+='<div class="pm-skillgroup"><h4>Magic</h4>'+grp("Magic").map(row).join("")+'</div>';
   if(grp("Combat Style").length)h+='<div class="pm-skillgroup"><h4>Combat Styles</h4>'+grp("Combat Style").map(row).join("")+'</div>';
-  if(S.passions.length)h+='<div class="pm-skillgroup"><h4>Passions</h4>'+S.passions.map((p,i)=>'<div class="pm-xprow"><span class="nm">'+esc(p.name||"(unnamed)")+'</span><span class="pctval">'+passionVal(p)+'%</span><button class="pm-btn sm roll" '+(xpRollsAvailable()>0&&typeof passionVal(p)==="number"?"":"disabled")+' onclick="APP.xpSpendPassion('+i+')">spend roll</button></div>').join("")+'<p class="pm-empty">Passion fumble increases and GM-approved reductions are handled manually.</p></div>';
+  if(S.passions.length)h+='<div class="pm-skillgroup"><h4>Passions</h4>'+S.passions.map((p,i)=>'<div class="pm-xprow"><span class="nm">'+esc(p.name||"(unnamed)")+'</span><span class="pctval">'+passionVal(p)+'%</span><button class="pm-btn sm roll" '+(xpRollsAvailable()>0&&typeof passionVal(p)==="number"?"":"disabled")+' onclick="APP.xpSpendPassion('+i+')">spend roll</button><label>Change <input type="number" step="1" id="passionChange'+i+'" aria-label="Change '+esc(p.name||"unnamed Passion")+'" style="width:65px"></label><button class="pm-btn sm" onclick="APP.adjustPassion('+i+',document.getElementById(\'passionChange'+i+'\').value)">apply</button></div>').join("")+'<p class="pm-empty">For a GM-directed change from play, enter a positive or negative amount (Core p.82). Applying it does not spend an Experience Roll; the GM decides the change. Values cannot fall below zero.</p></div>';
   h+='</div>';
   h+='<div class="pm-xplog"><h4>Results</h4>'+(S.xp.history.length?S.xp.history.map(xpLogRow).join(""):'<p class="pm-empty">No rolls yet.</p>')+'</div>';
   h+='</div></div>';
   return h;
 }
 function xpLogRow(r){
+  if(r.type==="passion-adjustment")return '<div class="pm-xplogrow">'+esc(r.label)+' — manual change <b>'+(r.delta>0?"+":"")+r.delta+'%</b> &rarr; now <b>'+r.newPct+'%</b></div>';
   if(r.type==="fumble")return '<div class="pm-xplogrow fumble">'+esc(r.label)+' — Fumble bonus <b>+1%</b> &rarr; now <b>'+r.newPct+'%</b></div>';
   return '<div class="pm-xplogrow'+(r.success?" ok":"")+'">'+esc(r.label)+' — d100 '+r.roll+' + INT '+r.int+' = <b>'+r.total+'</b> vs '+r.target+'% &rarr; '
    +(r.success?"met/beat it":"fell short")+', <b>+'+r.gain+'%</b>'+(r.fumbleApplied?" (fumble +1% applied first)":"")+' &rarr; now <b>'+r.newPct+'%</b></div>';

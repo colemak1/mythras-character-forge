@@ -120,7 +120,7 @@ MCR-05, 06, 09, minimum 10, minimum 17, 27, and 28 were merged in PR #30. Produc
 
 ## Passion advancement — review pending
 
-MCR-23: Core p.72 confirms Passions can increase by the same Experience Roll procedure as skills. Proposed support stores each gain on its Passion, preserving older records and character exports. Fumble adjustments and GM-approved reductions remain manual; production verification is pending.
+MCR-23: Core p.72 confirms Passions can increase by the same Experience Roll procedure as skills. Proposed support stores each gain on its Passion, preserving older records and character exports. A separate manual change supports GM-directed changes during play (p.82) without spending rolls. The GM determines event-driven adjustments; automatic fumble tracking and Experience Roll-based reductions remain unimplemented. Production verification is pending.
 
 ## Sorcery repair — merged, rounding verification outstanding
 

@@ -46,6 +46,18 @@ test('Core p.72: Passion improvement spends rolls, persists, and respects access
  run('VIEW_ONLY=false;APP.xpSpendPassion(99);');assert.equal(run('S.xp.pool'),1);
  run('Math.random=()=>0.99;APP.xpSpendPassion(1);');assert.equal(run('passionVal(S.passions[1])'),59);
 });
+test('Core p.82: GM-directed Passion changes persist without spending experience',()=>{
+ reset();run('S.passions=[{name:"Loyalty",type:"org"},{name:"Hope",type:"species"}];S.xp.pool=2;');
+ const start=run('passionVal(S.passions[0])');
+ run('APP.adjustPassion(0,"8");APP.adjustPassion(0,"-3");');
+ assert.equal(run('passionVal(S.passions[0])'),start+5);assert.equal(run('S.xp.pool'),2);
+ assert.match(run('xpModalHtml()'),/manual change/);
+ run('APP.adjustPassion(0,"-999");APP.adjustPassion(0,"1.5");APP.adjustPassion(0,"");APP.adjustPassion(9,"1");');
+ assert.equal(run('passionVal(S.passions[0])'),start+5);
+ run('VIEW_ONLY=true;APP.adjustPassion(0,"5");');assert.equal(run('passionVal(S.passions[0])'),start+5);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
+ assert.equal(run('passionVal(S.passions[0])'),start+5);assert.equal(run('passionVal(S.passions[1])'),54);
+});
 test('Core pp.71,79,110: damage and recovery guidance',()=>{
  reset();run('S.play.fatigue="Winded";');
  assert.match(run('playWoundEffectText("Right Arm","serious")'),/1d3 turns/);

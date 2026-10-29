@@ -634,6 +634,15 @@ window.APP={
    S.xp.pool=Math.max(0,S.xp.pool-1);
    S.xp.history.unshift({type:"roll",label:p.name||"(unnamed Passion)",roll:r===100?"00":r,int:S.chars.INT,total,target,success,gain,newPct:passionVal(p)});
    S.xp.history=S.xp.history.slice(0,25);render();},
+ // Core p.82: the GM may change a Passion as a result of events in play.
+ adjustPassion(i,value){if(VIEW_ONLY||!Number.isInteger(i))return;
+   const p=S.passions[i],delta=Number(value);
+   if(!p||String(value).trim()===""||!Number.isSafeInteger(delta)||delta===0)return;
+   const current=passionVal(p);
+   if(typeof current!=="number"||!Number.isSafeInteger(current+delta)||current+delta<0)return;
+   p.xpBonus=(Number(p.xpBonus)||0)+delta;
+   S.xp.history.unshift({type:"passion-adjustment",label:p.name||"(unnamed Passion)",delta,newPct:passionVal(p)});
+   S.xp.history=S.xp.history.slice(0,25);render();},
  // On-demand Difficulty Grade reference popover (Play Mode). Deliberately
  // bypasses render() — it's transient UI state, not character state, so it's
  // built/positioned/torn down directly against the DOM rather than round-
