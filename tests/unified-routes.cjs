@@ -131,6 +131,15 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   run('S.magic.known[0].intensity=1;S.magic.known[0].cost=1;Math.random=()=>0.95;APP.castMagic(0)');assert.equal(run('S.rollLog[0].tier'),"Failure");assert.equal(run('S.magic.known[0].active'),false);
   run('S.play.mysticismCasting={index:0,total:3,completed:3,signature:"bad"};normalizeState()');assert.equal(run('S.play.mysticismCasting'),null);
  });
+ await test('Theism exhorts on the final turn and preserves unreviewed legacy miracles',async()=>{
+  run('S=freshState();S.magic.known=[{tradition:"theism",name:"Bless",cost:3}];S.magic.devotional=12;S.magic.devotionalUsed=0;S.play.magic=12;APPVIEW="play";allMagic=()=>S.magic.known;magicSkillKey=()=>"exhort";finalPct=()=>80;gradeForEntry=()=>"standard";playCurMagic=()=>S.play.magic;Math.random=()=>0.49;viewOnlyBlock=()=>false;render=()=>{};');
+  run('APP.castMagic(0)');assert.match(run('PM_MSG'),/Confirm/);assert.equal(run('S.magic.known[0].cost'),3);assert.equal(run('S.rollLog.length'),0);
+  run('APP.miracleLevel(0,"2");APP.castMagic(0)');assert.equal(run('S.play.theismCasting.completed'),1);assert.equal(run('S.magic.devotionalUsed'),0);
+  const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
+  run('APP.castMagic(0)');assert.equal(run('S.rollLog[0].tier'),"Success");assert.equal(run('S.magic.devotionalUsed'),2);assert.equal(run('S.play.theismCasting'),null);
+  run('APP.miracleInstances(0,"2");APP.castMagic(0);APP.miracleInstances(0,"3");APP.castMagic(0)');assert.match(run('PM_MSG'),/changed/);assert.equal(run('S.rollLog.length'),1);
+  run('APP.theismCancel()');assert.equal(run('S.play.theismCasting'),null);
+ });
  await test('bound spirit POW over Binding limit cannot roll or spend points',async()=>{
   run('S=freshState();S.play.magic=10;S.magic.known=[{tradition:"animism",name:"Shade",pow:16,spiritStatus:"bound"}];S.magic.folk=[];magicSkillKey=()=>"binding";finalPct=()=>45;playCurMagic=()=>S.play.magic;viewOnlyBlock=()=>false;render=()=>{};');
   run('APP.commandSpirit(0)');assert.match(run('PM_MSG'),/exceeds/);assert.equal(run('S.play.magic'),10);assert.equal(run('S.rollLog.length'),0);

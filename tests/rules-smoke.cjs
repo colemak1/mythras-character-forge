@@ -352,8 +352,9 @@ test('Update 11: low MP stops Folk Magic and Sorcery before dice roll',()=>{
  evalRule('magicSkillPct=originalMagicSkillPct');
 });
 test('Update 11: devotional cost cannot exceed remaining pool',()=>{
- assert(/Not enough Devotional Pool/.test(evalRule('magicCastPreflight({tradition:"theism",name:"Bless",cost:3},20,2)')));
- assert.equal(evalRule('magicCastPreflight({tradition:"theism",name:"Bless",cost:3},0,3)'),null);
+ assert(/Confirm/.test(evalRule('magicCastPreflight({tradition:"theism",name:"Bless",cost:3},20,10)')));
+ assert(/Not enough Devotional Pool/.test(evalRule('magicCastPreflight({tradition:"theism",name:"Bless",cost:3,miracleLevel:3,miracleInstances:1},20,2)')));
+ assert.equal(evalRule('magicCastPreflight({tradition:"theism",name:"Bless",miracleLevel:3,miracleInstances:1},0,3)'),null);
 });
 test('Update 11: zero-cost imported talent cannot silently cast',()=>{
  assert(/positive Magic Point cost/.test(evalRule('magicCastPreflight({tradition:"mysticism",name:"Focus",cost:0},9,9)')));
@@ -388,6 +389,13 @@ test('Update 13: Theism Exhort Critical / Failure 0, Fumble 1, Success full',()=
  const e='{tradition:"theism",name:"Miracle",cost:3}';
  for(const [tier,val] of [['Critical',0],['Failure',0],['Fumble',1],['Success',3]])
   assert.equal(evalRule('theismOutcomeCost('+e+','+JSON.stringify(tier)+')'),val);
+});
+test('Core p.181: miracle level and instances determine cost and exhortation turns',()=>{
+ assert.equal(evalRule('theismDetails({miracleLevel:2,miracleInstances:1}).cost'),2);
+ assert.equal(evalRule('theismDetails({miracleLevel:2,miracleInstances:1}).turns'),2);
+ assert.equal(evalRule('theismDetails({miracleLevel:2,miracleInstances:3}).cost'),6);
+ assert.equal(evalRule('theismDetails({miracleLevel:2,miracleInstances:3}).turns'),4);
+ for(const [tier,val] of [['Critical',0],['Failure',0],['Fumble',1],['Success',6]])assert.equal(evalRule('theismOutcomeCost({miracleLevel:2,miracleInstances:3},'+JSON.stringify(tier)+')'),val);
 });
 test('Update 13: Mysticism cost by roll outcome (Core p.156)',()=>{
  const e='{tradition:"mysticism",name:"Talent",cost:5}';

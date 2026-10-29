@@ -128,6 +128,10 @@ window.APP={
      if(m.tradition==="animism"&&f==="intensity"&&n<1){PM_MSG="Spirit Intensity must be at least 1.";render();return;}
      m[f]=n;}
    render();},
+ miracleLevel(i,raw){const m=S.magic.known[i],n=Number(raw);if(!m||m.tradition!=="theism"||![1,2,3].includes(n))return;
+   m.miracleLevel=n;if(!Number.isInteger(m.miracleInstances)||m.miracleInstances<1)m.miracleInstances=1;render();},
+ miracleInstances(i,raw){const m=S.magic.known[i],n=Number(raw);if(!m||m.tradition!=="theism"||!Number.isInteger(n)||n<1||n>100)return;
+   m.miracleInstances=n;render();},
  shapingLevel(i,name,raw){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;
    if(!["Combine","Duration","Range","Targets","Magnitude"].includes(name))return;
    if(Number(m.combineExtra)>0){PM_MSG="Review the legacy combined-spell count before editing Shaping.";render();return;}
@@ -157,6 +161,7 @@ window.APP={
    m.active=true;m.remainingTurns=m.durationTurns||0;render();},
  sorceryCancel(){if(viewOnlyBlock())return;S.play.sorceryCasting=null;PM_MSG="Sorcery invocation cancelled; no Invocation roll was made.";render();},
  mysticismCancel(){if(viewOnlyBlock())return;S.play.mysticismCasting=null;PM_MSG="Talent preparation cancelled; no Mysticism roll was made.";render();},
+ theismCancel(){if(viewOnlyBlock())return;S.play.theismCasting=null;PM_MSG="Miracle exhortation cancelled; no Exhort roll was made.";render();},
  delMagic(i){debounceFire('delMagic'+i,()=>{S.magic.known.splice(i,1);render();});},
  devotional(v){S.magic.devotional=Math.max(0,parseInt(v,10)||0);
    S.magic.devotionalUsed=Math.min(S.magic.devotionalUsed,S.magic.devotional);render();},
@@ -222,6 +227,16 @@ window.APP={
      if(total>1&&!pending){S.play.mysticismCasting={index:idx,total,completed:1,signature};PM_MSG="Talent preparation turn 1 of "+total+" recorded. Roll Mysticism on the final turn (Core p.156).";render();return;}
      if(pending&&pending.completed+1<pending.total){pending.completed++;PM_MSG="Talent preparation turn "+pending.completed+" of "+pending.total+" recorded. No roll yet.";render();return;}
    }
+   if(m.tradition==="theism"){
+     const err=magicCastPreflight(m,playCurMagic(),devotionalCur());
+     if(err){PM_MSG=err;render();return;}
+     if(!magicSkillKey("Exhort")){PM_MSG="Add the Exhort skill before requesting a miracle.";render();return;}
+     const details=theismDetails(m),pending=S.play.theismCasting;
+     const signature=JSON.stringify([m.name,m.miracleLevel,m.miracleInstances]);
+     if(pending&&(pending.index!==idx||pending.signature!==signature||pending.total!==details.turns)){PM_MSG="A miracle is underway or its details changed. Cancel the exhortation before continuing.";render();return;}
+     if(details.turns>1&&!pending){S.play.theismCasting={index:idx,total:details.turns,completed:1,signature};PM_MSG="Exhortation turn 1 of "+details.turns+" recorded. Roll on the final turn (Core p.181).";render();return;}
+     if(pending&&pending.completed+1<pending.total){pending.completed++;PM_MSG="Exhortation turn "+pending.completed+" of "+pending.total+" recorded. No roll yet.";render();return;}
+   }
    // Core p.165: Invocation roll takes place on the final turn of casting.
    // A Sorcery click starts/advances a tracker until that final turn. It does
    // not automatically spend action points or assume uninterrupted casting.
@@ -280,6 +295,7 @@ window.APP={
    const tag=g.grade!=="standard"?" ("+GRADE_LABEL[g.grade]+")":"";
    if(m.tradition==="sorcery")S.play.sorceryCasting=null;
    if(m.tradition==="mysticism")S.play.mysticismCasting=null;
+   if(m.tradition==="theism")S.play.theismCasting=null;
    S.rollLog.unshift({label:magicLabel(m)+" — "+trad.castSkill+tag,pct:g.pct,
      roll:r===100?"00":r,tier,combat:false,oppTier:null,
      magic:(worked?"cast":"failed")+", "+costTxt});
@@ -1369,6 +1385,7 @@ function buildMD(){
     +magicKnown.map(m=>{const t=MAGIC_TRAD_MAP[m.tradition];
       const cost=m.tradition==="folk"?"1 MP (0 on a Critical)"
         :m.tradition==="sorcery"?(sorceryCost(m).mp+" MP / "+sorceryCost(m).turns+" turns")
+        :m.tradition==="theism"?theismCostLabel(m)
         :m.tradition==="animism"?("POW "+(m.pow||0)+", CHA "+(m.cha||0))
         :((m.cost||0)+(t.pool==="devotional"?" pool":" MP"));
       return "| "+magicLabel(m)+" | "+t.label+" | "+t.castSkill+" | "+cost+" |";}).join("\n")+"\n\n";

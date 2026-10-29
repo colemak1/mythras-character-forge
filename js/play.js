@@ -707,7 +707,8 @@ function pmFxFilter(input){
 // from the right pool.
 function magicPanel(){
   const all=allMagic();
-  const prep=S.play.mysticismCasting?'<p class="pm-empty">Talent preparation: '+S.play.mysticismCasting.completed+' / '+S.play.mysticismCasting.total+' turns. <button class="pm-btn sm" onclick="APP.mysticismCancel()">Cancel preparation</button> Resolve interruption and other actions with your GM.</p>':'';
+  const prep=(S.play.mysticismCasting?'<p class="pm-empty">Talent preparation: '+S.play.mysticismCasting.completed+' / '+S.play.mysticismCasting.total+' turns. <button class="pm-btn sm" onclick="APP.mysticismCancel()">Cancel preparation</button> Resolve interruption and other actions with your GM.</p>':'')
+   +(S.play.theismCasting?'<p class="pm-empty">Miracle exhortation: '+S.play.theismCasting.completed+' / '+S.play.theismCasting.total+' turns. <button class="pm-btn sm" onclick="APP.theismCancel()">Cancel exhortation</button> Resolve interruption with your GM.</p>':'');
   if(!all.length)return prep+'<p class="pm-empty">No magic known — pick some up on the Magic step in the Character Builder.</p>';
   let h='<div class="pm-magicpools">'
    +'<span>Magic Points <b>'+playCurMagic()+'</b>/'+playMaxMagic()+'</span>';
@@ -729,6 +730,7 @@ function magicPanel(){
       if(t.key==="folk"&&m.spell)meta=m.spell.t.join(", ");
       else if(t.key==="sorcery"){const c=sorceryCost(m);meta=c.mp+" MP · "+c.turns+" turn"+(c.turns>1?"s":"")+(c.shapings?" · "+Object.entries(sorceryLevels(m)).map(([k,v])=>k+" "+v).join(", "):" · unshaped")+(c.combinedSpells?" · +"+c.combinedSpells+" combined":"");}
       else if(t.key==="animism")meta="POW "+(m.pow||0)+" · CHA "+(m.cha||0)+" · Intensity "+(m.intensity||1)+" · "+(m.spiritStatus==="bound"?"BOUND":"UNBOUND")+(Number.isInteger(m.spiritMP)?" · spirit MP "+m.spiritMP:"");
+      else if(t.key==="theism"){const d=theismDetails(m);meta=d?d.cost+" from pool · "+d.turns+" turns":"Confirm miracle level in builder";}
       else meta=(m.cost||0)+(t.pool==="devotional"?" from pool":" MP")+" · Intensity "+(m.intensity||1)+(t.key==="mysticism"&&m.active?" · ACTIVE":"");
       const body=(t.key==="folk"&&m.spell)?m.spell.d:(m.notes||"");
       if(t.key==="sorcery"&&S.play.sorceryCasting && S.play.sorceryCasting.index===idx){
@@ -1229,6 +1231,7 @@ function characterSheetBody(){
      +magic.map(m=>{const t=MAGIC_TRAD_MAP[m.tradition];
        const cost=m.tradition==="folk"?"1 MP (0 on a Critical)"
          :m.tradition==="sorcery"?(sorceryCost(m).mp+" MP / "+sorceryCost(m).turns+" turns")
+         :m.tradition==="theism"?theismCostLabel(m)
          :m.tradition==="animism"?("POW "+(m.pow||0)+", CHA "+(m.cha||0))
          :((m.cost||0)+(t.pool==="devotional"?" pool":" MP"));
        return '<tr><td>'+esc(magicLabel(m))+'</td><td>'+esc(t.label)+'</td><td>'+esc(t.castSkill)+'</td><td>'+esc(cost)+'</td></tr>';}).join("")
