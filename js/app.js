@@ -329,6 +329,8 @@ window.APP={
    S.age.years=t;S.concept.age=String(t);render();},
  ageYears(v){const n=parseInt(v,10);S.age.years=Number.isFinite(n)?n:null;
    S.concept.age=Number.isFinite(n)?String(n):"";render();},
+ ageingReview(status,note){if(viewOnlyBlock()||!["resolved","override"].includes(status))return;
+   S.age.ageingReview={key:ageingReviewKey(),status,note:String(note||"").slice(0,300)};render();},
  // Official Core Background Events: keep rolled d100 results and a player's
  // brief summary, rather than reproducing the copyrighted table in the app.
  rollCoreBackgroundEvents(){

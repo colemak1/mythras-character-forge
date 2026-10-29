@@ -79,6 +79,19 @@ test('Core p.180: explicitly confirmed pool rank limits are non-destructive',()=
  const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
  assert.equal(run('S.magic.devotionalRank'),"lay");assert.equal(run('devotionalMax()'),9);
 });
+test('Core pp.34,70–71: ageing review tracks human bands without changing characteristics',()=>{
+ reset();run('S.age.category="senior";S.age.years=44;');
+ assert.equal(run('humanAgeingInfo().grade'),"Easy");assert.match(run('ageingReviewBlock()'),/not been reviewed/);
+ const chars=run('JSON.stringify(S.chars)');run('APP.ageingReview("resolved","Rolled at the table")');
+ assert.match(run('ageingReviewBlock()'),/Rolled at the table/);assert.equal(run('JSON.stringify(S.chars)'),chars);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
+ assert.match(run('ageingReviewBlock()'),/Rolled at the table/);
+ run('S.age.years=50');assert.equal(run('humanAgeingInfo().grade'),"Standard");assert.match(run('ageingReviewBlock()'),/not been reviewed/);
+ for(const [age,grade] of [[39,null],[40,"Easy"],[60,"Hard"],[70,"Formidable"],[80,"Herculean"],[90,"Hopeless"]]){
+  run(`S.age.years=${age}`);assert.equal(run('humanAgeingInfo()?.grade||null'),grade);
+ }
+ run('S.species="other";S.age.category="senior";');assert.equal(run('humanAgeingInfo()'),null);assert.match(run('ageingReviewBlock()'),/may not apply/);
+});
 test('Core pp.71,79,110: damage and recovery guidance',()=>{
  reset();run('S.play.fatigue="Winded";');
  assert.match(run('playWoundEffectText("Right Arm","serious")'),/1d3 turns/);

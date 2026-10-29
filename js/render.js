@@ -184,9 +184,27 @@ function ageCard(){
    +fld("Resulting Bonus Skill Points",'<div class="agetotal">'+bonusPool()+' points &middot; max '+bonusCap()+' per skill</div>')
    +'</div>';
   if(sp)h+='<p class="note">A '+esc(sp.label)+' lives '+esc(sp.lifespan)+', so these bands describe a very different span of life than they do for a human &mdash; the categories are about accumulated experience, not calendar years. Adjust the exact age to suit.</p>';
-  h+='<p class="note rulesrc">Age and Bonus Skill Points: Mythras Core p.34. Older characters are also subject to the optional ageing procedure (Core p.70).</p>';
+  h+='<p class="note rulesrc">Age and Bonus Skill Points: Mythras Core p.34. Senior and Old starting characters are subject to ageing; the human ageing bands begin at 40 (Core pp.70–71).</p>';
+  h+=ageingReviewBlock();
   h+=coreBackgroundEventsBlock();
   h+=lifeEventsBlock();
+  return h+'</div>';
+}
+function ageingReviewBlock(){
+  const info=humanAgeingInfo(),old=S.age.category==="senior"||S.age.category==="old";
+  if(!info&&!old)return "";
+  const human=!S.species||S.species==="human",review=S.age.ageingReview;
+  const current=review&&review.key===ageingReviewKey()?review:null;
+  let h='<div class="lifeev"><h4>Ageing review <span class="rulesrc">Core pp.34, 70–71</span></h4>';
+  if(!human)h+='<p class="note">Human age bands may not apply to this species. Confirm the bands and effects with your GM.</p>';
+  else if(info)h+='<p class="note">At age '+info.age+', the current human ageing band is '+esc(info.label)+'; its Endurance and Willpower tests are '+esc(info.grade)+'. Discuss any earlier bands with your GM.</p>';
+  else h+='<p class="note">Enter the exact age to identify the human ageing band.</p>';
+  h+='<p class="note">Each new ageing band calls for Endurance and Willpower tests. A failed test can reduce a characteristic; consult the Core Ageing Effects table with your GM. This tracker records your review only: it does not roll, apply penalties, or adjust derived values.</p>';
+  if(current)h+='<p class="note">Recorded: <b>'+esc(current.status==="resolved"?"Reviewed with GM":"GM override")+'</b>'+(current.note?' — '+esc(current.note):'')+'</p>';
+  else h+='<p class="warn">Ageing has not been reviewed for this age and species.</p>';
+  h+='<label>GM / ageing notes <input type="text" maxlength="300" id="ageingReviewNote" value="'+esc(current?.note||"")+'"></label> '
+   +'<button class="chip" onclick="APP.ageingReview(\'resolved\',document.getElementById(\'ageingReviewNote\').value)">Record GM review</button> '
+   +'<button class="chip" onclick="APP.ageingReview(\'override\',document.getElementById(\'ageingReviewNote\').value)">Record GM override</button>';
   return h+'</div>';
 }
 // Core p.18 background-events table is copyrighted; the wizard generates
