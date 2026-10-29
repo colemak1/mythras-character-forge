@@ -388,6 +388,15 @@ function stepFns(){
    :[stepConcept,stepChars,stepAttrs,stepCulture,stepCareer,stepBonus,stepCommunity,stepPassions,stepMagic,stepMoney,stepFinish];
 }
 function ageBand(){return AGE_MAP[(S.age&&S.age.category)||"adult"]||AGE_MAP.adult;}
+// Core pp.34,70–71 distinguish creation categories from human ageing bands.
+function humanAgeingInfo(){
+  if(S.species&&S.species!=="human")return null;
+  const age=Number(S.age.years);
+  if(S.age.years==null||!Number.isInteger(age)||age<40)return null;
+  const band=age>=90?["Dotage","Hopeless"]:age>=80?["Advanced Old Age","Herculean"]:age>=70?["Old Age","Formidable"]:age>=60?["Late Middle Age","Hard"]:age>=50?["Middle Age","Standard"]:["Early Middle Age","Easy"];
+  return {label:band[0],grade:band[1],age};
+}
+function ageingReviewKey(){return JSON.stringify([S.species||"human",S.age.category,S.age.years]);}
 function coreBackgroundRollCount(){return Math.max(0,AGE_CATEGORIES.findIndex(a=>a.key===ageBand().key));}
 function coreBackgroundRollsValid(){return (S.age.coreEvents||[]).length===coreBackgroundRollCount();}
 // Bonus Skill Points now come from the Experience Table's age band rather than

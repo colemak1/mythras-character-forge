@@ -18,11 +18,12 @@ The original audit findings below describe the audited snapshot, not necessarily
 | MCR-01–03 | Implemented in PR #34, verification incomplete | Shaping rounding beyond the printed example and combined-spell circumstances need review. |
 | MCR-04, 07 | Partially addressed in PR #41 | Check remaining rounding boundaries and specialist Folk allowance. |
 | MCR-11 | Implemented in PR #42 | Real-character production verification remains. |
-| MCR-12 | Partial: rank-confirmed single-pool limits proposed in this change | Fractional rounding and separate multiple-cult pools remain GM-managed. |
+| MCR-12 | Partially implemented in PR #48 | Fractional rounding and separate multiple-cult pools remain GM-managed. |
+| MCR-08 | Partial: ageing review guidance proposed | Checks and characteristic changes are not automated; GM review and production verification remain. |
 | MCR-13 | Partially implemented in PR #45 (merge bd423af2e1b198bab85bacee32fd92b1b1aa7c31) | Validate category costs, rounding, interruption and signed-in persistence. |
 | MCR-15 | Guidance in PR #44 | Creation-mode distinction, prerequisites and GM override remain. |
 | MCR-23 | Partially implemented in PR #43 | Passion fumble tracking, XP-based reductions and real-account verification remain. |
-| MCR-08, 14, 16, 18–22, 24–26 | Not completed in this batch | Check actual current implementation and Core before making changes. |
+| MCR-14, 16, 18–22, 24–26 | Not completed in this batch | Check actual current implementation and Core before making changes. |
 
 The previously failing homepage and Update 23 tests are being repaired in the baseline branch. The campaign-load failure was a real missing error path; the test can now verify that failed reads show a retry rather than an empty campaign list. Signed-in live-service verification is still outstanding.
 
@@ -165,6 +166,10 @@ MCR-15: Core pp.118,155,163,179 were visually checked. PR #44 (merge f03f21f4367
 
 MCR-14: Core p.181 was visually checked. PR #47 (merge 475456c446615cbc2aea028e79be6c742c73cbf9) records the miracle's cult level and number of instances, calculates full cost and turns, and rolls on the last turn. Legacy costs are preserved and require review before casting. GM manages interruptions and confirms access. Multiple-cult tracking, signed-in persistence, and production verification remain unfinished. Keep the item unchecked pending live testing.
 
-## Devotional Pool rank check — review pending
+## Devotional Pool rank check — merged, production verification pending
 
-MCR-12: Core p.180 was visually checked. A rank explicitly confirmed for the currently tracked pool supplies a limit. Whole-number limits reject new increases above the cap; an existing oversized pool is preserved and must be reviewed before casting. Unconfirmed rank or fractional result does not silently impose a rounding rule. The existing tracker still supports only one pool; combined multi-cult totals and fractional rounding require GM handling. Real-account and production verification are outstanding.
+MCR-12: Core p.180 was visually checked. PR #48 (merge 91da8239b4f71354ea6e083046d5f8d147b0dda9) added a rank explicitly confirmed for the currently tracked pool. Whole-number limits reject new increases above the cap; an existing oversized pool is preserved and must be reviewed before casting. Unconfirmed rank or fractional result does not silently impose a rounding rule. The existing tracker still supports only one pool; combined multi-cult totals and fractional rounding require GM handling. Real-account and production verification are outstanding.
+
+## Ageing review — review pending
+
+MCR-08: Visually checked Core pp.34,70–71. The creation Age table flags Senior and Old as subject to ageing; the separate human ageing bands start at 40. Proposed guidance records the GM's review or override against the age and species, and leaves existing characteristics untouched. Tests and penalties remain manual: direct characteristic changes would conflict with the current builder's rolled-range and points-buy validation. The acceptance requirement for persisted characteristic effects and updated derived values remains open.
