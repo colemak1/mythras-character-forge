@@ -729,6 +729,7 @@ function folkMagicPicker(){
   h+='<p class="note rulesrc">Core-first mode: the unverified Imperative spell catalogue has been removed. Your GM may add verified custom spells. Folk Magic chapter: Mythras Core pp.121&ndash;129.</p>'; 
   return h;
 }
+let DEVOTIONAL_MSG="";
 function knownMagicEditor(t){
   const rows=S.magic.known.map((m,i)=>({m,i})).filter(x=>x.m.tradition===t.key);
   let h='<div class="reservednote">'+esc(t.contentNote)+'</div>';
@@ -739,7 +740,13 @@ function knownMagicEditor(t){
   h+='<p class="note rulesrc">Core p.118: a starting magician normally knows one relevant ability per 20% (or part) of '+esc(abilitySkill)+': '+(starting===null?'confirm the skill with your GM':starting+' at '+skill+'%')+'. '+esc(restriction)+' This is starting-character guidance, not a limit on experienced or imported characters; GM decisions and later learning are not tracked here.</p>';
   if(t.key!=="animism"&&starting!==null&&named>starting)h+='<p class="note">'+named+' named abilities are recorded, more than the general starting allowance of '+starting+'. If this is a new character, review the choices with the GM; existing abilities are preserved.</p>';
   if(t.key==="theism"){
-    h+='<p class="note rulesrc">Core p.180: each cult has a separate pool. Maximum pool by cult rank: Lay Member none, Initiate ¼ POW, Acolyte ½ POW, Priest ¾ POW, High Priest full POW. Combined pools cannot exceed POW. This tracker does not yet enforce rank or multiple-cult limits; confirm your pool with the GM.</p>';
+    const rank=S.magic.devotionalRank||"",limit=devotionalRankLimit(),pool=devotionalMax();
+    h+='<p class="note rulesrc">Core p.180: each cult has a separate pool. Confirm the rank for this pool; the tracker handles one pool and does not enforce the combined limit for multiple cults. Confirm fractional rounding and other pools with the GM.</p>';
+    h+='<label>Rank for this pool <select onchange="APP.devotionalRank(this.value)">'
+     +[["","Not confirmed"],["lay","Lay Member"],["initiate","Initiate"],["acolyte","Acolyte"],["priest","Priest"],["highpriest","High Priest"]].map(([v,label])=>'<option value="'+v+'" '+(rank===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>';
+    h+='<p class="note">'+(limit===null?'Rank limit not confirmed.':Number.isInteger(limit)?'Confirmed rank limit: '+limit+' points.':'Rank formula gives '+limit+' points; confirm rounding with your GM.')+'</p>';
+    if(Number.isInteger(limit)&&pool>limit)h+='<p class="warn" role="alert">The recorded pool exceeds the confirmed rank limit. Existing points are preserved; review this with your GM.</p>';
+    if(DEVOTIONAL_MSG)h+='<p class="warn" role="alert">'+esc(DEVOTIONAL_MSG)+'</p>';
     h+='<div class="grid2">'
      +fld("Devotional Pool (Magic Points offered up)",'<input type="number" min="0" value="'+devotionalMax()+'" onchange="APP.devotional(this.value)">')
      +fld("Currently available",'<div class="agetotal">'+devotionalCur()+' / '+devotionalMax()+'</div>')

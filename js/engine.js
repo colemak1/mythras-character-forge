@@ -730,6 +730,14 @@ function magicCastPreflight(entry, availableMP, availableDevotion){
 }
 function devotionalMax(){return Math.max(0,parseInt(S.magic.devotional,10)||0);}
 function devotionalCur(){return Math.max(0,devotionalMax()-(S.magic.devotionalUsed||0));}
+// Core p.180. Rank is confirmed for this pool, not inferred from the
+// character's general cult field. Fractional limits need GM interpretation.
+function devotionalRankLimit(){
+  const fractions={lay:0,initiate:0.25,acolyte:0.5,priest:0.75,highpriest:1};
+  const rank=S.magic.devotionalRank,pow=Number(S.chars.POW);
+  if(!Object.prototype.hasOwnProperty.call(fractions,rank)||!Number.isSafeInteger(pow)||pow<1)return null;
+  return pow*fractions[rank];
+}
 // Every piece of magic the character knows, in one list, for the sheet and
 // Play Mode's Magic tab.
 function allMagic(){

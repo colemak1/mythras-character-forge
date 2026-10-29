@@ -163,7 +163,14 @@ window.APP={
  mysticismCancel(){if(viewOnlyBlock())return;S.play.mysticismCasting=null;PM_MSG="Talent preparation cancelled; no Mysticism roll was made.";render();},
  theismCancel(){if(viewOnlyBlock())return;S.play.theismCasting=null;PM_MSG="Miracle exhortation cancelled; no Exhort roll was made.";render();},
  delMagic(i){debounceFire('delMagic'+i,()=>{S.magic.known.splice(i,1);render();});},
- devotional(v){S.magic.devotional=Math.max(0,parseInt(v,10)||0);
+ devotionalRank(v){if(viewOnlyBlock())return;
+   if(!["","lay","initiate","acolyte","priest","highpriest"].includes(v))return;
+   S.magic.devotionalRank=v;DEVOTIONAL_MSG="";render();},
+ devotional(v){if(viewOnlyBlock())return;
+   const raw=String(v).trim(),n=Number(raw),limit=devotionalRankLimit(),old=devotionalMax();
+   if(!raw||!Number.isSafeInteger(n)||n<0){DEVOTIONAL_MSG="Enter a non-negative whole number.";render();return;}
+   if(Number.isInteger(limit)&&n>limit&&n>old){DEVOTIONAL_MSG="This exceeds the confirmed rank limit of "+limit+"; reduce the amount or review the rank.";render();return;}
+   DEVOTIONAL_MSG="";S.magic.devotional=n;
    S.magic.devotionalUsed=Math.min(S.magic.devotionalUsed,S.magic.devotional);render();},
  devotionalAdj(n){if(viewOnlyBlock())return;
    S.magic.devotionalUsed=Math.max(0,Math.min(devotionalMax(),(S.magic.devotionalUsed||0)-n));render();},
@@ -228,6 +235,8 @@ window.APP={
      if(pending&&pending.completed+1<pending.total){pending.completed++;PM_MSG="Talent preparation turn "+pending.completed+" of "+pending.total+" recorded. No roll yet.";render();return;}
    }
    if(m.tradition==="theism"){
+     const poolLimit=devotionalRankLimit();
+     if(Number.isInteger(poolLimit)&&devotionalMax()>poolLimit){PM_MSG="The recorded Devotional Pool exceeds its confirmed rank limit ("+poolLimit+"). Review the pool in the builder before casting; saved points are unchanged.";render();return;}
      const err=magicCastPreflight(m,playCurMagic(),devotionalCur());
      if(err){PM_MSG=err;render();return;}
      if(!magicSkillKey("Exhort")){PM_MSG="Add the Exhort skill before requesting a miracle.";render();return;}
