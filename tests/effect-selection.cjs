@@ -41,4 +41,17 @@ run('VIEW_ONLY=false;APP.playSetOpponentTier(0,"Critical");');
 assert.equal(run('selectedEffectRoll()'),null,'tied result has no selection context');
 run('S=freshState();S.rollLog=[{label:"Other character",tier:"Critical",oppTier:"Failure",combat:true}];');
 assert.equal(run('selectedEffectRoll()'),null,'selection context does not cross characters');
+// Shared excess is applied before critical/success/fumble evaluation.
+assert.equal(run('contestedRollResult(130, 10, 90, 70).reduction'),30);
+assert.equal(run('contestedRollResult(130, 10, 90, 70).a'),100);
+assert.equal(run('contestedRollResult(130, 10, 90, 70).b'),60);
+assert.equal(run('contestedRollResult(130, 10, 90, 70).tierA'),'Critical');
+assert.equal(run('contestedRollResult(130, 10, 90, 70).tierB'),'Failure');
+assert.equal(run('contestedRollResult(130, 10, 90, 70).differential'),2);
+assert.match(run('contestedRollResult(80, 45, 70, 60).opposed'),/Second participant wins/);
+assert.match(run('contestedRollResult(80, 90, 70, 90).opposed'),/Both failed/);
+assert.match(run('contestedRollResult(80, 30, 70, 30).opposed'),/adjudicate/);
+assert.equal(run('contestedRollResult(200, 5, 30, 99).b'),0);
+assert.equal(run('contestedRollResult(100, 0, 90, 2)'),null);
+assert.match(run('specialEffectsPanel()'),/Contested roll calculator/);
 console.log('PASS effect selection, limits, removal, changed result, and read-only guard');
