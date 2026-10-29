@@ -156,6 +156,7 @@ window.APP={
    if(err){PM_MSG=err;render();return;}
    m.active=true;m.remainingTurns=m.durationTurns||0;render();},
  sorceryCancel(){if(viewOnlyBlock())return;S.play.sorceryCasting=null;PM_MSG="Sorcery invocation cancelled; no Invocation roll was made.";render();},
+ mysticismCancel(){if(viewOnlyBlock())return;S.play.mysticismCasting=null;PM_MSG="Talent preparation cancelled; no Mysticism roll was made.";render();},
  delMagic(i){debounceFire('delMagic'+i,()=>{S.magic.known.splice(i,1);render();});},
  devotional(v){S.magic.devotional=Math.max(0,parseInt(v,10)||0);
    S.magic.devotionalUsed=Math.min(S.magic.devotionalUsed,S.magic.devotional);render();},
@@ -202,6 +203,24 @@ window.APP={
    if(m.tradition==="animism"){
      PM_MSG="Animism requires a specific action: Trance, summoning (Core p.137), Binding, or spirit combat. Use the recorded spirit as a reference and resolve the action with your GM; generic spell casting is disabled to avoid inaccurate results.";
      render();return;
+   }
+   if(m.tradition==="mysticism"){
+     const knownIndex=idx-S.magic.folk.length,record=S.magic.known[knownIndex];
+     if(!record||record.tradition!=="mysticism"){PM_MSG="Talent record changed; cancel preparation and review it.";render();return;}
+     const err=magicCastPreflight(m,playCurMagic(),devotionalCur());
+     if(err){PM_MSG=err;render();return;}
+     if(!magicSkillKey("Mysticism")){PM_MSG="Add the Mysticism skill before preparing a Talent.";render();return;}
+     if(record.active){PM_MSG="This Talent is already marked active. End it before preparing it again.";render();return;}
+     const limits=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
+     const limitError=mysticismActivationCheck(S.magic.known,knownIndex,limits.individual,limits.combined);
+     if(limitError){PM_MSG=limitError;render();return;}
+     const total=Number(record.intensity),signature=JSON.stringify([record.name,record.intensity,record.cost]);
+     const pending=S.play.mysticismCasting;
+     if(pending&&(pending.index!==idx||pending.signature!==signature||pending.total!==total)){
+       PM_MSG="A Talent is already being prepared or its details changed. Cancel preparation before continuing.";render();return;
+     }
+     if(total>1&&!pending){S.play.mysticismCasting={index:idx,total,completed:1,signature};PM_MSG="Talent preparation turn 1 of "+total+" recorded. Roll Mysticism on the final turn (Core p.156).";render();return;}
+     if(pending&&pending.completed+1<pending.total){pending.completed++;PM_MSG="Talent preparation turn "+pending.completed+" of "+pending.total+" recorded. No roll yet.";render();return;}
    }
    // Core p.165: Invocation roll takes place on the final turn of casting.
    // A Sorcery click starts/advances a tracker until that final turn. It does
@@ -260,6 +279,7 @@ window.APP={
    }else costTxt="nothing spent";
    const tag=g.grade!=="standard"?" ("+GRADE_LABEL[g.grade]+")":"";
    if(m.tradition==="sorcery")S.play.sorceryCasting=null;
+   if(m.tradition==="mysticism")S.play.mysticismCasting=null;
    S.rollLog.unshift({label:magicLabel(m)+" — "+trad.castSkill+tag,pct:g.pct,
      roll:r===100?"00":r,tier,combat:false,oppTier:null,
      magic:(worked?"cast":"failed")+", "+costTxt});
