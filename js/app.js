@@ -764,6 +764,14 @@ window.APP={
  playHeal(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const n=el?Number(el.value):NaN;
    if(!Number.isSafeInteger(n)||n<=0)return;
    S.play.hp[loc]=Math.min(playMaxHP(loc),playCurHP(loc)+n);if(el)el.value="";render();},
+ playNaturalRecovery(loc,rawReduction,treated){if(viewOnlyBlock())return;
+   const info=naturalRecoveryInfo(loc),raw=String(rawReduction).trim(),reduction=Number(raw);
+   if(!info||!raw||!Number.isInteger(reduction)||reduction<0||reduction>3||info.rate<1)return;
+   if(info.cls==="major"&&!treated){PM_MSG="Confirm successful treatment before natural Major Wound recovery (Core p.80).";render();return;}
+   const current=playCurHP(loc),gain=Math.min(playMaxHP(loc)-current,Math.max(0,info.rate-reduction));
+   S.play.hp[loc]=current+gain;
+   PM_MSG="After one "+info.interval+", "+loc+" recovers "+gain+" HP. Recheck the wound before another interval.";render();},
+ playFatigueCause(cause){if(viewOnlyBlock()||!["","exertion","blood","asphyxiation"].includes(cause))return;S.play.fatigueCause=cause;render();},
  playSetHP(loc,v){if(viewOnlyBlock())return;S.play.hp[loc]=playValidHP(v,playMaxHP(loc));render();},
  // Fixed-amount direct HP adjustment (−1/−3), deliberately bypassing armour
  // entirely -- for damage that was never subject to AP in the first place
