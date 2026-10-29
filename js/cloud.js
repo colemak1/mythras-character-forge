@@ -574,9 +574,18 @@ function normalizeLocalCampaign(c){
   return c?{id:c.id,name:c.name,notes:c.notes,session_state:c.sessionState||null,
     created_at:new Date(c.createdAt).toISOString(),dm_id:null,invite_code:null}:null;
 }
+let CAMP_LOAD_ERROR="",CAMP_LOAD_SEQUENCE=0;
 async function loadCampaignsUnified(){
-  if(cloudActive()){CAMP_CACHE=await cloudFetchCampaigns();}
-  else{CAMP_CACHE=loadCampaignsLocal().map(normalizeLocalCampaign);}
+  const seq=++CAMP_LOAD_SEQUENCE,owner=AUTH_USER?.id||null,cloud=cloudActive();
+  CAMP_LOAD_ERROR="";CAMP_CACHE=null;
+  try{
+    const camps=cloud?await cloudFetchCampaigns():loadCampaignsLocal().map(normalizeLocalCampaign);
+    if(seq!==CAMP_LOAD_SEQUENCE||owner!==(AUTH_USER?.id||null)||cloud!==cloudActive())return;
+    CAMP_CACHE=camps;
+  }catch(e){
+    if(seq!==CAMP_LOAD_SEQUENCE||owner!==(AUTH_USER?.id||null)||cloud!==cloudActive())return;
+    CAMP_LOAD_ERROR="Could not load your campaigns: "+(e?.message||"Unknown error")+". Your saved campaigns have not been deleted.";
+  }
   render();
 }
 // "My Characters" — every character ever autosaved (local) or owned
@@ -954,6 +963,7 @@ function renderMenuView(){
 }
 /* ---- campaign list ---- */
 function campaignsHTML(){
+  if(CAMP_LOAD_ERROR)return '<div class="menuwrap"><div class="menuhead"><h1>Campaigns</h1></div><p class="warn" role="alert">'+esc(CAMP_LOAD_ERROR)+'</p><button class="chip" onclick="loadCampaignsUnified()">Retry loading campaigns</button></div>';
   if(CAMP_CACHE===null)return '<div class="menuwrap"><p class="note" style="text-align:center">Loading campaigns&hellip;</p></div>';
   const camps=CAMP_CACHE.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   let h='<div class="menuwrap"><div class="menuhead"><h1>Campaigns</h1><p>'+(cloudActive()?"Synced to your account — DMs see every linked character.":"Local to this browser only.")+'</p></div>';
