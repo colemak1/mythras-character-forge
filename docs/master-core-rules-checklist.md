@@ -126,6 +126,10 @@ MCR-23: Core p.72 confirms Passions can increase by the same Experience Roll pro
 
 MCR-01, 02 and 03 were merged in PR #34 (merge `bfc26497b2a441c0de760435af70c49b07665347`), with automated tests passing. Legacy Intensity and combined-spell records require explicit review. Core pp.161–162 and p.165 were checked against the scanned rulebook; legacy casting trackers must be cancelled and restarted. Combined-spell identity, common targets and differing Invocation skills remain GM checks. The app rounds Shaping up; rounding at values other than the printed 47% example remains unverified and the items stay unchecked pending resolution and production testing.
 
-## Mysticism and Folk Magic — review pending
+## Mysticism and Folk Magic — merged, verification outstanding
 
-MCR-04 and MCR-07 have proposed changes. Visually checked uploaded Core pp.118, 121, 155 and 157: the general starting allowance counts each 20% or part, specialist Folk careers use one tenth, and Mysticism 34% has individual Intensity 2. Rounding at other Mysticism and specialist Folk boundaries remains unverified; specialist allowance is GM-managed. Automated tests cover the book's example, default allowance guidance, and manually recorded spells. Leave items unchecked pending review and production verification.
+MCR-04 and MCR-07 changes were merged in PR #41 (`add8c44c5042d522b2b96bc46957e90d70671701`). Visually checked uploaded Core pp.118, 121, 155 and 157: the general starting allowance counts each 20% or part, specialist Folk careers use one tenth, and Mysticism 34% has individual Intensity 2. Rounding at other Mysticism and specialist Folk boundaries remains unverified; specialist allowance is GM-managed. Automated tests cover the book's example, default allowance guidance, and manually recorded spells. Leave items unchecked pending production verification and resolution of those remaining questions.
+
+## Animism and Theism eligibility — merged, production verification pending
+
+MCR-11: bound-spirit command check merged in PR #42 (merge e9e66b5c02adbded2cdafd78e9283a8ae00aa51a) verifies POW against three times the Binding critical range, with missing POW requiring review. Visually checked Core pp.38, 131 and 136. MCR-12: guidance based on Core p.180 was merged; rank-specific caps and multiple pools are not yet modeled or enforced. Existing pools are unchanged. MCR-15 remains unfinished. Keep items unchecked pending production testing.
