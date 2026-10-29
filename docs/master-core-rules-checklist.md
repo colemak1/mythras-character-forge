@@ -170,6 +170,10 @@ MCR-14: Core p.181 was visually checked. PR #47 (merge 475456c446615cbc2aea028e7
 
 MCR-12: Core p.180 was visually checked. PR #48 (merge 91da8239b4f71354ea6e083046d5f8d147b0dda9) added a rank explicitly confirmed for the currently tracked pool. Whole-number limits reject new increases above the cap; an existing oversized pool is preserved and must be reviewed before casting. Unconfirmed rank or fractional result does not silently impose a rounding rule. The existing tracker still supports only one pool; combined multi-cult totals and fractional rounding require GM handling. Real-account and production verification are outstanding.
 
-## Ageing review — review pending
+## Ageing review — merged, production verification pending
 
-MCR-08: Visually checked Core pp.34,70–71. The creation Age table flags Senior and Old as subject to ageing; the separate human ageing bands start at 40. Proposed guidance records the GM's review or override against the age and species, and leaves existing characteristics untouched. Tests and penalties remain manual: direct characteristic changes would conflict with the current builder's rolled-range and points-buy validation. The acceptance requirement for persisted characteristic effects and updated derived values remains open.
+MCR-08: Visually checked Core pp.34,70–71. PR #49 (merge d6c861750a3f45b925d07383114873a352af7858) records the GM's review or override against the age and species, and leaves existing characteristics untouched. Tests and penalties remain manual: direct characteristic changes would conflict with the current builder's rolled-range and points-buy validation. The acceptance requirement for persisted characteristic effects and updated derived values remains open.
+
+## Individual armour locations — review pending
+
+MCR-16: Core p.58 visually checked. Proposed change models each limb independently, retaining a both-limbs shortcut. Legacy shared entries are copied to left and right only when those locations are missing; originals remain in saved data. Regression cases cover damage, ENC, cost, Initiative and JSON reload. Real-account cloud and production verification are outstanding.

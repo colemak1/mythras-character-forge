@@ -920,7 +920,8 @@ function weaponsCost(){return S.gearWeapons.reduce((a,n)=>{const w=weaponByName(
 // total suit cost. ARMOR_MATERIALS stores the printed full-suit totals,
 // so divide the suit cost by seven to recover the printed per-location
 // cost. "Each Arm"/"Each Leg" selections represent two locations.
-function armorCostAt(loc){const m=armorMaterialByName(S.armor[loc]);
+function armorNameAt(loc){const old=loc.includes("Arm")?"Each Arm":loc.includes("Leg")?"Each Leg":loc;return S.armor[loc]??S.armor[old]??"None";}
+function armorCostAt(loc){const m=armorMaterialByName(armorNameAt(loc));
   const suitCost=parseFloat((m.suit||"0/0/0").split("/")[1])||0;
   return suitCost/7;}
 function armorCostTotal(){return ARMOR_LOCATIONS.reduce((a,l)=>a+armorCostAt(l)*armorLocWeight(l),0);}
@@ -934,10 +935,10 @@ function gearCostTotal(){return Math.round(weaponsCost()+armorCostTotal());}
 // confirmed against page image). "Each Arm"/"Each Leg" are single pickers
 // covering two physical locations apiece, so they're weighted x2 here to
 // match the book's 7-location totals (Head, Chest, Abdomen, R/L Arm, R/L Leg).
-function armorEncAt(loc){const m=armorMaterialByName(S.armor[loc]);return m.encPerLoc*0.5;}
+function armorEncAt(loc){const m=armorMaterialByName(armorNameAt(loc));return m.encPerLoc*0.5;}
 function armorLocWeight(loc){return (loc==="Each Arm"||loc==="Each Leg")?2:1;}
 function armorEncTotal(){return ARMOR_LOCATIONS.reduce((a,l)=>a+armorEncAt(l)*armorLocWeight(l),0);}
-function armorApAt(loc){const m=armorMaterialByName(S.armor[loc]);return m.ap;}
+function armorApAt(loc){const m=armorMaterialByName(armorNameAt(loc));return m.ap;}
 function inventoryEncTotal(){return S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.enc||0),0);}
 function inventoryCostTotal(){return S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.cost||0),0);}
 function gearEncTotal(){return inventoryEncTotal()+weaponsEnc()+armorEncTotal();}
@@ -947,7 +948,7 @@ function gearEncTotal(){return inventoryEncTotal()+weaponsEnc()+armorEncTotal();
 // a full Plated Mail suit (ENC 6/location x 7 locations = 42) => 42/5 = 8.4,
 // rounded up to 9 => Initiative Penalty -9.
 function armourPenaltyToInit(){
-  const total=ARMOR_LOCATIONS.reduce((a,l)=>{const m=armorMaterialByName(S.armor[l]);return a+m.encPerLoc*armorLocWeight(l);},0);
+  const total=ARMOR_LOCATIONS.reduce((a,l)=>{const m=armorMaterialByName(armorNameAt(l));return a+m.encPerLoc*armorLocWeight(l);},0);
   return total<=0?0:Math.ceil(total/5);
 }
 // Encumbrance (core rulebook, Encumbrance section, confirmed against page
@@ -1036,7 +1037,8 @@ function stepMoney(){
    +'</div>';
   h+='<div class="card"><h3>Armour</h3><p class="note">Armour Table (Economics &amp; Equipment, p.58). Armour Points (AP) reduce damage to that location; worn armour counts as half its packed ENC, and total worn ENC also reduces Initiative (see below).</p>'
    +'<div class="grid3">'+ARMOR_LOCATIONS.map(loc=>fld(loc,'<select onchange="APP.setArmor(\''+jsq(loc)+'\',this.value)">'
-     +allArmorMaterialsFor(loc).map(m=>'<option value="'+esc(m.name)+'" '+(S.armor[loc]===m.name?"selected":"")+'>'+esc(m.name)+(m.custom?" ★":"")+' (AP '+m.ap+')</option>').join("")+'</select>')).join("")+'</div>'
+     +allArmorMaterialsFor(loc).map(m=>'<option value="'+esc(m.name)+'" '+(armorNameAt(loc)===m.name?"selected":"")+'>'+esc(m.name)+(m.custom?" ★":"")+' (AP '+m.ap+')</option>').join("")+'</select>')).join("")+'</div>'
+   +'<p class="note">Set both limbs together:</p><div class="grid2">'+["Each Arm","Each Leg"].map(loc=>fld(loc,'<select onchange="APP.setArmor(\''+jsq(loc)+'\',this.value)"><option value="" selected disabled>Choose armour for both</option>'+allArmorMaterialsFor(loc).map(m=>'<option value="'+esc(m.name)+'">'+esc(m.name)+' (AP '+m.ap+')</option>').join("")+'</select>')).join("")+'</div>'
    +'<p class="note" style="margin-top:6px">Armour ENC (worn, halved): <b style="font-family:var(--mono)">'+armorEncTotal()+'</b> &nbsp;&middot;&nbsp; Armour Penalty to Initiative: <b style="font-family:var(--mono)">-'+armourPenaltyToInit()+'</b></p></div>';
   h+='<div class="card"><h3>Inventory</h3><table class="alloc"><tr><th>Item</th><th class="num">Qty</th><th class="num">ENC each</th><th class="num">sp each</th><th></th></tr>'
    +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.inv('+i+',\'name\',this.value)"></td>'
@@ -1062,7 +1064,7 @@ function bodyDiagramSvg(){
   const pts=[["Head",30,9],["Chest",30,27],["Abdomen",30,43],
     ["Right Arm",13,29],["Left Arm",47,29],["Right Leg",22,70],["Left Leg",38,70]];
   return '<svg viewBox="0 0 60 90" class="mbodysvg" aria-hidden="true">'
-   +pts.map(([lbl,x,y])=>{const base=lbl.replace(/Right |Left /,"Each ");const ap=armorApAt(base);
+   +pts.map(([lbl,x,y])=>{const ap=armorApAt(lbl);
      return '<circle cx="'+x+'" cy="'+y+'" r="7.5"><title>'+esc(lbl)+' — AP '+ap+'</title></circle>'
       +'<text x="'+x+'" y="'+(y+2.6)+'" text-anchor="middle">'+ap+'</text>';}).join("")
    +'</svg>';

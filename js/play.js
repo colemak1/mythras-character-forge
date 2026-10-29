@@ -267,7 +267,7 @@ function pmBodySvg(){
     const fill=pmZoneFill(loc),stroke=pmZoneStroke(loc);
     const cls=playHPState(loc).cls;
     const sel=S.play.selectedLoc===loc;
-    const armLoc=PLAY_LIMB_BASE[loc]||loc;
+    const armLoc=loc;
     return '<g class="bz'+(cls!=="ok"?" "+cls:"")+(sel?" sel":"")+'" onclick="APP.playSelectLoc(\''+loc+'\')" role="button" tabindex="0" aria-label="'+loc+'">'
      +'<'+tag+' class="shape" '+attrs+' style="fill:'+fill+';stroke:'+stroke+'"/>'
      +'<'+tag+' class="hatch" '+attrs+' fill="url(#pmhatch)" stroke="none"/>'
@@ -290,7 +290,7 @@ function pmBodySvg(){
     const wound=loc===worstLoc&&worstCls!=="ok";
     const minor=wound&&worstCls==="minor";
     const cur=playCurHP(loc),max=playMaxHP(loc);
-    const armLoc=PLAY_LIMB_BASE[loc]||loc,ap=armorApAt(armLoc);
+    const armLoc=loc,ap=armorApAt(armLoc);
     const tierSuffix=worstCls==="major"?"MAJOR":worstCls==="serious"?"SERIOUS":"MINOR";
     const nm=pmShortName(loc).toUpperCase()+(wound?" — "+tierSuffix:"");
     const anchor=side==="left"?"start":"end";
@@ -313,12 +313,12 @@ function pmBodySvg(){
 }
 function pmLocRow(loc){
   const cur=playCurHP(loc),max=playMaxHP(loc),st=playHPState(loc).cls;
-  const armLoc=PLAY_LIMB_BASE[loc]||loc,ap=armorApAt(armLoc);
+  const armLoc=loc,ap=armorApAt(armLoc);
   const sel=S.play.selectedLoc===loc;
   return '<div class="pm-locrow st-'+st+(sel?' sel':'')+'" onclick="APP.playSelectLoc(\''+loc+'\')" role="button" tabindex="0">'
    +'<span class="dot" style="background:'+pmZoneFill(loc)+'"></span>'
    +'<span class="nm">'+pmShortName(loc)+'</span>'
-   +'<span class="ap" title="AP '+ap+' — '+esc(S.armor[armLoc]||"None")+'">'+PM_SHIELD_SVG+ap+'</span>'
+   +'<span class="ap" title="AP '+ap+' — '+esc(armorNameAt(armLoc))+'">'+PM_SHIELD_SVG+ap+'</span>'
    +'<span class="hp">'+cur+'<span>/'+max+'</span></span></div>';
 }
 // Redesigned damage entry (was a flat row of −1/−3/amount-input/−dmg/+heal/
@@ -336,12 +336,12 @@ function pmLocDetail(){
   const loc=S.play.selectedLoc;
   if(!loc)return '<div class="pm-locdetail"><p class="pm-empty">Choose a body location above to record an injury.</p></div>';
   const cur=playCurHP(loc),max=playMaxHP(loc),st=playHPState(loc);
-  const armLoc=PLAY_LIMB_BASE[loc]||loc,ap=armorApAt(armLoc);
+  const armLoc=loc,ap=armorApAt(armLoc);
   const idv="playdmg-"+loc.replace(/\s+/g,"_");
   const note=PM_DMG_NOTE&&PM_DMG_NOTE.loc===loc?PM_DMG_NOTE:null;
   return '<div class="pm-locdetail">'
    +'<div class="dt"><b>'+esc(loc)+'</b><span class="d20">d20: '+hitD20For(loc)+'</span></div>'
-   +'<div class="arm">'+esc(S.armor[armLoc]||"None")+' &mdash; AP '+ap+'</div>'
+   +'<div class="arm">'+esc(armorNameAt(armLoc))+' &mdash; AP '+ap+'</div>'
    +'<div class="hpline">'+cur+' <span>/ '+max+' HP</span><span class="pm-woundtag '+st.cls+'">'+st.tag+'</span></div>'
    +'<div class="fx">'+esc(playWoundEffectText(loc,st.cls))+'</div>'
    +(playWoundActionText(loc,st.cls)?'<p class="pm-notes" role="status">'+esc(playWoundActionText(loc,st.cls))+'</p>':'')
@@ -963,7 +963,7 @@ function renderPlayView(){
     }
   }else if(tab==="inventory"){
     h+='<div class="pm-tablewrap"><table class="pm-atktable"><tr><th>Location</th><th>Armour</th><th>AP</th></tr>'
-     +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(S.armor[l])+'</td><td>'+armorApAt(l)+'</td></tr>').join("")+'</table></div>';
+     +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(armorNameAt(l))+'</td><td>'+armorApAt(l)+'</td></tr>').join("")+'</table></div>';
     h+='<p class="pm-invmeta">Gear ENC '+gearEncTotal()+' / '+(encLimit()??"—")+' unencumbered'+(S.money.dice.length?(' &middot; '+moneyRemaining()+' / '+moneyTotal()+' sp'):"")+'</p>';
     if(inventoryBlock()){
       // Plain party-member view of a teammate's sheet: static list, no controls.
@@ -1159,7 +1159,7 @@ function characterSheetBody(){
      +S.community.connections.map(x=>'<div><b>'+esc(x.type)+':</b> '+esc(x.name)+(x.notes?' — '+esc(x.notes):'')+'</div>').join('')+'</div>':'')+'</div>';
   h+='<div class="mbox"><div class="mbox-t">Equipment &amp; Armour</div>'
    +'<table class="mtiny"><tr><th>Loc</th><th>Armour</th><th class="num">AP</th></tr>'
-   +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(S.armor[l])+'</td><td class="num">'+armorApAt(l)+'</td></tr>').join("")+'</table>'
+   +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(armorNameAt(l))+'</td><td class="num">'+armorApAt(l)+'</td></tr>').join("")+'</table>'
    +mkv("Init. penalty",initPenalty?"−"+initPenalty:"0")
    +mkv("Silver",S.money.dice.length?moneyRemaining()+" / "+moneyTotal()+" sp":"—")+'</div>';
   h+='</div>'; // /mhead-grid
@@ -1195,7 +1195,7 @@ function characterSheetBody(){
   h+='<div class="mbox"><div class="mbox-t">Hit Locations</div><div class="mhitloc-flex">'
    +'<table class="mtiny"><tr><th>d20</th><th>Loc</th><th class="num">HP</th><th class="num">AP</th></tr>'
    +HIT_D20.map(([r,loc])=>{const base=loc.replace(/Right |Left /,"Each ");
-     return '<tr><td>'+r+'</td><td>'+loc+'</td><td class="num">'+hpAt(base)+'</td><td class="num">'+armorApAt(base)+'</td></tr>';}).join("")
+     return '<tr><td>'+r+'</td><td>'+loc+'</td><td class="num">'+hpAt(base)+'</td><td class="num">'+armorApAt(loc)+'</td></tr>';}).join("")
    +'</table>'+bodyDiagramSvg()+'</div></div>';
   h+='<div class="mbox"><div class="mbox-t">Difficulty Grades</div><table class="mtiny">'
    +GRADES.map(([k,l])=>'<tr><td>'+l+'</td><td class="num">'+(GRADE_MULT[k]==null?(k==="automatic"?"no roll":"can&rsquo;t attempt"):(k==="standard"?"&mdash;":"&times;"+GRADE_MULT[k]))+'</td></tr>').join("")

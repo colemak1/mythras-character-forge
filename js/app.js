@@ -570,7 +570,7 @@ window.APP={
  /* weapons & armour */
  toggleWeapon(name){const i=S.gearWeapons.indexOf(name);
    if(i>=0)S.gearWeapons.splice(i,1);else S.gearWeapons.push(name);render();},
- setArmor(loc,material){S.armor[loc]=material;render();},
+ setArmor(loc,material){if(loc==="Each Arm"||loc==="Each Leg"){const suffix=loc.slice(5);S.armor["Right "+suffix]=material;S.armor["Left "+suffix]=material;}else S.armor[loc]=material;render();},
  /* combat style composition — any number of weapons/traits, Character Builder only */
  toggleStyleWeapon(key,name){toggleInList(styleDef(key).weapons,name);render();},
  toggleStyleTrait(key,name){toggleInList(styleDef(key).traits,name);render();},
@@ -754,7 +754,7 @@ window.APP={
  // rather than just silently updating the HP number.
  playApplyDamage(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const raw=el?Number(el.value):NaN;
    if(!Number.isSafeInteger(raw)||raw<=0)return;
-   const armLoc=PLAY_LIMB_BASE[loc]||loc,ap=armorApAt(armLoc);
+   const ap=armorApAt(loc);
    const applied=Math.max(0,raw-ap);
    // Floor at -maxHP (not 0) so Major Wound (<=-max, core pp.109-111) stays
    // reachable — clamping at 0 made Major Wound permanently dead code.
@@ -1383,7 +1383,7 @@ function buildMD(){
     md+="## Characteristics\n\n| "+CHARS.join(" | ")+" |\n|"+CHARS.map(()=>"---").join("|")+"|\n| "+CHARS.map(k=>c[k]).join(" | ")+" |\n\n";
     md+="## Hit Locations\n\n| d20 | Location | HP | AP |\n|---|---|---|---|\n"
       +HIT_D20.map(([r,loc])=>{const base=loc.replace(/Right |Left /,"").replace("Arm","Each Arm").replace("Leg","Each Leg");
-        const hp=hpLocsFinal(c.CON,c.SIZ).find(x=>x[0]===base);return "| "+r+" | "+loc+" | "+(hp?hp[1]:"")+" | "+armorApAt(base)+" |";}).join("\n")+"\n\n";
+        const hp=hpLocsFinal(c.CON,c.SIZ).find(x=>x[0]===base);return "| "+r+" | "+loc+" | "+(hp?hp[1]:"")+" | "+armorApAt(loc)+" |";}).join("\n")+"\n\n";
   }
   const grp=(g,t)=>{const list=es.filter(e=>e.grp===g).sort((a,b)=>a.label.localeCompare(b.label));
     if(!list.length)return "";
@@ -1412,7 +1412,7 @@ function buildMD(){
   if(S.passions.length)md+="## Passions\n\n| Passion | % |\n|---|---|\n"+S.passions.map(p=>"| "+(p.name||"(unnamed)")+" | "+passionVal(p)+"% |").join("\n")+"\n\n";
   if(S.gearWeapons.length)md+="## Weapons\n\n| Weapon | Damage | Reach | Effects | ENC | AP/HP |\n|---|---|---|---|---|---|\n"
     +S.gearWeapons.map(nm=>{const w=weaponByName(nm);return w?"| "+w.name+" | "+w.dmg+" | "+w.reach+" | "+w.effects+" | "+w.enc+" | "+w.apHp+" |":"";}).filter(Boolean).join("\n")+"\n\n";
-  md+="## Armour\n\n| Location | Construction | AP |\n|---|---|---|\n"+ARMOR_LOCATIONS.map(l=>"| "+l+" | "+S.armor[l]+" | "+armorApAt(l)+" |").join("\n")
+  md+="## Armour\n\n| Location | Construction | AP |\n|---|---|---|\n"+ARMOR_LOCATIONS.map(l=>"| "+l+" | "+armorNameAt(l)+" | "+armorApAt(l)+" |").join("\n")
     +"\n\nArmour Penalty to Initiative: -"+armourPenaltyToInit()+"\n\n";
   if(S.money.dice.length)md+="## Money\n\nStarting: "+moneyTotal()+" sp — remaining: "+moneyRemaining()+" sp\n\n";
   if(S.inventory.length)md+="## Equipment\n\n"+S.inventory.map(it=>"- "+it.name+" ×"+it.qty+" (ENC "+((it.qty||0)*(it.enc||0))+")").join("\n")+"\n\n";

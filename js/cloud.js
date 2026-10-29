@@ -549,7 +549,7 @@ function allWeapons(){return WEAPONS.concat(customContentByType("weapon").map(cu
 function weaponByName(name){return WEAPON_MAP[name]||allWeapons().find(w=>w.name===name);}
 function allArmorMaterialsFor(loc){
   const custom=customContentByType("armor").map(customArmorShape)
-   .filter(a=>!a.locations.length||a.locations.includes(loc));
+   .filter(a=>!a.locations.length||a.locations.includes(loc)||a.locations.includes(loc.includes("Arm")?"Each Arm":loc.includes("Leg")?"Each Leg":loc));
   return ARMOR_MATERIALS.concat(custom);
 }
 function armorMaterialByName(name){
