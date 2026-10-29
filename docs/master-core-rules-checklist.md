@@ -178,6 +178,10 @@ MCR-08: Visually checked Core pp.34,70–71. PR #49 (merge d6c861750a3f45b925d07
 
 MCR-16: Core p.58 visually checked. PR #50 (merge fdb438b754d604fd608e8fb2c0c6642fc6163bee) models each limb independently, retaining a both-limbs shortcut. Legacy shared entries are copied to left and right only when those locations are missing; originals remain in saved data. Regression cases cover damage, ENC, cost, Initiative and JSON reload. Real-account cloud and production verification are outstanding.
 
-## Recovery assistance — review pending
+## Recovery assistance — merged and deployed (PR #51)
 
 MCR-10: fatigue recovery guidance can be filtered by cause; the player/GM still determines when the cause has ended and adjusts fatigue manually. MCR-20: proposed natural healing applies one interval using the current wound severity, Healing Rate and a GM-entered strenuous-activity reduction. Major Wounds require confirmation of successful treatment (Core p.80). MCR-22: wound text now correctly refers to successful Healing treatment; lasting injury and permanent maximum-HP changes remain manual. No elapsed time is assumed or recorded, Pulp/Paragon adjustments remain GM-managed, and signed-in live persistence remains unverified.
+
+## Contested-roll calculator — ready for review
+
+MCR-19: Core pp.50–51 visually checked. An optional calculator accepts both modified skills and rolls, applies the shared excess over 100 before resolving either roll, and reports both opposed and differential results. It leaves the combat roll log and manual tier entry unchanged; applying its result to combat remains manual. The optional rounded subtraction rule is not applied. Real-account and production verification remain outstanding.

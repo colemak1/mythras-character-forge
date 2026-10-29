@@ -534,6 +534,31 @@ const DIFF_TABLE={
   Fumble:{Critical:-3,Success:-2,Failure:0,Fumble:0}
 };
 function playEffectsWon(mine,theirs){return DIFF_TABLE[mine]?.[theirs] ?? 0;}
+// Core pp.50–51: compare already-modified skills, then subtract the same
+// excess over 100 from each participant before determining either result.
+function contestedRollResult(skillA,rollA,skillB,rollB){
+  if(![skillA,skillB].every(n=>Number.isInteger(n)&&n>=0)||
+     ![rollA,rollB].every(n=>Number.isInteger(n)&&n>=1&&n<=100))return null;
+  const reduction=Math.max(0,skillA-100,skillB-100);
+  const a=Math.max(0,skillA-reduction), b=Math.max(0,skillB-reduction);
+  const tierA=resolveRoll(rollA,a), tierB=resolveRoll(rollB,b);
+  const rank={Fumble:0,Failure:1,Success:2,Critical:3};
+  let opposed;
+  if(rank[tierA]<2&&rank[tierB]<2)opposed="Both failed: the GM can call for a reroll or describe the outcome.";
+  else if(rank[tierA]!==rank[tierB])opposed=rank[tierA]>rank[tierB]?"First participant wins.":"Second participant wins.";
+  else if(rollA===rollB)opposed="Equal successful rolls: ask the GM to adjudicate the tie.";
+  else opposed=rollA>rollB?"First participant wins (higher successful roll).":"Second participant wins (higher successful roll).";
+  return {reduction,a,b,tierA,tierB,opposed,differential:playEffectsWon(tierA,tierB)};
+}
+function pmCalculateContest(form){
+  const values=["skillA","rollA","skillB","rollB"].map(n=>form.elements[n].value.trim());
+  const result=values.some(v=>!/^\d+$/.test(v))?null:contestedRollResult(...values.map(Number));
+  const out=form.querySelector('[data-contest-result]');
+  if(!result){out.textContent="Enter whole-number skills of 0 or more and rolls from 1 to 100 (use 100 for 00).";return;}
+  const d=result.differential;
+  out.textContent="Shared reduction: "+result.reduction+"%. Adjusted skills: "+result.a+"% and "+result.b+"%. Results: "+result.tierA+" and "+result.tierB+". Opposed: "+result.opposed+" Differential: "+(d>0?"first participant gains "+d+" level(s).":d<0?"second participant gains "+(-d)+" level(s).":"no benefit.");
+}
+
 let PM_EFFECT_ROLL_REF=null;
 let PM_FX_SEARCH="";
 function selectedEffectRoll(){
@@ -668,6 +693,7 @@ function specialEffectsPanel(){
   }).join("")
    +fxGroupHTML("Other",SPECIAL_EFFECTS.filter(e=>!new Set(FX_GROUPS.flatMap(([,names])=>names)).has(e[0])))
    +'</div>';
+  h+='<details class="pm-fx-item" style="margin-top:14px"><summary>Contested roll calculator <span class="pm-fx-badge">Core pp.50–51</span></summary><p>Enter each participant’s effective skill after difficulty and other modifiers, and their d100 roll. Use 100 for 00. This calculator does not change your roll log.</p><form onsubmit="event.preventDefault();pmCalculateContest(this)"><label>First skill % <input name="skillA" type="number" min="0" step="1" required></label> <label>First roll <input name="rollA" type="number" min="1" max="100" step="1" required></label> <label>Second skill % <input name="skillB" type="number" min="0" step="1" required></label> <label>Second roll <input name="rollB" type="number" min="1" max="100" step="1" required></label> <button class="pm-btn sm" type="submit">Compare rolls</button><p data-contest-result role="status"></p></form></details>';
   h+='<details class="pm-fx-item" style="margin-top:14px"><summary>How many Special Effects? <span class="pm-fx-badge">Roll comparison</span></summary><div class="pm-tablewrap"><table class="pm-atktable"><tr><th>You rolled</th><th>Opponent Critical</th><th>Opponent Success</th><th>Opponent Failure</th><th>Opponent Fumble</th></tr>'
    +["Critical","Success","Failure","Fumble"].map(mine=>'<tr><td><b>'+mine+'</b></td>'
      +["Critical","Success","Failure","Fumble"].map(theirs=>{const n=playEffectsWon(mine,theirs);
