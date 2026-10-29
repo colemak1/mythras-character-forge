@@ -7,6 +7,25 @@
 **Scope:** the four completed static audit handoffs, deduplicated and reprioritized.  
 **Status:** planning/handoff only. No code changed or tests run during this consolidation.
 
+## Current implementation status — baseline reconciliation
+
+The original audit findings below describe the audited snapshot, not necessarily current behaviour. The following reflects merged work through PR #45. “Partial” means the listed remainder is still open, not that the whole rule has been verified in production.
+
+| Items | Status | Remaining work |
+|---|---|---|
+| MCR-05, 06, 09, 27, 28 | Implemented in PR #30 | Signed-in production verification and full rules coverage remain. |
+| MCR-10, 17 | Minimum guidance implemented in PR #30 | Source-specific recovery workflow and optional parry assistance remain. |
+| MCR-01–03 | Implemented in PR #34, verification incomplete | Shaping rounding beyond the printed example and combined-spell circumstances need review. |
+| MCR-04, 07 | Partially addressed in PR #41 | Check remaining rounding boundaries and specialist Folk allowance. |
+| MCR-11 | Implemented in PR #42 | Real-character production verification remains. |
+| MCR-12 | Guidance only in PR #42 | Pool limits and multiple cults are not enforced. |
+| MCR-13 | Partially implemented in PR #45 (merge bd423af2e1b198bab85bacee32fd92b1b1aa7c31) | Validate category costs, rounding, interruption and signed-in persistence. |
+| MCR-15 | Guidance in PR #44 | Creation-mode distinction, prerequisites and GM override remain. |
+| MCR-23 | Partially implemented in PR #43 | Passion fumble tracking, XP-based reductions and real-account verification remain. |
+| MCR-08, 14, 16, 18–22, 24–26 | Not completed in this batch | Check actual current implementation and Core before making changes. |
+
+The previously failing homepage and Update 23 tests are being repaired in the baseline branch. The campaign-load failure was a real missing error path; the test can now verify that failed reads show a retry rather than an empty campaign list. Signed-in live-service verification is still outstanding.
+
 ## What this document is
 
 This is the **single working backlog** for correcting Mythras Forge's *Core-rule implementation*. It incorporates the reports below, keeps their original issue IDs for traceability, and ranks work by risk of a wrong result *during character creation or play*, not by visual polish or how easy an item is to code.
