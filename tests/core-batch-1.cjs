@@ -46,6 +46,24 @@ test('Core p.72: Passion improvement spends rolls, persists, and respects access
  run('VIEW_ONLY=false;APP.xpSpendPassion(99);');assert.equal(run('S.xp.pool'),1);
  run('Math.random=()=>0.99;APP.xpSpendPassion(1);');assert.equal(run('passionVal(S.passions[1])'),59);
 });
+test('Core p.73: learn professional skills without altering creation allocations',()=>{
+ reset();run('S.xp.pool=7;');const allocations=run('JSON.stringify(S.alloc)');
+ run('APP.xpLearnProfessional("Lore","History",false)');assert.equal(run('S.xp.pool'),7);
+ run('APP.xpLearnProfessional("Lore","",true)');assert.equal(run('S.xp.pool'),7);
+ run('APP.xpLearnProfessional("Lore","History",true)');
+ assert.equal(run('S.xp.pool'),4);assert.equal(run('finalPct(profKey("Lore","History"))'),24);
+ assert.equal(run('JSON.stringify(S.alloc)'),allocations);assert.match(run('xpModalHtml()'),/learned for 3 Experience Rolls/);
+ run('APP.xpLearnProfessional("Lore"," history ",true)');assert.equal(run('S.xp.pool'),4);
+ run('APP.xpLearnProfessional("Lore","Nature",true)');assert.equal(run('S.xp.pool'),1);
+ run('APP.xpLearnProfessional("Healing","",true)');assert.equal(run('S.xp.pool'),1);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
+ assert.equal(run('acquiredProfs().filter(p=>p.name==="Lore").length'),2);
+ assert.equal(run('finalPct(profKey("Lore","History"))'),24);
+ run('S.xp.pool=3;VIEW_ONLY=true;APP.xpLearnProfessional("Healing","",true)');assert.equal(run('S.xp.pool'),3);
+ run('VIEW_ONLY=false;APP.xpLearnProfessional("Healing","",true)');assert.equal(run('finalPct(profKey("Healing",""))'),24);
+ run('S.xp.pool=1;Math.random=()=>0;APP.xpSpend(profKey("Healing",""))');assert.equal(run('finalPct(profKey("Healing",""))'),25);
+ reset();run('delete S.xp.learnedProfs;normalizeState()');assert.equal(run('S.xp.learnedProfs.length'),0);
+});
 test('Core p.82: GM-directed Passion changes persist without spending experience',()=>{
  reset();run('S.passions=[{name:"Loyalty",type:"org"},{name:"Hope",type:"species"}];S.xp.pool=2;');
  const start=run('passionVal(S.passions[0])');

@@ -625,11 +625,26 @@ window.APP={
    const r=selectedEffectRoll();if(!r||!Number.isInteger(i)||i<0||i>=(r.effectsPicked||[]).length)return;
    r.effectsPicked.splice(i,1);render();},
  /* ---- Experience Rolls / Improve Skills (core rulebook pp.71-73) ---- */
- openXP(){XP_OPEN=true;render();},
+ openXP(){XP_LEARN_MSG="";XP_OPEN=true;render();},
  closeXP(){XP_OPEN=false;render();},
  xpAward(v,applyModifier=false){if(VIEW_ONLY)return;const n=parseInt(v,10);if(!Number.isFinite(n)||n===0)return;
    S.xp.pool=Math.max(0,S.xp.pool+n+(n>0&&applyModifier?xpMod(S.chars.CHA):0));
    render();},
+ xpLearnProfessional(name,spec,confirmed){
+   if(VIEW_ONLY)return;
+   const fail=msg=>{XP_LEARN_MSG=msg;render();};
+   if(!confirmed)return fail("Confirm the source of education, completed month and GM approval first.");
+   if(!Object.hasOwn(PROF,name))return fail("Choose a Professional Skill from the list.");
+   spec=typeof spec==="string"?spec.trim():"";
+   if(QUICK_SPEC_HINTS[name]&&!spec)return fail("Enter the skill’s speciality or tradition.");
+   if(!QUICK_SPEC_HINTS[name]&&spec)return fail("This skill does not use a speciality here; clear the speciality field.");
+   if(spec.length>100)return fail("Keep the speciality to 100 characters or fewer.");
+   if(acquiredProfs().some(p=>p.key===profKey(name,spec)))return fail("This skill and speciality are already acquired.");
+   if(xpRollsAvailable()<3)return fail("Learning a new skill requires 3 banked Experience Rolls.");
+   if(!Array.isArray(S.xp.learnedProfs))S.xp.learnedProfs=[];
+   S.xp.learnedProfs.push({name,spec});S.xp.pool-=3;
+   S.xp.history.unshift({type:"learn",label:profLabel(name,spec),newPct:finalPct(profKey(name,spec))});
+   S.xp.history=S.xp.history.slice(0,25);XP_LEARN_MSG="Learned "+profLabel(name,spec)+" at its characteristic base; spent 3 Experience Rolls.";render();},
  xpToggleFumble(key){const i=S.xp.fumbled.indexOf(key);
    if(i>=0)S.xp.fumbled.splice(i,1);else S.xp.fumbled.push(key);render();},
  // Manual "checked" toggle for a dramatic non-crit success the app can't
