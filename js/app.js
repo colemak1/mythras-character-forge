@@ -625,7 +625,7 @@ window.APP={
    const r=selectedEffectRoll();if(!r||!Number.isInteger(i)||i<0||i>=(r.effectsPicked||[]).length)return;
    r.effectsPicked.splice(i,1);render();},
  /* ---- Experience Rolls / Improve Skills (core rulebook pp.71-73) ---- */
- openXP(){XP_LEARN_MSG="";XP_OPEN=true;render();},
+ openXP(){XP_LEARN_MSG="";XP_TRAIN_MSG="";XP_OPEN=true;render();},
  closeXP(){XP_OPEN=false;render();},
  xpAward(v,applyModifier=false){if(VIEW_ONLY)return;const n=parseInt(v,10);if(!Number.isFinite(n)||n===0)return;
    S.xp.pool=Math.max(0,S.xp.pool+n+(n>0&&applyModifier?xpMod(S.chars.CHA):0));
@@ -645,6 +645,24 @@ window.APP={
    S.xp.learnedProfs.push({name,spec});S.xp.pool-=3;
    S.xp.history.unshift({type:"learn",label:profLabel(name,spec),newPct:finalPct(profKey(name,spec))});
    S.xp.history=S.xp.history.slice(0,25);XP_LEARN_MSG="Learned "+profLabel(name,spec)+" at its characteristic base; spent 3 Experience Rolls.";render();},
+ xpTrain(key,mentorValue,teachResult,confirmed){
+   if(VIEW_ONLY)return;
+   const fail=msg=>{XP_TRAIN_MSG=msg;render();};
+   const e=entryMap()[key],value=String(mentorValue).trim(),mentor=Number(value);
+   if(!confirmed)return fail("Confirm the completed week and GM approval first.");
+   if(!e)return fail("Choose an acquired skill.");
+   if(!/^\d+$/.test(value)||!Number.isSafeInteger(mentor))return fail("Enter the mentor’s whole-number skill percentage.");
+   if((S.xp.trainingPending||[]).includes(key))return fail("Improve this skill with an Experience Roll before training it again.");
+   const diff=mentor-finalPct(key);
+   if(diff<20)return fail("The mentor needs at least 20 percentage points more than the student.");
+   if(diff===20)return fail("At exactly 20 points, the Core text and table do not align; ask your GM to adjudicate the result.");
+   const step=trainingStep(diff,teachResult);if(step===null)return fail("Choose the trainer or teacher result.");
+   const die=trainingDie(step),gain=die.sides?d(die.sides)+die.bonus:0;
+   S.xp.bonus[key]=(S.xp.bonus[key]||0)+gain;
+   if(!Array.isArray(S.xp.trainingPending))S.xp.trainingPending=[];
+   S.xp.trainingPending.push(key);
+   S.xp.history.unshift({type:"training",label:e.label,gain,newPct:finalPct(key)});
+   S.xp.history=S.xp.history.slice(0,25);XP_TRAIN_MSG="Training complete: "+e.label+" gained "+gain+"%. An Experience Roll must improve it before training again.";render();},
  xpToggleFumble(key){const i=S.xp.fumbled.indexOf(key);
    if(i>=0)S.xp.fumbled.splice(i,1);else S.xp.fumbled.push(key);render();},
  // Manual "checked" toggle for a dramatic non-crit success the app can't
@@ -683,6 +701,7 @@ window.APP={
    const success=total>=target;
    const gain=success?(d(4)+1):1;
    S.xp.bonus[key]=(S.xp.bonus[key]||0)+gain;
+   S.xp.trainingPending=(S.xp.trainingPending||[]).filter(k=>k!==key);
    S.xp.checked=S.xp.checked.filter(k=>k!==key);
    S.xp.pool=Math.max(0,S.xp.pool-1);
    S.xp.history.unshift({type:"roll",key,label:e.label,roll:r===100?"00":r,int:S.chars.INT,total,target,success,gain,fumbleApplied,newPct:finalPct(key)});

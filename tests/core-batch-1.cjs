@@ -64,6 +64,31 @@ test('Core p.73: learn professional skills without altering creation allocations
  run('S.xp.pool=1;Math.random=()=>0;APP.xpSpend(profKey("Healing",""))');assert.equal(run('finalPct(profKey("Healing",""))'),25);
  reset();run('delete S.xp.learnedProfs;normalizeState()');assert.equal(run('S.xp.learnedProfs.length'),0);
 });
+test('Core p.73: mentor training steps, repeat gate, and persistence',()=>{
+ reset();run('Math.random=()=>0;S.xp.pool=2;');
+ for(const [diff,sides,bonus] of [[21,2,0],[30,2,0],[31,3,0],[40,3,0],[41,4,0],[51,6,0],[61,6,1],[100,6,4],[101,6,5]]){
+  assert.equal(run(`trainingDie(trainingStep(${diff},"trainer")).sides`),sides);
+  assert.equal(run(`trainingDie(trainingStep(${diff},"trainer")).bonus`),bonus);
+ }
+ assert.equal(run('trainingStep(20,"trainer")'),null);
+ assert.equal(run('trainingStep(21,"critical")'),2);
+ assert.equal(run('trainingDie(trainingStep(21,"fumble")).sides'),0);
+ run('APP.xpTrain("std:Athletics",46,"trainer",true)');
+ assert.equal(run('finalPct("std:Athletics")'),26);assert.equal(run('S.xp.pool'),2);
+ run('APP.xpTrain("std:Athletics",47,"trainer",false)');assert.equal(run('finalPct("std:Athletics")'),26);
+ run('APP.xpTrain("std:Athletics",47,"trainer",true)');assert.equal(run('finalPct("std:Athletics")'),27);
+ assert.equal(run('S.xp.pool'),2);assert.equal(run('S.xp.trainingPending.length'),1);
+ run('APP.xpTrain("std:Athletics",60,"trainer",true)');assert.equal(run('finalPct("std:Athletics")'),27);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
+ assert.equal(run('S.xp.trainingPending[0]'),'std:Athletics');
+ run('APP.xpSpend("std:Athletics")');assert.equal(run('S.xp.trainingPending.length'),0);
+ run('APP.xpTrain("std:Athletics",60,"trainer",true)');assert.equal(run('S.xp.trainingPending.length'),1);
+ run('VIEW_ONLY=true;APP.xpTrain("std:Healing",100,"trainer",true)');assert.equal(run('S.xp.trainingPending.length'),1);
+ reset();run('Math.random=()=>0;APP.xpTrain("std:Athletics",47,"fumble",true)');
+ assert.equal(run('finalPct("std:Athletics")'),26);assert.equal(run('S.xp.trainingPending.length'),1);
+ assert.match(run('xpModalHtml()'),/Train with a mentor/);
+ reset();run('delete S.xp.trainingPending;normalizeState()');assert.equal(run('S.xp.trainingPending.length'),0);
+});
 test('Core p.82: GM-directed Passion changes persist without spending experience',()=>{
  reset();run('S.passions=[{name:"Loyalty",type:"org"},{name:"Hope",type:"species"}];S.xp.pool=2;');
  const start=run('passionVal(S.passions[0])');

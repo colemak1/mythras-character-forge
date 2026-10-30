@@ -189,3 +189,7 @@ MCR-19: Core pp.50–51 visually checked. An optional calculator accepts both mo
 ## Learning professional skills — implementation in review
 
 MCR-24: Core p.73 visually checked. The advancement screen can add a GM-approved Professional Skill after a confirmed month of study, spending 3 banked Experience Rolls and preserving creation allocations. Specialities remain distinct, duplicates are rejected, and normal skill displays and improvement use the characteristic base. Education, money and prerequisites are confirmed at the table; live signed-in persistence is not yet verified.
+
+## Mentor training — implementation in review
+
+MCR-25: Core p.73 visually checked. Confirmed week-long training uses the mentor/student difference and teacher result to select the chart step; the skill must then be improved with an Experience Roll before further training. Time, payment, teacher roll and availability remain GM-managed. The text permits a 20-point difference but the chart begins at 21; the app flags exactly 20 for GM adjudication instead of assuming a chart row. Live signed-in persistence remains unverified.
