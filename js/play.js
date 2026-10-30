@@ -768,6 +768,7 @@ function magicPanel(){
       else if(t.key==="sorcery"){const c=sorceryCost(m);meta=c.mp+" MP · "+c.turns+" turn"+(c.turns>1?"s":"")+(c.shapings?" · "+Object.entries(sorceryLevels(m)).map(([k,v])=>k+" "+v).join(", "):" · unshaped")+(c.combinedSpells?" · +"+c.combinedSpells+" combined":"");}
       else if(t.key==="animism")meta="POW "+(m.pow||0)+" · CHA "+(m.cha||0)+" · Intensity "+(m.intensity||1)+" · "+(m.spiritStatus==="bound"?"BOUND":"UNBOUND")+(Number.isInteger(m.spiritMP)?" · spirit MP "+m.spiritMP:"");
       else if(t.key==="theism"){const d=theismDetails(m);meta=d?d.cost+" from pool · "+d.turns+" turns":"Confirm miracle level in builder";}
+      else if(t.key==="mysticism"){const det=mysticismDetails(m);meta=(det?det.cost+" MP":"Confirm Talent category and Intensity")+" · Intensity "+(m.intensity||1)+(m.active?" · ACTIVE":"");}
       else meta=(m.cost||0)+(t.pool==="devotional"?" from pool":" MP")+" · Intensity "+(m.intensity||1)+(t.key==="mysticism"&&m.active?" · ACTIVE":"");
       const body=(t.key==="folk"&&m.spell)?m.spell.d:(m.notes||"");
       if(t.key==="sorcery"&&S.play.sorceryCasting && S.play.sorceryCasting.index===idx){
@@ -786,7 +787,7 @@ function magicPanel(){
     }).join("");
     h+='</div>';
   });
-  h+='<p class="pm-empty" style="margin-top:10px">Sorcery and Mysticism use turn trackers; rolls occur on the final turn. AP and interruption are GM-managed. Mysticism activation and durations are manual; confirm the Talent category and Magic Point cost with the GM. Casting is blocked if you lack the minimum available points. Folk Magic, Sorcery, Mysticism, and Theism use distinct result-dependent costs (Core pp.122, 156, 165, 181). Animism has separate bound-spirit commands and manual tracking for spirit contact, binding vessel, and spirit-combat MP (Core pp.134–139); summoning, ritual Binding and spirit combat outcomes still require GM resolution. Consult Mythras Core and your GM for other requirements and effects.</p>';
+  h+='<p class="pm-empty" style="margin-top:10px">Sorcery and Mysticism use turn trackers; rolls occur on the final turn. AP and interruption are GM-managed. Mysticism activation and durations are manual; confirm each Talent category with the GM. Casting is blocked if you lack the minimum available points. Folk Magic, Sorcery, Mysticism, and Theism use distinct result-dependent costs (Core pp.122, 156, 165, 181). Animism has separate bound-spirit commands and manual tracking for spirit contact, binding vessel, and spirit-combat MP (Core pp.134–139); summoning, ritual Binding and spirit combat outcomes still require GM resolution. Consult Mythras Core and your GM for other requirements and effects.</p>';
   return h;
 }
 // A roll-log row. Combat Style rolls that beat a Success (i.e. Critical or

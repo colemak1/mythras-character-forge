@@ -193,3 +193,7 @@ MCR-24: Core p.73 visually checked. The advancement screen can add a GM-approved
 ## Mentor training — implementation in review
 
 MCR-25: Core p.73 visually checked. Confirmed week-long training uses the mentor/student difference and teacher result to select the chart step; the skill must then be improved with an Experience Roll before further training. Time, payment, teacher roll and availability remain GM-managed. The text permits a 20-point difference but the chart begins at 21; the app flags exactly 20 for GM adjudication instead of assuming a chart row. Live signed-in persistence remains unverified.
+
+## Mysticism category costs — implementation in review
+
+MCR-13: Core pp.155–157 visually checked. Players confirm category; augment costs 1 MP per intensity, invoke costs 2 MP at Intensity 1, and enhance costs 3 MP per intensity. Legacy manually recorded costs remain saved but do not determine the new calculated cost; unreviewed entries require category confirmation. Existing interrupted preparation must be cancelled and restarted after review. Activation remains manual, and rounding, interruption and real-account persistence remain open.
