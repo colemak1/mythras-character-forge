@@ -207,3 +207,7 @@ MCR-13: Core pp.155–157 visually checked. Players confirm category; augment co
 ## Wound incidents — implementation in review
 
 MCR-21: Core p.110 visually checked. Each attack entered through Apply Damage that causes a Serious or Major Wound creates a saved incident with actual post-armour damage, manual opposed-Endurance outcome, treatment status, notes and optional Serious interruption duration. Incidents can be resolved or reopened independently of current HP; deadlines are reminders, not automatic clocks. Direct HP adjustments do not presume an attack or create an incident. Condition enforcement, live-account verification and legacy wounds without incident records remain open.
+
+## Defensive Special Effects — implementation in review
+
+MCR-18: Core pp.94–96 visually checked. Combat rolls require an explicit attack/defence role for effect selection; eligible defence-only and shared effects are available when the defender wins. Critical and fumble requirements use the correct participant. Evade can be marked as defence, and an attacker may explicitly record an unopposed attack as no parry. Weapon and situational eligibility remain GM-confirmed; actual combat outcome and parry reductions are not inferred. Live-account verification remains open.
