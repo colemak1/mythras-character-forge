@@ -362,6 +362,22 @@ function pmWoundEvents(loc){
       +'<button type="button" class="pm-btn sm" onclick="APP.'+(e.resolved?'woundEventReopen':'woundEventResolve')+'('+i+')">'+(e.resolved?'Reopen incident':'Mark incident resolved')+'</button></details>';
    }).join("")+'</div>';
 }
+// Core pp.94–95: reduction depends on the effective weapon sizes after
+// a successful parry. This calculator does not assume a roll or modify HP.
+const PARRY_SIZES=["Small","Medium","Large","Huge","Enormous"];
+function parryDamage(damage,attackSize,defenceSize,result){
+  if(!Number.isSafeInteger(damage)||damage<0||!PARRY_SIZES.includes(attackSize)||!PARRY_SIZES.includes(defenceSize)||!["success","failed","none"].includes(result))return null;
+  if(result!=="success")return {remaining:damage,blocked:0};
+  const delta=PARRY_SIZES.indexOf(attackSize)-PARRY_SIZES.indexOf(defenceSize);
+  const remaining=delta<=0?0:delta===1?damage/2:damage;
+  return {remaining,blocked:damage-remaining};
+}
+function pmParryCalculate(form){
+  const raw=form.elements.damage.value.trim(),out=form.querySelector('[data-parry-result]');
+  const result=/^\d+$/.test(raw)?parryDamage(Number(raw),form.elements.attackSize.value,form.elements.defenceSize.value,form.elements.result.value):null;
+  if(!result){out.textContent="Enter a non-negative whole damage amount and select the sizes and defence result.";return;}
+  out.textContent="Parry blocks "+result.blocked+"; "+result.remaining+" damage remains before armour."+(Number.isInteger(result.remaining)?"":" A half point remains: use the GM’s rounding decision before entering damage.");
+}
 function pmLocDetail(){
   const loc=S.play.selectedLoc;
   if(!loc)return '<div class="pm-locdetail"><p class="pm-empty">Choose a body location above to record an injury.</p></div>';
@@ -377,6 +393,7 @@ function pmLocDetail(){
    +'<div class="fx">'+esc(playWoundEffectText(loc,st.cls))+'</div>'
    +(playWoundActionText(loc,st.cls)?'<p class="pm-notes" role="status">'+esc(playWoundActionText(loc,st.cls))+'</p>':'')
    +pmWoundEvents(loc)
+   +'<details class="pm-fx-item"><summary>Parry damage calculator <span class="pm-fx-badge">Core pp.94–95</span></summary><p>Enter damage after modifiers and any applicable Special Effects. Choose the effective weapon sizes and the actual parry result. The result is before armour; this calculator does not change HP.</p><form onsubmit="event.preventDefault();pmParryCalculate(this)"><label>Attack damage <input name="damage" type="number" min="0" step="1" required></label> <label>Attacking size <select name="attackSize" required><option value="">Choose size</option>'+PARRY_SIZES.map(n=>'<option>'+n+'</option>').join("")+'</select></label> <label>Parrying size <select name="defenceSize" required><option value="">Choose size</option>'+PARRY_SIZES.map(n=>'<option>'+n+'</option>').join("")+'</select></label> <label>Defence <select name="result" required><option value="">Choose result</option><option value="success">Successful parry (including critical)</option><option value="failed">Failed or fumbled parry</option><option value="none">No parry</option></select></label> <button type="submit" class="pm-btn sm">Calculate</button><p data-parry-result role="status"></p></form><p>Special Effects, weapon traits and other circumstances may change the result; the GM decides their application.</p></details>'
    +'<p class="pm-notes">Enter damage after parry and other reductions, before armour. Forge subtracts location AP (Core p.110).</p>'
    +'<div class="pm-dmgctl">'
    +'<div class="pm-dmgrow">'
