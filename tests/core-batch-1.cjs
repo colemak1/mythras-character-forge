@@ -149,6 +149,19 @@ test('Core p.58: legacy armour migrates and limbs can differ without changing to
  ctx.document.querySelector=()=>({value:"4"});run('APP.playApplyDamage("Right Arm");APP.playApplyDamage("Left Arm");');
  assert.equal(run('S.play.hp["Right Arm"]'),4);assert.equal(run('S.play.hp["Left Arm"]'),0);ctx.document.querySelector=()=>null;
 });
+test('Core pp.94–95: parry calculation needs explicit result and compares all sizes',()=>{
+ reset();const sizes=['Small','Medium','Large','Huge','Enormous'];
+ for(let a=0;a<sizes.length;a++)for(let d=0;d<sizes.length;d++){
+  const got=run(`parryDamage(8,"${sizes[a]}","${sizes[d]}","success").remaining`);
+  assert.equal(got,a<=d?0:a===d+1?4:8);
+ }
+ assert.equal(run('parryDamage(7,"Huge","Large","success").remaining'),3.5);
+ assert.equal(run('parryDamage(7,"Huge","Huge","failed").remaining'),7);
+ assert.equal(run('parryDamage(7,"Huge","Huge","none").remaining'),7);
+ assert.equal(run('parryDamage(7,"Huge","Huge","")'),null);
+ assert.equal(run('parryDamage(-1,"Huge","Large","success")'),null);
+ run('S.play.selectedLoc="Head"');assert.match(run('pmLocDetail()'),/Parry damage calculator/);
+});
 test('Core p.110: wound incident records track hits and survive healing and reload',()=>{
  reset();run('S.play.hp.Head=3;');ctx.document.querySelector=()=>({value:"3"});
  run('APP.playApplyDamage("Head")');assert.equal(run('S.play.woundEvents.length'),1);

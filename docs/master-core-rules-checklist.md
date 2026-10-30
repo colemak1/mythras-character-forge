@@ -215,3 +215,7 @@ MCR-18: Core pp.94–96 visually checked. Combat rolls require an explicit attac
 ## Permanent injury maximums — implementation in review
 
 MCR-22: Core p.80 visually checked. A GM-confirmed per-location maximum adjusts wound thresholds, recovery, sheets and party vitals without changing the stored wound or creation characteristics. Fractional reductions, injury result, absent limb hit locations, time and magical restoration remain GM decisions; the app does not roll or infer them. Real-account persistence is unverified.
+
+## Parry calculation — implementation in review
+
+MCR-17: Core pp.94–95 visually checked. An optional calculator shows remaining damage before armour for successful, failed or absent parries using effective weapon sizes. It does not infer the defence, apply Special Effects, apply armour, or change HP. Odd half-damage results are displayed exactly pending GM rounding; live browser verification remains open.
