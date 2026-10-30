@@ -131,6 +131,10 @@ window.APP={
  talentCategory(i,value){if(viewOnlyBlock())return;const m=S.magic.known[i];
    if(!m||m.tradition!=="mysticism"||!["","augment","invoke","enhance"].includes(value))return;
    m.talentCategory=value;render();},
+ startingMagicMode(mode){if(viewOnlyBlock()||!["","new","experienced"].includes(mode))return;
+   S.magic.startingReviewMode=mode;S.magic.startingReviewSignature=null;render();},
+ startingMagicConfirm(){if(viewOnlyBlock()||S.magic.startingReviewMode!=="new")return;
+   S.magic.startingReviewSignature=startingMagicReviewSignature();render();},
  miracleLevel(i,raw){const m=S.magic.known[i],n=Number(raw);if(!m||m.tradition!=="theism"||![1,2,3].includes(n))return;
    m.miracleLevel=n;if(!Number.isInteger(m.miracleInstances)||m.miracleInstances<1)m.miracleInstances=1;render();},
  miracleInstances(i,raw){const m=S.magic.known[i],n=Number(raw);if(!m||m.tradition!=="theism"||!Number.isInteger(n)||n<1||n>100)return;

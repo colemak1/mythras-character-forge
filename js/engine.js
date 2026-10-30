@@ -726,6 +726,10 @@ function spiritCommandPreflight(m,mp,bindingPct){
   if(Number(m.pow)>limit)return "The spirit's POW exceeds your Binding limit ("+limit+"); the command fails (Core pp.131, 136).";
   return null;
 }
+// Starting-magic review is an explicit snapshot, never inferred from old saves.
+function startingMagicReviewSignature(){
+  return JSON.stringify({folk:S.magic.folk,known:S.magic.known.map(m=>[m.tradition,m.name,m.miracleLevel]),rank:S.magic.devotionalRank,cult:S.cultMembership,culture:S.culture,career:S.career,skills:["Folk Magic","Binding","Mysticism","Invocation","Devotion"].map(magicSkillPct)});
+}
 function magicEntryCost(entry){
   if(entry.tradition==="sorcery")return sorceryCost(entry).mp;
   if(entry.tradition==="theism")return theismDetails(entry)?.cost||0;

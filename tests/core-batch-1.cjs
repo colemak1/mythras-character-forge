@@ -109,6 +109,16 @@ test('Core p.118: starting magic guidance uses the correct skill and preserves r
  assert.match(run('knownMagicEditor(MAGIC_TRADITIONS.find(t=>t.key==="sorcery"))'),/Invocation: 2 at 40%/);
  run('magicSkillPct=oldMagicSkillPct;');
 });
+test('Core p.118: starting magic review is explicit, persistent and becomes stale',()=>{
+ reset();run('var previousViewOnlyBlock=viewOnlyBlock;viewOnlyBlock=()=>false;S.magic.known=[{tradition:"theism",name:"Bless"}]');
+ assert.equal(run('S.magic.startingReviewMode'),undefined);
+ run('APP.startingMagicMode("new");APP.startingMagicConfirm()');
+ assert.equal(run('S.magic.startingReviewSignature===startingMagicReviewSignature()'),true);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState()`);
+ assert.equal(run('S.magic.startingReviewSignature===startingMagicReviewSignature()'),true);
+ run('S.magic.known[0].name="Other"');assert.equal(run('S.magic.startingReviewSignature===startingMagicReviewSignature()'),false);
+ run('APP.startingMagicMode("experienced")');assert.equal(run('S.magic.known.length'),1);run('viewOnlyBlock=previousViewOnlyBlock');
+});
 test('Core p.180: explicitly confirmed pool rank limits are non-destructive',()=>{
  reset();run('S.magic.devotional=0;APP.devotionalRank("initiate");');
  assert.equal(run('devotionalRankLimit()'),3);
