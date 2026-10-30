@@ -796,8 +796,25 @@ window.APP={
    // Floor at -maxHP (not 0) so Major Wound (<=-max, core pp.109-111) stays
    // reachable — clamping at 0 made Major Wound permanently dead code.
    S.play.hp[loc]=Math.max(-playMaxHP(loc),playCurHP(loc)-applied);
+   // Each new damaging hit at Serious/Major severity prompts its own opposed
+   // check (Core p.110). Do not infer the dice outcome or apply conditions.
+   const severity=playHPState(loc).cls;
+   if(applied>0&&(severity==="serious"||severity==="major")){
+     if(!Array.isArray(S.play.woundEvents))S.play.woundEvents=[];
+     S.play.woundEvents.push({loc,severity,damage:applied,outcome:"pending",interruptionTurns:null,treated:false,resolved:false,notes:""});
+   }
    PM_DMG_NOTE={loc,raw,ap,applied};
    if(el)el.value="";render();},
+ woundEventUpdate(i,field,value){if(viewOnlyBlock()||!Number.isInteger(i))return;
+   const e=S.play.woundEvents?.[i];if(!e||e.resolved)return;
+   if(field==="outcome"&&["pending","success","failure"].includes(value))e.outcome=value;
+   else if(field==="interruptionTurns"&&e.severity==="serious"&&(value===""||["1","2","3"].includes(String(value))))e.interruptionTurns=value===""?null:Number(value);
+   else if(field==="treated")e.treated=value===true;
+   else if(field==="notes")e.notes=String(value).slice(0,500);
+   else return;
+   render();},
+ woundEventResolve(i){if(viewOnlyBlock()||!Number.isInteger(i))return;const e=S.play.woundEvents?.[i];if(!e||e.resolved)return;e.resolved=true;render();},
+ woundEventReopen(i){if(viewOnlyBlock()||!Number.isInteger(i))return;const e=S.play.woundEvents?.[i];if(!e||!e.resolved)return;e.resolved=false;render();},
  playHeal(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const n=el?Number(el.value):NaN;
    if(!Number.isSafeInteger(n)||n<=0)return;
    S.play.hp[loc]=Math.min(playMaxHP(loc),playCurHP(loc)+n);if(el)el.value="";render();},

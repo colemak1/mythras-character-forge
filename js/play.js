@@ -340,6 +340,24 @@ function pmLocRow(loc){
 // go through armour at all -- ongoing bleed/poison/fire ticks, healing,
 // GM fiat -- kept small and explicitly labelled so it reads as the
 // exception, not the default.
+// Incident records stay separate from current location HP and require the
+// player/GM to record checks, treatment and timing; no live clock or forced outcome.
+function pmWoundEvents(loc){
+  const events=(S.play.woundEvents||[]).map((e,i)=>({e,i})).filter(x=>x.e&&x.e.loc===loc);
+  if(!events.length)return "";
+  const hr=charsReady()?healRate(S.chars.CON):0;
+  return '<div class="pm-notes"><h4>Recorded wound incidents</h4><p>Resolve opposed rolls and timing at the table. Recording an incident does not apply conditions automatically.</p>'
+   +events.map(({e,i})=>{
+     const limb=PLAY_LIMB_LOCS.includes(loc),serious=e.severity==="serious";
+     const consequence=serious?(limb?"On a failed check: limb unusable until HP is positive; legs cause a fall, arms drop held items unless strapped.":"On a failed check: unconscious for "+(Number.isSafeInteger(e.damage)?e.damage:"the attack’s damage")+" minutes."):(limb?"Incapacitated and prone; a failed check causes unconsciousness. For a severed, punctured or ripped-off limb, treatment is needed within "+(5*hr)+" minutes.":"Unconscious and incapacitated; a failed check causes death. If successful, treatment is needed within "+(2*hr)+" combat rounds.");
+     return '<details class="pm-fx-item"><summary>'+esc(serious?"Serious":"Major")+' wound · '+esc(String(e.damage))+ ' damage · '+(e.resolved?'resolved':'open')+'</summary><p>'+esc(consequence)+'</p>'
+      +'<label>Opposed Endurance outcome <select '+(e.resolved?'disabled':'')+' onchange="APP.woundEventUpdate('+i+',\'outcome\',this.value)">'+[["pending","Pending"],["success","Succeeded"],["failure","Failed"]].map(([v,label])=>'<option value="'+v+'" '+(e.outcome===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'
+      +(serious?' <label>Attack/casting interruption <select '+(e.resolved?'disabled':'')+' onchange="APP.woundEventUpdate('+i+',\'interruptionTurns\',this.value)"><option value="">Not recorded</option>'+[1,2,3].map(n=>'<option value="'+n+'" '+(e.interruptionTurns===n?'selected':'')+'>'+n+' turn'+(n===1?'':'s')+'</option>').join("")+'</select></label>':'')
+      +' <label><input type="checkbox" '+(e.treated?'checked':'')+' '+(e.resolved?'disabled':'')+' onchange="APP.woundEventUpdate('+i+',\'treated\',this.checked)"> Treatment recorded</label>'
+      +'<p><label>Attack roll, timing, or other notes <input type="text" maxlength="500" value="'+esc(String(e.notes||""))+'" '+(e.resolved?'disabled':'')+' onchange="APP.woundEventUpdate('+i+',\'notes\',this.value)"></label></p>'
+      +'<button type="button" class="pm-btn sm" onclick="APP.'+(e.resolved?'woundEventReopen':'woundEventResolve')+'('+i+')">'+(e.resolved?'Reopen incident':'Mark incident resolved')+'</button></details>';
+   }).join("")+'</div>';
+}
 function pmLocDetail(){
   const loc=S.play.selectedLoc;
   if(!loc)return '<div class="pm-locdetail"><p class="pm-empty">Choose a body location above to record an injury.</p></div>';
@@ -353,6 +371,7 @@ function pmLocDetail(){
    +'<div class="hpline">'+cur+' <span>/ '+max+' HP</span><span class="pm-woundtag '+st.cls+'">'+st.tag+'</span></div>'
    +'<div class="fx">'+esc(playWoundEffectText(loc,st.cls))+'</div>'
    +(playWoundActionText(loc,st.cls)?'<p class="pm-notes" role="status">'+esc(playWoundActionText(loc,st.cls))+'</p>':'')
+   +pmWoundEvents(loc)
    +'<p class="pm-notes">Enter damage after parry and other reductions, before armour. Forge subtracts location AP (Core p.110).</p>'
    +'<div class="pm-dmgctl">'
    +'<div class="pm-dmgrow">'
