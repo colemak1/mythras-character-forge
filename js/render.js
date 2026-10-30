@@ -417,7 +417,7 @@ function stepAttrs(){
   +'<div class="card"><h3>Hit Points per Location</h3><p class="note">CON+SIZ = '+(c.CON+c.SIZ)+'. Locations rolled on 1d20 in play.'+(hasAdv("hp")?' Includes the Advantage bonus below.':"")+'</p>'
   +'<table class="rt"><tr><th>d20</th><th>Location</th><th class="num">HP</th></tr>'
   +HIT_D20.map(([r,loc])=>{const base=loc.replace(/Right |Left /,"").replace("Arm","Each Arm").replace("Leg","Each Leg");
-    const hp=hpLocsFinal(c.CON,c.SIZ).find(x=>x[0]===base||x[0]===loc);
+    const hp=[loc,playMaxHP(loc)];
     return '<tr><td>'+r+'</td><td>'+loc+'</td><td class="num">'+(hp?hp[1]:"")+'</td></tr>';}).join("")
   +'</table></div>';
 }

@@ -800,7 +800,7 @@ window.APP={
    const applied=Math.max(0,raw-ap);
    // Floor at -maxHP (not 0) so Major Wound (<=-max, core pp.109-111) stays
    // reachable — clamping at 0 made Major Wound permanently dead code.
-   S.play.hp[loc]=Math.max(-playMaxHP(loc),playCurHP(loc)-applied);
+   S.play.hp[loc]=Math.min(playCurHP(loc),Math.max(-playMaxHP(loc),playCurHP(loc)-applied));
    // Each new damaging hit at Serious/Major severity prompts its own opposed
    // check (Core p.110). Do not infer the dice outcome or apply conditions.
    const severity=playHPState(loc).cls;
@@ -831,12 +831,19 @@ window.APP={
    S.play.hp[loc]=current+gain;
    PM_MSG="After one "+info.interval+", "+loc+" recovers "+gain+" HP. Recheck the wound before another interval.";render();},
  playFatigueCause(cause){if(viewOnlyBlock()||!["","exertion","blood","asphyxiation"].includes(cause))return;S.play.fatigueCause=cause;render();},
+ playSetMaxHP(loc,raw,confirmed){if(viewOnlyBlock()||!confirmed||!PLAY_HP_LOCS.includes(loc))return;
+   const text=String(raw).trim(),n=Number(text),base=playStateHPMax(S).find(x=>x[0]===(PLAY_LIMB_BASE[loc]||loc))?.[1];
+   if(!/^\d+$/.test(text)||!Number.isSafeInteger(n)||n<1||n>base){PM_MSG="Enter a whole-number maximum between 1 and the calculated maximum ("+base+").";render();return;}
+   S.play.hpMaxOverride=S.play.hpMaxOverride||{};S.play.hpMaxOverride[loc]=n;
+   PM_MSG=loc+" maximum set to "+n+" HP. The original wound and incident records are preserved.";render();},
+ playClearMaxHP(loc,confirmed){if(viewOnlyBlock()||!confirmed||!PLAY_HP_LOCS.includes(loc))return;
+   if(S.play.hpMaxOverride)delete S.play.hpMaxOverride[loc];PM_MSG=loc+" maximum restored to its calculated value.";render();},
  playSetHP(loc,v){if(viewOnlyBlock())return;S.play.hp[loc]=playValidHP(v,playMaxHP(loc));render();},
  // Fixed-amount direct HP adjustment (−1/−3), deliberately bypassing armour
  // entirely -- for damage that was never subject to AP in the first place
  // (poison, fire, GM fiat), not a shortcut for a
  // weapon hit. See the "Ignores armour" row in pmLocDetail.
- playQuickDamage(loc,n){if(viewOnlyBlock())return;S.play.hp[loc]=Math.max(-playMaxHP(loc),playCurHP(loc)-n);render();},
+ playQuickDamage(loc,n){if(viewOnlyBlock())return;S.play.hp[loc]=Math.min(playCurHP(loc),Math.max(-playMaxHP(loc),playCurHP(loc)-n));render();},
  // Selecting a location just opens the detail panel — read-only navigation,
  // always allowed even in a VIEW_ONLY session. Clears any damage-math note
  // left over from a different location so it can never show under the
@@ -1450,7 +1457,7 @@ function buildMD(){
     md+="## Characteristics\n\n| "+CHARS.join(" | ")+" |\n|"+CHARS.map(()=>"---").join("|")+"|\n| "+CHARS.map(k=>c[k]).join(" | ")+" |\n\n";
     md+="## Hit Locations\n\n| d20 | Location | HP | AP |\n|---|---|---|---|\n"
       +HIT_D20.map(([r,loc])=>{const base=loc.replace(/Right |Left /,"").replace("Arm","Each Arm").replace("Leg","Each Leg");
-        const hp=hpLocsFinal(c.CON,c.SIZ).find(x=>x[0]===base);return "| "+r+" | "+loc+" | "+(hp?hp[1]:"")+" | "+armorApAt(loc)+" |";}).join("\n")+"\n\n";
+        return "| "+r+" | "+loc+" | "+playMaxHP(loc)+" | "+armorApAt(loc)+" |";}).join("\n")+"\n\n";
   }
   const grp=(g,t)=>{const list=es.filter(e=>e.grp===g).sort((a,b)=>a.label.localeCompare(b.label));
     if(!list.length)return "";

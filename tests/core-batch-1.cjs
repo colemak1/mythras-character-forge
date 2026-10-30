@@ -164,6 +164,21 @@ test('Core p.110: wound incident records track hits and survive healing and relo
  reset();run('S.play.hp["Right Arm"]=0;APP.playQuickDamage("Right Arm",1)');assert.equal(run('S.play.woundEvents.length'),0);
  run('delete S.play.woundEvents;normalizeState()');assert.equal(run('S.play.woundEvents.length'),0);ctx.document.querySelector=()=>null;
 });
+test('Core p.80: permanent injury maximum preserves deep wounds and recalculates thresholds',()=>{
+ reset();const base=run('playMaxHP("Right Arm")');assert(base>=3);
+ run('S.play.hp["Right Arm"]=-playMaxHP("Right Arm");');const deep=run('playCurHP("Right Arm")');
+ run('APP.playSetMaxHP("Right Arm",2,false)');assert.equal(run('playMaxHP("Right Arm")'),base);
+ run('APP.playSetMaxHP("Right Arm",2,true)');assert.equal(run('playMaxHP("Right Arm")'),2);assert.equal(run('playCurHP("Right Arm")'),deep);
+ assert.equal(run('playHPState("Right Arm").cls'),'major');assert.equal(run('playMaxHP("Left Arm")'),base);
+ assert.equal(run('charVitals(JSON.parse(JSON.stringify(S))).locs.find(x=>x.loc==="Right Arm").max'),2);
+ run('S.play.selectedLoc="Right Arm"');assert.match(run('pmLocDetail()'),/Permanent injury: location maximum/);
+ run('APP.playQuickDamage("Right Arm",1)');assert.equal(run('playCurHP("Right Arm")'),deep,'further damage must not heal a deep wound');
+ run('APP.playNaturalRecovery("Right Arm",0,true)');assert.equal(run('playCurHP("Right Arm")'),deep+2);
+ const save=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(save)});normalizeState()`);assert.equal(run('playMaxHP("Right Arm")'),2);
+ run('VIEW_ONLY=true;APP.playClearMaxHP("Right Arm",true)');assert.equal(run('playMaxHP("Right Arm")'),2);
+ run('VIEW_ONLY=false;APP.playClearMaxHP("Right Arm",true)');assert.equal(run('playMaxHP("Right Arm")'),base);
+ reset();run('delete S.play.hpMaxOverride;normalizeState()');assert.equal(run('Object.keys(S.play.hpMaxOverride).length'),0);
+});
 test('Core p.80: natural recovery uses current severity and requires Major treatment',()=>{
  reset();run('S.play.hp.Head=0;');assert.equal(run('naturalRecoveryInfo("Head").interval'),"week");
  run('APP.playNaturalRecovery("Head",0,false)');assert.equal(run('S.play.hp.Head'),2);assert.equal(run('naturalRecoveryInfo("Head").interval'),"day");

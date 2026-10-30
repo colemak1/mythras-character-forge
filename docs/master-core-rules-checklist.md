@@ -211,3 +211,7 @@ MCR-21: Core p.110 visually checked. Each attack entered through Apply Damage th
 ## Defensive Special Effects — implementation in review
 
 MCR-18: Core pp.94–96 visually checked. Combat rolls require an explicit attack/defence role for effect selection; eligible defence-only and shared effects are available when the defender wins. Critical and fumble requirements use the correct participant. Evade can be marked as defence, and an attacker may explicitly record an unopposed attack as no parry. Weapon and situational eligibility remain GM-confirmed; actual combat outcome and parry reductions are not inferred. Live-account verification remains open.
+
+## Permanent injury maximums — implementation in review
+
+MCR-22: Core p.80 visually checked. A GM-confirmed per-location maximum adjusts wound thresholds, recovery, sheets and party vitals without changing the stored wound or creation characteristics. Fractional reductions, injury result, absent limb hit locations, time and magical restoration remain GM decisions; the app does not roll or infer them. Real-account persistence is unverified.
