@@ -260,7 +260,7 @@ function freshState(){return {
  // start at null, meaning "at max" — they're only written once the player
  // actually spends/takes damage, so a freshly-finished character always
  // shows full without needing an extra initialization step.
- play:{hp:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null},
+ play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null},
  // Experience Rolls (core rulebook pp.71-73, cross-checked against the
  // Mythras Core pp.71–72, checked against the uploaded rulebook — see audit for
  // citations). pool = banked, unspent Experience Rolls. fumbled = skill
@@ -349,6 +349,7 @@ function normalizeState(){
   if(S.money&&S.money.quickMult==null)S.money.quickMult=50;
   S.play=S.play||{hp:{},luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null};
   S.play.hp=S.play.hp||{};
+  if(!S.play.hpMaxOverride||typeof S.play.hpMaxOverride!=="object"||Array.isArray(S.play.hpMaxOverride))S.play.hpMaxOverride={};
   if(!Array.isArray(S.play.woundEvents))S.play.woundEvents=[];
   // A multi-turn invocation is a manual tracker, never an automatic spell effect.
   if(S.play.sorceryCasting && (!Number.isInteger(S.play.sorceryCasting.index) ||

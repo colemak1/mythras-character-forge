@@ -87,7 +87,9 @@ function charVitals(state){
   const locs=PLAY_HP_LOCS.map(loc=>{
     const key=PLAY_LIMB_BASE[loc]||loc;
     const row=playStateHPMax(state).find(x=>x[0]===key);
-    const max=row?row[1]:0;
+    const baseMax=row?row[1]:0, recorded=state.play.hpMaxOverride?.[loc];
+    const hasOverride=Number.isSafeInteger(recorded)&&recorded>=1&&recorded<=baseMax;
+    const max=hasOverride?recorded:baseMax;
     let v=state.play.hp[loc];
     if(v==null){
       // One-time migration path: earlier saves tracked "Each Arm"/"Each Leg"
@@ -97,7 +99,9 @@ function charVitals(state){
       const legacyKey=PLAY_LIMB_BASE[loc];
       if(legacyKey&&state.play.hp[legacyKey]!=null)v=state.play.hp[legacyKey];
     }
-    const cur=playValidHP(v,max);
+    // Preserve a pre-existing deeper wound when lowering a location maximum;
+    // clamping it to the new threshold would silently heal that injury.
+    const cur=hasOverride&&v!=null&&Number.isFinite(Number(v))?Math.min(max,Math.trunc(Number(v))):playValidHP(v,max);
     // Wound tiers per the core rulebook's "Damage and Wound Levels" (Combat
     // chapter): based on the location's own current remaining Hit Points
     // compared to its starting max, to zero, and to the negative of that
@@ -368,6 +372,7 @@ function pmLocDetail(){
   return '<div class="pm-locdetail">'
    +'<div class="dt"><b>'+esc(loc)+'</b><span class="d20">d20: '+hitD20For(loc)+'</span></div>'
    +'<div class="arm">'+esc(armorNameAt(armLoc))+' &mdash; AP '+ap+'</div>'
+   +'<details class="pm-fx-item"><summary>Permanent injury: location maximum</summary><p>After GM adjudication, enter the location’s reduced maximum HP (Core p.80). Wound thresholds use the reduced maximum. This does not determine the injury, alter hit-location rolls, or automatically treat the wound.</p><label>Maximum HP <input type="number" id="injuryMax" min="1" value="'+max+'" style="width:65px"></label> <label><input type="checkbox" id="injuryConfirm"> GM confirms this adjustment</label> <button type="button" class="pm-btn sm" onclick="APP.playSetMaxHP(\''+loc+'\',document.getElementById(\'injuryMax\').value,document.getElementById(\'injuryConfirm\').checked)">Set maximum</button> <button type="button" class="pm-btn sm" onclick="APP.playClearMaxHP(\''+loc+'\',document.getElementById(\'injuryConfirm\').checked)">Restore calculated maximum</button></details>'
    +'<div class="hpline">'+cur+' <span>/ '+max+' HP</span><span class="pm-woundtag '+st.cls+'">'+st.tag+'</span></div>'
    +'<div class="fx">'+esc(playWoundEffectText(loc,st.cls))+'</div>'
    +(playWoundActionText(loc,st.cls)?'<p class="pm-notes" role="status">'+esc(playWoundActionText(loc,st.cls))+'</p>':'')
@@ -1040,7 +1045,7 @@ function renderPlayView(){
        +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.playInv('+i+',\'name\',this.value)"></td>'
         +'<td><input type="number" value="'+it.qty+'" style="width:56px" onchange="APP.playInv('+i+',\'qty\',this.value)"></td>'
         +'<td><input type="number" min="0" step="0.5" value="'+it.enc+'" style="width:56px" onchange="APP.playInv('+i+',\'enc\',this.value)"></td>'
-        +'<td><input type="number" min="0" step="0.01" value="'+(it.cost||0)+'" style="width:64px" onchange="APP.playInv('+i+',\'cost\',this.value)"></td>' 
+        +'<td><input type="number" min="0" step="0.01" value="'+(it.cost||0)+'" style="width:64px" onchange="APP.playInv('+i+',\'cost\',this.value)"></td>'
         +'<td><button class="chip" aria-label="remove item" onclick="APP.playInvDel('+i+')">&times;</button></td></tr>').join("")
        +'</table></div><p style="margin-top:8px"><button class="chip" onclick="APP.playInvAdd()">+ add item</button></p>';
     }
@@ -1203,7 +1208,7 @@ function characterSheetBody(){
   }
   const initPenalty=armourPenaltyToInit();
   const careerName=S.customCareer.isCustom?S.customCareer.name:S.career;
-  const hpAt=loc=>{const hp=hpLocsFinal(c.CON,c.SIZ).find(x=>x[0]===loc);return hp?hp[1]:"";};
+  const hpAt=loc=>playMaxHP(loc);
   // ---- header band: player/character, background, title panel, contacts, equipment ----
   h+='<div class="mhead-grid">';
   h+='<div class="mbox"><div class="mbox-t">Player &amp; Character</div>'
@@ -1263,7 +1268,7 @@ function characterSheetBody(){
   h+='<div class="mbox"><div class="mbox-t">Hit Locations</div><div class="mhitloc-flex">'
    +'<table class="mtiny"><tr><th>d20</th><th>Loc</th><th class="num">HP</th><th class="num">AP</th></tr>'
    +HIT_D20.map(([r,loc])=>{const base=loc.replace(/Right |Left /,"Each ");
-     return '<tr><td>'+r+'</td><td>'+loc+'</td><td class="num">'+hpAt(base)+'</td><td class="num">'+armorApAt(loc)+'</td></tr>';}).join("")
+     return '<tr><td>'+r+'</td><td>'+loc+'</td><td class="num">'+hpAt(loc)+'</td><td class="num">'+armorApAt(loc)+'</td></tr>';}).join("")
    +'</table>'+bodyDiagramSvg()+'</div></div>';
   h+='<div class="mbox"><div class="mbox-t">Difficulty Grades</div><table class="mtiny">'
    +GRADES.map(([k,l])=>'<tr><td>'+l+'</td><td class="num">'+(GRADE_MULT[k]==null?(k==="automatic"?"no roll":"can&rsquo;t attempt"):(k==="standard"?"&mdash;":"&times;"+GRADE_MULT[k]))+'</td></tr>').join("")
