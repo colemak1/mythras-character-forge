@@ -9,7 +9,7 @@
 
 ## Current implementation status — baseline reconciliation
 
-The original audit findings below describe the audited snapshot, not necessarily current behaviour. The following reflects merged work through PR #45. “Partial” means the listed remainder is still open, not that the whole rule has been verified in production.
+The original audit findings below describe the audited snapshot, not necessarily current behaviour. The following reflects merged work through PR #55 plus the wound-incident change in this branch. “Partial” means the listed remainder is still open, not that the whole rule has been verified in production.
 
 | Items | Status | Remaining work |
 |---|---|---|
@@ -19,11 +19,17 @@ The original audit findings below describe the audited snapshot, not necessarily
 | MCR-04, 07 | Partially addressed in PR #41 | Check remaining rounding boundaries and specialist Folk allowance. |
 | MCR-11 | Implemented in PR #42 | Real-character production verification remains. |
 | MCR-12 | Partially implemented in PR #48 | Fractional rounding and separate multiple-cult pools remain GM-managed. |
-| MCR-08 | Partial: ageing review guidance proposed | Checks and characteristic changes are not automated; GM review and production verification remain. |
-| MCR-13 | Partially implemented in PR #45 (merge bd423af2e1b198bab85bacee32fd92b1b1aa7c31) | Validate category costs, rounding, interruption and signed-in persistence. |
+| MCR-08 | Partial: ageing review guidance in PR #49 | Checks and characteristic changes are not automated; GM review and production verification remain. |
+| MCR-13 | Partially implemented in PRs #45 and #55 | Category costs implemented; rounding, interruption and signed-in persistence remain. |
 | MCR-15 | Guidance in PR #44 | Creation-mode distinction, prerequisites and GM override remain. |
 | MCR-23 | Partially implemented in PR #43 | Passion fumble tracking, XP-based reductions and real-account verification remain. |
-| MCR-14, 16, 18–22, 24–26 | Not completed in this batch | Check actual current implementation and Core before making changes. |
+| MCR-14, 18, 22, 26 | Partial or open | Check current implementation and Core; remaining prerequisites, combat, lasting injury and characteristic advancement need work. |
+| MCR-16 | Independent armour locations in PR #50 | Signed-in migration verification remains. |
+| MCR-19 | Assisted contested-roll calculator in PR #52 | Applying results to combat remains manual. |
+| MCR-20 | Recovery assistance in PR #51 | Elapsed time and some healing modifiers remain manual. |
+| MCR-21 | Wound incident tracking in this branch | Conditions, direct-damage events and real-account verification remain. |
+| MCR-24 | Professional-skill learning in PR #53 | User reports it works; signed-in persistence and remaining prerequisites require further verification. |
+| MCR-25 | Mentor training in PR #54 | Exact 20-point boundary requires GM adjudication; live verification remains. |
 
 The previously failing homepage and Update 23 tests are being repaired in the baseline branch. The campaign-load failure was a real missing error path; the test can now verify that failed reads show a retry rather than an empty campaign list. Signed-in live-service verification is still outstanding.
 
@@ -197,3 +203,7 @@ MCR-25: Core p.73 visually checked. Confirmed week-long training uses the mentor
 ## Mysticism category costs — implementation in review
 
 MCR-13: Core pp.155–157 visually checked. Players confirm category; augment costs 1 MP per intensity, invoke costs 2 MP at Intensity 1, and enhance costs 3 MP per intensity. Legacy manually recorded costs remain saved but do not determine the new calculated cost; unreviewed entries require category confirmation. Existing interrupted preparation must be cancelled and restarted after review. Activation remains manual, and rounding, interruption and real-account persistence remain open.
+
+## Wound incidents — implementation in review
+
+MCR-21: Core p.110 visually checked. Each attack entered through Apply Damage that causes a Serious or Major Wound creates a saved incident with actual post-armour damage, manual opposed-Endurance outcome, treatment status, notes and optional Serious interruption duration. Incidents can be resolved or reopened independently of current HP; deadlines are reminders, not automatic clocks. Direct HP adjustments do not presume an attack or create an incident. Condition enforcement, live-account verification and legacy wounds without incident records remain open.

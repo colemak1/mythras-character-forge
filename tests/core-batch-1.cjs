@@ -149,6 +149,21 @@ test('Core p.58: legacy armour migrates and limbs can differ without changing to
  ctx.document.querySelector=()=>({value:"4"});run('APP.playApplyDamage("Right Arm");APP.playApplyDamage("Left Arm");');
  assert.equal(run('S.play.hp["Right Arm"]'),4);assert.equal(run('S.play.hp["Left Arm"]'),0);ctx.document.querySelector=()=>null;
 });
+test('Core p.110: wound incident records track hits and survive healing and reload',()=>{
+ reset();run('S.play.hp.Head=3;');ctx.document.querySelector=()=>({value:"3"});
+ run('APP.playApplyDamage("Head")');assert.equal(run('S.play.woundEvents.length'),1);
+ assert.equal(run('S.play.woundEvents[0].severity'),'serious');assert.equal(run('S.play.woundEvents[0].damage'),3);
+ assert.match(run('pmWoundEvents("Head")'),/unconscious for 3 minutes/);
+ run('APP.woundEventUpdate(0,"outcome","failure");APP.woundEventUpdate(0,"interruptionTurns","2");APP.woundEventUpdate(0,"notes","attack 46");APP.woundEventUpdate(0,"treated",true);');
+ run('APP.playApplyDamage("Head")');assert.equal(run('S.play.woundEvents.length'),2);
+ assert.equal(run('S.play.woundEvents[0].outcome'),'failure');assert.equal(run('S.play.woundEvents[0].interruptionTurns'),2);
+ run('APP.playSetHP("Head",2);APP.woundEventResolve(0)');assert.equal(run('S.play.woundEvents[0].resolved'),true);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
+ assert.equal(run('S.play.woundEvents[0].notes'),'attack 46');assert.equal(run('S.play.woundEvents[0].treated'),true);
+ run('APP.woundEventReopen(0);VIEW_ONLY=true;APP.woundEventUpdate(0,"notes","changed")');assert.equal(run('S.play.woundEvents[0].notes'),'attack 46');
+ reset();run('S.play.hp["Right Arm"]=0;APP.playQuickDamage("Right Arm",1)');assert.equal(run('S.play.woundEvents.length'),0);
+ run('delete S.play.woundEvents;normalizeState()');assert.equal(run('S.play.woundEvents.length'),0);ctx.document.querySelector=()=>null;
+});
 test('Core p.80: natural recovery uses current severity and requires Major treatment',()=>{
  reset();run('S.play.hp.Head=0;');assert.equal(run('naturalRecoveryInfo("Head").interval'),"week");
  run('APP.playNaturalRecovery("Head",0,false)');assert.equal(run('S.play.hp.Head'),2);assert.equal(run('naturalRecoveryInfo("Head").interval'),"day");
