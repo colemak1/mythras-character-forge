@@ -7,31 +7,40 @@
 **Scope:** the four completed static audit handoffs, deduplicated and reprioritized.  
 **Status:** planning/handoff only. No code changed or tests run during this consolidation.
 
-## Current implementation status — baseline reconciliation
+## Current implementation status — through PR #59
 
-The original audit findings below describe the audited snapshot, not necessarily current behaviour. The following reflects merged work through PR #55 plus the wound-incident change in this branch. “Partial” means the listed remainder is still open, not that the whole rule has been verified in production.
+The detailed checklist below preserves the original audit findings as historical context; its unchecked boxes do not indicate current implementation status. The table here is the working roadmap. “Implemented” means code was merged, not that production or every Core rule was independently verified. Production deployment after PR #51 has not been confirmed by the previous automated browser checks; signed-in cloud persistence remains outstanding.
 
-| Items | Status | Remaining work |
+| Items | Merged status | Remaining work |
 |---|---|---|
-| MCR-05, 06, 09, 27, 28 | Implemented in PR #30 | Signed-in production verification and full rules coverage remain. |
-| MCR-10, 17 | Minimum guidance implemented in PR #30 | Source-specific recovery workflow and optional parry assistance remain. |
-| MCR-01–03 | Implemented in PR #34, verification incomplete | Shaping rounding beyond the printed example and combined-spell circumstances need review. |
-| MCR-04, 07 | Partially addressed in PR #41 | Check remaining rounding boundaries and specialist Folk allowance. |
-| MCR-11 | Implemented in PR #42 | Real-character production verification remains. |
-| MCR-12 | Partially implemented in PR #48 | Fractional rounding and separate multiple-cult pools remain GM-managed. |
-| MCR-08 | Partial: ageing review guidance in PR #49 | Checks and characteristic changes are not automated; GM review and production verification remain. |
-| MCR-13 | Partially implemented in PRs #45 and #55 | Category costs implemented; rounding, interruption and signed-in persistence remain. |
-| MCR-15 | Guidance in PR #44 | Creation-mode distinction, prerequisites and GM override remain. |
-| MCR-23 | Partially implemented in PR #43 | Passion fumble tracking, XP-based reductions and real-account verification remain. |
-| MCR-14, 18, 22, 26 | Partial or open | Check current implementation and Core; remaining prerequisites, combat, lasting injury and characteristic advancement need work. |
-| MCR-16 | Independent armour locations in PR #50 | Signed-in migration verification remains. |
-| MCR-19 | Assisted contested-roll calculator in PR #52 | Applying results to combat remains manual. |
-| MCR-20 | Recovery assistance in PR #51 | Elapsed time and some healing modifiers remain manual. |
-| MCR-21 | Wound incident tracking in this branch | Conditions, direct-damage events and real-account verification remain. |
-| MCR-24 | Professional-skill learning in PR #53 | User reports it works; signed-in persistence and remaining prerequisites require further verification. |
-| MCR-25 | Mentor training in PR #54 | Exact 20-point boundary requires GM adjudication; live verification remains. |
+| MCR-01–03 | Sorcery Shaping and Combine corrected (#34) | Verify rounding beyond the printed example, combined-spell circumstances and live behavior. |
+| MCR-04, 07 | Mysticism intensity and Folk Magic starting guidance (#41) | Verify rounding boundaries and specialist Folk allowance. |
+| MCR-05, 06, 09, 27, 28 | Conditional CHA, repeat improvements and text fixes (#30) | Verify signed-in workflows; continue broader audit. |
+| MCR-08 | Ageing review guidance (#49) | Implement checks and persisted characteristic effects without invalidating creation. |
+| MCR-10 | Cause-specific Fatigue guidance (#51) | Recovery and the end of its cause remain manual. |
+| MCR-11 | Animism spirit POW eligibility (#42) | Verify with a real character and production account; broader prerequisites remain open. |
+| MCR-12 | Theism pool rank check (#48) | Fractional rounding and multiple-cult pools remain GM-managed. |
+| MCR-13 | Mysticism preparation and category costs (#45, #55) | Verify rounding, interruptions and signed-in persistence; activation remains manual. |
+| MCR-14 | Theism exhortation timing and cost (#47) | Cult access and interruptions remain GM-managed; verify live persistence. |
+| MCR-15 | Starting magic guidance (#44) | Distinguish new and experienced characters; prerequisites and GM override remain. |
+| MCR-16 | Independent armour locations (#50) | Verify legacy migrations with real saved characters. |
+| MCR-17 | Damage input guidance and optional parry calculator (#30, #59) | Odd half-damage rounding and live calculator testing remain. |
+| MCR-18 | Defensive effect selection and explicit roles (#57) | Weapon and situational restrictions remain GM-managed; verify live. |
+| MCR-19 | Contested-roll calculator (#52) | Applying calculator results to combat remains manual. |
+| MCR-20 | One-interval recovery (#51) | Elapsed time and some healing modifiers remain GM-managed. |
+| MCR-21 | Wound incident records (#56) | Condition enforcement, direct-damage incidents and live persistence remain. |
+| MCR-22 | Major treatment confirmation and location maximums (#51, #58) | Maiming result, missing-limb hit locations, rounding and live persistence remain. |
+| MCR-23 | Passion improvement and manual changes (#43) | Passion fumble tracking, XP-based reductions and live verification remain. |
+| MCR-24 | Learning professional skills (#53) | User reports it works; signed-in persistence and remaining prerequisites need verification. |
+| MCR-25 | Mentor training (#54) | Exact 20-point difference needs GM adjudication; live verification remains. |
+| MCR-26 | Not implemented | Characteristic improvement, derived values, maintenance, atrophy and optional purchase scheme need safe save handling. |
 
-The previously failing homepage and Update 23 tests are being repaired in the baseline branch. The campaign-load failure was a real missing error path; the test can now verify that failed reads show a retry rather than an empty campaign list. Signed-in live-service verification is still outstanding.
+### Next priorities
+
+1. Verify Pages deployment and signed-in save, reopen, import/export and campaign workflows using a safe test character; record failures and prerequisites.
+2. Resolve creation and magic prerequisites and sourcebook rounding; prioritize errors that can produce illegal characters or outcomes.
+3. Implement ageing and characteristic advancement with a safe distinction between creation values and later changes.
+4. Complete wound conditions, treatment and remaining combat assistance; then perform a broader Core audit and end-to-end playtest.
 
 ## What this document is
 
