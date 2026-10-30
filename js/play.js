@@ -582,14 +582,18 @@ let PM_EFFECT_ROLL_REF=null;
 let PM_FX_SEARCH="";
 function selectedEffectRoll(){
   const r=S.rollLog.includes(PM_EFFECT_ROLL_REF)?PM_EFFECT_ROLL_REF:null;
-  return r&&r.combat&&r.oppTier&&playEffectsWon(r.tier,r.oppTier)>0?r:null;
+  return r&&r.combat&&["attack","defence"].includes(r.combatRole)&&r.oppTier&&playEffectsWon(r.tier,r.oppTier)>0?r:null;
 }
 function canPickEffectForRoll(effect,r){
-  if(!effect||!effect[1]||!r)return false;
+  if(!effect||!r||!["attack","defence"].includes(r.combatRole))return false;
+  if(r.combatRole==="attack"&&!effect[1]||r.combatRole==="defence"&&!effect[2])return false;
+  if(r.combatKind==="evade"&&["Enhance Parry","Blind Opponent"].includes(effect[0]))return false;
   const requirement=effect[4]||"";
-  if(/Critical/.test(requirement)&&r.tier!=="Critical")return false;
+  if(requirement==="Attacker Criticals"&&(r.combatRole!=="attack"||r.tier!=="Critical"))return false;
+  if(requirement==="Defender Criticals"&&(r.combatRole!=="defence"||r.tier!=="Critical"))return false;
+  if(requirement==="Critical Only"&&r.tier!=="Critical")return false;
   if(requirement==="Opponent Fumbles"&&r.oppTier!=="Fumble")return false;
-  if(requirement==="Attacker Fumbles"&&r.tier!=="Fumble")return false;
+  if(requirement==="Attacker Fumbles"&&(r.combatRole==="attack"?r.tier:r.oppTier)!=="Fumble")return false;
   return true;
 }
 // [name, offensive, defensive, weapon restriction, specific roll requirement, stackable, description]
@@ -703,7 +707,7 @@ function specialEffectsPanel(){
     const picked=r.effectsPicked||[], limit=playEffectsWon(r.tier,r.oppTier);
     h+='<div class="pm-fx-selection"><b>'+esc(r.label)+': '+picked.length+'/'+limit+' chosen</b>'
       +(picked.length?'<div class="pm-fx-picks">'+picked.map((name,i)=>'<button type="button" class="pm-btn sm" title="Remove '+esc(name)+'" onclick="APP.playRemoveEffectChoice('+i+')">'+esc(name)+' &times;</button>').join("")+'</div>':"")
-      +'<span>Check weapon and roll requirements before choosing. Selection records the choice; resolve its outcome at the table.</span></div>';
+      +'<span>Role: '+(r.combatRole==='attack'?'attacker':'defender')+'. Check weapon and situational requirements with your GM. Selection records the choice; resolve its outcome at the table.</span></div>';
   }
   h+='<input type="text" class="pm-fx-search" aria-label="Search Special Effects" value="'+esc(PM_FX_SEARCH)+'" placeholder="Search '+SPECIAL_EFFECTS.length+' Special Effects by name or effect&hellip;" oninput="pmFxFilter(this)">';
   h+='<div class="pm-fx-list">'+FX_GROUPS.map(([groupName,names])=>{
@@ -830,15 +834,19 @@ function playRollLogRow(r,i){
   // Differential Roll table, so a new player needs to see that too, not
   // just when they themselves won.
   if(r.combat){
+    row+='<div class="pm-fx-resolve"><label>Your role <select onchange="APP.playSetCombatRole('+i+',this.value)"><option value="">Choose attack or defence</option>'
+      +(r.combatKind==="evade"?'':'<option value="attack" '+(r.combatRole==="attack"?'selected':'')+'>Attack</option>')
+      +'<option value="defence" '+(r.combatRole==="defence"?'selected':'')+'>Defence</option></select></label> Changing role clears chosen effects.</div>';
     if(!r.oppTier){
       row+='<div class="pm-fx-resolve">Opponent rolled: '+["Critical","Success","Failure","Fumble"].map(t=>
-        '<button class="pm-btn sm" onclick="APP.playSetOpponentTier('+i+',\''+t+'\')">'+t+'</button>').join("")+'</div>';
+        '<button class="pm-btn sm" onclick="APP.playSetOpponentTier('+i+',\''+t+'\')">'+t+'</button>').join("")
+        +(r.combatRole==="attack"?' <button class="pm-btn sm" onclick="APP.playNoParry('+i+')">No parry</button>':'')+'</div>';
     }else{
       const n=playEffectsWon(r.tier,r.oppTier);
-      row+='<div class="pm-fx-resolve">'+(n>0?'vs opponent '+r.oppTier+' &rarr; <b>you win '+n+' Special Effect'+(n>1?"s":"")+'</b>.'
-        :n<0?'vs opponent '+r.oppTier+' &rarr; <b>opponent wins '+(-n)+' Special Effect'+(-n>1?"s":"")+'</b> against you.'
-        :'vs opponent '+r.oppTier+' &rarr; no Special Effects either way.')
-        +(n>0?' <button class="pm-btn sm" onclick="APP.playJumpToEffects('+i+')">'+((r.effectsPicked||[]).length?'Change':'Choose')+' Special Effects</button>':n<0?' <button class="pm-btn sm" onclick="APP.playJumpToEffects()">View Special Effects</button>':'')
+      row+='<div class="pm-fx-resolve">'+(n>0?'vs '+(r.opponentAction==='no-parry'?'no parry (Failure)':'opponent '+r.oppTier)+' &rarr; <b>you win '+n+' Special Effect'+(n>1?"s":"")+'</b>.'
+        :n<0?'vs '+(r.opponentAction==='no-parry'?'no parry (Failure)':'opponent '+r.oppTier)+' &rarr; <b>opponent wins '+(-n)+' Special Effect'+(-n>1?"s":"")+'</b> against you.'
+        :'vs '+(r.opponentAction==='no-parry'?'no parry (Failure)':'opponent '+r.oppTier)+' &rarr; no Special Effects either way.')
+        +(n>0&&r.combatRole?' <button class="pm-btn sm" onclick="APP.playJumpToEffects('+i+')">'+((r.effectsPicked||[]).length?'Change':'Choose')+' Special Effects</button>':n>0?' Choose your role before selecting effects.':n<0?' <button class="pm-btn sm" onclick="APP.playJumpToEffects()">View Special Effects</button>':'')
         +((r.effectsPicked||[]).length?'<span>Chosen: '+esc(r.effectsPicked.join(', '))+'</span>':'')
         +' <button class="pm-btn sm" onclick="APP.playJumpToInjury()">Record injury</button></div>';
     }

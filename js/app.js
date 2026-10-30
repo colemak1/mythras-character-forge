@@ -615,10 +615,15 @@ window.APP={
    if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
    if(tier==="Critical")APP.markChecked(key);
    PM_EFFECT_ROLL_REF=null;
-   S.rollLog.unshift({label:e.label+tag,pct,roll:r===100?"00":r,tier,combat:key.startsWith("style:"),oppTier:null});
+   S.rollLog.unshift({label:e.label+tag,pct,roll:r===100?"00":r,tier,combat:key.startsWith("style:")||key==="std:Evade",combatKind:key==="std:Evade"?"evade":"style",oppTier:null});
    S.rollLog=S.rollLog.slice(0,8);render();},
+ playSetCombatRole(i,role){if(VIEW_ONLY||!S.rollLog[i]?.combat||!["attack","defence"].includes(role))return;
+   const r=S.rollLog[i];if(r.combatKind==="evade"&&role!=="defence")return;
+   if(r.combatRole!==role){r.combatRole=role;r.effectsPicked=[];if(r.opponentAction==="no-parry"){r.oppTier=null;r.opponentAction=null;}}render();},
+ playNoParry(i){if(VIEW_ONLY||!S.rollLog[i]?.combat||S.rollLog[i].combatRole!=="attack")return;
+   const r=S.rollLog[i];r.oppTier="Failure";r.opponentAction="no-parry";r.effectsPicked=[];render();},
  playSetOpponentTier(i,tier){if(VIEW_ONLY||!S.rollLog[i]||!["Critical","Success","Failure","Fumble"].includes(tier))return;
-   S.rollLog[i].oppTier=tier;S.rollLog[i].effectsPicked=[];render();},
+   S.rollLog[i].oppTier=tier;S.rollLog[i].opponentAction="rolled";S.rollLog[i].effectsPicked=[];render();},
  playChooseEffect(i){if(VIEW_ONLY)return;
    const r=selectedEffectRoll(), effect=SPECIAL_EFFECTS[i];if(!canPickEffectForRoll(effect,r))return;
    const picked=r.effectsPicked||[];

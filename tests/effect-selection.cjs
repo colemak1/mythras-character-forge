@@ -12,7 +12,7 @@ for(const name of ['data','engine','cloud','render','router','play','app']){
  vm.runInContext(src,ctx,{filename:name+'.js'});
 }
 const run=s=>vm.runInContext(s,ctx);
-run('render=()=>{};S=freshState();S.rollLog=[{label:"Spear",tier:"Critical",oppTier:"Failure",combat:true}];APP.playJumpToEffects(0);');
+run('render=()=>{};S=freshState();S.rollLog=[{label:"Spear",tier:"Critical",oppTier:"Failure",combat:true,combatRole:"attack"}];APP.playJumpToEffects(0);');
 assert.match(run('specialEffectsPanel()'),/Spear: 0\/2 chosen/);
 run('APP.playChooseEffect(SPECIAL_EFFECTS.findIndex(e=>e[0]==="Bleed"));');
 assert.equal(run('S.rollLog[0].effectsPicked.length'),1);
@@ -41,6 +41,20 @@ run('VIEW_ONLY=false;APP.playSetOpponentTier(0,"Critical");');
 assert.equal(run('selectedEffectRoll()'),null,'tied result has no selection context');
 run('S=freshState();S.rollLog=[{label:"Other character",tier:"Critical",oppTier:"Failure",combat:true}];');
 assert.equal(run('selectedEffectRoll()'),null,'selection context does not cross characters');
+// Explicit roles control eligibility and the attacker-fumble prerequisite.
+run('S=freshState();S.rollLog=[{label:"Parry",tier:"Critical",oppTier:"Fumble",combat:true}];APP.playJumpToEffects(0)');
+assert.equal(run('selectedEffectRoll()'),null,'role must be explicit');
+run('APP.playSetCombatRole(0,"defence");APP.playChooseEffect(SPECIAL_EFFECTS.findIndex(e=>e[0]==="Accidental Injury"));');
+assert.equal(run('S.rollLog[0].effectsPicked[0]'),'Accidental Injury');
+run('APP.playChooseEffect(SPECIAL_EFFECTS.findIndex(e=>e[0]==="Enhance Parry"));');assert.equal(run('S.rollLog[0].effectsPicked.length'),2);
+run('APP.playChooseEffect(SPECIAL_EFFECTS.findIndex(e=>e[0]==="Bleed"));');assert.equal(run('S.rollLog[0].effectsPicked.length'),2);
+run('APP.playSetCombatRole(0,"attack")');assert.equal(run('S.rollLog[0].effectsPicked.length'),0);
+run('APP.playNoParry(0)');assert.equal(run('S.rollLog[0].oppTier'),'Failure');assert.equal(run('S.rollLog[0].opponentAction'),'no-parry');
+run('APP.playSetCombatRole(0,"defence")');assert.equal(run('S.rollLog[0].oppTier'),null);
+run('S.rollLog=[{label:"Evade",combat:true,combatKind:"evade",tier:"Critical",oppTier:"Failure"}];APP.playSetCombatRole(0,"attack")');assert.equal(run('S.rollLog[0].combatRole'),undefined);
+run('APP.playSetCombatRole(0,"defence");APP.playJumpToEffects(0);APP.playChooseEffect(SPECIAL_EFFECTS.findIndex(e=>e[0]==="Enhance Parry"));');assert.equal(run('(S.rollLog[0].effectsPicked||[]).length'),0);
+run('S.rollLog[0].oppTier="Fumble";APP.playChooseEffect(SPECIAL_EFFECTS.findIndex(e=>e[0]==="Accidental Injury"))');assert.equal(run('S.rollLog[0].effectsPicked[0]'),'Accidental Injury');
+const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);assert.equal(run('S.rollLog[0].combatRole'),'defence');
 // Shared excess is applied before critical/success/fumble evaluation.
 assert.equal(run('contestedRollResult(130, 10, 90, 70).reduction'),30);
 assert.equal(run('contestedRollResult(130, 10, 90, 70).a'),100);

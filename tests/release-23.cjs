@@ -123,7 +123,7 @@ async function test(name,fn){await fn();console.log('PASS '+name);passed++;}
   assert.match(run('accountHTML()'),/Choose a new password/);
  });
  await test('combat roll result offers direct effect and injury controls',()=>{
-  const row=run('playRollLogRow({roll:21,label:"Sword",pct:60,tier:"Success",combat:true,oppTier:"Failure"},0)');
+  const row=run('playRollLogRow({roll:21,label:"Sword",pct:60,tier:"Success",combat:true,combatRole:"attack",oppTier:"Failure"},0)');
   assert.match(row,/APP\.playJumpToEffects\(0\)/);
   assert.match(row,/APP\.playJumpToInjury\(\)/);
   assert.match(fs.readFileSync(path.join(root,'js','play.js'),'utf8'),/id="pm-actions"/);
