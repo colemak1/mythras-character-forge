@@ -228,3 +228,7 @@ MCR-22: Core p.80 visually checked. A GM-confirmed per-location maximum adjusts 
 ## Parry calculation — implementation in review
 
 MCR-17: Core pp.94–95 visually checked. An optional calculator shows remaining damage before armour for successful, failed or absent parries using effective weapon sizes. It does not infer the defence, apply Special Effects, apply armour, or change HP. Odd half-damage results are displayed exactly pending GM rounding; live browser verification remains open.
+
+## Starting magic review — implementation in review
+
+MCR-15: Core p.118 visually checked. An explicit new/experienced selection and GM review snapshot distinguishes starting guidance from later learning without deleting saved abilities or blocking creation. Review becomes stale if recorded ability names or relevant skill values change. Prerequisite enforcement and per-tradition overrides remain open; live persistence is unverified.

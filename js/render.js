@@ -694,6 +694,9 @@ function stepQuickSkills(){
    why, at length). */
 function stepMagic(){
   let h=head("Magic","Optional. If your character has a magic skill, this is where they get magic to use it on &mdash; picked here, then castable from Play Mode with the right skill rolled and the right cost deducted.");
+  const mode=S.magic.startingReviewMode||"",reviewed=mode==="new"&&S.magic.startingReviewSignature===startingMagicReviewSignature();
+  h+='<div class="card"><h3>Starting magic review</h3><label>Character status <select onchange="APP.startingMagicMode(this.value)"><option value="" '+(!mode?'selected':'')+'>Not specified</option><option value="new" '+(mode==='new'?'selected':'')+'>New character</option><option value="experienced" '+(mode==='experienced'?'selected':'')+'>Experienced character</option></select></label>'
+   +(mode==='new'?'<p class="note">Review starting allowances, skill access, tradition and rank with the GM. Specialist or setting exceptions may apply. Existing entries are never removed. '+(reviewed?'GM review recorded for the current names and skills.':'GM review has not been recorded for the current names and skills.')+'</p><button type="button" class="chip" onclick="APP.startingMagicConfirm()">Record GM review / override</button>':mode==='experienced'?'<p class="note">Starting allowances are guidance; later abilities remain available for review with the GM.</p>':'<p class="note">Select a status to distinguish starting allowances from abilities learned later. Existing entries are preserved.</p>')+'</div>';
   const anyMagic=MAGIC_TRADITIONS.some(t=>traditionStatus(t).available);
   if(!anyMagic){
     h+='<div class="card"><h3>No magic skills yet</h3>'
@@ -756,7 +759,7 @@ function knownMagicEditor(t){
   const named=rows.filter(({m})=>String(m.name||"").trim()).length;
   const restriction={mysticism:'Starting mystics choose one path; talents must be available to a novice of that path (Core p.155).',sorcery:'Starting sorcerers choose one school and its source; starting spells come from that school (Core p.163).',theism:'Starting theists choose one cult; miracles must be available at their cult rank (Core p.179).',animism:'Confirm starting spirit access with your GM; recorded spirits may include encounters or spirits acquired later.'}[t.key]||'';
   h+='<p class="note rulesrc">Core p.118: a starting magician normally knows one relevant ability per 20% (or part) of '+esc(abilitySkill)+': '+(starting===null?'confirm the skill with your GM':starting+' at '+skill+'%')+'. '+esc(restriction)+' This is starting-character guidance, not a limit on experienced or imported characters; GM decisions and later learning are not tracked here.</p>';
-  if(t.key!=="animism"&&starting!==null&&named>starting)h+='<p class="note">'+named+' named abilities are recorded, more than the general starting allowance of '+starting+'. If this is a new character, review the choices with the GM; existing abilities are preserved.</p>';
+  if(S.magic.startingReviewMode!=="experienced"&&t.key!=="animism"&&starting!==null&&named>starting)h+='<p class="note">'+named+' named abilities are recorded, more than the general starting allowance of '+starting+'. If this is a new character, review the choices with the GM; existing abilities are preserved.</p>';
   if(t.key==="theism"){
     const rank=S.magic.devotionalRank||"",limit=devotionalRankLimit(),pool=devotionalMax();
     h+='<p class="note rulesrc">Core p.180: each cult has a separate pool. Confirm the rank for this pool; the tracker handles one pool and does not enforce the combined limit for multiple cults. Confirm fractional rounding and other pools with the GM.</p>';
