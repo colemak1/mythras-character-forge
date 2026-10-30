@@ -128,6 +128,9 @@ window.APP={
      if(m.tradition==="animism"&&f==="intensity"&&n<1){PM_MSG="Spirit Intensity must be at least 1.";render();return;}
      m[f]=n;}
    render();},
+ talentCategory(i,value){if(viewOnlyBlock())return;const m=S.magic.known[i];
+   if(!m||m.tradition!=="mysticism"||!["","augment","invoke","enhance"].includes(value))return;
+   m.talentCategory=value;render();},
  miracleLevel(i,raw){const m=S.magic.known[i],n=Number(raw);if(!m||m.tradition!=="theism"||![1,2,3].includes(n))return;
    m.miracleLevel=n;if(!Number.isInteger(m.miracleInstances)||m.miracleInstances<1)m.miracleInstances=1;render();},
  miracleInstances(i,raw){const m=S.magic.known[i],n=Number(raw);if(!m||m.tradition!=="theism"||!Number.isInteger(n)||n<1||n>100)return;
@@ -226,7 +229,7 @@ window.APP={
      const limits=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
      const limitError=mysticismActivationCheck(S.magic.known,knownIndex,limits.individual,limits.combined);
      if(limitError){PM_MSG=limitError;render();return;}
-     const total=Number(record.intensity),signature=JSON.stringify([record.name,record.intensity,record.cost]);
+     const total=Number(record.intensity),signature=JSON.stringify([record.name,record.intensity,record.talentCategory]);
      const pending=S.play.mysticismCasting;
      if(pending&&(pending.index!==idx||pending.signature!==signature||pending.total!==total)){
        PM_MSG="A Talent is already being prepared or its details changed. Cancel preparation before continuing.";render();return;

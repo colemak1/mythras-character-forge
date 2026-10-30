@@ -778,7 +778,7 @@ function knownMagicEditor(t){
     let r='<div class="magicrow">'
      +'<input type="text" class="mname" value="'+esc(m.name)+'" placeholder="'+esc(t.key==="animism"?"spirit name":t.key==="theism"?"miracle name":t.key==="mysticism"?"talent name":"spell name")+'" onchange="APP.magicField('+i+',\'name\',this.value)">';
     (t.fields||[]).forEach(([f,label])=>{
-      if(t.key==="theism"&&f==="cost")return;
+      if((t.key==="theism"||t.key==="mysticism")&&f==="cost")return;
       r+='<label class="mnum">'+esc(label)+'<input type="number" min="0" value="'+(m[f]||0)+'" onchange="APP.magicField('+i+',\''+f+'\',this.value)"></label>';
     });
     if(t.key==="theism"){
@@ -812,6 +812,10 @@ function knownMagicEditor(t){
        +'<p class="note rulesrc">Core pp.131, 134–139: Spirit POW is required to command a bound spirit; it cannot exceed three times your Binding critical range. Locating, negotiation, binding and spirit combat have separate prerequisites. Recording a contact or vessel does not automatically bind the spirit.</p>';
     }
     if(t.key==="mysticism"){
+      const details=mysticismDetails(m);
+      r+='<label class="mnum">Talent category<select onchange="APP.talentCategory('+i+',this.value)"><option value="" '+(!m.talentCategory?'selected':'')+'>Confirm with GM</option>'
+       +[["augment","Augment skill"],["invoke","Invoke trait"],["enhance","Enhance attribute"]].map(([v,label])=>'<option value="'+v+'" '+(m.talentCategory===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'
+       +(details?'<span class="mcost">'+details.cost+' MP base cost</span>':'<span class="warn">Select a category and valid Intensity before casting. Invoke traits use Intensity 1. Previously recorded cost: '+esc(String(m.cost??"not recorded"))+'; preserved for review.</span>');
       r+='<label class="mnum">Duration (turns; 0 = GM)<input type="number" min="0" max="9999" value="'+(m.durationTurns||0)+'" onchange="APP.talentDuration('+i+',this.value)"></label>'
        +'<button class="chip '+(m.active?'on':'')+'" onclick="APP.toggleTalent('+i+')">'+(m.active?'Active — end Talent':'Mark active')+'</button>'
        +(m.active&&m.durationTurns>0?'<span class="mcost">'+(m.remainingTurns||0)+' turns left</span><button class="chip" onclick="APP.talentTurn('+i+')">Advance 1 turn</button>':'');

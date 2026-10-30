@@ -357,7 +357,7 @@ test('Update 11: devotional cost cannot exceed remaining pool',()=>{
  assert.equal(evalRule('magicCastPreflight({tradition:"theism",name:"Bless",miracleLevel:3,miracleInstances:1},0,3)'),null);
 });
 test('Update 11: zero-cost imported talent cannot silently cast',()=>{
- assert(/positive Magic Point cost/.test(evalRule('magicCastPreflight({tradition:"mysticism",name:"Focus",cost:0},9,9)')));
+ assert(/Confirm the Talent category/.test(evalRule('magicCastPreflight({tradition:"mysticism",name:"Focus",cost:0},9,9)')));
 });
 test('Update 11: casts precheck before rolling and never overspend Magic Points',()=>{
  const app=fs.readFileSync(path.join(root,'js','app.js'),'utf8');
@@ -398,9 +398,17 @@ test('Core p.181: miracle level and instances determine cost and exhortation tur
  for(const [tier,val] of [['Critical',0],['Failure',0],['Fumble',1],['Success',6]])assert.equal(evalRule('theismOutcomeCost({miracleLevel:2,miracleInstances:3},'+JSON.stringify(tier)+')'),val);
 });
 test('Update 13: Mysticism cost by roll outcome (Core p.156)',()=>{
- const e='{tradition:"mysticism",name:"Talent",cost:5}';
+ const e='{tradition:"mysticism",name:"Talent",talentCategory:"augment",intensity:5,cost:99}';
  for(const [tier,val] of [['Critical',3],['Failure',1],['Fumble',5],['Success',5]])
   assert.equal(evalRule('mysticismOutcomeCost('+e+','+JSON.stringify(tier)+')'),val);
+});
+test('Core p.156: talent category determines cost and legacy entries need review',()=>{
+ assert.equal(evalRule('mysticismDetails({talentCategory:"augment",intensity:3}).cost'),3);
+ assert.equal(evalRule('mysticismDetails({talentCategory:"enhance",intensity:3}).cost'),9);
+ assert.equal(evalRule('mysticismDetails({talentCategory:"invoke",intensity:1}).cost'),2);
+ assert.equal(evalRule('mysticismDetails({talentCategory:"invoke",intensity:2})'),null);
+ assert.match(evalRule('magicCastPreflight({tradition:"mysticism",name:"Focus",intensity:2,cost:99},9,0)'),/Confirm/);
+ assert.match(evalRule('magicCastPreflight({tradition:"mysticism",name:"Focus",talentCategory:"enhance",intensity:3},8,0)'),/Not enough/);
 });
 test('Update 13: Mysticism per-talent and concurrent intensity limits',()=>{
  assert.equal(evalRule('mysticismLimits(34,54).individual'),2);

@@ -679,11 +679,19 @@ function theismOutcomeCost(entry,tier){
   if(tier==="Fumble")return 1;
   return full;
 }
-// Core p.156: Mysticism spends half on Critical, full on Success/Fumble,
-// and exactly 1 MP on Failure. Keep the talent cost explicitly recorded
-// because different talent categories have different base costs.
+// Core p.156: calculate the base cost from the Talent category and Intensity.
+// Existing manually recorded costs are retained until the player selects a category.
+function mysticismDetails(entry){
+  const intensity=Number(entry.intensity);
+  if(!Number.isSafeInteger(intensity)||intensity<1)return null;
+  if(entry.talentCategory==="augment")return {cost:intensity};
+  if(entry.talentCategory==="enhance")return Number.isSafeInteger(intensity*3)?{cost:intensity*3}:null;
+  if(entry.talentCategory==="invoke"&&intensity===1)return {cost:2};
+  return null;
+}
 function mysticismOutcomeCost(entry,tier){
-  const full=Math.max(0,Number(entry.cost)||0);
+  const full=mysticismDetails(entry)?.cost;
+  if(full==null)return null;
   if(tier==="Failure")return 1;
   if(tier==="Critical")return Math.ceil(full/2);
   return full;
@@ -719,6 +727,7 @@ function spiritCommandPreflight(m,mp,bindingPct){
 function magicEntryCost(entry){
   if(entry.tradition==="sorcery")return sorceryCost(entry).mp;
   if(entry.tradition==="theism")return theismDetails(entry)?.cost||0;
+  if(entry.tradition==="mysticism")return mysticismDetails(entry)?.cost||0;
   return Math.max(0,parseInt(entry.cost,10)||0);
 }
 // Devotional Pool: Magic Points a theist has offered to their deity. It is a
@@ -745,6 +754,7 @@ function magicCastPreflight(entry, availableMP, availableDevotion){
   const mp=Math.max(0,Number(availableMP)||0);
   const dp=Math.max(0,Number(availableDevotion)||0);
   const t=MAGIC_TRAD_MAP[entry.tradition];
+  if(entry.tradition==="mysticism"&&!mysticismDetails(entry))return "Confirm the Talent category and a valid Intensity before casting; invoked traits use Intensity 1 (Core p.156).";
   if(entry.tradition==="theism"&&!theismDetails(entry))return "Confirm this miracle's cult level and number of instances before casting (Core p.181).";
   if(entry.tradition==="folk" && mp<1)return "Not enough Magic Points to attempt Folk Magic (minimum 1 MP).";
   const cost=magicEntryCost(entry);
