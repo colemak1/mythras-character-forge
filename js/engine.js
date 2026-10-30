@@ -269,7 +269,7 @@ function freshState(){return {
  // % gained per skill key from this system, folded into finalPct() so every
  // existing display (skill list, sheet, roll log) picks it up automatically.
  // Legacy usedThisRun is retained for save compatibility and no longer limits improvement.
- xp:{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[],learnedProfs:[]}
+ xp:{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[],learnedProfs:[],trainingPending:[]}
 };}
 function normalizeState(){
   S.concept=S.concept||{};
@@ -375,6 +375,7 @@ function normalizeState(){
   S.xp.usedThisRun=S.xp.usedThisRun||[];S.xp.history=S.xp.history||[];
   S.xp.checked=S.xp.checked||[];
   if(!Array.isArray(S.xp.learnedProfs))S.xp.learnedProfs=[];
+  if(!Array.isArray(S.xp.trainingPending))S.xp.trainingPending=[];
   if(typeof S.xp.pool!=="number")S.xp.pool=0;
 }
 // Cult & Community is temporarily pulled out of the flow (user's own call,
@@ -571,6 +572,19 @@ function finalPct(key){const em=entryMap();const e=em[key];if(!e)return 0;
   // the final sheet. Fixed here; aGet returns 0 for phases with no entry for
   // this key, so this is a no-op for Full Creation characters.
   return e.base+cult+aGet("culture",key)+aGet("career",key)+aGet("bonus",key)+aGet("quick",key)+xpBonus(key);}
+// Core p.73 training chart, indexed in steps. The text permits a 20-point
+// difference but the first table row starts at 21; leave that edge to the GM.
+function trainingStep(difference,teachResult){
+  if(!Number.isSafeInteger(difference)||difference<=20)return null;
+  const shift={trainer:0,failure:0,success:1,critical:2,fumble:-1};
+  if(!Object.hasOwn(shift,teachResult))return null;
+  return Math.ceil((difference-20)/10)-1+shift[teachResult];
+}
+function trainingDie(step){
+  if(step<0)return {sides:0,bonus:0};
+  if(step<3)return {sides:[2,3,4][step],bonus:0};
+  return {sides:6,bonus:step-3};
+}
 // Cumulative permanent % gained for a skill via Experience Rolls (see the
 // xp section of freshState). Folded straight into finalPct so every place
 // that reads a skill's % — Play Mode list, Actions tab, Sheet, roll log —
