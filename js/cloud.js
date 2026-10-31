@@ -218,8 +218,10 @@ async function cloudFetchCampaigns(){
   const {data,error}=await sb.from("campaigns").select("*").order("created_at",{ascending:false});
   return error?[]:data;
 }
-async function cloudCreateCampaign(name){
-  const {data,error}=await sb.from("campaigns").insert({name,notes:"",dm_id:AUTH_USER.id,invite_code:genId().toUpperCase()}).select().single();
+async function cloudCreateCampaign(name,rules){
+  const fields={name,notes:"",dm_id:AUTH_USER.id,invite_code:genId().toUpperCase()};
+  if(rules!==undefined)fields.rules_settings=rules;
+  const {data,error}=await sb.from("campaigns").insert(fields).select().single();
   if(error)throw error;
   // This insert used to go unchecked — if it failed (RLS, network blip),
   // the campaign row still existed with the right dm_id, but the DM had no
@@ -571,7 +573,7 @@ const cloudActive=()=>CLOUD_ENABLED&&!!AUTH_USER;
 // for the local->unified shape instead of the four near-identical object
 // literals this used to be inlined as (list/detail/create/board-refetch).
 function normalizeLocalCampaign(c){
-  return c?{id:c.id,name:c.name,notes:c.notes,session_state:c.sessionState||null,
+  return c?{id:c.id,name:c.name,notes:c.notes,rules_settings:c.rulesSettings||null,session_state:c.sessionState||null,
     created_at:new Date(c.createdAt).toISOString(),dm_id:null,invite_code:null}:null;
 }
 let CAMP_LOAD_ERROR="",CAMP_LOAD_SEQUENCE=0;
@@ -628,9 +630,9 @@ async function loadCampaignViewUnified(id){
   render();
  }catch(e){CAMP_MSG="Could not load campaign: "+e.message;CAMPAIGN_VIEW={campaign:null,members:[],chars:[],unassigned:[]};render();}
 }
-async function createCampaignUnified(name){
-  if(cloudActive())return cloudCreateCampaign(name);
-  const camp={id:genId(),name,notes:"",createdAt:Date.now()};
+async function createCampaignUnified(name,rules){
+  if(cloudActive())return cloudCreateCampaign(name,rules);
+  const camp={id:genId(),name,notes:"",rulesSettings:rules||null,createdAt:Date.now()};
   upsertCampaignLocal(camp);
   return normalizeLocalCampaign(camp);
 }
@@ -650,8 +652,39 @@ async function sessionStateCampaignUnified(id,sessionState){
 // GM-tool edits (initiative/NPCs/notes) made from another tab/device,
 // mirroring loadBoardUnified's character refetch.
 async function loadCampaignRowUnified(id){
-  if(cloudActive()){const {data}=await sb.from("campaigns").select("*").eq("id",id).maybeSingle();return data||null;}
+  if(cloudActive()){const {data,error}=await sb.from("campaigns").select("*").eq("id",id).maybeSingle();if(error)throw error;return data||null;}
   return normalizeLocalCampaign(getCampaignLocal(id));
+}
+// Settings live on a separate campaign column; session tracker writes never overwrite it.
+const CAMPAIGN_BOOKS=["Mythras Companion","Classic Fantasy","Mythic Babylon","M-Space"];
+function normalizedCampaignRules(v){
+ if(!v||typeof v!=="object")return null;
+ const method=["training","permanent"].includes(v.characteristicImprovement)?v.characteristicImprovement:null;
+ const books=Array.isArray(v.books)?v.books.filter(x=>typeof x==="string"&&x.trim()).map(x=>x.trim().slice(0,100)).slice(0,20):[];
+ return {characteristicImprovement:method,books:[...new Set(books)]};
+}
+async function saveCampaignRulesUnified(camp,rules){
+ if(cloudActive()){
+   const {data,error}=await sb.from("campaigns").update({rules_settings:rules}).eq("id",camp.id).select("id,rules_settings").maybeSingle();
+   if(error)throw error;if(!data)throw Error("The campaign settings were not saved; check your GM access.");return data.rules_settings;
+ }
+ const local=getCampaignLocal(camp.id);if(!local)throw Error("Campaign not found.");
+ local.rulesSettings=rules;upsertCampaignLocal(local);return rules;
+}
+let CHARACTER_CAMPAIGN_RULES={id:null,status:"none",rules:null};
+async function refreshCharacterCampaignRules(id){
+ if(!id){CHARACTER_CAMPAIGN_RULES={id:null,status:"ready",rules:null};return null;}
+ const owner=AUTH_USER?.id||null;
+ const row=await loadCampaignRowUnified(id);if(!row)throw Error("Campaign settings are unavailable. Try again or contact the GM.");
+ const rules=normalizedCampaignRules(row.rules_settings);
+ if(row.rules_settings!=null&&!rules?.characteristicImprovement)throw Error("The GM needs to review the campaign rules.");
+ if((AUTH_USER?.id||null)!==owner)throw Error("The account changed while loading campaign rules.");
+ if(S.campaignId===id)CHARACTER_CAMPAIGN_RULES={id,status:"ready",rules};return rules;
+}
+function rulesForOpenCharacter(){
+ if(!S.campaignId)return {status:"standalone",rules:null};
+ if(CHARACTER_CAMPAIGN_RULES.id!==S.campaignId)return {status:"loading",rules:null};
+ return CHARACTER_CAMPAIGN_RULES;
 }
 async function deleteCampaignUnified(id){
   if(cloudActive())return cloudDeleteCampaign(id);
@@ -1024,6 +1057,27 @@ function renderLibraryView(){
   document.title="My Characters — Mythras Character Forge";
   $("#main").innerHTML=libraryHTML();
 }
+let CAMPAIGN_SETUP_EDIT=false,CAMPAIGN_SETUP_BUSY=false,CAMPAIGN_SETUP_DRAFT=null;
+function campaignSetupHTML(){
+ const camp=CAMPAIGN_SETUP_EDIT?CAMPAIGN_VIEW?.campaign:null;
+ const rules=CAMPAIGN_SETUP_DRAFT?.rules||normalizedCampaignRules(camp?.rules_settings)||{characteristicImprovement:"permanent",books:[]};
+ const enabled=new Set(rules.books);
+ const extras=rules.books.filter(x=>!CAMPAIGN_BOOKS.includes(x)).join(", ");
+ let h='<div class="menuwrap"><p><button class="nav" onclick="'+(camp?'APP.openCampaign(\''+jsq(camp.id)+'\')':'APP.toCampaigns()')+'">&#8592; Back</button></p>';
+ h+='<div class="card"><h2>'+(camp?'Campaign rules':'Create campaign')+'</h2><p class="note">The GM chooses these settings for the campaign. Players see and use the selected rules for their linked characters.</p>';
+ if(CAMP_MSG)h+='<p class="warn" role="alert">'+esc(CAMP_MSG)+'</p>';
+ if(!camp)h+='<label>Campaign name <input id="setupCampaignName" type="text" maxlength="100" value="'+esc(CAMPAIGN_SETUP_DRAFT?.name||"")+'" placeholder="Campaign name"></label>';
+ h+='<h3>Core rules</h3><p>Mythras Core Rulebook is always included.</p><label for="setupImprovement">Characteristic improvement</label> <select id="setupImprovement">'
+   +'<option value="training"'+(rules.characteristicImprovement==="training"?' selected':'')+'>Core: ongoing training and maintenance</option>'
+   +'<option value="permanent"'+(rules.characteristicImprovement==="permanent"?' selected':'')+'>Optional: permanent improvement</option></select>'
+   +'<p class="note">Ongoing training uses recurring Experience Rolls and can fade. Permanent improvement uses the optional one-time cost (Core pp.72–73). Existing records are preserved: any ongoing training already recorded still needs maintenance until stopped.</p>';
+ h+='<h3>Additional books</h3><p class="note">Record which books your group uses. These choices do not add or enable their mechanics yet; Core remains the implemented rules source.</p>';
+ h+=CAMPAIGN_BOOKS.map(b=>'<label style="display:block;margin:.5em 0"><input type="checkbox" name="setupBook" value="'+esc(b)+'"'+(enabled.has(b)?' checked':'')+'> '+esc(b)+' <span class="note">— selection only</span></label>').join("");
+ h+='<label>Other books (comma-separated) <input type="text" id="setupOtherBooks" maxlength="500" value="'+esc(extras)+'"></label>'
+   +'<p><button type="button" class="nav primary" '+(CAMPAIGN_SETUP_BUSY?'disabled':'')+' onclick="APP.saveCampaignSetup()">'+(CAMPAIGN_SETUP_BUSY?'Saving…':camp?'Save campaign rules':'Create campaign')+'</button></p></div></div>';
+ return h;
+}
+function renderCampaignSetupView(){document.body.classList.remove("play-mode","sheet-mode");document.body.classList.add("menu-mode");document.title="Campaign setup — Mythras Character Forge";$("#main").innerHTML=campaignSetupHTML();}
 /* ---- single campaign ---- */
 function campaignDetailHTML(){
   if(CAMPAIGN_VIEW===null)return '<div class="menuwrap"><p class="note" style="text-align:center">Loading campaign&hellip;</p></div>';
@@ -1042,6 +1096,9 @@ function campaignDetailHTML(){
      +(camp.notes?'<p class="note" style="margin-top:6px">'+esc(camp.notes)+'</p>':"");
   }
   h+='<p class="note" style="margin-top:8px">Created '+new Date(camp.created_at).toLocaleString()+'</p>';
+  const campaignRules=normalizedCampaignRules(camp.rules_settings);
+  h+='<p class="note"><b>Characteristic improvement:</b> '+(campaignRules?.characteristicImprovement==="permanent"?'Permanent (optional)':campaignRules?.characteristicImprovement==="training"?'Ongoing training':'Not configured')+'. <b>Additional books:</b> '+(campaignRules?.books?.length?campaignRules.books.map(esc).join(", "):"None recorded")+'.</p>'
+    +(isDM?'<button class="chip" onclick="APP.editCampaignRules()">Campaign rules &amp; books</button>':'');
   if(cloudActive()&&isDM&&camp.invite_code){
     h+='<p class="note" style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
      +'invite code <b style="font-family:var(--mono)">'+esc(camp.invite_code)+'</b>'

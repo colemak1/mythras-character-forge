@@ -673,7 +673,11 @@ window.APP={
    const r=selectedEffectRoll();if(!r||!Number.isInteger(i)||i<0||i>=(r.effectsPicked||[]).length)return;
    r.effectsPicked.splice(i,1);render();},
  /* ---- Experience Rolls / Improve Skills (core rulebook pp.71-73) ---- */
- openXP(){XP_LEARN_MSG="";XP_TRAIN_MSG="";XP_CHAR_MSG="";XP_OPEN=true;render();},
+ openXP(){XP_LEARN_MSG="";XP_TRAIN_MSG="";XP_CHAR_MSG="";XP_OPEN=true;
+   const current=S,id=S.campaignId;
+   if(id){CHARACTER_CAMPAIGN_RULES={id,status:"loading",rules:null};render();
+     refreshCharacterCampaignRules(id).catch(()=>{if(S===current)CHARACTER_CAMPAIGN_RULES={id,status:"error",rules:null};}).finally(()=>{if(S===current&&XP_OPEN)render();});
+   }else render();},
  closeXP(){XP_OPEN=false;render();},
  xpAward(v,applyModifier=false){if(VIEW_ONLY)return;const text=String(v).trim(),n=Number(text);if(!/^-?\d+$/.test(text)||!Number.isSafeInteger(n)||n===0)return;
    if(n<0){S.xp.pool=Math.max(0,S.xp.pool+n);render();return;}
@@ -684,7 +688,15 @@ window.APP={
    // One atrophy step for each characteristic whose training has stopped.
    for(const key of CHARS){for(let i=training.length-1;i>=0;i--){if(training[i].key===key&&!training[i].active){training.splice(i,1);break;}}}
    XP_CHAR_MSG="Award recorded: "+award+" rolls, "+maintained+" used to maintain training.";render();},
- xpCharacteristicTrain(key,confirmed){if(VIEW_ONLY)return;
+ xpCharacteristicTrain(key,confirmed,verified){if(VIEW_ONLY)return;
+   if(S.campaignId&&!verified){const current=S,id=S.campaignId;
+     CHARACTER_CAMPAIGN_RULES={id,status:"loading",rules:null};render();
+     return refreshCharacterCampaignRules(id).then(rules=>{
+       if(S!==current||S.campaignId!==id)return;
+       if(rules?.characteristicImprovement&&rules.characteristicImprovement!=="training"){XP_CHAR_MSG="Your GM has selected the other characteristic improvement method for this campaign.";render();return;}
+       APP.xpCharacteristicTrain(key,confirmed,true);
+     }).catch(()=>{if(S===current){CHARACTER_CAMPAIGN_RULES={id,status:"error",rules:null};XP_CHAR_MSG="Campaign rules could not be loaded. Try again when connected.";render();}});
+   }
    const fail=m=>{XP_CHAR_MSG=m;render();};
    if(!confirmed)return fail("Confirm GM approval first.");
    if(!charsReady()||!CHARS.includes(key)||key==="SIZ")return fail("Choose an eligible characteristic.");
@@ -694,7 +706,15 @@ window.APP={
    if(!S.xp.characteristics)S.xp.characteristics={permanent:{},training:[]};
    S.xp.characteristics.training.push({key,bonus:gain,active:true});S.xp.pool--;
    XP_CHAR_MSG=key+" training added +"+gain+"; future awards require one roll to maintain this step.";render();},
- xpCharacteristicPermanent(key,confirmed){if(VIEW_ONLY)return;
+ xpCharacteristicPermanent(key,confirmed,verified){if(VIEW_ONLY)return;
+   if(S.campaignId&&!verified){const current=S,id=S.campaignId;
+     CHARACTER_CAMPAIGN_RULES={id,status:"loading",rules:null};render();
+     return refreshCharacterCampaignRules(id).then(rules=>{
+       if(S!==current||S.campaignId!==id)return;
+       if(rules?.characteristicImprovement&&rules.characteristicImprovement!=="permanent"){XP_CHAR_MSG="Your GM has selected the other characteristic improvement method for this campaign.";render();return;}
+       APP.xpCharacteristicPermanent(key,confirmed,true);
+     }).catch(()=>{if(S===current){CHARACTER_CAMPAIGN_RULES={id,status:"error",rules:null};XP_CHAR_MSG="Campaign rules could not be loaded. Try again when connected.";render();}});
+   }
    const fail=m=>{XP_CHAR_MSG=m;render();};
    if(!confirmed)return fail("Confirm GM approval for the optional permanent rule first.");
    if(!charsReady()||!CHARS.includes(key)||key==="SIZ")return fail("Choose an eligible characteristic.");
@@ -1161,11 +1181,30 @@ window.APP={
  /* campaigns */
  toCampaigns(){APPVIEW="campaigns";CAMP_CACHE=null;CAMP_MSG=null;render();loadCampaignsUnified();window.scrollTo(0,0);},
  newCampaign(){
-   if(!AUTH_USER&&!MOCK_AUTH){CAMP_MSG="Sign in first — campaigns need an account once cloud sync is on.";render();return;}
-   createCampaignUnified("New Campaign").then(camp=>{
-     CURRENT_CAMPAIGN_ID=camp.id;APPVIEW="campaign";CAMPAIGN_VIEW=null;render();
-     loadCampaignViewUnified(camp.id);window.scrollTo(0,0);
-   }).catch(e=>{CAMP_MSG="Could not create campaign: "+e.message;render();});},
+   if(!AUTH_USER&&!MOCK_AUTH){CAMP_MSG="Sign in first — campaigns need an account.";MENU_MSG=CAMP_MSG;render();return;}
+   CAMPAIGN_SETUP_EDIT=false;CAMPAIGN_SETUP_DRAFT=null;CAMP_MSG=null;APPVIEW="campaign-setup";render();window.scrollTo(0,0);},
+ editCampaignRules(){
+   const camp=CAMPAIGN_VIEW?.campaign;if(!camp||(cloudActive()&&camp.dm_id!==AUTH_USER?.id))return;
+   CAMPAIGN_SETUP_EDIT=true;CAMPAIGN_SETUP_DRAFT=null;CAMP_MSG=null;APPVIEW="campaign-setup";render();window.scrollTo(0,0);},
+ async saveCampaignSetup(){
+   if(CAMPAIGN_SETUP_BUSY)return;
+   const camp=CAMPAIGN_SETUP_EDIT?CAMPAIGN_VIEW?.campaign:null;
+   if(CAMPAIGN_SETUP_EDIT&&(!camp||(cloudActive()&&camp.dm_id!==AUTH_USER?.id))){CAMP_MSG="Only the GM can change campaign settings.";render();return;}
+   const name=camp?.name||String(document.getElementById("setupCampaignName")?.value||"").trim();
+   const choice=document.getElementById("setupImprovement")?.value;
+   const selected=Array.from(document.querySelectorAll('input[name="setupBook"]:checked')).map(el=>el.value);
+   const others=String(document.getElementById("setupOtherBooks")?.value||"").split(",").map(x=>x.trim()).filter(Boolean);
+   const rules=normalizedCampaignRules({characteristicImprovement:choice,books:[...selected,...others]});
+   CAMPAIGN_SETUP_DRAFT={name,rules};
+   if(!name||name.length>100||!rules?.characteristicImprovement){CAMP_MSG="Enter a campaign name and choose a characteristic rule.";render();return;}
+   CAMPAIGN_SETUP_BUSY=true;CAMP_MSG=null;render();
+   try{
+     if(camp){const saved=await saveCampaignRulesUnified(camp,rules);camp.rules_settings=saved;CURRENT_CAMPAIGN_ID=camp.id;}
+     else {const created=await createCampaignUnified(name,rules);CURRENT_CAMPAIGN_ID=created.id;}
+     CAMPAIGN_SETUP_DRAFT=null;CAMPAIGN_SETUP_EDIT=false;APPVIEW="campaign";CAMPAIGN_VIEW=null;render();await loadCampaignViewUnified(CURRENT_CAMPAIGN_ID);window.scrollTo(0,0);
+   }catch(e){CAMP_MSG="Could not save campaign setup: "+(e?.message||"Unknown error");render();}
+   finally{CAMPAIGN_SETUP_BUSY=false;if(APPVIEW==="campaign-setup")render();}
+ },
  openCampaign(id){CURRENT_CAMPAIGN_ID=id;APPVIEW="campaign";CAMPAIGN_VIEW=null;CAMP_MSG=null;render();
    loadCampaignViewUnified(id);window.scrollTo(0,0);},
  campField(f,v){
