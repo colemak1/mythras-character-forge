@@ -423,6 +423,21 @@ function pmStandingText(){
   const label=worst==="major"?"MAJOR WOUND":worst==="serious"?"WOUNDED":"MINOR WOUND";
   return "STANDING: "+label+" &mdash; "+pmShortName(worstLoc).toUpperCase().replace(/\s+/g,"");
 }
+// A compact incident overview, derived only from saved events and explicit
+// outcomes. Timing and treatment remain player/GM decisions (Core p.110).
+function pmWoundOverview(){
+  const events=(S.play.woundEvents||[]).filter(e=>e&&!e.resolved&&PLAY_HP_LOCS.includes(e.loc));
+  if(!events.length)return "";
+  const hr=charsReady()?healRate(S.chars.CON):0;
+  return '<div class="pm-fx-selection"><b>Wound watch · '+events.length+' open</b><span>Track turns and treatment at the table. Select a location to update an incident.</span>'
+    +events.map(e=>{
+      const limb=PLAY_LIMB_LOCS.includes(e.loc),major=e.severity==="major";
+      const outcome=e.outcome==="success"?"Endurance succeeded":e.outcome==="failure"?"Endurance failed":"Endurance check pending";
+      let reminder=major?(e.treated?"Treatment recorded; GM resolves recovery.":limb?"Treatment deadline may be "+(5*hr)+" minutes, depending on injury.":"If the check succeeds, treatment deadline is "+(2*hr)+" combat rounds.")
+       :e.outcome==="failure"?(limb?(playCurHP(e.loc)>0?"Location now has positive HP; GM resolves limb status.":"Limb unusable until positive HP."):"Unconsciousness duration: "+e.damage+" minutes; GM tracks elapsed time."):"Check interruption and outcome.";
+      return '<div><button type="button" class="pm-btn sm" onclick="APP.playSelectLoc(\''+jsq(e.loc)+'\')">'+esc(e.loc)+'</button> <b>'+esc(major?"Major":"Serious")+'</b> · '+esc(outcome)+'<br><span>'+esc(reminder)+'</span></div>';
+    }).join("")+'</div>';
+}
 function pmVitalsCard(){
   const worstRank={ok:0,minor:1,serious:2,major:3};
   const worst=PLAY_HP_LOCS.reduce((w,l)=>{const st=playHPState(l).cls;return worstRank[st]>worstRank[w]?st:w;},"ok");
@@ -444,7 +459,7 @@ function pmVitalsCard(){
   // per-location list right below is the real, book-accurate readout.
   h+='<div class="pm-vit-body">'+pmBodySvg()+'<div class="pm-loclist">'+PLAY_HP_LOCS.map(pmLocRow).join("")+'</div></div>';
   h+='<div class="pm-legend"><span>Healthy</span><div class="pm-legendgrad"></div><span>Major Wound</span></div>';
-  h+=pmLocDetail();
+  h+=pmWoundOverview()+pmLocDetail();
   h+='</div>';
   return h;
 }

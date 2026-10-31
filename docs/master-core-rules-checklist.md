@@ -232,3 +232,7 @@ MCR-17: Core pp.94–95 visually checked. An optional calculator shows remaining
 ## Starting magic review — implementation in review
 
 MCR-15: Core p.118 visually checked. An explicit new/experienced selection and GM review snapshot distinguishes starting guidance from later learning without deleting saved abilities or blocking creation. Review becomes stale if recorded ability names or relevant skill values change. Prerequisite enforcement and per-tradition overrides remain open; live persistence is unverified.
+
+## Wound watch — implementation in review
+
+MCR-21: Core p.110 visually checked. Open saved wound incidents appear together in Vitals, with their recorded Endurance outcome and conditional reminders. The player/GM still tracks elapsed time, treatment, incapacitation and effects. This does not infer an outcome or enforce a condition. Production verification remains open.
