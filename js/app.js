@@ -649,11 +649,38 @@ window.APP={
    const r=selectedEffectRoll();if(!r||!Number.isInteger(i)||i<0||i>=(r.effectsPicked||[]).length)return;
    r.effectsPicked.splice(i,1);render();},
  /* ---- Experience Rolls / Improve Skills (core rulebook pp.71-73) ---- */
- openXP(){XP_LEARN_MSG="";XP_TRAIN_MSG="";XP_OPEN=true;render();},
+ openXP(){XP_LEARN_MSG="";XP_TRAIN_MSG="";XP_CHAR_MSG="";XP_OPEN=true;render();},
  closeXP(){XP_OPEN=false;render();},
- xpAward(v,applyModifier=false){if(VIEW_ONLY)return;const n=parseInt(v,10);if(!Number.isFinite(n)||n===0)return;
-   S.xp.pool=Math.max(0,S.xp.pool+n+(n>0&&applyModifier?xpMod(S.chars.CHA):0));
-   render();},
+ xpAward(v,applyModifier=false){if(VIEW_ONLY)return;const text=String(v).trim(),n=Number(text);if(!/^-?\d+$/.test(text)||!Number.isSafeInteger(n)||n===0)return;
+   if(n<0){S.xp.pool=Math.max(0,S.xp.pool+n);render();return;}
+   const training=characteristicTraining(S),maintained=training.filter(t=>t.active).length;
+   const award=Math.max(0,n+(applyModifier?xpMod(effectiveChars().CHA):0));
+   if(award<maintained){XP_CHAR_MSG="Award is too small to cover maintained training; stop training or check the award with your GM.";render();return;}
+   S.xp.pool+=award-maintained;
+   // One atrophy step for each characteristic whose training has stopped.
+   for(const key of CHARS){for(let i=training.length-1;i>=0;i--){if(training[i].key===key&&!training[i].active){training.splice(i,1);break;}}}
+   XP_CHAR_MSG="Award recorded: "+award+" rolls, "+maintained+" used to maintain training.";render();},
+ xpCharacteristicTrain(key,confirmed){if(VIEW_ONLY)return;
+   const fail=m=>{XP_CHAR_MSG=m;render();};
+   if(!confirmed)return fail("Confirm GM approval first.");
+   if(!charsReady()||!CHARS.includes(key)||key==="SIZ")return fail("Choose an eligible characteristic.");
+   if(xpRollsAvailable()<1)return fail("Training requires one banked Experience Roll.");
+   const cur=effectiveChars()[key],max=charMax(key),gain=Math.min(Math.ceil(max/10),max-cur);
+   if(gain<=0)return fail("This characteristic is already at its species maximum.");
+   if(!S.xp.characteristics)S.xp.characteristics={permanent:{},training:[]};
+   S.xp.characteristics.training.push({key,bonus:gain,active:true});S.xp.pool--;
+   XP_CHAR_MSG=key+" training added +"+gain+"; future awards require one roll to maintain this step.";render();},
+ xpCharacteristicPermanent(key,confirmed){if(VIEW_ONLY)return;
+   const fail=m=>{XP_CHAR_MSG=m;render();};
+   if(!confirmed)return fail("Confirm GM approval for the optional permanent rule first.");
+   if(!charsReady()||!CHARS.includes(key)||key==="SIZ")return fail("Choose an eligible characteristic.");
+   const cur=effectiveChars()[key],cost=1+cur-charMin(key);
+   if(cur>=charMax(key))return fail("This characteristic is already at its species maximum.");
+   if(cost<1||xpRollsAvailable()<cost)return fail("Permanent improvement requires "+cost+" banked Experience Rolls.");
+   if(!S.xp.characteristics)S.xp.characteristics={permanent:{},training:[]};
+   const p=S.xp.characteristics.permanent;p[key]=(p[key]||0)+1;S.xp.pool-=cost;
+   XP_CHAR_MSG=key+" permanently increased by 1 for "+cost+" Experience Rolls.";render();},
+ xpCharacteristicToggle(i){if(VIEW_ONLY||!Number.isInteger(i))return;const t=characteristicTraining(S)[i];if(!t)return;t.active=!t.active;XP_CHAR_MSG=t.key+" training "+(t.active?"resumed":"stopped; it will atrophy on the next award")+".";render();},
  xpLearnProfessional(name,spec,confirmed){
    if(VIEW_ONLY)return;
    const fail=msg=>{XP_LEARN_MSG=msg;render();};
@@ -721,23 +748,23 @@ window.APP={
      fumbleApplied=true;
    }
    const target=finalPct(key);
-   const r=d100();const total=r+S.chars.INT;
+   const r=d100();const total=r+effectiveChars().INT;
    const success=total>=target;
    const gain=success?(d(4)+1):1;
    S.xp.bonus[key]=(S.xp.bonus[key]||0)+gain;
    S.xp.trainingPending=(S.xp.trainingPending||[]).filter(k=>k!==key);
    S.xp.checked=S.xp.checked.filter(k=>k!==key);
    S.xp.pool=Math.max(0,S.xp.pool-1);
-   S.xp.history.unshift({type:"roll",key,label:e.label,roll:r===100?"00":r,int:S.chars.INT,total,target,success,gain,fumbleApplied,newPct:finalPct(key)});
+   S.xp.history.unshift({type:"roll",key,label:e.label,roll:r===100?"00":r,int:effectiveChars().INT,total,target,success,gain,fumbleApplied,newPct:finalPct(key)});
    S.xp.history=S.xp.history.slice(0,25);render();},
  // Core p.72: Passions improve using the same experience roll as skills.
  xpSpendPassion(i){if(VIEW_ONLY||xpRollsAvailable()<=0||!Number.isInteger(i))return;
    const p=S.passions[i];if(!p)return;
    const target=passionVal(p);if(typeof target!=="number"||!Number.isFinite(target))return;
-   const r=d100(),total=r+S.chars.INT,success=total>=target,gain=success?(d(4)+1):1;
+   const r=d100(),total=r+effectiveChars().INT,success=total>=target,gain=success?(d(4)+1):1;
    p.xpBonus=(Number(p.xpBonus)||0)+gain;
    S.xp.pool=Math.max(0,S.xp.pool-1);
-   S.xp.history.unshift({type:"roll",label:p.name||"(unnamed Passion)",roll:r===100?"00":r,int:S.chars.INT,total,target,success,gain,newPct:passionVal(p)});
+   S.xp.history.unshift({type:"roll",label:p.name||"(unnamed Passion)",roll:r===100?"00":r,int:effectiveChars().INT,total,target,success,gain,newPct:passionVal(p)});
    S.xp.history=S.xp.history.slice(0,25);render();},
  // Core p.82: the GM may change a Passion as a result of events in play.
  adjustPassion(i,value){if(VIEW_ONLY||!Number.isInteger(i))return;
@@ -1214,7 +1241,8 @@ window.APP={
    APP.gmSessionMutate(st=>{
      st.combatants.forEach(c=>{
        const row=c.kind==="pc"?(BOARD_CHARS||[]).find(b=>b.id===c.ref):null;
-       const bonus=row&&row.state&&row.state.chars?initBonus(row.state.chars.INT,row.state.chars.DEX):0;
+       const pc=row&&row.state&&row.state.chars?effectiveChars(row.state):null;
+       const bonus=pc?initBonus(pc.INT,pc.DEX):0;
        c.init=d(10)+bonus;
      });
    });},
@@ -1447,7 +1475,7 @@ function dl(name,content,type){const b=new Blob([content],{type});const u=URL.cr
   const a=document.createElement("a");a.href=u;a.download=name;a.click();
   setTimeout(()=>URL.revokeObjectURL(u),2000);}
 function buildMD(){
-  const c=S.chars,n=S.concept.name||"Unnamed Character";
+  const c=effectiveChars(),n=S.concept.name||"Unnamed Character";
   const es=allEntries();
   const careerName=S.customCareer.isCustom?S.customCareer.name:S.career||"";
   const yaml=["---","type: character","name: "+n,
