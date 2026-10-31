@@ -33,7 +33,7 @@ The detailed checklist below preserves the original audit findings as historical
 | MCR-23 | Passion improvement and manual changes (#43) | Passion fumble tracking, XP-based reductions and live verification remain. |
 | MCR-24 | Learning professional skills (#53) | User reports it works; signed-in persistence and remaining prerequisites need verification. |
 | MCR-25 | Mentor training (#54) | Exact 20-point difference needs GM adjudication; live verification remains. |
-| MCR-26 | Not implemented | Characteristic improvement, derived values, maintenance, atrophy and optional purchase scheme need safe save handling. |
+| MCR-26 | Characteristic training and optional permanent improvement implemented | Verify live signed-in saves and migrations, real award workflows, sourcebook interpretations, and edge cases involving changed species and creation scores. |
 
 ### Next priorities
 

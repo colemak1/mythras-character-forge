@@ -49,9 +49,9 @@ function renderRail(){
   }).join("");
 }
 function renderLedger(){
-  let h='<h3>Characteristics</h3><div class="ledchars">'+CHARS.map(c=>'<div class="lc"><b>'+(S.chars[c]??"&mdash;")+'</b><span>'+c+'</span></div>').join("")+'</div>';
+  let h='<h3>Characteristics</h3><div class="ledchars">'+CHARS.map(c=>'<div class="lc"><b>'+(effectiveChars()[c]??"&mdash;")+'</b><span>'+c+'</span></div>').join("")+'</div>';
   if(charsReady()){
-    const c=S.chars;
+    const c=effectiveChars();
     h+='<h3>Attributes</h3>'
       +led("Action Points",apFinal(c.INT,c.DEX,S.fixedAP))
       +led("Damage Mod",dmCalc(c.STR,c.SIZ))
@@ -388,7 +388,7 @@ function advCard(){
 }
 function stepAttrs(){
   if(!charsReady())return head("Attributes","Derived automatically from characteristics.")+'<div class="card"><p class="warn">Set all seven characteristics first.</p></div>';
-  const c=S.chars;
+  const c=effectiveChars();
   const rows=[
    ["Action Points",apFinal(c.INT,c.DEX,S.fixedAP)+(hasAdv("ap")?" (Advantage +1)":""),S.fixedAP?"fixed by house rule":"INT+DEX = "+(c.INT+c.DEX)],
    ["Damage Modifier",dmCalc(c.STR,c.SIZ),"STR+SIZ = "+(c.STR+c.SIZ)],
@@ -905,7 +905,7 @@ function stepPassions(){
   return h;
 }
 function passionVal(p){
-  if(!charsReady())return "?";const c=S.chars;
+  if(!charsReady())return "?";const c=effectiveChars();
   let base;
   switch(p.type){
    case "romantic":base=30+(+p.subjPOW||0)+(+p.subjCHA||0);break;
@@ -965,14 +965,14 @@ function armourPenaltyToInit(){
 // ("Overloaded"): two Grades harder, Movement halved and walk-only, counts
 // as Strenuous activity for Fatigue. STR x4 is a hard cap — cannot be
 // carried at all, encumbered or not.
-function encLimit(){return charsReady()?S.chars.STR*2:null;}
+function encLimit(){return charsReady()?effectiveChars().STR*2:null;}
 // `steps` is the number of Difficulty Grades this load actually costs a
 // STR/DEX-based skill. It used to exist only inside the message string, which
 // is why the penalty was displayed but never applied — engine.js's
 // encGradeSteps() reads it now and feeds it straight into gradeForEntry().
 function encStatus(){
   if(!charsReady())return null;
-  const total=gearEncTotal(),lim=S.chars.STR*2,over=S.chars.STR*3,cap=S.chars.STR*4;
+  const total=gearEncTotal(),lim=effectiveChars().STR*2,over=effectiveChars().STR*3,cap=effectiveChars().STR*4;
   if(total<=lim)return {level:"ok",steps:0,label:"Unencumbered",msg:"Within your unencumbered limit."};
   if(total<=over)return {level:"warn",steps:1,label:"Burdened",msg:"Burdened &mdash; over STR&times;2 ("+lim+"): STR/DEX-based skills (including Combat Styles) are one Grade harder, Movement -2m, no sprinting."};
   if(total<=cap)return {level:"bad",steps:2,label:"Overloaded",msg:"Overloaded &mdash; over STR&times;3 ("+over+"): STR/DEX-based skills are two Grades harder, Movement halved, walk-only."};

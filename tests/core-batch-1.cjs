@@ -15,6 +15,40 @@ const run=s=>vm.runInContext(s,ctx);
 run('render=()=>{};');
 const test=(name,fn)=>{fn();console.log('PASS',name)};
 const reset=()=>run('S=freshState();VIEW_ONLY=false;S.chars={STR:12,CON:12,SIZ:12,DEX:14,INT:12,POW:12,CHA:13};');
+test('Core pp.72–73: characteristic advancement maintains separate natural values and derived stats',()=>{
+ reset();run('S.xp.pool=20;');const skill=run('finalPct("std:Athletics")');
+ run('APP.xpCharacteristicTrain("STR",true)');
+ assert.equal(run('S.chars.STR'),12);assert.equal(run('effectiveChars().STR'),14);assert.equal(run('finalPct("std:Athletics")'),skill+2);assert.equal(run('S.xp.pool'),19);
+ run('APP.xpAward(3,false)');assert.equal(run('S.xp.pool'),21);
+ run('APP.xpCharacteristicPermanent("DEX",true)');assert.equal(run('effectiveChars().DEX'),15);assert.equal(run('S.xp.pool'),9);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState()`);
+ assert.equal(run('effectiveChars().STR'),14);assert.equal(run('effectiveChars().DEX'),15);
+ assert.equal(run('effectiveChars(JSON.parse(JSON.stringify(S))).STR'),14);
+ run('APP.xpCharacteristicToggle(0);APP.xpAward(3,false)');
+ assert.equal(run('effectiveChars().STR'),12);assert.equal(run('effectiveChars().DEX'),15);assert.equal(run('S.xp.pool'),12);
+});
+test('characteristic improvement respects caps, permission, award maintenance and creation scores',()=>{
+ reset();run('S.xp.pool=20;S.chars.STR=17;APP.xpCharacteristicTrain("STR",true)');
+ assert.equal(run('effectiveChars().STR'),18);assert.equal(run('S.xp.characteristics.training[0].bonus'),1);
+ run('APP.xpCharacteristicTrain("STR",true);APP.xpCharacteristicPermanent("SIZ",true)');assert.equal(run('S.xp.pool'),19);
+ run('VIEW_ONLY=true;APP.xpCharacteristicToggle(0);APP.xpCharacteristicPermanent("CON",true);APP.xpAward(3,false)');
+ assert.equal(run('S.xp.pool'),19);assert.equal(run('S.xp.characteristics.training[0].active'),true);
+ run('VIEW_ONLY=false;S.xp.characteristics.training.push({key:"DEX",bonus:2,active:true});APP.xpAward(1,false)');
+ assert.equal(run('S.xp.pool'),19);assert.equal(run('effectiveChars().DEX'),16);
+ run('S.charMode="pb";S.chars={STR:12,CON:11,SIZ:12,DEX:11,INT:12,POW:11,CHA:11};');
+ assert.equal(run('validate(currentSteps().indexOf("Characteristics")).ok'),true);
+});
+test('atrophy preserves damage when CON and location maximum decrease',()=>{
+ reset();run('S.xp.pool=2;S.chars.CON=10;APP.xpCharacteristicTrain("CON",true);S.play.hp.Head=-9;APP.xpCharacteristicToggle(0);APP.xpAward(2,false)');
+ assert.equal(run('effectiveChars().CON'),10);assert.equal(run('playCurHP("Head")'),-9);
+});
+test('stopped training can resume and loses one step per characteristic on an award',()=>{
+ reset();run('S.xp.pool=8;APP.xpCharacteristicTrain("STR",true);APP.xpCharacteristicTrain("STR",true);APP.xpCharacteristicToggle(0);APP.xpCharacteristicToggle(1)');
+ run('APP.xpCharacteristicToggle(0);APP.xpAward(3,false)');
+ assert.equal(run('S.xp.characteristics.training.length'),1);assert.equal(run('S.xp.characteristics.training[0].active'),true);
+ assert.equal(run('effectiveChars().STR'),14);assert.equal(run('S.xp.pool'),8);
+ run('APP.xpCharacteristicToggle(0);APP.xpAward(3,false)');assert.equal(run('effectiveChars().STR'),12);
+});
 test('Core p.72: CHA modifier is explicit, signed, and read-only guarded',()=>{
  for(const [cha,apply,expected] of [[13,false,3],[13,true,4],[6,false,3],[6,true,2]]){
   reset();run(`S.chars.CHA=${cha};APP.xpAward(3,${apply});`);assert.equal(run('S.xp.pool'),expected);
