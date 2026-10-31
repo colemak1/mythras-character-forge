@@ -687,14 +687,14 @@ window.APP={
    S.xp.trainingPending.push(key);
    S.xp.history.unshift({type:"training",label:e.label,gain,newPct:finalPct(key)});
    S.xp.history=S.xp.history.slice(0,25);XP_TRAIN_MSG="Training complete: "+e.label+" gained "+gain+"%. An Experience Roll must improve it before training again.";render();},
- xpToggleFumble(key){const i=S.xp.fumbled.indexOf(key);
+ xpToggleFumble(key){if(VIEW_ONLY)return;const i=S.xp.fumbled.indexOf(key);
    if(i>=0)S.xp.fumbled.splice(i,1);else S.xp.fumbled.push(key);render();},
  // Manual "checked" toggle for a dramatic non-crit success the app can't
  // detect algorithmically -- same interaction as xpToggleFumble above, just
  // a different flag. See markChecked() for the auto-set path (a Critical,
  // in-app or manually logged) and xpSpend() for how a checked skill's own
  // flag clears when its Experience Roll gets spent.
- xpToggleChecked(key){const i=S.xp.checked.indexOf(key);
+ xpToggleChecked(key){if(VIEW_ONLY)return;const i=S.xp.checked.indexOf(key);
    if(i>=0)S.xp.checked.splice(i,1);else S.xp.checked.push(key);render();},
  // Auto-set path for a Critical on the app's own roller (roll()/castMagic()
  // below) -- the ✓ flag itself is also directly toggleable by hand
@@ -704,7 +704,7 @@ window.APP={
  // Apply a flagged skill's free Fumble +1% on its own, without spending an
  // Experience Roll (the book grants this unconditionally, not just when a
  // roll happens to also be spent on that skill).
- xpApplyFumble(key){if(!S.xp.fumbled.includes(key))return;
+ xpApplyFumble(key){if(VIEW_ONLY||!S.xp.fumbled.includes(key))return;
    const e=entryMap()[key];if(!e)return;
    S.xp.bonus[key]=(S.xp.bonus[key]||0)+1;
    S.xp.fumbled=S.xp.fumbled.filter(k=>k!==key);
