@@ -32,6 +32,15 @@ test('Core p.72: repeated skill improvement spends rolls against updated percent
  const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
  assert.equal(run('S.xp.pool'),0);assert.equal(run('S.xp.bonus["std:Athletics"]'),2);
 });
+test('view-only experience flags and fumble improvement cannot mutate a character',()=>{
+ reset();run('S.xp.fumbled=["std:Athletics"];S.xp.checked=["std:Athletics"];VIEW_ONLY=true;');
+ const before=run('JSON.stringify(S.xp)');
+ run('APP.xpToggleFumble("std:Athletics");APP.xpToggleChecked("std:Athletics");APP.xpApplyFumble("std:Athletics");');
+ assert.equal(run('JSON.stringify(S.xp)'),before);
+ run('VIEW_ONLY=false;APP.xpApplyFumble("std:Athletics")');
+ assert.equal(run('S.xp.bonus["std:Athletics"]'),1);
+ assert.equal(run('S.xp.fumbled.length'),0);
+});
 test('Core p.72: Passion improvement spends rolls, persists, and respects access',()=>{
  reset();run('S.passions=[{name:"Loyalty",type:"org"},{name:"Love",type:"species"}];S.xp.pool=2;Math.random=()=>0;');
  const start=run('passionVal(S.passions[0])');
