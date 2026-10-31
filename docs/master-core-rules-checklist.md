@@ -16,7 +16,7 @@ The detailed checklist below preserves the original audit findings as historical
 | MCR-01–03 | Sorcery Shaping and Combine corrected (#34) | Verify rounding beyond the printed example, combined-spell circumstances and live behavior. |
 | MCR-04, 07 | Mysticism intensity and Folk Magic starting guidance (#41) | Verify rounding boundaries and specialist Folk allowance. |
 | MCR-05, 06, 09, 27, 28 | Conditional CHA, repeat improvements and text fixes (#30) | Verify signed-in workflows; continue broader audit. |
-| MCR-08 | Ageing review guidance (#49) | Implement checks and persisted characteristic effects without invalidating creation. |
+| MCR-08 | Human ageing outcomes and characteristic losses can be recorded with GM confirmation | Verify signed-in persistence and the complete ageing workflow; checks and dice rolls are made at the table, and non-human bands require GM adjudication. |
 | MCR-10 | Cause-specific Fatigue guidance (#51) | Recovery and the end of its cause remain manual. |
 | MCR-11 | Animism spirit POW eligibility (#42) | Verify with a real character and production account; broader prerequisites remain open. |
 | MCR-12 | Theism pool rank check (#48) | Fractional rounding and multiple-cult pools remain GM-managed. |
