@@ -190,6 +190,7 @@ function ageCard(){
   h+=lifeEventsBlock();
   return h+'</div>';
 }
+let AGE_RECORD_MSG="";
 function ageingReviewBlock(){
   const info=humanAgeingInfo(),old=S.age.category==="senior"||S.age.category==="old";
   if(!info&&!old)return "";
@@ -199,7 +200,26 @@ function ageingReviewBlock(){
   if(!human)h+='<p class="note">Human age bands may not apply to this species. Confirm the bands and effects with your GM.</p>';
   else if(info)h+='<p class="note">At age '+info.age+', the current human ageing band is '+esc(info.label)+'; its Endurance and Willpower tests are '+esc(info.grade)+'. Discuss any earlier bands with your GM.</p>';
   else h+='<p class="note">Enter the exact age to identify the human ageing band.</p>';
-  h+='<p class="note">Each new ageing band calls for Endurance and Willpower tests. A failed test can reduce a characteristic; consult the Core Ageing Effects table with your GM. This tracker records your review only: it does not roll, apply penalties, or adjust derived values.</p>';
+  h+='<p class="note">Each new ageing band calls for Endurance and Willpower tests. Record the results below; no effects are applied automatically. Prior GM reviews may already include ageing effects, so check them before recording a band.</p>';
+  const events=Array.isArray(S.age.ageingEvents)?S.age.ageingEvents:[];
+  if(events.length)h+='<p class="note">Recorded ageing bands: '+events.map(e=>esc(e.band)+(e.effects?.length?' ('+e.effects.map(x=>esc(x.key)+' −'+x.loss).join(', ')+')':' (no loss)')).join('; ')+'.</p>';
+  if(events.length)h+='<button class="chip" type="button" onclick="APP.undoAgeing()">Remove last ageing record</button>';
+  if(events.some(e=>e.terminal))h+='<p class="warn" role="alert">An ageing effect reduced a characteristic to zero; Core p.71 describes death from terminal frailty. Discuss the recorded result with the GM.</p>';
+  if(human&&info){
+    const bands=[[40,"Early Middle Age","Easy"],[50,"Middle Age","Standard"],[60,"Late Middle Age","Hard"],[70,"Old Age","Formidable"],[80,"Advanced Old Age","Herculean"],[90,"Dotage","Hopeless"]];
+    const available=bands.filter(b=>b[0]<=info.age&&!events.some(e=>e.band===b[1]));
+    if(available.length){
+      const outcomes='<option value="">Choose outcome</option><option value="success">Success or critical</option><option value="failure">Failure or fumble</option>';
+      h+='<details class="lifeev"'+(AGE_RECORD_MSG?' open':'')+'><summary>Record an ageing band</summary><p class="note">Use the listed difficulty for both checks. For each failed check, enter the 1d6 table roll and 1d3 loss rolled at the table. The app updates current values and related skills; creation values stay intact.</p>'
+       +'<label>Age band <select id="ageRecordBand">'+available.map(b=>'<option value="'+b[0]+'">'+b[1]+' — '+b[2]+'</option>').join("")+'</select></label><br>'
+       +'<label>Endurance <select id="ageEndOutcome">'+outcomes+'</select></label> <label>1d6 <input id="ageEndTable" type="number" min="1" max="6" style="width:4em"></label> <label>1d3 <input id="ageEndLoss" type="number" min="1" max="3" style="width:4em"></label><br>'
+       +'<label>Willpower <select id="ageWillOutcome">'+outcomes+'</select></label> <label>1d6 <input id="ageWillTable" type="number" min="1" max="6" style="width:4em"></label> <label>1d3 <input id="ageWillLoss" type="number" min="1" max="3" style="width:4em"></label><br>'
+       +'<label><input id="ageRecordConfirm" type="checkbox"> GM confirms these results were not applied before</label> '
+       +'<button class="chip" type="button" onclick="APP.recordAgeing(document.getElementById(\'ageRecordBand\').value,document.getElementById(\'ageEndOutcome\').value,document.getElementById(\'ageEndTable\').value,document.getElementById(\'ageEndLoss\').value,document.getElementById(\'ageWillOutcome\').value,document.getElementById(\'ageWillTable\').value,document.getElementById(\'ageWillLoss\').value,document.getElementById(\'ageRecordConfirm\').checked)">Record results</button></details>';
+    }
+  }
+  if(AGE_RECORD_MSG)h+='<p role="status" class="note">'+esc(AGE_RECORD_MSG)+'</p>';
+
   if(current)h+='<p class="note">Recorded: <b>'+esc(current.status==="resolved"?"Reviewed with GM":"GM override")+'</b>'+(current.note?' — '+esc(current.note):'')+'</p>';
   else h+='<p class="warn">Ageing has not been reviewed for this age and species.</p>';
   h+='<label>GM / ageing notes <input type="text" maxlength="300" id="ageingReviewNote" value="'+esc(current?.note||"")+'"></label> '
