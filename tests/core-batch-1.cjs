@@ -15,6 +15,19 @@ const run=s=>vm.runInContext(s,ctx);
 run('render=()=>{};');
 const test=(name,fn)=>{fn();console.log('PASS',name)};
 const reset=()=>run('S=freshState();VIEW_ONLY=false;S.chars={STR:12,CON:12,SIZ:12,DEX:14,INT:12,POW:12,CHA:13};');
+test('Core p.110: damage preserves deep negative HP through editing, saving and recovery',()=>{
+ reset();run('S.play.hp.Head=5');ctx.document.querySelector=()=>({value:'20'});
+ run('APP.playApplyDamage("Head")');assert.equal(run('playCurHP("Head")'),-15);
+ assert.equal(run('playHPState("Head").cls'),'major');
+ run('APP.playSetHP("Head",-15);APP.playQuickDamage("Head",3)');assert.equal(run('playCurHP("Head")'),-18);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState()`);
+ assert.equal(run('playCurHP("Head")'),-18);run('APP.playNaturalRecovery("Head",0,true)');
+ assert.equal(run('playCurHP("Head")'),-16);ctx.document.querySelector=()=>null;
+});
+test('Core p.100: Pin Down stacks and Entangle does not',()=>{
+ assert.equal(run('SPECIAL_EFFECTS.find(e=>e[0]==="Pin Down")[5]'),1);
+ assert.equal(run('SPECIAL_EFFECTS.find(e=>e[0]==="Entangle")[5]'),0);
+});
 test('Core pp.70–71: ageing records failures using the proper table, persists and recalculates',()=>{
  reset();run('S.age.years=55;S.age.category="senior";');const base=run('finalPct("std:Athletics")');
  run('APP.recordAgeing("40","failure","1","2","failure","4","3",true)');
@@ -289,8 +302,8 @@ test('Core p.80: permanent injury maximum preserves deep wounds and recalculates
  assert.equal(run('playHPState("Right Arm").cls'),'major');assert.equal(run('playMaxHP("Left Arm")'),base);
  assert.equal(run('charVitals(JSON.parse(JSON.stringify(S))).locs.find(x=>x.loc==="Right Arm").max'),2);
  run('S.play.selectedLoc="Right Arm"');assert.match(run('pmLocDetail()'),/Permanent injury: location maximum/);
- run('APP.playQuickDamage("Right Arm",1)');assert.equal(run('playCurHP("Right Arm")'),deep,'further damage must not heal a deep wound');
- run('APP.playNaturalRecovery("Right Arm",0,true)');assert.equal(run('playCurHP("Right Arm")'),deep+2);
+ run('APP.playQuickDamage("Right Arm",1)');assert.equal(run('playCurHP("Right Arm")'),deep-1,'further damage must reduce a deep wound');
+ run('APP.playNaturalRecovery("Right Arm",0,true)');assert.equal(run('playCurHP("Right Arm")'),deep+1);
  const save=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(save)});normalizeState()`);assert.equal(run('playMaxHP("Right Arm")'),2);
  run('VIEW_ONLY=true;APP.playClearMaxHP("Right Arm",true)');assert.equal(run('playMaxHP("Right Arm")'),2);
  run('VIEW_ONLY=false;APP.playClearMaxHP("Right Arm",true)');assert.equal(run('playMaxHP("Right Arm")'),base);

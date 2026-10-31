@@ -885,9 +885,8 @@ window.APP={
    if(!Number.isSafeInteger(raw)||raw<=0)return;
    const ap=armorApAt(loc);
    const applied=Math.max(0,raw-ap);
-   // Floor at -maxHP (not 0) so Major Wound (<=-max, core pp.109-111) stays
-   // reachable — clamping at 0 made Major Wound permanently dead code.
-   S.play.hp[loc]=Math.min(playCurHP(loc),Math.max(-playMaxHP(loc),playCurHP(loc)-applied));
+   // Preserve all damage below the Major Wound threshold (Core p.110).
+   S.play.hp[loc]=playCurHP(loc)-applied;
    // Each new damaging hit at Serious/Major severity prompts its own opposed
    // check (Core p.110). Do not infer the dice outcome or apply conditions.
    const severity=playHPState(loc).cls;
@@ -930,7 +929,7 @@ window.APP={
  // entirely -- for damage that was never subject to AP in the first place
  // (poison, fire, GM fiat), not a shortcut for a
  // weapon hit. See the "Ignores armour" row in pmLocDetail.
- playQuickDamage(loc,n){if(viewOnlyBlock())return;S.play.hp[loc]=Math.min(playCurHP(loc),Math.max(-playMaxHP(loc),playCurHP(loc)-n));render();},
+ playQuickDamage(loc,n){if(viewOnlyBlock()||!PLAY_HP_LOCS.includes(loc)||!Number.isSafeInteger(n)||n<=0)return;S.play.hp[loc]=playCurHP(loc)-n;render();},
  // Selecting a location just opens the detail panel — read-only navigation,
  // always allowed even in a VIEW_ONLY session. Clears any damage-math note
  // left over from a different location so it can never show under the

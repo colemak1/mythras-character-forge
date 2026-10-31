@@ -219,8 +219,8 @@ test('Update 07: party member with own Paragon advantages keeps bonuses',()=>{
  const v=evalRule('charVitals({...freshState(), archetype:"paragon", archAdvantages:["hp","ap","luck"],chars:{STR:13,CON:13,SIZ:13,DEX:13,INT:13,POW:13,CHA:13}})');
  assert.equal(v.maxAP,evalRule("apCalc(13,13)")+1);assert.equal(v.maxLuck,5);assert.equal(v.locs.find(l=>l.loc==="Head").max,evalRule('hpLocs(13,13).find(x=>x[0]==="Head")[1]')+2);
 });
-test('Update 07: wound values are bounded and bad imported HP does not break sheet',()=>{
- assert.equal(evalRule('playValidHP(500,6)'),6);assert.equal(evalRule('playValidHP(-500,6)'),-6);
+test('wound values preserve negative damage and bad imported HP does not break sheet',()=>{
+ assert.equal(evalRule('playValidHP(500,6)'),6);assert.equal(evalRule('playValidHP(-500,6)'),-500);
  assert.equal(evalRule('playValidHP("bad",6)'),6);assert.equal(evalRule('playValidHP(2.9,6)'),2);
  evalRule('S=freshState();S.chars={STR:13,CON:13,SIZ:13,DEX:13,INT:13,POW:13,CHA:13};S.play.hp.Head=999;');
  assert.equal(evalRule('charVitals().locs.find(x=>x.loc==="Head").cur'),evalRule('playMaxHP("Head")'));
