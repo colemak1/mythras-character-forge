@@ -181,6 +181,18 @@ window.APP={
    S.magic.devotionalUsed=Math.min(S.magic.devotionalUsed,S.magic.devotional);render();},
  devotionalAdj(n){if(viewOnlyBlock())return;
    S.magic.devotionalUsed=Math.max(0,Math.min(devotionalMax(),(S.magic.devotionalUsed||0)-n));render();},
+ devotionalDonate(raw,confirmed){if(viewOnlyBlock())return;
+   const text=String(raw).trim(),n=Number(text),limit=devotionalRankLimit(),current=devotionalCur();
+   const fail=msg=>{PM_MSG=msg;render();};
+   if(!confirmed)return fail("Confirm the holy place and donation with your GM.");
+   if(!/^\d+$/.test(text)||!Number.isSafeInteger(n)||n<1)return fail("Enter a positive whole-number donation.");
+   if(!Number.isInteger(limit))return fail("Confirm an unambiguous cult rank limit in the builder before transferring points.");
+   if(devotionalMax()>limit)return fail("Review the recorded pool above its rank limit before donating.");
+   if(n>playCurMagic())return fail("Not enough personal Magic Points for that donation.");
+   if(n>devotionalMax())return fail("The donation exceeds the recorded Devotional Pool maximum.");
+   if(n<=current)return fail("Under the Core suggested donation rule, this donation would not increase the pool; consult your GM.");
+   S.play.magic=playCurMagic()-n;S.magic.devotionalUsed=devotionalMax()-n;
+   PM_MSG="Donated "+n+" personal Magic Points; the Devotional Pool now has "+n+" points (Core p.180).";render();},
  devotionalReset(){if(viewOnlyBlock())return;S.magic.devotionalUsed=0;render();},
  // Core p.136: Calling upon a bound spirit is its own Binding action.
  // GM still adjudicates the spirit's action and possible

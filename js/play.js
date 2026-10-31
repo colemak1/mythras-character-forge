@@ -814,6 +814,7 @@ function magicPanel(){
      +'<button class="pm-btn sm" onclick="APP.devotionalReset()">refill</button></span>';
   }
   h+='</div>'+prep;
+  if(devotionalMax()>0)h+='<details class="pm-fx-item"><summary>Donate personal Magic Points <span class="pm-fx-badge">Core p.180</span></summary><p>At a suitable holy place, confirm the donation with the GM. This uses the Core suggested rule: the pool becomes the donation amount if greater than the current pool, rather than adding the donation to it. Other sources and variants remain manual.</p><label>Points donated <input id="devDonation" type="number" min="1" step="1"></label> <label><input id="devDonationConfirmed" type="checkbox"> Holy place and donation confirmed</label> <button type="button" class="pm-btn sm" onclick="APP.devotionalDonate(document.getElementById(\'devDonation\').value,document.getElementById(\'devDonationConfirmed\').checked)">Donate</button><p>Manual +, − and refill controls above remain available for GM-directed adjustments.</p></details>';
   const poolLimit=devotionalRankLimit();
   if(Number.isInteger(poolLimit)&&devotionalMax()>poolLimit)h+='<p class="warn" role="alert">The recorded Devotional Pool exceeds the confirmed rank limit ('+poolLimit+'). Review it in the builder before casting; saved points are preserved.</p>';
   MAGIC_TRADITIONS.forEach(t=>{
