@@ -132,6 +132,14 @@ test('Core p.180: explicitly confirmed pool rank limits are non-destructive',()=
  const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
  assert.equal(run('S.magic.devotionalRank'),"lay");assert.equal(run('devotionalMax()'),9);
 });
+test('Core p.180: confirmed donation transfers personal points without adding to the old pool',()=>{
+ reset();run('S.chars.POW=12;S.magic.devotionalRank="highpriest";S.magic.devotional=12;S.magic.devotionalUsed=9;S.play.magic=12');
+ run('APP.devotionalDonate(7,false)');assert.equal(run('playCurMagic()'),12);
+ run('APP.devotionalDonate(7,true)');assert.equal(run('playCurMagic()'),5);assert.equal(run('devotionalCur()'),7);
+ run('APP.devotionalDonate(3,true)');assert.equal(run('playCurMagic()'),5);assert.equal(run('devotionalCur()'),7);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState()`);assert.equal(run('devotionalCur()'),7);
+ run('VIEW_ONLY=true;APP.devotionalDonate(8,true)');assert.equal(run('playCurMagic()'),5);
+});
 test('Core pp.34,70–71: ageing review tracks human bands without changing characteristics',()=>{
  reset();run('S.age.category="senior";S.age.years=44;');
  assert.equal(run('humanAgeingInfo().grade'),"Easy");assert.match(run('ageingReviewBlock()'),/not been reviewed/);

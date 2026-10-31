@@ -236,3 +236,7 @@ MCR-15: Core p.118 visually checked. An explicit new/experienced selection and G
 ## Wound watch — implementation in review
 
 MCR-21: Core p.110 visually checked. Open saved wound incidents appear together in Vitals, with their recorded Endurance outcome and conditional reminders. The player/GM still tracks elapsed time, treatment, incapacitation and effects. This does not infer an outcome or enforce a condition. Production verification remains open.
+
+## Devotional donation — implementation in review
+
+MCR-12: Core p.180 visually checked. An optional, GM-confirmed personal MP donation follows the book’s suggested most-recent-donation rule and respects the recorded pool maximum and confirmed whole-number rank limit. Other sources, variant rules and multi-cult pools remain GM-managed. Real-account verification remains open.
