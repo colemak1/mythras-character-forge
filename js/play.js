@@ -63,16 +63,16 @@ const PLAY_LIMB_BASE={"Right Arm":"Each Arm","Left Arm":"Each Arm","Right Leg":"
 // not whichever character the GM currently has open in the editor.
 function playStateHasAdv(state,id){return state.archetype!=="ordinary"&&Array.isArray(state.archAdvantages)&&state.archAdvantages.includes(id);}
 function playStateHPMax(state){
-  const base=hpLocs(state.chars.CON,state.chars.SIZ);
+  const base=hpLocs(effectiveChars(state).CON,effectiveChars(state).SIZ);
   return playStateHasAdv(state,"hp")?base.map(([name,hp])=>[name,hp+(state.archetype==="paragon"?2:1)]):base;
 }
 function playStateLuckMax(state){
-  let v=luckPts(state.chars.POW);
+  let v=luckPts(effectiveChars(state).POW);
   if(playStateHasAdv(state,"luck"))v+=state.archetype==="paragon"?2:1;
   return v;
 }
 function playStateAPMax(state){
-  let v=apCalc(state.chars.INT,state.chars.DEX,state.fixedAP);
+  let v=apCalc(effectiveChars(state).INT,effectiveChars(state).DEX,state.fixedAP);
   if(playStateHasAdv(state,"ap"))v++;
   return v;
 }
@@ -83,7 +83,7 @@ function playValidHP(value,max){
 }
 function charVitals(state){
   state=state||S;
-  const c=state.chars;
+  const c=effectiveChars(state);
   const locs=PLAY_HP_LOCS.map(loc=>{
     const key=PLAY_LIMB_BASE[loc]||loc;
     const row=playStateHPMax(state).find(x=>x[0]===key);
@@ -101,7 +101,7 @@ function charVitals(state){
     }
     // Preserve a pre-existing deeper wound when lowering a location maximum;
     // clamping it to the new threshold would silently heal that injury.
-    const cur=hasOverride&&v!=null&&Number.isFinite(Number(v))?Math.min(max,Math.trunc(Number(v))):playValidHP(v,max);
+    const cur=v!=null&&Number.isFinite(Number(v))?Math.min(max,Math.trunc(Number(v))):playValidHP(v,max);
     // Wound tiers per the core rulebook's "Damage and Wound Levels" (Combat
     // chapter): based on the location's own current remaining Hit Points
     // compared to its starting max, to zero, and to the negative of that
@@ -199,7 +199,7 @@ function fatigueRecoveryText(cause){
   if(!mins)return r.name==="Dead"?"Never.":"No rest needed.";
   if(cause==="blood")return "Blood loss: one level per day, starting the day after bleeding stops (Core p.71).";
   if(cause==="asphyxiation")return "Asphyxiation: normally one level per minute after it ends; the GM may limit full recovery (Core p.71).";
-  const hr=charsReady()?Math.max(1,healRate(S.chars.CON)):1;
+  const hr=charsReady()?Math.max(1,healRate(effectiveChars().CON)):1;
   const t=mins/hr;
   const txt=t<60?(Math.round(t)+" minutes"):((Math.round(t/6)/10)+" hours");
   if(cause==="exertion")return "Physical exertion: "+txt+" of complete rest to shed this level ("+r.recovery+" ÷ Healing Rate "+hr+").";
@@ -208,7 +208,7 @@ function fatigueRecoveryText(cause){
 function naturalRecoveryInfo(loc){
   const max=playMaxHP(loc),cur=playCurHP(loc),cls=playHPState(loc).cls;
   if(!max||cur>=max||!["minor","serious","major"].includes(cls))return null;
-  return {cls,interval:cls==="minor"?"day":cls==="serious"?"week":"month",rate:charsReady()?healRate(S.chars.CON):0};
+  return {cls,interval:cls==="minor"?"day":cls==="serious"?"week":"month",rate:charsReady()?healRate(effectiveChars().CON):0};
 }
 function gradedPassivePct(key){const g=gradedPct(key,finalPct(key));return g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%";}
 function hitD20For(loc){const e=HIT_D20.find(x=>x[1]===loc);return e?e[0].replace("-","–"):"—";}
@@ -349,7 +349,7 @@ function pmLocRow(loc){
 function pmWoundEvents(loc){
   const events=(S.play.woundEvents||[]).map((e,i)=>({e,i})).filter(x=>x.e&&x.e.loc===loc);
   if(!events.length)return "";
-  const hr=charsReady()?healRate(S.chars.CON):0;
+  const hr=charsReady()?healRate(effectiveChars().CON):0;
   return '<div class="pm-notes"><h4>Recorded wound incidents</h4><p>Resolve opposed rolls and timing at the table. Recording an incident does not apply conditions automatically.</p>'
    +events.map(({e,i})=>{
      const limb=PLAY_LIMB_LOCS.includes(loc),serious=e.severity==="serious";
@@ -428,7 +428,7 @@ function pmStandingText(){
 function pmWoundOverview(){
   const events=(S.play.woundEvents||[]).filter(e=>e&&!e.resolved&&PLAY_HP_LOCS.includes(e.loc));
   if(!events.length)return "";
-  const hr=charsReady()?healRate(S.chars.CON):0;
+  const hr=charsReady()?healRate(effectiveChars().CON):0;
   return '<div class="pm-fx-selection"><b>Wound watch · '+events.length+' open</b><span>Track turns and treatment at the table. Select a location to update an incident.</span>'
     +events.map(e=>{
       const limb=PLAY_LIMB_LOCS.includes(e.loc),major=e.severity==="major";
@@ -472,7 +472,7 @@ function pmVitalsCard(){
 // exactly like DEX was in the approved sample. The "idx" column reads
 // "/07" on every row, matching the mockup's own (static) markup verbatim. ----
 function pmCharacteristicRail(){
-  const c=S.chars;
+  const c=effectiveChars();
   const order=["STR","CON","SIZ","DEX","INT","POW","CHA"];
   const maxVal=Math.max.apply(null,order.map(k=>c[k]));
   let h='<div class="pm-sect-head bar">CHAR.</div>';
@@ -492,7 +492,7 @@ function pmCharacteristicRail(){
 // spendable pool" mechanics share one interaction pattern). Magic Points
 // keeps its +/- stepper since it's a wider-range pool, not a pip count.
 function pmTicker(){
-  const c=S.chars,initPenalty=armourPenaltyToInit();
+  const c=effectiveChars(),initPenalty=armourPenaltyToInit();
   const maxAP=playMaxAP(),usedAP=Math.min(S.play.apUsed,maxAP),remainAP=maxAP-usedAP;
   const maxLuck=playMaxLuck(),curLuck=playCurLuck();
   const maxMagic=playMaxMagic(),curMagic=playCurMagic();
@@ -901,7 +901,7 @@ function renderPlayView(){
      +'<p class="pm-empty" style="margin-top:14px">Finish Characteristics first &mdash; Play Mode needs those numbers to work from.</p></div>';
     return;
   }
-  const c=S.chars;
+  const c=effectiveChars();
   const name=S.concept.name||"Unnamed Character";
   const careerName=S.customCareer.isCustom?S.customCareer.name:S.career;
   const initPenalty=armourPenaltyToInit();
@@ -1116,7 +1116,7 @@ function renderPlayView(){
   if(S.play.tab==="effects"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
 }
 // ---- Improve Skills modal (Experience Rolls, core rulebook pp.71-73) ----
-let XP_LEARN_MSG="", XP_TRAIN_MSG="";
+let XP_LEARN_MSG="", XP_TRAIN_MSG="", XP_CHAR_MSG="";
 function xpModalHtml(){
   const es=allEntries();
   const grp=g=>es.filter(e=>e.grp===g).sort((a,b)=>a.label.localeCompare(b.label));
@@ -1145,7 +1145,19 @@ function xpModalHtml(){
    +'<div class="pm-xpaward">Award <input type="number" id="xpAwardN" value="3" min="1" style="width:52px"> '
    +'<button class="pm-btn sm" onclick="APP.xpAward(document.getElementById(\'xpAwardN\').value,document.getElementById(\'xpApplyModifier\').checked)">+ add to pool</button> '
    +'<span class="pm-empty">core book: 2&ndash;4 per sitting, GM discretion. The optional CHA adjustment applies once to a positive award when selected.</span></div></div>';
-  h+='<p class="pm-empty">Spend 1 roll on a skill: roll 1d100, add INT ('+S.chars.INT+'). Total meets or beats the skill&rsquo;s current % &rarr; <b>+1d4+1%</b>. Total falls short &rarr; still <b>+1%</b> (an Experience Roll never fails outright). A skill flagged &#9873; got a Fumble since the last sitting and gets a free <b>+1%</b> (applied before any roll spent on it, doesn&rsquo;t stack) &mdash; this flags automatically when you roll a Fumble in Play Mode, or click the flag by hand. A skill flagged &#10003; is marked for reference only; it does not grant a free Experience Roll. You may spend additional banked rolls on the same skill; each uses its updated percentage.</p>';
+  h+='<p class="pm-empty">Spend 1 roll on a skill: roll 1d100, add INT ('+effectiveChars().INT+'). Total meets or beats the skill&rsquo;s current % &rarr; <b>+1d4+1%</b>. Total falls short &rarr; still <b>+1%</b> (an Experience Roll never fails outright). A skill flagged &#9873; got a Fumble since the last sitting and gets a free <b>+1%</b> (applied before any roll spent on it, doesn&rsquo;t stack) &mdash; this flags automatically when you roll a Fumble in Play Mode, or click the flag by hand. A skill flagged &#10003; is marked for reference only; it does not grant a free Experience Roll. You may spend additional banked rolls on the same skill; each uses its updated percentage.</p>';
+  const charAdv=S.xp.characteristics||{permanent:{},training:[]},training=characteristicTraining(S);
+  const active=training.filter(t=>t.active).length;
+  h+='<details class="pm-fx-item"'+(XP_CHAR_MSG?' open':'')+'><summary>Improve characteristics <span class="pm-fx-badge">Core pp.72–73</span></summary>'
+   +'<p>Training costs one banked roll per step now and one roll from each future award while maintained. Stopped training loses one step per characteristic with each new award. SIZ cannot increase through mundane means. The optional permanent method costs rolls once and requires GM approval.</p>'
+   +'<p>Training maintenance: '+active+' roll'+(active===1?'':'s')+' per award. Each award records one award event; award only once per allotment. Creation scores remain separate; editing them or changing species recalculates the current score and cap.</p>'
+   +'<label>Characteristic <select id="xpCharKey">'+CHARS.filter(k=>k!=="SIZ").map(k=>'<option value="'+k+'">'+k+' — natural '+S.chars[k]+', current '+effectiveChars()[k]+', maximum '+charMax(k)+'</option>').join("")+'</select></label> '
+   +'<label><input type="checkbox" id="xpCharConfirm"> GM approves the method and costs</label> '
+   +'<button type="button" class="pm-btn sm" onclick="APP.xpCharacteristicTrain(document.getElementById(\'xpCharKey\').value,document.getElementById(\'xpCharConfirm\').checked)">Add training step</button> '
+   +'<button type="button" class="pm-btn sm" onclick="APP.xpCharacteristicPermanent(document.getElementById(\'xpCharKey\').value,document.getElementById(\'xpCharConfirm\').checked)">Buy permanent +1</button>'
+   +'<p>Permanent +1 cost: 1 + current score − species minimum. Training step: one tenth of species maximum, rounded up following the book’s examples, capped at the species maximum.</p>'
+   +(training.length?'<p>Training steps:</p>'+training.map((t,i)=>'<div>'+esc(t.key)+' +'+t.bonus+' · '+(t.active?'maintained':'stopped')+' <button type="button" class="pm-btn sm" onclick="APP.xpCharacteristicToggle('+i+')">'+(t.active?'Stop':'Resume')+'</button></div>').join(""):'<p>No training steps recorded.</p>')
+   +'<p role="status">'+esc(XP_CHAR_MSG)+'</p></details>';
   h+='<details class="pm-fx-item"><summary>Learn a new Professional Skill <span class="pm-fx-badge">Core p.73</span></summary><p>Find a source of education, complete a month of study and practice, and obtain your GM’s approval. Learning costs 3 Experience Rolls plus any in-game costs. Confirm any additional cult, magic or other prerequisites with your GM.</p><label>Skill <select id="xpLearnName">'+Object.keys(PROF).sort().map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("")+'</select></label> <label>Speciality or tradition, if applicable <input id="xpLearnSpec" type="text" maxlength="100"></label><br><label><input id="xpLearnConfirmed" type="checkbox"> Education, month of study and GM approval confirmed</label> <button class="pm-btn sm" type="button" onclick="APP.xpLearnProfessional(document.getElementById(\'xpLearnName\').value,document.getElementById(\'xpLearnSpec\').value,document.getElementById(\'xpLearnConfirmed\').checked)">Learn for 3 rolls</button><p class="pm-empty">Specialities are required for Art, Binding, Craft, Culture, Devotion, Invocation, Language and Lore.</p><p role="status">'+esc(XP_LEARN_MSG)+'</p></details>';
   h+='<details class="pm-fx-item"><summary>Train with a mentor <span class="pm-fx-badge">Core p.73</span></summary><p>Complete one full week on one skill at a time. The mentor must have at least 20 percentage points more in that skill. Resolve availability, costs and any teacher’s Teach roll with your GM. After training, improve that skill with an Experience Roll before training it again.</p><label>Skill <select id="xpTrainKey">'+es.map(e=>'<option value="'+esc(e.key)+'">'+esc(e.label)+' ('+finalPct(e.key)+'%)'+((S.xp.trainingPending||[]).includes(e.key)?' — needs Experience Roll':'')+'</option>').join("")+'</select></label> <label>Mentor’s skill % <input id="xpTrainMentor" type="number" min="0" step="1"></label> <label>Mentor <select id="xpTrainResult"><option value="trainer">Trainer (no Teach roll)</option><option value="critical">Teacher: critical</option><option value="success">Teacher: success</option><option value="failure">Teacher: failure</option><option value="fumble">Teacher: fumble</option></select></label><br><label><input type="checkbox" id="xpTrainConfirmed"> Week and GM approval confirmed</label> <button type="button" class="pm-btn sm" onclick="APP.xpTrain(document.getElementById(\'xpTrainKey\').value,document.getElementById(\'xpTrainMentor\').value,document.getElementById(\'xpTrainResult\').value,document.getElementById(\'xpTrainConfirmed\').checked)">Complete training</button><p class="pm-empty">At exactly a 20-point difference, the text and table differ; ask your GM to adjudicate. Time and payment are tracked at the table.</p><p role="status">'+esc(XP_TRAIN_MSG)+'</p></details>';
   h+='<div class="pm-xplist">';
@@ -1199,7 +1211,7 @@ function conditionsSummary(){
 // reachable from Play Mode, the Finish step, and each My Characters card
 // (see APPVIEW "sheet" / APP.toSheet / renderSheetView below).
 function characterSheetBody(){
-  const c=S.chars,es=allEntries();
+  const c=effectiveChars(),es=allEntries();
   const grp=g=>es.filter(e=>e.grp===g).sort((a,b)=>a.label.localeCompare(b.label));
   // Small filled/hollow dot ahead of each skill name — purely a scannability
   // aid (not a rules concept) so a first-time player can spot at a glance
