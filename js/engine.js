@@ -269,7 +269,7 @@ function freshState(){return {
  // % gained per skill key from this system, folded into finalPct() so every
  // existing display (skill list, sheet, roll log) picks it up automatically.
  // Legacy usedThisRun is retained for save compatibility and no longer limits improvement.
- xp:{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[],learnedProfs:[],trainingPending:[]}
+ xp:{characteristics:{permanent:{},training:[]},pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[],learnedProfs:[],trainingPending:[]}
 };}
 function normalizeState(){
   S.concept=S.concept||{};
@@ -379,6 +379,10 @@ function normalizeState(){
   if(!Array.isArray(S.xp.learnedProfs))S.xp.learnedProfs=[];
   if(!Array.isArray(S.xp.trainingPending))S.xp.trainingPending=[];
   if(typeof S.xp.pool!=="number")S.xp.pool=0;
+  if(!S.xp.characteristics||typeof S.xp.characteristics!=="object")S.xp.characteristics={permanent:{},training:[]};
+  const adv=S.xp.characteristics;
+  if(!adv.permanent||typeof adv.permanent!=="object"||Array.isArray(adv.permanent))adv.permanent={};
+  if(!Array.isArray(adv.training))adv.training=[];
 }
 // Cult & Community is temporarily pulled out of the flow (user's own call,
 // to revisit later) — stepCult() and all its supporting data/functions are
@@ -457,6 +461,23 @@ function charBounds(c){
   return {min:(c==="INT"||c==="SIZ")?8:3,max:18};
 }
 const charMin=c=>charBounds(c).min, charMax=c=>charBounds(c).max;
+// Natural creation scores remain untouched. Advancement travels with the
+// character and can be computed for party-board states other than global S.
+function effectiveChars(state){
+  state=state||S;const out={...state.chars},a=state.xp?.characteristics;
+  if(!a)return out;
+  const sp=(typeof SPECIES_MAP!=="undefined"&&state.species)?SPECIES_MAP[state.species]:null;
+  for(const k of CHARS){
+    if(!Number.isFinite(out[k])||k==="SIZ")continue;
+    const max=sp?.bounds?.[k]?.[1]??18;
+    const p=a.permanent?.[k],permanent=Number.isSafeInteger(p)&&p>0?p:0;
+    const trained=Array.isArray(a.training)?a.training.reduce((n,t)=>n+(t?.key===k&&Number.isSafeInteger(t.bonus)&&t.bonus>0?t.bonus:0),0):0;
+    out[k]=Math.min(max,out[k]+permanent+trained);
+  }
+  return out;
+}
+function characteristicTraining(state){return Array.isArray(state.xp?.characteristics?.training)?state.xp.characteristics.training:[];}
+
 // Where the bound the player just tripped over comes from, so the validation
 // message explains itself instead of just asserting a number.
 function charRangeSource(){const sp=speciesDef();return sp?" for a "+sp.label:" for a human";}
@@ -482,7 +503,7 @@ function pbPool(){
   if(!sp||sp.pbPool==null)return base;
   return sp.pbPool+(base-ARCHETYPES.ordinary.pbPoints);
 }
-function baseOf(f,c){c=c||S.chars;if(!charsReady())return 0;
+function baseOf(f,c){c=c||effectiveChars();if(!charsReady())return 0;
   if(f.endsWith("x2"))return 2*c[f.slice(0,-2)];
   return f.split("+").reduce((a,k)=>a+c[k],0);}
 function parseOffer(str){const m=str.match(/^([^(]+?)\s*\((.+)\)\s*$/);
@@ -778,7 +799,7 @@ function devotionalCur(){return Math.max(0,devotionalMax()-(S.magic.devotionalUs
 // character's general cult field. Fractional limits need GM interpretation.
 function devotionalRankLimit(){
   const fractions={lay:0,initiate:0.25,acolyte:0.5,priest:0.75,highpriest:1};
-  const rank=S.magic.devotionalRank,pow=Number(S.chars.POW);
+  const rank=S.magic.devotionalRank,pow=Number(effectiveChars().POW);
   if(!Object.prototype.hasOwnProperty.call(fractions,rank)||!Number.isSafeInteger(pow)||pow<1)return null;
   return pow*fractions[rank];
 }
@@ -990,7 +1011,7 @@ function validate(step){
     if(S.money.dice.length&& (S.money.dice.length!==4||S.money.dice.some(x=>!Number.isInteger(x)||x<1||x>6)))return bad("Starting money must use four valid six-sided dice.");
     if(S.inventory.some(it=>!Number.isInteger(it.qty)||it.qty<0||!Number.isFinite(it.enc)||it.enc<0||!Number.isFinite(Number(it.cost||0))||Number(it.cost||0)<0))return bad("Inventory needs whole nonnegative quantities, nonnegative ENC and nonnegative prices.");
     if(!S.money.dice.length)return bad("Roll your starting money before completing Money & Gear.");
-    if(typeof gearEncTotal==="function"&&Number.isFinite(S.chars.STR)&&S.chars.STR>0&&gearEncTotal()>S.chars.STR*4)return bad("Your gear exceeds STR × 4 ENC, the carrying limit in Mythras Core p.77.");
+    if(typeof gearEncTotal==="function"&&Number.isFinite(S.chars.STR)&&S.chars.STR>0&&gearEncTotal()>effectiveChars().STR*4)return bad("Your gear exceeds STR × 4 ENC, the carrying limit in Mythras Core p.77.");
     const total=moneyTotal(),spent=moneySpentTotal();
     if(spent>total)return bad("You've spent "+spent+" sp but only have "+total+" sp — reduce gear or additional spending by "+(spent-total)+" sp.");
     return ok();}
