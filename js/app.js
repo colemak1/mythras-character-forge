@@ -348,6 +348,30 @@ window.APP={
    S.age.years=t;S.concept.age=String(t);render();},
  ageYears(v){const n=parseInt(v,10);S.age.years=Number.isFinite(n)?n:null;
    S.concept.age=Number.isFinite(n)?String(n):"";render();},
+ recordAgeing(band,endResult,endTable,endLoss,willResult,willTable,willLoss,confirmed){
+   if(viewOnlyBlock())return;
+   const fail=msg=>{AGE_RECORD_MSG=msg;render();};
+   const info=humanAgeingInfo(),n=Number(band),bands={40:["Early Middle Age","Easy"],50:["Middle Age","Standard"],60:["Late Middle Age","Hard"],70:["Old Age","Formidable"],80:["Advanced Old Age","Herculean"],90:["Dotage","Hopeless"]};
+   if(!confirmed)return fail("Confirm the GM review and that these results were not previously applied.");
+   if(!info||!bands[n]||n>info.age||!charsReady())return fail("Enter a valid human age and select an eligible band.");
+   if(!["success","failure"].includes(endResult)||!["success","failure"].includes(willResult))return fail("Select both check outcomes.");
+   const events=Array.isArray(S.age.ageingEvents)?S.age.ageingEvents:[];
+   if(events.some(e=>e.band===bands[n][0]))return fail("This ageing band is already recorded.");
+   const effects=[];
+   for(const [result,table,loss,keys] of [[endResult,endTable,endLoss,["STR","CON","DEX"]],[willResult,willTable,willLoss,["INT","POW","CHA"]]]){
+     if(result==="success")continue;
+     const t=String(table).trim(),l=String(loss).trim();
+     if(!/^[1-6]$/.test(t)||!/^[1-3]$/.test(l))return fail("For every failed check enter a 1d6 result (1–6) and a 1d3 loss (1–3).");
+     effects.push({key:keys[Math.floor((Number(t)-1)/2)],table:Number(t),loss:Number(l)});
+   }
+   const before=effectiveChars();
+   const terminal=effects.some(e=>before[e.key]-e.loss<=0);
+   S.age.ageingEvents=events;events.push({band:bands[n][0],grade:bands[n][1],endurance:endResult,willpower:willResult,effects,terminal});
+   AGE_RECORD_MSG=terminal?"Ageing recorded. A characteristic reached zero; discuss terminal frailty with the GM.":"Ageing results recorded; current characteristics and derived values have been updated.";render();},
+ undoAgeing(){if(viewOnlyBlock())return;const events=S.age?.ageingEvents;
+   if(!Array.isArray(events)||!events.length)return;
+   if(!confirm("Remove the most recently recorded ageing band? This recalculates current characteristics; later training and improvements remain."))return;
+   events.pop();AGE_RECORD_MSG="The most recently recorded ageing band was removed.";render();},
  ageingReview(status,note){if(viewOnlyBlock()||!["resolved","override"].includes(status))return;
    S.age.ageingReview={key:ageingReviewKey(),status,note:String(note||"").slice(0,300)};render();},
  // Official Core Background Events: keep rolled d100 results and a player's

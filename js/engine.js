@@ -308,6 +308,7 @@ function normalizeState(){
   if(!AGE_MAP[S.age.category])S.age.category="adult";
   S.age.events=S.age.events||[];
   S.age.coreEvents=Array.isArray(S.age.coreEvents)?S.age.coreEvents:[];
+  if(!Array.isArray(S.age.ageingEvents))S.age.ageingEvents=[];
   S.magic=S.magic||{folk:[],known:[],devotional:0,devotionalUsed:0};
   S.magic.folk=S.magic.folk||[];S.magic.known=S.magic.known||[];
   // Legacy versions stored Sorcery shaping as an array of selected names.
@@ -465,14 +466,18 @@ const charMin=c=>charBounds(c).min, charMax=c=>charBounds(c).max;
 // character and can be computed for party-board states other than global S.
 function effectiveChars(state){
   state=state||S;const out={...state.chars},a=state.xp?.characteristics;
-  if(!a)return out;
+  const adv=a||{permanent:{},training:[]};
   const sp=(typeof SPECIES_MAP!=="undefined"&&state.species)?SPECIES_MAP[state.species]:null;
   for(const k of CHARS){
     if(!Number.isFinite(out[k])||k==="SIZ")continue;
     const max=sp?.bounds?.[k]?.[1]??18;
-    const p=a.permanent?.[k],permanent=Number.isSafeInteger(p)&&p>0?p:0;
-    const trained=Array.isArray(a.training)?a.training.reduce((n,t)=>n+(t?.key===k&&Number.isSafeInteger(t.bonus)&&t.bonus>0?t.bonus:0),0):0;
-    out[k]=Math.min(max,out[k]+permanent+trained);
+    const p=adv.permanent?.[k],permanent=Number.isSafeInteger(p)&&p>0?p:0;
+    const trained=Array.isArray(adv.training)?adv.training.reduce((n,t)=>n+(t?.key===k&&Number.isSafeInteger(t.bonus)&&t.bonus>0?t.bonus:0),0):0;
+    const events=Array.isArray(state.age?.ageingEvents)?state.age.ageingEvents:[];
+    const loss=events.reduce((n,e)=>n+(Array.isArray(e?.effects)?e.effects.reduce((sum,v)=>sum+(v?.key===k&&Number.isInteger(v.loss)&&v.loss>=1&&v.loss<=3?v.loss:0),0):0),0);
+    const adjusted=out[k]+permanent+trained-loss;
+    // Do not silently cap old imported scores when there is no advancement.
+    out[k]=Math.max(0,(permanent||trained)?Math.min(max,adjusted):adjusted);
   }
   return out;
 }

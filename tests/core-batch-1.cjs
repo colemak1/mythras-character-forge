@@ -15,6 +15,43 @@ const run=s=>vm.runInContext(s,ctx);
 run('render=()=>{};');
 const test=(name,fn)=>{fn();console.log('PASS',name)};
 const reset=()=>run('S=freshState();VIEW_ONLY=false;S.chars={STR:12,CON:12,SIZ:12,DEX:14,INT:12,POW:12,CHA:13};');
+test('Core pp.70–71: ageing records failures using the proper table, persists and recalculates',()=>{
+ reset();run('S.age.years=55;S.age.category="senior";');const base=run('finalPct("std:Athletics")');
+ run('APP.recordAgeing("40","failure","1","2","failure","4","3",true)');
+ assert.equal(run('effectiveChars().STR'),10);assert.equal(run('effectiveChars().POW'),9);
+ assert.equal(run('S.chars.STR'),12);assert.equal(run('finalPct("std:Athletics")'),base-2);
+ assert.equal(run('S.age.ageingEvents[0].band'),"Early Middle Age");
+ run('APP.recordAgeing("40","success","","","success","","",true)');assert.equal(run('S.age.ageingEvents.length'),1);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState()`);
+ assert.equal(run('effectiveChars().STR'),10);assert.equal(run('effectiveChars(JSON.parse(JSON.stringify(S))).POW'),9);
+ run('APP.recordAgeing("50","success","","","success","","",true)');assert.equal(run('S.age.ageingEvents.length'),2);
+ run('APP.undoAgeing()');assert.equal(run('S.age.ageingEvents.length'),1);
+});
+test('ageing checks validate outcomes, bands, GM confirmation and terminal frailty',()=>{
+ reset();run('S.age.years=45;S.chars.STR=2;');
+ run('APP.recordAgeing("50","success","","","success","","",true);APP.recordAgeing("40","failure","7","3","success","","",true);APP.recordAgeing("40","failure","1","3","success","","",false)');
+ assert.equal(run('(S.age.ageingEvents||[]).length'),0);
+ run('VIEW_ONLY=true;APP.recordAgeing("40","failure","1","3","success","","",true)');assert.equal(run('(S.age.ageingEvents||[]).length'),0);
+ run('VIEW_ONLY=false;APP.recordAgeing("40","failure","1","3","success","","",true)');
+ assert.equal(run('effectiveChars().STR'),0);assert.equal(run('S.age.ageingEvents[0].terminal'),true);assert.match(run('ageingReviewBlock()'),/terminal frailty/);
+});
+test('legacy saves retain natural scores and older ageing notes without automatic losses',()=>{
+ reset();run('S.chars.STR=21;delete S.xp.characteristics;S.age.years=65;S.age.ageingReview={status:"resolved",note:"Already handled"};normalizeState()');
+ assert.equal(run('effectiveChars().STR'),21);assert.equal(run('S.age.ageingEvents.length'),0);
+});
+test('all ageing effect table rolls select the correct characteristics',()=>{
+ for(const [roll,physical,mental] of [[1,'STR','INT'],[2,'STR','INT'],[3,'CON','POW'],[4,'CON','POW'],[5,'DEX','CHA'],[6,'DEX','CHA']]){
+  reset();run(`S.age.years=40;APP.recordAgeing("40","failure","${roll}","1","failure","${roll}","1",true)`);
+  assert.equal(run('S.age.ageingEvents[0].effects[0].key'),physical);
+  assert.equal(run('S.age.ageingEvents[0].effects[1].key'),mental);
+ }
+});
+test('ageing loss can be counteracted by training without exceeding the species maximum',()=>{
+ reset();run('S.age.years=40;S.chars.STR=18;S.xp.pool=3;APP.recordAgeing("40","failure","1","3","success","","",true)');
+ assert.equal(run('effectiveChars().STR'),15);
+ run('APP.xpCharacteristicTrain("STR",true)');assert.equal(run('effectiveChars().STR'),17);
+ run('APP.xpCharacteristicTrain("STR",true)');assert.equal(run('effectiveChars().STR'),18);
+});
 test('Core pp.72–73: characteristic advancement maintains separate natural values and derived stats',()=>{
  reset();run('S.xp.pool=20;');const skill=run('finalPct("std:Athletics")');
  run('APP.xpCharacteristicTrain("STR",true)');
