@@ -187,6 +187,12 @@ test('Core p.110: wound incident records track hits and survive healing and relo
  reset();run('S.play.hp["Right Arm"]=0;APP.playQuickDamage("Right Arm",1)');assert.equal(run('S.play.woundEvents.length'),0);
  run('delete S.play.woundEvents;normalizeState()');assert.equal(run('S.play.woundEvents.length'),0);ctx.document.querySelector=()=>null;
 });
+test('Core p.110: wound overview shows unresolved recorded outcomes',()=>{
+ reset();run('S.play.woundEvents=[{loc:"Head",severity:"serious",damage:4,outcome:"failure",resolved:false},{loc:"Right Arm",severity:"major",damage:6,outcome:"pending",treated:false,resolved:false}]');
+ const html=run('pmWoundOverview()');assert.match(html,/Wound watch/);assert.match(html,/4 minutes/);assert.match(html,/Endurance check pending/);
+ run('S.play.woundEvents[0].resolved=true');assert.doesNotMatch(run('pmWoundOverview()'),/4 minutes/);
+ run('S.play.woundEvents[1].resolved=true');assert.equal(run('pmWoundOverview()'),"");
+});
 test('Core p.80: permanent injury maximum preserves deep wounds and recalculates thresholds',()=>{
  reset();const base=run('playMaxHP("Right Arm")');assert(base>=3);
  run('S.play.hp["Right Arm"]=-playMaxHP("Right Arm");');const deep=run('playCurHP("Right Arm")');
