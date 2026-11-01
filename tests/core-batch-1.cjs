@@ -15,6 +15,21 @@ const run=s=>vm.runInContext(s,ctx);
 run('render=()=>{};');
 const test=(name,fn)=>{fn();console.log('PASS',name)};
 const reset=()=>run('S=freshState();VIEW_ONLY=false;S.chars={STR:12,CON:12,SIZ:12,DEX:14,INT:12,POW:12,CHA:13};');
+test('Core p.70: armour reduces running and sprinting but not walking',()=>{
+ reset();run('S.xp.bonus["std:Athletics"]=26');const before=run('moveGaits()');
+ run('S.armor.Head="Half Plate (hoplite plate)"');const penalty=run('armourPenaltyToInit()');assert(penalty>0);
+ const after=run('moveGaits()');assert.equal(after.walk,before.walk);assert.equal(after.run,before.run-penalty);assert.equal(after.sprint,before.sprint-penalty);
+});
+test('Core p.79: immobilized characters cannot run or sprint from Athletics',()=>{
+ reset();run('S.xp.bonus["std:Athletics"]=75;S.play.fatigue="Incapacitated"');
+ assert.equal(run('moveGaits().walk'),0);assert.equal(run('moveGaits().run'),null);assert.equal(run('moveGaits().sprint'),null);
+});
+test('Core p.77: twenty zero-ENC items count as one ENC',()=>{
+ reset();run('S.inventory=[{name:"Arrow",qty:19,enc:0}]');assert.equal(run('gearEncTotal()'),0);
+ run('S.inventory[0].qty=20');assert.equal(run('gearEncTotal()'),1);
+ run('S.inventory.push({name:"Needle",qty:20,enc:0},{name:"",qty:20,enc:0},{name:"Unknown",qty:2,enc:null})');
+ assert.equal(run('gearEncTotal()'),2);
+});
 test('Core p.110: damage preserves deep negative HP through editing, saving and recovery',()=>{
  reset();run('S.play.hp.Head=5');ctx.document.querySelector=()=>({value:'20'});
  run('APP.playApplyDamage("Head")');assert.equal(run('playCurHP("Head")'),-15);
