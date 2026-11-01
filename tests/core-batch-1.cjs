@@ -15,6 +15,14 @@ const run=s=>vm.runInContext(s,ctx);
 run('render=()=>{};');
 const test=(name,fn)=>{fn();console.log('PASS',name)};
 const reset=()=>run('S=freshState();VIEW_ONLY=false;S.chars={STR:12,CON:12,SIZ:12,DEX:14,INT:12,POW:12,CHA:13};');
+test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
+ reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
+ assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
+ run('S.inventory[0].enc=37');assert.equal(run('gradeForEntry("std:Athletics")'),'formidable');
+ run('S.inventory[0].enc=25;S.play.fatigue="Wearied"');assert.equal(run('gradeForEntry("std:Athletics")'),'formidable');
+ run('S.play.fatigue="Fresh"');assert.equal(run('gradeForEntry("std:Willpower")'),'hard');
+ run('ACTIVE_GRADE="standard"');assert.equal(run('gradeForEntry("std:Willpower")'),'standard');
+});
 test('Core p.70: armour reduces running and sprinting but not walking',()=>{
  reset();run('S.xp.bonus["std:Athletics"]=26');const before=run('moveGaits()');
  run('S.armor.Head="Half Plate (hoplite plate)"');const penalty=run('armourPenaltyToInit()');assert(penalty>0);
