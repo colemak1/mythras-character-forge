@@ -41,19 +41,10 @@ const gradeHardness=g=>GRADE_ORDER.indexOf(g);
 
    Encumbrance (core rulebook, Encumbrance section): over STR x2 "Burdened"
    makes skills that use STR or DEX — Combat Styles included — one Grade
-   harder; over STR x3 "Overloaded" makes them two Grades harder. It is a
-   relative SHIFT, and it only touches STR/DEX skills.
-
-   Fatigue (Fatigue Levels table, see FATIGUE_TABLE): each level states an
-   absolute Skill Grade for the character's rolls, and it applies to every
-   skill, not just physical ones. So it behaves as a FLOOR on difficulty
-   rather than another shift — a Winded character rolls at Hard, and a
-   Winded *and* Burdened character rolls their Combat Style at Formidable
-   (Standard shifted one harder by the load = Hard, which the Winded floor
-   then does not worsen... but Overloaded's two steps take it to Formidable,
-   which is worse than the floor and therefore wins). Taking the harsher of
-   the two rather than summing them keeps the table's own wording intact
-   instead of inventing a stacking rule the book does not state. */
+   harder; over STR x3 "Overloaded" makes them two Grades harder. For
+   competing penalties we interpret these from Standard as Hard and
+   Formidable, and use the hardest applicable grade (Core pp.38,77,79).
+   Fatigue applies to all skills; encumbrance only to STR/DEX skills. */
 function skillUsesStrDex(key){
   const e=entryMap()[key];
   const f=(e&&e.formula)||"";
@@ -74,7 +65,7 @@ function gradeForEntry(key){
   const advKey=GRADE_EASIER_ADV[key];
   if(advKey&&hasAdv(advKey))g=shiftGradeEasier(g);
   const steps=encGradeSteps(key);
-  if(steps>0)g=shiftGradeHarder(g,steps);
+  if(steps>0){const encGrade=shiftGradeHarder("standard",steps);if(gradeHardness(encGrade)>gradeHardness(g))g=encGrade;}
   const floor=fatigueGradeFloor();
   if(floor&&gradeHardness(floor)>gradeHardness(g))g=floor;
   return g;
