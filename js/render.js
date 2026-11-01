@@ -969,7 +969,15 @@ function armorEncTotal(){return ARMOR_LOCATIONS.reduce((a,l)=>a+armorEncAt(l)*ar
 function armorApAt(loc){const m=armorMaterialByName(armorNameAt(loc));return m.ap;}
 function inventoryEncTotal(){return S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.enc||0),0);}
 function inventoryCostTotal(){return S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.cost||0),0);}
-function gearEncTotal(){return inventoryEncTotal()+weaponsEnc()+armorEncTotal();}
+// Core p.77: twenty zero-ENC items count as one ENC. Count individual
+// quantities across inventory and the equipped weapon list, not empty
+// armour slots; a partial group is not yet a full ENC.
+function zeroEncItemCount(){
+  const inventory=S.inventory.reduce((a,it)=>a+((typeof it.name==="string"&&it.name.trim()&&it.enc!==null&&it.enc!==undefined&&it.enc!==""&&Number(it.enc)===0&&Number.isSafeInteger(Number(it.qty))&&Number(it.qty)>0)?Number(it.qty):0),0);
+  const weapons=S.gearWeapons.reduce((a,n)=>{const w=weaponByName(n);return a+(w&&w.enc===0?1:0);},0);
+  return inventory+weapons;
+}
+function gearEncTotal(){return inventoryEncTotal()+weaponsEnc()+armorEncTotal()+Math.floor(zeroEncItemCount()/20);}
 // Armour Penalty to Initiative (core rulebook, p.58, confirmed against page
 // image): sum the FULL (unhalved) ENC of every worn armour location, divide
 // by 5, round up, subtract from Initiative Bonus. Worked example in the book:
@@ -1075,6 +1083,7 @@ function stepMoney(){
     +'<td class="num"><input type="number" min="0" step="0.01" value="'+(it.cost||0)+'" onchange="APP.inv('+i+',\'cost\',this.value)"></td>'
     +'<td><button class="chip" aria-label="remove item" onpointerdown="APP.invDel('+i+')" onclick="APP.invDel('+i+')">&times;</button></td></tr>').join("")
    +'</table><p style="margin-top:8px"><button class="chip" onpointerdown="APP.invAdd()" onclick="APP.invAdd()">+ add item</button> &nbsp;<span class="note">Inventory ENC: <b style="font-family:var(--mono)">'+inventoryEncTotal()+'</b> &nbsp;&middot;&nbsp; Total gear ENC (weapons + armour + inventory): <b style="font-family:var(--mono)">'+gearEncTotal()+'</b>'
+   +(zeroEncItemCount()?' &nbsp;&middot;&nbsp; Zero-ENC items: '+zeroEncItemCount()+' ('+Math.floor(zeroEncItemCount()/20)+' ENC per complete group of 20)':'')
    +(encLimit()!==null?' &nbsp;&middot;&nbsp; Unencumbered limit (STR&times;2): <b style="font-family:var(--mono)">'+encLimit()+'</b>':"")+'</span>'
    +(encStatus()&&encStatus().level!=="ok"?'<p class="'+(encStatus().level==="bad"?"warn":"note")+'" style="margin-top:4px">'+encStatus().msg+'</p>'+encEffectPanel():"")+'</p></div>';
   return h;
