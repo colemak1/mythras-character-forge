@@ -126,8 +126,9 @@ function moveGaits(){
   // running rate or 1m to the base sprinting rate, before multipliers.
   const athletics=Math.max(0,finalPct("std:Athletics"));
   const steps=Math.floor(athletics/25);
-  return {walk:r.m,run:r.walkOnly?null:(r.m+steps*0.5)*3,
-    sprint:(r.walkOnly||r.noSprint)?null:(r.m+steps)*5,info:r};
+  const armour=typeof armourPenaltyToInit==="function"?armourPenaltyToInit():0;
+  return {walk:r.m,run:(r.immobile||r.walkOnly)?null:Math.max(0,(r.m+steps*0.5)*3-armour),
+    sprint:(r.immobile||r.walkOnly||r.noSprint)?null:Math.max(0,(r.m+steps)*5-armour),info:r};
 }
 const moveText=()=>{const r=moveRate();return r.immobile?"0m":(r.m+"m");};
 

@@ -512,7 +512,7 @@ function pmTicker(){
   const mv=moveRate(),gaits=moveGaits();
   h+='<div class="pm-tk"><span class="k">Move</span><span class="v'+(mv.m!==mv.base?" mod":"")+'" title="'
    +esc((mv.notes.length?mv.notes.join("; ")+". ":"Base "+mv.base+"m. ")
-     +"Walk "+gaits.walk+"m"+(gaits.run?", Run "+gaits.run+"m":", Run unavailable")+(gaits.sprint?", Sprint "+gaits.sprint+"m":", Sprint unavailable"))+'">'
+     +"Walk "+gaits.walk+"m"+(gaits.run!==null?", Run "+gaits.run+"m":", Run unavailable")+(gaits.sprint!==null?", Sprint "+gaits.sprint+"m":", Sprint unavailable")+(initPenalty?"; armour reduces run and sprint by "+initPenalty+"m":""))+'">'
    +mv.m+'<small>m</small></span></div>';
   h+='<div class="pm-tk"><span class="k">Luck</span><span class="pm-pips" title="Click a pip to spend / restore">'
    +Array.from({length:maxLuck},(_,i)=>'<button class="pm-pip'+(i<curLuck?"":" off")+'" aria-label="luck point" onclick="APP.playLuckSetPip('+i+')"></button>').join("")+'</span></div>';
