@@ -12,6 +12,9 @@ for(const name of ['data','engine','cloud','render','router','play','app']){
  vm.runInContext(src,ctx,{filename:name+'.js'});
 }
 const run=s=>vm.runInContext(s,ctx);
+assert.match(run('SPECIAL_EFFECTS.find(e=>e[0]==="Weapon Malfunction (Firearms)")[6]'),/GM to adjudicate/);
+assert.equal(run('canPickEffectForRoll(SPECIAL_EFFECTS.find(e=>e[0]==="Weapon Malfunction (Firearms)"),{combatRole:"attack",tier:"Fumble",oppTier:"Success"})'),true);
+assert.equal(run('playEffectsWon("Fumble","Success")'),-2);
 run('render=()=>{};S=freshState();S.rollLog=[{label:"Spear",tier:"Critical",oppTier:"Failure",combat:true,combatRole:"attack"}];APP.playJumpToEffects(0);');
 assert.match(run('specialEffectsPanel()'),/Spear: 0\/2 chosen/);
 run('APP.playChooseEffect(SPECIAL_EFFECTS.findIndex(e=>e[0]==="Bleed"));');
