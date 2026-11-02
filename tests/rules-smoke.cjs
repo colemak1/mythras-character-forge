@@ -124,6 +124,28 @@ test('all four Core cultures define enough eligible skills for 100 cultural poin
   assert(new Set(data.std).size===data.std.length,`${name}: duplicate standard skill`);
  }
 });
+test('Core pp.14–16 culture skill lists and choice sets',()=>{
+ const cases={
+  Barbarian:{std:['Athletics','Brawn','Endurance','First Aid','Locale','Perception'],choice:['Boating','Ride'],pick:1,prof:['Craft (any)','Healing','Lore (any)','Musicianship','Navigation','Seamanship','Survival','Track']},
+  Civilised:{std:['Conceal','Deceit','Drive','Influence','Insight','Locale','Willpower'],choice:[],pick:0,prof:['Art (any)','Commerce','Craft (any)','Courtesy','Language (any)','Lore (any)','Musicianship','Streetwise']},
+  Nomadic:{std:['Endurance','First Aid','Locale','Perception','Stealth'],choice:['Athletics','Boating','Swim','Drive','Ride'],pick:2,prof:['Craft (any)','Culture (any)','Language (any)','Lore (any)','Musicianship','Navigation','Survival','Track']},
+  Primitive:{std:['Brawn','Endurance','Evade','Locale','Perception','Stealth'],choice:['Athletics','Boating','Swim'],pick:1,prof:['Craft (any)','Healing','Lore (any)','Musicianship','Navigation','Survival','Track']}
+ };
+ for(const [name,want] of Object.entries(cases)){
+  const actual=evalRule(`CULTURES[${JSON.stringify(name)}]`);
+  assert.deepEqual(Array.from(actual.std),want.std,name+' standard');
+  assert.deepEqual(actual.choice?Array.from(actual.choice.from):[],want.choice,name+' choice');
+  assert.equal(actual.choice?.pick||0,want.pick,name+' pick count');
+  assert.deepEqual(Array.from(actual.prof),want.prof,name+' professional');
+ }
+});
+test('Culture rejects duplicate, unavailable and unexpected standard choices',()=>{
+ for(const [culture,choices] of [['Nomadic',['Ride','Ride']],['Nomadic',['Ride','Willpower']],['Barbarian',['Swim']],['Civilised',['Ride']]]){
+  evalRule(`S=freshState();S.culture=${JSON.stringify(culture)};S.cultChoice=${JSON.stringify(choices)};`);
+  const result=evalRule('validate(currentSteps().indexOf("Culture"))');
+  assert(!result.ok && /cultural standard skill/.test(result.msg),`${culture}: ${result.msg}`);
+ }
+});
 test('all 24 Core careers have legal pool size and distinct Standard Skills',()=>{
  const names=evalRule('Object.keys(CAREERS)');
  assert.equal(names.length,24);
