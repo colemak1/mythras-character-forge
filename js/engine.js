@@ -924,6 +924,9 @@ function validate(step){
     if(!S.culture)return bad("Choose a culture.");
     const c=CULTURES[S.culture];
     if(c.choice&&S.cultChoice.length!==c.choice.pick)return bad("Pick "+c.choice.pick+" cultural standard skill"+(c.choice.pick>1?"s":"")+" ("+c.choice.text+").");
+    if(c.choice&&(new Set(S.cultChoice).size!==S.cultChoice.length||S.cultChoice.some(sk=>!c.choice.from.includes(sk))))
+      return bad("Choose distinct cultural standard skills from the listed options.");
+    if(!c.choice&&S.cultChoice.length)return bad("Remove extra cultural standard skill choices for this culture.");
     if(S.cultStyleOn&&!S.cultStyleName.trim())return bad("Give your cultural combat style a name (or turn off “Take a cultural combat style”).");
     if(S.cultProf.filter(Boolean).length!==3)return bad("Select three Professional Skills from the culture's options.");
     for(let i=0;i<3;i++){const p=S.cultProf[i];if(!p)continue;
