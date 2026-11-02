@@ -514,8 +514,11 @@ window.APP={
    }
  },
  customCareerName(v){S.customCareer.name=v;
-   if(v.trim()){S.career="__custom__";}else{S.career=null;}
-   this.skillsChanged();},
+   const button=document.getElementById("custom-career-continue");
+   if(button)button.disabled=!v.trim()||S.customCareer.std.length+S.customCareer.styleSlots>7;},
+ confirmCustomCareer(){
+   if(!S.customCareer.name.trim()||S.customCareer.std.length+S.customCareer.styleSlots>7)return;
+   S.career="__custom__";this.skillsChanged();},
  editCustomCareer(){if(S.customCareer.isCustom)S.career=null;render();window.scrollTo(0,0);},
  customCareerStd(skill){const i=S.customCareer.std.indexOf(skill);
    if(i>=0)S.customCareer.std.splice(i,1);

@@ -945,6 +945,8 @@ function validate(step){
     return ok();}
    case "Career":{
     if(!S.career)return bad("Choose a career.");
+    if(S.customCareer.isCustom&&S.customCareer.std.length+S.customCareer.styleSlots>7)
+      return bad("Custom careers may have at most seven Standard Skills, including Combat Styles.");
     const k=S.customCareer.isCustom?null:CAREERS[S.career];
     // A style slot left in "new style" mode with a blank name used to fall
     // back to the slot's category label (e.g. "Cultural Style") as the

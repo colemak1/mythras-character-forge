@@ -625,8 +625,8 @@ function stepCareer(){
   // If custom is being built and not yet named, show the builder
   if(S.customCareer.isCustom && !S.career){
     h+='<div class="card"><h3>Build your custom career</h3>'
-     +'<div class="field" style="margin-bottom:12px"><label>Career name</label><input type="text" value="'+esc(S.customCareer.name)+'" placeholder="e.g. Mercenary, Scholar, Scout" onchange="APP.customCareerName(this.value)" style="width:100%;"></div>'
-     +'<div class="field" style="margin-bottom:12px"><label>Standard skills (pick any, no limits)</label><div class="choicechips">'
+     +'<div class="field" style="margin-bottom:12px"><label>Career name</label><input type="text" value="'+esc(S.customCareer.name)+'" placeholder="e.g. Mercenary, Scholar, Scout" oninput="APP.customCareerName(this.value)" style="width:100%;"></div>'
+     +'<div class="field" style="margin-bottom:12px"><label>Standard skills (up to seven including Combat Styles)</label><div class="choicechips">'
      +STD.map(([sk,_])=>'<button class="chip '+(S.customCareer.std.includes(sk)?"on":"")+'" onclick="APP.customCareerStd(\''+sk+'\')">'+sk+'</button>').join("")
      +'</div></div>'
      +'<div class="field" style="margin-bottom:12px"><label>Professional skills (pick up to 3)</label>'
@@ -638,7 +638,9 @@ function stepCareer(){
      +'<option value="1" '+(S.customCareer.styleSlots===1?"selected":"")+'>One</option>'
      +'<option value="2" '+(S.customCareer.styleSlots===2?"selected":"")+'>Two</option>'
      +'</select></div>'
-     +'<p class="note" style="margin-top:10px">Give it a name above to lock it in and continue &mdash; you can always come back and edit the standard skills or style slots later from the &ldquo;Edit custom career&rdquo; button.</p></div>';
+     +'<p class="note" style="margin-top:10px">Agree your career and professional skill options with your GM (Core p. 33). The builder currently lets you select up to three professional skills directly; it does not record a separate seven-option career list.</p>'
+     +'<p class="note">'+(S.customCareer.std.length+S.customCareer.styleSlots)+' / 7 Standard Skills and Combat Styles selected. '+(S.customCareer.std.length+S.customCareer.styleSlots>7?'Remove selections to continue.':'')+'</p>'
+     +'<button id="custom-career-continue" class="chip actionchip" '+(!S.customCareer.name.trim()||S.customCareer.std.length+S.customCareer.styleSlots>7?'disabled ':'')+'onclick="APP.confirmCustomCareer()">Continue with custom career</button></div>';
     return h;
   }
 

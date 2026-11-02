@@ -97,6 +97,7 @@ The book also includes guidance, tables, creature statistics and setting-depende
 
 The first characteristic/attribute cases, including exact tested boundaries and open cases, are detailed in [core-characteristics-cases.md](core-characteristics-cases.md).
 The initial culture skill-list and choice-validation cases are in [core-culture-cases.md](core-culture-cases.md).
+The initial career list and custom-career cases are in [core-career-cases.md](core-career-cases.md).
 
 | Case | Evidence | Result and limit |
 |---|---|---|
