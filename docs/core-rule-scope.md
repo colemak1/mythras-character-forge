@@ -95,6 +95,8 @@ The book also includes guidance, tables, creature statistics and setting-depende
 
 ## Evidence already available
 
+The first characteristic/attribute cases, including exact tested boundaries and open cases, are detailed in [core-characteristics-cases.md](core-characteristics-cases.md).
+
 | Case | Evidence | Result and limit |
 |---|---|---|
 | CH-01–04: one human points build | Signed-in live test, 2026-11-02; uploaded Core pp. 8–10. STR 10, CON 10, SIZ 18, DEX 10, INT 17, POW 10, CHA 5. | 80-point total accepted; AP 3, damage +1d2, initiative 14, luck 2, healing 2, head/legs 6, chest 8, abdomen 7, arms 5 displayed. One case, not all boundaries or creation paths. |
