@@ -294,8 +294,11 @@ function heightWeightCard(){
    +fld("Height override (metres)",'<input type="number" step="0.01" min="0" value="'+esc(c.heightM)+'" placeholder="'+hw.derivedM.toFixed(2)+'" onchange="APP.set(\'concept\',\'heightM\',this.value)">')
    +fld("Weight override (kg)",'<input type="number" step="1" min="0" value="'+esc(c.weightKg)+'" placeholder="'+hw.derivedKg+'" onchange="APP.set(\'concept\',\'weightKg\',this.value)">')
    +'</div>';
-  h+='<p class="note">Body frame (set above) redistributes the same SIZ: a Lithe build is taller and leaner for its mass, Heavy is shorter and denser. Weight tracks SIZ directly, since SIZ <i>is</i> the character&rsquo;s mass.</p>';
-  h+='<p class="note rulesrc">The core rulebook&rsquo;s Height &amp; Weight table (p.9) is not reproduced here &mdash; this app has no verified transcription of it, and inventing one would be worse than saying so. These are computed from a stated model (see <code>HW_ANCHORS</code> in data.js) pinned to the standard adult figure for an average-SIZ human and, for each demi-human, to the height its own species description gives. If you have the table in front of you, type its value into the override boxes and it wins outright.</p>';
+  if(hw.ranges){
+    h+='<p class="note rulesrc">Core p. 9: height '+hw.ranges.height.join('&ndash;')+' cm; '+esc(hw.build)+' weight '+hw.ranges.weight.join('&ndash;')+' kg. The default is the midpoint, rounded for display. Enter a value above to choose your character&rsquo;s measurements.</p>';
+  }else{
+    h+='<p class="note">These nonhuman measurements are estimates. Enter your own values above to use the measurements appropriate to your species and setting.</p>';
+  }
   return h+'</div>';
 }
 function stepConcept(){
