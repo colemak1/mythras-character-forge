@@ -137,15 +137,28 @@ function heightWeight(){
   const avgSiz=(SPECIES_MAP[spKey]||SPECIES_MAP.human).avg.SIZ;
   const build=BUILD_FACTORS[S.concept.frame]||1;
   const siz=S.chars.SIZ;
-  const derivedM=a.heightAt*Math.pow(siz/avgSiz,1/3)*build;
-  const derivedKg=a.massPerSiz*siz;
+  let derivedM=a.heightAt*Math.pow(siz/avgSiz,1/3)*build;
+  let derivedKg=a.massPerSiz*siz;
+  let ranges=null;
+  if(spKey==="human" && Number.isInteger(siz) && siz>=1){
+    // Core p.9. Use the midpoint as a convenient default; players may select
+    // any value in the printed range or retain a previously entered override.
+    const heights=[[1,45],[46,80],[81,105],[106,120],[121,130],[131,140],[141,150]];
+    const height=siz<=7?heights[siz-1]:[151+5*(siz-8),155+5*(siz-8)];
+    const frame=S.concept.frame||"Medium";
+    const factor=frame==="Lithe"?5:frame==="Heavy"?9:7;
+    const weight=[factor*(siz-1)+1,factor*siz];
+    ranges={height,weight};
+    derivedM=(height[0]+height[1])/200;
+    derivedKg=(weight[0]+weight[1])/2;
+  }
   const om=parseFloat(S.concept.heightM), ok=parseFloat(S.concept.weightKg);
   const m=Number.isFinite(om)&&om>0?om:derivedM;
   const kg=Number.isFinite(ok)&&ok>0?ok:derivedKg;
   return {m:Math.round(m*100)/100,kg:Math.round(kg),
     derivedM:Math.round(derivedM*100)/100,derivedKg:Math.round(derivedKg),
     overriddenH:m!==derivedM,overriddenW:kg!==derivedKg,
-    ft:mToFtIn(m),lb:Math.round(kg*2.2046),species:spKey,build:S.concept.frame||"Medium"};
+    ft:mToFtIn(m),lb:Math.round(kg*2.2046),species:spKey,build:S.concept.frame||"Medium",ranges};
 }
 function mToFtIn(m){const totalIn=Math.round(m*39.3701);return Math.floor(totalIn/12)+"&prime;"+(totalIn%12)+"&Prime;";}
 // Imperial for the two personal-body stats (feet/inches, pounds) -- unlike

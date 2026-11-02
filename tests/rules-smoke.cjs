@@ -25,6 +25,35 @@ test('baseline attributes',()=>{
  assert.equal(evalRule('apCalc(18,18)'),3);
  assert.equal(evalRule('luckPts(13)'),3);
 });
+test('Core pp.8–10 attribute table boundaries',()=>{
+ for(const [sum,expected] of [[12,1],[13,2],[24,2],[25,3],[36,3],[37,4]]) assert.equal(evalRule(`apCalc(${sum},0)`),expected);
+ for(const [v,xp,healing,luck] of [[6,-1,1,1],[7,0,2,2],[12,0,2,2],[13,1,3,3],[18,1,3,3],[19,2,4,4]]){
+  assert.equal(evalRule(`xpMod(${v})`),xp);assert.equal(evalRule(`healRate(${v})`),healing);assert.equal(evalRule(`luckPts(${v})`),luck);
+ }
+ for(const [sum,leg,arm,chest] of [[5,1,1,3],[6,2,1,4],[10,2,1,4],[11,3,2,5],[40,8,7,10]]){
+  assert.equal(evalRule(`hpLocs(${sum},0)[4][1]`),leg);assert.equal(evalRule(`hpLocs(${sum},0)[3][1]`),arm);assert.equal(evalRule(`hpLocs(${sum},0)[1][1]`),chest);
+ }
+});
+test('Core p.37 success and fumble boundaries',()=>{
+ for(const [roll,skill,outcome] of [[1,40,'Critical'],[4,40,'Critical'],[5,40,'Success'],[40,40,'Success'],[41,40,'Failure'],[95,110,'Success'],[96,110,'Failure'],[99,100,'Fumble'],[99,101,'Failure'],[100,101,'Fumble']]) assert.equal(evalRule(`resolveRoll(${roll},${skill})`),outcome);
+});
+test('Core p.9 human height and weight ranges, frames, and saved overrides',()=>{
+ evalRule('S=freshState(); S.chars={STR:13,CON:13,SIZ:13,DEX:13,INT:13,POW:13,CHA:13};');
+ assert.equal(evalRule('heightWeight().ranges.height.join("-")'),'176-180');
+ assert.equal(evalRule('heightWeight().ranges.weight.join("-")'),'85-91');
+ assert.equal(evalRule('heightWeight().kg'),88);
+ evalRule('S.concept.frame="Lithe"');
+ assert.equal(evalRule('heightWeight().ranges.weight.join("-")'),'61-65');
+ evalRule('S.concept.frame="Heavy"');
+ assert.equal(evalRule('heightWeight().ranges.weight.join("-")'),'109-117');
+ evalRule('S.concept.heightM="1.7"; S.concept.weightKg="72"');
+ assert.equal(evalRule('heightWeight().m'),1.7);
+ assert.equal(evalRule('heightWeight().kg'),72);
+ evalRule('S.concept.heightM=""; S.concept.weightKg=""; S.chars.SIZ=21');
+ assert.equal(evalRule('heightWeight().ranges.height.join("-")'),'216-220');
+ evalRule('S.chars.SIZ=22');
+ assert.equal(evalRule('heightWeight().ranges.height.join("-")'),'221-225');
+});
 
 test('Athletics improves running and sprinting (Core pp.39, 70)',()=>{
  evalRule('encStatus=()=>({level:"ok"});S=freshState();S.chars={STR:13,CON:13,SIZ:13,DEX:13,INT:13,POW:13,CHA:13};S.xp.bonus["std:Athletics"]=26;');
