@@ -54,6 +54,19 @@ test('Core p.9 human height and weight ranges, frames, and saved overrides',()=>
  evalRule('S.chars.SIZ=22');
  assert.equal(evalRule('heightWeight().ranges.height.join("-")'),'221-225');
 });
+test('Core p.9 damage modifier table at each printed boundary',()=>{
+ const expected=[[5,'-1d8'],[10,'-1d6'],[15,'-1d4'],[20,'-1d2'],[25,'+0'],[30,'+1d2'],[35,'+1d4'],[40,'+1d6'],[45,'+1d8'],[50,'+1d10'],[60,'+1d12'],[70,'+2d6'],[80,'+1d8+1d6'],[90,'+2d8'],[100,'+1d10+1d8'],[110,'+2d10'],[120,'+2d10+1d2'],[130,'+2d10+1d4']];
+ let previous=0;for(const [upper,value] of expected){for(const sum of [previous+1,upper]) assert.equal(evalRule(`dmCalc(${sum},0)`),value,`STR+SIZ ${sum}`);previous=upper;}
+});
+test('Core p.9 height and frame ranges for all human SIZ values',()=>{
+ const heights=[[141,150],[151,155],[156,160],[161,165],[166,170],[171,175],[176,180],[181,185],[186,190],[191,195],[196,200],[201,205]];
+ evalRule('S=freshState();S.chars={STR:10,CON:10,SIZ:8,DEX:10,INT:10,POW:10,CHA:10}');
+ for(let siz=8;siz<=18;siz++) for(const [frame,factor] of [['Lithe',5],['Medium',7],['Heavy',9]]){
+  evalRule(`S.chars.SIZ=${siz};S.concept.frame=${JSON.stringify(frame)}`);
+  assert.equal(evalRule('heightWeight().ranges.height.join(",")'),heights[siz-7].join(','));
+  assert.equal(evalRule('heightWeight().ranges.weight.join(",")'),`${factor*(siz-1)+1},${factor*siz}`);
+ }
+});
 
 test('Athletics improves running and sprinting (Core pp.39, 70)',()=>{
  evalRule('encStatus=()=>({level:"ok"});S=freshState();S.chars={STR:13,CON:13,SIZ:13,DEX:13,INT:13,POW:13,CHA:13};S.xp.bonus["std:Athletics"]=26;');

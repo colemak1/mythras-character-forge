@@ -343,7 +343,7 @@ function stepChars(){
     +'</div></div>';
   }else if(S.charMode==="roll"){
     const quote=isOrd
-     ?"&ldquo;3d6 for STR, CON, DEX, POW and CHA. 2d6+6 for INT and SIZ. Allocate results to fit the concept. Results may be allocated in the order listed, or distributed as the Games Master and players agree.&rdquo;"
+     ?"Human characteristics: roll 3d6 for STR, CON, DEX, POW and CHA, and 2d6+6 for INT and SIZ. Core offers rolling in order or assigning results within each matching dice group (p. 8)."
      :tier.quote;
     body='<div class="card"><h3>Roll the dice</h3>'
     +'<div class="rulequote">'+quote+'</div>'
@@ -363,7 +363,7 @@ function stepChars(){
     const pool=pbPool();
     body='<div class="card"><h3>Points build &mdash; '+pool+' points</h3>'
     +'<div class="rulequote">'+(isOrd
-      ?"&ldquo;Alternatively distribute 80 points amongst the characteristics. Minimum 3 (8 for INT and SIZ), maximum 18. Use all the points.&rdquo;"
+      ?"Core points build: allocate all 80 points, staying within each characteristic's possible human range (p. 8)."
       :"&ldquo;If using the Points Build method, players build their character from a pre-set pool of "+pool+" points.&rdquo; &mdash; Mythras Companion")+'</div>'
     +'<div class="pool"><span>Points</span><span class="pv '+(total===pool?"ok":(total>pool?"bad":""))+'">'+total+' / '+pool+'</span>'
      +'<div class="pbar"><i style="width:'+Math.min(100,total/pool*100)+'%"></i></div><span class="note">'+(pool-total)+' left</span></div>'
