@@ -15,6 +15,15 @@ const run=s=>vm.runInContext(s,ctx);
 run('render=()=>{};');
 const test=(name,fn)=>{fn();console.log('PASS',name)};
 const reset=()=>run('S=freshState();VIEW_ONLY=false;S.chars={STR:12,CON:12,SIZ:12,DEX:14,INT:12,POW:12,CHA:13};');
+test('Core p.33 custom career stays editable and counts styles within seven',()=>{
+ reset();run('APP.pickCareer("__custom__");APP.customCareerName("Artificer");');
+ assert.equal(run('S.career'),null);assert.match(run('stepCareer()'),/Build your custom career/);
+ run('S.customCareer.std=["Athletics","Brawn","Endurance","Evade","First Aid","Locale"];APP.customCareerStyles(2);APP.confirmCustomCareer();');
+ assert.equal(run('S.career'),null);assert.match(run('stepCareer()'),/Remove selections to continue/);
+ run('APP.customCareerStyles(1);APP.confirmCustomCareer();');assert.equal(run('S.career'),'__custom__');
+ run('APP.editCustomCareer();');assert.equal(run('S.customCareer.name'),'Artificer');assert.equal(run('S.customCareer.std.length'),6);
+ run('S.career="__custom__";S.customCareer.styleSlots=2;');assert.match(run('validate(currentSteps().indexOf("Career")).msg'),/at most seven/);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
