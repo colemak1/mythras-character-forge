@@ -1,5 +1,7 @@
 # Core coverage baseline
 
+The detailed working scope, case status definitions, existing evidence, and verification sequence are in [core-rule-scope.md](core-rule-scope.md). The chapter inventory below remains a high-level index, not a count of verified rules.
+
 Source: user-supplied Mythras Core Rulebook, contents printed pp. 2–3. This inventory is not a completed audit. Status is deliberately unverified until evidence is recorded for a specific rule and implementation.
 
 For each rule record: printed page, app behavior and location, outcome (verified / GM-managed / discrepancy / unsupported / not assessed), tests and production verification. Never equate passing tests with sourcebook accuracy.
