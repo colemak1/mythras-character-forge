@@ -52,7 +52,11 @@ function currentRoute(){
   if(APPVIEW==="wiki")return WIKI_CHAPTER?"/wiki/"+encodeURIComponent(WIKI_CHAPTER):"/wiki";
   return "/"; // menu
 }
+let ROUTER_BOOTING=false;
 function syncRouteFromState(){
+  // Auth callbacks can render the default menu before the saved session is
+  // restored. Preserve the requested deep link until boot has routed it.
+  if(ROUTER_BOOTING)return;
   const hash="#"+currentRoute();
   if(location.hash!==hash)location.hash=hash;
 }
@@ -233,6 +237,9 @@ window.addEventListener("hashchange",()=>{
 async function boot(){
   // Supabase can resolve an email recovery redirect while getSession() is
   // running. Subscribe first so PASSWORD_RECOVERY is not lost on cold load.
+  ROUTER_BOOTING=true;
+  const initialHash=location.hash;
+  const hadPendingJoin=!!localStorage.getItem(PENDING_JOIN_KEY);
   initAuth();
   if(CLOUD_ENABLED){
     try{
@@ -240,6 +247,13 @@ async function boot(){
       if(data&&data.session)await onSignedIn(data.session.user);
     }catch(e){/* best-effort -- initAuth's own listener still catches a later resolution */}
   }
-  if(AUTH_RECOVERY){APPVIEW="account";render();return;}
-  await applyRoute(parseRoute(location.hash),{cold:true});
+  try{
+    if(AUTH_RECOVERY){APPVIEW="account";render();return;}
+    // A pending invite may already have been completed during sign-in.
+    if(!hadPendingJoin||APPVIEW!=="campaign"||!CURRENT_CAMPAIGN_ID)
+      await applyRoute(parseRoute(initialHash),{cold:true});
+  }finally{
+    ROUTER_BOOTING=false;
+    syncRouteFromState();
+  }
 }
