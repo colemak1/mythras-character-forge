@@ -56,6 +56,15 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   await run('applyRoute(parseRoute("#/campaign/camp"))');await run('applyRoute(parseRoute("#/campaign/camp/board"))');
   assert.equal(run('loadedCampaigns.join(",")'),'camp,camp,board:camp');
  });
+ await test('cold campaign link survives an auth callback that renders the menu',async()=>{
+  run('AUTH_USER=null;AUTH_PROFILE=null;AUTH_RECOVERY=false;MOCK_AUTH=null;APPVIEW="menu";CURRENT_CAMPAIGN_ID=null;location.hash="#/campaign/cold-campaign";sb.auth.onAuthStateChange=fn=>{sb.listener=fn;};sb.from=()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{display_name:"Player"}})})})});sb.auth.getSession=async()=>{await sb.listener("SIGNED_IN",{user:{id:"cold-user",email:"cold@example.test"}});return {data:{session:{user:{id:"cold-user",email:"cold@example.test"}}}};};loadCampaignViewUnified=async id=>{CAMPAIGN_VIEW={campaign:{id}};};');
+  await run('boot()');assert.equal(run('APPVIEW'),'campaign');assert.equal(run('CURRENT_CAMPAIGN_ID'),'cold-campaign');assert.equal(ctx.location.hash,'#/campaign/cold-campaign');
+ });
+ await test('cold saved-character play link survives session restoration',async()=>{
+  run('var originalOpenCharUnified=openCharUnified;AUTH_USER=null;AUTH_PROFILE=null;AUTH_RECOVERY=false;MOCK_AUTH=null;APPVIEW="menu";CURRENT_CAMPAIGN_ID=null;S=freshState();location.hash="#/character/cold-char/play";sb.auth.onAuthStateChange=fn=>{sb.listener=fn;};sb.auth.getSession=async()=>{await sb.listener("SIGNED_IN",{user:{id:"cold-user",email:"cold@example.test"}});return {data:{session:{user:{id:"cold-user",email:"cold@example.test"}}}};};openCharUnified=async id=>({id,ownerId:"cold-user",campaignId:null,state:freshState()});');
+  await run('boot()');assert.equal(run('APPVIEW'),'play');assert.equal(run('S._libId'),'cold-char');assert.equal(ctx.location.hash,'#/character/cold-char/play');
+  run('openCharUnified=originalOpenCharUnified');
+ });
  await test('signed-out invites survive sign-in and complete through the existing join flow',async()=>{
   run('AUTH_USER=null;AUTH_PROFILE=null;');await run('applyRoute(parseRoute("#/join/TABLE%2B1"))');
   assert.equal(run('APPVIEW'),'account');assert.equal(run('localStorage.getItem(PENDING_JOIN_KEY)'),'TABLE+1');
