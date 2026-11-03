@@ -45,6 +45,12 @@ window.APP={
    S.poolA=Array.from({length:tier.mainRolls},rollMain);
    S.poolB=Array.from({length:tier.sizintRolls},rollSizInt);
    S.assignA={};S.assignB={};CHARS.forEach(c=>S.chars[c]=null);render();},
+ assignRolledOrder(){
+   if(S.archetype!=="ordinary"||S.poolA.length<5||S.poolB.length<2)return;
+   S.assignA={};S.assignB={};
+   ["STR","CON","DEX","POW","CHA"].forEach((c,i)=>{S.assignA[c]=i;S.chars[c]=S.poolA[i];});
+   ["SIZ","INT"].forEach((c,i)=>{S.assignB[c]=i;S.chars[c]=S.poolB[i];});
+   render();},
  assignInOrder(){
    const idxByValDesc=pool=>pool.map((v,i)=>i).sort((a,b)=>pool[b]-pool[a]);
    const orderA=idxByValDesc(S.poolA),orderB=idxByValDesc(S.poolB);
