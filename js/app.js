@@ -496,7 +496,7 @@ window.APP={
    if((picks[i]||"")===(name||""))return;
    if(picks[i]){delete S.alloc[ph][profKey(picks[i],specs[i])];}
    picks[i]=name||null;specs[i]="";
-   if(name&&(which==="cult"||which==="quick"))S.alloc[ph][profKey(name,"")]=5;
+   if(name&&(which==="cult"||which==="quick")&&S.alloc[ph][profKey(name,"")]===undefined)S.alloc[ph][profKey(name,"")]=5;
    this.skillsChanged();},
  profSpec(which,i,v){
    const picks=which==="cult"?S.cultProf:(which==="car"?S.carProf:S.qProf),
