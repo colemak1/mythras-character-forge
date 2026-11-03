@@ -15,6 +15,15 @@ const run=s=>vm.runInContext(s,ctx);
 assert.match(run('SPECIAL_EFFECTS.find(e=>e[0]==="Weapon Malfunction (Firearms)")[6]'),/GM to adjudicate/);
 assert.equal(run('canPickEffectForRoll(SPECIAL_EFFECTS.find(e=>e[0]==="Weapon Malfunction (Firearms)"),{combatRole:"attack",tier:"Fumble",oppTier:"Success"})'),true);
 assert.equal(run('playEffectsWon("Fumble","Success")'),-2);
+// Core p.51 differential table, transcribed independently from rendered page.
+const tiers=['Critical','Success','Failure','Fumble'],rolls=[1,20,90,99];
+const expected=[[0,1,2,3],[-1,0,1,2],[-2,-1,0,0],[-3,-2,0,0]];
+for(let i=0;i<4;i++)for(let j=0;j<4;j++){
+ const result=run(`contestedRollResult(80,${rolls[i]},80,${rolls[j]})`);
+ assert.equal(result.tierA,tiers[i]);assert.equal(result.tierB,tiers[j]);
+ assert.equal(result.differential,expected[i][j],`${tiers[i]} vs ${tiers[j]}`);
+}
+
 run('render=()=>{};S=freshState();S.rollLog=[{label:"Spear",tier:"Critical",oppTier:"Failure",combat:true,combatRole:"attack"}];APP.playJumpToEffects(0);');
 assert.match(run('specialEffectsPanel()'),/Spear: 0\/2 chosen/);
 run('APP.playChooseEffect(SPECIAL_EFFECTS.findIndex(e=>e[0]==="Bleed"));');
