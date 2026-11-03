@@ -164,6 +164,12 @@ test('changing career warns before discarding selected career work',()=>{
  run('APP.pickCareer("__custom__");');assert.equal(run('S.career'),'Scholar');assert.equal(run('S.carProfSpec[0]'),'History');
  ctx.confirm=()=>true;run('APP.pickCareer("Warrior");');assert.equal(run('S.career'),'Warrior');assert.equal(run('aSum("career")'),0);
 });
+test('changing culture warns before discarding work but not for seeded defaults',()=>{
+ reset();let prompts=0;ctx.confirm=()=>{prompts++;return false};run('APP.pickCulture("Civilised");APP.pickCulture("Barbarian");');assert.equal(prompts,0);assert.equal(run('S.culture'),'Barbarian');
+ run('S.cultProf[0]="Lore";S.cultProfSpec[0]="History";S.alloc.culture[profKey("Lore","History")]=10;S.alloc.bonus[profKey("Lore","History")]=8;APP.pickCulture("Civilised");');
+ assert.equal(prompts,1);assert.equal(run('S.culture'),'Barbarian');assert.equal(run('aGet("culture",profKey("Lore","History"))'),10);assert.equal(run('aGet("bonus",profKey("Lore","History"))'),8);
+ ctx.confirm=()=>true;run('APP.pickCulture("Civilised");');assert.equal(run('S.culture'),'Civilised');assert.equal(run('aGet("culture",profKey("Lore","History"))'),0);ctx.confirm=()=>true;
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');

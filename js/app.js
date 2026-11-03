@@ -474,7 +474,14 @@ window.APP={
    S.step=0;render();window.scrollTo(0,0);},
  qStyle(on){S.qStyleOn=on;if(on)S.alloc.quick["style:quick"]=5;else delete S.alloc.quick["style:quick"];this.skillsChanged();},
  /* culture */
- pickCulture(n){if(S.culture===n)return;S.culture=n;S.cultChoice=[];
+ pickCulture(n){if(S.culture===n)return;
+   // The initial five points per standard skill are seeded automatically;
+   // do not warn about those alone before the player has made changes.
+   const base=S.culture?new Set(CULTURES[S.culture].std.map(sk=>"std:"+sk)):new Set();
+   const changed=!!S.culture&&(S.cultChoice.length>0||S.cultProf.some(Boolean)||
+     Object.entries(S.alloc.culture).some(([key,value])=>base.has(key)?value!==5:value!==0));
+   if(changed&&!confirm("Changing culture resets your cultural skill choices and cultural point allocations. Some bonus points on removed professional skills may also return to the pool. Continue?"))return;
+   S.culture=n;S.cultChoice=[];
    S.cultProf=[null,null,null];S.cultProfSpec=["","",""];S.alloc.culture={};
    CULTURES[n].std.forEach(sk=>{S.alloc.culture["std:"+sk]=5;});
    this.skillsChanged();},
