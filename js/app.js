@@ -500,7 +500,7 @@ window.APP={
      specs=which==="cult"?S.cultProfSpec:(which==="car"?S.carProfSpec:S.qProfSpec);
    const ph=which==="cult"?"culture":(which==="car"?"career":"quick");
    const old=profKey(picks[i],specs[i]);const nw=profKey(picks[i],v);
-   if(S.alloc[ph][old]!==undefined&&old!==nw){S.alloc[ph][nw]=S.alloc[ph][old];delete S.alloc[ph][old];}
+   if(S.alloc[ph][old]!==undefined&&old!==nw){S.alloc[ph][nw]=(S.alloc[ph][nw]||0)+S.alloc[ph][old];delete S.alloc[ph][old];}
    const wasBlank=!String(specs[i]||"").trim();specs[i]=v;
    // Naming a previously unspecialised legacy skill should carry its bonus
    // points with it when no other source still owns the old skill.

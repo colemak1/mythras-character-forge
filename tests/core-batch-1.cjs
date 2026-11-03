@@ -122,6 +122,11 @@ test('switching creation mode removes stale literacy links and preserves learned
  assert.equal(run('S.literacyLinks[profKey("Literacy","Coastal")]'),undefined);
  assert.equal(run('S.literacyLinks[profKey("Literacy","Ancient")]'),'std:Native Tongue');
 });
+test('changing a speciality does not overwrite points already on the destination skill',()=>{
+ reset();run('S.career="Scholar";S.carProf=["Lore","Lore",null];S.carProfSpec=["History","Nature",""];S.alloc.career[profKey("Lore","History")]=7;S.alloc.career[profKey("Lore","Nature")]=8;APP.profSpec("car",0,"Nature");');
+ assert.equal(run('aGet("career",profKey("Lore","Nature"))'),15);assert.equal(run('aSum("career")'),15);
+ assert.match(run('validate(currentSteps().indexOf("Career")).msg'),/twice/);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
