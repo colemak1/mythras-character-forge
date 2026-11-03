@@ -1,6 +1,6 @@
 # Character creation acceptance record
 
-This record consolidates subsystem 1 instead of treating each edge case as a release. **Status: source/automated review complete for the Core human creation scope below; final live checks of this release pending.** Do not increment the subsystem count until those checks are recorded.
+This record consolidates subsystem 1 instead of treating each edge case as a release. **Status: complete for the Core human creation scope below. Subsystems finished:1/8.** Source, automated and relevant signed-in deployment checks passed. Historical pre-release observations below are superseded by the final live record.
 
 ## Authority and boundaries
 
@@ -48,3 +48,16 @@ Quick Character, Pulp/Paragon, legacy non-human templates and Sit'ota house opti
 ## Release checks
 
 All12 JavaScript suites passed (244 reported groups, with 1,440 builds and216 dice combinations inside their respective groups). Syntax checks and `git diff --check` passed. The final live record and deployed revision will be appended after publication. Until then, subsystem1 remains in progress.
+
+
+## Final deployed verification — November3,2026
+
+PR108 merged as `3c48e22170528f90b1a70cce208577392dfa9513`. The live page served engine64/render65/play56/app81. Test Player signed in through the secure form after the cloud browser reset. The original Verification Player and Creation Audit — Human were both present in the account.
+
+- Opened the saved Primitive / Audit Warden character on this deployed revision. Final review reported creation checks passed. Its seven offers, three style slots, two cultural links, Literacy(Coastal)/Language(Coastal) link and prior allocations had survived the earlier save/reopen checks.
+- Chose Skip optional background events with the recorded roll81 summary present. Saved and reloaded; the final page still passed. The printed sheet showed the skipped status AND the retained roll81 family-fortune summary.
+- Entered STR12.5 in Manual. The field retained12.5, validation reported a whole-number error, and attempting to navigate to Finish stayed on Characteristics. Restored12 and its recorded roll mode; the creation checks passed.
+- Temporarily selected Senior and age54: the UI showed the Standard Middle Age tests and manual review controls. Recorded a GM review. Returned to Adult age20, retaining the150-point bonus allocations and the existing measurements1.80m/91kg. No ageing losses were fabricated.
+- Saved the restored valid character and entered Play Mode: all seven scores, expected attributes and full location HP displayed. This completes the relevant creation handoff; combat behavior is not certified by this test.
+
+All12 automated suites passed (244 reported groups, including1,440 allocation round trips and216 dice combinations); syntax and whitespace checks passed. No unresolved implementation defect remains in this inventoried creation acceptance scope. GM choices and the recorded speciality/rounding interpretations remain explicit. Equipment, later ageing/advancement, combat, magic/cults, creature creation and broader campaign permissions remain in their original subsystems.
