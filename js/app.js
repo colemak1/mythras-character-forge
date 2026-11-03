@@ -514,15 +514,17 @@ window.APP={
    this.skillsChanged();},
  /* career */
  pickCareer(n){
+   if(n==="__custom__"&&S.customCareer.isCustom)return;
+   if(n!=="__custom__"&&S.career===n&&!S.customCareer.isCustom)return;
+   const hasCareerWork=aSum("career")>0||S.carProf.some(Boolean)||S.carStyles.some(cs=>cs&&(cs.name||"").trim());
+   if(hasCareerWork&&!confirm("Changing career resets your career skill choices, Combat Style details and career point allocations. Continue?"))return;
    if(n==="__custom__"){
-     if(S.customCareer.isCustom)return; // already selected, including while editing
      S.customCareer.isCustom=true;S.career=null;
      if(!Array.isArray(S.customCareer.profOffers))S.customCareer.profOffers=[];
      S.carProf=[null,null,null];S.carProfSpec=["","",""];S.alloc.career={};
      S.carStyles=Array(S.customCareer.styleSlots).fill(null).map(()=>({mode:"new",name:""}));
      this.skillsChanged();
    }else{
-     if(S.career===n&&!S.customCareer.isCustom)return;
      S.customCareer.isCustom=false;S.career=n;
      S.carProf=[null,null,null];S.carProfSpec=["","",""];S.alloc.career={};
      S.carStyles=CAREERS[n].styleSlots.map(()=>({mode:"new",name:""}));this.skillsChanged();
