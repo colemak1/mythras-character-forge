@@ -405,6 +405,18 @@ function stepFns(){
    :[stepConcept,stepChars,stepAttrs,stepCulture,stepCareer,stepBonus,stepCommunity,stepPassions,stepMagic,stepMoney,stepFinish];
 }
 function ageBand(){return AGE_MAP[(S.age&&S.age.category)||"adult"]||AGE_MAP.adult;}
+// Core p.34 gives human age categories as dice expressions. Non-human
+// lifespans require GM-defined ranges, so do not impose human ranges there.
+function ageRangeIssue(){
+  const age=S.age.years;
+  if(age==null||age==="")return null;
+  if(!Number.isInteger(age)||age<0)return "Enter a non-negative whole number for age.";
+  if(S.species&&S.species!=="human")return null;
+  const band=ageBand(),min=band.base+band.n,max=band.base+6*band.n;
+  return age<min||age>max?band.label+" normally covers ages "+min+"–"+max+". Change the age or category, or record the GM's exception.":null;
+}
+function ageRangeKey(){return JSON.stringify([S.species||"human",S.age.category,S.age.years]);}
+function ageRangeApproved(){return S.age.rangeApproval===ageRangeKey();}
 // Core pp.34,70–71 distinguish creation categories from human ageing bands.
 function humanAgeingInfo(){
   if(S.species&&S.species!=="human")return null;
@@ -900,6 +912,10 @@ function validate(step){
   const ok=m=>({ok:true,msg:m||""}), bad=m=>({ok:false,msg:m});
   const name=currentSteps()[step];
   switch(name){
+   case "Concept":{
+    const issue=ageRangeIssue();
+    if(issue&&(!Number.isInteger(S.age.years)||S.age.years<0||!ageRangeApproved()))return bad(issue);
+    return ok();}
    case "Characteristics":{
     if(!charsReady())return bad("Assign a value to all seven characteristics.");
     // Range check runs in EVERY entry mode. It used to sit inside the

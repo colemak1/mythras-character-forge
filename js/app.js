@@ -340,14 +340,13 @@ window.APP={
       &&!confirm("This age band changes your Bonus Skill Points from "+oldPool+" to "+nwPool
         +". The "+spent+" points you have already allocated stay where they are, but the Bonus Skills step will need rebalancing to the new total. Continue?")){
      S.age.category=prev;render();return;}
-   // Keep the rolled age honest against the band it now belongs to.
-   const a=AGE_MAP[key];
-   if(S.age.years!=null&&(S.age.years<a.base+a.n||S.age.years>a.base+a.n*6))S.age.years=null;
+   // Keep the entered age; a mismatch needs correction or a GM exception.
    render();},
  rollAge(){const a=ageBand();let t=a.base;for(let i=0;i<a.n;i++)t+=d(6);
    S.age.years=t;S.concept.age=String(t);render();},
- ageYears(v){const n=parseInt(v,10);S.age.years=Number.isFinite(n)?n:null;
-   S.concept.age=Number.isFinite(n)?String(n):"";render();},
+ ageYears(v){const n=v===""?null:Number(v);S.age.years=n;
+   S.concept.age=n==null?"":String(n);render();},
+ approveAgeRange(){if(ageRangeIssue()&&Number.isInteger(S.age.years)&&S.age.years>=0)S.age.rangeApproval=ageRangeKey();render();},
  recordAgeing(band,endResult,endTable,endLoss,willResult,willTable,willLoss,confirmed){
    if(viewOnlyBlock())return;
    const fail=msg=>{AGE_RECORD_MSG=msg;render();};
