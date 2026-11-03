@@ -545,6 +545,14 @@ window.APP={
    cs.mode=m;this.skillsChanged();},
  carStyleName(i,v){S.carStyles[i].name=v;this.skillsChanged();},
  skillsChanged(){reconcileSkillAllocations();render();},
+ literacyLink(key,language){
+   if(VIEW_ONLY)return;
+   const em=entryMap();
+   if(!key.startsWith("prof:Literacy|")||!em[key])return;
+   if(language&&(!em[language]||(language!=="std:Native Tongue"&&!language.startsWith("prof:Language|"))))return;
+   if(!S.literacyLinks||typeof S.literacyLinks!=="object")S.literacyLinks={};
+   if(language)S.literacyLinks[key]=language;else delete S.literacyLinks[key];
+   render();},
  hobbySpec(v){const old=profKey(S.hobby,S.hobbySpec),wasBlank=!String(S.hobbySpec||"").trim();
    S.hobbySpec=v;const nw=profKey(S.hobby,v);
    if(S.hobby!=="__combat_style__"&&wasBlank&&old!==nw&&S.alloc.bonus[old]!==undefined&&!acquiredProfs().some(p=>p.key===old)){
@@ -765,13 +773,14 @@ window.APP={
    const e=entryMap()[key],value=String(mentorValue).trim(),mentor=Number(value);
    if(!confirmed)return fail("Confirm the completed week and GM approval first.");
    if(!e)return fail("Choose an acquired skill.");
+   if(literacyHeadroom(key)<=0)return fail("Literacy is at its linked language limit; improve the spoken language first.");
    if(!/^\d+$/.test(value)||!Number.isSafeInteger(mentor))return fail("Enter the mentor’s whole-number skill percentage.");
    if((S.xp.trainingPending||[]).includes(key))return fail("Improve this skill with an Experience Roll before training it again.");
    const diff=mentor-finalPct(key);
    if(diff<20)return fail("The mentor needs at least 20 percentage points more than the student.");
    if(diff===20)return fail("At exactly 20 points, the Core text and table do not align; ask your GM to adjudicate the result.");
    const step=trainingStep(diff,teachResult);if(step===null)return fail("Choose the trainer or teacher result.");
-   const die=trainingDie(step),gain=die.sides?d(die.sides)+die.bonus:0;
+   const die=trainingDie(step),gain=Math.min(literacyHeadroom(key),die.sides?d(die.sides)+die.bonus:0);
    S.xp.bonus[key]=(S.xp.bonus[key]||0)+gain;
    if(!Array.isArray(S.xp.trainingPending))S.xp.trainingPending=[];
    S.xp.trainingPending.push(key);
@@ -796,6 +805,7 @@ window.APP={
  // roll happens to also be spent on that skill).
  xpApplyFumble(key){if(VIEW_ONLY||!S.xp.fumbled.includes(key))return;
    const e=entryMap()[key];if(!e)return;
+   if(literacyHeadroom(key)<=0){window.alert("Literacy is at its spoken language limit. Improve that language first.");return;}
    S.xp.bonus[key]=(S.xp.bonus[key]||0)+1;
    S.xp.fumbled=S.xp.fumbled.filter(k=>k!==key);
    S.xp.history.unshift({type:"fumble",key,label:e.label,newPct:finalPct(key)});
@@ -804,6 +814,10 @@ window.APP={
  // Apply a pending fumble bonus before determining that current percentage.
  xpSpend(key){if(VIEW_ONLY||xpRollsAvailable()<=0)return;
    const e=entryMap()[key];if(!e)return;
+   // Resolve a free fumble improvement separately if it would consume the
+   // last point of headroom; do not also spend a roll for a zero gain.
+   if(literacyHeadroom(key)<=0){window.alert("Literacy is at its spoken language limit. Improve that language first; no Experience Roll was spent.");return;}
+   if(S.xp.fumbled.includes(key)&&literacyHeadroom(key)===1){this.xpApplyFumble(key);window.alert("The free fumble improvement reached the language limit; no Experience Roll was spent.");return;}
    let fumbleApplied=false;
    if(S.xp.fumbled.includes(key)){
      S.xp.bonus[key]=(S.xp.bonus[key]||0)+1;
@@ -813,7 +827,7 @@ window.APP={
    const target=finalPct(key);
    const r=d100();const total=r+effectiveChars().INT;
    const success=total>=target;
-   const gain=success?(d(4)+1):1;
+   const gain=Math.min(literacyHeadroom(key),success?(d(4)+1):1);
    S.xp.bonus[key]=(S.xp.bonus[key]||0)+gain;
    S.xp.trainingPending=(S.xp.trainingPending||[]).filter(k=>k!==key);
    S.xp.checked=S.xp.checked.filter(k=>k!==key);

@@ -585,6 +585,18 @@ function stepCulture(){
   h+='<div class="card"><h3>Cultural passions</h3><p class="note">Suggested for '+S.culture+': '+c.passions.map(esc).join(" &middot; ")+' &mdash; set values at the Passions step.</p></div>';
   return h;
 }
+// Ask explicitly instead of guessing which named language is native.
+function literacyLinksHTML(){
+  const em=entryMap(),literacy=acquiredProfs().filter(p=>p.name==="Literacy");
+  if(!literacy.length)return "";
+  const languages=[em["std:Native Tongue"],...acquiredProfs().filter(p=>p.name==="Language").map(p=>em[p.key])].filter(Boolean);
+  return '<div class="field"><label>Literacy and spoken language</label><p class="note">Core p. 47: choose the spoken language for each Literacy skill. Its effective value cannot exceed that language. An unlinked skill is not capped automatically; stored points remain intact.</p>'
+   +literacy.map(p=>{const current=(S.literacyLinks||{})[p.key]||"",valid=literacyLanguageKey(p.key,em);
+     return '<div style="margin:6px 0"><span>'+esc(profLabel(p.name,p.spec))+'</span> <select onchange="APP.literacyLink(\''+jsq(p.key)+'\',this.value)"><option value="">&mdash; select spoken language &mdash;</option>'
+      +languages.map(e=>'<option value="'+esc(e.key)+'" '+(valid===e.key?'selected':'')+'>'+esc(e.label)+'</option>').join("")+'</select>'
+      +(current&&!valid?'<span class="warn"> Previous language is no longer available; select another.</span>':"")
+      +(valid?'<span class="note"> Effective '+finalPct(p.key)+'% (uncapped '+rawSkillPct(p.key,em)+'%).</span>':'<span class="warn"> Choose a language to apply the cap.</span>')+'</div>';}).join("")+'</div>';
+}
 function profPickers(which,offers,slots){
   const picks=which==="cult"?S.cultProf:(which==="car"?S.carProf:S.qProf),
     specs=which==="cult"?S.cultProfSpec:(which==="car"?S.carProfSpec:S.qProfSpec);
@@ -619,7 +631,7 @@ function profPickers(which,offers,slots){
      +(hint?'<input type="text" value="'+esc(specs[i])+'" placeholder="speciality: '+esc(hint)+'" style="flex:1;min-width:160px" onchange="APP.profSpec(\''+which+'\','+i+',this.value)">':"")
      +'</div>';
   }
-  if(picks.includes("Literacy"))h+='<p class="note">Core p. 47: Literacy requires the associated spoken language and cannot exceed its Language skill. Check this with your GM; the builder does not apply that cap yet.</p>';
+  if(picks.includes("Literacy"))h+=literacyLinksHTML();
   return h;
 }
 
@@ -695,7 +707,8 @@ function stepBonus(){
    +'<option value="__combat_style__" '+(S.hobby==="__combat_style__"?"selected":"")+'>Combat Style</option>'
    +hobOff.map(n=>'<option '+(S.hobby===n?"selected":"")+'>'+n+'</option>').join("")+'</select>'
    +(S.hobby?'<input type="text" value="'+esc(S.hobbySpec)+'" placeholder="speciality / combat style name" onchange="APP.hobbySpec(this.value)">':"")
-   +'</div>'+(S.hobby==='Literacy'?'<p class="note">Core p. 47: Literacy requires the associated spoken language and cannot exceed its Language skill. Check this with your GM; the builder does not apply that cap yet.</p>':'')+'</div>';
+   +'</div></div>';
+  h+=literacyLinksHTML();
   const es=allEntries();
   h+='<div class="card"><h3>Allocate '+pool+' bonus points</h3>'
    +allocTable("bonus",es.map(e=>({key:e.key,label:(e.grp==="Combat Style"?"Combat Style: ":"")+e.label,base:e.base,plus40:(e.key==="std:Customs"||e.key==="std:Native Tongue"),grp:e.grp})),pool,0,cap,"",["Standard","Professional","Magic","Combat Style"])+'</div>';
@@ -712,6 +725,7 @@ function stepQuickSkills(){
    +(S.qStyleOn?combatStyleBuilderHTML({key:"style:quick",name:S.qStyleName||"Combat Style"}):"")
    +'</div>';
   h+='<p class="note">Customs and Native Tongue gain <b>+40%</b> each, irrespective of method, applied automatically below.</p>';
+  if(!S.qProf.includes("Literacy"))h+=literacyLinksHTML();
   const rows=quickKeys().map(k=>rowFor(k,true)).filter(Boolean);
   h+='<div class="card"><h3>Allocate 100 points</h3>'
    +allocTable("quick",rows,100,5,15,"&ldquo;Distribute 100 points amongst the listed Standard Skills, the chosen Professional Skills, and the Combat Style (if selected)&hellip; each skill must receive a minimum of 5% and cannot receive more than 15%.&rdquo; &mdash; Character Creation Workbook")+'</div>';

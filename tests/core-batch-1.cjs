@@ -50,8 +50,8 @@ test('one custom offer permits distinct specialities while duplicates remain inv
  assert.equal(run('professionalPicksError(S.carProf,S.carProfSpec,S.customCareer.profOffers,null,"Career")'),null);
  assert.match(run('validate(currentSteps().indexOf("Career")).msg'),/Spend exactly 100/);
  run('S.carProfSpec[1]="History";');assert.match(run('validate(currentSteps().indexOf("Career")).msg'),/twice/);
- run('S.carProf=["Literacy",null,null];');assert.match(run('profPickers("car",["Literacy"],3)'),/does not apply that cap yet/);
- run('S.hobby="Literacy";');assert.match(run('stepBonus()'),/does not apply that cap yet/);
+ run('S.carProf=["Literacy",null,null];');assert.match(run('profPickers("car",["Literacy"],3)'),/choose the spoken language/i);
+ run('S.hobby="Literacy";');assert.match(run('stepBonus()'),/choose the spoken language/i);
 });
 test('legacy custom career selections remain available and migrate on editing',()=>{
  reset();run('S.customCareer={isCustom:true,name:"Old",std:["Athletics"],prof:[],styleSlots:0};S.career="__custom__";S.carProf=["Healing",null,null];S.alloc.career[profKey("Healing","")]=15;');
@@ -96,6 +96,26 @@ test('naming legacy unspecialised skills preserves their bonus points',()=>{
  assert.equal(run('aGet("culture",profKey("Navigation","Sea"))'),10);assert.equal(run('aGet("bonus",profKey("Navigation","Sea"))'),7);
  run('S.hobby="Musicianship";S.hobbySpec="";S.alloc.bonus[profKey("Musicianship","")]=12;APP.hobbySpec("Wind");');
  assert.equal(run('aGet("bonus",profKey("Musicianship","Wind"))'),12);
+});
+test('Core p.47 linked literacy is capped by the selected spoken skill without losing points',()=>{
+ reset();run('S.culture="Civilised";S.cultProf=["Literacy","Language",null];S.cultProfSpec=["Coastal","Coastal",""];S.alloc.culture[profKey("Literacy","Coastal")]=15;S.alloc.culture[profKey("Language","Coastal")]=5;');
+ const lk=run('profKey("Literacy","Coastal")'),lang=run('profKey("Language","Coastal")');ctx.lk=lk;ctx.lang=lang;
+ assert.equal(run('finalPct(lk)'),39);run('APP.literacyLink(lk,lang);');assert.equal(run('finalPct(lk)'),30);
+ assert.equal(run('aGet("culture",lk)'),15);assert.match(run('literacyLinksHTML()'),/uncapped 39%/);
+ run('S.alloc.bonus[lang]=15;');assert.equal(run('finalPct(lk)'),39);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);assert.equal(run('finalPct(lk)'),39);assert.equal(run('S.literacyLinks[lk]'),lang);
+ run('APP.literacyLink(lk,"std:Native Tongue");');assert.equal(run('finalPct(lk)'),39);
+ run('APP.literacyLink(lk,"std:Athletics");');assert.equal(run('S.literacyLinks[lk]'),"std:Native Tongue");
+ run('S.literacyLinks[lk]="prof:Language|missing";');assert.equal(run('finalPct(lk)'),39);assert.match(run('literacyLinksHTML()'),/no longer available/);
+});
+test('linked Literacy advancement respects the spoken-language limit without spending a roll at cap',()=>{
+ reset();ctx.alert=()=>{};run('S.culture="Civilised";S.cultProf=["Literacy","Language",null];S.cultProfSpec=["Coastal","Coastal",""];S.alloc.culture[profKey("Literacy","Coastal")]=5;S.alloc.culture[profKey("Language","Coastal")]=4;S.xp.pool=3;');
+ const lk=run('profKey("Literacy","Coastal")'),lang=run('profKey("Language","Coastal")');ctx.lk=lk;ctx.lang=lang;
+ run('APP.literacyLink(lk,lang);');const pool=run('S.xp.pool');run('APP.xpSpend(lk);');assert.equal(run('S.xp.pool'),pool);
+ run('S.alloc.culture[lang]=10;');const before=run('rawSkillPct(lk,entryMap())');run('APP.xpSpend(lk);');
+ assert.equal(run('S.xp.pool'),pool-1);assert(run('rawSkillPct(lk,entryMap())')<=run('rawSkillPct(lang,entryMap())'));assert(run('rawSkillPct(lk,entryMap())')>before);
+ run('S.xp.fumbled.push(lk);S.alloc.culture[lang]=rawSkillPct(lk,entryMap())-25+1;');
+ const rolls=run('S.xp.pool');run('APP.xpSpend(lk);');assert.equal(run('S.xp.pool'),rolls);assert.equal(run('S.xp.fumbled.includes(lk)'),false);
 });
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');

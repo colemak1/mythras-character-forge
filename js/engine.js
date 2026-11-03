@@ -608,7 +608,7 @@ function allEntries(){
 }
 const entryMap=()=>Object.fromEntries(allEntries().map(x=>[x.key,x]));
 function aSum(ph){return Object.values(S.alloc[ph]).reduce((a,b)=>a+(b||0),0);}
-function finalPct(key){const em=entryMap();const e=em[key];if(!e)return 0;
+function rawSkillPct(key,em){const e=em[key];if(!e)return 0;
   const cult=(key==="std:Customs"||key==="std:Native Tongue")?40:0;
   // NOTE: this previously omitted aGet("quick",key) — Quick Character mode's
   // own 100-point allocation was validated (had to sum to exactly 100) but
@@ -617,6 +617,20 @@ function finalPct(key){const em=entryMap();const e=em[key];if(!e)return 0;
   // the final sheet. Fixed here; aGet returns 0 for phases with no entry for
   // this key, so this is a no-op for Full Creation characters.
   return e.base+cult+aGet("culture",key)+aGet("career",key)+aGet("bonus",key)+aGet("quick",key)+xpBonus(key);}
+// Apply the Core p.47 Literacy cap only when a player explicitly links an
+// existing spoken language. Old unlinked saves stay intact and remain manual.
+function literacyLanguageKey(key,em){
+  if(!key.startsWith("prof:Literacy|")||!em[key])return null;
+  const linked=(S.literacyLinks||{})[key];
+  return typeof linked==="string"&&em[linked]&&(linked==="std:Native Tongue"||linked.startsWith("prof:Language|"))?linked:null;
+}
+function literacyHeadroom(key){const em=entryMap(),language=literacyLanguageKey(key,em);
+  return language?Math.max(0,rawSkillPct(language,em)-rawSkillPct(key,em)):Infinity;
+}
+function finalPct(key){const em=entryMap();if(!em[key])return 0;
+  const raw=rawSkillPct(key,em),language=literacyLanguageKey(key,em);
+  return language?Math.min(raw,rawSkillPct(language,em)):raw;
+}
 // Core p.73 training chart, indexed in steps. The text permits a 20-point
 // difference but the first table row starts at 21; leave that edge to the GM.
 function trainingStep(difference,teachResult){
