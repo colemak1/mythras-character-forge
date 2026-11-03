@@ -73,6 +73,22 @@ test('Core p.34 human age ranges, mismatch warnings and category changes preserv
  run('APP.ageYears("1.5");APP.approveAgeRange();');assert.equal(run('validate(0).ok'),false);
  run('S.species="elf";S.age.years=100;');assert.equal(run('ageRangeIssue()'),null);
 });
+test('Core pp.44–48 requires specialities for literacy, instruments, mysticism and navigation',()=>{
+ reset();
+ for(const [name,spec] of [['Literacy','Native Tongue'],['Musicianship','Wind'],['Mysticism','Temple'],['Navigation','Underground']]){
+  ctx.skillName=name;ctx.skillSpec=spec;
+  assert.match(run('professionalPicksError([skillName],[""],[skillName],null,"Career")'),/speciality/);
+  assert.equal(run('professionalPicksError([skillName],[skillSpec],[skillName],null,"Career")'),null);
+ }
+ run('S.hobby="Navigation";S.hobbySpec="";');assert.match(run('validate(currentSteps().indexOf("Bonus Skills")).msg'),/speciality/);
+ run('S.hobbySpec="Sea";');assert.doesNotMatch(run('validate(currentSteps().indexOf("Bonus Skills")).msg'),/speciality/);
+});
+test('naming legacy unspecialised skills preserves their bonus points',()=>{
+ reset();run('S.culture="Barbarian";S.cultProf=["Navigation",null,null];S.alloc.culture[profKey("Navigation","")]=10;S.alloc.bonus[profKey("Navigation","")]=7;APP.profSpec("cult",0,"Sea");');
+ assert.equal(run('aGet("culture",profKey("Navigation","Sea"))'),10);assert.equal(run('aGet("bonus",profKey("Navigation","Sea"))'),7);
+ run('S.hobby="Musicianship";S.hobbySpec="";S.alloc.bonus[profKey("Musicianship","")]=12;APP.hobbySpec("Wind");');
+ assert.equal(run('aGet("bonus",profKey("Musicianship","Wind"))'),12);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');

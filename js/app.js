@@ -496,7 +496,13 @@ window.APP={
    const ph=which==="cult"?"culture":(which==="car"?"career":"quick");
    const old=profKey(picks[i],specs[i]);const nw=profKey(picks[i],v);
    if(S.alloc[ph][old]!==undefined&&old!==nw){S.alloc[ph][nw]=S.alloc[ph][old];delete S.alloc[ph][old];}
-   specs[i]=v;this.skillsChanged();},
+   const wasBlank=!String(specs[i]||"").trim();specs[i]=v;
+   // Naming a previously unspecialised legacy skill should carry its bonus
+   // points with it when no other source still owns the old skill.
+   if(wasBlank&&old!==nw&&S.alloc.bonus[old]!==undefined&&!acquiredProfs().some(p=>p.key===old)){
+     S.alloc.bonus[nw]=(S.alloc.bonus[nw]||0)+S.alloc.bonus[old];delete S.alloc.bonus[old];
+   }
+   this.skillsChanged();},
  /* career */
  pickCareer(n){
    if(n==="__custom__"){
@@ -539,7 +545,12 @@ window.APP={
    cs.mode=m;this.skillsChanged();},
  carStyleName(i,v){S.carStyles[i].name=v;this.skillsChanged();},
  skillsChanged(){reconcileSkillAllocations();render();},
- hobbySpec(v){S.hobbySpec=v;this.skillsChanged();},
+ hobbySpec(v){const old=profKey(S.hobby,S.hobbySpec),wasBlank=!String(S.hobbySpec||"").trim();
+   S.hobbySpec=v;const nw=profKey(S.hobby,v);
+   if(S.hobby!=="__combat_style__"&&wasBlank&&old!==nw&&S.alloc.bonus[old]!==undefined&&!acquiredProfs().some(p=>p.key===old)){
+     S.alloc.bonus[nw]=(S.alloc.bonus[nw]||0)+S.alloc.bonus[old];delete S.alloc.bonus[old];
+   }
+   this.skillsChanged();},
  clearAllocation(phase,key){if(VIEW_ONLY)return;delete S.alloc[phase][key];render();},
  /* allocations */
  aAdj(ph,key,dir){const {pool,max}=phaseLimits(ph);

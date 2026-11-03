@@ -591,7 +591,8 @@ function cultMemberSkillKey(){const a=cultArch();return a?profKey(a.skill,S.cult
 // style offers already used elsewhere in this file).
 const QUICK_SPEC_HINTS={"Art":"any","Binding":"Cult, Totem or Tradition","Craft":"any",
 "Culture":"any","Devotion":"Pantheon, Cult or God","Invocation":"Cult, School or Grimoire",
-"Language":"any","Lore":"any"};
+"Language":"any","Lore":"any","Literacy":"associated language",
+"Musicianship":"instrument group","Mysticism":"tradition or foundation","Navigation":"region or environment"};
 
 // Pulp Hero / Paragon character tiers (Mythras Companion, "Pyramids, Pulp, &
 // Paragons", pp.54-55, verified against page scans). Advantages cannot be

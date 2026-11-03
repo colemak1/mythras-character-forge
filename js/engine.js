@@ -1022,6 +1022,8 @@ function validate(step){
     return ok();}
    case "Bonus Skills":{
     if(S.hobby==="__combat_style__"&&!(S.hobbySpec||"").trim())return bad("Name your hobby Combat Style.");
+    if(S.hobby&&S.hobby!=="__combat_style__"&&QUICK_SPEC_HINTS[S.hobby]&&!(S.hobbySpec||"").trim())
+      return bad("Give your hobby "+S.hobby+" a speciality ("+QUICK_SPEC_HINTS[S.hobby]+").");
     const pool=bonusPool(),cap=bonusCap();
     const keys=allEntries().map(e=>e.key);
     const allocationProblem=allocationError("bonus",keys,cap);
