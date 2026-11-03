@@ -466,6 +466,11 @@ window.APP={
    S.hobby=null;S.hobbySpec="";
    S.qProf=[null,null,null];S.qProfSpec=["","",""];S.qStyleOn=false;S.qStyleName="";
    S.alloc={culture:{},career:{},bonus:{},quick:{}};
+   // Creation choices were reset. Retain links only for skills that still
+   // exist (for example, Literacy learned through advancement).
+   if(S.literacyLinks){const em=entryMap();
+     for(const [key,language] of Object.entries(S.literacyLinks))
+       if(!em[key]||!em[language])delete S.literacyLinks[key];}
    S.step=0;render();window.scrollTo(0,0);},
  qStyle(on){S.qStyleOn=on;if(on)S.alloc.quick["style:quick"]=5;else delete S.alloc.quick["style:quick"];this.skillsChanged();},
  /* culture */
