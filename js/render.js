@@ -353,6 +353,7 @@ function stepChars(){
     body='<div class="card"><h3>Roll the dice</h3>'
     +'<div class="rulequote">'+quote+'</div>'
     +'<p><button class="chip actionchip" onclick="APP.rollPools()" style="font-size:13.5px">Roll all pools</button> '
+    +(S.poolA.length&&isOrd?'<button class="nav" onclick="APP.assignRolledOrder()" style="border:1px solid var(--line);border-radius:5px;padding:6px 14px">Assign in rolled order</button> ':'')
     +(S.poolA.length?'<button class="nav" onclick="APP.assignInOrder()" style="border:1px solid var(--line);border-radius:5px;padding:6px 14px">Assign highest first</button>':"")+'</p>'
     +(S.poolA.length?'<p style="margin-top:8px"><b>Main pool:</b> '+S.poolA.map(v=>'<span class="dicechip">'+v+'</span>').join("")+' &nbsp; <b>SIZ/INT pool:</b> '+S.poolB.map(v=>'<span class="dicechip">'+v+'</span>').join("")+(S.poolA.length>ROLL_3D6.length||S.poolB.length>ROLL_2D6.length?' <span class="note">(one spare in each pool to discard, per the book)</span>':"")+'</p>':"")
     +'<div class="charrow" style="margin-top:12px">'

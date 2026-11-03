@@ -232,6 +232,14 @@ test('cultural loyalty suggestions use the target category from Core pp.14–16'
   reset();ctx.culture=culture;run('S.culture=culture;APP.pasFromCulture()');assert.equal(run('S.passions[0].type'),type,culture);
  }
 });
+test('Core p.8 rolled-order assignment uses each roll once within its dice group',()=>{
+ reset();run('S.charMode="roll";S.poolA=[7,8,9,10,11];S.poolB=[12,13];APP.assignRolledOrder();');
+ assert.deepEqual(Array.from(run('CHARS.map(c=>S.chars[c])')),[7,8,12,9,13,10,11]);
+ assert.equal(run('validate(currentSteps().indexOf("Characteristics")).ok'),true);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
+ assert.deepEqual(Array.from(run('CHARS.map(c=>S.chars[c])')),[7,8,12,9,13,10,11]);
+ assert.match(run('stepChars()'),/Assign in rolled order/);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
