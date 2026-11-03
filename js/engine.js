@@ -380,11 +380,13 @@ function normalizeState(){
   ARMOR_LOCATIONS.forEach(l=>{if(!S.armor[l])S.armor[l]="None";});
   S.alloc.bonus=S.alloc.bonus||{};S.alloc.quick=S.alloc.quick||{};
   S.creationMode=S.creationMode||"full";S.archetype=S.archetype||"ordinary";
+  if(S.fixedAP==null)S.fixedAP=0;
   if(S.species===undefined)S.species=null;
   S.age=S.age||{category:"adult",years:null,events:[]};
   if(!AGE_MAP[S.age.category])S.age.category="adult";
   S.age.events=S.age.events||[];
-  S.age.coreEvents=Array.isArray(S.age.coreEvents)?S.age.coreEvents:[];
+  S.age.coreEvents=Array.isArray(S.age.coreEvents)?S.age.coreEvents.filter(e=>e&&typeof e==='object'&&!Array.isArray(e)).map(e=>({roll:e.roll,summary:String(e.summary||'').slice(0,500)})):[];
+  S.age.coreEventsSkipped=S.age.coreEventsSkipped===true;
   if(!Array.isArray(S.age.ageingEvents))S.age.ageingEvents=[];
   S.magic=S.magic||{folk:[],known:[],devotional:0,devotionalUsed:0};
   S.magic.folk=S.magic.folk||[];S.magic.known=S.magic.known||[];
@@ -499,7 +501,12 @@ function humanAgeingInfo(){
 }
 function ageingReviewKey(){return JSON.stringify([S.species||"human",S.age.category,S.age.years]);}
 function coreBackgroundRollCount(){return Math.max(0,AGE_CATEGORIES.findIndex(a=>a.key===ageBand().key));}
-function coreBackgroundRollsValid(){return (S.age.coreEvents||[]).length===coreBackgroundRollCount();}
+function coreBackgroundRollsValid(){return S.age.coreEventsSkipped||(S.age.coreEvents||[]).length===coreBackgroundRollCount();}
+function coreBackgroundLines(){
+  const lines=S.age.coreEventsSkipped?['Optional Background Events skipped; any saved results below are retained notes.']:[];
+  for(const [i,e] of (S.age.coreEvents||[]).entries())if(e)lines.push('Core Background Event '+(i+1)+' — d100: '+e.roll+'; '+(String(e.summary||'').trim()||'Result awaiting player / GM review.'));
+  return lines;
+}
 // Bonus Skill Points now come from the Experience Table's age band rather than
 // a hardcoded 150/15. Adult is 150/+15, which is exactly what was hardcoded,
 // so nothing changes for a default character.
@@ -932,7 +939,7 @@ function magicLabel(m){
 
 /* ================= VALIDATION ================= */
 function cultureReqKeys(){
-  if(!S.culture)return [];
+  if(!S.culture||!Object.hasOwn(CULTURES,S.culture))return [];
   const c=CULTURES[S.culture];const keys=c.std.map(n=>"std:"+n);
   S.cultChoice.forEach(n=>keys.push("std:"+n));
   S.cultProf.forEach((p,i)=>{if(p)keys.push(profKey(p,S.cultProfSpec[i]));});
@@ -1018,15 +1025,28 @@ function validate(step){
       const total=CHARS.reduce((a,c)=>a+S.chars[c],0);
       if(total!==pool)return bad("Points build must use all "+pool+" points ("+total+" spent).");
     }
+    // Old/manual saves may have no roll provenance. Retain them for GM review,
+    // but a recorded assignment must actually use its recorded pool once.
+    if(S.charMode==="roll"&&usesHumanPools()&&(S.poolA.length||S.poolB.length)){
+      for(const [names,pool,assigned] of [[ROLL_3D6,S.poolA,S.assignA],[ROLL_2D6,S.poolB,S.assignB]]){
+        const used=new Set();
+        for(const c of names){const i=assigned[c];
+          if(!Number.isInteger(i)||i<0||i>=pool.length||used.has(i)||pool[i]!==S.chars[c])
+            return bad("The recorded dice assignment for "+c+" is missing, reused or does not match its pool. Reassign the rolls, or use Manual for GM-agreed values.");
+          used.add(i);
+        }
+      }
+    }
     return ok();}
    case "Attributes":{
+    if(![0,2,3].includes(S.fixedAP))return bad("Fixed Action Points must be off, 2 or 3 for this table option.");
     if(S.archetype!=="ordinary"){
       const t=ARCHETYPES[S.archetype];
       if(S.archAdvantages.length!==t.advantages)return bad("Choose exactly "+t.advantages+" Advantage"+(t.advantages>1?"s":"")+".");
     }
     return ok();}
    case "Culture":{
-    if(!S.culture)return bad("Choose a culture.");
+    if(!S.culture||!Object.hasOwn(CULTURES,S.culture))return bad("Choose a listed culture. Saved skill points are retained for review.");
     const c=CULTURES[S.culture];
     if(c.choice&&S.cultChoice.length!==c.choice.pick)return bad("Pick "+c.choice.pick+" cultural standard skill"+(c.choice.pick>1?"s":"")+" ("+c.choice.text+").");
     if(c.choice&&(new Set(S.cultChoice).size!==S.cultChoice.length||S.cultChoice.some(sk=>!c.choice.from.includes(sk))))
@@ -1049,7 +1069,7 @@ function validate(step){
     if(s!==100)return bad("Spend exactly 100 cultural points ("+s+" spent).");
     return ok();}
    case "Career":{
-    if(!S.career)return bad("Choose a career.");
+    if(!S.career||(!S.customCareer.isCustom&&!Object.hasOwn(CAREERS,S.career)))return bad("Choose a listed or custom career. Saved skill points are retained for review.");
     if(S.customCareer.isCustom&&S.customCareer.std.length+S.customCareer.styleSlots>7)
       return bad("Custom careers may have at most seven Standard Skills, including Combat Styles.");
     const k=S.customCareer.isCustom?null:CAREERS[S.career];
@@ -1144,4 +1164,26 @@ function validate(step){
   }
 }
 const stepPassed=i=>validate(i).ok||S.overrides[i];
+
+// Final review is deliberately descriptive: optional/GM-assessed details do
+// not become fabricated automatic bonuses or mandatory backstory choices.
+function creationReview(){
+  const rows=[];const add=(step,status,text)=>rows.push({step,status,text});
+  currentSteps().forEach((name,i)=>{if(name==='Finish')return;const v=validate(i);
+    if(!v.ok)add(name,S.overrides[i]?'override':'error',v.msg);
+  });
+  const events=S.age.coreEvents||[],count=coreBackgroundRollCount();
+  if(!S.age.coreEventsSkipped&&(events.length!==count||events.some(e=>!e||!Number.isInteger(e.roll)||e.roll<1||e.roll>100||!String(e.summary||'').trim())))
+    add('Concept','manual','Background events: these are optional (p.17). If using them, record the '+count+' age-based Core table result'+(count===1?'':'s')+' or agree the outcomes with your GM (pp.18–20,34). You can explicitly skip them on Concept. Mechanical effects are resolved with the GM.');
+  if(['senior','old'].includes(ageBand().key)||humanAgeingInfo()){
+    if(S.age.ageingReview?.key!==ageingReviewKey()||!['resolved','override'].includes(S.age.ageingReview?.status))add('Concept','manual','Ageing: review the applicable bands with your GM and record the results or a GM review (pp.34,70–71).');
+  }
+  if(S.charMode==='roll'&&usesHumanPools()&&!S.poolA.length&&!S.poolB.length)
+    add('Characteristics','manual','This saved character has no recorded dice pools. Confirm the starting scores with your GM, or record them as Manual. Saved scores are unchanged.');
+  for(const p of S.passions||[])if(passionVal(p)==='?')add('Passions','manual','Passion '+(p.name||'(unnamed)')+': enter the required subject characteristics or a GM-agreed starting percentage (p.23).');
+  const em=entryMap();
+  for(const p of acquiredProfs())if(p.name==='Literacy'&&!literacyLanguageKey(p.key,em))
+    add(S.creationMode==='quick'?'Quick Skills':'Bonus Skills','manual',p.label||profLabel(p.name,p.spec)+': link the associated spoken language to apply its Literacy limit (p.47).');
+  return rows;
+}
 

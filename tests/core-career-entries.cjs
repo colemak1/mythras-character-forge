@@ -39,3 +39,34 @@ for(const [name,[standards,styleCount,professionals]] of Object.entries(cases)){
  assert.deepStrictEqual(sorted(career.prof.map(x=>x.replace(/\s*\(.*/,''))),sorted(professionals.split(',')),name+' professional skills');
  console.log('PASS',name);
 }
+// Printed parenthetical contexts, independently checked on Core pp.29–33.
+// An empty array means that entry has no printed professional-skill context.
+const contexts={
+ Agent:['Culture (any)','Language (any)'],
+ Alchemist:['Craft (Alchemy)','Language (any)','Lore (Specific Alchemical Speciality)'],
+ 'Beast Handler':['Craft (Animal Husbandry)','Healing (Specific Species)','Lore (Specific Species)','Teach (Specific Species)'],
+ Courtesan:['Art (any)','Culture (any)','Language (any)'],
+ Courtier:['Art (any)','Culture (any)','Language (any)','Lore (any)'],
+ Crafter:['Art (any)','Craft (Primary)','Craft (Secondary)'],
+ Entertainer:[],Farmer:['Craft (any)','Lore (Agriculture)','Lore (Animal Husbandry)'],
+ Fisher:['Craft (any)','Lore (Primary Catch)','Lore (Secondary Catch)'],
+ Herder:['Craft (Animal Husbandry)','Healing (Specific Species)'],
+ Hunter:['Craft (Hunting Related)','Lore (Regional or Specific Species)'],
+ Merchant:['Culture (any)','Language (any)'],
+ Miner:['Craft (Mining)','Lore (Minerals)','Navigation (Underground)'],
+ Mystic:['Art (any)','Lore (any)'],Official:['Language (any)','Lore (any)'],
+ Physician:['Craft (Specific Physiological Speciality)','Language (any)','Lore (Specific Alchemical Speciality)'],
+ Priest:['Devotion (Pantheon, Cult or God)','Lore (any)'],
+ Sailor:['Craft (Specific Shipboard Speciality)','Culture (any)','Language (any)','Lore (any)'],
+ Scholar:['Culture (any)','Language (any)','Lore (Primary)','Lore (Secondary)'],
+ Scout:['Culture (any)','Language (any)','Lore (any)'],
+ Shaman:['Binding (Cult, Totem or Tradition)','Lore (any)'],
+ Sorcerer:['Invocation (Cult, School or Grimoire)','Language (any)','Lore (any)'],
+ Thief:[],Warrior:['Craft (any)','Lore (Military History)','Lore (Strategy and Tactics)']
+};
+const styles={Agent:['Concealable Weapons Style'],Herder:['Specific Herding or Cultural Style'],Hunter:['Specific Hunting or Cultural Style'],Mystic:['Cultural Style'],Sailor:['Specific Shipboard or Cultural Style'],Scout:['Specific Hunting or Cultural Style'],Thief:['Concealable Weapons Style'],Warrior:['Cultural Style','Speciality Style']};
+for(const name of Object.keys(cases)){
+ assert.deepStrictEqual(Array.from(ctx.careers[name].prof).filter(p=>p.includes('(')),contexts[name],name+' printed contexts');
+ assert.deepStrictEqual(Array.from(ctx.careers[name].styleSlots),styles[name]||[],name+' style contexts');
+}
+console.log('PASS all 24 career speciality contexts and Combat Style labels');
