@@ -494,7 +494,7 @@ window.APP={
    // Repeated offers can share a base name; reselecting the same skill must
    // not erase its existing speciality and points.
    if((picks[i]||"")===(name||""))return;
-   if(picks[i]){delete S.alloc[ph][profKey(picks[i],specs[i])];}
+   // Reconciliation returns points only if no remaining choice uses the skill.
    picks[i]=name||null;specs[i]="";
    if(name&&(which==="cult"||which==="quick")&&S.alloc[ph][profKey(name,"")]===undefined)S.alloc[ph][profKey(name,"")]=5;
    this.skillsChanged();},
@@ -503,8 +503,9 @@ window.APP={
      specs=which==="cult"?S.cultProfSpec:(which==="car"?S.carProfSpec:S.qProfSpec);
    const ph=which==="cult"?"culture":(which==="car"?"career":"quick");
    const old=profKey(picks[i],specs[i]);const nw=profKey(picks[i],v);
-   if(S.alloc[ph][old]!==undefined&&old!==nw){S.alloc[ph][nw]=(S.alloc[ph][nw]||0)+S.alloc[ph][old];delete S.alloc[ph][old];}
    const wasBlank=!String(specs[i]||"").trim();specs[i]=v;
+   const oldStillSelected=picks.some((p,j)=>p&&profKey(p,specs[j])===old);
+   if(S.alloc[ph][old]!==undefined&&old!==nw&&!oldStillSelected){S.alloc[ph][nw]=(S.alloc[ph][nw]||0)+S.alloc[ph][old];delete S.alloc[ph][old];}
    // Naming a previously unspecialised legacy skill should carry its bonus
    // points with it when no other source still owns the old skill.
    if(wasBlank&&old!==nw&&S.alloc.bonus[old]!==undefined&&!acquiredProfs().some(p=>p.key===old)){
