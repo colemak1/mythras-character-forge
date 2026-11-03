@@ -286,38 +286,50 @@ function rollSummary(entry,rolling=false){
   let grade=st.result||(/does not defend/i.test(entry.title)?'NO REACTION':'ACTION RESOLVED');
   return `${dice.length?`<div class="${rolling?'dice-live':''}">${renderDice(dice,rolling)}</div>`:''}<div class="roll-status ${good?'good':bad?'bad':''}">${rolling?'DICE ROLLING…':esc(grade)}</div><div class="half-detail">${rolling?'The die is still moving.':esc(entry.body||'')}</div>`;
 }
-function exchangeHalf(side,info){
-  const isAtk=side==='atk',initialInitiative=V.busy&&/^Encounter.*Initiative/i.test(V.stage?.entry?.title||''),id=initialInitiative?(isAtk?'a':'b'):(isAtk?info.atkId:info.defId);
+function exchangeHalf(id,info){
+  // The columns are fixed by combatant.  A is always on the left; B is always on the right.
+  // Only the ATTACKER / DEFENDER role changes as initiative and reactions change.
+  const isPlayer=id==='a',isAtk=info.atkId===id,isDef=info.defId===id;
+  const initialInitiative=V.busy&&/^Encounter.*Initiative/i.test(V.stage?.entry?.title||'');
   const fighter=S.fighters[id]||S.fighters.a;
   const p=info.pending,deciding=!V.busy&&S.phase==='fight';
-  const pSide=p?.kind==='reaction'||p?.kind==='range'?'def':p?.kind==='effect'||p?.kind==='location'?(p.owner===p.atk?'atk':'def'):null;
-  const decisionHere=deciding&&(p?pSide===side:isAtk);
+  const decisionId=p?.kind==='reaction'?p.def:
+    p?.kind==='range'?p.defender:
+    (p?.kind==='effect'||p?.kind==='location')?p.owner:
+    S.order?.[S.turnIndex];
+  const decisionHere=deciding&&decisionId===id;
   const current=V.stage,entry=current?.entry||null;
-  const activeStage=V.busy&&current&&((side==='def'&&current.kind==='defense')||(side==='atk'&&current.kind==='attack')||((current.kind!=='attack'&&current.kind!=='defense')&&side==='atk'));
-  const ownRecord=isAtk?info.attack:info.defense;
+  const rollOwner=current?.kind==='defense'?info.defId:
+    current?.kind==='attack'?info.atkId:
+    current?.kind==='hurt'&&current?.target?current.target:
+    current?.kind==='effect'&&p?.owner?p.owner:info.atkId;
+  const activeStage=V.busy&&current&&!initialInitiative&&rollOwner===id;
+  const ownRecord=isAtk?info.attack:isDef?info.defense:null;
   const liveRecord=activeStage?entry:null;
+  const role=initialInitiative?'INITIATIVE':isAtk?'ATTACKING':isDef?'DEFENDING':'READY';
   let content='';
   if(initialInitiative){
-    const dice=V.stage.entry.meta?.dice||[];const one=dice[isAtk?0:1];
+    const dice=V.stage.entry.meta?.dice||[];const one=dice[isPlayer?0:1];
     content=`<div class="half-role">${esc(fighter.name)} · Initiative</div><div class="${V.stage.rolling?'dice-live':''}">${renderDice(one?[one]:[],!!V.stage.rolling)}</div><div class="half-result neutral">${V.stage.rolling?'Rolling…':fighter.initiative}</div><div class="half-detail">d10 + initiative bonus</div>`;
   }else if(isAtk&&p?.kind==='range'&&!V.busy){
     content=`<div class="half-placeholder"><strong>Changing Range</strong>${esc(fighter.name)} is ${p.desired==='short'?'closing to shorter reach':'opening to longer reach'}. The opponent must respond.</div>`;
   }else if(decisionHere){
-    if(isAtk&&p?.kind==='effect')content=`<div class="half-role">${esc(fighter.name)} chooses a special effect</div>${actionHtml()}`;
-    else content=actionHtml();
+    content=actionHtml();
   }else if(liveRecord){
     const stage=stageFor(liveRecord),grade=stage.result||stage.sub||'RESOLVED';
     content=`<div class="half-role">${esc(fighter.name)} · ${esc(stage.beat||'action')}</div>${rollSummary(liveRecord,!!current?.rolling)}<div class="half-result ${/FAILURE|FUMBLE/i.test(grade)?'bad':/SUCCESS|CRITICAL/i.test(grade)?'':'neutral'}">${current?.rolling?'Rolling…':esc(grade)}</div>`;
   }else if(ownRecord){
-    const showAsOpen=(!isAtk&&info.pending?.kind==='reaction');
+    const showAsOpen=isDef&&info.pending?.kind==='reaction';
     content=showAsOpen?`<div class="half-placeholder"><strong>Defender's decision</strong>Parry, evade, or save your Action Points.</div>`:`<div class="half-role">${esc(fighter.name)}</div>${rollSummary(ownRecord,false)}`;
   }else if(V.busy){
     content='<div class="half-placeholder"><strong>Awaiting resolution</strong>The opposing fighter has yet to respond.</div>';
   }else{
-    content=`<div class="half-placeholder"><strong>${isAtk?'Choose your action':'Ready to respond'}</strong>${isAtk?'Commit an attack, move within reach, or prepare.':'Your reaction will appear here when an attack is made.'}</div>`;
+    const canAct=S.order?.[S.turnIndex]===id;
+    content=`<div class="half-placeholder"><strong>${canAct?'Choose your action':isDef?'Ready to respond':'Watching the exchange'}</strong>${canAct?'Commit an attack, change range, or prepare.':'This combatant’s rolls and reactions appear here.'}</div>`;
   }
-  return `<section class="exchange-half ${decisionHere?'active':''} ${activeStage&&current?.rolling?'is-rolling':''}" aria-label="${isAtk?'Attacking':'Responding'} combatant">
-    <div class="half-heading"><strong>${isAtk?'⚔ Attack / Action':'◇ Defender / Response'}</strong><span>${isAtk?'01':'02'}</span></div>
+  const heading=S.mode==='pvp'?(isPlayer?'PLAYER ONE':'PLAYER TWO'):(isPlayer?'YOUR CHARACTER':'OPPONENT');
+  return `<section class="exchange-half ${decisionHere?'active':''} ${activeStage&&current?.rolling?'is-rolling':''}" data-combatant="${id}" aria-label="${isPlayer?'Player':'Opponent'} combatant">
+    <div class="half-heading"><strong>${heading}</strong><span>${role}</span></div>
     <div class="half-fighter">${esc(fighter.name)} <small>· ${fighter.ap} AP</small></div>${content}</section>`;
 }
 function outcomeStrip(info){
@@ -454,7 +466,7 @@ function rangeReact(option){
 }
 function newHero(){return mkFighter('a',config.charname,'human',config.style,config.weapon,config.armor,config.evade,3)};
 function newEnemy(wave){if(S.mode==='pvp')return mkFighter('b',config.pvpName,'human',config.pvpSkill,config.pvpWeapon,1,50,3);const lvl=S.mode==='tutorial'?1:wave;const type=ENEMY_NAMES[Math.min(ENEMY_NAMES.length-1,Math.floor((wave-1)/2))];let weaponKeys=['dagger','sword','mace','spear','greatsword'];let weapon=weaponKeys[(wave+die(5)-1)%weaponKeys.length];if(wave===1)weapon='dagger';let skill=Math.min(105,43+(wave-1)*5+die(10));if(S.mode==='tutorial')skill=45;let armor=S.mode==='tutorial'?0:Math.min(5,Math.floor((wave-1)/3));let foe=mkFighter('b',type,'ai',skill,weapon,armor,Math.min(90,42+wave*3),wave);foe.brawn=Math.min(95,46+3*wave);foe.endurance=Math.min(95,51+2*wave);return foe;}
-function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1><p>${setup?'Learn the rules, survive the gauntlet, or challenge a friend.':'Split attack and response · animated dice · Core optional reach rules.'}</p></div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle animation speed">${V.quick?'FAST':'CINEMATIC'} · SPEED</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v6 · Split combat display</span>`}</div></section>${setup?setupHtml():arenaHtml()}<div class="footer-notes"><div class="footgrid"><span>Prototype only · no connection to your Forge account · no changes to your saved characters</span><span>${setup?'Select a mode to begin.':'Seven hit locations · AP combat cycles · differential results'}</span></div><div style="margin-top:5px">Simplified rules: basic melee, parry/evade, a small Special Effects subset, wounds, and initiative. Core pp. 63-64 weapon stats and pp. 106-107 optional Closing/Opening Range are active (two-step reach differences). Interception and Evade contests are modeled; attacking the longer weapon, full fatigue, Luck, shields, armour ENC and complete wound rules are still pending audit. Source: uploaded Mythras 2e Core.</div></div>`;if(!setup){let log=$('.log');if(log)log.scrollTop=log.scrollHeight;}}
+function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1><p>${setup?'Learn the rules, survive the gauntlet, or challenge a friend.':'Player always left, opponent always right · animated dice · Core optional reach rules.'}</p></div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle animation speed">${V.quick?'FAST':'CINEMATIC'} · SPEED</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v7 · Fixed combatant columns</span>`}</div></section>${setup?setupHtml():arenaHtml()}<div class="footer-notes"><div class="footgrid"><span>Prototype only · no connection to your Forge account · no changes to your saved characters</span><span>${setup?'Select a mode to begin.':'Seven hit locations · AP combat cycles · differential results'}</span></div><div style="margin-top:5px">Simplified rules: basic melee, parry/evade, a small Special Effects subset, wounds, and initiative. Core pp. 63-64 weapon stats and pp. 106-107 optional Closing/Opening Range are active (two-step reach differences). Interception and Evade contests are modeled; attacking the longer weapon, full fatigue, Luck, shields, armour ENC and complete wound rules are still pending audit. Source: uploaded Mythras 2e Core.</div></div>`;if(!setup){let log=$('.log');if(log)log.scrollTop=log.scrollHeight;}}
 function modeName(m){return {tutorial:'Guided Tutorial',normal:'Normal Gauntlet',hardcore:'Hardcore Gauntlet',pvp:'Local PvP'}[m]||m}
 function setupHtml(){let modes=[['tutorial','01','Guided Tutorial','One beginner-friendly bout with reminders about Mythras decisions.'],['normal','02','Normal Gauntlet','Infinite escalating enemies. Your wounds reset after each win.'],['hardcore','03','Hardcore Gauntlet','Same escalating enemies. Wounds and injuries persist between fights.'],['pvp','04','Local PvP','Two players take turns on one screen; online matching comes later.']];return `<div class="setup"><h2>Choose your challenge</h2><p class="intro">A working combat loop with selectable reactions, hit locations, a tactical computer opponent, and a local streak board.</p><div class="modes">${modes.map(([k,n,t,d])=>`<button class="mode ${config.mode===k?'on':''}" data-act="mode" data-val="${k}"><span class="n">MODE ${n}</span><strong>${t}</strong><small>${d}</small></button>`).join('')}</div><div class="setup-bottom"><div class="formcard"><h3>Build your practice fighter</h3><div class="formgrid"><label>Username<input id="username" maxlength="30" value="${esc(config.username)}"></label><label>Character name<input id="charname" maxlength="45" value="${esc(config.charname)}"></label><label>Combat Style %<input id="style" type="number" min="20" max="110" value="${config.style}"></label><label>Evade %<input id="evade" type="number" min="20" max="110" value="${config.evade}"></label><label>Armor AP (all locations)<input id="armor" type="number" min="0" max="6" value="${config.armor}"></label><label>Weapon<select id="weapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.weapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label>${config.mode==='pvp'?`<label>Second player name<input id="pvpName" maxlength="45" value="${esc(config.pvpName)}"></label><label>Second player Combat Style %<input id="pvpSkill" type="number" min="20" max="110" value="${config.pvpSkill}"></label><label>Second player weapon<select id="pvpWeapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.pvpWeapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label>`:''}</div><p class="formhint">For now, these are editable sample statistics, not an imported character. Each combatant has individual location HP. Weapon sizes affect successful parries.</p><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px"><button class="cta" data-act="start">${config.mode==='pvp'?'Start Duel':'Enter Training Grounds'} &nbsp;→</button><span class="modehint">Runs entirely on your device.</span></div></div><div class="setup-right"><div class="statbox"><strong>Gauntlet leaderboard</strong><p>Stored in this browser, not published online. Rankings count consecutive opponents defeated.</p><div class="badges"><button class="lbtab ${S.lbMode==='normal'?'on':''}" data-act="lbmode" data-val="normal">Normal</button><button class="lbtab ${S.lbMode==='hardcore'?'on':''}" data-act="lbmode" data-val="hardcore">Hardcore</button></div>${scoresHtml(S.lbMode)}</div><div class="statbox"><strong>The rules we're testing</strong><div class="badges"><span class="notechip">d100 Skill checks</span><span class="notechip">d20 Hit location</span><span class="notechip">Parry by size</span><span class="notechip">Action points</span><span class="notechip">Special Effects</span><span class="notechip">Optional weapon reach</span><span class="notechip">Serious/Major wounds</span></div><p>Some results and effects are simplified for this prototype. Actual Forge integration would reuse your existing character data and sourcebook-verified engine.</p></div></div></div></div>`}
 function zoneClass(f,loc){const x=f.hp[loc],m=f.maxHp[loc];return x<=-m?'major':x<=0?'serious':x<m?'minor':'ok'}
@@ -467,7 +479,7 @@ function arenaHtml(){
  <div class="center-top"><div class="label">${S.mode==='pvp'?'Friendly duel':'Training grounds'} · ${S.mode==='tutorial'?'Learning encounter':`Encounter ${S.wave}`}</div>
  <h2>Round ${S.round} <span style="color:#a88b5b;font-size:15px">/ Cycle ${S.cycle}</span></h2>
  <div class="roundbar"><div class="side">${esc(a.name)} · ${a.initiative??'—'} INI</div><div class="vs">✧ &nbsp; VS &nbsp; ✧<div style="font:700 10px system-ui,sans-serif;color:#e9c68e;margin-top:5px">${engagementInfo().active?(S.engagement==='short'?'SHORT REACH':'LONG REACH'):'MATCHED REACH'}</div></div><div class="side">${esc(b.name)} · ${b.initiative??'—'} INI</div></div></div>
- <div class="exchange-board">${exchangeHalf('atk',info)}${exchangeHalf('def',info)}</div>${outcomeStrip(info)}
+ <div class="exchange-board">${exchangeHalf('a',info)}${exchangeHalf('b',info)}</div>${outcomeStrip(info)}
  ${S.phase==='between'||S.phase==='over'?`<div class="center-content"><div class="actionbox">${actionHtml()}</div></div>`:''}
  ${S.mode==='tutorial'&&S.phase==='fight'?`<div class="tutorialnote" style="margin:12px 15px;color:#c9b48e;font-size:11px">${esc(tutorialHint())}</div>`:''}
  <div class="statusbar">${S.phase==='fight'?`MYTHRAS MELEE DEMO · ${S.pending?'DECISION REQUIRED':`ACTING: ${esc(S.fighters[S.order[S.turnIndex]]?.name||'—')}`}`:'TRAINING SESSION · RESULTS'}</div>
