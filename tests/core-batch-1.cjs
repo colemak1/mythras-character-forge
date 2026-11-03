@@ -250,6 +250,14 @@ test('Core pp.11–12 all standard skill formulas and Anathaym base example',()=
  run('S.cultStyleOn=true;S.cultStyleName="Guard";');assert.equal(run('entryMap()["style:cult"].base'),27);
  assert.equal(run('finalPct("std:Customs")'),68);assert.equal(run('finalPct("std:Native Tongue")'),63);
 });
+test('Core p.8 roll assignment rejects reused and invalid pool indices without losing existing values',()=>{
+ reset();run('S.poolA=[7,8,9,10,11];S.poolB=[12,13];APP.assign("STR",0);APP.assign("CON",1);');
+ run('APP.assign("CON",0);');assert.equal(run('S.chars.CON'),8);assert.equal(run('S.assignA.CON'),1);
+ run('APP.assign("CON",99);APP.assign("STR",-1);APP.assign("NOT_A_CHAR",0);');assert.equal(run('S.chars.CON'),8);assert.equal(run('S.chars.STR'),7);
+ run('APP.assign("SIZ",0);APP.assign("INT",0);');assert.equal(run('S.chars.SIZ'),12);assert.equal(run('S.chars.INT'),12);
+ // INT retains its prior independent value when an invalid selection is rejected.
+ assert.equal(run('S.assignB.INT'),undefined);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
