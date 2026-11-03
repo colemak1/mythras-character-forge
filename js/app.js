@@ -657,7 +657,7 @@ window.APP={
  /* money & inventory */
  rollMoney(){S.money.dice=[d(6),d(6),d(6),d(6)];render();},
  mon(f,v){
-   if(f==="socialClass"){S.money[f]=v;render();return;}
+   if(f==="socialClass"){S.money[f]=v;S.money.classRoll=null;render();return;}
    const n=Number(v);
    // Refuse invalid, negative or implausible currency entries rather than
    // silently converting them to zero and losing the player's input.
@@ -665,7 +665,12 @@ window.APP={
    S.money[f]=n;render();},
  pickSocialClass(name){if(!name)return;const list=SOCIAL_CLASSES[S.culture]||[];
    const opt=list.find(([n])=>n===name);if(!opt)return;
-   S.money.socialClass=opt[0];S.money.mod=opt[1];render();},
+   S.money.socialClass=opt[0];S.money.mod=opt[1];S.money.classRoll=null;render();},
+ rollSocialClass(){
+   if(!SOCIAL_CLASS_ROLL_BOUNDS[S.culture])return;
+   if(S.money.socialClass&&!confirm("Rolling will replace the selected social class and money modifier. Continue?"))return;
+   const roll=d100(),result=socialClassForRoll(S.culture,roll);
+   S.money.socialClass=result[0];S.money.mod=result[1];S.money.classRoll={roll,culture:S.culture,className:result[0]};render();},
  // Same stale-DOM-click race addPas() guards against below -- these sit
  // right next to the item name/qty/enc fields in the Inventory table.
  invAdd(){debounceFire('invAdd',()=>{S.inventory.push({name:"",qty:1,enc:0,cost:0});render();});},

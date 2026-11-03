@@ -1079,6 +1079,7 @@ function stepMoney(){
     +(S.money.dice.length?S.money.dice.map(v=>'<span class="dicechip">'+v+'</span>').join("")+' &times; '+mult+' &times; modifier':"")+'</p>'
    +(SOCIAL_CLASSES[S.culture]?fld("Social class (Culture &amp; Community, p.24)",'<select onchange="APP.pickSocialClass(this.value)"><option value="">&mdash; choose, or type your own below &mdash;</option>'
      +SOCIAL_CLASSES[S.culture].map(([nm,mod])=>'<option value="'+esc(nm)+'" '+(S.money.socialClass===nm?"selected":"")+'>'+esc(nm)+' (&times;'+mod+')</option>').join("")+'</select>'):"")
+   +(SOCIAL_CLASSES[S.culture]?'<p><button class="chip" onclick="APP.rollSocialClass()">Roll social class (d100)</button> '+(S.money.classRoll&&S.money.classRoll.culture===S.culture&&S.money.classRoll.className===S.money.socialClass?'<span class="note">Rolled '+esc(String(S.money.classRoll.roll))+': '+esc(S.money.classRoll.className)+'.</span>':'')+'</p><p class="note">Core p.21: roll unless already determined; choosing or rerolling requires GM agreement. Background resources remain a GM decision.</p>':'')
    +'<div class="grid3" style="margin-top:8px">'
    +fld("Social class (free text, overrides the picker above)",'<input type="text" value="'+esc(S.money.socialClass)+'" placeholder="e.g. Freeman" onchange="APP.mon(\'socialClass\',this.value)">')
    +fld("Money modifier (from your social class table)",'<input type="number" step="0.5" value="'+S.money.mod+'" onchange="APP.mon(\'mod\',this.value)">')
