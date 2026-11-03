@@ -491,6 +491,9 @@ window.APP={
    const picks=which==="cult"?S.cultProf:(which==="car"?S.carProf:S.qProf),
      specs=which==="cult"?S.cultProfSpec:(which==="car"?S.carProfSpec:S.qProfSpec);
    const ph=which==="cult"?"culture":(which==="car"?"career":"quick");
+   // Repeated offers can share a base name; reselecting the same skill must
+   // not erase its existing speciality and points.
+   if((picks[i]||"")===(name||""))return;
    if(picks[i]){delete S.alloc[ph][profKey(picks[i],specs[i])];}
    picks[i]=name||null;specs[i]="";
    if(name&&(which==="cult"||which==="quick"))S.alloc[ph][profKey(name,"")]=5;

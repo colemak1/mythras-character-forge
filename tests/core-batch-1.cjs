@@ -133,6 +133,11 @@ test('reselecting a custom career during editing preserves selections and alloca
  const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();APP.confirmCustomCareer();`);
  assert.equal(run('S.alloc.career["std:Athletics"]'),12);assert.equal(run('S.carStyles[0].name'),'Bow');
 });
+test('reselecting a professional skill preserves its speciality and allocated points',()=>{
+ reset();run('S.career="Warrior";S.carProf=["Lore",null,null];S.carProfSpec=["Military History","",""];S.alloc.career[profKey("Lore","Military History")]=12;APP.pickProf("car",0,"Lore");');
+ assert.equal(run('S.carProfSpec[0]'),'Military History');assert.equal(run('aGet("career",profKey("Lore","Military History"))'),12);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);assert.equal(run('aGet("career",profKey("Lore","Military History"))'),12);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
