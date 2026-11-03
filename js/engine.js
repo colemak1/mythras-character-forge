@@ -964,7 +964,13 @@ function validate(step){
       const off=k?k.prof.map(parseOffer).find(o=>o.name===p):null;
       const hint=(off&&off.hint)?off.hint:QUICK_SPEC_HINTS[p];
       if(hint&&!S.carProfSpec[i].trim())return bad("Give "+p+" a speciality ("+hint+").");}
-    const careerOffers=S.customCareer.isCustom?Object.keys(PROF):k.prof;
+    const configuredOffers=S.customCareer.isCustom&&Array.isArray(S.customCareer.profOffers);
+    const careerOffers=S.customCareer.isCustom?(configuredOffers?S.customCareer.profOffers.filter(Boolean):Object.keys(PROF)):k.prof;
+    if(configuredOffers){
+      if(S.customCareer.profOffers.filter(Boolean).length>7||S.customCareer.profOffers.some(o=>o&&!Object.hasOwn(PROF,o)))return bad("Choose at most seven valid custom career Professional Skill options.");
+      for(const name of new Set(S.carProf.filter(Boolean)))
+        if(S.carProf.filter(p=>p===name).length>careerOffers.filter(o=>o===name).length)return bad("Add enough "+name+" options to the custom career or change your selected skills.");
+    }
     const professionError=professionalPicksError(S.carProf,S.carProfSpec,careerOffers,null,"Career");
     if(professionError)return bad(professionError);
     const allowed=careerKeys();
@@ -999,7 +1005,6 @@ function validate(step){
     if(s!==100)return bad("Spend exactly 100 points ("+s+" spent).");
     return ok();}
    case "Bonus Skills":{
-    if(!S.hobby)return bad("Choose a hobby Professional Skill or Combat Style.");
     if(S.hobby==="__combat_style__"&&!(S.hobbySpec||"").trim())return bad("Name your hobby Combat Style.");
     const pool=bonusPool(),cap=bonusCap();
     const keys=allEntries().map(e=>e.key);

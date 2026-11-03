@@ -609,6 +609,7 @@ function profPickers(which,offers,slots){
      // (selecting either still just picks "Lore"; the filter below already
      // stops the same base name being pickable in two slots at once), only
      // the label text was wrong.
+     +(cur&&!parsed.some(o=>o.name===cur)?'<option value="'+esc(cur)+'" selected>'+esc(cur)+' (no longer offered)</option>':'')
      +parsed.filter(o=>o.name===cur||hintFor(o.name)||!picks.some((p,j)=>j!==i&&p===o.name)).map(o=>'<option value="'+esc(o.name)+'" '+(cur===o.name?"selected":"")+'>'+esc(o.name+(o.hint?" ("+o.hint+")":""))+'</option>').join("")+'</select>'
      +(hint?'<input type="text" value="'+esc(specs[i])+'" placeholder="speciality: '+esc(hint)+'" style="flex:1;min-width:160px" onchange="APP.profSpec(\''+which+'\','+i+',this.value)">':"")
      +'</div>';
@@ -629,16 +630,15 @@ function stepCareer(){
      +'<div class="field" style="margin-bottom:12px"><label>Standard skills (up to seven including Combat Styles)</label><div class="choicechips">'
      +STD.map(([sk,_])=>'<button class="chip '+(S.customCareer.std.includes(sk)?"on":"")+'" onclick="APP.customCareerStd(\''+sk+'\')">'+sk+'</button>').join("")
      +'</div></div>'
-     +'<div class="field" style="margin-bottom:12px"><label>Professional skills (pick up to 3)</label>'
-     +profPickers("car",Object.keys(PROF).sort(),3)
-     +'</div>'
-     +'<div class="field"><label>Combat style slots (0–2)</label>'
+     +'<div class="field" style="margin-bottom:12px"><label>Professional skill options (up to seven)</label>'
+     +'<p class="note">List the skills offered by this career; you can choose up to three for your character afterwards. Repeat a specialised skill if the career offers more than one speciality.</p>'
+     +Array.from({length:7},(_,i)=>'<div style="margin:5px 0"><span class="note">'+(i+1)+'. </span><select onchange="APP.customCareerOffer('+i+',this.value)"><option value="">&mdash; no option &mdash;</option>'
+       +Object.keys(PROF).sort().map(n=>'<option value="'+esc(n)+'" '+((S.customCareer.profOffers||[])[i]===n?'selected':'')+'>'+esc(n)+'</option>').join('')+'</select></div>').join('')+'</div>'
+     +'<div class="field"><label>Combat Style slots (0–7, included in the seven Standard Skills)</label>'
      +'<select onchange="APP.customCareerStyles(+this.value)" style="width:100%;">'
-     +'<option value="0" '+(S.customCareer.styleSlots===0?"selected":"")+'>None</option>'
-     +'<option value="1" '+(S.customCareer.styleSlots===1?"selected":"")+'>One</option>'
-     +'<option value="2" '+(S.customCareer.styleSlots===2?"selected":"")+'>Two</option>'
+     +Array.from({length:8},(_,i)=>'<option value="'+i+'" '+(S.customCareer.styleSlots===i?'selected':'')+'>'+i+'</option>').join('')
      +'</select></div>'
-     +'<p class="note" style="margin-top:10px">Agree your career and professional skill options with your GM (Core p. 33). The builder currently lets you select up to three professional skills directly; it does not record a separate seven-option career list.</p>'
+     +'<p class="note" style="margin-top:10px">Agree this career and its skill options with your GM (Core p. 33).</p>'
      +'<p class="note">'+(S.customCareer.std.length+S.customCareer.styleSlots)+' / 7 Standard Skills and Combat Styles selected. '+(S.customCareer.std.length+S.customCareer.styleSlots>7?'Remove selections to continue.':'')+'</p>'
      +'<button id="custom-career-continue" class="chip actionchip" '+(!S.customCareer.name.trim()||S.customCareer.std.length+S.customCareer.styleSlots>7?'disabled ':'')+'onclick="APP.confirmCustomCareer()">Continue with custom career</button></div>';
     return h;
@@ -647,7 +647,7 @@ function stepCareer(){
   if(!S.career)return h;
   const k=S.customCareer.isCustom?{std:S.customCareer.std,styleSlots:Array(S.customCareer.styleSlots).fill(null)}:CAREERS[S.career];
   h+='<div class="card"><h3>Standard skills</h3><p class="note">'+k.std.join(", ")+(k.styleSlots.length?"; Combat Style: "+k.styleSlots.map((s,i)=>s||("Combat Style "+(i+1))).join("; Combat Style: "):"")+'</p>'
-   +(S.customCareer.isCustom?'<p style="margin-top:8px"><button class="chip" onclick="APP.editCustomCareer()">Edit custom career (standard skills / style slots)</button></p>':"")+'</div>';
+   +(S.customCareer.isCustom?'<p style="margin-top:8px"><button class="chip" onclick="APP.editCustomCareer()">Edit custom career options</button></p>':"")+'</div>';
   if(k.styleSlots.length){
     h+='<div class="card"><h3>Career combat style'+(k.styleSlots.length>1?"s":"")+'</h3>';
     k.styleSlots.forEach((slot,i)=>{
@@ -664,7 +664,7 @@ function stepCareer(){
     });
     h+='<p class="note">&ldquo;Choosing a Style or Professional Skill previously gained via cultural background simply allows the character to further apply some of their career skill points.&rdquo;</p></div>';
   }
-  const carProfOffers=S.customCareer.isCustom?Object.keys(PROF).sort():k.prof;
+  const carProfOffers=S.customCareer.isCustom?(Array.isArray(S.customCareer.profOffers)?S.customCareer.profOffers.filter(Boolean):Object.keys(PROF).sort()):k.prof;
   h+='<div class="card"><h3>Up to three professional skills</h3><p class="note">Different specialities of Lore, Craft, or other specialised skills may be selected separately. The same skill and speciality cannot be selected twice.</p>'+profPickers("car",carProfOffers,3)+'</div>';
   const rows=careerKeys().map(key=>rowFor(key,false)).filter(Boolean);
   h+='<div class="card"><h3>Allocate 100 career points</h3>'
@@ -675,17 +675,17 @@ function stepCareer(){
 /* ---- step: bonus ---- */
 function stepBonus(){
   const pool=bonusPool(),cap=bonusCap(),tierExtra=ARCHETYPES[S.archetype].bonusExtra||0;
-  let h=head("Bonus Skill Points","Free development: "+pool+" points across anything the character knows, no more than "+cap+"% to any one skill &mdash; plus one extra Professional Skill or Combat Style as a hobby.");
+  let h=head("Bonus Skill Points","Free development: "+pool+" points across anything the character knows, no more than "+cap+"% to any one skill &mdash; and an optional extra Professional Skill or Combat Style as a hobby.");
   const hobOff=Object.keys(PROF).sort();
   const band=ageBand();
-  h+='<div class="card"><h3>Hobby skill</h3>'
-   +'<div class="rulequote">&ldquo;Default characters have 150 points with a limit of assigning no more than 15 points per skill. Choose one additional Professional Skill or Combat Style as a hobby speciality.&rdquo;'
+  h+='<div class="card"><h3>Hobby skill (optional)</h3>'
+   +'<div class="rulequote">Adult characters normally have 150 bonus points and a 15-point per-skill cap. One new Professional Skill or Combat Style may be chosen as a hobby (Core p. 34).'
    +(tierExtra?' &mdash; '+ARCHETYPES[S.archetype].label+' adds +'+tierExtra+' points and raises the per-skill cap to '+cap+'% (Mythras Companion, pp.54&ndash;55).':"")+'</div>'
    +'<p class="note">Your pool comes from the Experience Table&rsquo;s age band: <b>'+esc(band.label)+'</b> gives <b>'+band.bonus+'</b> points at a cap of <b>+'+band.cap+'</b> per skill'
    +(tierExtra?', plus '+ARCHETYPES[S.archetype].label+'&rsquo;s +'+tierExtra+' (the more generous of the two caps applies, so '+cap+' here)':"")
    +'. Change it on the Concept step.</p>'
    +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
-   +'<select onchange="APP.hobby(this.value)"><option value="">&mdash; choose a hobby skill &mdash;</option>'
+   +'<select onchange="APP.hobby(this.value)"><option value="">&mdash; no hobby skill &mdash;</option>'
    +'<option value="__combat_style__" '+(S.hobby==="__combat_style__"?"selected":"")+'>Combat Style</option>'
    +hobOff.map(n=>'<option '+(S.hobby===n?"selected":"")+'>'+n+'</option>').join("")+'</select>'
    +(S.hobby?'<input type="text" value="'+esc(S.hobbySpec)+'" placeholder="speciality / combat style name" onchange="APP.hobbySpec(this.value)">':"")

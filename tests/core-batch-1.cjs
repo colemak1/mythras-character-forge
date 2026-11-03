@@ -34,6 +34,27 @@ test('editing a custom career preserves allocations for skills still offered',()
  run('APP.editCustomCareer();APP.customCareerStd("Athletics");');
  assert.equal(run('S.alloc.career["std:Athletics"]'),undefined);assert.equal(run('S.alloc.career["style:k0"]'),10);
 });
+test('Core p.33 custom careers save seven offers and retain unavailable selected skills for correction',()=>{
+ reset();run('APP.pickCareer("__custom__");APP.customCareerName("Explorer");APP.customCareerStd("Athletics");APP.customCareerOffer(0,"Lore");APP.customCareerOffer(1,"Lore");APP.customCareerOffer(2,"Healing");APP.customCareerStyles(3);APP.confirmCustomCareer();S.carStyles.forEach((x,i)=>x.name="Style "+i);S.carProf=["Lore","Lore","Healing"];S.carProfSpec=["History","Nature",""];S.alloc.career[profKey("Lore","History")]=12;');
+ assert.equal(run('S.career'),'__custom__');assert.equal(run('S.carStyles.length'),3);
+ assert.equal(run('professionalPicksError(S.carProf,S.carProfSpec,S.customCareer.profOffers,null,"Career")'),null);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();APP.editCustomCareer();APP.customCareerOffer(0,"");APP.confirmCustomCareer();`);
+ assert.equal(run('S.alloc.career[profKey("Lore","History")]'),12);
+ assert.match(run('validate(currentSteps().indexOf("Career")).msg'),/Add enough Lore/);
+ run('APP.editCustomCareer();APP.customCareerOffer(1,"");APP.confirmCustomCareer();');
+ assert.match(run('stepCareer()'),/Lore \(no longer offered\)/);
+ assert.equal(run('S.alloc.career[profKey("Lore","History")]'),12);
+});
+test('legacy custom career selections remain available and migrate on editing',()=>{
+ reset();run('S.customCareer={isCustom:true,name:"Old",std:["Athletics"],prof:[],styleSlots:0};S.career="__custom__";S.carProf=["Healing",null,null];S.alloc.career[profKey("Healing","")]=15;');
+ assert.match(run('stepCareer()'),/Healing/);run('APP.editCustomCareer();');
+ assert.equal(run('S.customCareer.profOffers[0]'),'Healing');assert.equal(run('S.alloc.career[profKey("Healing","")]'),15);
+});
+test('Core p.34 permits spending bonus points without choosing a hobby',()=>{
+ reset();run('S.hobby=null;S.alloc.bonus={};STD.slice(0,10).forEach(([n])=>S.alloc.bonus["std:"+n]=15);');
+ assert.equal(run('validate(currentSteps().indexOf("Bonus Skills")).ok'),true);
+ assert.match(run('stepBonus()'),/Hobby skill \(optional\)/);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
