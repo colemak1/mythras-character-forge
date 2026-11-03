@@ -33,7 +33,7 @@ The stable eight-subsystem progress plan is in [subsystem-plan.md](subsystem-pla
 | CU-01 | Culture skill selection, points and style | 13–16 | automate | partial |
 | CU-02 | Four cultures and offered skills, one child per culture | 14–16 | automate | partial |
 | CU-03 | Background events and age-dependent count | 17–20, 34 | GM-assisted | partial |
-| CU-04 | Community, family, social class and connections | 21–25 | GM-assisted | not assessed |
+| CU-04 | Community, family, social class and connections | 21–25 | GM-assisted | partial |
 | CU-05 | Starting Passions and targets | 22–23 | automate / GM-assisted | partial |
 | CR-01 | Career selection, skill offers and 100-point allocation | 28–33 | automate | partial |
 | CR-02 | Career entries, one child per career | 29–33 | automate | partial |
@@ -99,6 +99,7 @@ The stable eight-subsystem progress plan is in [subsystem-plan.md](subsystem-pla
 
 The first characteristic/attribute cases, including exact tested boundaries and open cases, are detailed in [core-characteristics-cases.md](core-characteristics-cases.md).
 The initial culture skill-list and choice-validation cases are in [core-culture-cases.md](core-culture-cases.md).
+The initial community, social-class and Passion cases are in [core-community-cases.md](core-community-cases.md).
 The career and bonus-skill audit cases and open gaps are in [core-career-cases.md](core-career-cases.md).
 The initial skill-situation cases are in [core-skill-situations-cases.md](core-skill-situations-cases.md).
 
