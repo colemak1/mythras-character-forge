@@ -258,6 +258,17 @@ test('Core p.8 roll assignment rejects reused and invalid pool indices without l
  // INT retains its prior independent value when an invalid selection is rejected.
  assert.equal(run('S.assignB.INT'),undefined);
 });
+test('each culture and published career can coexist and retain its eligible standard skills',()=>{
+ const cultures=Array.from(run('Object.keys(CULTURES)')),careers=Array.from(run('Object.keys(CAREERS)'));
+ assert.equal(cultures.length,4);assert.equal(careers.length,24);
+ for(const culture of cultures)for(const career of careers){
+  reset();ctx.culture=culture;ctx.career=career;run('APP.pickCulture(culture);APP.pickCareer(career);');
+  assert.equal(run('S.culture'),culture);assert.equal(run('S.career'),career);
+  assert.equal(run('CULTURES[culture].std.every(n=>cultureReqKeys().includes("std:"+n))'),true,`${culture} cultural skills`);
+  assert.equal(run('CAREERS[career].std.every(n=>careerKeys().includes("std:"+n))'),true,`${career} career skills`);
+  assert.equal(run('S.carStyles.length'),run('CAREERS[career].styleSlots.length'));
+ }
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
