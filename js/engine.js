@@ -984,8 +984,6 @@ function validate(step){
     const careerOffers=S.customCareer.isCustom?(configuredOffers?S.customCareer.profOffers.filter(Boolean):Object.keys(PROF)):k.prof;
     if(configuredOffers){
       if(S.customCareer.profOffers.filter(Boolean).length>7||S.customCareer.profOffers.some(o=>o&&!Object.hasOwn(PROF,o)))return bad("Choose at most seven valid custom career Professional Skill options.");
-      for(const name of new Set(S.carProf.filter(Boolean)))
-        if(S.carProf.filter(p=>p===name).length>careerOffers.filter(o=>o===name).length)return bad("Add enough "+name+" options to the custom career or change your selected skills.");
     }
     const professionError=professionalPicksError(S.carProf,S.carProfSpec,careerOffers,null,"Career");
     if(professionError)return bad(professionError);

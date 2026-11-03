@@ -619,6 +619,7 @@ function profPickers(which,offers,slots){
      +(hint?'<input type="text" value="'+esc(specs[i])+'" placeholder="speciality: '+esc(hint)+'" style="flex:1;min-width:160px" onchange="APP.profSpec(\''+which+'\','+i+',this.value)">':"")
      +'</div>';
   }
+  if(picks.includes("Literacy"))h+='<p class="note">Core p. 47: Literacy requires the associated spoken language and cannot exceed its Language skill. Check this with your GM; the builder does not apply that cap yet.</p>';
   return h;
 }
 
@@ -636,7 +637,7 @@ function stepCareer(){
      +STD.map(([sk,_])=>'<button class="chip '+(S.customCareer.std.includes(sk)?"on":"")+'" onclick="APP.customCareerStd(\''+sk+'\')">'+sk+'</button>').join("")
      +'</div></div>'
      +'<div class="field" style="margin-bottom:12px"><label>Professional skill options (up to seven)</label>'
-     +'<p class="note">List the skills offered by this career; you can choose up to three for your character afterwards. Repeat a specialised skill if the career offers more than one speciality.</p>'
+     +'<p class="note">List the skills offered by this career; you can choose up to three for your character afterwards. A specialised skill may be chosen more than once with different specialities, subject to GM agreement.</p>'
      +Array.from({length:7},(_,i)=>'<div style="margin:5px 0"><span class="note">'+(i+1)+'. </span><select onchange="APP.customCareerOffer('+i+',this.value)"><option value="">&mdash; no option &mdash;</option>'
        +Object.keys(PROF).sort().map(n=>'<option value="'+esc(n)+'" '+((S.customCareer.profOffers||[])[i]===n?'selected':'')+'>'+esc(n)+'</option>').join('')+'</select></div>').join('')+'</div>'
      +'<div class="field"><label>Combat Style slots (0–7, included in the seven Standard Skills)</label>'
@@ -694,7 +695,7 @@ function stepBonus(){
    +'<option value="__combat_style__" '+(S.hobby==="__combat_style__"?"selected":"")+'>Combat Style</option>'
    +hobOff.map(n=>'<option '+(S.hobby===n?"selected":"")+'>'+n+'</option>').join("")+'</select>'
    +(S.hobby?'<input type="text" value="'+esc(S.hobbySpec)+'" placeholder="speciality / combat style name" onchange="APP.hobbySpec(this.value)">':"")
-   +'</div></div>';
+   +'</div>'+(S.hobby==='Literacy'?'<p class="note">Core p. 47: Literacy requires the associated spoken language and cannot exceed its Language skill. Check this with your GM; the builder does not apply that cap yet.</p>':'')+'</div>';
   const es=allEntries();
   h+='<div class="card"><h3>Allocate '+pool+' bonus points</h3>'
    +allocTable("bonus",es.map(e=>({key:e.key,label:(e.grp==="Combat Style"?"Combat Style: ":"")+e.label,base:e.base,plus40:(e.key==="std:Customs"||e.key==="std:Native Tongue"),grp:e.grp})),pool,0,cap,"",["Standard","Professional","Magic","Combat Style"])+'</div>';
