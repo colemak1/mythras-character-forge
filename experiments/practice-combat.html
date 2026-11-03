@@ -83,6 +83,110 @@
 
 
 .combat-stage .stage-result.bad{color:#d67e6b;text-shadow:0 2px 9px #541b1399}.combat-stage .stage-result.good{color:#b9d5ac;text-shadow:0 2px 9px #1b3d2299}
+
+/* V6 · two-sided exchange board; fighter sheets flank the active contest. */
+:root{--v6-gold:#ca9b57;--v6-cream:#f0e0c5;--v6-ink:#181a19}
+body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
+.main{max-width:1840px;padding:18px 22px 35px}
+.mast{margin-bottom:13px;align-items:center}
+.mast h1{font-size:31px;margin:3px 0 4px;text-transform:none;letter-spacing:.015em}
+.mast p{font:12px system-ui,sans-serif}
+.arena{grid-template-columns:minmax(234px,.91fr) minmax(500px,1.84fr) minmax(234px,.91fr);gap:12px;align-items:start}
+.arena .fighter{min-height:582px;background:linear-gradient(170deg,#242623 0%,#151817 85%);color:#ede0ca;border:1px solid #90764f;box-shadow:0 14px 38px #0006}
+.fighter .fighter-head{background:linear-gradient(#2c2b27,#1e201e);border-bottom-color:#796443;padding:15px 17px 12px}
+.fighter .fighter-head h2{color:#f2dec0;font-size:23px;margin:5px 0 5px}
+.fighter .tag{color:#c9a46a}
+.fighter .sub,.fighter .track label,.fighter .track div,.fighter .fighter-foot p{color:#bead93!important}
+.fighter .track b{color:#f3e6d0}
+.fighter .track b small{font-weight:400;color:#bda884;font-size:11px}
+.fighter .dots i{background:#d0a365;border-color:#d0a365}.fighter .dots i.off{background:transparent}
+.fighter .figure-area{display:grid;grid-template-columns:minmax(105px,.85fr) minmax(115px,1fr);gap:8px;padding:12px 13px 10px}
+.fighter .figure-title{grid-column:1 / -1;color:#d2b581;border-bottom:1px solid #5d513e;padding-bottom:7px}
+.fighter .fig{height:254px;border-bottom:none;align-self:center}
+.fighter .fig svg{height:235px;width:142px;max-width:100%}
+.fighter .fig .zone{stroke:#a38458;stroke-width:2}.fighter .fig .zone.ok{fill:#363933}.fighter .fig .zone.minor{fill:#987b45}.fighter .fig .zone.serious{fill:#9c563b}.fighter .fig .zone.major{fill:#952f29}.fighter .fig .zone:hover,.fighter .fig .zone.sel{stroke:#ffdf94}
+.fighter .location-list{display:block;margin:0;align-self:center}
+.fighter .loc{color:#dfd1b9;font-size:10px;padding:7px 2px;border-bottom-color:#4e4539;gap:4px}
+.fighter .loc small{color:#ac9576}.fighter .loc.wounded{color:#f9ad84}.fighter .loc.sel,.fighter .loc:hover{background:#423b2f}
+.fighter .fighter-foot{padding:12px 14px;border-top-color:#675438;color:#e9d8bc}
+.fighter .weapon-line{color:#decbac;font-size:11px;gap:6px;flex-wrap:wrap}.fighter .weapon-line span:last-child{color:#f4e2bd}
+.fighter .condition{background:#383b2f;color:#c6d9b7}.fighter .condition.danger{background:#512d27;color:#f7baa6}
+.center{min-height:582px;background:#1b1c1a;border-color:#94774e;box-shadow:0 15px 40px #0009}
+.center-top{padding:13px 17px 11px;background:#20211e}
+.center-top h2{font-size:22px;margin:5px 0 9px;text-transform:none}
+.center-top .label{font-size:9px}
+.center .roundbar{grid-template-columns:1fr auto 1fr;font-size:10px;gap:6px}
+.center .roundbar .vs{font-size:12px}
+.exchange-board{display:grid;grid-template-columns:1fr 1fr;gap:0;background:#e9dec9;min-height:367px;border-bottom:1px solid #b6a17e}
+.exchange-half{background:radial-gradient(ellipse at 50% 0%,#f7edda,#e0d1b5 95%);color:#30271e;padding:17px 19px 18px;min-width:0;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;position:relative}
+.exchange-half+.exchange-half{border-left:2px solid #a99575}
+.exchange-half.active{box-shadow:inset 0 0 0 3px #bb925250}
+.exchange-half .half-heading{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #b9a485;padding-bottom:9px;gap:5px;margin-bottom:10px}
+.exchange-half .half-heading strong{font:700 12px system-ui,sans-serif;text-transform:uppercase;letter-spacing:.12em;color:#645039}
+.exchange-half .half-heading span{font:700 10px system-ui,sans-serif;color:#8c6b42;white-space:nowrap}
+.half-fighter{font:18px Georgia,serif;text-align:center;color:#49351f;margin:3px 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.half-fighter small{font:11px system-ui,sans-serif;color:#8a775c}
+.exchange-half .stage-dice{margin:5px auto 7px;gap:10px}
+.exchange-half .die-wrap{min-width:62px;gap:4px}
+.exchange-half .die-shape{width:65px;height:65px;font-size:24px;box-shadow:0 5px 10px #43301755}
+.exchange-half .die-role{color:#7a5d3c;font-size:9px}
+.exchange-half .percent{background:linear-gradient(135deg,#f6e3b9,#cea169,#80572f);color:#302018;text-shadow:0 1px #fff8}
+.half-result{text-align:center;color:#46623b;font:normal clamp(24px,2.35vw,34px) Georgia,serif;margin:10px 0 6px;line-height:1.15}
+.half-result.bad{color:#9b493f}.half-result.neutral{color:#69513b}
+.half-detail{text-align:center;color:#5a4936;font:11px/1.45 system-ui,sans-serif;margin:0 auto;max-width:310px;overflow-wrap:anywhere}
+.half-placeholder{margin:auto;text-align:center;color:#876f52;font:13px/1.65 Georgia,serif;max-width:245px}
+.half-placeholder strong{display:block;font:18px Georgia,serif;color:#493924;margin-bottom:8px}
+.half-role{color:#8b6841;text-transform:uppercase;font:700 9px system-ui,sans-serif;letter-spacing:.15em;text-align:center;margin:3px 0 0}
+.exchange-half .turnline{margin:0 0 8px;color:#4a3523;flex-wrap:wrap}
+.exchange-half .turnline h3{color:#4b3623;font-size:12px}.exchange-half .turnline span{color:#80684b}
+.exchange-half .desc{font:11px/1.5 system-ui,sans-serif;color:#675139;margin:5px 0 12px}
+.exchange-half .choicegrid{gap:7px;grid-template-columns:1fr 1fr}
+.exchange-half .choice{border-color:#ab8c61;background:#f8edda;color:#473620;min-height:55px;padding:10px 8px}
+.exchange-half .choice strong{color:#4a331b;font-size:11px}
+.exchange-half .choice small{color:#857056;font-size:10px}
+.exchange-half .choice.gold{background:#e4c28f;border-color:#a67b3d}
+.exchange-half .choice.red{border-color:#c18e80}
+.exchange-half .choice:hover:not(:disabled){background:#f4dba9;border-color:#a77a39}
+.exchange-half .inlineopts{grid-template-columns:repeat(2,1fr)}
+.exchange-half .toolbutton{color:#6b4c28;border-color:#ad8858}
+.outcome-strip{display:flex;align-items:center;justify-content:center;gap:14px;text-align:center;min-height:70px;padding:11px 16px;background:linear-gradient(#30251c,#201c18);border-bottom:1px solid #6e5536;color:#efdbb8}
+.outcome-strip .outcome-mark{font-size:23px;color:#cda263}
+.outcome-strip .outcome-headline{font:normal 20px Georgia,serif;color:#f0d7ae}
+.outcome-strip .outcome-sub{font:11px/1.4 system-ui,sans-serif;color:#ad9b81;margin-top:4px}
+.outcome-strip.impact{background:linear-gradient(#58352a,#2c201b)}
+.outcome-strip.effect{background:linear-gradient(#574429,#2b261d)}
+.outcome-strip .strip-skip{margin-left:auto;white-space:nowrap}
+.center-content{padding:0;flex:none;display:block}
+.center-content .actionbox{border:none;padding:9px 14px 12px;margin:0}
+.center-content .tutorialnote{margin:2px 14px 12px}
+.center .statusbar{font-size:10px}
+.combat-history{grid-column:1/-1;min-width:0;background:#181a18;border:1px solid #8a704b;padding:0 15px 14px;box-shadow:0 12px 38px #0005}
+.history-header{display:flex;justify-content:space-between;align-items:center;color:#e2cba3;padding:13px 3px;border-bottom:1px solid #7b6443;gap:10px}
+.history-header h3{font:normal 21px Georgia,serif;margin:0}
+.history-header span{font:10px system-ui,sans-serif;color:#bda47d}
+.combat-history .log{max-height:265px;min-height:100px;overflow:auto;margin-top:8px;padding:0 4px 0 0}
+.combat-history .entry{display:grid;grid-template-columns:160px 1fr;gap:16px;padding:10px 12px;margin-bottom:5px;background:#242520;border:1px solid #454134;border-left:3px solid #756143}
+.combat-history .entry.hit{border-left-color:#c99e55}.combat-history .entry.hurt{border-left-color:#ca6f57}
+.combat-history .entry .t{color:#ddbd86;margin:0;font-size:10px;align-self:center}
+.combat-history .entry p{color:#d7c9b1;font:11px/1.5 system-ui,sans-serif}
+.combat-history .entry small{grid-column:2;color:#a89a80;font-size:10px;margin:0}
+.exchange-half .resolving{background:#eee1c9;border-color:#b49360;color:#574326;padding:9px;margin:auto 0}
+.exchange-half .resolving-icon{color:#a37d45}
+.exchange-half .resolving strong{color:#574326;font-size:10px}
+.exchange-half .resolving small{color:#867052}
+.exchange-half .resolving .toolbutton{color:#624b2d;background:#f8eddd;border-color:#aa8e67}
+.exchange-half .endpanel{color:#42301f;background:transparent;border:none;padding:0}.exchange-half .endpanel p{color:#776247}
+.exchange-half .endpanel h3{font-size:19px}
+.exchange-half .stage-badge{border-color:#b49460;color:#76552e;background:#f2e5d1;box-shadow:none;min-width:0}
+.exchange-half.is-rolling .die-shape{animation:diceJitter .11s steps(2,end) infinite alternate}
+.exchange-half .roll-status{text-align:center;color:#8f6740;font:700 11px system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;margin:4px 0}
+.exchange-half .roll-status.bad{color:#a45643}
+.exchange-half .roll-status.good{color:#55764d}
+@media(max-width:1260px){.arena{grid-template-columns:minmax(200px,.9fr) minmax(455px,1.65fr) minmax(200px,.9fr);gap:8px}.fighter .figure-area{grid-template-columns:100px 1fr}.fighter .fig svg{height:200px}.fighter .loc{font-size:9px;padding:6px 0}.exchange-half{padding:13px}}
+@media(max-width:1000px){.arena{grid-template-columns:minmax(180px,1fr) minmax(360px,1.8fr)}.arena .fighter.enemy{grid-column:1;grid-row:2}.arena .center{grid-column:2;grid-row:1 / span 2}.arena .combat-history{grid-row:3}.fighter .figure-area{grid-template-columns:95px 1fr}.main{padding:16px 12px}}
+@media(max-width:690px){.arena{display:flex;flex-direction:column}.arena .fighter,.arena .center,.arena .combat-history{width:100%;min-height:unset}.fighter .figure-area{grid-template-columns:140px 1fr}.fighter .fig svg{height:190px}.exchange-board{min-height:360px}.exchange-half{padding:10px}.exchange-half .choicegrid{grid-template-columns:1fr}.exchange-half .choice{min-height:48px}.combat-history .entry{grid-template-columns:1fr;gap:4px}.combat-history .entry small{grid-column:1}}
+@media(prefers-reduced-motion:reduce){.exchange-half .die-shape{animation:none!important}}
+
 </style>
 </head>
 <body>
@@ -148,6 +252,105 @@ function stageHtml(){
     ${V.busy?'<button type="button" class="skip-link" data-act="skip">Skip sequence ↠</button>':''}
   </div>`;
 }
+
+function visibleChronicle(){
+  const count=V.busy?V.visibleCount:(S.logs?.length||0);
+  let logs=(S.logs||[]).slice(0,count);
+  if(V.busy&&V.stage?.entry&&!logs.some(x=>x.id===V.stage.entry.id))logs=[...logs,V.stage.entry];
+  return logs;
+}
+function currentExchange(){
+  const logs=visibleChronicle();
+  let attackIndex=-1;
+  for(let i=logs.length-1;i>=0;i--){
+    if(/ attacks$/i.test(logs[i].title)||/change range|attempts? to (?:close|open)/i.test(logs[i].title)){
+      attackIndex=i;break;
+    }
+  }
+  let attack=attackIndex>=0?logs[attackIndex]:null;
+  const recent=attackIndex>=0?logs.slice(attackIndex+1):[];
+  let defense=recent.find(l=>/ (?:parries|evades)$| does not defend$/i.test(l.title))||null;
+  if((!V.busy&&!S.pending&&S.phase==='fight')||S.pending?.kind==='range'){attack=null;defense=null;}
+  const pend=S.pending;
+  let atkId=pend?.atk||pend?.mover||null;
+  let defId=pend?.def||pend?.defender||null;
+  if(!atkId&&attack){atkId=attack.title.startsWith(S.fighters.a.name)?'a':attack.title.startsWith(S.fighters.b.name)?'b':null}
+  if(!atkId){atkId=S.order?.[S.turnIndex]||S.order?.[0]||'a'}
+  if(!defId)defId=atkId==='a'?'b':'a';
+  return {attack,defense,atkId,defId,pending:pend,latest:logs[logs.length-1]||null};
+}
+function rollSummary(entry,rolling=false){
+  if(!entry)return '';
+  let st=stageFor(entry),dice=st.dice||[];
+  let good=/CRITICAL|SUCCESS/i.test(st.result),bad=/FAILURE|FUMBLE/i.test(st.result);
+  let grade=st.result||(/does not defend/i.test(entry.title)?'NO REACTION':'ACTION RESOLVED');
+  return `${dice.length?`<div class="${rolling?'dice-live':''}">${renderDice(dice,rolling)}</div>`:''}<div class="roll-status ${good?'good':bad?'bad':''}">${rolling?'DICE ROLLING…':esc(grade)}</div><div class="half-detail">${rolling?'The die is still moving.':esc(entry.body||'')}</div>`;
+}
+function exchangeHalf(side,info){
+  const isAtk=side==='atk',initialInitiative=V.busy&&/^Encounter.*Initiative/i.test(V.stage?.entry?.title||''),id=initialInitiative?(isAtk?'a':'b'):(isAtk?info.atkId:info.defId);
+  const fighter=S.fighters[id]||S.fighters.a;
+  const p=info.pending,deciding=!V.busy&&S.phase==='fight';
+  const pSide=p?.kind==='reaction'||p?.kind==='range'?'def':p?.kind==='effect'||p?.kind==='location'?(p.owner===p.atk?'atk':'def'):null;
+  const decisionHere=deciding&&(p?pSide===side:isAtk);
+  const current=V.stage,entry=current?.entry||null;
+  const activeStage=V.busy&&current&&((side==='def'&&current.kind==='defense')||(side==='atk'&&current.kind==='attack')||((current.kind!=='attack'&&current.kind!=='defense')&&side==='atk'));
+  const ownRecord=isAtk?info.attack:info.defense;
+  const liveRecord=activeStage?entry:null;
+  let content='';
+  if(initialInitiative){
+    const dice=V.stage.entry.meta?.dice||[];const one=dice[isAtk?0:1];
+    content=`<div class="half-role">${esc(fighter.name)} · Initiative</div><div class="${V.stage.rolling?'dice-live':''}">${renderDice(one?[one]:[],!!V.stage.rolling)}</div><div class="half-result neutral">${V.stage.rolling?'Rolling…':fighter.initiative}</div><div class="half-detail">d10 + initiative bonus</div>`;
+  }else if(isAtk&&p?.kind==='range'&&!V.busy){
+    content=`<div class="half-placeholder"><strong>Changing Range</strong>${esc(fighter.name)} is ${p.desired==='short'?'closing to shorter reach':'opening to longer reach'}. The opponent must respond.</div>`;
+  }else if(decisionHere){
+    if(isAtk&&p?.kind==='effect')content=`<div class="half-role">${esc(fighter.name)} chooses a special effect</div>${actionHtml()}`;
+    else content=actionHtml();
+  }else if(liveRecord){
+    const stage=stageFor(liveRecord),grade=stage.result||stage.sub||'RESOLVED';
+    content=`<div class="half-role">${esc(fighter.name)} · ${esc(stage.beat||'action')}</div>${rollSummary(liveRecord,!!current?.rolling)}<div class="half-result ${/FAILURE|FUMBLE/i.test(grade)?'bad':/SUCCESS|CRITICAL/i.test(grade)?'':'neutral'}">${current?.rolling?'Rolling…':esc(grade)}</div>`;
+  }else if(ownRecord){
+    const showAsOpen=(!isAtk&&info.pending?.kind==='reaction');
+    content=showAsOpen?`<div class="half-placeholder"><strong>Defender's decision</strong>Parry, evade, or save your Action Points.</div>`:`<div class="half-role">${esc(fighter.name)}</div>${rollSummary(ownRecord,false)}`;
+  }else if(V.busy){
+    content='<div class="half-placeholder"><strong>Awaiting resolution</strong>The opposing fighter has yet to respond.</div>';
+  }else{
+    content=`<div class="half-placeholder"><strong>${isAtk?'Choose your action':'Ready to respond'}</strong>${isAtk?'Commit an attack, move within reach, or prepare.':'Your reaction will appear here when an attack is made.'}</div>`;
+  }
+  return `<section class="exchange-half ${decisionHere?'active':''} ${activeStage&&current?.rolling?'is-rolling':''}" aria-label="${isAtk?'Attacking':'Responding'} combatant">
+    <div class="half-heading"><strong>${isAtk?'⚔ Attack / Action':'◇ Defender / Response'}</strong><span>${isAtk?'01':'02'}</span></div>
+    <div class="half-fighter">${esc(fighter.name)} <small>· ${fighter.ap} AP</small></div>${content}</section>`;
+}
+function outcomeStrip(info){
+  const p=info.pending,x=V.stage,entry=x?.entry;
+  let headline='Choose your next action',sub='Attack and defense rolls will resolve here, then enter the chronicle.',css='',mark='✧';
+  if(V.busy&&x){
+    headline=x.rolling?'Rolling dice…':x.kind==='hurt'?(x.result||'Damage resolved'):x.kind==='miss'?'No damaging hit':x.kind==='final'?'The bout is over':x.result||x.primary||'Exchange resolved';
+    sub=x.rolling?'Watch the two combatants resolve this exchange.':x.body||'';
+    css=x.kind==='hurt'?'impact':x.kind==='effect'?'effect':'';
+    mark=x.kind==='hurt'?'✕':x.kind==='defense'?'◇':'⚔';
+  }else if(p?.kind==='reaction'){
+    headline=`${S.fighters[p.atk].name} attacks · ${p.attackRoll.label}`;
+    sub=`${p.attackRoll.roll} versus ${S.fighters[p.atk].style}% — choose ${S.fighters[p.def].name}'s reaction.`;
+    mark='⚔';
+  }else if(p?.kind==='range'){
+    headline='Contest the range change';sub='The defender may allow, oppose, or intercept the change.';mark='↔';
+  }else if(p?.kind==='effect'){
+    headline=`${p.effectsLeft} Special Effect${p.effectsLeft===1?'':'s'} available`;sub='The fighter with the advantage chooses before damage.';css='effect';mark='✦';
+  }else if(p?.kind==='location'){
+    headline='Select a hit location';sub='Choose the location before rolling weapon damage.';css='effect';mark='◎';
+  }else if(S.phase==='between'){
+    headline='Victory · next opponent awaits';sub='Your streak continues. Choose when to enter the next fight.';css='effect';mark='✦';
+  }else if(S.phase==='over'){
+    headline=`${S.winner||'Combat'} · encounter over`;sub=S.endReason||'The encounter is finished.';mark='✦';
+  }else if(info.latest){
+    const st=stageFor(info.latest);headline=st.result||st.primary||'Exchange resolved';sub=st.body||'';css=st.kind==='hurt'?'impact':st.kind==='effect'?'effect':'';mark=st.kind==='hurt'?'✕':'✦';
+  }
+  return `<div class="outcome-strip ${css}" aria-live="polite"><div class="outcome-mark">${mark}</div><div><div class="outcome-headline">${esc(headline)}</div><div class="outcome-sub">${esc(sub)}</div></div>${V.busy?'<button class="toolbutton strip-skip" data-act="skip">Skip ↠</button>':''}</div>`;
+}
+function combatHistory(){
+  const logs=V.busy?S.logs.slice(0,V.visibleCount):S.logs;
+  return `<section class="combat-history"><div class="history-header"><h3>Combat Chronicle</h3><span>${logs.length} events · newest at bottom</span></div><div class="log" id="combatLog" aria-live="polite">${logs.map(l=>`<div class="entry ${l.kind} ${V.busy&&V.events[V.step]?.id===l.id?'fresh':''}"><div class="t">${esc(l.title)}</div><p>${esc(l.body)}</p>${l.detail?`<small>${esc(l.detail)}</small>`:''}</div>`).join('')}</div></section>`;
+}
 function playCaptured(fn,reset=false){
   clearPresentationTimers();
   const before=S.fighters?clone(S.fighters):null,prior=reset?0:(S.logs?.length||0);
@@ -167,7 +370,7 @@ function playBeat(){
   V.highlight=null;
   render();
   if(V.stage.rolling){
-    const cycle=()=>{document.querySelectorAll('.die-shape').forEach(node=>{const d={sides:Number(node.dataset.sides)||6,role:node.dataset.role||'',variant:node.dataset.variant||''};const face=node.querySelector('.die-face');if(face)face.textContent=randomFaceForDie(d);});};
+    const cycle=()=>{document.querySelectorAll('.dice-live .die-shape').forEach(node=>{const d={sides:Number(node.dataset.sides)||6,role:node.dataset.role||'',variant:node.dataset.variant||''};const face=node.querySelector('.die-face');if(face)face.textContent=randomFaceForDie(d);});};
     cycle();
     V.diceTimer=setInterval(cycle,72);
   }
@@ -251,13 +454,25 @@ function rangeReact(option){
 }
 function newHero(){return mkFighter('a',config.charname,'human',config.style,config.weapon,config.armor,config.evade,3)};
 function newEnemy(wave){if(S.mode==='pvp')return mkFighter('b',config.pvpName,'human',config.pvpSkill,config.pvpWeapon,1,50,3);const lvl=S.mode==='tutorial'?1:wave;const type=ENEMY_NAMES[Math.min(ENEMY_NAMES.length-1,Math.floor((wave-1)/2))];let weaponKeys=['dagger','sword','mace','spear','greatsword'];let weapon=weaponKeys[(wave+die(5)-1)%weaponKeys.length];if(wave===1)weapon='dagger';let skill=Math.min(105,43+(wave-1)*5+die(10));if(S.mode==='tutorial')skill=45;let armor=S.mode==='tutorial'?0:Math.min(5,Math.floor((wave-1)/3));let foe=mkFighter('b',type,'ai',skill,weapon,armor,Math.min(90,42+wave*3),wave);foe.brawn=Math.min(95,46+3*wave);foe.endurance=Math.min(95,51+2*wave);return foe;}
-function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1><p>${setup?'Learn the rules, survive the gauntlet, or challenge a friend.':'A simplified Mythras combat sandbox · separate from your saved character.'}</p></div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle animation speed">${V.quick?'FAST':'CINEMATIC'} · SPEED</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v5 · Core reach rules</span>`}</div></section>${setup?setupHtml():arenaHtml()}<div class="footer-notes"><div class="footgrid"><span>Prototype only · no connection to your Forge account · no changes to your saved characters</span><span>${setup?'Select a mode to begin.':'Seven hit locations · AP combat cycles · differential results'}</span></div><div style="margin-top:5px">Simplified rules: basic melee, parry/evade, a small Special Effects subset, wounds, and initiative. Core pp. 63-64 weapon stats and pp. 106-107 optional Closing/Opening Range are active (two-step reach differences). Interception and Evade contests are modeled; attacking the longer weapon, full fatigue, Luck, shields, armour ENC and complete wound rules are still pending audit. Source: uploaded Mythras 2e Core.</div></div>`;if(!setup){let log=$('.log');if(log)log.scrollTop=log.scrollHeight;}}
+function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1><p>${setup?'Learn the rules, survive the gauntlet, or challenge a friend.':'Split attack and response · animated dice · Core optional reach rules.'}</p></div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle animation speed">${V.quick?'FAST':'CINEMATIC'} · SPEED</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v6 · Split combat display</span>`}</div></section>${setup?setupHtml():arenaHtml()}<div class="footer-notes"><div class="footgrid"><span>Prototype only · no connection to your Forge account · no changes to your saved characters</span><span>${setup?'Select a mode to begin.':'Seven hit locations · AP combat cycles · differential results'}</span></div><div style="margin-top:5px">Simplified rules: basic melee, parry/evade, a small Special Effects subset, wounds, and initiative. Core pp. 63-64 weapon stats and pp. 106-107 optional Closing/Opening Range are active (two-step reach differences). Interception and Evade contests are modeled; attacking the longer weapon, full fatigue, Luck, shields, armour ENC and complete wound rules are still pending audit. Source: uploaded Mythras 2e Core.</div></div>`;if(!setup){let log=$('.log');if(log)log.scrollTop=log.scrollHeight;}}
 function modeName(m){return {tutorial:'Guided Tutorial',normal:'Normal Gauntlet',hardcore:'Hardcore Gauntlet',pvp:'Local PvP'}[m]||m}
 function setupHtml(){let modes=[['tutorial','01','Guided Tutorial','One beginner-friendly bout with reminders about Mythras decisions.'],['normal','02','Normal Gauntlet','Infinite escalating enemies. Your wounds reset after each win.'],['hardcore','03','Hardcore Gauntlet','Same escalating enemies. Wounds and injuries persist between fights.'],['pvp','04','Local PvP','Two players take turns on one screen; online matching comes later.']];return `<div class="setup"><h2>Choose your challenge</h2><p class="intro">A working combat loop with selectable reactions, hit locations, a tactical computer opponent, and a local streak board.</p><div class="modes">${modes.map(([k,n,t,d])=>`<button class="mode ${config.mode===k?'on':''}" data-act="mode" data-val="${k}"><span class="n">MODE ${n}</span><strong>${t}</strong><small>${d}</small></button>`).join('')}</div><div class="setup-bottom"><div class="formcard"><h3>Build your practice fighter</h3><div class="formgrid"><label>Username<input id="username" maxlength="30" value="${esc(config.username)}"></label><label>Character name<input id="charname" maxlength="45" value="${esc(config.charname)}"></label><label>Combat Style %<input id="style" type="number" min="20" max="110" value="${config.style}"></label><label>Evade %<input id="evade" type="number" min="20" max="110" value="${config.evade}"></label><label>Armor AP (all locations)<input id="armor" type="number" min="0" max="6" value="${config.armor}"></label><label>Weapon<select id="weapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.weapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label>${config.mode==='pvp'?`<label>Second player name<input id="pvpName" maxlength="45" value="${esc(config.pvpName)}"></label><label>Second player Combat Style %<input id="pvpSkill" type="number" min="20" max="110" value="${config.pvpSkill}"></label><label>Second player weapon<select id="pvpWeapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.pvpWeapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label>`:''}</div><p class="formhint">For now, these are editable sample statistics, not an imported character. Each combatant has individual location HP. Weapon sizes affect successful parries.</p><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px"><button class="cta" data-act="start">${config.mode==='pvp'?'Start Duel':'Enter Training Grounds'} &nbsp;→</button><span class="modehint">Runs entirely on your device.</span></div></div><div class="setup-right"><div class="statbox"><strong>Gauntlet leaderboard</strong><p>Stored in this browser, not published online. Rankings count consecutive opponents defeated.</p><div class="badges"><button class="lbtab ${S.lbMode==='normal'?'on':''}" data-act="lbmode" data-val="normal">Normal</button><button class="lbtab ${S.lbMode==='hardcore'?'on':''}" data-act="lbmode" data-val="hardcore">Hardcore</button></div>${scoresHtml(S.lbMode)}</div><div class="statbox"><strong>The rules we're testing</strong><div class="badges"><span class="notechip">d100 Skill checks</span><span class="notechip">d20 Hit location</span><span class="notechip">Parry by size</span><span class="notechip">Action points</span><span class="notechip">Special Effects</span><span class="notechip">Optional weapon reach</span><span class="notechip">Serious/Major wounds</span></div><p>Some results and effects are simplified for this prototype. Actual Forge integration would reuse your existing character data and sourcebook-verified engine.</p></div></div></div></div>`}
 function zoneClass(f,loc){const x=f.hp[loc],m=f.maxHp[loc];return x<=-m?'major':x<=0?'serious':x<m?'minor':'ok'}
 function figureSvg(f){const sel=S.sel?.[f.id];return `<svg viewBox="0 0 240 360" role="img" aria-label="Clickable hit-location figure for ${esc(f.name)}">${HIT_LOCS.map(loc=>`<g class="zone ${zoneClass(f,loc)} ${V.highlight?.id===f.id&&V.highlight.loc===loc?'impact-zone':''} ${sel===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}"><title>${loc} · ${f.hp[loc]}/${f.maxHp[loc]} HP · ${f.armor} AP armour</title>${SHAPES[loc]}</g>`).join('')}</svg>`}
 function fighterCard(f,cls){let injuries=HIT_LOCS.filter(l=>f.hp[l]<f.maxHp[l]);let worst=injuries.reduce((w,l)=>(zoneClass(f,l)==='major'?3:zoneClass(f,l)==='serious'?2:1)>w?w: w,0);let status=f.status==='Defeated'?'Incapacitated':worst===0?'Uninjured':worst===1?'Minor wounds':worst===2?'Serious wound':'Major wound';let selected=S.sel?.[f.id];return `<article class="fighter ${cls} ${V.highlight?.id===f.id?'just-hit':''}"><div class="fighter-head"><span class="tag">${cls==='player'?'PLAYER ONE':(S.mode==='pvp'?'PLAYER TWO':'OPPONENT')}</span><h2>${esc(f.name)}</h2><div class="sub">${f.kind==='ai'?`Skill ${f.style}% · Utility AI`: `Combat Style ${f.style}%`} · ${esc(WEAPONS[f.weapon].name)} · ${reachName(f)} reach</div><div class="tracks"><div class="track"><label>Action Points</label><b>${f.ap}<small> / ${f.apMax}</small></b><div class="dots">${Array.from({length:f.apMax},(_,i)=>`<i class="${i>=f.ap?'off':''}"></i>`).join('')}</div></div><div class="track"><label>Initiative</label><b>${f.initiative??'—'}</b><div style="font:11px system-ui,sans-serif;color:#87745c;margin-top:5px">${f.prone?'Prone · ':''}${f.skipAttack?'Under pressure':'Ready'}</div></div></div></div><div class="figure-area"><div class="figure-title"><span>Hit locations / D20</span><span>AP ${f.armor} armor</span></div><div class="fig">${figureSvg(f)}</div><div class="location-list">${HIT_LOCS.map(loc=>`<div class="loc ${f.hp[loc]<f.maxHp[loc]?'wounded':''} ${selected===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}"><span>${loc.replace('Right ','R. ').replace('Left ','L. ')}</span><span>${f.hp[loc]}<small> / ${f.maxHp[loc]}</small></span></div>`).join('')}</div></div><div class="fighter-foot"><div class="weapon-line"><span>Equipped / Reach</span><span>${esc(WEAPONS[f.weapon].name)} · ${reachName(f)}</span></div><div class="weapon-line" style="margin-top:7px"><span>Combat Style / Evade</span><span>${f.style}% / ${f.evade}%</span></div><div class="condition ${f.status==='Defeated'?'danger':worst===0?'safe':''}">${status}${f.prone?' · Prone':''}</div>${selected?`<p>Selected: <b>${selected}</b> (${f.hp[selected]}/${f.maxHp[selected]} HP). ${f.armor} AP armour. ${zoneClass(f,selected)==='ok'?'Uninjured.':zoneClass(f,selected)==='minor'?'Minor wound.':zoneClass(f,selected)==='serious'?'Serious wound.':'Major wound.'}</p>`:'<p>Click a body location to inspect its HP and wound severity. Wounds are isolated to each location.</p>'}</div></article>`}
-function arenaHtml(){let a=V.busy&&V.shown?.a?V.shown.a:S.fighters.a,b=V.busy&&V.shown?.b?V.shown.b:S.fighters.b;return `<div class="arena">${fighterCard(a,'player')}<section class="center"><div class="center-top"><div class="label">${S.mode==='pvp'?'Friendly duel':'Training grounds'} · ${S.mode==='tutorial'?'Learning encounter':`Encounter ${S.wave}`}</div><h2>Round ${S.round} <span style="color:#a88b5b;font-size:17px">/ Cycle ${S.cycle}</span></h2><div class="roundbar"><div class="side">${esc(a.name)}<br><span style="color:#d1b788">${a.initiative??'—'} INI</span></div><div class="vs">✧ &nbsp; VS &nbsp; ✧<div style="font:700 10px system-ui,sans-serif;color:#e9c68e;margin-top:6px">${engagementInfo().active?(S.engagement==='short'?'SHORT REACH':'LONG REACH'):'MATCHED REACH'}</div></div><div class="side">${esc(b.name)}<br><span style="color:#d1b788">${b.initiative??'—'} INI</span></div></div></div>${stageHtml()}<div class="center-content"><div class="logtitle"><span>Combat Chronicle</span><span>${S.wins||0} ${S.mode==='pvp'?'Duel wins':'Streak wins'}</span></div><div class="log" id="combatLog" aria-live="polite">${(V.busy?S.logs.slice(0,V.visibleCount):S.logs).map(l=>`<div class="entry ${l.kind} ${V.busy&&V.events[V.step]?.id===l.id?'fresh':''}"><div class="t">${esc(l.title)}</div><p>${esc(l.body)}</p>${l.detail?`<small>${esc(l.detail)}</small>`:''}</div>`).join('')}</div><div class="actionbox">${actionHtml()}</div>${S.mode==='tutorial'&&S.phase==='fight'?`<div class="tutorialnote">${esc(tutorialHint())}</div>`:''}</div><div class="statusbar">${S.phase==='fight'?`MYTHRAS MELEE DEMO · ${S.pending?'DECISION REQUIRED':`ACTING: ${esc(S.fighters[S.order[S.turnIndex]]?.name||'—')}`}`:'TRAINING SESSION · RESULTS'}</div></section>${fighterCard(b,'enemy')}</div>`}
+function arenaHtml(){
+ const a=V.busy&&V.shown?.a?V.shown.a:S.fighters.a,b=V.busy&&V.shown?.b?V.shown.b:S.fighters.b;
+ const info=currentExchange();
+ return `<div class="arena">${fighterCard(a,'player')}<section class="center">
+ <div class="center-top"><div class="label">${S.mode==='pvp'?'Friendly duel':'Training grounds'} · ${S.mode==='tutorial'?'Learning encounter':`Encounter ${S.wave}`}</div>
+ <h2>Round ${S.round} <span style="color:#a88b5b;font-size:15px">/ Cycle ${S.cycle}</span></h2>
+ <div class="roundbar"><div class="side">${esc(a.name)} · ${a.initiative??'—'} INI</div><div class="vs">✧ &nbsp; VS &nbsp; ✧<div style="font:700 10px system-ui,sans-serif;color:#e9c68e;margin-top:5px">${engagementInfo().active?(S.engagement==='short'?'SHORT REACH':'LONG REACH'):'MATCHED REACH'}</div></div><div class="side">${esc(b.name)} · ${b.initiative??'—'} INI</div></div></div>
+ <div class="exchange-board">${exchangeHalf('atk',info)}${exchangeHalf('def',info)}</div>${outcomeStrip(info)}
+ ${S.phase==='between'||S.phase==='over'?`<div class="center-content"><div class="actionbox">${actionHtml()}</div></div>`:''}
+ ${S.mode==='tutorial'&&S.phase==='fight'?`<div class="tutorialnote" style="margin:12px 15px;color:#c9b48e;font-size:11px">${esc(tutorialHint())}</div>`:''}
+ <div class="statusbar">${S.phase==='fight'?`MYTHRAS MELEE DEMO · ${S.pending?'DECISION REQUIRED':`ACTING: ${esc(S.fighters[S.order[S.turnIndex]]?.name||'—')}`}`:'TRAINING SESSION · RESULTS'}</div>
+ </section>${fighterCard(b,'enemy')}${combatHistory()}</div>`;
+}
 function tutorialHint(){let p=S.pending;if(p?.kind==='reaction')return 'An incoming attack can be Parried (weapon size reduces damage), Evaded (may avoid the hit but leaves you prone), or accepted to conserve AP.';if(p?.kind==='effect')return 'In Mythras, superior levels of success can earn Special Effects. These are chosen before damage and hit location.';if(p?.kind==='range')return 'The defender may allow the Change Range action, oppose with Evade, or intercept by attacking against the mover’s Evade. Closing succeeds even if an interception hits.';if(p?.kind==='location')return 'Choose Location lets you target a normally reachable area of the opponent rather than roll the d20 location die.';return 'Each combatant gets one proactive action in initiative order per cycle. Reactive actions also cost an Action Point. Track both fighters’ location HP.'}
 function actionHtml(){if(V.busy)return `<div class="resolving"><span class="resolving-icon">✦</span><div><strong>RESOLVING THE EXCHANGE</strong><small>The exchange now plays out as a sequence: roll, answer, impact, consequence.</small></div><button data-act="skip" class="toolbutton">Skip ↠</button></div>`;if(S.phase==='between')return `<div class="endpanel"><span class="eyebrow">Victory · streak ${S.wins}</span><h3>Opponent Defeated</h3><p>${S.mode==='normal'?'Your character will be restored to full health for the next encounter.':'Your wounds and injuries will carry into the next encounter. Action Points will refresh.'} Your next opponent will be stronger.</p><div class="endbuttons"><button class="cta" data-act="next">Face Opponent ${S.wave+1} →</button><button class="cta alt" data-act="reset">Finish Run</button></div></div>`;
 if(S.phase==='over')return `<div class="endpanel"><span class="eyebrow">${S.mode==='pvp'?'Duel finished':S.mode==='tutorial'?'Lesson finished':'Gauntlet finished'}</span><h3>${esc(S.winner||'Bout ended')}</h3><p>${esc(S.endReason||'Combat concluded.')} ${['normal','hardcore'].includes(S.mode)?`Your final win streak was ${S.wins}.`:''}</p><div class="endbuttons"><button class="cta" data-act="retry">${S.mode==='pvp'?'Rematch':S.mode==='tutorial'?'Try Lesson Again':'Run Again'}</button><button class="cta alt" data-act="reset">Back to Modes</button></div></div>`;
