@@ -184,6 +184,11 @@ function ageCard(){
      +'<button class="chip actionchip" onclick="APP.rollAge()">roll '+esc(cur.dice)+'</button></div>')
    +fld("Resulting Bonus Skill Points",'<div class="agetotal">'+bonusPool()+' points &middot; max '+bonusCap()+' per skill</div>')
    +'</div>';
+  const ageIssue=ageRangeIssue();
+  if(ageIssue){
+    h+='<p class="'+(ageRangeApproved()?'note':'warn')+'" role="status">'+esc(ageIssue)+(ageRangeApproved()?' GM exception recorded for this age and category.':'')+'</p>';
+    if(Number.isInteger(S.age.years)&&S.age.years>=0&&!ageRangeApproved())h+='<button class="chip" onclick="APP.approveAgeRange()">Record GM exception for this age</button>';
+  }
   if(sp)h+='<p class="note">A '+esc(sp.label)+' lives '+esc(sp.lifespan)+', so these bands describe a very different span of life than they do for a human &mdash; the categories are about accumulated experience, not calendar years. Adjust the exact age to suit.</p>';
   h+='<p class="note rulesrc">Age and Bonus Skill Points: Mythras Core p.34. Senior and Old starting characters are subject to ageing; the human ageing bands begin at 40 (Core pp.70–71).</p>';
   h+=ageingReviewBlock();

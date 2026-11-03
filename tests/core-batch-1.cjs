@@ -55,6 +55,24 @@ test('Core p.34 permits spending bonus points without choosing a hobby',()=>{
  assert.equal(run('validate(currentSteps().indexOf("Bonus Skills")).ok'),true);
  assert.match(run('stepBonus()'),/Hobby skill \(optional\)/);
 });
+test('Core p.34 human age ranges, mismatch warnings and category changes preserve data',()=>{
+ reset();
+ for(const [category,low,high] of [['young',11,16],['adult',17,27],['middle',28,43],['senior',44,64],['old',65,90]]){
+  run(`S.age.category=${JSON.stringify(category)};S.age.years=${low};`);assert.equal(run('ageRangeIssue()'),null);
+  run(`S.age.years=${high};`);assert.equal(run('ageRangeIssue()'),null);
+  run(`S.age.years=${high+1};`);assert.match(run('ageRangeIssue()'),/normally covers/);
+ }
+ run('S.age.category="adult";S.age.years=40;S.concept.age="40";S.alloc.bonus={"std:Athletics":15};');
+ assert.equal(run('validate(0).ok'),false);assert.equal(run('bonusPool()'),150);
+ assert.match(run('ageCard()'),/Record GM exception/);
+ run('APP.pickAge("middle")');assert.equal(run('S.age.years'),40);assert.equal(run('S.concept.age'), '40');
+ assert.equal(run('S.alloc.bonus["std:Athletics"]'),15);assert.equal(run('bonusPool()'),200);assert.equal(run('validate(0).ok'),true);
+ run('APP.pickAge("adult");APP.approveAgeRange();');assert.equal(run('validate(0).ok'),true);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);assert.equal(run('validate(0).ok'),true);
+ run('APP.ageYears("41")');assert.equal(run('validate(0).ok'),false);assert.equal(run('S.alloc.bonus["std:Athletics"]'),15);
+ run('APP.ageYears("1.5");APP.approveAgeRange();');assert.equal(run('validate(0).ok'),false);
+ run('S.species="elf";S.age.years=100;');assert.equal(run('ageRangeIssue()'),null);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
