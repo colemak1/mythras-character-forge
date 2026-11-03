@@ -19,10 +19,20 @@
 .stage-topline{display:flex;justify-content:space-between;position:relative;z-index:1;padding:11px 18px 0;font:700 10px system-ui,sans-serif;letter-spacing:.15em;color:#b89a6d}
 .stage-topline span:last-child{color:#927b5c;font-weight:500}
 .stage-core{position:relative;z-index:1;min-height:123px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;padding:15px 20px 5px}
-.stage-dice{display:flex;gap:7px;align-items:center;justify-content:center;margin:0 auto 3px}
-.dice-cell{display:flex;align-items:center;justify-content:center;width:49px;height:52px;border:1px solid #ccb48d;background:linear-gradient(145deg,#f5e9d1,#bc9e70);border-radius:7px;box-shadow:inset 0 1px #fff9,0 5px 12px #0007;color:#35291b;font:700 27px Georgia,serif;font-variant-numeric:tabular-nums}
-.dice-suffix{font:700 10px system-ui,sans-serif;color:#bda982;letter-spacing:.12em;margin-left:6px}
-.combat-stage.is-rolling .dice-cell{animation:diceJitter .13s steps(2,end) infinite alternate;border-color:#f6d495}
+.stage-dice{display:flex;gap:14px;align-items:flex-end;justify-content:center;flex-wrap:wrap;margin:0 auto 3px;max-width:100%}
+.die-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:72px}
+.die-shape{position:relative;display:flex;align-items:center;justify-content:center;width:72px;height:72px;color:#24170f;font:700 25px Georgia,serif;font-variant-numeric:tabular-nums;text-shadow:0 1px 0 #fff8;box-shadow:inset 0 1px #fff9,0 8px 18px #0008,0 0 0 1px #f4d9ab22;background:linear-gradient(145deg,#fbf1df,#c49d63 60%,#8b6637 100%)}
+.die-shape .die-face{position:relative;z-index:2}
+.die-shape:before{content:'';position:absolute;inset:6px;border:1px solid rgba(90,57,22,.34);pointer-events:none}
+.die-shape.d4{clip-path:polygon(50% 5%,6% 93%,94% 93%)}
+.die-shape.d6{border-radius:10px}
+.die-shape.d8{clip-path:polygon(50% 1%,88% 22%,99% 50%,88% 78%,50% 99%,12% 78%,1% 50%,12% 22%)}
+.die-shape.d10{clip-path:polygon(50% 1%,80% 10%,97% 34%,92% 67%,70% 92%,30% 92%,8% 67%,3% 34%,20% 10%)}
+.die-shape.d12{clip-path:polygon(50% 1%,80% 10%,97% 34%,97% 66%,80% 90%,50% 99%,20% 90%,3% 66%,3% 34%,20% 10%)}
+.die-shape.d20{clip-path:polygon(50% 0%,82% 12%,100% 38%,95% 68%,76% 91%,50% 100%,24% 91%,5% 68%,0% 38%,18% 12%)}
+.die-shape.percent{background:linear-gradient(145deg,#eef4ff,#87a6d6 58%,#3d5b84 100%);color:#f7fbff;text-shadow:0 1px 0 #16304f}.die-shape.percent:before{border-color:rgba(234,242,255,.35)}
+.die-role{font:700 10px system-ui,sans-serif;color:#bda982;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+.combat-stage.is-rolling .die-shape{animation:diceJitter .13s steps(2,end) infinite alternate;border-color:#f6d495}
 .stage-primary{font:700 11px system-ui,sans-serif;color:#dec499;letter-spacing:.15em;text-transform:uppercase}
 .stage-result{font:700 clamp(18px,2vw,25px) Georgia,serif;color:#e9ddc5;line-height:1.2;letter-spacing:.02em;text-shadow:0 2px 10px #000b}
 .combat-stage.attack .stage-result,.combat-stage.defense .stage-result{color:#e8ddc5}
@@ -75,10 +85,14 @@ let nextLogId=1;
 const V={capturing:false,busy:false,quick:false,reduced:!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches),
   events:[],step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,timer:null,diceTimer:null};
 function clearPresentationTimers(){if(V.timer)clearTimeout(V.timer);if(V.diceTimer)clearInterval(V.diceTimer);V.timer=V.diceTimer=null;}
+function makeDie(sides,value,role='',variant='',display=''){return {sides,value,role,variant,display:display||String(value)}}
+function d100Dice(value){const n=Math.max(1,Math.min(100,Number(value)||1));const tens=n===100?0:Math.floor(n/10);const ones=n%10;return [makeDie(10,tens,'10s','percent',tens===0?'00':String(tens*10)),makeDie(10,ones,'1s','percent',String(ones))]}
+function randomFaceForDie(d){const s=Number(d?.sides)||6;const variant=d?.variant||'';const role=d?.role||'';if(variant==='percent'&&role==='10s'){const n=Math.floor(Math.random()*10)*10;return n===0?'00':String(n);}if(variant==='percent')return String(Math.floor(Math.random()*10));if(s===10)return String(Math.floor(Math.random()*10)+1);return String(Math.floor(Math.random()*s)+1)}
+function dieClass(sides){return 'd'+(Number(sides)||6)}
+function renderDice(dice,rolling){return `<div class="stage-dice" aria-label="dice tray">${dice.map((d,i)=>`<div class="die-wrap"><div class="die-shape ${dieClass(d.sides)} ${d.variant||''}" data-sides="${d.sides}" data-role="${esc(d.role||'')}" data-variant="${esc(d.variant||'')}"><span class="die-face">${rolling?randomFaceForDie(d):esc(d.display??d.value)}</span></div><div class="die-role">${esc(d.role||('d'+d.sides))}</div></div>`).join('')}</div>`}
+function fallbackDice(title,body){const roll=/^(\d{1,3})\s+(?:against|vs)\b/.exec(body)||/\b(?:rolls?\s+Endurance\s+|roll\s*:?\s*)(\d{1,3})\s*(?:\/|vs)/i.exec(body);if(roll)return d100Dice(Number(roll[1]));return []}
 function stageFor(entry){
   const title=entry.title||'', body=entry.body||'';
-  const roll=/^(\d{1,3})\s+(?:against|vs)\b/.exec(body)||/\b(?:rolls?\s+Endurance\s+|roll\s*:?\s*)(\d{1,3})\s*(?:\/|vs)/i.exec(body);
-  const n=roll?Number(roll[1]):null;
   const outcome=/(?:—\s*|\(\s*)(CRITICAL|SUCCESS|FAILURE|FUMBLE)\b/i.exec(body);
   let kind=entry.kind||'system',primary=title.toUpperCase(),result=outcome?outcome[1].toUpperCase():'',target=null,loc=null;
   const hit=/\bhits\s+(Head|Chest|Abdomen|Right Arm|Left Arm|Right Leg|Left Leg)\b/i.exec(title);
@@ -86,25 +100,26 @@ function stageFor(entry){
   else if(/No Damaging Hit/i.test(title)){primary='ATTACK DEFLECTED';result='NO DAMAGE';kind='miss';}
   else if(/FIGHT ENDS/i.test(title)){primary='THE FIGHT IS OVER';result=(S.winner||'VICTORY').toUpperCase();kind='final';}
   else if(/Special Effects/i.test(title)){primary='OPENING CREATED';result='SPECIAL EFFECT';kind='effect';}
+  else if(/Initiative/i.test(title)){primary='INITIATIVE ROLL';result='ORDER SET';kind='attack';}
   else if(/\battacks$/i.test(title)){primary=title.replace(/ attacks$/i,'').toUpperCase()+' · ATTACK';kind='attack';}
   else if(/\b(parries|evades)$/i.test(title)){primary=title.replace(/ (parries|evades)$/i,'').toUpperCase()+' · '+(/parries$/i.test(title)?'PARRY':'EVADE');kind='defense';}
   else if(/Trip Opponent|Press Advantage|Overextend|Choose Location|Maximize Damage/i.test(title)){primary='TACTICAL ADVANTAGE';kind='effect';}
   else if(/WOUND/i.test(title)){primary=title.toUpperCase();kind='hurt';}
   else if(/Round \d+/i.test(title)){primary=title.toUpperCase();result='NEW ROUND';}
-  return {primary,result,roll:n!==null&&n>=1&&n<=100?n:null,kind,body,entry,target,loc,rolling:false};
+  const dice=(entry.meta&&entry.meta.dice&&entry.meta.dice.length)?entry.meta.dice:fallbackDice(title,body);
+  return {primary,result,dice,kind,body,entry,target,loc,rolling:false};
 }
 function stageHtml(){
   const x=V.stage;
-  if(!x)return `<div class="combat-stage idle"><div class="stage-topline"><span>THE EXCHANGE</span><span>READY</span></div><div class="stage-core"><div class="stage-dice idle-dice"><span class="dice-cell">d</span><span class="dice-cell">%</span></div><div class="stage-primary">AWAITING AN ACTION</div><div class="stage-result">Your next choice changes the fight.</div></div><div class="stage-caption">Each roll and consequence will appear here first.</div></div>`;
-  const isDice=x.roll!==null;
-  const shown=x.roll===100?'00':String(x.roll??0).padStart(2,'0');
-  const highlightResult=V.busy&&x.rolling?'ROLLING d100…':x.result||'RESOLVED';
+  if(!x)return `<div class="combat-stage idle"><div class="stage-topline"><span>THE EXCHANGE</span><span>READY</span></div><div class="stage-core">${renderDice([makeDie(10,0,'10s','percent','00'),makeDie(10,0,'1s','percent','0'),makeDie(6,6,'Damage'),makeDie(10,10,'Initiative')],false)}<div class="stage-primary">AWAITING AN ACTION</div><div class="stage-result">Your next choice changes the fight.</div></div><div class="stage-caption">Each roll and consequence will appear here first.</div></div>`;
+  const hasDice=(x.dice||[]).length>0;
+  const highlightResult=V.busy&&x.rolling?'ROLLING…':x.result||'RESOLVED';
   return `<div class="combat-stage ${x.kind}${x.rolling?' is-rolling':''}${V.highlight?' is-impact':''}" role="status" aria-live="polite">
     <div class="stage-topline"><span>${V.busy?`EXCHANGE · BEAT ${V.step+1} / ${V.events.length}`:'LATEST RESULT'}</span><span>${x.rolling?'DICE IN MOTION':x.kind==='hurt'?'DAMAGE RESOLVED':'RESULT'}</span></div>
-    <div class="stage-core">${isDice?`<div class="stage-dice" aria-label="d100 result ${x.rolling?'rolling':x.roll}"><span id="diceTens" class="dice-cell">${x.rolling?'?':shown[0]}</span><span id="diceOnes" class="dice-cell">${x.rolling?'?':shown[1]}</span><span class="dice-suffix">d100</span></div>`:''}
-      <div class="stage-primary">${esc(x.primary)}</div><div class="stage-result ${/FAILURE|FUMBLE|NO DAMAGE/i.test(highlightResult)?'bad':/SUCCESS|CRITICAL/i.test(highlightResult)?'good':''}">${esc(highlightResult)}</div></div>
+    <div class="stage-core">${hasDice?renderDice(x.dice,x.rolling):''}
+      <div class="stage-primary">${esc(x.primary)}</div><div class="stage-result ${/FAILURE|FUMBLE|NO DAMAGE/i.test(highlightResult)?'bad':/SUCCESS|CRITICAL|ORDER SET/i.test(highlightResult)?'good':''}">${esc(highlightResult)}</div></div>
     <div class="stage-caption">${esc(x.body)}</div>
-    <div class="stage-progress"><div style="width:${V.busy?Math.round((V.step+(x.rolling?.4:.85))/Math.max(1,V.events.length)*100):100}%"></div></div>
+    <div class="stage-progress"><div style="width:${V.busy?Math.round((V.step+(x.rolling?.45:.86))/Math.max(1,V.events.length)*100):100}%"></div></div>
     ${V.busy?'<button type="button" class="skip-link" data-act="skip">Skip sequence ↠</button>':''}
   </div>`;
 }
@@ -123,21 +138,23 @@ function playBeat(){
   clearPresentationTimers();
   const e=V.events[V.step];
   if(!e){V.busy=false;V.visibleCount=Infinity;V.shown=null;V.highlight=null;render();return;}
-  V.stage=stageFor(e);V.stage.rolling=!!(V.stage.roll!==null&&!V.reduced&&!V.quick);
+  V.stage=stageFor(e);V.stage.rolling=!!((V.stage.dice||[]).length&&!V.reduced&&!V.quick);
   V.highlight=null;
   render();
   if(V.stage.rolling){
-    const cycle=()=>{const tens=document.getElementById('diceTens'),ones=document.getElementById('diceOnes');if(tens&&ones){tens.textContent=Math.floor(Math.random()*10);ones.textContent=Math.floor(Math.random()*10);}};
-    V.diceTimer=setInterval(cycle,58);
+    const cycle=()=>{document.querySelectorAll('.die-shape').forEach(node=>{const d={sides:Number(node.dataset.sides)||6,role:node.dataset.role||'',variant:node.dataset.variant||''};const face=node.querySelector('.die-face');if(face)face.textContent=randomFaceForDie(d);});};
+    cycle();
+    V.diceTimer=setInterval(cycle,72);
   }
-  const windup=V.reduced?0:V.quick?75:V.stage.roll!==null?610:180;
+  const hasDice=(V.stage.dice||[]).length>0;
+  const windup=V.reduced?0:V.quick?(hasDice?250:110):(hasDice?Math.min(1700,820+V.stage.dice.length*230):220);
   V.timer=setTimeout(()=>{
     clearPresentationTimers();
     V.stage.rolling=false;V.visibleCount=(S.logs||[]).indexOf(e)+1;
     if(e.view)V.shown=clone(e.view);
     V.highlight=V.stage.target?{id:V.stage.target,loc:V.stage.loc}:null;
     render();
-    const dwell=V.reduced?0:V.quick?135:V.stage.kind==='hurt'?1050:V.stage.kind==='final'?1350:V.stage.roll!==null?760:520;
+    const dwell=V.reduced?0:V.quick?200:V.stage.kind==='hurt'?1280:V.stage.kind==='final'?1500:hasDice?960:560;
     V.timer=setTimeout(()=>{V.step++;playBeat();},dwell);
   },windup);
 }
@@ -170,18 +187,18 @@ if(p?.kind==='effect'){let win=S.fighters[p.owner],los=S.fighters[p.other],offen
 if(p?.kind==='location')return `<div class="turnline"><h3>Choose Hit Location</h3><span>Special Effect</span></div><p class="desc">Select a reachable location on the defending combatant. All seven humanoid locations are assumed in reach in this simplified melee demo.</p><div class="inlineopts">${HIT_LOCS.map(l=>`<button class="choice" data-act="pickloc" data-val="${esc(l)}"><strong>${l.replace('Right ','R. ').replace('Left ','L. ')}</strong></button>`).join('')}</div>`;
 let id=S.order[S.turnIndex],f=S.fighters[id];if(!f)return '<p class="desc">Waiting for combat to begin.</p>';
 return `<div class="turnline"><h3>${esc(f.name)} · Your Turn</h3><span>${f.ap} AP remaining</span></div><p class="desc">One proactive action per turn. Attacks use Combat Style ${f.style}%. ${f.prone?'You are prone: Regain Footing is available.':''}</p><div class="choicegrid"><button class="choice gold" data-act="attack" ${f.ap<1||f.disabled.includes('Right Arm')?'disabled':''}><strong>Attack · 1 AP</strong><small>Roll Combat Style, allow a reaction, resolve damage</small></button><button class="choice" data-act="dither" ${f.ap<1?'disabled':''}><strong>Dither · 1 AP</strong><small>Use your action without attacking</small></button><button class="choice" data-act="stand" ${f.ap<1||!f.prone?'disabled':''}><strong>Regain Footing · 1 AP</strong><small>Stand up if you have been knocked prone</small></button><button class="choice" data-act="help"><strong>Combat reference</strong><small>Show the rules this prototype implements</small></button></div>`}
-function log(title,body,kind='system',detail=''){S.logs.push({id:nextLogId++,title,body,kind,detail,view:S.fighters?clone(S.fighters):null});if(S.logs.length>110)S.logs.shift();}
+function log(title,body,kind='system',detail='',meta=null){S.logs.push({id:nextLogId++,title,body,kind,detail,meta,view:S.fighters?clone(S.fighters):null});if(S.logs.length>110)S.logs.shift();}
 function rollSkill(pct){const r=d100();const grade=r===100||(r===99&&pct<=100)?'fumble':r>=96?'failure':r<=Math.ceil(pct/10)?'critical':r<=pct||r<=5?'success':'failure';return {roll:r,grade:({critical:3,success:2,failure:1,fumble:0})[grade],label:grade.toUpperCase(),name:grade};}
 function opposedBetter(x,y){return x.grade>y.grade || (x.grade===y.grade&&x.grade>=2&&x.roll>y.roll)}
-function weaponRoll(w,maxDie){let v=WEAPONS[w];let arr=Array.from({length:v.dice[0]},(_,i)=>i===0&&maxDie?v.dice[1]:die(v.dice[1]));return {total:arr.reduce((a,b)=>a+b,0)+v.bonus,detail:`${arr.join('+')}${v.bonus?`+${v.bonus}`:''}`}}
+function weaponRoll(w,maxDie){let v=WEAPONS[w];let arr=Array.from({length:v.dice[0]},(_,i)=>i===0&&maxDie?v.dice[1]:die(v.dice[1]));return {total:arr.reduce((a,b)=>a+b,0)+v.bonus,detail:`${arr.join('+')}${v.bonus?`+${v.bonus}`:''}`,rolls:arr,sides:v.dice[1],bonus:v.bonus,count:v.dice[0]}}
 function startRun(){S={phase:'fight',mode:config.mode,wave:1,wins:0,sel:{},lbMode:'normal',logs:[],fighters:{a:newHero(),b:newEnemy(1)},round:1,cycle:1,turnIndex:0,pending:null,endReason:'',winner:null};beginEncounter();}
-function beginEncounter(){let a=S.fighters.a,b=S.fighters.b;a.status='Ready';b.status='Ready';a.ap=a.apMax;b.ap=b.apMax;for(let f of [a,b]){const initDie=die(10);f.initiative=f.init+initDie-f.armor;f.initRoll=initDie}S.order=a.initiative>=b.initiative?['a','b']:['b','a'];S.round=1;S.cycle=1;S.turnIndex=0;S.pending=null;S.phase='fight';log(`Encounter ${S.wave} · Initiative`,`${a.name}: ${a.initRoll}+${a.init}-${a.armor} = ${a.initiative}. ${b.name}: ${b.initRoll}+${b.init}-${b.armor} = ${b.initiative}. ${S.fighters[S.order[0]].name} acts first.`,'system');advance();}
+function beginEncounter(){let a=S.fighters.a,b=S.fighters.b;a.status='Ready';b.status='Ready';a.ap=a.apMax;b.ap=b.apMax;for(let f of [a,b]){const initDie=die(10);f.initiative=f.init+initDie-f.armor;f.initRoll=initDie}S.order=a.initiative>=b.initiative?['a','b']:['b','a'];S.round=1;S.cycle=1;S.turnIndex=0;S.pending=null;S.phase='fight';log(`Encounter ${S.wave} · Initiative`,`${a.name}: ${a.initRoll}+${a.init}-${a.armor} = ${a.initiative}. ${b.name}: ${b.initRoll}+${b.init}-${b.armor} = ${b.initiative}. ${S.fighters[S.order[0]].name} acts first.`,'system','',{dice:[makeDie(10,a.initRoll,`${a.name} init`),makeDie(10,b.initRoll,`${b.name} init`)]});advance();}
 function advance(){if(S.phase!=='fight'||S.pending)return;let tries=0;while(tries++<25){if(S.turnIndex>=2){if(S.fighters.a.ap===0&&S.fighters.b.ap===0){S.round++;S.cycle=1;for(let f of Object.values(S.fighters))f.ap=f.apMax;log(`Round ${S.round}`,`Both fighters refresh their Action Points.`,'system')}else S.cycle++;S.turnIndex=0;}
 let id=S.order[S.turnIndex],f=S.fighters[id];if(f.ap<=0){S.turnIndex++;continue;}if(f.skipAttack>0){f.skipAttack--;f.ap--;log('Cannot Attack',`${f.name} is under pressure and uses this turn without attacking.`, 'system','Prototype simplification of Press Advantage / Overextend Opponent.');S.turnIndex++;continue;}
 if(f.kind==='ai'){const standScore=f.prone?72+(f.ap>1?9:0):0;const attackScore=58+(f.style>65?7:0)+(f.prone?-25:0)+Math.random()*11;if(standScore>attackScore){f.prone=false;f.ap--;log('Regain Footing',`${f.name} spends 1 AP to stand.`);S.turnIndex++;continue;}beginAttack(id);return;}
 render();return;}log('Turn order safety','Combat scheduling reached its safety limit.','system');render();}
-function beginAttack(id){if(S.phase!=='fight'||S.pending)return;let f=S.fighters[id],t=S.fighters[id==='a'?'b':'a'];if(!f||f.ap<1)return;f.ap--;let at=rollSkill(f.style*(f.prone?2/3:1));S.pending={kind:'reaction',atk:id,def:t.id,attackRoll:at,reaction:'none',defenseRoll:null,owner:null,other:null,effectsLeft:0,chosen:[],chosenLoc:null,maximize:0,evaded:false};log(`${f.name} attacks`,`${at.roll} against Combat Style ${Math.round(f.style*(f.prone?2/3:1))}% — ${at.label}.`,'system',`${f.weapon==='spear'?'Spear':'Weapon'}: ${WEAPONS[f.weapon].name}. ${f.ap} AP left.`);if(t.kind==='ai'){const threat=at.grade>=2?60+(at.grade===3?18:0):at.grade===0?38:10;const parryValue=threat+(t.ap>1?12:-15)+(Object.values(t.hp).some((hp)=>hp<=2)?12:0)+Math.random()*12;react(t.ap>0&&parryValue>50?'parry':'none');}else render();}
-function react(action){const p=S.pending;if(!p||p.kind!=='reaction')return;const a=S.fighters[p.atk],d=S.fighters[p.def];p.reaction=action;let dr=null;if(action!=='none'&&d.ap>0){d.ap--;dr=rollSkill(action==='parry'?d.style:d.evade);p.defenseRoll=dr;log(`${d.name} ${action==='parry'?'parries':'evades'}`,`${dr.roll} vs ${action==='parry'?d.style:d.evade}% — ${dr.label}. ${d.ap} AP remaining.`,'system');if(action==='evade')d.prone=true;}else{p.reaction='none';log(`${d.name} does not defend`,`${d.name} preserves Action Points. The exchange is treated as an undefended attack.`,'system');}
+function beginAttack(id){if(S.phase!=='fight'||S.pending)return;let f=S.fighters[id],t=S.fighters[id==='a'?'b':'a'];if(!f||f.ap<1)return;f.ap--;let at=rollSkill(f.style*(f.prone?2/3:1));S.pending={kind:'reaction',atk:id,def:t.id,attackRoll:at,reaction:'none',defenseRoll:null,owner:null,other:null,effectsLeft:0,chosen:[],chosenLoc:null,maximize:0,evaded:false};log(`${f.name} attacks`,`${at.roll} against Combat Style ${Math.round(f.style*(f.prone?2/3:1))}% — ${at.label}.`,'system',`${f.weapon==='spear'?'Spear':'Weapon'}: ${WEAPONS[f.weapon].name}. ${f.ap} AP left.`,{dice:d100Dice(at.roll)});if(t.kind==='ai'){const threat=at.grade>=2?60+(at.grade===3?18:0):at.grade===0?38:10;const parryValue=threat+(t.ap>1?12:-15)+(Object.values(t.hp).some((hp)=>hp<=2)?12:0)+Math.random()*12;react(t.ap>0&&parryValue>50?'parry':'none');}else render();}
+function react(action){const p=S.pending;if(!p||p.kind!=='reaction')return;const a=S.fighters[p.atk],d=S.fighters[p.def];p.reaction=action;let dr=null;if(action!=='none'&&d.ap>0){d.ap--;dr=rollSkill(action==='parry'?d.style:d.evade);p.defenseRoll=dr;log(`${d.name} ${action==='parry'?'parries':'evades'}`,`${dr.roll} vs ${action==='parry'?d.style:d.evade}% — ${dr.label}. ${d.ap} AP remaining.`,'system','',{dice:d100Dice(dr.roll)});if(action==='evade')d.prone=true;}else{p.reaction='none';log(`${d.name} does not defend`,`${d.name} preserves Action Points. The exchange is treated as an undefended attack.`,'system');}
 const attackGrade=p.attackRoll.grade,defenseGrade=dr?dr.grade:1;
 const offense=attackGrade>defenseGrade?attackGrade-defenseGrade:0;
 const defense=dr&&defenseGrade>attackGrade?defenseGrade-attackGrade:0;
@@ -204,14 +221,14 @@ function chooseAIEffectOrRender(){const p=S.pending;if(!p||p.kind!=='effect')ret
 function applyEffect(effect){const p=S.pending;if(!p||p.kind!=='effect')return;const actor=S.fighters[p.owner],target=S.fighters[p.other];p.chosen.push(effect);if(effect==='choose'){p.chosenLoc=null;if(actor.kind==='ai'){let fav=HIT_LOCS.slice().sort((a,b)=>target.hp[a]-target.hp[b]);p.chosenLoc=fav[0];log('Choose Location',`${actor.name} targets ${target.name}'s ${p.chosenLoc}.`,'hit');finishOneEffect();}else{p.kind='location';render();}return;}
 if(effect==='press'||effect==='overextend'){target.skipAttack=(target.skipAttack||0)+1;log(effect==='press'?'Press Advantage':'Overextend Opponent',`${target.name} cannot attack on their next turn.`,'hit');}
 if(effect==='maximize'){p.maximize++;log('Maximize Damage',`${actor.name} will maximize one weapon damage die.`,'hit');}
-if(effect==='trip'){let test=rollSkill(Math.max(target.brawn,target.evade));const origin=p.owner===p.atk?p.attackRoll:p.defenseRoll;let resist=opposedBetter(test,origin);if(!resist)target.prone=true;log('Trip Opponent',`${target.name} rolls ${test.roll} vs ${Math.max(target.brawn,target.evade)}% — ${test.label}. ${resist?'They keep their footing.':'They fall prone.'}`,'hit','Simplified opposed Brawn/Evade check versus the winning combat roll.');}
+if(effect==='trip'){let test=rollSkill(Math.max(target.brawn,target.evade));const origin=p.owner===p.atk?p.attackRoll:p.defenseRoll;let resist=opposedBetter(test,origin);if(!resist)target.prone=true;log('Trip Opponent',`${target.name} rolls ${test.roll} vs ${Math.max(target.brawn,target.evade)}% — ${test.label}. ${resist?'They keep their footing.':'They fall prone.'}`,'hit','Simplified opposed Brawn/Evade check versus the winning combat roll.',{dice:d100Dice(test.roll)});}
 finishOneEffect();}
 function finishOneEffect(){const p=S.pending;if(!p)return;p.effectsLeft--;if(p.effectsLeft>0){p.kind='effect';chooseAIEffectOrRender();}else resolveHit();}
 function chooseLocation(loc){const p=S.pending;if(!p||p.kind!=='location'||!HIT_LOCS.includes(loc))return;p.chosenLoc=loc;log('Choose Location',`${S.fighters[p.owner].name} selects ${loc} before damage is rolled.`,'hit');finishOneEffect();}
 function resolveHit(){const p=S.pending;if(!p)return;let atk=S.fighters[p.atk],def=S.fighters[p.def];if(p.attackRoll.grade<2||p.evaded){log('No Damaging Hit',p.evaded?`${def.name} evades the incoming strike, ending prone.`:`${atk.name}'s attack failed to connect.`, 'system');endAction();return;}
 let loc=p.chosenLoc||HIT_TABLE[die(20)-1];let dmg=weaponRoll(atk.weapon,p.maximize>0);let parry=0,parryText='No successful parry.';if(p.reaction==='parry'&&p.defenseRoll?.grade>=2){let sizes=WEAPONS[atk.weapon].size-WEAPONS[def.weapon].size;parry=sizes<=0?dmg.total:sizes===1?Math.ceil(dmg.total/2):0;parryText=`Successful parry: ${parry} absorbed (${WEAPONS[def.weapon].name} size vs ${WEAPONS[atk.weapon].name}).`;}
-let afterParry=Math.max(0,dmg.total-parry),wound=Math.max(0,afterParry-def.armor),old=def.hp[loc];def.hp[loc]-=wound;def.lastDamage={loc,wound};log(`${atk.name} hits ${loc}`,`${dmg.total} weapon damage (${dmg.detail}) − ${parry} parry − ${Math.min(afterParry,def.armor)} armor = ${wound} HP lost.`,'hurt',`${parryText} ${loc}: ${old} → ${def.hp[loc]} HP.`);
-let cls=zoneClass(def,loc);if(wound>0&&(cls==='serious'||cls==='major')){let end=rollSkill(def.endurance);let vs=opposedBetter(end,p.attackRoll);log(`${cls.toUpperCase()} WOUND · ${loc}`,`${def.name} rolls Endurance ${end.roll}/${def.endurance}% (${end.label}) versus original attack ${p.attackRoll.roll} (${p.attackRoll.label}): ${vs?'holds on':'fails'}.`,'hurt');if(cls==='major'){endFight(atk.id,`${def.name} suffered a Major Wound to ${loc}.`);return;}if(!vs){if(['Head','Chest','Abdomen'].includes(loc)){endFight(atk.id,`${def.name} is incapacitated by a Serious Wound to ${loc}.`);return;}if(loc==='Right Arm'){def.disabled.push(loc);endFight(atk.id,`${def.name}'s weapon arm is disabled. (Prototype ends the fight here.)`);return;}if(loc.endsWith('Leg'))def.prone=true;}def.skipAttack=Math.max(def.skipAttack,die(3));log('Pain and interruption',`${def.name} cannot attack for ${def.skipAttack} upcoming turn(s) while reeling from the Serious Wound.`,'hurt','This simplified wound handling does not model every Core recovery and disability consequence.');}
+let afterParry=Math.max(0,dmg.total-parry),wound=Math.max(0,afterParry-def.armor),old=def.hp[loc];def.hp[loc]-=wound;def.lastDamage={loc,wound};log(`${atk.name} hits ${loc}`,`${dmg.total} weapon damage (${dmg.detail}) − ${parry} parry − ${Math.min(afterParry,def.armor)} armor = ${wound} HP lost.`,'hurt',`${parryText} ${loc}: ${old} → ${def.hp[loc]} HP.`,{dice:[makeDie(20,HIT_TABLE.indexOf(loc)+1,'Hit loc'),...dmg.rolls.map((r,i)=>makeDie(dmg.sides,r,dmg.count>1?`DMG ${i+1}`:'Damage'))]});
+let cls=zoneClass(def,loc);if(wound>0&&(cls==='serious'||cls==='major')){let end=rollSkill(def.endurance);let vs=opposedBetter(end,p.attackRoll);log(`${cls.toUpperCase()} WOUND · ${loc}`,`${def.name} rolls Endurance ${end.roll}/${def.endurance}% (${end.label}) versus original attack ${p.attackRoll.roll} (${p.attackRoll.label}): ${vs?'holds on':'fails'}.`,'hurt','',{dice:d100Dice(end.roll)});if(cls==='major'){endFight(atk.id,`${def.name} suffered a Major Wound to ${loc}.`);return;}if(!vs){if(['Head','Chest','Abdomen'].includes(loc)){endFight(atk.id,`${def.name} is incapacitated by a Serious Wound to ${loc}.`);return;}if(loc==='Right Arm'){def.disabled.push(loc);endFight(atk.id,`${def.name}'s weapon arm is disabled. (Prototype ends the fight here.)`);return;}if(loc.endsWith('Leg'))def.prone=true;}def.skipAttack=Math.max(def.skipAttack,die(3));log('Pain and interruption',`${def.name} cannot attack for ${def.skipAttack} upcoming turn(s) while reeling from the Serious Wound.`,'hurt','This simplified wound handling does not model every Core recovery and disability consequence.');}
 endAction();}
 function endAction(){S.pending=null;if(S.phase!=='fight'){render();return;}S.turnIndex++;advance();}
 function endFight(winnerId,reason){S.pending=null;const winner=S.fighters[winnerId],loser=S.fighters[winnerId==='a'?'b':'a'];loser.status='Defeated';S.endReason=reason;S.winner=winner.name;log('FIGHT ENDS',`${winner.name} wins. ${reason}`,'hurt');if(S.mode==='pvp'||S.mode==='tutorial'){S.phase='over';render();return;}if(winnerId==='a'){S.wins++;saveScore();S.phase='between';}else S.phase='over';render();}
