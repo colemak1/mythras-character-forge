@@ -10,6 +10,8 @@ The target includes Core character creation, characteristics and skills, equipme
 
 The book also includes guidance, tables, creature statistics and setting-dependent decisions that are not necessarily automatic character-sheet calculations. The provisional targets below label these **GM-assisted**, **reference**, or **scope decision needed**. They are not silently excluded from Core. Before treating any as outside the final product, confirm the intended workflow; absence of a feature is not itself a reason to exclude a rule.
 
+The stable eight-subsystem progress plan is in [subsystem-plan.md](subsystem-plan.md).
+
 ## How to use this register
 
 - **Target:** `automate` means correct calculations, constraints and outcomes where appropriate; `GM-assisted` means explicitly record or support choices and outcomes without automating the GM's judgement; `reference` means accurate findable guidance or manual use of the book, subject to publishing rights; `decision` means the required product behavior has not been decided. These are proposed targets, not verified descriptions of current behavior.

@@ -187,6 +187,17 @@ test('removing a cultural style warns and cancellation preserves every allocatio
  for(const ph of ['culture','career','bonus'])assert(run(`aGet(${JSON.stringify(ph)},"style:cult")`)>0);
  ctx.confirm=()=>true;run('APP.cultStyle(false);');assert.equal(run('S.cultStyleOn'),false);assert.equal(run('S.carStyles[0].mode'),'new');assert.equal(run('aGet("career","style:cult")'),0);
 });
+test('Core p.10 human hit-location table across every printed band and extension',()=>{
+ const expected=[[1,3,2,1,1],[2,4,3,1,2],[3,5,4,2,3],[4,6,5,3,4],[5,7,6,4,5],[6,8,7,5,6],[7,9,8,6,7],[8,10,9,7,8],[9,11,10,8,9]];
+ for(let i=0;i<expected.length;i++)for(const total of [i*5+1,i*5+5]){
+  ctx.total=total;assert.deepEqual(Array.from(run('hpLocs(total,0)'),x=>x[1]),expected[i]);
+ }
+});
+test('Core p.8 characteristic inputs reject fractional values without altering stored data',()=>{
+ reset();run('S.charMode="pb";S.chars={STR:10.5,CON:9.5,SIZ:12,DEX:12,INT:12,POW:12,CHA:12};');
+ assert.match(run('validate(currentSteps().indexOf("Characteristics")).msg'),/whole number/);assert.equal(run('S.chars.STR'),10.5);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);assert.equal(run('S.chars.STR'),10.5);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');

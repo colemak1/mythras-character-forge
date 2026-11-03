@@ -938,6 +938,7 @@ function validate(step){
     // bound itself is whatever the character's species can actually roll
     // (charBounds), so this stays correct once non-human templates exist.
     for(const c of CHARS){const {min,max}=charBounds(c);
+      if(!Number.isInteger(S.chars[c]))return bad(c+" must be a whole number.");
       if(S.chars[c]<min||S.chars[c]>max)
         return bad(c+" must be between "+min+" and "+max+charRangeSource()+" — "+c+" is currently "+S.chars[c]+".");}
     if(S.charMode==="pb"){
