@@ -13,7 +13,7 @@ Source: user-uploaded `pdfcoffee.com_mythras-2e-2-pdf-free(20261021-212124).pdf`
 | CH-03a | CHA experience modifier and CON healing rate tables (p. 9). | `xpMod`/`healRate`; tests cover 6/7, 12/13 and 18/19. | Source and listed automated boundaries pass; application during awards and healing are separate cases. |
 | CH-03b | POW luck table, magic points equal POW (p. 10). | `luckPts`, existing character display; luck boundaries tested at 6/7, 12/13 and 18/19. | Luck source and listed tests pass; broader MP workflows remain separate. |
 | CH-04a | Height range by SIZ; weight range by SIZ and body frame; player chooses actual value (pp. 9–10). | `heightWeight`; tests check all human SIZ 8–18 and each frame, plus explicit overrides. Midpoint is a convenience, not a book-mandated value. | Printed ranges pass automated checks for human SIZ 8–18; live override/save/reopen and nonhuman cases remain open. |
-| CH-04b | Human HP location table uses CON+SIZ (p. 10). | `hpLocs`; existing tests cover selected band boundaries; prior live example CON 10+SIZ 18 gave 6 head/legs, 7 abdomen, 8 chest, 5 arms. | Partial: selected examples pass; all bands, injury interactions and nonhuman bodies remain open. |
+| CH-04b | Human HP location table uses CON+SIZ (p. 10). | `hpLocs`; source-based tests cover every printed band boundary and one extension; prior live example CON 10+SIZ 18 gave 6 head/legs, 7 abdomen, 8 chest, 5 arms. | All printed human table bands and one extension pass automated checks; injury interactions, nonhuman bodies and live boundaries remain open. |
 | CH-04c | Human base movement is 6m (p. 10). | `moveBase`; prior signed-in example showed 6m. | One live example passes; movement penalties and other species are separate cases. |
 
 ## Finding corrected in this batch
@@ -28,3 +28,7 @@ The builder enclosed a paraphrase of the dice and points-build rules in quotatio
 - Expand standard skill bases, culture and career entries to individual cases before using these results as a denominator for all character creation.
 
 Nine JavaScript suites were run for this batch, including the new table checks. They are local automated tests, not a new live-service test. No overall rules percentage can be calculated from this partial set.
+
+## Additional creation batch
+
+Human characteristic validation now rejects non-integer values (including legacy/imported fractional points-build totals) without changing the saved values. Core p. 8 uses whole dice and point allocations. Automated tests cover a fractional 80-point build and preservation after reload. Live verification remains open. The broader subsystem remains in progress.
