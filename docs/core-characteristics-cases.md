@@ -32,3 +32,7 @@ Nine JavaScript suites were run for this batch, including the new table checks. 
 ## Additional creation batch
 
 Human characteristic validation now rejects non-integer values (including legacy/imported fractional points-build totals) without changing the saved values. Core p. 8 uses whole dice and point allocations. Automated tests cover a fractional 80-point build and preservation after reload. Live verification remains open. The broader subsystem remains in progress.
+
+## Standard skill creation bases
+
+Core p. 11 was checked against the rendered table. All 22 standard-skill formulas now have independent automated comparisons, with Anathaym’s example characteristics used to check calculated values. The Combat Style base (p. 12) and +40 cultural Customs/Native Tongue bonuses (p. 13) have example checks. Live creation, nonhuman cases and the complete skill descriptions are still open.
