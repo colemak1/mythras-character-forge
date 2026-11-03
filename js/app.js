@@ -490,7 +490,15 @@ window.APP={
    else{if(S.cultChoice.length>=c.choice.pick){const removed=S.cultChoice.shift();delete S.alloc.culture["std:"+removed];}
      S.cultChoice.push(sk);S.alloc.culture["std:"+sk]=5;}
    this.skillsChanged();},
- cultStyle(on){S.cultStyleOn=on;if(!on){delete S.alloc.culture["style:cult"];delete S.alloc.career["style:cult"];delete S.alloc.bonus["style:cult"];
+ cultStyle(on){
+   if(on===S.cultStyleOn)return;
+   if(!on){
+     const def=S.styleDefs["style:cult"];
+     const hasWork=!!(S.cultStyleName||"").trim()||["culture","career","bonus"].some(ph=>aGet(ph,"style:cult")>0)||
+       S.carStyles.some(cs=>cs&&cs.mode==="link")||!!(def&&((def.weapons||[]).length||(def.traits||[]).length));
+     if(hasWork&&!confirm("Removing the cultural Combat Style returns its allocated points to their pools and unlinks career styles. Continue?")){render();return;}
+   }
+   S.cultStyleOn=on;if(!on){delete S.alloc.culture["style:cult"];delete S.alloc.career["style:cult"];delete S.alloc.bonus["style:cult"];
    S.carStyles.forEach(cs=>{if(cs&&cs.mode==="link")cs.mode="new";});}
    else S.alloc.culture["style:cult"]=0;
    this.skillsChanged();},

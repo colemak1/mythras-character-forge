@@ -181,6 +181,12 @@ test('changing one linked career style preserves shared cultural-style points',(
  const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);assert.equal(run('aGet("career","style:cult")'),12);
  run('APP.carStyleMode(1,"new");');assert.equal(run('aGet("career","style:cult")'),0);
 });
+test('removing a cultural style warns and cancellation preserves every allocation',()=>{
+ reset();run('S.cultStyleOn=true;S.cultStyleName="Guard";S.carStyles=[{mode:"link",name:""}];S.alloc.culture["style:cult"]=5;S.alloc.career["style:cult"]=10;S.alloc.bonus["style:cult"]=7;');
+ ctx.confirm=()=>false;run('APP.cultStyle(false);');assert.equal(run('S.cultStyleOn'),true);assert.equal(run('S.carStyles[0].mode'),'link');
+ for(const ph of ['culture','career','bonus'])assert(run(`aGet(${JSON.stringify(ph)},"style:cult")`)>0);
+ ctx.confirm=()=>true;run('APP.cultStyle(false);');assert.equal(run('S.cultStyleOn'),false);assert.equal(run('S.carStyles[0].mode'),'new');assert.equal(run('aGet("career","style:cult")'),0);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
