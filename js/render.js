@@ -884,7 +884,13 @@ function stepCommunity(){
   const c=S.community||{connections:[]};
   let h=head("Community & Connections","Mythras Core, pp.21–25: develop your family, personal ties and resources. These are narrative records, not automatic bonuses. You can leave sections blank and develop them during play.");
   h+='<div class="card"><h3>Family & community</h3>'
-    +'<p class="note">Core p.25 has optional d100 family tables for parents, siblings, family reputation and connections. Consult the book to roll, or agree on details with your GM.</p>';
+    +'<p class="note">Roll any optional Core p.25 table, or agree on your background with the GM. Results are saved below; use them to develop your notes and named connections. Enemies/rivals and contacts/allies from reputation are choices to settle with the GM.</p>';
+  for(const [key,label] of Object.entries(FAMILY_TABLES)){
+    const r=c.rolls?.[key];
+    h+='<div style="margin-bottom:10px"><button class="chip" onpointerdown="APP.rollFamily(\''+key+'\')" onclick="APP.rollFamily(\''+key+'\')">'+(r?'Reroll ':'Roll ')+label.toLowerCase()+'</button>';
+    if(r)h+='<p class="note">'+esc(familyRollLines({rolls:{[key]:r}})[0])+'</p>';
+    h+='</div>';
+  }
   for(const [key,label,placeholder] of [
     ["family","Family / household","Family members, home, lineage"],
     ["parents","Parents","Family status or d100 result"],
@@ -892,6 +898,11 @@ function stepCommunity(){
     ["reputation","Family reputation","Reputation, allies, family history"],
     ["resources","Background resources","Mounts, lodging, retainers or other available support"]
   ])h+=fld(label,'<input type="text" value="'+esc(c[key]||'')+'" placeholder="'+esc(placeholder)+'" onchange="APP.communityField(\''+key+'\',this.value)">');
+  h+='<hr><h3>Marriage &amp; children (optional)</h3><p class="note">Core p.23: agree on these details with the GM, or roll marital status against base Influence (CHA × 2). For a married character, you may roll 1d4−1 children and their ages. For a Middle Aged or older parent, child ages use the next younger Core age category. Develop the relationship and any identical-age siblings with the GM.</p>'
+    +'<button class="chip" onpointerdown="APP.rollHousehold(\'marriage\')" onclick="APP.rollHousehold(\'marriage\')" '+(!charsReady()?'disabled':'')+'>'+(c.marriageRoll?'Reroll':'Roll')+' marital status</button> '
+    +'<button class="chip" onpointerdown="APP.rollHousehold(\'children\')" onclick="APP.rollHousehold(\'children\')">'+(c.childrenRoll?'Reroll':'Roll')+' children (married character)</button>';
+  for(const line of householdRollLines(c))h+='<p class="note">'+esc(line)+'</p>';
+  h+=fld('Marriage / children notes','<input type="text" value="'+esc(c.household||'')+'" placeholder="Agreed household details, names and relationships" onchange="APP.communityField(\'household\',this.value)">');
   h+='</div><div class="card"><h3>Allies, Contacts, Rivals & Enemies</h3>'
     +'<p class="note">Core p.22 distinguishes allies who actively help, contacts who might help, rivals who compete, and enemies who mean harm. Describe people or organisations without assigning mechanical bonuses.</p>';
   (c.connections||[]).forEach((x,i)=>{
@@ -934,7 +945,7 @@ function stepPassions(){
   h+='<div class="card">';
   if(!S.passions.length)h+='<p class="note">No passions yet &mdash; add one below'+(S.culture?', or start from your culture&rsquo;s suggestions':"")+'.</p>';
   S.passions.forEach((p,i)=>{
-    const t=PASSION_TYPES[p.type];
+    const t=PASSION_TYPES[p.type]||PASSION_TYPES.org;
     h+='<div style="border:1px solid var(--line-soft);border-radius:6px;padding:10px;margin-bottom:8px">'
      +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
      +'<input type="text" value="'+esc(p.name)+'" placeholder="e.g. Loyalty to Clan Chieftain" style="flex:1;min-width:180px" onchange="APP.pas('+i+',\'name\',this.value)">'
@@ -945,7 +956,9 @@ function stepPassions(){
      +(t.needs.includes("subjPOW")?' &nbsp;subject POW <input type="number" value="'+(p.subjPOW||"")+'" onchange="APP.pas('+i+',\'subjPOW\',this.value)">':"")
      +(t.needs.includes("subjCHA")?' &nbsp;subject CHA <input type="number" value="'+(p.subjCHA||"")+'" onchange="APP.pas('+i+',\'subjCHA\',this.value)">':"")
      +' &nbsp;&rarr; <b style="font-family:var(--mono);color:var(--bronze-hi)">'+passionVal(p)+'%</b>'
-     +(passionVal(p)==="?"?' <span class="note">Enter the subject characteristics to calculate this Passion.</span>':"")+'</div></div>';
+      +(passionVal(p)==="?"?' <span class="note">Enter the subject characteristics to calculate this Passion.</span>':"")+'</div>'
+     +'<label class="note" style="display:block;margin-top:8px">GM-agreed starting percentage (optional; Core p.23) <input type="number" min="0" step="1" value="'+esc(p.startingOverride??'')+'" placeholder="Use formula" onchange="APP.pas('+i+',\'startingOverride\',this.value)"></label>'
+     +(p.startingOverride!=null?'<p class="note">Starting override replaces the formula; earned Passion changes still apply. Clear it to use the formula.</p>':'')+'</div>';
   });
   h+='<p><button class="chip" onpointerdown="APP.addPas()" onclick="APP.addPas()">+ add passion</button>'
    +(S.culture?' <button class="chip" onclick="APP.pasFromCulture()">use '+S.culture+' suggestions</button>':"")
@@ -953,6 +966,8 @@ function stepPassions(){
   return h;
 }
 function passionVal(p){
+  const override=p.startingOverride;
+  if(override!==null&&override!==undefined&&String(override).trim()!==""&&Number.isSafeInteger(Number(override))&&Number(override)>=0)return Number(override)+(Number(p.xpBonus)||0);
   if(!charsReady())return "?";const c=effectiveChars();
   const needs=PASSION_TYPES[p.type]?.needs||[];
   if(needs.some(key=>p[key]==null||String(p[key]).trim()===""||!Number.isFinite(Number(p[key]))||!Number.isInteger(Number(p[key]))||Number(p[key])<0))return "?";
@@ -960,7 +975,7 @@ function passionVal(p){
   switch(p.type){
    case "romantic":base=30+(+p.subjPOW||0)+(+p.subjCHA||0);break;
    case "platonic":case "averse":base=30+c.POW+(+p.subjCHA||0);break;
-   case "org":case "place":base=30+c.POW+c.INT;break;
+   case "org":case "place":case "concept":base=30+c.POW+c.INT;break;
    case "species":case "object":base=30+c.POW*2;break;
    default:base=30;
   }return base+(Number(p.xpBonus)||0);

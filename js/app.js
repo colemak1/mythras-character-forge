@@ -625,9 +625,25 @@ window.APP={
    S.hobby=name||null;S.hobbySpec="";this.skillsChanged();},
  /* Core Culture & Community, pp.21–25: narrative choices, not free mechanical bonuses. */
  communityField(key,value){
-   if(!["family","parents","siblings","reputation","partyTie","resources"].includes(key))return;
+   if(!["family","parents","siblings","reputation","partyTie","resources","household"].includes(key))return;
    S.community[key]=String(value).slice(0,2000);render();
  },
+ rollFamily(table){debounceFire("rollFamily:"+table,()=>{
+   if(VIEW_ONLY||!Object.hasOwn(FAMILY_TABLES,table))return;
+   S.community.rolls=S.community.rolls||{};
+   if(S.community.rolls[table]&&!confirm("Replace the saved "+FAMILY_TABLES[table].toLowerCase()+" roll? Your written notes and named connections will remain."))return;
+   S.community.rolls[table]=familyTableResult(table,d(100));render();
+ });},
+ rollHousehold(which){debounceFire("rollHousehold:"+which,()=>{
+   if(VIEW_ONLY||!["marriage","children"].includes(which))return;
+   const key=which==="marriage"?"marriageRoll":"childrenRoll";
+   if(S.community[key]&&!confirm("Replace the saved "+which+" roll? Your household notes will remain."))return;
+   if(which==="marriage"){
+     const cha=effectiveChars().CHA;if(!Number.isSafeInteger(cha)||cha<0)return;
+     S.community[key]=marriageResult(d(100),cha*2);
+   }else S.community[key]=childrenResult(ageBand().key);
+   render();
+ });},
  communityAdd(){debounceFire("communityAdd",()=>{S.community.connections.push({type:"Contact",name:"",notes:""});render();});},
  communityRemove(i){debounceFire("communityRemove"+i,()=>{if(i>=0&&i<S.community.connections.length)S.community.connections.splice(i,1);render();});},
  communityConnection(i,key,value){
@@ -654,7 +670,16 @@ window.APP={
  // normal press only ever adds one passion.
  addPas(){debounceFire('addPas',()=>{S.passions.push({name:"",type:"org",subjPOW:"",subjCHA:""});render();});},
  delPas(i){debounceFire('delPas'+i,()=>{S.passions.splice(i,1);render();});},
- pas(i,f,v){S.passions[i][f]=v;render();},
+ pas(i,f,v){
+   if(VIEW_ONLY||!S.passions[i])return;
+   if(f==="startingOverride"){
+     if(String(v).trim()==="")delete S.passions[i].startingOverride;
+     else {const n=Number(v);if(!Number.isSafeInteger(n)||n<0)return;S.passions[i].startingOverride=n;}
+   }else if(f==="type"){if(!Object.hasOwn(PASSION_TYPES,v))return;S.passions[i][f]=v;}
+   else if(["name","subjPOW","subjCHA"].includes(f))S.passions[i][f]=String(v).slice(0,2000);
+   else return;
+   render();
+ },
  pasFromCulture(){if(!S.culture)return;const c=CULTURES[S.culture];
    // Loyalty to a chief is person-based; Loyalty to a town is place-based.
    // Love and Hate suggestions still need the player to select a target type.
@@ -1670,10 +1695,12 @@ function buildMD(){
       return "| "+magicLabel(m)+" | "+t.label+" | "+t.castSkill+" | "+cost+" |";}).join("\n")+"\n\n";
   if(S.community){
     const c=S.community;
-    const fields=[["Family",c.family],["Parents",c.parents],["Siblings",c.siblings],["Family reputation",c.reputation],["Background resources",c.resources],["Party connection",c.partyTie]];
+    const fields=[["Family",c.family],["Parents",c.parents],["Siblings",c.siblings],["Family reputation",c.reputation],["Background resources",c.resources],["Party connection",c.partyTie],["Marriage / children",c.household]];
     const nonempty=fields.filter(([,value])=>String(value||"").trim());
-    if(nonempty.length||c.connections.length){
+    if(nonempty.length||c.connections.length||familyRollLines(c).length||householdRollLines(c).length){
       md+="## Community\n\n"+nonempty.map(([key,value])=>"**"+key+":** "+String(value).replace(/\n/g," ")).join("\n\n")+"\n\n";
+      if(familyRollLines(c).length)md+="### Optional family rolls (Core p.25)\n\n"+familyRollLines(c).map(x=>"- "+x).join("\n")+"\n\n";
+      if(householdRollLines(c).length)md+="### Optional household rolls (Core p.23)\n\n"+householdRollLines(c).map(x=>"- "+x).join("\n")+"\n\n";
       if(c.connections.length)md+="### Allies, Contacts, Rivals and Enemies\n\n"+c.connections.map(x=>"- **"+x.type+":** "+x.name+(x.notes?" — "+x.notes.replace(/\n/g," "):"")).join("\n")+"\n\n";
     }
   }

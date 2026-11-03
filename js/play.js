@@ -1271,7 +1271,13 @@ function characterSheetBody(){
    +mkv("Homeland",esc(S.concept.homeland||"—"))+mkv("Social class",esc(S.money.socialClass||"—"))
    +(S.archetype!=="ordinary"?mkv("Tier",esc(ARCHETYPES[S.archetype].label)):"")
    +((S.community&&S.community.family)?mkv('Family',esc(S.community.family)):'')
+   +((S.community&&S.community.parents)?mkv('Parents',esc(S.community.parents)):'')
+   +((S.community&&S.community.siblings)?mkv('Siblings',esc(S.community.siblings)):'')
    +((S.community&&S.community.reputation)?mkv('Reputation',esc(S.community.reputation)):'')
+   +((S.community&&S.community.resources)?mkv('Resources',esc(S.community.resources)):'')
+   +(familyRollLines().length?'<div class="mnotesmini">'+familyRollLines().map(x=>'<div>'+esc(x)+'</div>').join('')+'</div>':'')
+   +((S.community&&S.community.household)?mkv('Marriage / children',esc(S.community.household)):'')
+   +(householdRollLines().length?'<div class="mnotesmini">'+householdRollLines().map(x=>'<div>'+esc(x)+'</div>').join('')+'</div>':'')
    +((S.community&&S.community.partyTie)?mkv('Party tie',esc(S.community.partyTie)):'')
    +'<div class="mnotesmini">'+(S.concept.notes?esc(S.concept.notes):'<span class="note">No background notes yet.</span>')+'</div></div>';
   h+='<div class="mtitlepanel"><div class="logo">Mythra<span>S</span></div><div class="sub2">Character Record</div></div>';
