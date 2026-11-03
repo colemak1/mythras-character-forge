@@ -530,7 +530,8 @@ const PASSION_TYPES={
  averse:{label:"A person — averse (hate/fear)",calc:"30 + own POW + subject's CHA",needs:["subjCHA"]},
  org:{label:"An organisation or group",calc:"30 + POW + INT",needs:[]},
  species:{label:"A race or species",calc:"30 + POW x2",needs:[]},
- place:{label:"A place, concept or ideal",calc:"30 + POW + INT",needs:[]},
+ place:{label:"A place",calc:"30 + POW + INT",needs:[]},
+ concept:{label:"A concept or ideal",calc:"30 + POW + INT",needs:[]},
  object:{label:"An object or substance",calc:"30 + POW x2",needs:[]}};
 
 // Cult & Community. The rank ladder, requirements and training-discount

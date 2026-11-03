@@ -12,6 +12,63 @@ function hpLocs(CON,SIZ){const i=Math.max(1,Math.ceil((CON+SIZ)/5));
   return [["Head",i],["Chest",i+2],["Abdomen",i+1],["Each Arm",Math.max(1,i-1)],["Each Leg",i]];}
 const HIT_D20=[["1-3","Right Leg"],["4-6","Left Leg"],["7-9","Abdomen"],["10-12","Chest"],["13-15","Right Arm"],["16-18","Left Arm"],["19-20","Head"]];
 
+// Optional family tables, uploaded Mythras Core p.25 (visually verified).
+// Resolve one d100 with an injected die function; retain every follow-up roll.
+const FAMILY_TABLES={parents:"Parents",siblings:"Siblings",extended:"Extended family",reputation:"Family reputation",connections:"Family connections"};
+function familyTableResult(table,roll,die=d){
+  if(!Object.hasOwn(FAMILY_TABLES,table)||!Number.isInteger(roll)||roll<1||roll>100)return null;
+  const dice=[];
+  const take=sides=>{const value=die(sides);if(!Number.isInteger(value)||value<1||value>sides)throw new RangeError("Invalid family die");dice.push({sides,value});return value;};
+  let summary="";
+  if(table==="parents")summary=roll<=20?"Both parents living":roll<=40?"Single parent: father":roll<=60?"One birth parent and a stepparent":roll<=80?"Single parent: mother":"Both parents dead";
+  if(table==="siblings")summary=roll<=10?"No siblings":take(roll<=30?4:roll<=70?6:roll<=90?8:10)+" sibling(s)";
+  if(table==="extended"){
+    const band=roll<=10?0:roll<=30?1:roll<=70?2:roll<=90?3:4;
+    const g=band===0?0:take(band===1?2:3)+(band<=2?-1:band===4?1:0);
+    const a=band===0?0:take([0,2,3,4,6][band]);
+    const c=band===0?0:take([0,3,4,6,8][band]);
+    summary=g+" grandparent(s); "+a+" aunt(s)/uncle(s); "+c+" cousin(s)";
+  }
+  if(table==="reputation"){
+    if(roll<=15)summary="Poor reputation; "+take(3)+" enemies or rivals";
+    else if(roll<=35)summary="Sound reputation, with hidden secrets; 1 enemy or rival";
+    else if(roll<=65)summary="Sound reputation; no additional relationships";
+    else if(roll<=85)summary="Good reputation, potentially vulnerable to scandal; 1 contact or ally";
+    else summary="Excellent reputation; "+take(3)+" contacts or allies";
+  }
+  if(table==="connections"){
+    const count=roll<=20?0:roll<=80?1:roll<=90?2:roll<=95?3:4;
+    const reach=count===0?"No notable connections":count===1?"Community connections":count===2?"Local influence":count===3?"Regional influence":"National influence";
+    const ties=Array.from({length:count},()=>["Ally","Contact","Enemy","Rival"][take(4)-1]);
+    summary=reach+(ties.length?"; "+ties.join(", "):"");
+  }
+  return {roll,dice,summary};
+}
+// Core p.23 Marriage box. Compare the raw d100 with base Influence, not its trained value.
+function marriageResult(roll,baseInfluence){
+  if(!Number.isInteger(roll)||roll<1||roll>100||!Number.isSafeInteger(baseInfluence)||baseInfluence<0)return null;
+  return {roll,baseInfluence,status:roll<=baseInfluence/10?"Married":roll<=baseInfluence?"Betrothed":"Neither married nor betrothed by this roll"};
+}
+function childrenResult(category,die=d){
+  const bands={young:[1,4,0],adult:[1,4,0],middle:[2,6,15],senior:[3,6,25],old:[4,6,40]};
+  if(!Object.hasOwn(bands,category))return null;
+  const dice=[];const take=sides=>{const value=die(sides);if(!Number.isInteger(value)||value<1||value>sides)throw new RangeError("Invalid family die");dice.push({sides,value});return value;};
+  const count=take(4)-1,ages=[];const [n,sides,add]=bands[category];
+  for(let child=0;child<count;child++){let age=add;for(let i=0;i<n;i++)age+=take(sides);ages.push(age);}
+  return {category,count,ages,dice};
+}
+function householdRollLines(community=S.community){
+  const lines=[];const m=community?.marriageRoll,c=community?.childrenRoll;
+  if(m)lines.push("Marital status — d100: "+m.roll+"; base Influence: "+m.baseInfluence+" → "+m.status);
+  if(c)lines.push("Children (parent category: "+(AGE_MAP[c.category]?.label||c.category)+") — "+c.count+(c.count?"; ages: "+c.ages.join(", "):"")+"; "+c.dice.map(x=>"d"+x.sides+": "+x.value).join(", ")+(new Set(c.ages).size<c.ages.length?". Identical ages indicate twins or triplets.":""));
+  return lines;
+}
+function familyRollLines(community=S.community){
+  return Object.entries(FAMILY_TABLES).filter(([key])=>community?.rolls?.[key]).map(([key,label])=>{
+    const r=community.rolls[key];return label+" — d100: "+r.roll+(r.dice.length?"; "+r.dice.map(x=>"d"+x.sides+": "+x.value).join(", "):"")+" → "+r.summary;
+  });
+}
+
 // Advantage-aware wrappers (Pulp Hero / Paragon). Grade-easier Advantages
 // (Endurance/Stealth/Willpower) and the doubled Healing Rate on Minor/Serious
 // Wounds are deliberately NOT folded into a flat number here — Mythras
@@ -247,7 +304,7 @@ function freshState(){return {
  customCareer:{isCustom:false,name:"",std:[],prof:[],styleSlots:0},
  hobby:null, hobbySpec:"",
  cultMembership:{archetype:null,name:"",rank:0},
- community:{family:"",parents:"",siblings:"",reputation:"",connections:[],partyTie:"",resources:""},
+ community:{family:"",parents:"",siblings:"",reputation:"",connections:[],partyTie:"",resources:"",rolls:{},household:""},
  _creationFlowVersion:2,
  qProf:[null,null,null], qProfSpec:["","",""], qStyleOn:false, qStyleName:"",
  alloc:{culture:{},career:{},bonus:{},quick:{}},
@@ -294,9 +351,24 @@ function normalizeState(){
     S._creationFlowVersion=2;
   }
   S.community=S.community||{};
-  for(const key of ["family","parents","siblings","reputation","partyTie","resources"]){
+  for(const key of ["family","parents","siblings","reputation","partyTie","resources","household"]){
     if(typeof S.community[key]!=="string")S.community[key]="";
   }
+  // Only retain reproducible table records. Old/manual narrative fields remain intact.
+  const familyRolls={};
+  for(const key of Object.keys(FAMILY_TABLES)){
+    const old=S.community.rolls?.[key];if(!old||!Array.isArray(old.dice))continue;
+    let next=0;
+    try{const result=familyTableResult(key,old.roll,sides=>{const x=old.dice[next++];return x?.sides===sides?x.value:NaN;});
+      if(result&&next===old.dice.length)familyRolls[key]=result;
+    }catch(e){/* malformed optional roll record */}
+  }
+  if(S.community.marriageRoll){const m=S.community.marriageRoll;S.community.marriageRoll=marriageResult(m.roll,m.baseInfluence);}
+  if(S.community.childrenRoll){
+    const old=S.community.childrenRoll;let next=0;S.community.childrenRoll=null;
+    try{const result=childrenResult(old.category,sides=>{const x=old.dice?.[next++];return x?.sides===sides?x.value:NaN;});if(result&&next===old.dice?.length)S.community.childrenRoll=result;}catch(e){/* malformed optional roll */}
+  }
+  S.community.rolls=familyRolls;
   S.community.connections=Array.isArray(S.community.connections)?S.community.connections.filter(x=>x&&typeof x==="object"):[];
   S.community.connections=S.community.connections.map(x=>({type:["Ally","Contact","Rival","Enemy"].includes(x.type)?x.type:"Contact",name:String(x.name||"").slice(0,160),notes:String(x.notes||"").slice(0,1000)}));
   if(S.cultStyleSmallAlloc===undefined)S.cultStyleSmallAlloc=true; // existing guests keep requested Sit’ota style allocation behavior
