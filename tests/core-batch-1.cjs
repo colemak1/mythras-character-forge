@@ -198,6 +198,26 @@ test('Core p.8 characteristic inputs reject fractional values without altering s
  assert.match(run('validate(currentSteps().indexOf("Characteristics")).msg'),/whole number/);assert.equal(run('S.chars.STR'),10.5);
  const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);assert.equal(run('S.chars.STR'),10.5);
 });
+test('Core p.23 Passion table uses each target formula and leaves missing values unresolved',()=>{
+ reset();run('S.chars.POW=12;S.chars.INT=14;');
+ for(const [type,pow,cha,expected] of [['romantic',11,9,50],['platonic','',9,51],['averse','',9,51],['org','','',56],['place','','',56],['species','','',54],['object','','',54]]){
+  ctx.p={type,subjPOW:pow,subjCHA:cha};assert.equal(run('passionVal(p)'),expected,type);
+ }
+ ctx.p={type:'romantic',subjPOW:'',subjCHA:'9'};assert.equal(run('passionVal(p)'),'?');
+ ctx.p={type:'averse',subjCHA:''};assert.equal(run('passionVal(p)'),'?');
+ ctx.p={type:'averse',subjCHA:'-1'};assert.equal(run('passionVal(p)'),'?');
+ run('S.passions=[{name:"Love",type:"romantic",subjPOW:"",subjCHA:"9"}];S.xp.pool=1;APP.xpSpendPassion(0);');assert.equal(run('S.xp.pool'),1);assert.match(run('stepPassions()'),/Enter the subject characteristics/);
+});
+test('Core pp.21,24 culture money multipliers and social class modifiers',()=>{
+ const expected={Barbarian:[50,[["Outcast",0.25],["Slave",0.5],["Freeman",1],["Gentry",3],["Ruling",5]]],Civilised:[75,[["Outcast",0.25],["Slave",0.5],["Freeman",1],["Gentry",3],["Aristocracy",5],["Ruling",10]]],Nomadic:[25,[["Outcast",0.25],["Slave",0.5],["Freeman",1],["Ruling",3]]],Primitive:[10,[["Outcast",0.25],["Freeman",1],["Ruling",2]]]};
+ for(const [culture,[mult,classes]] of Object.entries(expected)){
+  reset();ctx.culture=culture;run('S.culture=culture;S.money.dice=[1,2,3,4];');assert.equal(run('baseMult()'),mult);
+  for(const [name,mod] of classes){ctx.className=name;run('APP.pickSocialClass(className)');assert.equal(run('S.money.mod'),mod);assert.equal(run('moneyTotal()'),Math.round(10*mult*mod));}
+ }
+});
+test('Core p.22 personal connections explain manually tracked Group Luck',()=>{
+ reset();assert.match(run('stepCommunity()'),/Group Luck starts at 2 plus 1 per character/);assert.match(run('stepCommunity()'),/Track this shared pool with the GM/);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');

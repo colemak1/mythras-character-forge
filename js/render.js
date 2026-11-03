@@ -883,7 +883,7 @@ function stepCommunity(){
   const c=S.community||{connections:[]};
   let h=head("Community & Connections","Mythras Core, pp.21–25: develop your family, personal ties and resources. These are narrative records, not automatic bonuses. You can leave sections blank and develop them during play.");
   h+='<div class="card"><h3>Family & community</h3>'
-    +'<p class="note">Core p.22 has optional d100 family tables for parents, siblings, family reputation and connections. Consult the book to roll, or agree on details with your GM.</p>';
+    +'<p class="note">Core p.25 has optional d100 family tables for parents, siblings, family reputation and connections. Consult the book to roll, or agree on details with your GM.</p>';
   for(const [key,label,placeholder] of [
     ["family","Family / household","Family members, home, lineage"],
     ["parents","Parents","Family status or d100 result"],
@@ -905,7 +905,7 @@ function stepCommunity(){
   });
   h+='<button class="chip" onpointerdown="APP.communityAdd()" onclick="APP.communityAdd()">+ Add a connection</button></div>';
   h+='<div class="card"><h3>Why this party?</h3>'
-    +'<p class="note">Core p.22 suggests each character establish a relationship with another member of the party.</p>'
+    +'<p class="note">Core p.22 suggests each character establish a relationship with another member of the party. If the group uses this option, Group Luck starts at 2 plus 1 per character with a personal connection. Track this shared pool with the GM; it is used when helping another character.</p>'
     +fld('Connection to a fellow PC','<input type="text" value="'+esc(c.partyTie||'')+'" placeholder="What brought your characters together?" onchange="APP.communityField(\'partyTie\',this.value)">')+'</div>';
   return h;
 }
@@ -943,7 +943,8 @@ function stepPassions(){
      +'Formula: '+t.calc
      +(t.needs.includes("subjPOW")?' &nbsp;subject POW <input type="number" value="'+(p.subjPOW||"")+'" onchange="APP.pas('+i+',\'subjPOW\',this.value)">':"")
      +(t.needs.includes("subjCHA")?' &nbsp;subject CHA <input type="number" value="'+(p.subjCHA||"")+'" onchange="APP.pas('+i+',\'subjCHA\',this.value)">':"")
-     +' &nbsp;&rarr; <b style="font-family:var(--mono);color:var(--bronze-hi)">'+passionVal(p)+'%</b></div></div>';
+     +' &nbsp;&rarr; <b style="font-family:var(--mono);color:var(--bronze-hi)">'+passionVal(p)+'%</b>'
+     +(passionVal(p)==="?"?' <span class="note">Enter the subject characteristics to calculate this Passion.</span>':"")+'</div></div>';
   });
   h+='<p><button class="chip" onpointerdown="APP.addPas()" onclick="APP.addPas()">+ add passion</button>'
    +(S.culture?' <button class="chip" onclick="APP.pasFromCulture()">use '+S.culture+' suggestions</button>':"")
@@ -952,6 +953,8 @@ function stepPassions(){
 }
 function passionVal(p){
   if(!charsReady())return "?";const c=effectiveChars();
+  const needs=PASSION_TYPES[p.type]?.needs||[];
+  if(needs.some(key=>p[key]==null||String(p[key]).trim()===""||!Number.isFinite(Number(p[key]))||!Number.isInteger(Number(p[key]))||Number(p[key])<0))return "?";
   let base;
   switch(p.type){
    case "romantic":base=30+(+p.subjPOW||0)+(+p.subjCHA||0);break;
