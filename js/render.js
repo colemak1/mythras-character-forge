@@ -929,7 +929,7 @@ function stepCult(){
 }
 /* ---- step: passions ---- */
 function stepPassions(){
-  let h=head("Passions","Optional but recommended: a Loyalty, a Love and a Hate. Starting values follow the book&rsquo;s table and depend on what the passion is aimed at.");
+  let h=head("Passions","Optional but recommended: a Loyalty, a Love and a Hate. Choose the target type for each Passion; starting values depend on what it is aimed at.");
   h+='<div class="card">';
   if(!S.passions.length)h+='<p class="note">No passions yet &mdash; add one below'+(S.culture?', or start from your culture&rsquo;s suggestions':"")+'.</p>';
   S.passions.forEach((p,i)=>{

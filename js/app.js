@@ -646,7 +646,9 @@ window.APP={
  delPas(i){debounceFire('delPas'+i,()=>{S.passions.splice(i,1);render();});},
  pas(i,f,v){S.passions[i][f]=v;render();},
  pasFromCulture(){if(!S.culture)return;const c=CULTURES[S.culture];
-   const types=["org","romantic","averse"];
+   // Loyalty to a chief is person-based; Loyalty to a town is place-based.
+   // Love and Hate suggestions still need the player to select a target type.
+   const types=[S.culture==="Civilised"?"place":"platonic","romantic","averse"];
    c.passions.forEach((name,i)=>{if(!S.passions.some(p=>p.name===name))
      S.passions.push({name,type:types[i]||"org",subjPOW:"",subjCHA:""});});
    render();},

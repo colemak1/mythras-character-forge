@@ -227,6 +227,11 @@ test('Core p.24 social class roll tables cover every result and preserve roll on
  run('APP.pickSocialClass("Freeman");');assert.equal(run('S.money.classRoll'),null);
  assert.equal(run('socialClassForRoll("Civilised",0)'),null);
 });
+test('cultural loyalty suggestions use the target category from Core pp.14–16',()=>{
+ for(const [culture,type] of [['Barbarian','platonic'],['Civilised','place'],['Nomadic','platonic'],['Primitive','platonic']]){
+  reset();ctx.culture=culture;run('S.culture=culture;APP.pasFromCulture()');assert.equal(run('S.passions[0].type'),type,culture);
+ }
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
