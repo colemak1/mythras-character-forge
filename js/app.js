@@ -503,6 +503,7 @@ window.APP={
    if(n==="__custom__"){
      if(S.customCareer.isCustom&&S.career)return; // already locked in
      S.customCareer.isCustom=true;S.career=null;
+     if(!Array.isArray(S.customCareer.profOffers))S.customCareer.profOffers=[];
      S.carProf=[null,null,null];S.carProfSpec=["","",""];S.alloc.career={};
      S.carStyles=Array(S.customCareer.styleSlots).fill(null).map(()=>({mode:"new",name:""}));
      this.skillsChanged();
@@ -519,7 +520,12 @@ window.APP={
  confirmCustomCareer(){
    if(!S.customCareer.name.trim()||S.customCareer.std.length+S.customCareer.styleSlots>7)return;
    S.career="__custom__";this.skillsChanged();},
- editCustomCareer(){if(S.customCareer.isCustom)S.career=null;render();window.scrollTo(0,0);},
+ editCustomCareer(){if(S.customCareer.isCustom){
+   if(!Array.isArray(S.customCareer.profOffers))S.customCareer.profOffers=S.carProf.filter(Boolean);
+   S.career=null;}render();window.scrollTo(0,0);},
+ customCareerOffer(i,v){if(i<0||i>=7)return;
+   if(!Array.isArray(S.customCareer.profOffers))S.customCareer.profOffers=[];
+   S.customCareer.profOffers[i]=v;render();},
  customCareerStd(skill){const i=S.customCareer.std.indexOf(skill);
    if(i>=0)S.customCareer.std.splice(i,1);
    else S.customCareer.std.push(skill);
