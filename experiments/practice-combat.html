@@ -203,6 +203,65 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .outcome-strip.roll-required{background:linear-gradient(#5a4128,#29221a)}
 @keyframes promptArrive{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.roll-await{animation:none}.roll-now{transition:none}}
+
+/* v10 — sparse, grounded combat UI. Primary rolls have explicit combatant ownership. */
+.roll-now,.roll-now:hover,.roll-now:active{background:#342d24;color:#f1e7d6;border:1px solid #7a6a52;border-radius:2px;box-shadow:none;filter:none;transform:none;font:600 13px system-ui,sans-serif;letter-spacing:.015em;max-width:100%;width:190px;padding:12px 18px;transition:background .15s,border-color .15s}
+.roll-now:hover{background:#4b3b29;border-color:#aa8655}
+.roll-now:focus-visible{outline:2px solid #b78b54;outline-offset:3px}
+.exchange-half:has(.roll-await){box-shadow:inset 0 0 0 1px #977b4a;background:#eee1c9}
+.roll-await{min-height:218px;gap:7px;padding:2px 4px;animation:none}
+.roll-await h3{font:normal 18px Georgia,serif;margin:0}
+.roll-await-kicker{font:600 10px system-ui,sans-serif;letter-spacing:.07em;color:#786246}
+.roll-await-dice{margin:5px auto 8px}
+.roll-await .die-shape,.roll-await .die-shape.percent{border:1px solid #9a866b;background:#e6dbc5;color:#766752;box-shadow:none;text-shadow:none}
+.exchange-board{min-height:320px}
+.exchange-half{padding:13px 15px;background:#e9dec9}
+.exchange-half.active{box-shadow:inset 0 0 0 1px #ad8a59;background:#f1e7d4}
+.exchange-half .half-heading{padding-bottom:6px;margin-bottom:5px}
+.exchange-half .half-fighter{font-size:15px;margin:4px 0 8px}
+.exchange-half .half-detail{font-size:11px;color:#866f52}
+.exchange-half .choicegrid{gap:7px}
+.exchange-half .choice{min-height:43px;padding:10px 9px;background:#f5ebda;border-color:#b7a287;text-align:center;border-radius:2px}
+.exchange-half .choice.gold{background:#e5d6bc;border-color:#a78e69}
+.exchange-half .choice strong{font:600 12px system-ui,sans-serif;color:#493a2a}
+.exchange-half .choice:hover:not(:disabled){background:#e9d6b6}
+.exchange-half .desc{display:none}
+.exchange-half .turnline{margin:0 0 9px}
+.exchange-half .turnline h3{font-weight:600;letter-spacing:.04em}
+.half-placeholder{font:14px Georgia,serif;color:#87745d}
+.half-placeholder strong{font:normal 20px Georgia,serif;color:#554634}
+.exchange-half .roll-status{font:600 14px system-ui,sans-serif;letter-spacing:.03em;margin-top:9px}
+.half-role{font:600 10px system-ui,sans-serif;letter-spacing:.08em}
+.outcome-strip{min-height:50px;gap:9px;padding:9px 14px;background:#29251f}
+.outcome-strip .outcome-headline{font-size:17px}
+.outcome-strip .outcome-mark{font-size:15px}
+.outcome-strip .outcome-sub{font-size:10px;margin-top:2px}
+.combat-history{padding:0 13px 10px}
+.history-header{padding:9px 3px}
+.history-header h3{font:normal 17px Georgia,serif}
+.history-toggle{color:#c5ae89;background:transparent;border:1px solid #574e40;padding:6px 10px;font:600 11px system-ui,sans-serif;border-radius:2px}
+.history-toggle:hover{border-color:#9e8157}
+.recent-entry{display:grid;grid-template-columns:160px minmax(0,1fr);gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid #433e34;color:#d3c5ab;font:11px system-ui,sans-serif}
+.recent-entry:last-child{border-bottom:0}
+.recent-entry span{color:#bda27a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recent-entry small{color:#c0b5a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:11px system-ui,sans-serif}
+.recent-empty{color:#b7a78d;padding:14px;font:12px system-ui,sans-serif}
+.combat-history .log{margin-top:8px;max-height:250px;min-height:80px}
+.tutorial-why{border-top:1px solid #514737;margin:0;padding:9px 14px;color:#d2b98f;font:11px system-ui,sans-serif}
+.tutorial-why summary{cursor:pointer}.tutorial-why p{max-width:530px;line-height:1.6;color:#b9aa91}
+.fighter-foot{padding:6px 16px 12px}
+.fighter-foot p{font:11px system-ui,sans-serif;margin:5px 0 0}
+.fighter-head{padding:14px 16px 10px}
+.fighter-head .sub{font-size:12px;line-height:1.45}
+.center-top{padding:13px 18px 8px}
+.center-top h2{font-size:22px;margin:4px 0 8px}
+.center-top .label{letter-spacing:.09em}
+.main .mast{margin-bottom:15px}
+.mast h1{font-size:31px;margin:3px 0 2px}
+.main{padding-top:20px}
+.footer-notes{padding:10px 0;margin-top:10px;color:#aa9c85;font:11px system-ui,sans-serif}
+.footer-notes summary{cursor:pointer}.footer-notes p{line-height:1.6;max-width:850px}
+@media(max-width:690px){.recent-entry{grid-template-columns:1fr;gap:4px}.exchange-half{padding:10px}.roll-now{width:160px}}
 </style>
 </head>
 <body>
@@ -253,17 +312,16 @@ function rollPrompt(actor){
     [makeDie(10,0,'Tens','percent','??'),makeDie(10,0,'Ones','percent','?')]:
     [makeDie(d.sides,d.fixed??0,d.fixed!=null?'Maximized':(d.label||'d'+d.sides),'',d.fixed!=null?String(d.fixed):'?')]);
   return `<div class="roll-await" role="group" aria-label="Manual ${esc(title)} roll for ${esc(fighter.name)}">
-     <div class="roll-await-kicker">YOUR ROLL · ${esc(fighter.name)}</div>
+     <div class="roll-await-kicker">${esc(title)} · ${esc(fighter.name)}</div>
      <h3>${esc(R.label)}</h3><div class="roll-await-dice">${renderDice(placeholders,false)}</div>
-     <button type="button" class="roll-now" data-act="roll" aria-label="Roll ${esc(title)} now">⚄ &nbsp; ROLL ${esc(title.toUpperCase())}</button>
-     <p>Click to roll. No result is generated before you press the button.</p>
+     <button type="button" class="roll-now" data-act="roll" aria-label="Roll ${esc(title)} now">Roll ${esc(title)}</button>
   </div>`;
 }
 
 // Presentation is separate from the rules state: rolls resolve immediately,
 // then the screen unveils the recorded, immutable events in order.
 const V={capturing:false,busy:false,quick:false,reduced:!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches),
-  events:[],step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,timer:null,diceTimer:null};
+  events:[],step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,timer:null,diceTimer:null,showLog:false};
 function clearPresentationTimers(){if(V.timer)clearTimeout(V.timer);if(V.diceTimer)clearInterval(V.diceTimer);V.timer=V.diceTimer=null;}
 function makeDie(sides,value,role='',variant='',display=''){return {sides,value,role,variant,display:display||String(value)}}
 function d100Dice(value){const n=Math.max(1,Math.min(100,Number(value)||1));const tens=n===100?0:Math.floor(n/10);const ones=n%10;return [makeDie(10,tens,'10s','percent',tens===0?'00':String(tens*10)),makeDie(10,ones,'1s','percent',String(ones))]}
@@ -333,12 +391,17 @@ function currentExchange(){
   if(!defId)defId=atkId==='a'?'b':'a';
   return {attack,defense,atkId,defId,pending:pend,latest:logs[logs.length-1]||null};
 }
-function rollSummary(entry,rolling=false){
+function rollSummary(entry,rolling=false,diceOverride=null){
   if(!entry)return '';
-  let st=stageFor(entry),dice=st.dice||[];
-  let good=/CRITICAL|SUCCESS/i.test(st.result),bad=/FAILURE|FUMBLE/i.test(st.result);
-  let grade=st.result||(/does not defend/i.test(entry.title)?'NO REACTION':'ACTION RESOLVED');
-  return `${dice.length?`<div class="${rolling?'dice-live':''}">${renderDice(dice,rolling)}</div>`:''}<div class="roll-status ${good?'good':bad?'bad':''}">${rolling?'DICE ROLLING…':esc(grade)}</div><div class="half-detail">${rolling?'The die is still moving.':esc(entry.body||'')}</div>`;
+  const st=stageFor(entry),dice=diceOverride||st.dice||[];
+  const title=entry.title||'';
+  const grade=st.result||(/^.+ · Initiative$/.test(title)?'INITIATIVE':'RESOLVED');
+  const isSkill=/ attacks$| parries$| evades$|WOUND ·|Trip Opponent/i.test(title);
+  const skillMatch=/^(\d{1,3}) (?:against|vs) [^\d]*(\d{1,3})%/i.exec(entry.body||'');
+  const valueMatch=/(\d{1,3})(?:\s+against|\s+vs)/i.exec(entry.body||'');
+  const detail=isSkill?(skillMatch?`${skillMatch[1]} / ${skillMatch[2]}%`:(valueMatch?`Rolled ${valueMatch[1]}`:'')):'';
+  const good=/CRITICAL|SUCCESS/i.test(grade),bad=/FAILURE|FUMBLE/i.test(grade);
+  return `${dice.length?`<div class="${rolling?'dice-live':''}">${renderDice(dice,rolling)}</div>`:''}<div class="roll-status ${good?'good':bad?'bad':''}">${rolling?'Rolling…':esc(grade)}</div>${!rolling&&detail?`<div class="half-detail">${esc(detail)}</div>`:''}`;
 }
 function exchangeHalf(id,info){
   // The columns are fixed by combatant.  A is always on the left; B is always on the right.
@@ -353,11 +416,14 @@ function exchangeHalf(id,info){
     S.order?.[S.turnIndex];
   const decisionHere=deciding&&decisionId===id&&!R;
   const current=V.stage,entry=current?.entry||null;
-  const rollOwner=current?.kind==='defense'?info.defId:
+  const explicitOwner=entry?.meta?.actor;
+  const sideDice=entry?.meta?.sideDice;
+  const rollOwner=explicitOwner==='a'||explicitOwner==='b'?explicitOwner:
+    current?.kind==='defense'?info.defId:
     current?.kind==='attack'?info.atkId:
-    current?.kind==='hurt'&&current?.target?current.target:
+    current?.kind==='hurt'&&current?.target?(current.target==='a'?'b':'a'):
     current?.kind==='effect'&&p?.owner?p.owner:info.atkId;
-  const activeStage=V.busy&&current&&!initialInitiative&&rollOwner===id;
+  const activeStage=!!(V.busy&&current&&!initialInitiative&&(rollOwner===id||sideDice?.[id]));
   const ownRecord=isAtk?info.attack:isDef?info.defense:null;
   const liveRecord=activeStage?entry:null;
   const role=initialInitiative?'INITIATIVE':isAtk?'ATTACKING':isDef?'DEFENDING':'READY';
@@ -369,22 +435,22 @@ function exchangeHalf(id,info){
   }else if(R&&!V.busy&&R.actor===id){
     content=rollPrompt(id);
   }else if(R&&!V.busy){
-    content='<div class="half-placeholder"><strong>Awaiting a roll</strong>The other fighter is preparing their dice.</div>';
+    content=ownRecord?`<div class="half-role">Last action</div>${rollSummary(ownRecord,false)}`:'<div class="half-placeholder"><strong>Ready</strong></div>';
   }else if(isAtk&&p?.kind==='range'&&!V.busy){
-    content=`<div class="half-placeholder"><strong>Changing Range</strong>${esc(fighter.name)} is ${p.desired==='short'?'closing to shorter reach':'opening to longer reach'}. The opponent must respond.</div>`;
+    content=`<div class="half-placeholder"><strong>${p.desired==='short'?'Closing range':'Opening range'}</strong></div>`;
   }else if(decisionHere){
     content=actionHtml();
   }else if(liveRecord){
     const stage=stageFor(liveRecord),grade=stage.result||stage.sub||'RESOLVED';
-    content=`<div class="half-role">${esc(fighter.name)} · ${esc(stage.beat||'action')}</div>${rollSummary(liveRecord,!!current?.rolling)}<div class="half-result ${/FAILURE|FUMBLE/i.test(grade)?'bad':/SUCCESS|CRITICAL/i.test(grade)?'':'neutral'}">${current?.rolling?'Rolling…':esc(grade)}</div>`;
+    content=`<div class="half-role">${esc(stage.beat||'roll')}</div>${rollSummary(liveRecord,!!current?.rolling,sideDice?.[id]||null)}`;
   }else if(ownRecord){
     const showAsOpen=isDef&&info.pending?.kind==='reaction';
-    content=showAsOpen?`<div class="half-placeholder"><strong>Defender's decision</strong>Parry, evade, or save your Action Points.</div>`:`<div class="half-role">${esc(fighter.name)}</div>${rollSummary(ownRecord,false)}`;
+    content=showAsOpen?`<div class="half-placeholder"><strong>Choose a defense</strong></div>`:`<div class="half-role">${esc(fighter.name)}</div>${rollSummary(ownRecord,false)}`;
   }else if(V.busy){
-    content='<div class="half-placeholder"><strong>Awaiting resolution</strong>The opposing fighter has yet to respond.</div>';
+    content='<div class="half-placeholder"><strong>Waiting</strong></div>';
   }else{
     const canAct=S.order?.[S.turnIndex]===id;
-    content=`<div class="half-placeholder"><strong>${canAct?'Choose your action':isDef?'Ready to respond':'Watching the exchange'}</strong>${canAct?'Commit an attack, change range, or prepare.':'This combatant’s rolls and reactions appear here.'}</div>`;
+    content=`<div class="half-placeholder"><strong>${canAct?'Your turn':isDef?'Ready to defend':'Ready'}</strong></div>`;
   }
   const heading=S.mode==='pvp'?(isPlayer?'PLAYER ONE':'PLAYER TWO'):(isPlayer?'YOUR CHARACTER':'OPPONENT');
   return `<section class="exchange-half ${decisionHere?'active':''} ${activeStage&&current?.rolling?'is-rolling':''}" data-combatant="${id}" aria-label="${isPlayer?'Player':'Opponent'} combatant">
@@ -393,36 +459,53 @@ function exchangeHalf(id,info){
 }
 function outcomeStrip(info){
   const p=info.pending,x=V.stage,entry=x?.entry;
-  let headline='Choose your next action',sub='Attack and defense rolls will resolve here, then enter the chronicle.',css='',mark='✧';
+  let headline='Choose an action',sub='',css='',mark='✧';
   if(R&&!V.busy){
-    headline=`${S.fighters[R.actor].name}: ${R.label}`;sub='Press Roll on the highlighted side to continue. The outcome has not been generated.';mark='⚄';css='roll-required';
+    headline=`Roll · ${R.label}`;sub='';mark='';css='roll-required';
   }else if(V.busy&&x){
     headline=x.rolling?'Rolling dice…':x.kind==='hurt'?(x.result||'Damage resolved'):x.kind==='miss'?'No damaging hit':x.kind==='final'?'The bout is over':x.result||x.primary||'Exchange resolved';
-    sub=x.rolling?'Watch the two combatants resolve this exchange.':x.body||'';
+    sub='';
     css=x.kind==='hurt'?'impact':x.kind==='effect'?'effect':'';
     mark=x.kind==='hurt'?'✕':x.kind==='defense'?'◇':'⚔';
   }else if(p?.kind==='reaction'){
     headline=`${S.fighters[p.atk].name} attacks · ${p.attackRoll.label}`;
-    sub=`${p.attackRoll.roll} versus ${S.fighters[p.atk].style}% — choose ${S.fighters[p.def].name}'s reaction.`;
+    sub='Choose a defense';
     mark='⚔';
   }else if(p?.kind==='range'){
-    headline='Contest the range change';sub='The defender may allow, oppose, or intercept the change.';mark='↔';
+    headline='Change range';sub='Allow, oppose, or intercept';mark='↔';
   }else if(p?.kind==='effect'){
-    headline=`${p.effectsLeft} Special Effect${p.effectsLeft===1?'':'s'} available`;sub='The fighter with the advantage chooses before damage.';css='effect';mark='✦';
+    headline=`${p.effectsLeft} Special Effect${p.effectsLeft===1?'':'s'} available`;sub='Choose an effect';css='effect';mark='✦';
   }else if(p?.kind==='location'){
-    headline='Select a hit location';sub='Choose the location before rolling weapon damage.';css='effect';mark='◎';
+    headline='Select a hit location';sub='';css='effect';mark='◎';
   }else if(S.phase==='between'){
-    headline='Victory · next opponent awaits';sub='Your streak continues. Choose when to enter the next fight.';css='effect';mark='✦';
+    headline='Victory · next opponent awaits';sub='';css='effect';mark='✦';
   }else if(S.phase==='over'){
-    headline=`${S.winner||'Combat'} · encounter over`;sub=S.endReason||'The encounter is finished.';mark='✦';
+    headline=`${S.winner||'Combat'} · encounter over`;sub='';mark='✦';
   }else if(info.latest){
-    const st=stageFor(info.latest);headline=st.result||st.primary||'Exchange resolved';sub=st.body||'';css=st.kind==='hurt'?'impact':st.kind==='effect'?'effect':'';mark=st.kind==='hurt'?'✕':'✦';
+    const st=stageFor(info.latest);headline=st.result||st.primary||'Exchange resolved';sub='';css=st.kind==='hurt'?'impact':st.kind==='effect'?'effect':'';mark=st.kind==='hurt'?'✕':'✦';
   }
-  return `<div class="outcome-strip ${css}" aria-live="polite"><div class="outcome-mark">${mark}</div><div><div class="outcome-headline">${esc(headline)}</div><div class="outcome-sub">${esc(sub)}</div></div>${V.busy?'<button class="toolbutton strip-skip" data-act="skip">Skip ↠</button>':''}</div>`;
+  return `<div class="outcome-strip ${css}" aria-live="polite"><div class="outcome-mark">${mark}</div><div><div class="outcome-headline">${esc(headline)}</div>${sub?`<div class="outcome-sub">${esc(sub)}</div>`:''}</div>${V.busy?'<button class="toolbutton strip-skip" data-act="skip">Skip ↠</button>':''}</div>`;
+}
+function conciseLog(entry){
+  const body=String(entry.body||'');
+  if(/ attacks$| parries$| evades$/i.test(entry.title)){
+    const m=/(\d+) (?:against|vs) .*?— (CRITICAL|SUCCESS|FAILURE|FUMBLE)/i.exec(body);
+    return m?`Roll ${m[1]} · ${m[2].toLowerCase()}`:body;
+  }
+  if(/ hits (Head|Chest|Abdomen|Right Arm|Left Arm|Right Leg|Left Leg)$/i.test(entry.title)){
+    const m=/= (\d+) HP lost/.exec(body);return m?`${m[1]} HP lost`:body;
+  }
+  if(/^Encounter \d+ · Initiative/.test(entry.title)){const last=body.match(/([^.]*) acts first\./);return last?`${last[1]} acts first`:body;}
+  if(/Initiative$/.test(entry.title)){const m=/rolls (\d+) \+ .*?= (\d+)/.exec(body);return m?`d10 ${m[1]} · total ${m[2]}`:body;}
+  if(/Hit Location/.test(entry.title)){const m=/: ([A-Za-z ]+)\./.exec(body);return m?m[1]:body;}
+  return body;
 }
 function combatHistory(){
   const logs=V.busy?S.logs.slice(0,V.visibleCount):S.logs;
-  return `<section class="combat-history"><div class="history-header"><h3>Combat Chronicle</h3><span>${logs.length} events · newest at bottom</span></div><div class="log" id="combatLog" aria-live="polite">${logs.map(l=>`<div class="entry ${l.kind} ${V.busy&&V.events[V.step]?.id===l.id?'fresh':''}"><div class="t">${esc(l.title)}</div><p>${esc(l.body)}</p>${l.detail?`<small>${esc(l.detail)}</small>`:''}</div>`).join('')}</div></section>`;
+  const recent=logs.slice(-3);
+  const summaryRows=recent.map(l=>`<div class="recent-entry"><span>${esc(l.title)}</span><small>${esc(conciseLog(l))}</small></div>`).join('');
+  return `<section class="combat-history"><div class="history-header"><h3>Combat log</h3><button type="button" class="history-toggle" data-act="togglelog" aria-expanded="${V.showLog?'true':'false'}">${V.showLog?'Hide full log':'Full log'} · ${logs.length}</button></div>
+   ${V.showLog?`<div class="log" id="combatLog">${logs.map(l=>`<div class="entry ${l.kind}"><div class="t">${esc(l.title)}</div><p>${esc(l.body)}</p>${l.detail?`<small>${esc(l.detail)}</small>`:''}</div>`).join('')}</div>`:`<div class="recent-list">${summaryRows||'<div class="recent-empty">Combat events will appear here.</div>'}</div>`}</section>`;
 }
 function playCaptured(fn,reset=false){
   clearPresentationTimers();
@@ -512,7 +595,7 @@ function rangeReact(option){
     requestSkill(mover.id,mover.evade,`Change Range · ${mover.name} Evade`,mr=>{
       requestSkill(d.id,d.evade,`Oppose Range · ${d.name} Evade`,dr=>{
         const winner=opposedBetter(mr,dr);
-        log('Change Range · Evade contest',`${mover.name} Evade ${mr.roll}/${mover.evade}% (${mr.label}) vs ${d.name} Evade ${dr.roll}/${d.evade}% (${dr.label}). ${winner?'Change succeeds.':'Original range maintained.'}`,'system','',{dice:[...d100Dice(mr.roll),...d100Dice(dr.roll)]});
+        log('Change Range · Evade contest',`${mover.name} Evade ${mr.roll}/${mover.evade}% (${mr.label}) vs ${d.name} Evade ${dr.roll}/${d.evade}% (${dr.label}). ${winner?'Change succeeds.':'Original range maintained.'}`,'system','',{sideDice:{[mover.id]:d100Dice(mr.roll),[d.id]:d100Dice(dr.roll)}});
         if(winner)setCombatRange(p.desired,`${mover.name} ${p.desired==='short'?'closes to the shorter':'opens to the longer'} reach.`);
         endRangeAction();
       });
@@ -522,7 +605,7 @@ function rangeReact(option){
     d.ap--;
     requestSkill(d.id,d.style,`Intercept · ${d.name} Combat Style`,dr=>{
       requestSkill(mover.id,mover.evade,`Change Range · ${mover.name} Evade`,mr=>{
-        log('Change Range · Interception',`${d.name} Combat Style ${dr.roll}/${d.style}% (${dr.label}) vs ${mover.name} Evade ${mr.roll}/${mover.evade}% (${mr.label}). The range changes even if the attack lands.`,'system','',{dice:[...d100Dice(dr.roll),...d100Dice(mr.roll)]});
+        log('Change Range · Interception',`${d.name} Combat Style ${dr.roll}/${d.style}% (${dr.label}) vs ${mover.name} Evade ${mr.roll}/${mover.evade}% (${mr.label}). The range changes even if the attack lands.`,'system','',{sideDice:{[d.id]:d100Dice(dr.roll),[mover.id]:d100Dice(mr.roll)}});
         const p2={kind:'effect',atk:d.id,def:mover.id,attackRoll:dr,defenseRoll:mr,reaction:'evade',evaded:opposedBetter(mr,dr),owner:null,other:null,effectsLeft:0,chosen:[],chosenLoc:null,maximize:0,rangeAfter:p.desired,rangeIntercept:true};
         S.pending=p2;
         const o=Math.max(0,dr.grade-mr.grade),def=Math.max(0,mr.grade-dr.grade);
@@ -535,12 +618,12 @@ function rangeReact(option){
 }
 function newHero(){return mkFighter('a',config.charname,'human',config.style,config.weapon,config.armor,config.evade,3)};
 function newEnemy(wave){if(S.mode==='pvp')return mkFighter('b',config.pvpName,'human',config.pvpSkill,config.pvpWeapon,1,50,3);const lvl=S.mode==='tutorial'?1:wave;const type=ENEMY_NAMES[Math.min(ENEMY_NAMES.length-1,Math.floor((wave-1)/2))];let weaponKeys=['dagger','sword','mace','spear','greatsword'];let weapon=weaponKeys[(wave+die(5)-1)%weaponKeys.length];if(wave===1)weapon='dagger';let skill=Math.min(105,43+(wave-1)*5+die(10));if(S.mode==='tutorial')skill=45;let armor=S.mode==='tutorial'?0:Math.min(5,Math.floor((wave-1)/3));let foe=mkFighter('b',type,'ai',skill,weapon,armor,Math.min(90,42+wave*3),wave);foe.brawn=Math.min(95,46+3*wave);foe.endurance=Math.min(95,51+2*wave);return foe;}
-function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1><p>${setup?'Learn the rules, survive the gauntlet, or challenge a friend.':'Player left, opponent right · click to roll your dice · Core optional reach rules.'}</p></div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle animation speed">${V.quick?'FAST':'CINEMATIC'} · SPEED</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v9 · Combat resolution</span>`}</div></section>${setup?setupHtml():arenaHtml()}<div class="footer-notes"><div class="footgrid"><span>Prototype only · no connection to your Forge account · no changes to your saved characters</span><span>${setup?'Select a mode to begin.':'Manual player dice · AP cycles · hit locations'}</span></div><div style="margin-top:5px">Simplified rules: basic melee, parry/evade, a small Special Effects subset, wounds, and initiative. Core pp. 63-64 weapon stats and pp. 106-107 optional Closing/Opening Range are active (two-step reach differences). Interception and Evade contests are modeled; attacking the longer weapon, fatigue, Luck, shields, armour ENC, some wound recovery and many special effects remain outside this prototype. Source: uploaded Mythras 2e Core.</div></div>`;if(!setup){let log=$('.log');if(log)log.scrollTop=log.scrollHeight;}}
+function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle animation speed">${V.quick?'FAST':'CINEMATIC'} · SPEED</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v10 · Combat clarity</span>`}</div></section>${setup?setupHtml():arenaHtml()}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, selected Special Effects, wounds, initiative and optional reach. Not yet implemented: full Special Effects, Luck, shields, armour encumbrance, fatigue and several recovery rules. Source: uploaded Mythras 2e Core, pp. 63–64 and 90–110.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;}}
 function modeName(m){return {tutorial:'Guided Tutorial',normal:'Normal Gauntlet',hardcore:'Hardcore Gauntlet',pvp:'Local PvP'}[m]||m}
 function setupHtml(){let modes=[['tutorial','01','Guided Tutorial','One beginner-friendly bout with reminders about Mythras decisions.'],['normal','02','Normal Gauntlet','Infinite escalating enemies. Your wounds reset after each win.'],['hardcore','03','Hardcore Gauntlet','Same escalating enemies. Wounds and injuries persist between fights.'],['pvp','04','Local PvP','Two players take turns on one screen; online matching comes later.']];return `<div class="setup"><h2>Choose your challenge</h2><p class="intro">A working combat loop with selectable reactions, hit locations, a tactical computer opponent, and a local streak board.</p><div class="modes">${modes.map(([k,n,t,d])=>`<button class="mode ${config.mode===k?'on':''}" data-act="mode" data-val="${k}"><span class="n">MODE ${n}</span><strong>${t}</strong><small>${d}</small></button>`).join('')}</div><div class="setup-bottom"><div class="formcard"><h3>Build your practice fighter</h3><div class="formgrid"><label>Username<input id="username" maxlength="30" value="${esc(config.username)}"></label><label>Character name<input id="charname" maxlength="45" value="${esc(config.charname)}"></label><label>Combat Style %<input id="style" type="number" min="20" max="110" value="${config.style}"></label><label>Evade %<input id="evade" type="number" min="20" max="110" value="${config.evade}"></label><label>Armor AP (all locations)<input id="armor" type="number" min="0" max="6" value="${config.armor}"></label><label>Weapon<select id="weapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.weapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label>${config.mode==='pvp'?`<label>Second player name<input id="pvpName" maxlength="45" value="${esc(config.pvpName)}"></label><label>Second player Combat Style %<input id="pvpSkill" type="number" min="20" max="110" value="${config.pvpSkill}"></label><label>Second player weapon<select id="pvpWeapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.pvpWeapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label>`:''}</div><p class="formhint">For now, these are editable sample statistics, not an imported character. Each combatant has individual location HP. Weapon sizes affect successful parries.</p><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px"><button class="cta" data-act="start">${config.mode==='pvp'?'Start Duel':'Enter Training Grounds'} &nbsp;→</button><span class="modehint">Runs entirely on your device.</span></div></div><div class="setup-right"><div class="statbox"><strong>Gauntlet leaderboard</strong><p>Stored in this browser, not published online. Rankings count consecutive opponents defeated.</p><div class="badges"><button class="lbtab ${S.lbMode==='normal'?'on':''}" data-act="lbmode" data-val="normal">Normal</button><button class="lbtab ${S.lbMode==='hardcore'?'on':''}" data-act="lbmode" data-val="hardcore">Hardcore</button></div>${scoresHtml(S.lbMode)}</div><div class="statbox"><strong>The rules we're testing</strong><div class="badges"><span class="notechip">d100 Skill checks</span><span class="notechip">d20 Hit location</span><span class="notechip">Parry by size</span><span class="notechip">Action points</span><span class="notechip">Special Effects</span><span class="notechip">Optional weapon reach</span><span class="notechip">Serious/Major wounds</span></div><p>Some results and effects are simplified for this prototype. Actual Forge integration would reuse your existing character data and sourcebook-verified engine.</p></div></div></div></div>`}
 function zoneClass(f,loc){const x=f.hp[loc],m=f.maxHp[loc];return x<=-m?'major':x<=0?'serious':x<m?'minor':'ok'}
 function figureSvg(f){const sel=S.sel?.[f.id];return `<svg viewBox="0 0 240 360" role="img" aria-label="Clickable hit-location figure for ${esc(f.name)}">${HIT_LOCS.map(loc=>`<g class="zone ${zoneClass(f,loc)} ${V.highlight?.id===f.id&&V.highlight.loc===loc?'impact-zone':''} ${sel===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}"><title>${loc} · ${f.hp[loc]}/${f.maxHp[loc]} HP · ${f.armor} AP armour</title>${SHAPES[loc]}</g>`).join('')}</svg>`}
-function fighterCard(f,cls){let injuries=HIT_LOCS.filter(l=>f.hp[l]<f.maxHp[l]);let worst=injuries.reduce((w,l)=>(zoneClass(f,l)==='major'?3:zoneClass(f,l)==='serious'?2:1)>w?w: w,0);let status=f.status==='Defeated'?'Incapacitated':worst===0?'Uninjured':worst===1?'Minor wounds':worst===2?'Serious wound':'Major wound';let selected=S.sel?.[f.id];return `<article class="fighter ${cls} ${V.highlight?.id===f.id?'just-hit':''}"><div class="fighter-head"><span class="tag">${cls==='player'?'PLAYER ONE':(S.mode==='pvp'?'PLAYER TWO':'OPPONENT')}</span><h2>${esc(f.name)}</h2><div class="sub">${f.kind==='ai'?`Skill ${f.style}% · Utility AI`: `Combat Style ${f.style}%`} · ${esc(WEAPONS[f.weapon].name)} · ${reachName(f)} reach</div><div class="tracks"><div class="track"><label>Action Points</label><b>${f.ap}<small> / ${f.apMax}</small></b><div class="dots">${Array.from({length:f.apMax},(_,i)=>`<i class="${i>=f.ap?'off':''}"></i>`).join('')}</div></div><div class="track"><label>Initiative</label><b>${f.initiative??'—'}</b><div style="font:11px system-ui,sans-serif;color:#87745c;margin-top:5px">${f.prone?'Prone · ':''}${f.skipAttack?'Attack restricted':'Ready'}</div></div></div></div><div class="figure-area"><div class="figure-title"><span>Hit locations / D20</span><span>AP ${f.armor} armor</span></div><div class="fig">${figureSvg(f)}</div><div class="location-list">${HIT_LOCS.map(loc=>`<div class="loc ${f.hp[loc]<f.maxHp[loc]?'wounded':''} ${selected===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}"><span>${loc.replace('Right ','R. ').replace('Left ','L. ')}</span><span>${f.hp[loc]}<small> / ${f.maxHp[loc]}</small></span></div>`).join('')}</div></div><div class="fighter-foot"><div class="weapon-line"><span>Equipped / Reach</span><span>${esc(WEAPONS[f.weapon].name)} · ${reachName(f)}</span></div><div class="weapon-line" style="margin-top:7px"><span>Combat Style / Evade</span><span>${f.style}% / ${f.evade}%</span></div><div class="condition ${f.status==='Defeated'?'danger':worst===0?'safe':''}">${status}${f.prone?' · Prone':''}</div>${selected?`<p>Selected: <b>${selected}</b> (${f.hp[selected]}/${f.maxHp[selected]} HP). ${f.armor} AP armour. ${zoneClass(f,selected)==='ok'?'Uninjured.':zoneClass(f,selected)==='minor'?'Minor wound.':zoneClass(f,selected)==='serious'?'Serious wound.':'Major wound.'}</p>`:'<p>Click a body location to inspect its HP and wound severity. Wounds are isolated to each location.</p>'}</div></article>`}
+function fighterCard(f,cls){let injuries=HIT_LOCS.filter(l=>f.hp[l]<f.maxHp[l]);let worst=injuries.reduce((w,l)=>(zoneClass(f,l)==='major'?3:zoneClass(f,l)==='serious'?2:1)>w?w: w,0);let status=f.status==='Defeated'?'Incapacitated':worst===0?'Uninjured':worst===1?'Minor wounds':worst===2?'Serious wound':'Major wound';let selected=S.sel?.[f.id];return `<article class="fighter ${cls} ${V.highlight?.id===f.id?'just-hit':''}"><div class="fighter-head"><span class="tag">${cls==='player'?'PLAYER ONE':(S.mode==='pvp'?'PLAYER TWO':'OPPONENT')}</span><h2>${esc(f.name)}</h2><div class="sub">${f.kind==='ai'?`Skill ${f.style}% · Utility AI`: `Combat Style ${f.style}%`} · ${esc(WEAPONS[f.weapon].name)} · ${reachName(f)} reach</div><div class="tracks"><div class="track"><label>Action Points</label><b>${f.ap}<small> / ${f.apMax}</small></b><div class="dots">${Array.from({length:f.apMax},(_,i)=>`<i class="${i>=f.ap?'off':''}"></i>`).join('')}</div></div><div class="track"><label>Initiative</label><b>${f.initiative??'—'}</b><div style="font:11px system-ui,sans-serif;color:#87745c;margin-top:5px">${f.prone?'Prone · ':''}${f.skipAttack?'Attack restricted':'Ready'}</div></div></div></div><div class="figure-area"><div class="figure-title"><span>Hit locations / D20</span><span>AP ${f.armor} armor</span></div><div class="fig">${figureSvg(f)}</div><div class="location-list">${HIT_LOCS.map(loc=>`<div class="loc ${f.hp[loc]<f.maxHp[loc]?'wounded':''} ${selected===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}"><span>${loc.replace('Right ','R. ').replace('Left ','L. ')}</span><span>${f.hp[loc]}<small> / ${f.maxHp[loc]}</small></span></div>`).join('')}</div></div><div class="fighter-foot"><div class="condition ${f.status==='Defeated'?'danger':worst===0?'safe':''}">${status}${f.prone?' · Prone':''}</div>${selected?`<p>${selected}: ${f.hp[selected]}/${f.maxHp[selected]} HP · ${f.armor} AP</p>`:''}</div></article>`}
 function arenaHtml(){
  const a=V.busy&&V.shown?.a?V.shown.a:S.fighters.a,b=V.busy&&V.shown?.b?V.shown.b:S.fighters.b;
  const info=currentExchange();
@@ -550,8 +633,8 @@ function arenaHtml(){
  <div class="roundbar"><div class="side">${esc(a.name)} · ${a.initiative??'—'} INI</div><div class="vs">✧ &nbsp; VS &nbsp; ✧<div style="font:700 10px system-ui,sans-serif;color:#e9c68e;margin-top:5px">${engagementInfo().active?(S.engagement==='short'?'SHORT REACH':'LONG REACH'):'MATCHED REACH'}</div></div><div class="side">${esc(b.name)} · ${b.initiative??'—'} INI</div></div></div>
  <div class="exchange-board">${exchangeHalf('a',info)}${exchangeHalf('b',info)}</div>${outcomeStrip(info)}
  ${S.phase==='between'||S.phase==='over'?`<div class="center-content"><div class="actionbox">${actionHtml()}</div></div>`:''}
- ${S.mode==='tutorial'&&S.phase==='fight'?`<div class="tutorialnote" style="margin:12px 15px;color:#c9b48e;font-size:11px">${esc(tutorialHint())}</div>`:''}
- <div class="statusbar">${S.phase==='fight'?`MYTHRAS MELEE DEMO · ${S.pending?'DECISION REQUIRED':`ACTING: ${esc(S.fighters[S.order[S.turnIndex]]?.name||'—')}`}`:'TRAINING SESSION · RESULTS'}</div>
+ ${S.mode==='tutorial'&&S.phase==='fight'?`<details class="tutorial-why"><summary>Combat tip</summary><p>${esc(tutorialHint())}</p></details>`:''}
+ <div class="statusbar">${S.phase==='fight'?`${S.pending?'Response needed':`Turn: ${esc(S.fighters[S.order[S.turnIndex]]?.name||'—')}`}`:'Encounter complete'}</div>
  </section>${fighterCard(b,'enemy')}${combatHistory()}</div>`;
 }
 function tutorialHint(){let p=S.pending;if(p?.kind==='reaction')return 'An incoming attack can be Parried (weapon size reduces damage), Evaded (may avoid the hit but leaves you prone), or accepted to conserve AP.';if(p?.kind==='effect')return 'In Mythras, superior levels of success can earn Special Effects. These are chosen before damage and hit location.';if(p?.kind==='range')return 'The defender may allow the Change Range action, oppose with Evade, or intercept by attacking against the mover’s Evade. Closing succeeds even if an interception hits.';if(p?.kind==='location')return 'Choose Location lets you target a normally reachable area of the opponent rather than roll the d20 location die.';return 'Each combatant gets one proactive action in initiative order per cycle. Reactive actions also cost an Action Point. Track both fighters’ location HP.'}
@@ -560,13 +643,13 @@ if(S.phase==='over')return `<div class="endpanel"><span class="eyebrow">${S.mode
 const p=S.pending;
 if(p?.kind==='range'){
   const mover=S.fighters[p.mover],d=S.fighters[p.defender];
-  return `<div class="turnline"><h3>${esc(d.name)} · Change Range</h3><span>${d.ap} AP available</span></div><p class="desc"><b>${esc(mover.name)}</b> tries to ${p.desired==='short'?'close inside':'open beyond'} your weapon reach. Respond before the change is resolved.</p><div class="choicegrid"><button class="choice" data-act="rangeRespond" data-val="permit"><strong>Allow Change</strong><small>Keep your AP; range changes automatically.</small></button><button class="choice gold" data-act="rangeRespond" data-val="oppose" ${d.ap<1?'disabled':''}><strong>Oppose · 1 AP</strong><small>Opposed Evade rolls; preserve the present range if you win.</small></button><button class="choice red" data-act="rangeRespond" data-val="intercept" ${d.ap<1?'disabled':''} style="grid-column:span 2"><strong>Intercept · 1 AP</strong><small>Attack versus mover’s Evade; range changes regardless of the hit.</small></button></div>`;
+  return `<div class="turnline"><h3>${esc(d.name)} · Change Range</h3><span>${d.ap} AP available</span></div><div class="choicegrid"><button class="choice" data-act="rangeRespond" data-val="permit"><strong>Allow Change</strong><small>Keep your AP; range changes automatically.</small></button><button class="choice gold" data-act="rangeRespond" data-val="oppose" ${d.ap<1?'disabled':''}><strong>Oppose · 1 AP</strong><small>Opposed Evade rolls; preserve the present range if you win.</small></button><button class="choice red" data-act="rangeRespond" data-val="intercept" ${d.ap<1?'disabled':''} style="grid-column:span 2"><strong>Intercept · 1 AP</strong><small>Attack versus mover’s Evade; range changes regardless of the hit.</small></button></div>`;
 }
-if(p?.kind==='reaction'){let d=S.fighters[p.def],atk=S.fighters[p.atk];return `<div class="turnline"><h3>${esc(d.name)} · Reaction</h3><span>${d.ap} AP available</span></div><p class="desc"><b>${esc(atk.name)}</b> attacks: <b>${p.attackRoll.roll}</b> vs ${atk.style}% — <b>${p.attackRoll.label}</b>. Decide whether to spend AP defending.</p><div class="choicegrid"><button class="choice gold" data-act="react" data-val="parry" ${d.ap<=0||!canParryAtReach(d.id)?'disabled':''}><strong>Parry · 1 AP</strong><small>${canParryAtReach(d.id)?`Combat Style ${d.style}% · weapon size matters`:'Cannot parry with this weapon in your current condition/reach'}</small></button><button class="choice" data-act="react" data-val="evade" ${d.ap<=0?'disabled':''}><strong>Evade · 1 AP</strong><small>Evade ${d.evade}% · ends prone</small></button><button class="choice" data-act="react" data-val="none" style="grid-column:span 2"><strong>Do Not Defend</strong><small>Save AP, but accept the attack if it succeeds.</small></button></div>`}
-if(p?.kind==='effect'){let win=S.fighters[p.owner],offense=p.owner===p.atk,opts=availableEffects(p);return `<div class="turnline"><h3>${esc(win.name)} · Special Effect</h3><span>${p.effectsLeft} remaining</span></div><p class="desc">${offense?'Offensive':'Defensive'} advantage. Select a legal effect before any damage or hit-location rolls. Core pp. 95–101.</p><div class="choicegrid">${opts.map(([id,n,description])=>`<button class="choice ${id==='choose'?'gold':''}" data-act="effect" data-val="${id}"><strong>${n}</strong><small>${description}</small></button>`).join('')}</div><button class="toolbutton" style="width:100%;margin-top:9px" data-act="skipEffect">Skip remaining effects</button>`}
-if(p?.kind==='location')return `<div class="turnline"><h3>Choose Hit Location</h3><span>Special Effect</span></div><p class="desc">Select a reachable location on the defending combatant. All seven humanoid locations are assumed in reach in this simplified melee demo.</p><div class="inlineopts">${HIT_LOCS.map(l=>`<button class="choice" data-act="pickloc" data-val="${esc(l)}"><strong>${l.replace('Right ','R. ').replace('Left ','L. ')}</strong></button>`).join('')}</div>`;
+if(p?.kind==='reaction'){let d=S.fighters[p.def],atk=S.fighters[p.atk];return `<div class="turnline"><h3>${esc(d.name)} · Reaction</h3><span>${d.ap} AP available</span></div><div class="choicegrid"><button class="choice gold" data-act="react" data-val="parry" ${d.ap<=0||!canParryAtReach(d.id)?'disabled':''}><strong>Parry · 1 AP</strong><small>${canParryAtReach(d.id)?`Combat Style ${d.style}% · weapon size matters`:'Cannot parry with this weapon in your current condition/reach'}</small></button><button class="choice" data-act="react" data-val="evade" ${d.ap<=0?'disabled':''}><strong>Evade · 1 AP</strong><small>Evade ${d.evade}% · ends prone</small></button><button class="choice" data-act="react" data-val="none" style="grid-column:span 2"><strong>Do Not Defend</strong><small>Save AP, but accept the attack if it succeeds.</small></button></div>`}
+if(p?.kind==='effect'){let win=S.fighters[p.owner],offense=p.owner===p.atk,opts=availableEffects(p);return `<div class="turnline"><h3>${esc(win.name)} · Special Effect</h3><span>${p.effectsLeft} remaining</span></div><div class="choicegrid">${opts.map(([id,n,description])=>`<button class="choice ${id==='choose'?'gold':''}" data-act="effect" data-val="${id}"><strong>${n}</strong><small>${description}</small></button>`).join('')}</div><button class="toolbutton" style="width:100%;margin-top:9px" data-act="skipEffect">Skip remaining effects</button>`}
+if(p?.kind==='location')return `<div class="turnline"><h3>Choose Hit Location</h3><span>Special Effect</span></div><div class="inlineopts">${HIT_LOCS.map(l=>`<button class="choice" data-act="pickloc" data-val="${esc(l)}"><strong>${l.replace('Right ','R. ').replace('Left ','L. ')}</strong></button>`).join('')}</div>`;
 let id=S.order[S.turnIndex],f=S.fighters[id];if(!f)return '<p class="desc">Waiting for combat to begin.</p>';
-return `<div class="turnline"><h3>${esc(f.name)} · Your Turn</h3><span>${f.ap} AP remaining</span></div><p class="desc">One proactive action per turn. Attacks use Combat Style ${combatTarget(f)}%. ${isCrampedAtReach(id)?'At short reach your long weapon strikes awkwardly with its haft (1d3+1).':!canAttackBody(id)?'Too far inside your opponent’s reach to strike their body; close range first.':''} ${f.prone?'You are prone: Regain Footing is available.':''}</p><div class="choicegrid"><button class="choice gold" data-act="attack" ${f.ap<1||f.skipAttack>0||!canUseWeapon(f)||!canAttackBody(id)?'disabled':''}><strong>Attack · 1 AP</strong><small>${f.skipAttack>0?'Stunned / pressured: cannot attack this turn':!canUseWeapon(f)?'Weapon arm disabled: swap weapon hand or concede':isCrampedAtReach(id)?'Awkward strike with the haft · 1d3+1':!canAttackBody(id)?'Body out of reach — close range first':'Roll Combat Style, allow a reaction, resolve damage'}</small></button><button class="choice" data-act="changeRange" ${f.ap<1||!proposedRange(id)?'disabled':''}><strong>Change Range · 1 AP</strong><small>${proposedRange(id)==='short'?'Close to shorter reach':proposedRange(id)==='long'?'Open to longer reach':'No contested reach difference'}</small></button>${f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded?`<button class="choice" data-act="swapHand"><strong>Switch Weapon Hand · 1 AP</strong><small>Ready your weapon in the usable hand</small></button>`:''}<button class="choice" data-act="dither" ${f.ap<1?'disabled':''}><strong>Dither · 1 AP</strong><small>Use your action without attacking</small></button><button class="choice" data-act="stand" ${f.ap<1||!canRegainFooting(f)?'disabled':''}><strong>Regain Footing · 1 AP</strong><small>Opposed Brawn test if engaged (Core p.92)</small></button><button class="choice" data-act="yield"><strong>Concede Bout</strong><small>End this training fight without a death</small></button><button class="choice" data-act="help"><strong>Combat reference</strong><small>Show the rules this prototype implements</small></button></div>`}
+return `<div class="turnline"><h3>${esc(f.name)} · Your Turn</h3><span>${f.ap} AP remaining</span></div><div class="choicegrid"><button class="choice gold" data-act="attack" ${f.ap<1||f.skipAttack>0||!canUseWeapon(f)||!canAttackBody(id)?'disabled':''}><strong>Attack · 1 AP</strong><small>${f.skipAttack>0?'Stunned / pressured: cannot attack this turn':!canUseWeapon(f)?'Weapon arm disabled: swap weapon hand or concede':isCrampedAtReach(id)?'Awkward strike with the haft · 1d3+1':!canAttackBody(id)?'Body out of reach — close range first':'Roll Combat Style, allow a reaction, resolve damage'}</small></button><button class="choice" data-act="changeRange" ${f.ap<1||!proposedRange(id)?'disabled':''}><strong>Change Range · 1 AP</strong><small>${proposedRange(id)==='short'?'Close to shorter reach':proposedRange(id)==='long'?'Open to longer reach':'No contested reach difference'}</small></button>${f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded?`<button class="choice" data-act="swapHand"><strong>Switch Weapon Hand · 1 AP</strong><small>Ready your weapon in the usable hand</small></button>`:''}<button class="choice" data-act="dither" ${f.ap<1?'disabled':''}><strong>Dither · 1 AP</strong><small>Use your action without attacking</small></button><button class="choice" data-act="stand" ${f.ap<1||!canRegainFooting(f)?'disabled':''}><strong>Regain Footing · 1 AP</strong><small>Opposed Brawn test if engaged (Core p.92)</small></button><button class="choice" data-act="yield"><strong>Concede Bout</strong><small>End this training fight without a death</small></button><button class="choice" data-act="help"><strong>Combat reference</strong><small>Show the rules this prototype implements</small></button></div>`}
 function log(title,body,kind='system',detail='',meta=null){S.logs.push({id:nextLogId++,title,body,kind,detail,meta,view:S.fighters?clone(S.fighters):null});if(S.logs.length>110)S.logs.shift();}
 function rollSkill(pct,forcedRoll=null){const r=forcedRoll==null?d100():forcedRoll;const grade=r===100||(r===99&&pct<=100)?'fumble':r>=96?'failure':r<=Math.ceil(pct/10)?'critical':r<=pct||r<=5?'success':'failure';return {roll:r,grade:({critical:3,success:2,failure:1,fumble:0})[grade],label:grade.toUpperCase(),name:grade};}
 function opposedBetter(x,y){return x.grade>y.grade || (x.grade===y.grade&&x.grade>=2&&x.roll>y.roll)}
@@ -590,7 +673,7 @@ function regainFooting(id){
    requestSkill(other.id,other.brawn,`Resist Regain Footing · ${other.name} Brawn`,res=>{
      const success=opposedBetter(br,res);
      if(success)f.prone=false;
-     log('Regain Footing',`${f.name} Brawn ${br.roll}/${f.brawn}% versus ${other.name} Brawn ${res.roll}/${other.brawn}%. ${success?'Returns to standing.':'Remains prone.'}`,'system','Engaged combatants make an opposed test (Core p.92).',{actor:f.id,dice:[...d100Dice(br.roll),...d100Dice(res.roll)]});
+     log('Regain Footing',`${f.name} Brawn ${br.roll}/${f.brawn}% versus ${other.name} Brawn ${res.roll}/${other.brawn}%. ${success?'Returns to standing.':'Remains prone.'}`,'system','Engaged combatants make an opposed test (Core p.92).',{sideDice:{[f.id]:d100Dice(br.roll),[other.id]:d100Dice(res.roll)}});
      advanceStun(f);S.turnIndex++;advance();
    });
  });
@@ -833,6 +916,7 @@ function decoratedClick(e){
   const node=e.target.closest('[data-act]');if(!node)return;
   const act=node.dataset.act;
   if(act==='speed'){V.quick=!V.quick;render();return;}
+  if(act==='togglelog'){V.showLog=!V.showLog;render();return;}
   if(act==='skip'){skipPresentation();return;}
   if(act==='roll'){if(!V.busy&&R)playCaptured(performManualRoll);return;}
   if(V.busy)return;
