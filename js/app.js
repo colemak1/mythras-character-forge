@@ -553,8 +553,18 @@ window.APP={
    if(i>=0)S.customCareer.std.splice(i,1);
    else S.customCareer.std.push(skill);
    this.skillsChanged();},
- customCareerStyles(n){S.customCareer.styleSlots=n;
+ customCareerStyles(n){
+   if(!Number.isInteger(n)||n<0||n>7)return;
    const old=S.carStyles.length;
+   if(n<old){
+     const hasWork=S.carStyles.slice(n).some((cs,j)=>{
+       const key="style:k"+(n+j),def=S.styleDefs[key];
+       return !!(cs&&((cs.name||"").trim()||cs.mode==="link"))||
+         aGet("career",key)>0||aGet("bonus",key)>0||!!(def&&((def.weapons||[]).length||(def.traits||[]).length));
+     });
+     if(hasWork&&!confirm("Reducing Combat Style slots removes the affected career styles and may return their points to the pool. Continue?")){render();return;}
+   }
+   S.customCareer.styleSlots=n;
    if(n<old)S.carStyles=S.carStyles.slice(0,n);
    else for(let i=old;i<n;i++)S.carStyles.push({mode:"new",name:""});
    this.skillsChanged();},

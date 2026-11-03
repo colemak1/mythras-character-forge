@@ -170,6 +170,11 @@ test('changing culture warns before discarding work but not for seeded defaults'
  assert.equal(prompts,1);assert.equal(run('S.culture'),'Barbarian');assert.equal(run('aGet("culture",profKey("Lore","History"))'),10);assert.equal(run('aGet("bonus",profKey("Lore","History"))'),8);
  ctx.confirm=()=>true;run('APP.pickCulture("Civilised");');assert.equal(run('S.culture'),'Civilised');assert.equal(run('aGet("culture",profKey("Lore","History"))'),0);ctx.confirm=()=>true;
 });
+test('reducing custom career styles warns before removing work',()=>{
+ reset();run('APP.pickCareer("__custom__");APP.customCareerName("Scout");APP.customCareerStyles(2);S.carStyles[1].name="Spear";S.alloc.career["style:k1"]=12;S.styleDefs["style:k1"]={weapons:["Spear"],traits:[]};');
+ ctx.confirm=()=>false;run('APP.customCareerStyles(1);');assert.equal(run('S.customCareer.styleSlots'),2);assert.equal(run('S.carStyles[1].name'),'Spear');assert.equal(run('aGet("career","style:k1")'),12);
+ ctx.confirm=()=>true;run('APP.customCareerStyles(1);');assert.equal(run('S.customCareer.styleSlots'),1);assert.equal(run('S.carStyles.length'),1);ctx.confirm=()=>true;
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
