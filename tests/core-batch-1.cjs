@@ -218,6 +218,15 @@ test('Core pp.21,24 culture money multipliers and social class modifiers',()=>{
 test('Core p.22 personal connections explain manually tracked Group Luck',()=>{
  reset();assert.match(run('stepCommunity()'),/Group Luck starts at 2 plus 1 per character/);assert.match(run('stepCommunity()'),/Track this shared pool with the GM/);
 });
+test('Core p.24 social class roll tables cover every result and preserve roll on save',()=>{
+ const reference={Barbarian:[[1,5,"Outcast"],[6,15,"Slave"],[16,80,"Freeman"],[81,95,"Gentry"],[96,100,"Ruling"]],Civilised:[[1,2,"Outcast"],[3,20,"Slave"],[21,70,"Freeman"],[71,95,"Gentry"],[96,99,"Aristocracy"],[100,100,"Ruling"]],Nomadic:[[1,5,"Outcast"],[6,10,"Slave"],[11,90,"Freeman"],[91,100,"Ruling"]],Primitive:[[1,5,"Outcast"],[6,80,"Freeman"],[81,100,"Ruling"]]};
+ for(const [culture,rows] of Object.entries(reference))for(let n=1;n<=100;n++){ctx.culture=culture;ctx.roll=n;assert.equal(run('socialClassForRoll(culture,roll)[0]'),rows.find(([lo,hi])=>n>=lo&&n<=hi)[2]);}
+ reset();run('S.culture="Civilised";Math.random=()=>0.99;APP.rollSocialClass();');assert.equal(run('S.money.socialClass'),'Ruling');assert.equal(run('S.money.mod'),10);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);assert.equal(run('S.money.classRoll.roll'),100);
+ ctx.confirm=()=>false;run('APP.rollSocialClass();');assert.equal(run('S.money.classRoll.roll'),100);ctx.confirm=()=>true;
+ run('APP.pickSocialClass("Freeman");');assert.equal(run('S.money.classRoll'),null);
+ assert.equal(run('socialClassForRoll("Civilised",0)'),null);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');

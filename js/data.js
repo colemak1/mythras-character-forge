@@ -510,6 +510,14 @@ const SOCIAL_CLASSES={
  "Primitive":[["Outcast",0.25],["Freeman",1],["Ruling",2]]
 };
 
+// Core p.24 social class d100 upper bounds, aligned with SOCIAL_CLASSES.
+const SOCIAL_CLASS_ROLL_BOUNDS={Barbarian:[5,15,80,95,100],Civilised:[2,20,70,95,99,100],Nomadic:[5,10,90,100],Primitive:[5,80,100]};
+function socialClassForRoll(culture,roll){
+  const bounds=SOCIAL_CLASS_ROLL_BOUNDS[culture],classes=SOCIAL_CLASSES[culture];
+  if(!bounds||!classes||!Number.isInteger(roll)||roll<1||roll>100)return null;
+  return classes[bounds.findIndex(upper=>roll<=upper)]||null;
+}
+
 // Damage Modifier table (core p.9, verified visually)
 const DM_TABLE=[[5,"-1d8"],[10,"-1d6"],[15,"-1d4"],[20,"-1d2"],[25,"+0"],[30,"+1d2"],
 [35,"+1d4"],[40,"+1d6"],[45,"+1d8"],[50,"+1d10"],[60,"+1d12"],[70,"+2d6"],
