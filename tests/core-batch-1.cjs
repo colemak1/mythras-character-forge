@@ -40,10 +40,18 @@ test('Core p.33 custom careers save seven offers and retain unavailable selected
  assert.equal(run('professionalPicksError(S.carProf,S.carProfSpec,S.customCareer.profOffers,null,"Career")'),null);
  const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();APP.editCustomCareer();APP.customCareerOffer(0,"");APP.confirmCustomCareer();`);
  assert.equal(run('S.alloc.career[profKey("Lore","History")]'),12);
- assert.match(run('validate(currentSteps().indexOf("Career")).msg'),/Add enough Lore/);
+ assert.doesNotMatch(run('validate(currentSteps().indexOf("Career")).msg'),/Add enough Lore/);
  run('APP.editCustomCareer();APP.customCareerOffer(1,"");APP.confirmCustomCareer();');
  assert.match(run('stepCareer()'),/Lore \(no longer offered\)/);
  assert.equal(run('S.alloc.career[profKey("Lore","History")]'),12);
+});
+test('one custom offer permits distinct specialities while duplicates remain invalid',()=>{
+ reset();run('APP.pickCareer("__custom__");APP.customCareerName("Scholar");APP.customCareerOffer(0,"Lore");APP.confirmCustomCareer();S.carProf=["Lore","Lore",null];S.carProfSpec=["History","Nature",""];');
+ assert.equal(run('professionalPicksError(S.carProf,S.carProfSpec,S.customCareer.profOffers,null,"Career")'),null);
+ assert.match(run('validate(currentSteps().indexOf("Career")).msg'),/Spend exactly 100/);
+ run('S.carProfSpec[1]="History";');assert.match(run('validate(currentSteps().indexOf("Career")).msg'),/twice/);
+ run('S.carProf=["Literacy",null,null];');assert.match(run('profPickers("car",["Literacy"],3)'),/does not apply that cap yet/);
+ run('S.hobby="Literacy";');assert.match(run('stepBonus()'),/does not apply that cap yet/);
 });
 test('legacy custom career selections remain available and migrate on editing',()=>{
  reset();run('S.customCareer={isCustom:true,name:"Old",std:["Athletics"],prof:[],styleSlots:0};S.career="__custom__";S.carProf=["Healing",null,null];S.alloc.career[profKey("Healing","")]=15;');
