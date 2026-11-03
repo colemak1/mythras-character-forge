@@ -175,6 +175,12 @@ test('reducing custom career styles warns before removing work',()=>{
  ctx.confirm=()=>false;run('APP.customCareerStyles(1);');assert.equal(run('S.customCareer.styleSlots'),2);assert.equal(run('S.carStyles[1].name'),'Spear');assert.equal(run('aGet("career","style:k1")'),12);
  ctx.confirm=()=>true;run('APP.customCareerStyles(1);');assert.equal(run('S.customCareer.styleSlots'),1);assert.equal(run('S.carStyles.length'),1);ctx.confirm=()=>true;
 });
+test('changing one linked career style preserves shared cultural-style points',()=>{
+ reset();run('S.cultStyleOn=true;S.cultStyleName="Guard";S.customCareer={isCustom:true,name:"Soldier",std:[],styleSlots:2};S.career="__custom__";S.carStyles=[{mode:"link",name:""},{mode:"link",name:""}];S.alloc.career["style:cult"]=12;APP.carStyleMode(0,"link");');
+ assert.equal(run('aGet("career","style:cult")'),12);run('APP.carStyleMode(0,"new");');assert.equal(run('aGet("career","style:cult")'),12);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);assert.equal(run('aGet("career","style:cult")'),12);
+ run('APP.carStyleMode(1,"new");');assert.equal(run('aGet("career","style:cult")'),0);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');

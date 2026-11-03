@@ -569,7 +569,9 @@ window.APP={
    else for(let i=old;i<n;i++)S.carStyles.push({mode:"new",name:""});
    this.skillsChanged();},
  carStyleMode(i,m){const cs=S.carStyles[i];
-   delete S.alloc.career[cs.mode==="link"?"style:cult":"style:k"+i];
+   if(!cs||cs.mode===m)return;
+   // Reconciliation keeps allocations for a cultural style still used by
+   // another career slot and returns genuinely unavailable points to the pool.
    cs.mode=m;this.skillsChanged();},
  carStyleName(i,v){S.carStyles[i].name=v;this.skillsChanged();},
  skillsChanged(){reconcileSkillAllocations();render();},
