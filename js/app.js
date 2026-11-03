@@ -87,7 +87,7 @@ window.APP={
    const avail=Math.max(0,pool-otherReserved);
    S.chars[c]=Math.max(0,Math.min(charMax(c),target,avail));
    render();},
- manual(c,v){const n=parseInt(v,10);S.chars[c]=Number.isFinite(n)?n:null;render();},
+ manual(c,v){if(!CHARS.includes(c))return;const n=String(v).trim()===''?NaN:Number(v);S.chars[c]=Number.isFinite(n)?n:null;render();},
  fap(v){S.fixedAP=v;render();},
  /* character tier & creation method */
  /* ---- magic ---- */
@@ -386,11 +386,14 @@ window.APP={
  // Official Core Background Events: keep rolled d100 results and a player's
  // brief summary, rather than reproducing the copyrighted table in the app.
  rollCoreBackgroundEvents(){
+   if(VIEW_ONLY)return;
    const count=coreBackgroundRollCount();
    const saved=S.age.coreEvents||[];
    if(saved.length && !confirm("Replace your existing official Background Event rolls and notes?"))return;
+   S.age.coreEventsSkipped=false;
    S.age.coreEvents=Array.from({length:count},()=>({roll:d100(),summary:""}));render();
  },
+ skipCoreBackgroundEvents(){if(VIEW_ONLY)return;S.age.coreEventsSkipped=true;render();},
  editCoreBackgroundEvent(i,v){
    if(!S.age.coreEvents||!S.age.coreEvents[i])return;
    S.age.coreEvents[i].summary=String(v).slice(0,500);render();
@@ -470,6 +473,9 @@ window.APP={
    const hasWork=S.culture||S.career||S.qProf.some(Boolean)||aSum("culture")||aSum("career")||aSum("bonus")||aSum("quick");
    if(hasWork&&!confirm("Switching between Full Creation and Quick Character resets Culture/Career/Skill allocations made so far. Continue?"))return;
    S.creationMode=mode;
+   // Skill-step indices change between Full and Quick. A Culture override
+   // must not become permission to bypass Quick Skills after its reset.
+   S.overrides=Object.fromEntries(Object.entries(S.overrides||{}).filter(([step])=>Number(step)<3));
    S.culture=null;S.cultChoice=[];S.cultProf=[null,null,null];S.cultProfSpec=["","",""];S.cultStyleOn=false;S.cultStyleName="";
    S.career=null;S.carProf=[null,null,null];S.carProfSpec=["","",""];S.carStyles=[];
    S.customCareer={isCustom:false,name:"",std:[],prof:[],styleSlots:0};
@@ -484,10 +490,10 @@ window.APP={
    S.step=0;render();window.scrollTo(0,0);},
  qStyle(on){S.qStyleOn=on;if(on)S.alloc.quick["style:quick"]=5;else delete S.alloc.quick["style:quick"];this.skillsChanged();},
  /* culture */
- pickCulture(n){if(S.culture===n)return;
+ pickCulture(n){if(!Object.hasOwn(CULTURES,n)||S.culture===n)return;
    // The initial five points per standard skill are seeded automatically;
    // do not warn about those alone before the player has made changes.
-   const base=S.culture?new Set(CULTURES[S.culture].std.map(sk=>"std:"+sk)):new Set();
+   const base=S.culture&&Object.hasOwn(CULTURES,S.culture)?new Set(CULTURES[S.culture].std.map(sk=>"std:"+sk)):new Set();
    const changed=!!S.culture&&(S.cultChoice.length>0||S.cultProf.some(Boolean)||
      Object.entries(S.alloc.culture).some(([key,value])=>base.has(key)?value!==5:value!==0));
    if(changed&&!confirm("Changing culture resets your cultural skill choices and cultural point allocations. Some bonus points on removed professional skills may also return to the pool. Continue?"))return;
@@ -539,6 +545,7 @@ window.APP={
    this.skillsChanged();},
  /* career */
  pickCareer(n){
+   if(n!=="__custom__"&&!Object.hasOwn(CAREERS,n))return;
    if(n==="__custom__"&&S.customCareer.isCustom)return;
    if(n!=="__custom__"&&S.career===n&&!S.customCareer.isCustom)return;
    const hasCareerWork=aSum("career")>0||S.carProf.some(Boolean)||S.carStyles.some(cs=>cs&&(cs.name||"").trim());
@@ -974,7 +981,13 @@ window.APP={
  _gradePopEsc(e){if(e.key==="Escape")APP._closeGradePop();},
  setGrade(g){ACTIVE_GRADE=g;render();},
  /* play mode */
- toPlay(){APPVIEW="play";XP_OPEN=false;render();window.scrollTo(0,0);},
+ toPlay(){
+   if(APPVIEW==='character'){
+     const correction=creationReview().find(r=>r.status==='error');
+     if(correction){S.step=currentSteps().indexOf(correction.step);render();window.scrollTo(0,0);return;}
+   }
+   APPVIEW="play";XP_OPEN=false;render();window.scrollTo(0,0);
+ },
  backFromPlay(){
    if(VIEW_ONLY||PLAY_RETURN_VIEW==="board"){APP.toBoard(CURRENT_CAMPAIGN_ID);return;}
    APPVIEW="character";render();window.scrollTo(0,0);},
@@ -1704,6 +1717,7 @@ function buildMD(){
       if(c.connections.length)md+="### Allies, Contacts, Rivals and Enemies\n\n"+c.connections.map(x=>"- **"+x.type+":** "+x.name+(x.notes?" — "+x.notes.replace(/\n/g," "):"")).join("\n")+"\n\n";
     }
   }
+  if(coreBackgroundLines().length)md+="## Optional Core Background Events\n\n"+coreBackgroundLines().map(x=>'- '+x).join('\n')+'\n\n';
   if(S.passions.length)md+="## Passions\n\n| Passion | % |\n|---|---|\n"+S.passions.map(p=>"| "+(p.name||"(unnamed)")+" | "+passionVal(p)+"% |").join("\n")+"\n\n";
   if(S.gearWeapons.length)md+="## Weapons\n\n| Weapon | Damage | Reach | Effects | ENC | AP/HP |\n|---|---|---|---|---|---|\n"
     +S.gearWeapons.map(nm=>{const w=weaponByName(nm);return w?"| "+w.name+" | "+w.dmg+" | "+w.reach+" | "+w.effects+" | "+w.enc+" | "+w.apHp+" |":"";}).filter(Boolean).join("\n")+"\n\n";

@@ -238,7 +238,9 @@ function ageingReviewBlock(){
 function coreBackgroundEventsBlock(){
   const count=coreBackgroundRollCount(),events=S.age.coreEvents||[];
   let h='<div class="lifeev"><h4>Background Events <span class="rulesrc">Mythras Core</span></h4>'
-   +'<p class="note">Core pp.18–20, 34: your age category gives <b>'+count+'</b> official Background Event roll'+(count===1?'':'s')+'. Roll d100 here, consult the corresponding entry in your copy of Core, and record a short summary. The separate generator below is house content, not part of the official table.</p>';
+   +'<p class="note">Background Events are optional (Core p.17). If using them, your age category gives <b>'+count+'</b> official Background Event roll'+(count===1?'':'s')+' (pp.18–20,34). Roll d100 here, consult your copy of Core, and record a short summary. You may choose an event, reroll a duplicate or unsuitable result, or agree conflicting results with your GM. Effects are resolved manually. The separate generator below is house content.</p>';
+  if(S.age.coreEventsSkipped)h+='<p class="note">Optional Background Events skipped. Saved rolls and notes are retained for reference; rolling again resumes this option.</p>';
+  else if(count>0)h+='<button class="chip" onclick="APP.skipCoreBackgroundEvents()">Skip optional background events</button> ';
   if(events.length!==count){
     h+='<p class="note" role="status">'+(events.length?'Your age category changed; the saved rolls no longer match its required number. Re-roll when ready.':'No official rolls recorded yet.')+'</p>';
   }
@@ -434,7 +436,7 @@ function stepAttrs(){
      return r.notes.length?src+" &mdash; "+r.notes.join("; "):src;})()]];
   return head("Attributes","Nothing to enter here &mdash; every attribute is computed from the verified core tables and updates live if you revisit characteristics.")
   +'<div class="card"><div class="attrgrid">'+rows.map(r=>'<div class="attr"><div class="an">'+r[0]+'</div><div class="av">'+r[1]+'</div><div class="ah">'+r[2]+'</div></div>').join("")+'</div>'
-  +'<p class="note" style="margin-top:10px"><b>Optional rule &mdash; Fixed Action Points:</b> &ldquo;all characters can start the game with either 2 or 3 Action Points, regardless of INT and DEX.&rdquo; '
+  +'<p class="note" style="margin-top:10px"><b>GM-agreed table option &mdash; Fixed Action Points:</b> use 2 or 3 instead of the Core INT+DEX calculation. Leave off for standard Core creation. '
   +'<label><input type="radio" name="fap" '+(S.fixedAP===0?"checked":"")+' onchange="APP.fap(0)"> off</label> '
   +'<label><input type="radio" name="fap" '+(S.fixedAP===2?"checked":"")+' onchange="APP.fap(2)"> 2</label> '
   +'<label><input type="radio" name="fap" '+(S.fixedAP===3?"checked":"")+' onchange="APP.fap(3)"> 3</label></p></div>'
@@ -567,7 +569,7 @@ function combatStyleBuilderHTML(s){
 function stepCulture(){
   let h=head("Culture","Your cultural background: +40% to Customs and Native Tongue, three Professional Skills, an optional Combat Style, and 100 points across all of them.");
   h+='<div class="pickgrid">'+Object.keys(CULTURES).map(n=>'<button class="pick '+(S.culture===n?"on":"")+'" onclick="APP.pickCulture(\''+n+'\')"><span class="pn">'+n+'</span><div class="pd">'+CULTURES[n].blurb+'</div></button>').join("")+'</div>';
-  if(!S.culture)return h;
+  if(!S.culture||!Object.hasOwn(CULTURES,S.culture))return h;
   const c=CULTURES[S.culture];
   h+='<div class="card"><h3>Standard skills</h3><p class="note">'+c.std.join(", ")+(c.choice?"; <i>"+esc(c.choice.text)+"</i>":"")+'</p>';
   if(c.choice){h+='<div class="choicechips">'+c.choice.from.map(sk=>'<button class="chip '+(S.cultChoice.includes(sk)?"on":"")+'" onclick="APP.cultChoice(\''+sk+'\')">'+sk+'</button>').join("")+'</div>';}
@@ -602,12 +604,16 @@ function profPickers(which,offers,slots){
   const picks=which==="cult"?S.cultProf:(which==="car"?S.carProf:S.qProf),
     specs=which==="cult"?S.cultProfSpec:(which==="car"?S.carProfSpec:S.qProfSpec);
   const parsed=offers.map(parseOffer);
+  // One choice per base skill; list every printed context together. Multiple
+  // options with the same value made the browser display the last context
+  // even when the first was chosen, and always showed the first hint below.
+  const options=[...new Set(parsed.map(o=>o.name))].map(name=>({name,hint:[...new Set(parsed.filter(o=>o.name===name).map(o=>o.hint).filter(Boolean))].join('; ')||null}));
   // Fallback to the generic speciality hints (used elsewhere for Quick
   // Character / custom careers) when an offer string has no "(hint)" of its
   // own — e.g. a custom career's flat, unparenthesised skill list — so a
   // speciality box still appears for skills that always need one (Craft,
   // Lore, Language, etc.) instead of silently skipping it.
-  const hintFor=name=>{const o=parsed.find(x=>x.name===name);return (o&&o.hint)?o.hint:(QUICK_SPEC_HINTS[name]||null);};
+  const hintFor=name=>{const o=options.find(x=>x.name===name);return (o&&o.hint)?o.hint:(QUICK_SPEC_HINTS[name]||null);};
   let h="";
   for(let i=0;i<slots;i++){
     const cur=picks[i]||"";
@@ -615,20 +621,8 @@ function profPickers(which,offers,slots){
     h+='<div style="display:flex;gap:8px;align-items:center;margin:5px 0;flex-wrap:wrap">'
      +'<span class="note" style="width:18px">'+(i+1)+'.</span>'
      +'<select onchange="APP.pickProf(\''+which+'\','+i+',this.value)"><option value="">&mdash; choose &mdash;</option>'
-     // Each <option>'s label uses its OWN parsed hint (o.hint), not
-     // hintFor(o.name) -- a career can offer the same base skill twice
-     // with two different hints (e.g. Warrior's "Lore (Military History)"
-     // and "Lore (Strategy and Tactics)", both really just two suggested
-     // framings for the one Lore slot a Warrior can pick), and hintFor()
-     // looks up by name, which always resolves to whichever of the two
-     // comes first in the offers list -- so the second entry silently
-     // rendered as an exact, indistinguishable duplicate of the first
-     // instead of showing its own hint. value stays o.name either way
-     // (selecting either still just picks "Lore"; the filter below already
-     // stops the same base name being pickable in two slots at once), only
-     // the label text was wrong.
      +(cur&&!parsed.some(o=>o.name===cur)?'<option value="'+esc(cur)+'" selected>'+esc(cur)+' (no longer offered)</option>':'')
-     +parsed.filter(o=>o.name===cur||hintFor(o.name)||!picks.some((p,j)=>j!==i&&p===o.name)).map(o=>'<option value="'+esc(o.name)+'" '+(cur===o.name?"selected":"")+'>'+esc(o.name+(o.hint?" ("+o.hint+")":""))+'</option>').join("")+'</select>'
+     +options.filter(o=>o.name===cur||hintFor(o.name)||!picks.some((p,j)=>j!==i&&p===o.name)).map(o=>'<option value="'+esc(o.name)+'" '+(cur===o.name?"selected":"")+'>'+esc(o.name+(o.hint?" ("+o.hint+")":""))+'</option>').join("")+'</select>'
      +(hint?'<input type="text" value="'+esc(specs[i])+'" placeholder="speciality: '+esc(hint)+'" style="flex:1;min-width:160px" onchange="APP.profSpec(\''+which+'\','+i+',this.value)">':"")
      +'</div>';
   }
@@ -665,6 +659,7 @@ function stepCareer(){
 
   if(!S.career)return h;
   const k=S.customCareer.isCustom?{std:S.customCareer.std,styleSlots:Array(S.customCareer.styleSlots).fill(null)}:CAREERS[S.career];
+  if(!k)return h;
   h+='<div class="card"><h3>Standard skills</h3><p class="note">'+k.std.join(", ")+(k.styleSlots.length?"; Combat Style: "+k.styleSlots.map((s,i)=>s||("Combat Style "+(i+1))).join("; Combat Style: "):"")+'</p>'
    +(S.customCareer.isCustom?'<p style="margin-top:8px"><button class="chip" onclick="APP.editCustomCareer()">Edit custom career options</button></p>':"")+'</div>';
   if(k.styleSlots.length){
@@ -684,7 +679,7 @@ function stepCareer(){
     h+='<p class="note">&ldquo;Choosing a Style or Professional Skill previously gained via cultural background simply allows the character to further apply some of their career skill points.&rdquo;</p></div>';
   }
   const carProfOffers=S.customCareer.isCustom?(Array.isArray(S.customCareer.profOffers)?S.customCareer.profOffers.filter(Boolean):Object.keys(PROF).sort()):k.prof;
-  h+='<div class="card"><h3>Up to three professional skills</h3><p class="note">Different specialities of Lore, Craft, or other specialised skills may be selected separately. The same skill and speciality cannot be selected twice.</p>'+profPickers("car",carProfOffers,3)+'</div>';
+  h+='<div class="card"><h3>Up to three professional skills</h3><p class="note">Different specialities of Lore, Craft, or other specialised skills may be selected separately. The same skill and speciality cannot be selected twice. Use this career&rsquo;s listed subjects where specified; agree suitable names or substitutions with your GM. A broad offer may supply distinct specialities under this project&rsquo;s GM-reviewed interpretation of Core pp.28–29.</p>'+profPickers("car",carProfOffers,3)+'</div>';
   const rows=careerKeys().map(key=>rowFor(key,false)).filter(Boolean);
   h+='<div class="card"><h3>Allocate 100 career points</h3>'
    +allocTable("career",rows,100,0,15,"&ldquo;Distribute 100 points amongst the career&rsquo;s listed Standard Skills and whatever Professional Skills were chosen&hellip; Not all of the available skills need to be improved, but no individual skill can receive more than 15%.&rdquo;")+'</div>';
@@ -1073,7 +1068,7 @@ function encEffectPanel(){
 /* ---- step: money & gear ---- */
 function baseMult(){
   if(S.creationMode==="quick")return S.money.quickMult||0;
-  return S.culture?CULTURES[S.culture].money:0;
+  return S.culture&&Object.hasOwn(CULTURES,S.culture)?CULTURES[S.culture].money:0;
 }
 function moneyTotal(){const base=S.money.dice.reduce((a,b)=>a+b,0);
   return Math.round(base*baseMult()*(S.money.mod||1));}
