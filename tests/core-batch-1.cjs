@@ -240,6 +240,16 @@ test('Core p.8 rolled-order assignment uses each roll once within its dice group
  assert.deepEqual(Array.from(run('CHARS.map(c=>S.chars[c])')),[7,8,12,9,13,10,11]);
  assert.match(run('stepChars()'),/Assign in rolled order/);
 });
+test('Core pp.11–12 all standard skill formulas and Anathaym base example',()=>{
+ reset();run('S.chars={STR:11,CON:13,SIZ:10,DEX:16,INT:14,POW:7,CHA:9};');
+ const expected={Athletics:27,Boating:24,Brawn:21,Conceal:23,Customs:28,Dance:25,Deceit:23,Drive:23,Endurance:26,Evade:32,'First Aid':30,Influence:18,Insight:21,Locale:28,'Native Tongue':23,Perception:21,Ride:23,Sing:16,Stealth:30,Swim:24,Unarmed:27,Willpower:14};
+ const formulas={Athletics:"STR+DEX",Boating:"STR+CON",Brawn:"STR+SIZ",Conceal:"DEX+POW",Customs:"INTx2",Dance:"DEX+CHA",Deceit:"INT+CHA",Drive:"DEX+POW",Endurance:"CONx2",Evade:"DEXx2","First Aid":"INT+DEX",Influence:"CHAx2",Insight:"INT+POW",Locale:"INTx2","Native Tongue":"INT+CHA",Perception:"INT+POW",Ride:"DEX+POW",Sing:"CHA+POW",Stealth:"DEX+INT",Swim:"STR+CON",Unarmed:"STR+DEX",Willpower:"POWx2"};
+ assert.equal(run('STD.length'),Object.keys(expected).length);
+ for(const [name,formula] of Object.entries(formulas)){ctx.skillName=name;assert.equal(run('STD_MAP[skillName]'),formula,name);}
+ for(const [name,value] of Object.entries(expected)){ctx.skillName=name;assert.equal(run('entryMap()["std:"+skillName].base'),value,name);}
+ run('S.cultStyleOn=true;S.cultStyleName="Guard";');assert.equal(run('entryMap()["style:cult"].base'),27);
+ assert.equal(run('finalPct("std:Customs")'),68);assert.equal(run('finalPct("std:Native Tongue")'),63);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');

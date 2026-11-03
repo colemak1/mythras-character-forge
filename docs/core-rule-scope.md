@@ -29,7 +29,7 @@ The stable eight-subsystem progress plan is in [subsystem-plan.md](subsystem-pla
 | CH-02 | Action points, damage modifier and initiative | 8–10 | automate | partial |
 | CH-03 | Experience modifier, healing rate, luck, magic points | 9–10 | automate | partial |
 | CH-04 | Human height, weight, location HP and movement | 9–10 | automate / player choice | partial |
-| CH-05 | Standard skill bases and universal skills | 11–12, 38–43 | automate | partial |
+| CH-05 | Standard skill bases and universal skills | 11–12, 38–43 | automate | partial: 22 base formulas source-checked; full skill rules remain open |
 | CU-01 | Culture skill selection, points and style | 13–16 | automate | partial |
 | CU-02 | Four cultures and offered skills, one child per culture | 14–16 | automate | partial |
 | CU-03 | Background events and age-dependent count | 17–20, 34 | GM-assisted | partial |
