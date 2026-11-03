@@ -138,6 +138,13 @@ test('reselecting a professional skill preserves its speciality and allocated po
  assert.equal(run('S.carProfSpec[0]'),'Military History');assert.equal(run('aGet("career",profKey("Lore","Military History"))'),12);
  const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);assert.equal(run('aGet("career",profKey("Lore","Military History"))'),12);
 });
+test('adding another unspecialised professional choice does not overwrite existing points',()=>{
+ for(const mode of ['cult','quick']){
+  reset();ctx.mode=mode;run('if(mode==="cult"){S.culture="Civilised";S.cultProf=["Lore",null,null];}else{S.creationMode="quick";S.qProf=["Lore",null,null];}');
+  run('window.constPhase=mode==="cult"?"culture":"quick";S.alloc[constPhase][profKey("Lore","")]=12;APP.pickProf(mode,1,"Lore");');
+  assert.equal(run('aGet(constPhase,profKey("Lore",""))'),12);
+ }
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
