@@ -58,9 +58,13 @@ window.APP={
    ROLL_3D6.forEach((c,i)=>{if(i<orderA.length){S.assignA[c]=orderA[i];S.chars[c]=S.poolA[orderA[i]];}});
    ROLL_2D6.forEach((c,i)=>{if(i<orderB.length){S.assignB[c]=orderB[i];S.chars[c]=S.poolB[orderB[i]];}});
    render();},
- assign(c,idx){const isB=ROLL_2D6.includes(c);const asg=isB?S.assignB:S.assignA;const pool=isB?S.poolB:S.poolA;
+ assign(c,idx){
+   if(!CHARS.includes(c))return;
+   const isB=ROLL_2D6.includes(c);const asg=isB?S.assignB:S.assignA;const pool=isB?S.poolB:S.poolA;
    if(idx===""){delete asg[c];S.chars[c]=null;}
-   else{asg[c]=+idx;S.chars[c]=pool[+idx];}
+   else{const index=Number(idx);
+     if(!Number.isInteger(index)||index<0||index>=pool.length||Object.entries(asg).some(([name,used])=>name!==c&&used===index))return;
+     asg[c]=index;S.chars[c]=pool[index];}
    render();},
  pb(c,dir){const mnOf=charMin;const mn=mnOf(c);
    const pool=pbPool();
