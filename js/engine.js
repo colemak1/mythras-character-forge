@@ -189,7 +189,7 @@ function gradeRefRows(key){
 
 /* ================= SUCCESS TIERS (core, Skills chapter) ================= */
 function resolveRoll(roll,skill){
-  const crit=Math.max(1,Math.ceil(skill/10));
+  const crit=Math.max(0,Math.ceil(skill/10));
   const fumble=skill>100?(roll===100):(roll>=99);
   if(fumble)return "Fumble";
   if(roll>=96)return "Failure";           // 96-00 always fails

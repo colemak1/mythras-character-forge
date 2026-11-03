@@ -69,6 +69,13 @@ assert.match(run('contestedRollResult(80, 45, 70, 60).opposed'),/Second particip
 assert.match(run('contestedRollResult(80, 90, 70, 90).opposed'),/Both failed/);
 assert.match(run('contestedRollResult(80, 30, 70, 30).opposed'),/adjudicate/);
 assert.equal(run('contestedRollResult(200, 5, 30, 99).b'),0);
+// Core pp.37,51: 01–05 always succeeds, but 0% has no critical range.
+const zero=run('contestedRollResult(200, 5, 30, 1)');
+assert.equal(zero.b,0);assert.equal(zero.tierB,'Success');assert.equal(zero.differential,1);
+assert.equal(run('resolveRoll(1,0)'),'Success');
+assert.equal(run('resolveRoll(1,1)'),'Critical');
+assert.equal(run('resolveRoll(5,0)'),'Success');
+assert.equal(run('resolveRoll(6,0)'),'Failure');
 assert.equal(run('contestedRollResult(100, 0, 90, 2)'),null);
 assert.match(run('specialEffectsPanel()'),/Contested roll calculator/);
 console.log('PASS effect selection, limits, removal, changed result, and read-only guard');
