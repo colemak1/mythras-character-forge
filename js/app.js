@@ -511,7 +511,7 @@ window.APP={
  /* career */
  pickCareer(n){
    if(n==="__custom__"){
-     if(S.customCareer.isCustom&&S.career)return; // already locked in
+     if(S.customCareer.isCustom)return; // already selected, including while editing
      S.customCareer.isCustom=true;S.career=null;
      if(!Array.isArray(S.customCareer.profOffers))S.customCareer.profOffers=[];
      S.carProf=[null,null,null];S.carProfSpec=["","",""];S.alloc.career={};

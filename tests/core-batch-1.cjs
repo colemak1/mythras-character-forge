@@ -127,6 +127,12 @@ test('changing a speciality does not overwrite points already on the destination
  assert.equal(run('aGet("career",profKey("Lore","Nature"))'),15);assert.equal(run('aSum("career")'),15);
  assert.match(run('validate(currentSteps().indexOf("Career")).msg'),/twice/);
 });
+test('reselecting a custom career during editing preserves selections and allocations',()=>{
+ reset();run('APP.pickCareer("__custom__");APP.customCareerName("Scout");APP.customCareerStd("Athletics");APP.customCareerStyles(1);APP.confirmCustomCareer();S.carStyles[0].name="Bow";S.carProf[0]="Healing";S.alloc.career["std:Athletics"]=12;APP.editCustomCareer();APP.pickCareer("__custom__");');
+ assert.equal(run('S.carStyles[0].name'),'Bow');assert.equal(run('S.carProf[0]'),'Healing');assert.equal(run('S.alloc.career["std:Athletics"]'),12);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();APP.confirmCustomCareer();`);
+ assert.equal(run('S.alloc.career["std:Athletics"]'),12);assert.equal(run('S.carStyles[0].name'),'Bow');
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
