@@ -145,6 +145,19 @@ test('adding another unspecialised professional choice does not overwrite existi
   assert.equal(run('aGet(constPhase,profKey("Lore",""))'),12);
  }
 });
+test('removing one duplicate professional choice preserves the remaining allocation',()=>{
+ for(const mode of ['cult','car','quick']){
+  reset();ctx.mode=mode;
+  run('if(mode==="cult"){S.culture="Civilised";S.cultProf=["Lore","Lore",null];S.cultProfSpec=["History","History",""];}else if(mode==="car"){S.career="Scholar";S.carProf=["Lore","Lore",null];S.carProfSpec=["History","History",""];}else{S.creationMode="quick";S.qProf=["Lore","Lore",null];S.qProfSpec=["History","History",""];}window.phase=mode==="cult"?"culture":mode==="car"?"career":"quick";S.alloc[phase][profKey("Lore","History")]=12;APP.pickProf(mode,0,"");');
+  assert.equal(run('aGet(phase,profKey("Lore","History"))'),12);
+  const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);assert.equal(run('aGet(phase,profKey("Lore","History"))'),12);
+  run('APP.pickProf(mode,1,"");');assert.equal(run('aGet(phase,profKey("Lore","History"))'),0);
+ }
+});
+test('changing one duplicate speciality leaves the shared points on the remaining skill',()=>{
+ reset();run('S.career="Scholar";S.carProf=["Lore","Lore",null];S.carProfSpec=["History","History",""];S.alloc.career[profKey("Lore","History")]=12;APP.profSpec("car",0,"Nature");');
+ assert.equal(run('aGet("career",profKey("Lore","History"))'),12);assert.equal(run('aGet("career",profKey("Lore","Nature"))'),0);assert.equal(run('aSum("career")'),12);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
