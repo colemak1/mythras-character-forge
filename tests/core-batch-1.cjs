@@ -158,6 +158,12 @@ test('changing one duplicate speciality leaves the shared points on the remainin
  reset();run('S.career="Scholar";S.carProf=["Lore","Lore",null];S.carProfSpec=["History","History",""];S.alloc.career[profKey("Lore","History")]=12;APP.profSpec("car",0,"Nature");');
  assert.equal(run('aGet("career",profKey("Lore","History"))'),12);assert.equal(run('aGet("career",profKey("Lore","Nature"))'),0);assert.equal(run('aSum("career")'),12);
 });
+test('changing career warns before discarding selected career work',()=>{
+ reset();run('APP.pickCareer("Scholar");S.carProf[0]="Lore";S.carProfSpec[0]="History";S.alloc.career[profKey("Lore","History")]=12;');
+ ctx.confirm=()=>false;run('APP.pickCareer("Warrior");');assert.equal(run('S.career'),'Scholar');assert.equal(run('aGet("career",profKey("Lore","History"))'),12);
+ run('APP.pickCareer("__custom__");');assert.equal(run('S.career'),'Scholar');assert.equal(run('S.carProfSpec[0]'),'History');
+ ctx.confirm=()=>true;run('APP.pickCareer("Warrior");');assert.equal(run('S.career'),'Warrior');assert.equal(run('aSum("career")'),0);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
