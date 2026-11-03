@@ -117,6 +117,11 @@ test('linked Literacy advancement respects the spoken-language limit without spe
  run('S.xp.fumbled.push(lk);S.alloc.culture[lang]=rawSkillPct(lk,entryMap())-25+1;');
  const rolls=run('S.xp.pool');run('APP.xpSpend(lk);');assert.equal(run('S.xp.pool'),rolls);assert.equal(run('S.xp.fumbled.includes(lk)'),false);
 });
+test('switching creation mode removes stale literacy links and preserves learned skills',()=>{
+ reset();run('S.culture="Civilised";S.cultProf=["Literacy","Language",null];S.cultProfSpec=["Coastal","Coastal",""];S.xp.learnedProfs=[{name:"Literacy",spec:"Ancient"}];APP.literacyLink(profKey("Literacy","Coastal"),profKey("Language","Coastal"));APP.literacyLink(profKey("Literacy","Ancient"),"std:Native Tongue");APP.setMode("quick");');
+ assert.equal(run('S.literacyLinks[profKey("Literacy","Coastal")]'),undefined);
+ assert.equal(run('S.literacyLinks[profKey("Literacy","Ancient")]'),'std:Native Tongue');
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');
