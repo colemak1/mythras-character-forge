@@ -24,6 +24,16 @@ test('Core p.33 custom career stays editable and counts styles within seven',()=
  run('APP.editCustomCareer();');assert.equal(run('S.customCareer.name'),'Artificer');assert.equal(run('S.customCareer.std.length'),6);
  run('S.career="__custom__";S.customCareer.styleSlots=2;');assert.match(run('validate(currentSteps().indexOf("Career")).msg'),/at most seven/);
 });
+test('editing a custom career preserves allocations for skills still offered',()=>{
+ reset();run('APP.pickCareer("__custom__");APP.customCareerName("Artificer");APP.customCareerStd("Athletics");APP.customCareerStyles(1);APP.confirmCustomCareer();S.carStyles[0].name="Guard";S.carProf[0]="Healing";S.alloc.career={"std:Athletics":15,"style:k0":10,"prof:Healing|":12};APP.editCustomCareer();APP.customCareerStd("Brawn");');
+ assert.equal(run('S.alloc.career["std:Athletics"]'),15);
+ assert.equal(run('S.alloc.career["style:k0"]'),10);
+ assert.equal(run('S.alloc.career["prof:Healing|"]'),12);
+ const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();APP.confirmCustomCareer();`);
+ assert.equal(run('S.alloc.career["std:Athletics"]'),15);assert.equal(run('S.alloc.career["style:k0"]'),10);assert.equal(run('S.alloc.career["prof:Healing|"]'),12);
+ run('APP.editCustomCareer();APP.customCareerStd("Athletics");');
+ assert.equal(run('S.alloc.career["std:Athletics"]'),undefined);assert.equal(run('S.alloc.career["style:k0"]'),10);
+});
 test('Core pp.38,77,79: hardest task, encumbrance or fatigue grade applies',()=>{
  reset();run('ACTIVE_GRADE="hard";S.inventory=[{name:"Load",qty:1,enc:25}]');
  assert.equal(run('gradeForEntry("std:Athletics")'),'hard');

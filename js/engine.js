@@ -842,7 +842,9 @@ function cultureReqKeys(){
   return keys;
 }
 function careerKeys(){
-  if(!S.career)return [];
+  // A custom career remains active while its editor is open; clearing the
+  // selection temporarily must not discard every existing career allocation.
+  if(!S.career&&!S.customCareer.isCustom)return [];
   const k=S.customCareer.isCustom?{std:S.customCareer.std,styleSlots:Array(S.customCareer.styleSlots).fill(null)}:CAREERS[S.career];
   if(!k)return [];
   const keys=k.std.map(n=>"std:"+n);
