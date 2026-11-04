@@ -61,6 +61,32 @@ button[disabled]{cursor:wait;opacity:.65}
 @media(max-width:860px){.compare,.detail-comparison{grid-template-columns:1fr}.stage{height:340px}.card header{padding:19px 17px 15px}.readout{padding:13px 17px}.card-actions{padding:12px 17px 17px}}
 @media(max-width:420px){.stage{height:295px}.controls{gap:7px}.controls button{padding:9px 10px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
+
+/* Percentile-pair iteration: selectable finishes and readable overhead result */
+.style-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 19px;padding:12px 0;border-top:1px solid #3d463c;border-bottom:1px solid #3d463c}
+.style-title{font-size:10px;letter-spacing:.14em;color:#b8b2a3;text-transform:uppercase;font-weight:700;margin-right:8px}
+.style-toolbar button{min-height:37px;padding:7px 12px;font-size:12px;font-weight:600;border-color:#545e52;background:transparent;color:#c2c7b9}
+.style-toolbar button[aria-pressed="true"]{background:#42483b;color:#f0dcc0;border-color:#b7a17b}
+.floating-result{position:absolute;top:17%;left:50%;z-index:3;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:148px;padding:10px 18px;pointer-events:none;opacity:0;visibility:hidden;transform:translate(-50%,12px) scale(.96);transition:opacity .36s ease,transform .45s cubic-bezier(.19,1,.22,1),visibility 0s linear .45s}
+.floating-result.show{visibility:visible;opacity:1;transform:translate(-50%,0) scale(1);transition:opacity .36s ease,transform .45s cubic-bezier(.19,1,.22,1),visibility 0s}
+.float-caption{font:700 9px/1.3 system-ui,sans-serif;letter-spacing:.17em;text-transform:uppercase}
+.float-number{font:400 62px/.94 Georgia,serif;letter-spacing:-.06em;font-variant-numeric:tabular-nums}
+.float-math{white-space:nowrap;font:600 12px/1.5 system-ui,sans-serif;letter-spacing:.03em}
+main[data-presentation="minimal"] .floating-result{color:#f2e2c6;text-shadow:0 2px 10px rgba(0,0,0,.72)}
+main[data-presentation="minimal"] .float-caption,main[data-presentation="minimal"] .float-math{color:#c9c2b2}
+main[data-presentation="brass"] .floating-result{border:1px solid #bbaa84;background:linear-gradient(155deg,rgba(45,43,35,.96),rgba(24,29,24,.97));color:#f0d6a4;box-shadow:inset 0 0 0 4px rgba(143,121,77,.14),0 7px 24px #0007}
+main[data-presentation="brass"] .floating-result::before{content:"";position:absolute;inset:4px;border:1px solid rgba(195,159,102,.31);pointer-events:none}
+main[data-presentation="brass"] .float-caption,main[data-presentation="brass"] .float-math{color:#d1ba8e}
+main[data-presentation="referee"] .floating-result{background:rgba(12,17,15,.96);border-left:4px solid #e6d6b4;color:#fff9e8;box-shadow:0 4px 15px #0006;min-width:164px;padding:8px 18px}
+main[data-presentation="referee"] .float-number{font:800 63px/.98 system-ui,sans-serif;letter-spacing:-.06em}
+main[data-presentation="referee"] .float-caption,main[data-presentation="referee"] .float-math{color:#cad3c8}
+main[data-presentation="paper"] .floating-result{background:#e7ddc8;color:#473b2c;transform:translate(-50%,12px) rotate(-2deg);box-shadow:0 5px 12px rgba(10,13,11,.37);border:1px solid #b6aa93}
+main[data-presentation="paper"] .floating-result.show{transform:translate(-50%,0) rotate(-2deg)}
+main[data-presentation="paper"] .float-caption,main[data-presentation="paper"] .float-math{color:#645748}
+.stage .floating-result:not(.show){visibility:hidden}
+@media(max-width:780px){.floating-result{top:11%;min-width:120px;padding:7px 13px}.float-number{font-size:48px}main[data-presentation="referee"] .float-number{font-size:50px}.style-toolbar{gap:6px}}
+@media(prefers-reduced-motion:reduce){.floating-result,.floating-result.show{transition:none!important;transform:translate(-50%,0)!important}}
+
 </style>
 <script type="importmap">
 {"imports":{
@@ -70,12 +96,12 @@ button[disabled]{cursor:wait;opacity:.65}
 </script>
 </head>
 <body>
-<main>
+<main id="dice-lab" data-presentation="minimal">
 <div class="top"><span class="logo">New Sit’ota / Experiments</span><a href="./practice-combat.html">Back to Practice Combat</a></div>
 <header>
 <div class="eyebrow">Dice Lab · 3D comparison</div>
 <h1>Two ways to roll a hundred.</h1>
-<p class="lead">These are real-time 3D models with tabletop collisions and angular motion, not animated CSS tiles. Roll each independently or compare the same result. Choose based on what actually feels good in motion.</p>
+<p class="lead">Two physical 3D percentile dice now roll alongside each original prototype. The tens and ones land first; the combined d100 result rises above the tabletop. Try four different finish and result styles below.</p>
 </header>
 <div class="controls">
 <button id="roll-both" class="primary" type="button">Roll both · same result</button>
@@ -86,33 +112,52 @@ button[disabled]{cursor:wait;opacity:.65}
 </label>
 <button id="reset-camera" type="button">Reset views</button>
 </div>
+<div class="style-toolbar" role="group" aria-label="Dice and floating result styles">
+  <span class="style-title">Presentation style</span>
+  <button type="button" data-presentation="minimal" aria-pressed="true">Minimal Serif</button>
+  <button type="button" data-presentation="brass" aria-pressed="false">Brass Cartouche</button>
+  <button type="button" data-presentation="referee" aria-pressed="false">Referee Call</button>
+  <button type="button" data-presentation="paper" aria-pressed="false">Paper Slip</button>
+</div>
 <div class="status" id="status" role="status" aria-live="polite">Loading the 3D tabletop…</div>
 <section class="compare" aria-label="Physical d100 roller prototypes">
 <article class="card" id="card-hundred">
 <header><span class="card-label">Option A / 100 numbered faces</span><h2>True hundred-sided</h2>
-<p>A faceted resin-like solid with 100 individually numbered faces. It behaves closer to a rolling sphere than an ordinary polyhedral die.</p></header>
-<div class="stage" id="stage-hundred"><div class="stage-fallback">Preparing renderer…</div><span class="stage-state" id="state-hundred">Ready</span><span class="stage-help">Drag to inspect</span></div>
-<div class="readout"><span class="number" id="number-hundred" aria-live="polite">—</span><div class="detail"><span id="target-hundred">Target 67%</span><strong id="grade-hundred">Not yet rolled</strong></div></div>
+<p>A 100-faced resin die beside a physical tens-and-ones d10 pair. Compare their motion and the floating combined value.</p></header>
+<div class="stage" id="stage-hundred"><div class="stage-fallback">Preparing renderer…</div>
+<div class="floating-result" id="floating-hundred" aria-live="polite" aria-atomic="true">
+  <span class="float-caption">d100 result</span>
+  <strong class="float-number">—</strong>
+  <span class="float-math">00 + 0 = 100</span>
+</div>
+<span class="stage-state" id="state-hundred">Ready</span><span class="stage-help">Drag to inspect</span></div>
+<div class="readout"><span class="number" id="number-hundred" aria-live="polite">—</span><div class="detail"><span id="breakdown-hundred">Tens + ones</span><span id="target-hundred">Target 67%</span><strong id="grade-hundred">Not yet rolled</strong></div></div>
 <div class="card-actions"><button class="roll" type="button" data-roll="hundred">Roll this die</button><button class="pick" type="button" data-pick="hundred" aria-pressed="false">Choose this</button></div>
 </article>
 <article class="card" id="card-poly">
 <header><span class="card-label">Option B / 20 large faces</span><h2>Recognizable polyhedron</h2>
-<p>A heavy metal d20-style solid with a full 1–100 result below it. The shape is for presentation; it is not mislabeled as a physical 100-face die.</p></header>
-<div class="stage" id="stage-poly"><div class="stage-fallback">Preparing renderer…</div><span class="stage-state" id="state-poly">Ready</span><span class="stage-help">Drag to inspect</span></div>
-<div class="readout"><span class="number" id="number-poly" aria-live="polite">—</span><div class="detail"><span id="target-poly">Target 67%</span><strong id="grade-poly">Not yet rolled</strong></div></div>
+<p>A metal d20-inspired centerpiece beside the same physical percentile pair. The tens and ones determine the full 1–100 result.</p></header>
+<div class="stage" id="stage-poly"><div class="stage-fallback">Preparing renderer…</div>
+<div class="floating-result" id="floating-poly" aria-live="polite" aria-atomic="true">
+  <span class="float-caption">d100 result</span>
+  <strong class="float-number">—</strong>
+  <span class="float-math">00 + 0 = 100</span>
+</div>
+<span class="stage-state" id="state-poly">Ready</span><span class="stage-help">Drag to inspect</span></div>
+<div class="readout"><span class="number" id="number-poly" aria-live="polite">—</span><div class="detail"><span id="breakdown-poly">Tens + ones</span><span id="target-poly">Target 67%</span><strong id="grade-poly">Not yet rolled</strong></div></div>
 <div class="card-actions"><button class="roll" type="button" data-roll="poly">Roll this die</button><button class="pick" type="button" data-pick="poly" aria-pressed="false">Choose this</button></div>
 </article>
 </section>
 <div class="disclosure">
 <h3>What makes these different</h3>
 <div class="detail-comparison">
-<p><strong>A: 100 genuine numbered faces.</strong> The shape is built from 98 flat quadrilateral faces and two flat caps. A fair 1–100 value is sampled first, then the physical tumble is guided to land on its corresponding face. The animation is not the random-number generator.</p>
-<p><strong>B: physical d20-style body.</strong> More readable proportions and pronounced face edges, but only 20 faces. This design displays the full d100 result outside the solid so its face markings never misrepresent the outcome.</p>
+<p><strong>A: the genuine 100-face model.</strong> The centerpiece has 100 numbered facets. A separate physical tens die (00–90) and ones die (0–9) show the percentile breakdown as they settle on the tabletop.</p>
+<p><strong>B: the recognizable 20-face model.</strong> Its centerpiece is still only a d20-shaped object, but its two true d10 percentile dice show the same rolled outcome. The larger number appears above them when the roll resolves.</p>
 </div>
-<p>Both use Three.js and cannon-es for real-time rendering and rigid-body tabletop collisions. Drag either scene to examine the model. WebGL and an internet connection to load the libraries are required. Neither option changes the actual Practice Combat roller.</p>
+<p>Both use Three.js and cannon-es for 3D rendering and rigid-body collisions. The fair d100 value is sampled before animation; the dice finish oriented to their assigned faces. For percentile dice, 00 + 0 = 100, 00 + 7 = 7, and 30 + 0 = 30. Drag the scene to inspect. WebGL and internet access for the libraries are required. Practice Combat is unchanged.</p>
 </div>
 <footer class="foot"><span id="selection">No favorite selected</span><span>Standalone experiment · no Mythras combat rules modified</span></footer>
 </main>
-<script type="module" src="./d100-physical-lab.js"></script>
+<script type="module" src="./d100-physical-lab.js?v=2"></script>
 </body>
 </html>
