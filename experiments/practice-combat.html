@@ -1449,6 +1449,9 @@ function conditionInsightsHtml(f){
    '</section>';
 }
 function reachContextHtml(){
+ // Playback uses a completed rules state while revealing earlier events.
+ // Do not show a future range change before its animation is complete.
+ if(V.busy)return '';
  const reach=engagementInfo();
  if(S.disengaged)return '<p class="reach-context" role="note"><strong>Separated by '+
    esc(S.gapMetres||0)+'m.</strong> Re-engage before attempting a body strike.</p>';
