@@ -894,4 +894,17 @@ check('Reach explanation returns immediately after playback completes',
 state.fighters.a.weapon='sword';state.fighters.b.weapon='sword';
 state.engagement='equal';
 
+
+/* An impaled weapon with no size-derived penalty should not fabricate one. */
+const previousSiz10=state.fighters.a.siz;
+state.phase='fight';state.pending=null;presentation.busy=false;
+state.fighters.a.siz=45;
+state.fighters.a.impaledWounds=[{loc:'Left Leg',weaponSize:1}];
+api.render();
+check('Size-zero impalement grade does not invent a skill modifier',
+ sandbox.window.prototypeCombat.impaleGrade(state.fighters.a)===0 &&
+ root.innerHTML.includes('Lodged weapon; no additional skill penalty from its size.'));
+state.fighters.a.siz=previousSiz10;
+state.fighters.a.impaledWounds=[];
+
 console.log('Practice Combat UX smoke checks passed.');
