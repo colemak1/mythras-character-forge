@@ -501,7 +501,8 @@ presentation.busy=true;presentation.visibleCount=2;
 api.render();
 check('Playback summary hides unrevealed wound and effect results',
   root.innerHTML.includes('class="exchange-recap progress"') &&
-  !root.innerHTML.includes('class="recap-explanation"') &&
+  root.innerHTML.includes('Awaiting response') &&
+  !root.innerHTML.includes('7 damage − 2 parry − 1 armour = 4 HP lost') &&
   !root.innerHTML.includes('strikes Right Arm · 4 HP lost'));
 check('Recap keeps an explicit Show results option during detailed playback',
   root.innerHTML.includes('class="recap-toolbar"') &&
