@@ -1217,6 +1217,7 @@ function resultModalHtml(){
   const injuryTitle=injury?`${severity} · ${cause.location}`:cause.type==='fatigue'?'Blood loss / fatigue':cause.type==='exhaustion'?'Mutual exhaustion':'Concession';
   const injuryDetail=injury?`${cause.victim} · ${cause.hpLost} HP lost · ${cause.remaining}/${cause.maxHp} location HP`:
     cause.type==='fatigue'?`${cause.victim} was incapacitated by accumulated Fatigue`:cause.type==='exhaustion'?'Neither fighter has sufficient Action Points to continue':`${cause.victim||'Combatant'} conceded the bout`;
+  const urgent=injury&&cause.criticalWindow?`Urgent treatment: within ${cause.criticalWindow.value} ${cause.criticalWindow.unit} to prevent fatal blood loss/shock.`:'';
   const consequence=injury?cause.consequence:cause.type==='fatigue'?'Bleeding continued into successive combat rounds.':cause.type==='exhaustion'?'Both exhausted fighters lack the AP to act; the training bout is scored as a draw.':'Fight ended without a finishing wound';
   const next=S.phase==='between';
   const nextButton=next?`<button type="button" class="result-primary" data-act="next">Next opponent</button>`:
@@ -1229,7 +1230,7 @@ function resultModalHtml(){
     <div class="result-finish ${injury?'has-location':''}" id="resultCause">
       ${injury?`<div class="result-figure">${finishingLocationSvg(cause.location)}</div>`:''}
       <div class="result-why"><div class="result-eyebrow">${injury?'FINISHING INJURY':'BOUT ENDED BY'}</div>
-        <strong>${esc(injuryTitle)}</strong><span>${esc(injuryDetail)}</span><small>${esc(consequence)}</small></div>
+        <strong>${esc(injuryTitle)}</strong><span>${esc(injuryDetail)}</span><small>${esc(consequence)}</small>${urgent?`<small>${esc(urgent)}</small>`:''}</div>
     </div>
     <div class="result-meta">Encounter ended in round ${S.round}${injury?' · Final hit to '+esc(cause.location):''}</div>
     ${['normal','hardcore'].includes(S.mode)?`<div class="result-streak">Streak <strong>${S.wins}</strong></div>`:''}
@@ -1264,7 +1265,7 @@ function focusActiveDecision(){
  });
 }
 
-function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'QUICK':'DETAILED'} · PACE</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v19 · Fatigue and recovery</span>`}</div></section>${setup?setupHtml():arenaHtml()}${!setup?resultModalHtml():''}${!setup?meleeEffectReference():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, sourcebook-gated Special Effects, wounds, initiative and optional reach. Implemented: sourcebook-derived AP (INT+DEX), hit-location HP (CON+SIZ), initiative bonus (average INT/DEX), mixed-location armour and armour ENC penalty, weapon/shield Size parries, shield wards, STR+SIZ Damage Modifier, and Withdraw. Still simplified: shield attacks, complex terrain for Bash beyond a 6m training-ring clearance, Luck and long-term natural recovery over days/weeks; exertion Fatigue uses Core pp.78–79 and Hardcore rest uses training-arena pacing. A short separated gap can be re-engaged without a Move AP; beyond 3m the training prototype charges 1 AP. Hardcore First Aid restores partial function after Serious Wounds, but not HP. Major Wounds remain incapacitating. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110; Special Effects summary and descriptions pp. 95–101.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.dataset.help=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;focusActiveDecision();}}
+function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'QUICK':'DETAILED'} · PACE</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v20 · Wound accuracy</span>`}</div></section>${setup?setupHtml():arenaHtml()}${!setup?resultModalHtml():''}${!setup?meleeEffectReference():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, sourcebook-gated Special Effects, wounds, initiative and optional reach. Implemented: sourcebook-derived AP (INT+DEX), hit-location HP (CON+SIZ), initiative bonus (average INT/DEX), mixed-location armour and armour ENC penalty, weapon/shield Size parries, shield wards, STR+SIZ Damage Modifier, and Withdraw. Still simplified: shield attacks, unarmed grapples, complex terrain for Bash beyond a 6m training-ring clearance, Luck and long-term natural recovery over days/weeks; exertion Fatigue uses Core pp.78–79 and Hardcore rest uses training-arena pacing. A short separated gap can be re-engaged without a Move AP; beyond 3m the training prototype charges 1 AP. Hardcore First Aid restores partial function after Serious Wounds, but not HP. Major Wounds remain incapacitating. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110; Special Effects summary and descriptions pp. 95–101.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.dataset.help=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;focusActiveDecision();}}
 function modeName(m){return {tutorial:'Guided Tutorial',normal:'Normal Gauntlet',hardcore:'Hardcore Gauntlet',pvp:'Local PvP'}[m]||m}
 function setupHtml(){let modes=[['tutorial','01','Guided Tutorial','One beginner-friendly bout with reminders about Mythras decisions.'],['normal','02','Normal Gauntlet','Infinite escalating enemies. Your wounds reset after each win.'],['hardcore','03','Hardcore Gauntlet','Same escalating enemies. Wounds and injuries persist between fights.'],['pvp','04','Local PvP','Two players take turns on one screen; online matching comes later.']];return `<div class="setup"><h2>Choose your challenge</h2><p class="intro">A working combat loop with selectable reactions, hit locations, a tactical computer opponent, and a local streak board.</p><div class="modes">${modes.map(([k,n,t,d])=>`<button class="mode ${config.mode===k?'on':''}" data-act="mode" data-val="${k}" aria-pressed="${config.mode===k}"><span class="n">MODE ${n}</span><strong>${t}</strong><small>${d}</small></button>`).join('')}</div><div class="setup-bottom"><div class="formcard"><div class="setup-fighter-intro"><h3>Practice fighter</h3><p>${esc(config.charname)} · ${esc(WEAPONS[config.weapon].name)} · ${config.style}% Combat Style</p></div><details class="fighter-customize"><summary>Customize fighter <span>Skills, weapons and attributes</span></summary><div class="formgrid"><label>Username<input id="username" maxlength="30" value="${esc(config.username)}"></label><label>Character name<input id="charname" maxlength="45" value="${esc(config.charname)}"></label><label>Combat Style %<input id="style" type="number" min="20" max="110" value="${config.style}"></label><label>Evade %<input id="evade" type="number" min="20" max="110" value="${config.evade}"></label><label>Armour AP (all locations)<input id="armor" type="number" min="0" max="8" value="${config.armor}"></label><label>Weapon<select id="weapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.weapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Shield<select id="shield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.shield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>First Aid % (sample)<input id="firstAid" type="number" min="1" max="100" value="${config.firstAid}"></label><label>Willpower % (sample)<input id="willpower" type="number" min="1" max="110" value="${config.willpower}"></label><label>Strength (STR)<input id="str" type="number" min="5" max="20" value="${config.str}"></label><label>Size (SIZ)<input id="siz" type="number" min="5" max="20" value="${config.siz}"></label><label>Constitution (CON)<input id="con" type="number" min="5" max="20" value="${config.con}"></label><label>Dexterity (DEX)<input id="dex" type="number" min="5" max="20" value="${config.dex}"></label><label>Intelligence (INT)<input id="int" type="number" min="5" max="20" value="${config.int}"></label><details style="grid-column:1/-1"><summary>Optional: armour by hit location</summary><label style="display:block;margin:8px 0"><input id="mixedArmour" type="checkbox" ${config.mixedArmour?'checked':''}> Use separate armour values</label><div class="formgrid">${HIT_LOCS.map(loc=>`<label>${loc} AP<input id="armour_${loc.replace(/ /g,'_')}" type="number" min="0" max="8" value="${config.armourByLocation[loc]??config.armor}"></label>`).join('')}</div></details>${config.mode==='pvp'?`<label>Second player name<input id="pvpName" maxlength="45" value="${esc(config.pvpName)}"></label><label>Second player Combat Style %<input id="pvpSkill" type="number" min="20" max="110" value="${config.pvpSkill}"></label><label>Second player Evade %<input id="pvpEvade" type="number" min="20" max="110" value="${config.pvpEvade}"></label><label>Second player armour AP<input id="pvpArmor" type="number" min="0" max="8" value="${config.pvpArmor}"></label><label>Second player weapon<select id="pvpWeapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.pvpWeapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Second player shield<select id="pvpShield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.pvpShield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>Second player STR<input id="pvpStr" type="number" min="5" max="20" value="${config.pvpStr}"></label><label>Second player SIZ<input id="pvpSiz" type="number" min="5" max="20" value="${config.pvpSiz}"></label><label>Second player CON<input id="pvpCon" type="number" min="5" max="20" value="${config.pvpCon}"></label><label>Second player DEX<input id="pvpDex" type="number" min="5" max="20" value="${config.pvpDex}"></label><label>Second player INT<input id="pvpInt" type="number" min="5" max="20" value="${config.pvpInt}"></label><details style="grid-column:1/-1"><summary>Optional: second player armour by location</summary><label style="display:block;margin:8px 0"><input id="pvpMixedArmour" type="checkbox" ${config.pvpMixedArmour?'checked':''}> Use separate armour values</label><div class="formgrid">${HIT_LOCS.map(loc=>`<label>${loc} AP<input id="pvpArmour_${loc.replace(/ /g,'_')}" type="number" min="0" max="8" value="${config.pvpArmourByLocation[loc]??config.pvpArmor}"></label>`).join('')}</div></details>`:''}</div><p class="formhint">These are sample statistics, not an imported character. Uniform armour is the default. Expand the armour-by-location section for mixed equipment; two-handed weapons cannot equip a shield.</p></details><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px"><button class="cta" data-act="start">${config.mode==='pvp'?'Start Duel':'Enter Training Grounds'} &nbsp;→</button><span class="modehint">Runs entirely on your device.</span></div></div><div class="setup-right"><div class="statbox"><strong>Gauntlet leaderboard</strong><p>Stored in this browser, not published online. Rankings count consecutive opponents defeated.</p><div class="badges"><button class="lbtab ${S.lbMode==='normal'?'on':''}" data-act="lbmode" data-val="normal">Normal</button><button class="lbtab ${S.lbMode==='hardcore'?'on':''}" data-act="lbmode" data-val="hardcore">Hardcore</button></div>${scoresHtml(S.lbMode)}</div><details class="statbox rules-disclosure"><summary>The rules we're testing</summary><div class="badges"><span class="notechip">d100 Skill checks</span><span class="notechip">d20 Hit location</span><span class="notechip">Parry by size</span><span class="notechip">Shields &amp; wards</span><span class="notechip">Damage modifier</span><span class="notechip">Armour initiative</span><span class="notechip">Action points</span><span class="notechip">Special Effects</span><span class="notechip">Optional weapon reach</span><span class="notechip">Serious/Major wounds</span></div><p>Some results and effects remain simplified for this prototype, including full fatigue, weapon durability, and shield attacks. Actual Forge integration would reuse your existing character data and sourcebook-verified engine.</p></details></div></div></div>`}
 function zoneClass(f,loc){const x=f.hp[loc],m=f.maxHp[loc];return x<=-m?'major':x<=0?'serious':x<m?'minor':'ok'}
@@ -1489,7 +1490,17 @@ function combatTarget(f){let pct=f.style;if(f.prone)pct=Math.ceil(pct/2);if(cann
  if(f.weaponHand==='Right Arm'&&zoneClass(f,'Right Arm')==='serious')pct=Math.ceil(pct*2/3);
  if(f.weaponHand==='Left Arm'&&zoneClass(f,'Left Arm')==='serious')pct=Math.ceil(pct*2/3);
  if(f.blindedTurns>0)pct=Math.max(1,Math.ceil(pct/10));return pct;}
-function evadeTarget(f){let pct=f.prone?Math.ceil(f.evade/2):f.evade;if(f.partialLimbs?.['Right Leg']||f.partialLimbs?.['Left Leg'])pct=Math.ceil(pct*2/3);if(f.blindedTurns>0)pct=Math.max(1,Math.ceil(pct/10));return pct;}
+// Core p.110: a usable but seriously injured leg makes leg-dependent tasks
+// one difficulty grade harder until healed to a Minor Wound. Two injured legs
+// each impose a grade. Partial function after First Aid does not double-count.
+function evadeTarget(f){
+ let pct=f.prone?Math.ceil(f.evade/2):f.evade;
+ for(const loc of ['Right Leg','Left Leg']){
+  if(zoneClass(f,loc)==='serious'||f.partialLimbs?.[loc])pct=Math.ceil(pct*2/3);
+ }
+ if(f.blindedTurns>0)pct=Math.max(1,Math.ceil(pct/10));
+ return pct;
+}
 function limbDisabled(f,loc){return f.disabled.includes(loc)&&!f.partialLimbs?.[loc];}
 function releasePinnedBy(f){
  if(!S.fighters)return;
@@ -1875,9 +1886,14 @@ function applyEffect(effect){
    const foe=S.fighters[p.atk];
    requestDice(foe.id,[{sides:20,label:'Self hit location'}],`Accidental Injury · ${foe.name} hit location`,([index])=>{
     const loc=HIT_TABLE[index-1];rollWeaponDamageForEffect(foe,`Accidental Injury · ${foe.name} damage`,(amount)=>{
-      const armour=armourAt(foe,loc),wound=Math.max(0,amount-armour);foe.hp[loc]-=wound;foe.lastDamage={loc,wound,attacker:foe.name,weapon:WEAPONS[foe.weapon].name};
-      note('Accidental Injury',`${foe.name} strikes their own ${loc}: ${amount} damage − ${armour} armour = ${wound} HP lost.`);
-      // The existing prototype wound pipeline handles any serious/major consequences.
+      // Mythras Core p.96: the fumbler suffers their OWN weapon damage in
+      // a randomly selected hit location, ignoring *all* armour.
+      const wound=Math.max(0,amount),old=foe.hp[loc];
+      foe.hp[loc]-=wound;
+      registerWound(foe,loc,wound);
+      foe.lastDamage={loc,wound,attacker:foe.name,weapon:WEAPONS[foe.weapon].name};
+      log('Accidental Injury',`${foe.name} accidentally hits ${loc}: ${amount} self-inflicted damage, armour ignored. ${old} → ${foe.hp[loc]} HP.`, 'hurt','Mythras Core p.96: armour does not protect against Accidental Injury.',{actor:foe.id,target:foe.id,location:loc});
+      // The normal Serious/Major Wound resolution still applies to the injury.
       const severity=zoneClass(foe,loc);
       if(wound>0&&(severity==='serious'||severity==='major')){resolveWound(actor,foe,loc,severity,wound,p.attackRoll,()=>finishOneEffect());return;}
       finishOneEffect();
@@ -2075,11 +2091,32 @@ function resolveWound(atk,def,loc,cls,wound,attackRoll,onContinue){
  }else woundEndurance();
  function woundEndurance(){
    requestSkill(def.id,def.endurance,`Endurance · ${cls} wound to ${loc}`,res=>{
-     const holds=opposedBetter(res,attackRoll);
-     log(`${cls.toUpperCase()} WOUND · ${loc}`,`${def.name} Endurance ${res.roll}/${def.endurance}% (${res.label}) opposed by original attack ${attackRoll.roll} (${attackRoll.label}). ${holds?'Resists the additional consequence.':'Fails to resist.'}`,'hurt',`Core p.110 · ${body} consequence`,{actor:def.id,dice:d100Dice(res.roll)});
+     let defendedAgainst=attackRoll;
+     if(def.endurance>100){
+       const excess=def.endurance-100;
+       const initialTarget=attackRoll.effectiveTarget??atk.style;
+       const modifiedTarget=Math.max(0,initialTarget-excess);
+       defendedAgainst=rollSkill(modifiedTarget,attackRoll.roll);
+       log('Exceptional Endurance',`${def.name}'s ${def.endurance}% Endurance reduces the original attack skill from ${initialTarget}% to ${modifiedTarget}% for the wound contest; the roll ${attackRoll.roll} is now ${defendedAgainst.label}.`,'system','Core p.110: apply the excess over 100 retroactively to the attacking skill.',{actor:def.id});
+     }
+     const holds=opposedBetter(res,defendedAgainst);
+     log(`${cls.toUpperCase()} WOUND · ${loc}`,`${def.name} Endurance ${res.roll}/${def.endurance}% (${res.label}) versus the attack ${defendedAgainst.roll} (${defendedAgainst.label}). ${holds?'Resists the additional consequence.':'Fails to resist.'}`,'hurt',`Core p.110 · ${body} consequence`,{actor:def.id,dice:d100Dice(res.roll)});
      if(cls==='major'){
-       if(isLimb)endFight(atk.id,`${def.name} has a Major Limb Wound and is incapacitated.${holds?' Remains conscious.':' Falls unconscious from agony.'}`);
-       else endFight(atk.id,holds?`${def.name} has a Major Wound to ${loc}: unconscious and critically injured.`:`${def.name} dies from a Major Wound to ${loc}.`);
+       // A major limb wound incapacitates regardless of the Endurance test.
+       // Without urgent treatment, blood loss/shock becomes fatal after
+       // 5× Healing Rate minutes. A resisted major head/torso wound also
+       // remains fatal after 2× Healing Rate Combat Rounds unless treated.
+       const rate=healingRateFor(def.con);
+       if(isLimb){
+         def.criticalWindow={unit:'minutes',value:5*rate,location:loc};
+         endFight(atk.id,`${def.name} has a Major Limb Wound and is incapacitated.${holds?' Remains conscious.':' Falls unconscious from agony.'} Untreated shock/blood loss becomes fatal after ${5*rate} minutes.`);
+       }else if(holds){
+         def.criticalWindow={unit:'combat rounds',value:2*rate,location:loc};
+         endFight(atk.id,`${def.name} is unconscious from a Major Wound to ${loc}. Without immediate treatment, death follows after ${2*rate} Combat Rounds.`);
+       }else{
+         def.criticalWindow=null;
+         endFight(atk.id,`${def.name} dies immediately from a Major Wound to ${loc}.`);
+       }
        return;
      }
      if(!holds){
@@ -2088,7 +2125,7 @@ function resolveWound(atk,def,loc,cls,wound,attackRoll,onContinue){
        if(loc.endsWith('Leg'))def.prone=true;
        log('Limb Disabled',`${def.name}'s ${loc} becomes unusable until healed to positive HP. ${loc.endsWith('Leg')?'They fall prone.':'They cannot use that arm.'}`,'hurt');
      }else{
-       log('Wound Resisted',`${def.name} remains functional; injured-body tasks are one difficulty grade harder until healed to a Minor Wound.`,'system');
+       log('Wound Resisted',`${def.name} remains functional; tasks requiring the injured ${loc} are one difficulty grade harder until the wound heals to a Minor Wound.`,'system','Core p.110: local, not global, difficulty penalty.');
      }
      onContinue();
    });
@@ -2104,8 +2141,8 @@ function endFight(winnerId,reason){
   S.finalCause=hit&&HIT_LOCS.includes(hit.loc)?{
     type:'injury',location:hit.loc,severity:zoneClass(loser,hit.loc),hpLost:hit.wound,
     remaining:loser.hp[hit.loc],maxHp:loser.maxHp[hit.loc],attacker:hit.attacker||winner.name,
-    weapon:hit.weapon||'',victim:loser.name,
-    consequence:/dies from/i.test(reason)?'Fatal wound':/unconscious|consciousness/i.test(reason)?'Unconscious':'Incapacitated'
+    weapon:hit.weapon||'',victim:loser.name,criticalWindow:loser.criticalWindow||null,
+    consequence:/dies immediately|dies from/i.test(reason)?'Fatal wound':/unconscious|consciousness/i.test(reason)?'Unconscious':'Incapacitated'
   }:{type:/blood loss|fatigue|exertion|exhaustion/i.test(reason)?'fatigue':'concession',victim:loser.name};
   S.showEndModal=true;
   log('FIGHT ENDS',`${winner.name} wins. ${reason}`,'hurt');
