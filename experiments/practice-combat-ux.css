@@ -583,3 +583,298 @@ button:focus-visible,.loc:focus-visible {
     animation:none!important;
   }
 }
+
+
+/* Practice Combat UX pass 04 — seven-location field chart and fighter dossiers.
+   All hit locations, armour values and injury classes are supplied by the engine. */
+.arena .fighter {
+  background:#1c201d;
+  border-color:#454b41;
+}
+.fighter .fighter-head {
+  background:#222720;
+  padding:20px 20px 17px;
+  border-bottom-color:#444a40;
+}
+.fighter .fighter-head h2 {
+  text-transform:none;
+  font:normal clamp(25px,1.85vw,31px)/1.1 Georgia,serif;
+  letter-spacing:-.025em;
+  margin:8px 0 14px;
+}
+.fighter .fighter-profile {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:14px;
+  border-top:1px solid #40483d;
+  padding-top:12px;
+}
+.fighter .fighter-profile .profile-weapon {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+.fighter .fighter-profile .profile-label {
+  text-transform:uppercase;
+  letter-spacing:.09em;
+  color:#a89c86;
+  font:600 10px/1.3 system-ui,sans-serif;
+}
+.fighter .fighter-profile .profile-weapon strong {
+  font:normal 18px/1.15 Georgia,serif;
+  color:#ead9be;
+  white-space:normal;
+}
+.fighter .fighter-profile .profile-weapon small {
+  font:12px/1.4 system-ui,sans-serif;
+  color:#b3a48b;
+}
+.fighter .fighter-profile .profile-skill {
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:2px;
+}
+.fighter .fighter-profile .profile-skill strong {
+  color:#ead9be;
+  font:600 21px/1.1 system-ui,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.fighter .tracks {
+  margin-top:16px;
+  padding-top:3px;
+}
+.fighter .fighter-head .track b {
+  font-size:23px;
+}
+.fighter .figure-area {
+  display:grid;
+  grid-template-columns:minmax(120px,1fr) minmax(114px,1fr);
+  gap:15px;
+  align-items:start;
+  padding:17px 17px 13px;
+}
+.fighter .figure-title {
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:center;
+  grid-column:1 / -1;
+  border:0;
+  padding:0;
+  font:600 10px/1.35 system-ui,sans-serif;
+  letter-spacing:.06em;
+  color:#b6a990;
+}
+.fighter .fig {
+  min-height:296px;
+  height:auto;
+  align-items:center;
+  padding:3px 0 1px;
+  background:linear-gradient(to right,transparent 49.65%,rgba(171,159,135,.08) 49.65%,rgba(171,159,135,.08) 50.35%,transparent 50.35%);
+}
+.fighter .fig svg.anatomy-chart {
+  display:block;
+  width:100%;
+  height:auto;
+  max-width:215px;
+  max-height:330px;
+  overflow:visible;
+}
+.anatomy-chart .anatomy-guide {
+  fill:none;
+  stroke:#777f71;
+  stroke-width:1;
+  stroke-dasharray:3 7;
+  opacity:.28;
+  pointer-events:none;
+}
+.anatomy-chart .anatomy-plate {
+  vector-effect:non-scaling-stroke;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.fighter .anatomy-chart .zone { cursor:pointer; }
+.fighter .anatomy-chart .zone.ok { fill:#353f35; }
+.fighter .anatomy-chart .zone.minor { fill:#9a784e; }
+.fighter .anatomy-chart .zone.serious { fill:#a75a44; }
+.fighter .anatomy-chart .zone.major { fill:#aa3f38; }
+.fighter .anatomy-chart .zone:hover,
+.fighter .anatomy-chart .zone.sel,
+.fighter .anatomy-chart .zone:focus-visible {
+  stroke:#f1d3a4;
+  stroke-width:3.3;
+  filter:drop-shadow(0 0 4px rgba(206,166,105,.18));
+  outline:none;
+}
+.anatomy-chart .anatomy-seam {
+  fill:none;
+  stroke:#b2aa90;
+  stroke-opacity:.44;
+  stroke-width:1;
+  pointer-events:none;
+  vector-effect:non-scaling-stroke;
+}
+.anatomy-chart .anatomy-wound-mark {
+  fill:#ead3b8;
+  stroke:#773c30;
+  stroke-width:2;
+  vector-effect:non-scaling-stroke;
+  pointer-events:none;
+}
+.anatomy-chart .anatomy-wound-mark.major {
+  fill:#ffb29b;
+}
+.fighter .location-list {
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  margin:0;
+  align-self:center;
+  width:100%;
+}
+.fighter button.loc {
+  position:relative;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-rows:auto 3px;
+  column-gap:6px;
+  row-gap:7px;
+  align-items:center;
+  width:100%;
+  min-height:44px;
+  padding:6px 3px 7px;
+  border-bottom:1px solid #343b34;
+}
+.fighter button.loc:focus-visible,
+.fighter button.loc.sel {
+  outline:none;
+  background:#2c352c;
+  box-shadow:inset 2px 0 #c0a06e;
+}
+.fighter button.loc .loc-ident {
+  min-width:0;
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+}
+.fighter button.loc .loc-name {
+  font:500 12px/1.3 system-ui,sans-serif;
+  color:#e5d9c5;
+}
+.fighter button.loc .loc-rolls {
+  color:#998e7b;
+  font:10px/1.3 system-ui,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.fighter button.loc .loc-hp {
+  font:600 13px/1.3 system-ui,sans-serif;
+  color:#eadac2;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.fighter button.loc .loc-hp small {
+  font-size:10px;
+  font-weight:400;
+}
+.fighter button.loc .loc-gauge {
+  grid-column:1 / -1;
+  width:100%;
+  height:3px;
+  background:#424b41;
+  overflow:hidden;
+}
+.fighter button.loc .loc-gauge i {
+  display:block;
+  height:100%;
+  background:#a6b3a0;
+  transition:width .15s ease-out;
+}
+.fighter button.loc.minor .loc-gauge i { background:#bd9462; }
+.fighter button.loc.serious .loc-hp { color:#e2a58b; }
+.fighter button.loc.major .loc-hp { color:#e89481; }
+.fighter button.loc.serious .loc-gauge,
+.fighter button.loc.major .loc-gauge { background:#623e36; }
+.fighter button.loc.wounded .loc-name { color:#f2d4b8; }
+.anatomy-key {
+  grid-column:1/-1;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:7px 12px;
+  margin:0 auto;
+  color:#aa9c84;
+  font:11px/1.4 system-ui,sans-serif;
+}
+.anatomy-key span { display:inline-flex;align-items:center;gap:5px; }
+.anatomy-key i { width:7px;height:7px;display:inline-block;background:#707f6b; }
+.anatomy-key .minor i { background:#9a784e; }
+.anatomy-key .serious i { background:#a75a44; }
+.anatomy-key .major i { background:#aa3f38; }
+.fighter .fighter-foot {
+  border-top:1px solid #3d463c;
+  padding:14px 17px 17px;
+}
+.fighter .location-inspector {
+  margin:14px 0 0;
+  padding:12px 0 0;
+  border-top:1px solid #3c453b;
+  display:grid;
+  gap:8px;
+}
+.location-inspector .inspector-title {
+  color:#c5ab83;
+  font:600 11px/1.3 system-ui,sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+}
+.location-inspector .inspector-facts {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px 15px;
+  color:#b7ad9a;
+  font:12px/1.4 system-ui,sans-serif;
+}
+.location-inspector .inspector-facts strong {
+  color:#f0e1c8;
+  font-size:13px;
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.location-inspector .inspector-note {
+  color:#d9ac8f;
+  font:12px/1.4 system-ui,sans-serif;
+}
+.finish-location-figure .anatomy-seam {
+  fill:none;stroke:#b9a28a;stroke-opacity:.36;stroke-width:1;pointer-events:none;
+}
+.finish-location-figure .anatomy-plate {
+  vector-effect:non-scaling-stroke;
+  stroke-linejoin:round;
+}
+@media(max-width:1360px){
+  .fighter .figure-area { grid-template-columns:minmax(100px,1fr) minmax(104px,1fr);gap:8px;padding:14px 12px 12px; }
+  .fighter .fig { min-height:265px; }
+  .fighter button.loc .loc-ident { flex-direction:column;gap:0; }
+  .fighter button.loc { min-height:42px; }
+}
+@media(max-width:1060px){
+  .fighter .figure-area { grid-template-columns:minmax(106px,.8fr) minmax(120px,1fr); }
+  .fighter .fig { min-height:260px; }
+}
+@media(max-width:740px) {
+  .fighter .figure-area { grid-template-columns:minmax(125px,1fr) minmax(135px,1fr);gap:14px;padding:17px; }
+  .fighter .fig { min-height:285px; }
+  .fighter button.loc .loc-ident { flex-direction:row;gap:7px; }
+}
+@media(max-width:390px){
+  .fighter .figure-area { gap:8px;grid-template-columns:minmax(95px,1fr) minmax(115px,1fr);padding:13px; }
+  .fighter button.loc .loc-ident { flex-direction:column;gap:0; }
+  .fighter .fig { min-height:260px; }
+}
+@media(prefers-reduced-motion:reduce){
+ .fighter button.loc .loc-gauge i { transition:none; }
+}
