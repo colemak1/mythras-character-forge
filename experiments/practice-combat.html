@@ -567,7 +567,7 @@ function rollPrompt(actor){
 
 // Presentation is separate from the rules state: rolls resolve immediately,
 // then the screen unveils the recorded, immutable events in order.
-const V={capturing:false,busy:false,quick:true,reduced:!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches),
+const V={capturing:false,busy:false,quick:false,reduced:!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches),
   events:[],step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,timer:null,diceTimer:null,showLog:false,moreActionsOpen:false,guideWhyOpen:false,openChronicle:new Set()};
 function clearPresentationTimers(){if(V.timer)clearTimeout(V.timer);if(V.diceTimer)clearInterval(V.diceTimer);V.timer=V.diceTimer=null;}
 function makeDie(sides,value,role='',variant='',display=''){return {sides,value,role,variant,display:display||String(value)}}
