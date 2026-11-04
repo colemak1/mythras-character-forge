@@ -615,6 +615,24 @@ function pmCalculateContest(form){
   out.textContent="Shared reduction: "+result.reduction+"%. Adjusted skills: "+result.a+"% and "+result.b+"%. Results: "+result.tierA+" and "+result.tierB+". Opposed: "+result.opposed+" Differential: "+(d>0?"first participant gains "+d+" level(s).":d<0?"second participant gains "+(-d)+" level(s).":"no benefit.");
 }
 
+function pmCalculateModifiedSkill(form){
+  const primary=form.elements.primary.valueAsNumber;
+  const secondary=form.elements.secondary.valueAsNumber;
+  const roll=form.elements.roll.valueAsNumber;
+  const method=form.elements.method.value;
+  const out=form.querySelector('[data-modified-skill-result]');
+  if(![primary,secondary].every(n=>Number.isSafeInteger(n)&&n>=0)||
+     !Number.isInteger(roll)||roll<1||roll>100||!["cap","augment"].includes(method)){
+    out.textContent="Enter whole-number skill percentages and a roll from 1 to 100.";
+    return;
+  }
+  const augmented=method==="augment";
+  const target=augmented?primary+Math.round(secondary/5):Math.min(primary,secondary);
+  if(!Number.isSafeInteger(target)){out.textContent="The adjusted percentage is too large.";return;}
+  out.textContent=target+"% target. "+resolveRoll(roll,target,augmented?primary:target)+"."
+    +(augmented?" Critical and fumble thresholds use "+primary+"%.":"");
+}
+
 let PM_EFFECT_ROLL_REF=null;
 let PM_FX_SEARCH="";
 function selectedEffectRoll(){
@@ -970,7 +988,8 @@ function renderPlayView(){
     // literal .sk row from D: bare numeral (no "%"), a gray mono base-
     // formula caption (STR+DEX etc, "x2" normalised to "×2"), and a dotted
     // .lead line — no trained/untrained bullet dot, the mockup has none.
-    const pctTxt=g.pct===null?GRADE_LABEL[g.grade]:String(g.pct);
+    const fluency=isSpokenLanguage(e.key);
+    const pctTxt=fluency?String(base):g.pct===null?GRADE_LABEL[g.grade]:String(g.pct);
     const cbt=e.grp==="Combat Style";
     const baseFmt=(e.formula||"").replace(/x(\d)/i,"×$1").toUpperCase();
     const checked=S.xp.checked.includes(e.key);
@@ -993,20 +1012,29 @@ function renderPlayView(){
     // wasn't something a physical-dice table actually wanted.
     const fumbleflag='<button class="pm-xpflag'+(fumbled?" on":"")+'" title="'+(fumbled?"Fumbled — free +1% pending. Click to remove flag.":"Mark this skill as Fumbled (free +1% next Improve Skills)")+'" onclick="APP.xpToggleFumble(\''+jsq(e.key)+'\')">&#9873;</button>';
     return '<div class="pm-skillrow'+(cbt?" cbt":"")+'">'
-     +ckflag+fumbleflag
+     +(fluency?"":ckflag+fumbleflag)
      +'<span class="nm">'+esc(e.label)+'</span>'
      +(baseFmt?'<span class="base">'+esc(baseFmt)+'</span>':'')
      +'<span class="lead"></span>'
-     +'<span class="pctval" onclick="APP.toggleGradePop(\''+jsq(e.key)+'\',\''+jsq(e.label)+'\',event)" title="Click for Difficulty Grades">'+pctTxt+'</span>'
-     +'<button class="pm-btn roll" onclick="APP.roll(\''+jsq(e.key)+'\')">roll</button></div>';
+     +(fluency?'<span class="pctval" title="Spoken fluency">'+pctTxt+'</span>':'<span class="pctval" onclick="APP.toggleGradePop(\''+jsq(e.key)+'\',\''+jsq(e.label)+'\',event)" title="Click for Difficulty Grades">'+pctTxt+'</span>'
+     +'<button class="pm-btn roll" onclick="APP.roll(\''+jsq(e.key)+'\')">roll</button>')+'</div>';
   };
   h+='<div class="pm-col pm-col-skills"><div class="pm-box pm-skillsbox" style="height:100%">'
-   +'<div class="pm-sect-head" title="Difficulty Grade multiplies every skill % before you roll — the GM calls a harder or easier Grade for the situation, not a fixed penalty per attempt. Very Easy x2 · Easy x1.5 · Standard x1 · Hard x2/3 · Formidable x1/2 · Herculean x1/10 · Automatic/Hopeless skip the roll entirely."><span class="no">03</span> SKILLS'+(ACTIVE_GRADE!=="standard"?' <span class="pm-gradenote">('+GRADE_LABEL[ACTIVE_GRADE]+')</span>':"")+'</div>'
+   +'<div class="pm-sect-head" title="Difficulty Grade adjusts rolled skill percentages — the GM calls a harder or easier Grade for the situation, not a fixed penalty per attempt. Very Easy x2 · Easy x1.5 · Standard x1 · Hard x2/3 · Formidable x1/2 · Herculean x1/10 · Automatic/Hopeless skip the roll entirely."><span class="no">03</span> SKILLS'+(ACTIVE_GRADE!=="standard"?' <span class="pm-gradenote">('+GRADE_LABEL[ACTIVE_GRADE]+')</span>':"")+'</div>'
    +'<div class="pm-ghost">03</div>';
   h+='<div class="pm-skillgroup"><h4>Standard</h4>'+grp("Standard").map(skrow).join("")+'</div>';
   h+='<div class="pm-skillgroup"><h4>Professional</h4>'+(grp("Professional").length?grp("Professional").map(skrow).join(""):'<p class="pm-empty">None.</p>')+'</div>';
   if(grp("Magic").length)h+='<div class="pm-skillgroup"><h4>Magic</h4>'+grp("Magic").map(skrow).join("")+'</div>';
   if(grp("Combat Style").length)h+='<div class="pm-skillgroup"><h4>Combat Styles</h4>'+grp("Combat Style").map(skrow).join("")+'</div>';
+  h+='<details class="pm-fx-item"><summary>GM skill and task rulings <span class="pm-fx-badge">Core pp.38, 50–52, 65–67</span></summary>'
+   +'<p><b>Retry.</b> If the GM allows one more attempt after failure, make it one grade harder. A second failure ends attempts for the foreseeable future.</p>'
+   +'<p><b>Augment or cap.</b> For a GM-approved augmentation, use one assisting skill and add 20% of its value to the primary skill. Judge criticals and fumbles using the unaugmented primary skill. A cap limits the primary skill to the secondary skill when the secondary skill is lower.</p>'
+   +'<form onsubmit="event.preventDefault();pmCalculateModifiedSkill(this)"><label>Method <select name="method"><option value="augment">Augment</option><option value="cap">Cap</option></select></label> <label>Primary % <input name="primary" type="number" min="0" step="1" required></label> <label>Secondary % <input name="secondary" type="number" min="0" step="1" required></label> <label>d100 (100 for 00) <input name="roll" type="number" min="1" max="100" step="1" required></label> <button type="submit" class="pm-btn sm">Check result</button><p role="status" data-modified-skill-result></p></form>'
+   +'<p><b>Spoken fluency (Core pp.42, 47).</b> Use Native Tongue or Language to judge fluency or cap a verbal skill. When judging a related dialect, treat fluency at least one grade harder as appropriate to the divergence.</p>'
+   +'<p><b>Group rolls.</b> For a team roll, use the highest skill if one success helps everyone, or the lowest if one failure costs everyone. For a sorting roll, compare one shared roll to each person’s skill. For proportional success, use the skill percentage as the share of the group that succeeds.</p>'
+   +'<p><b>Task rounds.</b> The GM sets the duration of a round and any deadline. Track +50% for a critical, +25% for a success, 0% for a failure, or −25% for a fumble. An acceptable result takes 100%. Use the Core Item Quality and Enhancements tables for crafting outcomes.</p>'
+   +'<p><b>Optional simplified modifiers.</b> The GM can use flat changes of +40, +20, 0, −20, −40 and −80 percentage points from Very Easy through Herculean. In a contest, the GM can round the shared reduction up to the next multiple of ten when the highest modified skill exceeds 100%. Apply either option manually if your table uses it.</p>'
+   +'<p>Use the calculator for a single roll with GM-approved percentages. Augmentation rounds to the nearest whole percent, following the 33% example on p.50. For contests, resolve shared over-100 adjustments separately. The calculator does not change your character or roll log.</p></details>';
   h+='</div></div>';
 
   // -- col 4: 04 Combat (weapons + fatigue), tabbed section, press log --
@@ -1223,6 +1251,7 @@ function characterSheetBody(){
   // the proficiency-dot idea from D&D Beyond's skill list, adapted since
   // Mythras has no proficiency toggle — "trained" here just means invested.
   const skrows=list=>list.map(e=>{
+    if(isSpokenLanguage(e.key))return '<div class="skrow"><span>'+esc(e.label)+'</span><span class="pct" title="Spoken fluency">'+finalPct(e.key)+'%</span></div>';
     const base=finalPct(e.key);const g=gradedPct(e.key,base);const shifted=g.grade!==ACTIVE_GRADE;
     const why=gradeReasons(e.key);
     const whyTxt=why.length?why.map(r=>r.text).join(" · "):"";
@@ -1234,7 +1263,7 @@ function characterSheetBody(){
     return '<div class="skrow"><span>'+dot+esc(e.label)+'</span><span>'+valueHtml+' <button class="rollb" onclick="APP.roll(\''+jsq(e.key)+'\')">roll</button></span></div>';
   }).join("");
   let h=head("Character Sheet","A printable reference sheet — same numbers as Play Mode. Roll skills straight off it if you like; this browser autosaves as you go either way.");
-  h+='<div class="card"><h3>Difficulty Grade</h3><p class="note">Shifts every skill %, and what the roll button uses, until you set it back to Standard.'
+  h+='<div class="card"><h3>Difficulty Grade</h3><p class="note">Shifts rolled skill percentages until you set it back to Standard.'
    +(S.archetype!=="ordinary"?' Endurance/Stealth/Willpower auto-shift one step easier if you took that Advantage (marked &#9733;).':"")+'</p>'
    +'<select onchange="APP.setGrade(this.value)">'+GRADES.map(([k,l])=>'<option value="'+k+'" '+(ACTIVE_GRADE===k?"selected":"")+'>'+l+'</option>').join("")+'</select>'
    +(ACTIVE_GRADE!=="standard"?' <button class="chip" onclick="APP.setGrade(\'standard\')">reset to Standard</button>':"")

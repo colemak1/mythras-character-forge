@@ -88,3 +88,27 @@ assert.equal(run('resolveRoll(6,0)'),'Failure');
 assert.equal(run('contestedRollResult(100, 0, 90, 2)'),null);
 assert.match(run('specialEffectsPanel()'),/Contested roll calculator/);
 console.log('PASS effect selection, limits, removal, changed result, and read-only guard');
+
+run('S=freshState();render=()=>{};APP.roll("std:Native Tongue")');
+assert.equal(run('S.rollLog.length'),0);
+assert.match(run('PM_MSG'),/fluency/);
+assert.equal(run('isSpokenLanguage("prof:Language|korathian")'),true);
+assert.equal(run('isSpokenLanguage("prof:Literacy|korathian")'),false);
+
+// Core p.50 examples and thresholds through the Play Mode calculator.
+for(const [method,primary,secondary,roll,expected] of [
+ ["augment",38,33,4,"45% target. Critical."],
+ ["augment",38,33,5,"45% target. Success."],
+ ["augment",38,33,45,"45% target. Success."],
+ ["augment",38,33,46,"45% target. Failure."],
+ ["augment",98,25,99,"103% target. Fumble."],
+ ["augment",101,25,99,"106% target. Failure."],
+ ["cap",48,23,3,"23% target. Critical."],
+ ["cap",48,23,24,"23% target. Failure."],
+ ["cap",48,70,49,"48% target. Failure."],
+ ["cap",48,23,0,"Enter whole-number skill percentages"]
+]){
+ ctx.skillInput={method:{value:method},primary:{valueAsNumber:primary},secondary:{valueAsNumber:secondary},roll:{valueAsNumber:roll}};
+ const result=run('(()=>{const output={};pmCalculateModifiedSkill({elements:skillInput,querySelector:()=>output});return output.textContent;})()');
+ assert(result.startsWith(expected),result);
+}

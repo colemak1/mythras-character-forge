@@ -85,7 +85,7 @@ function hpLocsFinal(CON,SIZ){const base=hpLocs(CON,SIZ);if(!hasAdv("hp"))return
 // Grade math: shift one step toward Very Easy (used for the Pulp/Paragon
 // Endurance/Stealth/Willpower "one Grade easier" Advantages), then apply the
 // resulting grade's multiplier to a base skill %.
-function shiftGradeEasier(g,n){const i=GRADE_ORDER.indexOf(g);return GRADE_ORDER[Math.max(1,i-(n==null?1:n))];}
+function shiftGradeEasier(g,n){const i=GRADE_ORDER.indexOf(g);return i===0?g:GRADE_ORDER[Math.max(1,i-(n==null?1:n))];}
 // Shifting harder can reach Hopeless (the step past Herculean) but never
 // wraps round to Automatic, mirroring shiftGradeEasier's floor at Very Easy.
 function shiftGradeHarder(g,n){const i=GRADE_ORDER.indexOf(g);return GRADE_ORDER[Math.min(GRADE_ORDER.length-1,i+(n==null?1:n))];}
@@ -133,7 +133,7 @@ function gradeForEntry(key){
 function gradeReasons(key){
   const out=[];
   const advKey=GRADE_EASIER_ADV[key];
-  if(advKey&&hasAdv(advKey))out.push({dir:"easier",text:ARCHETYPES[S.archetype].label+" Advantage: one Grade easier"});
+  if(advKey&&hasAdv(advKey)&&shiftGradeEasier(ACTIVE_GRADE)!==ACTIVE_GRADE)out.push({dir:"easier",text:ARCHETYPES[S.archetype].label+" Advantage: one Grade easier"});
   const steps=encGradeSteps(key);
   if(steps>0){const st=encStatus();
     out.push({dir:"harder",text:st.label+": "+steps+" Grade"+(steps>1?"s":"")+" harder (STR/DEX skill)"});}
@@ -245,9 +245,9 @@ function gradeRefRows(key){
 }
 
 /* ================= SUCCESS TIERS (core, Skills chapter) ================= */
-function resolveRoll(roll,skill){
-  const crit=Math.max(0,Math.ceil(skill/10));
-  const fumble=skill>100?(roll===100):(roll>=99);
+function resolveRoll(roll,skill,tierSkill=skill){
+  const crit=Math.max(0,Math.ceil(tierSkill/10));
+  const fumble=tierSkill>100?(roll===100):(roll>=99);
   if(fumble)return "Fumble";
   if(roll>=96)return "Failure";           // 96-00 always fails
   if(roll<=crit)return "Critical";        // 1/10 of skill, round up
@@ -686,6 +686,8 @@ function allEntries(){
   return e;
 }
 const entryMap=()=>Object.fromEntries(allEntries().map(x=>[x.key,x]));
+// Core pp.42,47: spoken-language skills represent fluency.
+const isSpokenLanguage=key=>key==="std:Native Tongue"||key.startsWith("prof:Language|");
 function aSum(ph){return Object.values(S.alloc[ph]).reduce((a,b)=>a+(b||0),0);}
 function rawSkillPct(key,em){const e=em[key];if(!e)return 0;
   const cult=(key==="std:Customs"||key==="std:Native Tongue")?40:0;

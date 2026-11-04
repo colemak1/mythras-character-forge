@@ -751,6 +751,7 @@ window.APP={
  cstyleToggleCat(key,cat,isOpen){cstyleUI(key).openCats[cat]=isOpen;},
  /* roller */
  roll(key){const em=entryMap();const e=em[key];if(!e)return;
+   if(isSpokenLanguage(key)){PM_MSG="Spoken language measures fluency. Roll the relevant skill, capped by fluency if the GM calls for it.";render();return;}
    PM_MSG=null;
    const base=finalPct(key);const g=gradedPct(key,base);
    if(g.pct===null){PM_MSG=g.grade==="automatic"?"Automatic — no roll needed, it just succeeds.":"Hopeless — no attempt can be made at this Grade.";render();return;}

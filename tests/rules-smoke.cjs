@@ -37,6 +37,15 @@ test('Core pp.8–10 attribute table boundaries',()=>{
 test('Core p.37 success and fumble boundaries',()=>{
  for(const [roll,skill,outcome] of [[1,40,'Critical'],[4,40,'Critical'],[5,40,'Success'],[40,40,'Success'],[41,40,'Failure'],[95,110,'Success'],[96,110,'Failure'],[99,100,'Fumble'],[99,101,'Failure'],[100,101,'Fumble']]) assert.equal(evalRule(`resolveRoll(${roll},${skill})`),outcome);
 });
+test('an easier grade preserves Automatic and never shifts Very Easy to Automatic',()=>{
+ evalRule('encStatus=()=>({level:"ok"});S.archetype="pulp";S.archAdvantages=["stealth"];');
+ for(const [grade,expected,pct] of [["automatic","automatic",null],["veasy","veasy",100],["standard","easy",75]]){
+  evalRule(`ACTIVE_GRADE="${grade}"`);
+  assert.equal(evalRule('gradedPct("std:Stealth",50).grade'),expected);
+  assert.equal(evalRule('gradedPct("std:Stealth",50).pct'),pct);
+ }
+ evalRule('ACTIVE_GRADE="standard";S.archetype="ordinary";S.archAdvantages=[];');
+});
 test('Core p.9 human height and weight ranges, frames, and saved overrides',()=>{
  evalRule('S=freshState(); S.chars={STR:13,CON:13,SIZ:13,DEX:13,INT:13,POW:13,CHA:13};');
  assert.equal(evalRule('heightWeight().ranges.height.join("-")'),'176-180');
