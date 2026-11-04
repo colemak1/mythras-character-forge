@@ -9,7 +9,11 @@ const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches 
 const UP = new THREE.Vector3(0,1,0);
 const instances = new Map();
 let chosen = '';
-try { chosen = localStorage.getItem('sitota-physical-die-choice') || ''; } catch {}
+let presentationStyle='minimal';
+try {
+  chosen=localStorage.getItem('sitota-physical-die-choice')||'';
+  presentationStyle=localStorage.getItem('sitota-physical-die-style')||'minimal';
+} catch {}
 let lastFrame = performance.now();
 
 function uniformD100() {
@@ -152,7 +156,7 @@ function makeGeometry(spec,id){
   geo.computeVertexNormals();
   const material=new THREE.MeshPhysicalMaterial({
     color:isTens?0x335449:isOnes?0xd8c9ab:metal?0x756a56:0x254e42,
-    metalness:metal?.82:pair?.12:.18,roughness:metal?.31:pair?.32:.38,
+    metalness:metal ? .82 : pair ? .12 : .18,roughness:metal ? .31 : pair ? .32 : .38,
     clearcoat:metal?.22:.62,clearcoatRoughness:.29,
     side:THREE.FrontSide
   });
@@ -458,14 +462,28 @@ function choose(id){
   }
   $('selection').textContent='Your current pick: '+(id==='hundred'?'True hundred-sided':'Recognizable polyhedron')+' · Preference saved in this browser';
 }
+
+function setPresentationStyle(id){
+  if(!['minimal','brass','referee','paper'].includes(id))return;
+  presentationStyle=id;
+  $('dice-lab').dataset.presentation=id;
+  document.querySelectorAll('button[data-presentation]').forEach(button=>{
+    button.setAttribute('aria-pressed',String(button.dataset.presentation===id));
+  });
+  for(const die of instances.values())die.setFinish(id);
+  try{localStorage.setItem('sitota-physical-die-style',id);}catch{}
+}
+
 function rollBoth(n){const roll=n??uniformD100();for(const die of instances.values())die.throw(roll);}
 
 try{
   for(const id of ['hundred','poly'])instances.set(id,new DieStage(id));
-  $('status').textContent='3D models ready. Roll each separately or roll the same d100 value on both.';
+  $('status').textContent='3D dice ready. Each tabletop now includes a physical tens die and ones die.';
+  setPresentationStyle(presentationStyle);
   if(['hundred','poly'].includes(chosen))choose(chosen);
   document.querySelectorAll('button[data-roll]').forEach(b=>b.addEventListener('click',()=>instances.get(b.dataset.roll).throw(uniformD100())));
   document.querySelectorAll('button[data-pick]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.pick)));
+  document.querySelectorAll('button[data-presentation]').forEach(b=>b.addEventListener('click',()=>setPresentationStyle(b.dataset.presentation)));
   $('roll-both').addEventListener('click',()=>rollBoth());
   $('force-one').addEventListener('click',()=>rollBoth(1));
   $('force-hundred').addEventListener('click',()=>rollBoth(100));
@@ -487,4 +505,4 @@ try{
     if(!stage.querySelector('canvas'))stage.querySelector('.stage-fallback').textContent='3D renderer unavailable';
   }
 }
-window.physicalDiceLab={variants:['hundred','poly'],uniformD100,rollBoth,choose,models:{facetedHundred,polyTwenty}};
+window.physicalDiceLab={variants:['hundred','poly'],presentationStyles:['minimal','brass','referee','paper'],uniformD100,splitPercentile,combinePercentile,rollBoth,choose,setPresentationStyle,models:{facetedHundred,polyTwenty,d10Trapezohedron}};
