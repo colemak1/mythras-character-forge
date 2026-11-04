@@ -1456,3 +1456,12 @@ button:focus-visible,.loc:focus-visible {
 @media(prefers-reduced-motion:reduce){
  .fighter.decision-focus .fighter-head {transition:none;}
 }
+
+
+/* UX 11: align the top of an active roll, not only its bottom button. */
+.roll-await {
+  scroll-margin-top: 84px;
+}
+@media (max-height: 680px) {
+  .roll-await { scroll-margin-top: 48px; }
+}
