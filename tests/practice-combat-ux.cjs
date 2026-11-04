@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=9/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=10/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -762,5 +762,119 @@ check('Trip resistance prompt identifies the effect owner without duplicate narr
  root.innerHTML.includes(recapTarget+' attempts to trip '+recapActor) &&
  !root.innerHTML.includes('class="recap-live"'));
 state.pending=null;api.resetRoll();
+
+
+/* UX pass 10: conditions, reach, action costs and decision emphasis. */
+state.phase='fight';state.mode='normal';state.order=['a','b'];state.turnIndex=0;
+state.pending=null;state.logs=[];presentation.busy=false;
+presentation.stage=null;presentation.visibleCount=Infinity;
+api.resetRoll();
+const hero10=state.fighters.a,foe10=state.fighters.b;
+const orig10={a:{...hero10,hp:{...hero10.hp}},b:{...foe10,hp:{...foe10.hp}}};
+hero10.prone=false;hero10.skipAttack=0;hero10.blindedTurns=0;
+hero10.bleeding=false;hero10.fatigue=0;hero10.stunnedLocations={};
+hero10.impaledWounds=[];hero10.impaledWeapon=null;
+hero10.pinnedGear=null;hero10.braced=false;hero10.disarmed=false;
+hero10.partialLimbs={};hero10.disabled=[];hero10.shield='none';
+foe10.prone=false;foe10.blindedTurns=0;foe10.bleeding=false;foe10.fatigue=0;
+foe10.stunnedLocations={};foe10.impaledWounds=[];foe10.disabled=[];
+foe10.partialLimbs={};foe10.pinnedGear=null;foe10.disarmed=false;
+foe10.braced=false;foe10.skipAttack=0;
+hero10.hp={...hero10.maxHp};foe10.hp={...foe10.maxHp};
+state.disengaged=false;state.engagement='equal';state.gapMetres=0;
+hero10.weapon='sword';foe10.weapon='sword';
+api.render();
+check('No conditions container when fighters are uninjured and unrestricted',
+ !root.innerHTML.includes('class="condition-insights"'));
+check('One AP attack cost and zero AP concession are explicit',
+ root.innerHTML.includes('Attack · 1 AP') &&
+ root.innerHTML.includes('Concede Bout · 0 AP'));
+check('Uncontested reach does not insert another explanation',
+ !root.innerHTML.includes('class="reach-context"'));
+check('Action-ready fighter gets the visual focus rather than both fighters',
+ root.innerHTML.includes('class="fighter player decision-focus') &&
+ !root.innerHTML.includes('class="fighter enemy decision-focus'));
+state.pending={kind:'reaction',atk:'a',def:'b',
+ attackRoll:{grade:2,roll:30,label:'SUCCESS'}};
+api.render();
+check('Reacting opponent gets the fighter focus',
+ root.innerHTML.includes('class="fighter enemy decision-focus') &&
+ !root.innerHTML.includes('class="fighter player decision-focus'));
+check('Defending without reaction explicitly costs zero AP',
+ root.innerHTML.includes('Do Not Defend · 0 AP'));
+state.pending=null;hero10.shield='buckler';
+api.render();
+check('Shield ward is clearly marked as a free zero AP choice',
+ root.innerHTML.includes('Ward Shield · 0 AP'));
+hero10.shield='none';
+hero10.prone=true;hero10.skipAttack=2;hero10.bleeding=true;
+api.render();
+check('Prone condition explains its effects instead of only displaying a label',
+ root.innerHTML.includes('Attack and Evade targets are halved.') &&
+ root.innerHTML.includes('Regaining footing uses 1 AP.'));
+check('Restricted attack shows remaining duration and that other actions remain',
+ root.innerHTML.includes('Attack restricted') &&
+ root.innerHTML.includes('2 turns remaining.') &&
+ root.innerHTML.includes('Other permitted actions and reactions remain available.'));
+check('Bleeding explains its start-of-round consequence',
+ root.innerHTML.includes('Fatigue increases each new Combat Round'));
+hero10.blindedTurns=3;hero10.fatigue=2;hero10.stunnedLocations={Head:1};
+api.render();
+check('More than three condition explanations are collapsed by default',
+ root.innerHTML.includes('class="condition-overflow"') &&
+ !root.innerHTML.includes('class="condition-overflow" data-id="a" open'));
+check('Multiple conditions include severity and head-stun consequence',
+ root.innerHTML.includes('Blinded') &&
+ root.innerHTML.includes('Cannot respond while the head is stunned.'));
+handlers.toggle({target:{classList:{contains:k=>k==='condition-overflow'},
+ dataset:{id:'a'},open:true}});
+api.render();
+check('Expanded conditions stay open after a re-render',
+ root.innerHTML.includes('class="condition-overflow" data-id="a" open'));
+hero10.prone=false;hero10.skipAttack=0;hero10.bleeding=false;
+hero10.blindedTurns=0;hero10.fatigue=0;hero10.stunnedLocations={};
+hero10.impaledWounds=[{loc:'Right Leg',weaponSize:3}];
+hero10.hp.RightArm=0;
+api.render();
+check('Impaled weapons name their affected location and difficulty implication',
+ root.innerHTML.includes('Impaled') &&
+ root.innerHTML.includes('Right Leg') &&
+ root.innerHTML.includes('Embedded weapon increases skill difficulty.'));
+hero10.impaledWounds=[];hero10.hp={...hero10.maxHp};
+hero10.hp['Left Leg']=0;
+api.render();
+check('Serious leg condition explains harder Evade target',
+ root.innerHTML.includes('Left Leg injury') &&
+ root.innerHTML.includes('Evade is one difficulty grade harder'));
+hero10.hp={...hero10.maxHp};
+hero10.weapon='greatsword';foe10.weapon='dagger';
+state.engagement='long';
+api.render();
+check('At long reach the controller and limited short-weapon fighter are named',
+ root.innerHTML.includes(hero10.name+' controls long reach.') &&
+ root.innerHTML.includes(foe10.name+' must close distance'));
+state.engagement='short';
+api.render();
+check('Short reach names the fighter inside and the longer weapon restriction',
+ root.innerHTML.includes(foe10.name+' has moved inside') &&
+ root.innerHTML.includes(hero10.name+' attacks awkwardly'));
+state.disengaged=true;state.gapMetres=4;
+api.render();
+check('Separated combatants see the actual disengagement distance',
+ root.innerHTML.includes('Separated by 4m.') &&
+ root.innerHTML.includes('Re-engage before attempting a body strike'));
+state.disengaged=false;state.engagement='equal';
+hero10.weapon='sword';foe10.weapon='sword';
+state.pending={kind:'tripResistChoice',owner:'a',other:'b',atk:'a',def:'b'};
+api.render();
+check('Trip resistance focus highlights the defender choosing resistance',
+ root.innerHTML.includes('class="fighter enemy decision-focus'));
+state.pending={kind:'effect',owner:'a',other:'b',atk:'a',def:'b',
+ effectsLeft:1,chosen:[],attackRoll:{grade:2,roll:27,label:'SUCCESS'},
+ defenseRoll:{grade:1,roll:89,label:'FAILURE'}};
+api.render();
+check('Effect selection focus returns to its owner',
+ root.innerHTML.includes('class="fighter player decision-focus'));
+state.pending=null;
 
 console.log('Practice Combat UX smoke checks passed.');
