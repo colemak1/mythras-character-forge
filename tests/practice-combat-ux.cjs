@@ -670,7 +670,7 @@ state.logs=[eAttack,eDefense,{...tripIntent,body:recapTarget+' fails and falls p
 api.render();
 check('Successful trip narrates the knockdown',
  root.innerHTML.includes('trips '+recapTarget) &&
- root.innerHTML.includes('Opponent knocked prone'));
+ root.innerHTML.includes('Target knocked prone'));
 const extraLiveStage={entry:{id:3610,title:recapActor+' attacks'},kind:'attack',rolling:true};
 state.logs=[eAttack,eDefense];
 presentation.busy=true;presentation.visibleCount=2;
@@ -738,5 +738,28 @@ check('First-exchange damage windup does not reveal the hit location',
  root.innerHTML.includes('Resolving damage') &&
  !root.innerHTML.includes('STRIKE · LEFT LEG'));
 presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;
+
+
+/* Defensive trip belongs to the effect owner, not the original attacker. */
+const defensiveTrip={...tripIntent,id:3620,meta:{actor:'b'}};
+state.phase='fight';state.mode='normal';
+state.logs=[eAttack,eDefense,defensiveTrip];state.pending=null;
+presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;
+api.resetRoll();api.render();
+check('A defensive trip credits the actual effect owner',
+ root.innerHTML.includes(recapTarget+' resists '+recapTarget+'’s trip')===false &&
+ root.innerHTML.includes(recapActor+' resists '+recapTarget+'’s trip'));
+state.logs=[eAttack,eDefense,eAdvantage];
+state.pending={kind:'tripResistChoice',owner:'b',other:'a',atk:'a',def:'b'};
+api.render();
+check('A pending defensive trip is narrated before a resistance roll',
+ root.innerHTML.includes(recapTarget+' attempts to trip '+recapActor) &&
+ root.innerHTML.includes('Choose Brawn or Evade to resist the trip'));
+api.setRoll({id:3621,actor:'a',label:'Trip · '+recapActor+' Brawn',
+ defs:[{sides:100,label:'d100'}]});
+api.render();
+check('Trip resistance prompt identifies the effect owner and target',
+ root.innerHTML.includes('NOW</span> '+recapTarget+' attempts to trip '+recapActor));
+state.pending=null;api.resetRoll();
 
 console.log('Practice Combat UX smoke checks passed.');
