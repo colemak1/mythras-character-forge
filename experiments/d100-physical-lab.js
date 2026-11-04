@@ -275,9 +275,24 @@ class DieStage {
     this.scene.add(this.visual.group);
     const phy=newWorld(this.visual);
     this.world=phy.world;this.body=phy.body;
+    // Three distinct rigid bodies: original centerpiece + two actual d10s.
+    const pairSpec=d10Trapezohedron();
+    const tensModel=makeGeometry(pairSpec,'tens'),onesModel=makeGeometry(pairSpec,'ones');
+    this.scene.add(tensModel.group,onesModel.group);
+    const tensBody=addPercentileBody(this.world,tensModel);
+    const onesBody=addPercentileBody(this.world,onesModel);
+    this.parts=[
+      {key:'hero',visual:this.visual,body:this.body,x:0,z:-1.16},
+      {key:'tens',visual:tensModel,body:tensBody,x:-1.10,z:.94},
+      {key:'ones',visual:onesModel,body:onesBody,x:1.10,z:.94}
+    ];
+    this.percentile={tens:this.parts[1],ones:this.parts[2]};
     this.value=null;this.running=false;
-    this.body.position.set(0,1.17,0);this.body.sleep();
-    this.visual.group.position.set(0,1.17,0);
+    for(const part of this.parts){
+      const height=part.key==='hero'?1.17:.62;
+      part.body.position.set(part.x,height,part.z);part.body.sleep();
+      part.visual.group.position.set(part.x,height,part.z);
+    }
     this.resizeObserver=window.ResizeObserver?new ResizeObserver(()=>this.resize()):null;
     this.resizeObserver?.observe(this.stage);this.resize();
     this.installPointerDrag();
@@ -309,68 +324,111 @@ class DieStage {
     this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();
   }
   setResult(n){
+    const dice=splitPercentile(n),combined=combinePercentile(dice.tens,dice.ones);
+    if(combined!==n)throw Error('Percentile dice must match the result');
     $('number-'+this.id).textContent=String(n).padStart(2,'0');
+    $('breakdown-'+this.id).textContent=dice.tensLabel+' + '+dice.onesLabel+' = '+n;
     const t=validTarget();
     $('target-'+this.id).textContent='Target '+t+'%';
     const grade=$('grade-'+this.id);
     grade.textContent=n<=t?'Within target':'Above target';
     grade.className=n<=t?'pass':'fail';
+    const label=$('floating-'+this.id);
+    label.querySelector('.float-number').textContent=String(n).padStart(2,'0');
+    label.querySelector('.float-math').textContent=dice.tensLabel+' + '+dice.onesLabel+' = '+n;
+    label.classList.add('show');
+  }
+  faceUpPose(part,index){
+    const face=part.visual.faces[index];
+    if(!face)throw Error('Missing numbered d10 face '+index);
+    const align=new THREE.Quaternion().setFromUnitVectors(face.normal.clone().normalize(),UP);
+    const spin=new THREE.Quaternion().setFromAxisAngle(UP,Math.random()*2*Math.PI);
+    const quat=spin.multiply(align);
+    const minY=Math.min(...part.visual.vertices.map(v=>new THREE.Vector3(...v).applyQuaternion(quat).y));
+    return {quat,position:new THREE.Vector3(part.x,-minY+.025,part.z)};
   }
   prepareTarget(n){
-    const face=this.visual.faces[this.id==='hundred'?n-1:((n-1)%20)];
-    const normal=face.normal.clone().normalize();
-    const align=new THREE.Quaternion().setFromUnitVectors(normal,UP);
-    const spin=new THREE.Quaternion().setFromAxisAngle(UP,Math.random()*2*Math.PI);
-    this.endQ=spin.multiply(align);
-    const minY=Math.min(...this.visual.vertices.map(v=>new THREE.Vector3(...v).applyQuaternion(this.endQ).y));
-    this.endPos=new THREE.Vector3(0,-minY+.019,0);
+    const result=splitPercentile(n);
+    this.parts[0].pose=this.faceUpPose(this.parts[0],this.id==='hundred'?n-1:(n-1)%20);
+    this.percentile.tens.pose=this.faceUpPose(this.percentile.tens,result.tens/10);
+    this.percentile.ones.pose=this.faceUpPose(this.percentile.ones,result.ones);
   }
   throw(n){
     this.value=n;
     this.prepareTarget(n);
-    this.body.wakeUp();
-    this.body.position.set(-.8,2.85,-.4);
-    this.body.quaternion.setFromEuler(Math.random()*3,Math.random()*3,Math.random()*3);
-    this.body.velocity.set(2.9,-1.4,.7);
-    this.body.angularVelocity.set(10+Math.random()*5,12+Math.random()*4,8+Math.random()*4);
-    this.body.force.set(0,0,0);
-    this.body.torque.set(0,0,0);
-    this.running=true;
-    this.start=performance.now();this.settleStart=null;
+    const launches=[
+      {x:-.75,y:2.9,z:-1.05,vx:1.45,vz:.4},
+      {x:-1.75,y:2.55,z:.8,vx:.95,vz:.05},
+      {x:1.55,y:2.75,z:.8,vx:-.7,vz:-.10}
+    ];
+    for(let i=0;i<this.parts.length;i++){
+      const p=this.parts[i],start=launches[i];
+      p.body.wakeUp();
+      p.body.position.set(start.x,start.y,start.z);
+      p.body.quaternion.setFromEuler(Math.random()*3,Math.random()*3,Math.random()*3);
+      p.body.velocity.set(start.vx,-1.1,start.vz);
+      p.body.angularVelocity.set(9+Math.random()*6,11+Math.random()*5,8+Math.random()*5);
+      p.body.force.set(0,0,0);p.body.torque.set(0,0,0);
+      p.fromQuat=null;p.fromPos=null;
+    }
+    this.running=true;this.start=performance.now();this.settleStart=null;
+    $('floating-'+this.id).classList.remove('show');
     $('number-'+this.id).textContent='—';
+    $('breakdown-'+this.id).textContent='Tens + ones rolling…';
     $('grade-'+this.id).textContent='Rolling…';$('grade-'+this.id).className='';
     $('state-'+this.id).textContent='In motion';
     this.stage.closest('.card').querySelectorAll('button.roll').forEach(b=>b.disabled=true);
-    if(reduced){this.settleImmediate();}
+    if(reduced)this.settleImmediate();
   }
   settleImmediate(){
     this.running=false;
-    this.body.sleep();
-    this.visual.group.position.copy(this.endPos);
-    this.visual.group.quaternion.copy(this.endQ);
+    for(const p of this.parts){
+      p.body.sleep();
+      p.visual.group.position.copy(p.pose.position);
+      p.visual.group.quaternion.copy(p.pose.quat);
+    }
     this.setResult(this.value);
     $('state-'+this.id).textContent='Settled';
     this.stage.closest('.card').querySelector('button.roll').disabled=false;
+  }
+  setFinish(theme){
+    const colors={
+      minimal:{tens:0x285344,ones:0xe4d3b4,hero:this.id==='hundred'?0x254e42:0x756a56},
+      brass:{tens:0x513e30,ones:0xb99f72,hero:this.id==='hundred'?0x425047:0x887451},
+      referee:{tens:0x242e2b,ones:0xe3ded0,hero:this.id==='hundred'?0x263a32:0x575d57},
+      paper:{tens:0x563d41,ones:0xefe1c6,hero:this.id==='hundred'?0x505b4a:0x786d60}
+    }[theme]||{tens:0x285344,ones:0xe4d3b4,hero:0x254e42};
+    for(const p of this.parts){
+      p.visual.material.color.setHex(colors[p.key]);
+      if(p.key==='ones')p.visual.edgeMaterial.color.setHex(0x8a7860);
+      if(p.key==='tens')p.visual.edgeMaterial.color.setHex(theme==='brass'?0xc5a86f:0x849d8c);
+    }
   }
   tick(now,dt){
     if(this.running){
       const elapsed=now-this.start;
       if(elapsed<1550){
         this.world.step(1/90,Math.min(dt,.05),5);
-        this.visual.group.position.set(this.body.position.x,this.body.position.y,this.body.position.z);
-        this.visual.group.quaternion.set(this.body.quaternion.x,this.body.quaternion.y,this.body.quaternion.z,this.body.quaternion.w);
+        for(const p of this.parts){
+          p.visual.group.position.set(p.body.position.x,p.body.position.y,p.body.position.z);
+          p.visual.group.quaternion.set(p.body.quaternion.x,p.body.quaternion.y,p.body.quaternion.z,p.body.quaternion.w);
+        }
       }else{
         if(this.settleStart===null){
           this.settleStart=now;
-          this.fromQ=this.visual.group.quaternion.clone();this.fromPos=this.visual.group.position.clone();
-          this.body.sleep();
+          for(const p of this.parts){
+            p.fromQuat=p.visual.group.quaternion.clone();
+            p.fromPos=p.visual.group.position.clone();
+            p.body.sleep();
+          }
           $('state-'+this.id).textContent='Settling';
         }
-        const t=Math.min(1,(now-this.settleStart)/550);
-        const ease=1-Math.pow(1-t,3);
-        this.visual.group.quaternion.copy(this.fromQ).slerp(this.endQ,ease);
-        this.visual.group.position.copy(this.fromPos).lerp(this.endPos,ease);
-        if(t>=1){this.settleImmediate();}
+        const t=Math.min(1,(now-this.settleStart)/610),ease=1-Math.pow(1-t,3);
+        for(const p of this.parts){
+          p.visual.group.quaternion.copy(p.fromQuat).slerp(p.pose.quat,ease);
+          p.visual.group.position.copy(p.fromPos).lerp(p.pose.position,ease);
+        }
+        if(t>=1)this.settleImmediate();
       }
     }
     this.renderer.render(this.scene,this.camera);
