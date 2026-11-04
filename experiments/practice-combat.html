@@ -312,7 +312,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .effects-ref-grid span{font:10px system-ui,sans-serif;color:#9f9585}
 .recovery-options{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 0 16px;border-bottom:1px solid #9d876145;margin-bottom:10px}.recovery-options button{padding:9px 13px;border:1px solid #af9972;border-radius:2px;background:transparent;color:inherit;cursor:pointer;font:600 12px system-ui}.recovery-options button:disabled{opacity:.45;cursor:not-allowed}.recovery-options small{font:11px/1.5 system-ui;color:#b6a48c;max-width:330px}
 </style>
-<link rel="stylesheet" href="practice-combat-ux.css?v=8">
+<link rel="stylesheet" href="practice-combat-ux.css?v=9">
 </head>
 <body>
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>Practice Combat</span><span class="hide-mobile">Independent demo · no account required</span><a href="#" id="homeLink">Reset</a></div></header>
@@ -636,26 +636,54 @@ function performManualRoll(){
 }
 /* Only describe a harder roll when the engine's actual target has changed.
    The injury example is shown only for an isolated serious weapon-arm modifier. */
+/* Explains ONLY engine-applied adjustments, using the same combat, Evade
+   and general-condition helpers that determine the target. */
 function rollDifficultyHtml(actor){
- const f=S.fighters?.[actor];
- const label=String(R?.label||'');
- if(!f||!/^(Attack · Combat Style|Parry ·|Evade ·)/.test(label))return '';
+ const f=S.fighters?.[actor],label=String(R?.label||'');
+ if(!f)return '';
+ const isEvade=/^Evade ·/.test(label);
+ const isStyle=/^(Attack · Combat Style|Parry ·)/.test(label);
+ if(!isEvade&&!isStyle)return '';
  const targets=[...label.matchAll(/(\d+)%/g)];
  if(!targets.length)return '';
  const final=Number(targets[targets.length-1][1]);
- const isEvade=/^Evade ·/.test(label);
  const base=Number(isEvade?f.evade:f.style);
  if(!Number.isFinite(base)||!Number.isFinite(final)||final>=base)return '';
- const isolatedWound=/^Attack · Combat Style/.test(label)&&
-   zoneClass(f,f.weaponHand)==='serious'&&!f.prone&&!f.blindedTurns&&
-   !f.fatigue&&!(f.impaledWounds?.length)&&
+ const conditionTarget=isEvade?evadeTarget(f):combatTarget(f);
+ const expected=effectiveSkill(f,conditionTarget);
+ // If another rule has adjusted the target, don't claim our listed conditions
+ // explain the entire numerical difference.
+ if(expected!==final)return '';
+ const reasons=[];
+ if(f.prone)reasons.push('Prone');
+ if(isStyle){
+   if(f.weaponHand&&zoneClass(f,f.weaponHand)==='serious')
+     reasons.push('Serious '+f.weaponHand+' wound');
+   if(cannotAttackDueToStun(f))reasons.push('Stunned');
+   if(f.weaponHand&&limbDisabled(f,f.weaponHand))reasons.push('Weapon arm disabled');
+ }else{
+   for(const loc of ['Right Leg','Left Leg']){
+     if(zoneClass(f,loc)==='serious')reasons.push('Serious '+loc+' wound');
+     else if(f.partialLimbs?.[loc])reasons.push('Partial '+loc+' function');
+   }
+ }
+ if(f.blindedTurns>0)reasons.push('Blinded');
+ if((FATIGUE_GRADES[Math.min(9,f.fatigue||0)]||0)>0)
+   reasons.push((FATIGUE_NAMES[Math.min(9,f.fatigue)]||'Fatigue')+' fatigue');
+ if(impaleGrade(f)>0){
+   const locations=[...new Set((f.impaledWounds||[]).map(w=>w.loc).filter(Boolean))];
+   reasons.push('Impaled weapon'+(locations.length?' · '+locations.join(', '):''));
+ }
+ if(!reasons.length)return '';
+ const singleGrade=reasons.length===1&&
+   (reasons[0].startsWith('Serious ')||reasons[0].startsWith('Partial '))&&
    Math.ceil(base*2/3)===final;
  return '<p class="roll-difficulty-note">'+
-   '<span>'+(isolatedWound?'One difficulty grade harder':'Adjusted roll target')+'</span>'+
+   '<span>'+(singleGrade?'One difficulty grade harder':'Reduced roll target')+'</span>'+
    '<strong>'+base+'% → '+final+'%</strong>'+
-   '<small>'+(isolatedWound?'Standard → Hard · serious '+esc(f.weaponHand)+' wound':
-   'Target reduced by combat conditions')+'</small></p>';
+   '<small>'+esc(reasons.join(' · '))+(singleGrade?' · Standard → Hard':'')+'</small></p>';
 }
+
 function rollPrompt(actor){
   if(!R||R.actor!==actor)return '';
   const fighter=S.fighters[actor];
