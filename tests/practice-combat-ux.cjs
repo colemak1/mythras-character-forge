@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=11/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=12/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -40,7 +40,7 @@ const sandbox = {
   clearInterval,
 };
 const api = vm.runInNewContext(match[1] +
-  '\n;({startRun, render, state: () => S, resetRoll: () => { R = null; V.busy = false; }, setRoll: value => { R = value; }, availableEffects})',
+  '\n;({startRun, render, state: () => S, resetRoll: () => { R = null; V.busy = false; }, setRoll: value => { R = value; }, availableEffects, d100Dice, renderDice, randomFaceForDie})',
   sandbox, { filename: 'practice-combat-inline.js' });
 
 function check(name, predicate) {
@@ -968,6 +968,56 @@ api.render();
 check('An undefended failed attack is simply a miss',
  root.innerHTML.includes(otherName+' misses') &&
  !root.innerHTML.includes('attempts to evade and ends prone.'));
+api.resetRoll();
+
+
+/* UX 12: single d100 presentation and matte die design, mechanics unchanged. */
+check('One actual d100 is rendered for any percentile result, including 100',
+  api.d100Dice(43).length===1 && api.d100Dice(43)[0].sides===100 &&
+  api.d100Dice(43)[0].display==='43' &&
+  api.d100Dice(100).length===1 && api.d100Dice(100)[0].display==='100' &&
+  api.d100Dice(1)[0].display==='1');
+check('Single percentile die always displays one tile rather than tens and ones',
+  (api.renderDice(api.d100Dice(75),false).match(/class="die-wrap"/g)||[]).length===1 &&
+  api.renderDice(api.d100Dice(75),false).includes('class="die-shape d100 percentile"') &&
+  !api.renderDice(api.d100Dice(75),false).includes('10s'));
+check('Percentile animation can display values from 1 to 100',
+  Array.from({length:150},()=>Number(api.randomFaceForDie({sides:100})))
+   .every(n=>Number.isInteger(n)&&n>=1&&n<=100));
+state.phase='fight';state.pending=null;state.mode='tutorial';
+presentation.busy=false;presentation.stage=null;presentation.visibleCount=Infinity;
+api.setRoll({id:5110,actor:'a',label:'Attack · Combat Style 34%',
+ defs:[{sides:100,label:'d100'}]});
+api.render();
+const p12=root.innerHTML.slice(root.innerHTML.indexOf('<div class="roll-await"'));
+check('Manual percentile prompt has one tile with target in the same block',
+ (p12.match(/class="die-wrap"/g)||[]).length===1 &&
+ p12.includes('class="die-shape d100 percentile"') &&
+ p12.includes('Target <strong>34%</strong>'));
+check('Roll heading, die and roll button remain in the same reading order',
+ p12.indexOf('<h3>')<p12.indexOf('class="die-shape d100 percentile"') &&
+ p12.indexOf('class="die-shape d100 percentile"')<p12.indexOf('data-act="roll"'));
+api.setRoll({id:5111,actor:'a',label:'Hit Location · d20',
+ defs:[{sides:20,label:'Hit location'}]});
+api.render();
+check('Hit location remains a single d20, not converted to d100',
+ root.innerHTML.includes('class="die-shape d20"') &&
+ !root.innerHTML.includes('class="die-shape d100 percentile"'));
+api.setRoll({id:5112,actor:'a',label:'Damage · Left Leg',
+ defs:[{sides:6,label:'Weapon A'},{sides:4,label:'Damage Modifier'}]});
+api.render();
+const dm12=root.innerHTML.slice(root.innerHTML.indexOf('<div class="roll-await"'));
+check('Damage dice stay multiple and display their correct sizes',
+ (dm12.match(/class="die-wrap"/g)||[]).length===2 &&
+ dm12.includes('class="die-shape d6"') &&
+ dm12.includes('class="die-shape d4"'));
+check('Updated dice have a specific non-gloss d100 tile style',
+ css.includes('.exchange-half .die-shape.d100') &&
+ css.includes('clip-path:polygon(21% 0,79% 0') &&
+ css.includes('background:#343b37'));
+check('One d100 still shows the exact recorded d100 roll in history',
+ api.renderDice(api.d100Dice(100),false).includes('>100</span>') &&
+ api.renderDice(api.d100Dice(75),false).includes('>75</span>'));
 api.resetRoll();
 
 console.log('Practice Combat UX smoke checks passed.');
