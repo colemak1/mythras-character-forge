@@ -717,6 +717,14 @@ window.APP={
    S.money.socialClass=result[0];S.money.mod=result[1];S.money.classRoll={roll,culture:S.culture,className:result[0]};render();},
  // Same stale-DOM-click race addPas() guards against below -- these sit
  // right next to the item name/qty/enc fields in the Inventory table.
+ addCoreTool(index){
+   if(index==="")return;
+   const i=Number(index);
+   if(!Number.isInteger(i)||i<0||i>=CORE_TOOLS.length)return;
+   const [name,enc,cost]=CORE_TOOLS[i];
+   S.inventory.push({name,qty:1,enc,cost});
+   render();
+ },
  invAdd(){debounceFire('invAdd',()=>{S.inventory.push({name:"",qty:1,enc:0,cost:0});render();});},
  invDel(i){debounceFire('invDel'+i,()=>{S.inventory.splice(i,1);render();});},
  inv(i,f,v){

@@ -492,6 +492,28 @@ const ARMOR_MATERIALS=[
  {name:"Plated Mail (splinted chainmail)",ap:7,encPerLoc:6,suit:"42/9800/9"},
  {name:"Articulated Plate (gothic plate)",ap:8,encPerLoc:7,suit:"49/16800/10"}
 ];
+// Core pp.60–61. Costs are in silver, including copper prices at 10 cp/sp.
+const CORE_TOOLS=[
+ ["Abacus",1,8],["Astrolabe",1,200],["Backpack / satchel",1,5],["Bedroll",1,1],
+ ["Bit and bridle",1,15],["Block and tackle",1,15],["Bottle",0,2],["Candle (6 hours)",1,1],
+ ["Chain (2 m)",2,40],["Large chest",5,80],["Small chest",3,40],["Travel cooking pot",2,3],
+ ["Basic craft tools",2,75],["Riding crop",0,15],["Crowbar",1,25],["Doorjamb",2,5],
+ ["Driver’s whip",0,25],["Falconer’s kit",1,30],["Mount feed (one day)",1,0.5],
+ ["Wine goblet (glass)",0,8],["First aid kit",0,25],["Fish hooks (20)",0,1],
+ ["Fishing kit",1,15],["Fishing net",4,10],["Flint and tinder",0,1],["Game snares and traps",1,1],
+ ["Goad",1,25],["Grappling hook",0,5],["Hammer / saw / mallet / chisel",1,1],
+ ["Healer’s kit",1,150],["Hourglass",1,20],["Knife (tool)",0,5],["Rope ladder (3 m)",4,2],
+ ["Basic lantern",1,10],["Lock picks",0,75],["Lodestone",0,5],["Milling stone",2,8],
+ ["Hand mirror",1,12],["Wooden mug / beaker / dish / plate",0,0.5],["Musical instrument",2,70],
+ ["Nails or tacks (50)",0,0.2],["Oil flask",1,1],["Papyrus or paper (one sheet)",0,0.5],
+ ["Pickaxe",1,35],["Pole (3 m)",1,1],["Quills and ink",1,30],["Quiver",0,2],
+ ["Folding razor",0,3],["Hemp rope (10 m)",2,10],["Large sack",1,0.5],["Small sack",0,0.2],
+ ["Riding saddle",3,60],["War saddle",4,90],["Saddlebag",2,20],["Hand saw",1,1],
+ ["Scythe / sickle",2,30],["Sextant",1,25],["Ship’s compass",1,70],["Horse shoes",1,10],
+ ["Spade / hoe / pitchfork",1,25],["Torch (1 hour)",0,0.4],["Torch (6 hours)",1,0.8],
+ ["Waterskin or canteen",1,0.5],["Wax block",1,0.2]
+];
+
 const ARMOR_MAP=Object.fromEntries(ARMOR_MATERIALS.map(a=>[a.name,a]));
 const ARMOR_LOCATIONS=["Head","Chest","Abdomen","Right Arm","Left Arm","Right Leg","Left Leg"];
 // Core p.58 material multipliers for GM-approved armour construction.

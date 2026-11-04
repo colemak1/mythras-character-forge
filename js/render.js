@@ -1021,7 +1021,7 @@ function armorEncTotal(){return ARMOR_LOCATIONS.reduce((a,l)=>a+armorEncAt(l)*ar
 function armorApAt(loc){const m=armorMaterialByName(armorNameAt(loc));return m.ap;}
 function inventoryItemEnc(it){return it.wornClothing===true?0:(it.qty||0)*(it.enc||0);}
 function inventoryEncTotal(){return S.inventory.reduce((a,it)=>a+inventoryItemEnc(it),0);}
-function inventoryCostTotal(){return S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.cost||0),0);}
+function inventoryCostTotal(){return Math.round(S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.cost||0),0)*100)/100;}
 // Core p.77: twenty zero-ENC items count as one ENC. Count individual
 // quantities across inventory and the equipped weapon list, not empty
 // armour slots; a partial group is not yet a full ENC.
@@ -1169,7 +1169,9 @@ function stepMoney(){
    +ARMOR_LOCATIONS.filter(loc=>armorNameAt(loc)!=="None"&&Object.hasOwn(ARMOR_MAP,armorNameAt(loc))).map(loc=>fld(loc+' material','<select onchange="APP.setArmorSubstance(\''+jsq(loc)+'\',this.value)"><option value="">Default</option>'
      +Object.entries(MATERIAL_ENC_MULT).map(([name,mult])=>'<option value="'+esc(name)+'" '+(armorSubstanceAt(loc)===name?'selected':'')+'>'+esc(name)+' (&times;'+mult+')</option>').join("")+'</select>')).join("")+'</div></details>'
    +'<p class="note" style="margin-top:6px">Armour ENC (worn, halved): <b style="font-family:var(--mono)">'+armorEncTotal()+'</b> &nbsp;&middot;&nbsp; Armour Penalty to Initiative: <b style="font-family:var(--mono)">-'+armourPenaltyToInit()+'</b></p></div>';
-  h+='<div class="card"><h3>Inventory</h3><p class="note">Mark only worn everyday clothing. Split worn and spare clothing into separate rows.</p><table class="alloc"><tr><th>Item</th><th class="num">Qty</th><th class="num">ENC each</th><th>Worn clothing</th><th class="num">sp each</th><th></th></tr>'
+  h+='<div class="card"><h3>Inventory</h3><form onsubmit="event.preventDefault();APP.addCoreTool(this.elements.tool.value)"><label>Core tool <select name="tool" required><option value="">Choose a tool</option>'
+   +CORE_TOOLS.map(([name,enc,cost],i)=>'<option value="'+i+'">'+esc(name)+' · '+enc+' ENC · '+cost+' sp</option>').join("")
+   +'</select></label> <button class="chip" type="submit">Add tool</button></form><p class="note">Core pp.60–61. Confirm availability with the GM. Enter variable-price gear manually, including lockboxes (1–4 ENC, 75–250 sp). Mark only worn everyday clothing. Split worn and spare clothing into separate rows.</p><table class="alloc"><tr><th>Item</th><th class="num">Qty</th><th class="num">ENC each</th><th>Worn clothing</th><th class="num">sp each</th><th></th></tr>'
    +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.inv('+i+',\'name\',this.value)"></td>'
     +'<td class="num"><input type="number" value="'+it.qty+'" onchange="APP.inv('+i+',\'qty\',this.value)"></td>'
     +'<td class="num"><input type="number" min="0" step="0.5" value="'+it.enc+'" onchange="APP.inv('+i+',\'enc\',this.value)"></td>'

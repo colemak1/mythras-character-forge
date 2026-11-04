@@ -29,3 +29,9 @@ Follow-up live verification and broader inventory and encumbrance cases remain o
 - Core p.77 non-human scaling and optional item-count encumbrance are GM procedures. Preset weapon and armour ENC uses the book’s human-scale values.
 
 To test, add a coat with 1 ENC and a cost of 4 sp, then toggle worn clothing. The gear load drops by 1 and the cost stays 4 sp. Check the panel in Money & Gear and confirm Play Mode shows the same load.
+
+### Ordinary gear catalogue
+
+- Money & Gear has 64 fixed-price Core tools from pp.60–61. Selecting a tool adds an editable inventory row with ENC and price. Copper prices convert at 10 cp per sp (Core p.54).
+- Lockboxes, material variants and other variable purchases use manual inventory or spending entries. Accommodation, food, clothing and livestock remain GM-priced using the Core tables.
+- Test adding three bundles of nails or tacks. They total 0.60 sp. Add 10 m of hemp rope and confirm the ledger shows 10.60 sp and the rope contributes 2 ENC.

@@ -225,6 +225,18 @@ test('Core pp.62–67 crew equipment and vehicle reference stays separate from p
  assert.match(html,/Herculean with improvised tools/);
  assert.equal(run('JSON.stringify(S)'),before);
 });
+test('Core pp.60–61 tool presets add editable inventory with exact silver prices',()=>{
+ reset();
+ run('APP.addCoreTool("");APP.addCoreTool(1000);');
+ assert.equal(run('S.inventory.length'),0);
+ run('APP.addCoreTool(CORE_TOOLS.findIndex(([name])=>name==="Nails or tacks (50)"));APP.inv(0,"qty","3");');
+ assert.equal(run('inventoryCostTotal()'),0.6);
+ assert.equal(run('inventoryEncTotal()'),0);
+ run('APP.addCoreTool(CORE_TOOLS.findIndex(([name])=>name==="Hemp rope (10 m)"));');
+ assert.equal(run('inventoryCostTotal()'),10.6);
+ assert.equal(run('inventoryEncTotal()'),2);
+ assert.match(run('stepMoney()'),/Lockboxes|lockboxes/);
+});
 test('Core p.77 worn clothing is exempt, with carried clothing and zero-ENC groups counted',()=>{
  reset();
  run('S.chars={STR:10,CON:10,SIZ:10,DEX:10,INT:10,POW:10,CHA:10};S.inventory=[{name:"Coat",qty:1,enc:1,cost:4},{name:"Buttons",qty:19,enc:0},{name:"Boots",qty:1,enc:0}];S.gearWeapons=["Dagger"];');

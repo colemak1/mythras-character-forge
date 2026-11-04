@@ -51,7 +51,7 @@ The stable eight-subsystem progress plan is in [subsystem-plan.md](subsystem-pla
 |---|---|---:|---|---|
 | EQ-01 | Starting money, social class, income and spending | 21–25, 54–55 | automate / GM-assisted | partial |
 | EQ-02 | Armour types, costs, location, ENC and initiative | 57–58 | automate | partial |
-| EQ-03 | Tools and ordinary equipment, one child per entry | 56–61 | automate / reference | not assessed |
+| EQ-03 | Tools and ordinary equipment | 56–61 | automate / reference | 64 fixed-price tool presets checked against pp.60–61. Variable gear, lodging, clothing, food and livestock use GM pricing. |
 | EQ-04 | Melee weapons and shields, one child per entry and property | 61–64 | automate / reference | partial |
 | EQ-05 | Ranged weapons and ammunition, one child per entry and property | 61–66 | automate / reference | partial |
 | EQ-06 | Siege weapons, vehicles, manufacture, quality and repair | 62–67 | reference / GM-assisted | source checked, live follow-up pending |
