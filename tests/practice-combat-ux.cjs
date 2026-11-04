@@ -13,7 +13,8 @@ assert.ok(match, 'Practice Combat inline runtime exists');
 assert.match(page, /practice-combat-ux\.css\?v=4/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
-const root = { innerHTML: '', addEventListener() {} };
+const handlers = {};
+const root = { innerHTML: '', addEventListener(type, callback) { handlers[type] = callback; } };
 const home = { addEventListener() {} };
 const document = {
   querySelector(selector) {
@@ -198,5 +199,20 @@ check('New fighter dossier clearly labels weapon and Combat Style',
   root.innerHTML.includes('class="fighter-profile"') &&
   root.innerHTML.includes('class="profile-weapon"') &&
   root.innerHTML.includes('class="profile-skill"'));
+
+
+/* The anatomy must also work with a keyboard, not only with a mouse. */
+let prevented = false;
+const fakeSvgZone = {
+  tagName:'g',dataset:{act:'selectloc',id:'a',val:'Left Arm'},
+  classList:{contains(name){return name==='zone';}},
+  closest(query){return query==='g.zone[data-act="selectloc"]'||query==='[data-act]'?this:null;}
+};
+handlers.keydown({target:fakeSvgZone,key:'Enter',preventDefault(){prevented=true;}});
+check('Enter selects an SVG hit location without submitting a page action',
+  prevented && state.sel.a==='Left Arm');
+check('Keyboard-selected location is marked as pressed in the diagram',
+  root.innerHTML.includes('data-val="Left Arm" tabindex="0" role="button"') &&
+  root.innerHTML.includes('aria-pressed="true"'));
 
 console.log('Practice Combat UX smoke checks passed.');
