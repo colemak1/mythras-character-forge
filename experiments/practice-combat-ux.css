@@ -878,3 +878,209 @@ button:focus-visible,.loc:focus-visible {
 @media(prefers-reduced-motion:reduce){
  .fighter button.loc .loc-gauge i { transition:none; }
 }
+
+
+/* UX pass 05: legible combat chronicle and just-in-time teaching.
+   The anatomy chart and fighter silhouette rules intentionally remain unchanged. */
+.combat-history .history-header {
+  padding:17px 0 14px;
+  align-items:center;
+}
+.combat-history .history-header h3 {
+  font:normal 24px/1.15 Georgia,serif;
+  letter-spacing:-.012em;
+  margin:0;
+}
+.history-intro {
+  margin:6px 0 0;
+  color:#aea28f;
+  font:12px/1.4 system-ui,sans-serif;
+}
+.combat-history .history-toggle {
+  flex-shrink:0;
+  min-height:38px;
+  background:transparent;
+  border:1px solid #5f574a;
+  border-radius:2px;
+  color:#e2d1b5;
+  font:600 12px/1.2 system-ui,sans-serif;
+  padding:9px 13px;
+  cursor:pointer;
+}
+.combat-history .history-toggle:hover,
+.combat-history .history-toggle:focus-visible {
+  background:#34342c;
+  border-color:#b49870;
+}
+.chronicle-list {
+  padding:4px 0 3px;
+}
+.chronicle-list.is-full {
+  max-height:460px;
+  overflow:auto;
+  scrollbar-width:thin;
+  scrollbar-color:#5f594b #1d211e;
+}
+.chronicle-entry {
+  border:0;
+  border-bottom:1px solid #343b34;
+  border-left:2px solid transparent;
+  background:transparent;
+  color:#e7ddce;
+}
+.chronicle-entry:last-child {
+  border-bottom:0;
+}
+.chronicle-entry.hurt { border-left-color:#b86a57; }
+.chronicle-entry.hit { border-left-color:#b49568; }
+.chronicle-entry summary {
+  list-style:none;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  min-height:53px;
+  padding:11px 10px 11px 13px;
+  cursor:pointer;
+}
+.chronicle-entry summary::-webkit-details-marker { display:none; }
+.chronicle-entry summary:hover { background:#292e29; }
+.chronicle-entry summary:focus-visible {
+  outline:2px solid #c7a276;
+  outline-offset:-2px;
+}
+.chronicle-entry[open] {
+  background:#232823;
+}
+.chronicle-entry[open] summary {
+  background:#2a3029;
+}
+.chronicle-main {
+  display:flex;
+  align-items:baseline;
+  flex:1;
+  flex-wrap:wrap;
+  gap:4px 12px;
+  min-width:0;
+}
+.chronicle-main strong {
+  font:600 13px/1.45 system-ui,sans-serif;
+  color:#e8d3b5;
+}
+.chronicle-main .chronicle-summary {
+  font:12px/1.45 system-ui,sans-serif;
+  color:#c7c0b3;
+  overflow-wrap:anywhere;
+}
+.chronicle-disclose {
+  color:#a8a08e;
+  flex-shrink:0;
+  font:11px/1.4 system-ui,sans-serif;
+}
+.chronicle-disclose:after {
+  content:'';
+  display:inline-block;
+  vertical-align:3px;
+  border-right:1px solid currentColor;
+  border-bottom:1px solid currentColor;
+  width:5px;height:5px;
+  transform:rotate(45deg);
+  margin-left:8px;
+}
+.chronicle-entry[open] .chronicle-disclose:after {
+  transform:rotate(225deg);
+  vertical-align:0;
+}
+.chronicle-mechanics {
+  padding:11px 17px 15px;
+  background:#1f2520;
+  border-top:1px solid #363d34;
+}
+.chronicle-mechanics-label {
+  display:block;
+  color:#a9977d;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+  font:600 10px/1.4 system-ui,sans-serif;
+}
+.chronicle-mechanics p {
+  margin:7px 0 0;
+  max-width:1000px;
+  color:#d3c7b5;
+  font:12px/1.6 system-ui,sans-serif;
+  overflow-wrap:anywhere;
+}
+.chronicle-mechanics .chronicle-source {
+  color:#a89c84;
+  font-size:11px;
+}
+.chronicle-empty {
+  padding:22px 13px;
+  color:#a89b87;
+  font:13px/1.5 system-ui,sans-serif;
+}
+.tutorial-guide {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px 18px;
+  flex-wrap:wrap;
+  padding:13px 20px 15px;
+  background:#ece3d3;
+  border-top:1px solid #cbbda6;
+  color:#493e30;
+}
+.tutorial-guide-main {
+  display:flex;
+  flex:1;
+  min-width:210px;
+  flex-direction:column;
+  gap:3px;
+}
+.tutorial-guide-main strong {
+  color:#58452f;
+  font:normal 19px/1.2 Georgia,serif;
+}
+.tutorial-guide-main span {
+  color:#685640;
+  font:13px/1.4 system-ui,sans-serif;
+}
+.tutorial-guide-details {
+  flex-shrink:0;
+  max-width:100%;
+  font:12px/1.4 system-ui,sans-serif;
+  color:#65543e;
+}
+.tutorial-guide-details summary {
+  cursor:pointer;
+  padding:6px 0;
+  font-weight:600;
+}
+.tutorial-guide-details summary:hover {
+  color:#2f332d;
+}
+.tutorial-guide-details[open] {
+  flex-basis:100%;
+}
+.tutorial-guide-details p {
+  margin:6px 0 0;
+  max-width:650px;
+  font:12px/1.6 system-ui,sans-serif;
+}
+.decision-panel .tutorial-guide {
+  margin:18px -26px -19px;
+  padding:14px 26px;
+  background:#e6dbc8;
+}
+@media(max-width:1320px){
+ .decision-panel .tutorial-guide { margin:16px -19px -17px; padding:14px 19px; }
+}
+@media(max-width:740px){
+ .combat-history .history-header { align-items:flex-start; }
+ .combat-history .history-header h3 { font-size:21px; }
+ .combat-history .history-toggle { font-size:11px; }
+ .chronicle-entry summary { align-items:flex-start; }
+ .chronicle-main { flex-direction:column; gap:3px; }
+ .tutorial-guide { padding:13px 15px; }
+ .decision-panel .tutorial-guide { margin:15px -15px -18px; padding:14px 15px; }
+}
