@@ -1132,3 +1132,129 @@ button:focus-visible,.loc:focus-visible {
   .outcome-strip { flex-wrap:wrap; }
   .outcome-strip .strip-skip { margin-left:auto; }
 }
+
+
+/* Practice Combat UX 07 — one concise explanation of the exchange where it happens.
+   This replaces the duplicated outcome strip after the action controls. */
+.exchange-recap {
+  padding:18px 22px 19px;
+  background:#242920;
+  color:#e9ddc8;
+  border-top:1px solid #575244;
+}
+.exchange-recap .recap-heading {
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px 16px;
+  justify-content:space-between;
+  color:#b8a58a;
+  text-transform:uppercase;
+  font:600 10px/1.4 system-ui,sans-serif;
+  letter-spacing:.1em;
+}
+.exchange-recap h3 {
+  color:#eee1ce;
+  font:normal clamp(21px,1.8vw,27px)/1.17 Georgia,serif;
+  letter-spacing:-.015em;
+  margin:11px 0 5px;
+  text-wrap:balance;
+}
+.exchange-recap.injury h3 { color:#e8b394; }
+.exchange-recap.blocked h3 { color:#e0d5c0; }
+.exchange-recap .recap-explanation {
+  margin:5px 0 0;
+  color:#c8bbab;
+  font:13px/1.5 system-ui,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.exchange-recap .recap-consequences {
+  margin:10px 0 0;
+  color:#e3ae8d;
+  font:600 12px/1.45 system-ui,sans-serif;
+}
+.exchange-recap .recap-steps {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  margin:16px 0 0;
+  padding-top:13px;
+  border-top:1px solid #485046;
+}
+.exchange-recap .recap-step {
+  padding:2px 12px 4px;
+  border-right:1px solid #4a5149;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.exchange-recap .recap-step:first-child { padding-left:0; }
+.exchange-recap .recap-step:last-child { padding-right:0;border-right:0; }
+.exchange-recap .recap-step-label {
+  color:#a69e89;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  font:600 10px/1.4 system-ui,sans-serif;
+}
+.exchange-recap .recap-step strong {
+  color:#ecdfca;
+  font:500 12px/1.5 system-ui,sans-serif;
+  overflow-wrap:anywhere;
+}
+.exchange-recap .recap-step.awaiting strong {
+  font-weight:400;
+  color:#a8a493;
+}
+.exchange-recap .recap-step.is-hit strong { color:#e5b397; }
+.exchange-recap .recap-next {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 12px;
+  align-items:baseline;
+  padding-top:13px;
+  margin-top:14px;
+  border-top:1px solid #454c43;
+}
+.exchange-recap .recap-next span {
+  font:600 10px/1.35 system-ui,sans-serif;
+  color:#bda481;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+.exchange-recap .recap-next strong {
+  color:#f1dfbf;
+  font:500 13px/1.4 system-ui,sans-serif;
+}
+.exchange-recap .recap-toolbar {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid #495046;
+  font:12px/1.4 system-ui,sans-serif;
+  color:#a7a495;
+}
+.exchange-recap .recap-toolbar .toolbutton {
+  color:#eee1cc;
+  border:1px solid #7e7058;
+  background:#373b31;
+  font-size:12px;
+  padding:9px 13px;
+}
+.exchange-recap .recap-toolbar .toolbutton:hover {
+  background:#4b5141;
+}
+@media(max-width:1320px){
+ .exchange-recap { padding:17px 18px; }
+ .exchange-recap .recap-step { padding-left:8px;padding-right:8px; }
+ .exchange-recap .recap-step strong { font-size:11px; }
+}
+@media(max-width:740px){
+ .exchange-recap { padding:16px 15px; }
+ .exchange-recap .recap-steps { grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 0; }
+ .exchange-recap .recap-step:nth-child(2) { border-right:0; }
+ .exchange-recap .recap-step:nth-child(3) { padding-left:0; }
+ .exchange-recap .recap-step strong { font-size:12px; }
+}
