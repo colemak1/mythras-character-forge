@@ -722,6 +722,7 @@ window.APP={
  inv(i,f,v){
    const it=S.inventory[i];if(!it)return;
    if(f==="name")it.name=v;
+   else if(f==="wornClothing")it.wornClothing=v===true;
    else{const n=Number(v);if(!Number.isFinite(n)||n<0||(f==="qty"&&!Number.isInteger(n)))return;it[f]=n;}
    render();},
  /* weapons & armour */
@@ -1112,11 +1113,7 @@ window.APP={
  // plain party member looking at a teammate's sheet. See inventoryBlock().
  playInvAdd(){if(inventoryBlock())return;S.inventory.push({name:"",qty:1,enc:0,cost:0});render();},
  playInvDel(i){if(inventoryBlock())return;S.inventory.splice(i,1);render();},
- playInv(i,f,v){if(inventoryBlock())return;
-   const it=S.inventory[i];if(!it)return;
-   if(f==="name")it.name=v;
-   else {const n=Number(v);if(!Number.isFinite(n)||n<0||(f==="qty"&&!Number.isInteger(n)))return;it[f]=n;}
-   render();},
+ playInv(i,f,v){if(inventoryBlock())return;this.inv(i,f,v);},
  // Switching tabs (Actions/Special Effects/Inventory/Features/Notes) is
  // read-only navigation, always allowed even in a VIEW_ONLY session.
  playTab(t){S.play.tab=t;render();},
@@ -1740,7 +1737,7 @@ function buildMD(){
   md+="## Armour\n\n| Location | Construction | AP |\n|---|---|---|\n"+ARMOR_LOCATIONS.map(l=>"| "+l+" | "+armorDisplayName(l)+" | "+armorApAt(l)+" |").join("\n")
     +"\n\nArmour Penalty to Initiative: -"+armourPenaltyToInit()+"\n\n";
   if(S.money.dice.length)md+="## Money\n\nStarting: "+moneyTotal()+" sp — remaining: "+moneyRemaining()+" sp\n\n";
-  if(S.inventory.length)md+="## Equipment\n\n"+S.inventory.map(it=>"- "+it.name+" ×"+it.qty+" (ENC "+((it.qty||0)*(it.enc||0))+")").join("\n")+"\n\n";
+  if(S.inventory.length)md+="## Equipment\n\n"+S.inventory.map(it=>"- "+it.name+" ×"+it.qty+" (ENC "+inventoryItemEnc(it)+")").join("\n")+"\n\n";
   if(S.concept.notes)md+="## Notes\n\n"+S.concept.notes+"\n";
   return md;
 }

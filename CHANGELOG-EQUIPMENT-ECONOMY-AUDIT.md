@@ -21,3 +21,11 @@ The initial equipment release passed signed-in checks for weapon values, fractio
 The follow-up adds a collapsible reference on **Money & Gear** for all six siege weapons, all eight vehicles, ammunition bundles and manufacture or repair. Siege gear and cargo stay out of personal ENC. The GM tracks their use, task progress, quality and upkeep. Open the panel and check that a Ballista lists 5 Combat Rounds and a crew of 2–4, and that the freight wagon lists 10 occupants and 200 cargo ENC.
 
 Follow-up live verification and broader inventory and encumbrance cases remain open.
+
+### Inventory and encumbrance follow-up
+
+- Money & Gear and Play Mode can exclude worn everyday clothing from ENC without losing its purchase price or packed ENC. Spare clothing and carried armour use their full ENC.
+- Verified the 20-item zero-ENC grouping across inventory and weapons, and the exact STR ×2, ×3 and ×4 boundaries.
+- Core p.77 non-human scaling and optional item-count encumbrance are GM procedures. Preset weapon and armour ENC uses the book’s human-scale values.
+
+To test, add a coat with 1 ENC and a cost of 4 sp, then toggle worn clothing. The gear load drops by 1 and the cost stays 4 sp. Check the panel in Money & Gear and confirm Play Mode shows the same load.

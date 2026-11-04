@@ -1019,13 +1019,14 @@ function armorEncAt(loc){return armorPackedEncAt(loc)*0.5;}
 function armorLocWeight(loc){return (loc==="Each Arm"||loc==="Each Leg")?2:1;}
 function armorEncTotal(){return ARMOR_LOCATIONS.reduce((a,l)=>a+armorEncAt(l)*armorLocWeight(l),0);}
 function armorApAt(loc){const m=armorMaterialByName(armorNameAt(loc));return m.ap;}
-function inventoryEncTotal(){return S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.enc||0),0);}
+function inventoryItemEnc(it){return it.wornClothing===true?0:(it.qty||0)*(it.enc||0);}
+function inventoryEncTotal(){return S.inventory.reduce((a,it)=>a+inventoryItemEnc(it),0);}
 function inventoryCostTotal(){return S.inventory.reduce((a,it)=>a+(it.qty||0)*(it.cost||0),0);}
 // Core p.77: twenty zero-ENC items count as one ENC. Count individual
 // quantities across inventory and the equipped weapon list, not empty
 // armour slots; a partial group is not yet a full ENC.
 function zeroEncItemCount(){
-  const inventory=S.inventory.reduce((a,it)=>a+((typeof it.name==="string"&&it.name.trim()&&it.enc!==null&&it.enc!==undefined&&it.enc!==""&&Number(it.enc)===0&&Number.isSafeInteger(Number(it.qty))&&Number(it.qty)>0)?Number(it.qty):0),0);
+  const inventory=S.inventory.reduce((a,it)=>a+((it.wornClothing!==true&&typeof it.name==="string"&&it.name.trim()&&it.enc!==null&&it.enc!==undefined&&it.enc!==""&&Number(it.enc)===0&&Number.isSafeInteger(Number(it.qty))&&Number(it.qty)>0)?Number(it.qty):0),0);
   const weapons=S.gearWeapons.reduce((a,n)=>{const w=weaponByName(n);return a+(w&&w.enc===0?1:0);},0);
   return inventory+weapons;
 }
@@ -1122,6 +1123,7 @@ function equipmentReference(){
     +'<p>Siege projectiles are Beyond Enormous. Use effective and long ranges, and reduce loading by one Combat Round per crew member above the minimum, up to the listed maximum. Resolve shots and fortification damage with the GM (p.62).</p>'
     +table("Vehicles (Core p.64)",["Vehicle","Occupants","Cargo ENC","Draw","Milieu","sp"],vehicles)
     +'<p>Occupants include the driver. For animal-drawn transport, full draw gives the animals’ normal movement. With fewer animals, scale movement by the fraction of the listed draw. Sedan chairs and palanquins use human carriers (pp.62, 64). Track vehicle cargo separately from character ENC.</p>'
+    +'<h3>Encumbrance exceptions</h3><p>Core p.77 excludes worn everyday clothing. List spare clothing and packed armour at their full carried ENC. For equipment proportionally sized for another species, enter the GM-adjusted values using average species SIZ divided by 13. Use the optional item-count method at the table if your group uses it.</p>'
     +'<h3>Manufacture and repair</h3><p>Use the applicable Craft, Engineering or Mechanisms skill. The GM sets the Task Round duration and decides whether the work is possible. Core p.65 lists Hopeless without tools, Herculean with improvised tools, and Formidable with poor or incomplete tools or missing key resources.</p>'
     +'<p>Per Task Round, critical adds 50%, success adds 25%, failure adds 0%, and fumble subtracts 25%. At 100% the result is acceptable. Use the quality and enhancement rules on pp.66–67 for substandard work, enhancements earned within four rounds and optional refinement. Track the result with the GM.</p>'
     +'<p>Use Additional silver spent for off-character purchases if they come out of these funds. The reference does not add cargo or crew equipment to personal ENC.</p></details>';
@@ -1167,10 +1169,11 @@ function stepMoney(){
    +ARMOR_LOCATIONS.filter(loc=>armorNameAt(loc)!=="None"&&Object.hasOwn(ARMOR_MAP,armorNameAt(loc))).map(loc=>fld(loc+' material','<select onchange="APP.setArmorSubstance(\''+jsq(loc)+'\',this.value)"><option value="">Default</option>'
      +Object.entries(MATERIAL_ENC_MULT).map(([name,mult])=>'<option value="'+esc(name)+'" '+(armorSubstanceAt(loc)===name?'selected':'')+'>'+esc(name)+' (&times;'+mult+')</option>').join("")+'</select>')).join("")+'</div></details>'
    +'<p class="note" style="margin-top:6px">Armour ENC (worn, halved): <b style="font-family:var(--mono)">'+armorEncTotal()+'</b> &nbsp;&middot;&nbsp; Armour Penalty to Initiative: <b style="font-family:var(--mono)">-'+armourPenaltyToInit()+'</b></p></div>';
-  h+='<div class="card"><h3>Inventory</h3><table class="alloc"><tr><th>Item</th><th class="num">Qty</th><th class="num">ENC each</th><th class="num">sp each</th><th></th></tr>'
+  h+='<div class="card"><h3>Inventory</h3><p class="note">Mark only worn everyday clothing. Split worn and spare clothing into separate rows.</p><table class="alloc"><tr><th>Item</th><th class="num">Qty</th><th class="num">ENC each</th><th>Worn clothing</th><th class="num">sp each</th><th></th></tr>'
    +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.inv('+i+',\'name\',this.value)"></td>'
     +'<td class="num"><input type="number" value="'+it.qty+'" onchange="APP.inv('+i+',\'qty\',this.value)"></td>'
     +'<td class="num"><input type="number" min="0" step="0.5" value="'+it.enc+'" onchange="APP.inv('+i+',\'enc\',this.value)"></td>'
+    +'<td><input type="checkbox" aria-label="Worn everyday clothing" '+(it.wornClothing===true?'checked':'')+' onchange="APP.inv('+i+',\'wornClothing\',this.checked)"></td>'
     +'<td class="num"><input type="number" min="0" step="0.01" value="'+(it.cost||0)+'" onchange="APP.inv('+i+',\'cost\',this.value)"></td>'
     +'<td><button class="chip" aria-label="remove item" onpointerdown="APP.invDel('+i+')" onclick="APP.invDel('+i+')">&times;</button></td></tr>').join("")
    +'</table><p style="margin-top:8px"><button class="chip" onpointerdown="APP.invAdd()" onclick="APP.invAdd()">+ add item</button> &nbsp;<span class="note">Inventory ENC: <b style="font-family:var(--mono)">'+inventoryEncTotal()+'</b> &nbsp;&middot;&nbsp; Total gear ENC (weapons + armour + inventory): <b style="font-family:var(--mono)">'+gearEncTotal()+'</b>'

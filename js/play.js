@@ -1096,16 +1096,17 @@ function renderPlayView(){
     h+='<p class="pm-invmeta">Gear ENC '+gearEncTotal()+' / '+(encLimit()??"—")+' unencumbered'+(S.money.dice.length?(' &middot; '+moneyRemaining()+' / '+moneyTotal()+' sp'):"")+'</p>';
     if(inventoryBlock()){
       // Plain party-member view of a teammate's sheet: static list, no controls.
-      if(S.inventory.length)h+='<div class="pm-invlist">'+S.inventory.map(it=>'<div class="pm-invrow"><span>'+esc(it.name)+' &times;'+it.qty+'</span><span class="pm-empty">ENC '+((it.qty||0)*(it.enc||0))+'</span></div>').join("")+'</div>';
+      if(S.inventory.length)h+='<div class="pm-invlist">'+S.inventory.map(it=>'<div class="pm-invrow"><span>'+esc(it.name)+' &times;'+it.qty+'</span><span class="pm-empty">ENC '+inventoryItemEnc(it)+'</span></div>').join("")+'</div>';
     }else{
       // Editable for the owner always, and for the DM viewing a player's
       // character (VIEW_ONLY_IS_DM) as a narrow loot/gear exception. Deliberately
       // avoids the .pm-sbtn/.pm-pip/.pm-fatsel/.pm-dmgrow input classes that the
       // .view-only CSS rule disables, since this stays live under VIEW_ONLY for a DM.
-      h+='<div class="pm-tablewrap"><table class="pm-atktable"><tr><th>Item</th><th>Qty</th><th>ENC ea</th><th>sp ea</th><th></th></tr>'
+      h+='<div class="pm-tablewrap"><table class="pm-atktable"><tr><th>Item</th><th>Qty</th><th>ENC ea</th><th>Worn clothing</th><th>sp ea</th><th></th></tr>'
        +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.playInv('+i+',\'name\',this.value)"></td>'
         +'<td><input type="number" value="'+it.qty+'" style="width:56px" onchange="APP.playInv('+i+',\'qty\',this.value)"></td>'
         +'<td><input type="number" min="0" step="0.5" value="'+it.enc+'" style="width:56px" onchange="APP.playInv('+i+',\'enc\',this.value)"></td>'
+        +'<td><input type="checkbox" aria-label="Worn everyday clothing" '+(it.wornClothing===true?'checked':'')+' onchange="APP.playInv('+i+',\'wornClothing\',this.checked)"></td>'
         +'<td><input type="number" min="0" step="0.01" value="'+(it.cost||0)+'" style="width:64px" onchange="APP.playInv('+i+',\'cost\',this.value)"></td>'
         +'<td><button class="chip" aria-label="remove item" onclick="APP.playInvDel('+i+')">&times;</button></td></tr>').join("")
        +'</table></div><p style="margin-top:8px"><button class="chip" onclick="APP.playInvAdd()">+ add item</button></p>';
@@ -1398,7 +1399,7 @@ function characterSheetBody(){
      +'</table></div>';
   }
   if(S.inventory.length)h+='<div class="mbox" style="margin-top:8px"><div class="mbox-t">Other Equipment</div>'
-   +S.inventory.map(it=>mkv(esc(it.name)+' ×'+it.qty,'ENC '+((it.qty||0)*(it.enc||0)))).join("")+'</div>';
+   +S.inventory.map(it=>mkv(esc(it.name)+' ×'+it.qty,'ENC '+inventoryItemEnc(it))).join("")+'</div>';
   h+='</div>';
   h+='<div class="exportrow"><button class="nav" onclick="window.print()">Print sheet</button></div>';
   h+=rulesNotes();
