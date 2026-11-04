@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=5/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=6/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -300,5 +300,107 @@ handlers.focusin({target:{closest(selector){
 check('Tutorial choice focus replaces the hint in the existing guidance line',
   tutorialCopy.textContent==='A parry can absorb damage');
 document.querySelector=originalQuery;
+
+
+/* UX pass 06: newest-first chronology and faster, stable combat navigation. */
+state.mode='normal';
+state.phase='fight';
+state.pending=null;
+state.logs=[
+ {id:2101,title:'First event',body:'Oldest entry',kind:'system'},
+ {id:2102,title:'Second event',body:'Middle entry',kind:'system'},
+ {id:2103,title:'Third event',body:'Later entry',kind:'system'},
+ {id:2104,title:'Fourth event',body:'Newest entry',kind:'system'}
+];
+presentation.busy=false;
+presentation.visibleCount=Infinity;
+presentation.stage=null;
+presentation.highlight=null;
+presentation.showLog=false;
+api.resetRoll();
+api.render();
+check('Default chronicle puts the most recent event first',
+  root.innerHTML.indexOf('data-log-id="2104"') <
+  root.innerHTML.indexOf('data-log-id="2103"'));
+check('Preview shows only three newest events',
+  !root.innerHTML.includes('data-log-id="2101"') &&
+  (root.innerHTML.match(/class="chronicle-entry /g)||[]).length===3);
+presentation.showLog=true;
+api.render();
+check('Full history stays reverse chronological',
+  ['2104','2103','2102','2101'].map(id=>root.innerHTML.indexOf('data-log-id="'+id+'"'))
+    .every((position,i,all)=>position>=0&&(i===0||position>all[i-1])));
+presentation.busy=true;
+presentation.visibleCount=2;
+api.render();
+check('Reverse chronological playback does not reveal future events',
+  root.innerHTML.indexOf('data-log-id="2102"') <
+  root.innerHTML.indexOf('data-log-id="2101"') &&
+  !root.innerHTML.includes('data-log-id="2103"'));
+presentation.busy=false;
+presentation.visibleCount=Infinity;
+presentation.showLog=false;
+
+check('Quick presentation is the default',presentation.quick===true);
+api.render();
+check('Quick presentation has a labelled toggle',
+  root.innerHTML.includes('QUICK · PACE') &&
+  root.innerHTML.includes('aria-label="Toggle combat presentation pace"'));
+handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
+check('Pace can be switched to detailed without changing the combat state',
+  presentation.quick===false && root.innerHTML.includes('DETAILED · PACE') &&
+  state.phase==='fight');
+presentation.busy=true;
+presentation.events=[state.logs[0],state.logs[1]];
+handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
+check('Switching to Quick while events play skips the remaining delay',
+  presentation.quick===true&&!presentation.busy);
+
+state.pending=null;
+state.order=['a','b'];
+state.turnIndex=0;
+api.render();
+check('Normal-turn primary action still available',
+  root.innerHTML.includes('class="choicegrid primary-actions"'));
+handlers.toggle({target:{classList:{contains:k=>k==='secondary-actions'},open:true}});
+api.render();
+check('More actions stays expanded after a full screen refresh',
+  presentation.moreActionsOpen===true &&
+  root.innerHTML.includes('class="secondary-actions" open'));
+
+state.mode='tutorial';
+state.pending={kind:'reaction',atk:'b',def:'a',attackRoll:{grade:2,roll:21,label:'SUCCESS'}};
+handlers.toggle({target:{classList:{contains:k=>k==='tutorial-guide-details'},open:true}});
+api.render();
+check('The expanded Why explanation survives a screen refresh',
+  presentation.guideWhyOpen===true &&
+  root.innerHTML.includes('class="tutorial-guide-details" open'));
+check('Reaction screen says exactly what to do',
+  root.innerHTML.includes('Choose your defense') &&
+  root.innerHTML.includes('data-act="react"'));
+
+state.pending=null;
+state.mode='normal';
+const savedQuery=document.querySelector;
+const savedRAF=sandbox.window.requestAnimationFrame;
+const button={focused:false,scrolled:false,focus(){this.focused=true;},
+  getBoundingClientRect(){return {top:1200,bottom:1250};},
+  scrollIntoView(){this.scrolled=true;}};
+document.querySelector=selector=>selector.startsWith('.roll-await .roll-now,')?button:savedQuery(selector);
+sandbox.window.requestAnimationFrame=callback=>callback();
+sandbox.window.innerHeight=800;
+api.setRoll({id:3041,actor:'a',label:'Manual d20 roll',defs:[{sides:20,label:'Hit location'}]});
+api.render();
+check('Next required roll gets focus and scrolls into view only when offscreen',
+  button.focused && button.scrolled);
+button.focused=false;button.scrolled=false;
+button.getBoundingClientRect=()=>({top:180,bottom:240});
+api.setRoll({id:3042,actor:'a',label:'Another manual d20 roll',defs:[{sides:20,label:'Hit location'}]});
+api.render();
+check('A visible roll is focused without scrolling the page',
+  button.focused && !button.scrolled);
+document.querySelector=savedQuery;
+sandbox.window.requestAnimationFrame=savedRAF;
+api.resetRoll();
 
 console.log('Practice Combat UX smoke checks passed.');
