@@ -723,4 +723,20 @@ check('An embedded weapon is identified as the specific cause of the skill penal
 causalFighter.impaledWounds=[];
 api.resetRoll();
 
+
+/* The first action has narration even before an exchange recap exists. */
+state.phase='fight';state.logs=[];state.pending=null;state.mode='normal';
+presentation.busy=true;presentation.visibleCount=0;
+presentation.stage={kind:'attack',rolling:true,entry:{id:3617,title:recapActor+' attacks'}};
+api.render();
+check('Opening attack has live narration before any recap exists',
+ root.innerHTML.includes('class="outcome-strip') &&
+ root.innerHTML.includes('>'+recapActor+' attacks</div>'));
+presentation.stage={kind:'hurt',rolling:true,entry:{id:3618,title:recapActor+' hits Left Leg'}};
+api.render();
+check('First-exchange damage windup does not reveal the hit location',
+ root.innerHTML.includes('Resolving damage') &&
+ !root.innerHTML.includes('STRIKE · LEFT LEG'));
+presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;
+
 console.log('Practice Combat UX smoke checks passed.');
