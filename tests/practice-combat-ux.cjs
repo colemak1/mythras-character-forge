@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=3/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=4/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const root = { innerHTML: '', addEventListener() {} };
@@ -166,5 +166,37 @@ state.winner = state.fighters.b.name;
 api.render();
 check('Defeat retains appropriate result heading',
   root.innerHTML.includes('>DEFEAT</h2>'));
+
+
+/* Pass 04: anatomical regions, exact engine-derived roll bands, and inspection. */
+state.phase = 'fight';
+state.pending = null;
+presentation.busy = false;
+presentation.stage = null;
+presentation.highlight = null;
+state.fighters.a.hp['Right Arm'] = 0;
+state.fighters.a.armourLocations['Right Arm'] = 1;
+state.sel = {a:'Right Arm'};
+api.render();
+check('New anatomical chart appears on both combatants',
+  (root.innerHTML.match(/class="anatomy-chart"/g) || []).length===2 &&
+  root.innerHTML.includes('class="anatomy-plate"'));
+check('Anatomy has seven keyboard accessible targets per fighter',
+  (root.innerHTML.match(/role="button"/g) || []).length===14 &&
+  (root.innerHTML.match(/tabindex="0"/g) || []).length===14);
+check('D20 ranges derived from the actual hit table',
+  ['01–03','04–06','07–09','10–12','13–15','16–18','19–20'].every(x=>
+    root.innerHTML.includes(x)));
+check('Selected limb reveals actual local armour, not global approximation',
+  root.innerHTML.includes('class="location-inspector"') &&
+  root.innerHTML.includes('Armour <strong>1 AP</strong>'));
+check('Injured regions include persistent wound markers',
+  root.innerHTML.includes('class="anatomy-wound-mark serious"'));
+check('Injured region HP gauge is empty at zero HP',
+  /class="loc serious wounded sel"[\s\S]*?data-val="Right Arm"[\s\S]*?style="width:0%"/.test(root.innerHTML));
+check('New fighter dossier clearly labels weapon and Combat Style',
+  root.innerHTML.includes('class="fighter-profile"') &&
+  root.innerHTML.includes('class="profile-weapon"') &&
+  root.innerHTML.includes('class="profile-skill"'));
 
 console.log('Practice Combat UX smoke checks passed.');
