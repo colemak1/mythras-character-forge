@@ -114,6 +114,7 @@ state.showEndModal = false;
 state.fighters.a.hp['Right Arm'] = 0;
 state.fighters.a.lastDamage = { loc: 'Right Arm', wound: 4 };
 const presentation = sandbox.window.prototypeCombat.presentation();
+presentation.busy = true;
 presentation.highlight = { id: 'a', loc: 'Right Arm' };
 presentation.stage = { kind: 'hurt', loc: 'Right Arm', target: 'a',
   entry: { title: 'Opponent hits Right Arm', body: '= 4 HP lost', kind: 'hurt',
@@ -138,6 +139,7 @@ check('Hit-location roll does not replay old damage callout',
 
 presentation.stage = null;
 presentation.highlight = null;
+presentation.busy = false;
 state.phase = 'over';
 state.pending = null;
 state.winnerId = 'a';
