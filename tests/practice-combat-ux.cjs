@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=8/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=9/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -483,7 +483,7 @@ state.pending=null;
 state.logs.push(eDefense,eAdvantage,eEffect,eLocation,eHit,eDisabled);
 api.render();
 check('Complete exchange recap explains the attacker and hit body part',
-  root.innerHTML.includes('strikes Right Arm · 4 HP lost') &&
+  root.innerHTML.includes('strikes the Right Arm · 4 HP lost') &&
   root.innerHTML.includes('class="exchange-recap injury"'));
 check('Recap shows attack, parry, Special Effect and hit together',
   root.innerHTML.includes('23 / 67% · Success') &&
@@ -503,7 +503,7 @@ check('Playback summary hides unrevealed wound and effect results',
   root.innerHTML.includes('class="exchange-recap progress"') &&
   root.innerHTML.includes('Awaiting response') &&
   !root.innerHTML.includes('7 damage − 2 parry − 1 armour = 4 HP lost') &&
-  !root.innerHTML.includes('strikes Right Arm · 4 HP lost'));
+  !root.innerHTML.includes('strikes the Right Arm · 4 HP lost'));
 check('Recap keeps an explicit Show results option during detailed playback',
   root.innerHTML.includes('class="recap-toolbar"') &&
   root.innerHTML.includes('data-act="skip"'));
@@ -513,7 +513,7 @@ state.logs=[eAttack,{id:3311,title:recapTarget+' does not defend',
   {id:3312,title:'No Damaging Hit',body:recapActor+"'s attack failed to connect.",kind:'system'}];
 api.render();
 check('Undefended miss is explained without incorrectly claiming damage',
-  root.innerHTML.includes('No damaging hit') &&
+  root.innerHTML.includes('strike misses') &&
   root.innerHTML.includes('Not defended') &&
   root.innerHTML.includes('No HP lost'));
 
@@ -521,7 +521,7 @@ const eBlocked={...eHit,id:3313,body:'4 weapon (4) +0 (0) = 4 total; 2 parry; 2 
 state.logs=[eAttack,eDefense,eBlocked];
 api.render();
 check('Armour/parry absorbing everything shows zero actual HP loss',
-  root.innerHTML.includes('strikes Right Arm · no HP lost') &&
+  root.innerHTML.includes('strikes the Right Arm · no HP lost') &&
   root.innerHTML.includes('4 damage − 2 parry − 2 armour = 0 HP lost') &&
   root.innerHTML.includes('class="exchange-recap blocked"'));
 
@@ -534,7 +534,7 @@ state.logs.push({id:3321,title:'Encounter 4 · Initiative',
   body:'Initiative completed.',kind:'system'});
 api.render();
 check('Initiative of next encounter stays free of stale damage',
-  !root.innerHTML.includes('strikes Right Arm · 4 HP lost'));
+  !root.innerHTML.includes('strikes the Right Arm · 4 HP lost'));
 
 
 /* UX pass 07: consequence wording reflects the result, not just the roll type. */
@@ -611,22 +611,116 @@ api.render();
 check('An isolated serious weapon-arm modifier shows before and after targets',
  root.innerHTML.includes('class="roll-difficulty-note"') &&
  root.innerHTML.includes(normalStyle+'% → '+hardTarget+'%') &&
- root.innerHTML.includes('Standard → Hard · serious Right Arm wound'));
+ root.innerHTML.includes('Serious Right Arm wound · Standard → Hard'));
 attacker.prone=true;
 const combinedTarget=Math.ceil(Math.ceil(normalStyle/2)*2/3);
 api.setRoll({id:3404,actor:'a',label:'Attack · Combat Style '+combinedTarget+'%',
  defs:[{sides:100,label:'d100'}]});
 api.render();
 check('Combined conditions do not mislabel the whole reduction as just one grade',
- root.innerHTML.includes('Adjusted roll target') &&
- root.innerHTML.includes('Target reduced by combat conditions') &&
- !root.innerHTML.includes('Standard → Hard · serious Right Arm wound'));
+ root.innerHTML.includes('Reduced roll target') &&
+ root.innerHTML.includes('Prone · Serious Right Arm wound') &&
+ !root.innerHTML.includes('Serious Right Arm wound · Standard → Hard'));
 attacker.prone=false;attacker.hp['Right Arm']=attacker.maxHp['Right Arm'];
 api.setRoll({id:3405,actor:'a',label:'Attack · Combat Style '+normalStyle+'%',
  defs:[{sides:100,label:'d100'}]});
 api.render();
 check('Unmodified rolls do not show an invented difficulty penalty',
  !root.innerHTML.includes('class="roll-difficulty-note"'));
+api.resetRoll();
+
+
+/* UX 09: names both the ongoing action and the specific condition behind a target. */
+const impaleIntent={id:3601,title:'Impale',body:'Weapon damage will be rolled twice; choose a result.',kind:'hit'};
+const impaleLodged={id:3602,title:'Impaled Weapon',
+ body:recapActor+"'s Broadsword lodges in "+recapTarget+"'s Right Arm. Weapon cannot be used until withdrawn.",
+ kind:'hurt'};
+const impaleBlocked={id:3603,title:'Impale blocked',
+ body:'Armour/parry prevents a wound; the weapon does not lodge.',kind:'system'};
+state.phase='fight';state.mode='normal';state.pending=null;state.wave=3;
+state.logs=[eAttack,eDefense,eAdvantage,impaleIntent,eLocation];
+presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;
+api.resetRoll();api.render();
+check('Unresolved impale describes intent, not a confirmed injury',
+ root.innerHTML.includes('attempts to impale '+recapTarget) &&
+ !root.innerHTML.includes('impales '+recapTarget+' in the'));
+state.logs.push(eHit);
+api.render();
+check('Weapon striking does not claim an impale before the log confirms lodgement',
+ root.innerHTML.includes('strikes the Right Arm · 4 HP lost') &&
+ !root.innerHTML.includes('impales '+recapTarget+' in the'));
+state.logs.push(impaleLodged);
+api.render();
+check('Confirmed impale names the victim and specific body part',
+ root.innerHTML.includes('impales '+recapTarget+' in the Right Arm · 4 HP lost') &&
+ root.innerHTML.includes('Weapon lodged'));
+state.logs=[eAttack,eDefense,impaleIntent,eBlocked,impaleBlocked];
+api.render();
+check('Blocked impale is not narrated as a lodged weapon',
+ !root.innerHTML.includes('impales '+recapTarget+' in the') &&
+ root.innerHTML.includes('Impale blocked'));
+const tripIntent={id:3604,title:'Trip Opponent',
+ body:recapTarget+' rolls 44 vs 66% (SUCCESS): remains standing.',kind:'hit'};
+state.logs=[eAttack,eDefense,tripIntent];
+api.render();
+check('Resisted trip is reported as a resisted attempt',
+ root.innerHTML.includes('resists '+recapActor+'’s trip') &&
+ root.innerHTML.includes('Trip resisted'));
+state.logs=[eAttack,eDefense,{...tripIntent,body:recapTarget+' fails and falls prone.'}];
+api.render();
+check('Successful trip narrates the knockdown',
+ root.innerHTML.includes('trips '+recapTarget) &&
+ root.innerHTML.includes('Opponent knocked prone'));
+const extraLiveStage={entry:{id:3610,title:recapActor+' attacks'},kind:'attack',rolling:true};
+state.logs=[eAttack,eDefense];
+presentation.busy=true;presentation.visibleCount=2;
+presentation.stage=extraLiveStage;
+api.render();
+check('Live attack narration appears inside recap before a result is revealed',
+ root.innerHTML.includes('class="recap-live"') &&
+ root.innerHTML.includes('NOW</span> '+recapActor+' attacks'));
+presentation.stage={entry:{id:3611,title:recapActor+' hits Right Arm'},kind:'hurt',rolling:true};
+api.render();
+check('Damage animation does not leak an unrevealed injury in live caption',
+ root.innerHTML.includes('NOW</span> Resolving damage') &&
+ !root.innerHTML.includes('NOW</span> '+recapActor+' hits Right Arm'));
+presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;
+
+const causalFighter=state.fighters.a;
+causalFighter.prone=false;causalFighter.blindedTurns=0;
+causalFighter.hp['Right Arm']=causalFighter.maxHp['Right Arm'];
+causalFighter.fatigue=2;
+causalFighter.impaledWounds=[];
+const fatigueTarget=Math.ceil(causalFighter.style*2/3);
+api.setRoll({id:3612,actor:'a',label:'Attack · Combat Style '+causalFighter.style+'% · '+fatigueTarget+'% (Tired fatigue)',
+ defs:[{sides:100,label:'d100'}]});
+api.render();
+check('Fatigue modifier is named specifically on a reduced target',
+ root.innerHTML.includes('Tired fatigue') &&
+ root.innerHTML.includes(causalFighter.style+'% → '+fatigueTarget+'%') &&
+ !root.innerHTML.includes('Target reduced by combat conditions'));
+causalFighter.fatigue=0;
+causalFighter.hp['Right Arm']=0;
+causalFighter.prone=true;
+const proneSerious=Math.ceil(Math.ceil(causalFighter.style/2)*2/3);
+api.setRoll({id:3613,actor:'a',label:'Attack · Combat Style '+proneSerious+'%',
+ defs:[{sides:100,label:'d100'}]});
+api.render();
+check('Stacking a prone penalty and serious wound names both causes',
+ root.innerHTML.includes('Prone · Serious Right Arm wound') &&
+ root.innerHTML.includes(causalFighter.style+'% → '+proneSerious+'%'));
+causalFighter.prone=false;
+causalFighter.hp['Right Arm']=causalFighter.maxHp['Right Arm'];
+causalFighter.impaledWounds=[{loc:'Left Leg',weaponSize:3}];
+const impaleFactor=[1,2/3,1/2,1/10,0][sandbox.window.prototypeCombat.impaleGrade(causalFighter)];
+const impaleSkill=Math.ceil(causalFighter.style*impaleFactor);
+api.setRoll({id:3614,actor:'a',label:'Attack · Combat Style '+causalFighter.style+'% · '+impaleSkill+'% (impaled weapon)',
+ defs:[{sides:100,label:'d100'}]});
+api.render();
+check('An embedded weapon is identified as the specific cause of the skill penalty',
+ root.innerHTML.includes('Impaled weapon · Left Leg') &&
+ root.innerHTML.includes(causalFighter.style+'% → '+impaleSkill+'%'));
+causalFighter.impaledWounds=[];
 api.resetRoll();
 
 console.log('Practice Combat UX smoke checks passed.');
