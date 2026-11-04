@@ -893,7 +893,7 @@ function injurySummaryHtml(f){
  return `<div class="injury-summary ${grade}"><span>Most serious injury</span><strong>${esc(loc)} · ${name}</strong><small>${f.hp[loc]} / ${f.maxHp[loc]} HP</small></div>`;
 }
 function impactFeedbackHtml(f){
- const loc=V.highlight?.id===f.id?V.highlight.loc:null;
+ const loc=V.stage?.kind==='hurt'&&V.highlight?.id===f.id?V.highlight.loc:null;
  if(!loc||!HIT_LOCS.includes(loc))return '';
  const damage=f.lastDamage?.loc===loc?Math.max(0,Number(f.lastDamage.wound)||0):null;
  const grade=zoneClass(f,loc);
