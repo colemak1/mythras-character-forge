@@ -758,8 +758,9 @@ check('A pending defensive trip is narrated before a resistance roll',
 api.setRoll({id:3621,actor:'a',label:'Trip · '+recapActor+' Brawn',
  defs:[{sides:100,label:'d100'}]});
 api.render();
-check('Trip resistance prompt identifies the effect owner and target',
- root.innerHTML.includes('NOW</span> '+recapTarget+' attempts to trip '+recapActor));
+check('Trip resistance prompt identifies the effect owner without duplicate narration',
+ root.innerHTML.includes(recapTarget+' attempts to trip '+recapActor) &&
+ !root.innerHTML.includes('class="recap-live"'));
 state.pending=null;api.resetRoll();
 
 console.log('Practice Combat UX smoke checks passed.');
