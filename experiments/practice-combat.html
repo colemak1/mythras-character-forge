@@ -620,7 +620,12 @@ function requestDice(actor,defs,label,callback){
 }
 function requestSkill(actor,percent,label,callback){
  const effective=effectiveSkill(S.fighters?.[actor],percent);
- const shown=effective!==percent?`${label} · ${effective}% after conditions`:label;
+ const causes=[];
+ const f=S.fighters?.[actor];
+ if(f&&(FATIGUE_GRADES[Math.min(9,f.fatigue||0)]||0)>0)
+   causes.push((FATIGUE_NAMES[Math.min(9,f.fatigue)]||'Fatigue')+' fatigue');
+ if(f&&impaleGrade(f)>0)causes.push('impaled weapon');
+ const shown=effective!==percent?`${label} · ${effective}% (${causes.join(' + ')||'adjusted'})`:label;
  requestDice(actor,[{sides:100,label:'d100'}],shown,values=>{
   const result=rollSkill(effective,values[0]);result.effectiveTarget=effective;
   callback(result);
