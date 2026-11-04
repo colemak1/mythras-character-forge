@@ -1781,7 +1781,7 @@ function decoratedClick(e){
 }
 function updateChoiceHelp(e){
  const choice=e.target.closest('.decision-panel button.choice');
- const help=document.getElementById('choiceHelp');
+ const help=document.getElementById('choiceHelp')||document.querySelector('.decision-panel .tutorial-guide-main span');
  if(choice&&help)help.textContent=choice.dataset.help||choice.textContent.trim();
 }
 $('#root').addEventListener('pointerover',updateChoiceHelp);
