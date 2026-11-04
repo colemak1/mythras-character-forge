@@ -877,4 +877,21 @@ check('Effect selection focus returns to its owner',
  root.innerHTML.includes('class="fighter player decision-focus'));
 state.pending=null;
 
+
+/* UX10: never narrate a future reach state while event playback is incomplete. */
+state.phase='fight';state.pending=null;state.disengaged=false;
+state.fighters.a.weapon='greatsword';state.fighters.b.weapon='dagger';
+state.engagement='long';
+presentation.busy=true;presentation.visibleCount=0;
+presentation.stage={kind:'system',rolling:false,entry:{title:'Range changes'}};
+api.render();
+check('Reach explanation does not leak unrevealed range changes during playback',
+ !root.innerHTML.includes('class="reach-context"'));
+presentation.busy=false;presentation.stage=null;
+state.engagement='long';api.render();
+check('Reach explanation returns immediately after playback completes',
+ root.innerHTML.includes('class="reach-context"'));
+state.fighters.a.weapon='sword';state.fighters.b.weapon='sword';
+state.engagement='equal';
+
 console.log('Practice Combat UX smoke checks passed.');
