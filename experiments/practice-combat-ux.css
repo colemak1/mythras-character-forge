@@ -1258,3 +1258,80 @@ button:focus-visible,.loc:focus-visible {
  .exchange-recap .recap-step:nth-child(3) { padding-left:0; }
  .exchange-recap .recap-step strong { font-size:12px; }
 }
+
+
+/* Practice Combat UX 08 — separate injury difficulty from roll success grade.
+   The outcome remains the most prominent element; mechanics remain secondary. */
+.exchange-recap h3 {
+  font-size:clamp(23px,2vw,29px);
+  line-height:1.18;
+  margin-top:12px;
+}
+.exchange-recap .recap-heading {
+  font-size:10px;
+}
+.exchange-recap .recap-explanation {font-size:13px;}
+.exchange-recap .recap-steps {
+  padding-top:12px;
+  margin-top:15px;
+}
+.exchange-recap .recap-step-label { opacity:.82; }
+.exchange-recap .recap-difficulty {
+  display:grid;
+  gap:4px;
+  margin-top:13px;
+  padding:12px 0 0 13px;
+  border-top:1px solid #4a5146;
+  border-left:3px solid #b6a07c;
+  background:transparent;
+  color:#ede0ce;
+}
+.exchange-recap .recap-difficulty-label {
+  color:#b5a68e;
+  font:600 10px/1.4 system-ui,sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.exchange-recap .recap-difficulty strong {
+  color:#f0e0c5;
+  font:600 14px/1.45 system-ui,sans-serif;
+}
+.exchange-recap .recap-difficulty span:last-child {
+  color:#bfb4a0;
+  font:12px/1.5 system-ui,sans-serif;
+}
+.exchange-half .roll-difficulty-note {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  justify-content:center;
+  gap:4px 9px;
+  margin:9px auto 6px;
+  padding:8px 10px;
+  border-top:1px solid #bfae95;
+  border-bottom:1px solid #bfae95;
+  color:#5a4734;
+  text-align:center;
+  font-family:system-ui,sans-serif;
+}
+.roll-difficulty-note span {
+  flex-basis:100%;
+  font-size:11px;
+  font-weight:600;
+}
+.roll-difficulty-note strong {
+  font-size:18px;
+  font-weight:700;
+  font-variant-numeric:tabular-nums;
+  color:#5b4030;
+}
+.roll-difficulty-note small {
+  flex-basis:100%;
+  font-size:11px;
+  line-height:1.45;
+  color:#795f42;
+}
+@media(max-width:740px) {
+  .exchange-recap .recap-difficulty { margin-top:12px;padding:10px 0 0 10px; }
+  .exchange-recap .recap-difficulty strong { font-size:13px; }
+}
