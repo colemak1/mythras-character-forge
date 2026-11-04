@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=4/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=5/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -40,7 +40,7 @@ const sandbox = {
   clearInterval,
 };
 const api = vm.runInNewContext(match[1] +
-  '\n;({startRun, render, state: () => S, resetRoll: () => { R = null; V.busy = false; }, availableEffects})',
+  '\n;({startRun, render, state: () => S, resetRoll: () => { R = null; V.busy = false; }, setRoll: value => { R = value; }, availableEffects})',
   sandbox, { filename: 'practice-combat-inline.js' });
 
 function check(name, predicate) {
@@ -214,5 +214,77 @@ check('Enter selects an SVG hit location without submitting a page action',
 check('Keyboard-selected location is marked as pressed in the diagram',
   root.innerHTML.includes('data-val="Left Arm" tabindex="0" role="button"') &&
   root.innerHTML.includes('aria-pressed="true"'));
+
+
+/* UX pass 05: readable logs, full calculations and context-sensitive help. */
+state.phase='fight';
+state.pending=null;
+state.mode='normal';
+state.showEndModal=false;
+state.logs=[
+  {id:1001,title:'Encounter 1 · Initiative',body:'Two combatants roll initiative.',kind:'system',detail:'Core p.90'},
+  {id:1002,title:'Kethan attacks',body:'Roll 23 against Combat Style 67% — SUCCESS.',kind:'hit',detail:'Attack check'},
+  {id:1003,title:'Hit Location',body:'Kethan rolls 16 (d20): Left Arm.',kind:'system',meta:{location:'Left Arm',roll:16}},
+  {id:1004,title:'Kethan hits Right Arm',body:'Broadsword +2 = 4 HP lost. Armour absorbed 1.',kind:'hurt',detail:'Damage and armour'}
+];
+presentation.busy=false;
+presentation.visibleCount=Infinity;
+presentation.stage=null;
+presentation.highlight=null;
+presentation.showLog=false;
+api.resetRoll();
+api.render();
+check('Combat chronicle shows the three latest events by default',
+  (root.innerHTML.match(/class="chronicle-entry /g)||[]).length===3 &&
+  root.innerHTML.includes('Combat chronicle'));
+check('Hit narration uses actor, body location and actual HP loss',
+  root.innerHTML.includes('Kethan strikes Right Arm') &&
+  root.innerHTML.includes('4 HP lost'));
+check('Original calculations remain inside expandable entries',
+  root.innerHTML.includes('<details class="chronicle-entry') &&
+  root.innerHTML.includes('Armour absorbed 1.') &&
+  root.innerHTML.includes('Recorded result'));
+check('Chronicle includes sourced hit-location rolls',
+  root.innerHTML.includes('Left Arm · d20 16'));
+presentation.showLog=true;
+api.render();
+check('Full history includes every recorded event',
+  (root.innerHTML.match(/class="chronicle-entry /g)||[]).length===4);
+check('Expanded detail is preserved after a state re-render',(()=>{
+  handlers.toggle({target:{classList:{contains:k=>k==='chronicle-entry'},dataset:{logId:'1004'},open:true}});
+  api.render();
+  return /data-log-id="1004" open/.test(root.innerHTML);
+})());
+presentation.busy=true;
+presentation.visibleCount=2;
+api.render();
+check('Chronicle does not reveal unreleased future events during playback',
+  (root.innerHTML.match(/class="chronicle-entry /g)||[]).length===2 &&
+  !root.innerHTML.includes('Kethan strikes Right Arm'));
+presentation.busy=false;
+presentation.visibleCount=Infinity;
+presentation.showLog=false;
+state.logs=[];
+state.mode='tutorial';
+state.pending={kind:'reaction',atk:'b',def:'a',attackRoll:{label:'SUCCESS',grade:2,roll:32}};
+api.render();
+check('Guided Tutorial explains the current defensive decision',
+  root.innerHTML.includes('Defend against the attack') &&
+  root.innerHTML.includes('class="tutorial-guide-details"') &&
+  root.innerHTML.includes('data-act="react"'));
+check('Old duplicate tutorial tip has been removed',
+  !root.innerHTML.includes('class="tutorial-why"'));
+state.pending=null;
+api.setRoll({id:99,actor:'a',label:'Hit Location · d20',defs:[{sides:20,label:'Location'}]});
+api.render();
+check('Roll-time guidance explains the d20 without moving the roll prompt',
+  root.innerHTML.includes('Find the hit location') &&
+  root.innerHTML.includes('data-act="roll"') &&
+  root.innerHTML.indexOf('data-combatant="a"') < root.innerHTML.indexOf('data-combatant="b"'));
+api.resetRoll();
+state.mode='normal';
+api.render();
+check('Normal mode stays free of tutorial prompts',
+  !root.innerHTML.includes('class="tutorial-guide"'));
 
 console.log('Practice Combat UX smoke checks passed.');
