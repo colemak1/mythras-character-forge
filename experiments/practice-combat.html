@@ -639,8 +639,6 @@ function performManualRoll(){
   const result=request.defs.map(d=>d.fixed!=null?d.fixed:die(d.sides));
   request.callback(result);
 }
-/* Only describe a harder roll when the engine's actual target has changed.
-   The injury example is shown only for an isolated serious weapon-arm modifier. */
 /* Explains ONLY engine-applied adjustments, using the same combat, Evade
    and general-condition helpers that determine the target. */
 function rollDifficultyHtml(actor){
@@ -949,6 +947,9 @@ function exchangeRecapModel(){
    headline=evaded?defender+' evades '+attacker+'’s strike':attacker+'’s strike misses';
    note=String(noHit.body||'').trim();
    resultKind='blocked';
+ }else if(!V.busy&&S.pending?.kind==='tripResistChoice'){
+   headline=attacker+' attempts to trip '+defender;
+   note='Choose how to resist the trip.';
  }else if(trip){
    if(/falls prone|is knocked prone/i.test(trip.body||''))headline=attacker+' trips '+defender;
    else if(/remains standing|keeps footing/i.test(trip.body||''))headline=defender+' resists '+attacker+'’s trip';
@@ -1014,6 +1015,7 @@ function exchangeRecapModel(){
    !V.busy&&S.phase==='fight'&&S.pending?.kind==='location'?'Choose the hit location':
    !V.busy&&S.phase==='fight'&&S.pending?.kind==='impalePick'?'Select impale damage':
    !V.busy&&S.phase==='fight'&&S.pending?.kind==='impaleResist'?'Respond to withdrawal':
+   !V.busy&&S.phase==='fight'&&S.pending?.kind==='tripResistChoice'?'Choose Brawn or Evade to resist the trip':
    '';
  return {headline,note,kind:resultKind,attacker,extra:unique,difficultyReminder,steps:stepItems,
    status:V.busy?'Revealing exchange':finished?'Last exchange':'Exchange in progress',
@@ -1026,7 +1028,7 @@ function exchangeLiveNarration(){
  const pending=S.pending,who=id=>S.fighters?.[id]?.name||'A fighter';
  if(!V.busy&&R){
    const label=String(R.label||'');
-   if(/^Trip resistance/i.test(label)&&pending?.owner&&pending?.other)
+   if(/^(?:Trip resistance|Trip ·)/i.test(label)&&pending?.owner&&pending?.other)
      return who(pending.owner)+' attempts to trip '+who(pending.other);
    if(/^Damage · /i.test(label)){
      const loc=/^Damage · (Head|Chest|Abdomen|Right Arm|Left Arm|Right Leg|Left Leg)/i.exec(label)?.[1];
@@ -1035,6 +1037,8 @@ function exchangeLiveNarration(){
    if(/^Hit Location/i.test(label))return who(R.actor)+' rolls for hit location';
    return '';
  }
+ if(!V.busy&&pending?.kind==='tripResistChoice'&&pending.owner&&pending.other)
+   return who(pending.owner)+' attempts to trip '+who(pending.other);
  if(!V.busy||!V.stage?.rolling||!V.stage.entry)return '';
  const title=V.stage.entry.title||'';
  if(/ attacks$/i.test(title))return title.replace(/ attacks$/i,'')+' attacks';
