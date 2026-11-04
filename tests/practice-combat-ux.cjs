@@ -519,8 +519,9 @@ check('Recap keeps an explicit Show results option during detailed playback',
   root.innerHTML.includes('class="recap-toolbar"') &&
   root.innerHTML.includes('data-act="skip"'));
 presentation.busy=false;presentation.visibleCount=Infinity;
-state.logs=[eAttack,{id:3311,title:recapTarget+' does not defend',
-  body:recapTarget+' preserves Action Points.',kind:'system'},
+state.logs=[{...eAttack,body:'93 against Combat Style 67% — FAILURE.'},
+  {id:3311,title:recapTarget+' does not defend',
+   body:recapTarget+' preserves Action Points.',kind:'system'},
   {id:3312,title:'No Damaging Hit',body:recapActor+"'s attack failed to connect.",kind:'system'}];
 api.render();
 check('Undefended miss is explained without incorrectly claiming damage',
