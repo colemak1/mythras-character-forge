@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=2/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=3/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const root = { innerHTML: '', addEventListener() {} };
@@ -105,5 +105,64 @@ state.winner = 'Test fighter';
 api.render();
 check('Next opponent button survives end-of-bout transition',
   root.innerHTML.includes('data-act="next"'));
+
+
+/* Pass 03: consequences and finishing-blow recap remain tied to wound state. */
+state.phase = 'fight';
+state.pending = null;
+state.showEndModal = false;
+state.fighters.a.hp['Right Arm'] = 0;
+state.fighters.a.lastDamage = { loc: 'Right Arm', wound: 4 };
+const presentation = sandbox.window.prototypeCombat.presentation();
+presentation.highlight = { id: 'a', loc: 'Right Arm' };
+presentation.stage = { kind: 'hurt', loc: 'Right Arm', target: 'a',
+  entry: { title: 'Opponent hits Right Arm', body: '= 4 HP lost', kind: 'hurt',
+    view: { a: state.fighters.a, b: state.fighters.b } },
+  result: '-4 HP', rolling: false };
+api.render();
+check('Serious arm wound is visible beside the fighter',
+  root.innerHTML.includes('class="injury-summary serious"') &&
+  root.innerHTML.includes('Right Arm · Serious wound'));
+check('Damage callout identifies actual hit location and HP lost',
+  root.innerHTML.includes('class="injury-impact"') &&
+  root.innerHTML.includes('4 HP lost'));
+check('Outcome strip names hit location and wound severity',
+  root.innerHTML.includes('Right Arm · -4 HP') &&
+  root.innerHTML.includes('Serious wound'));
+
+presentation.stage = { kind: 'location', loc: 'Right Arm', target: 'a',
+  entry: { title: 'Hit Location', body: '', kind: 'system' } };
+api.render();
+check('Hit-location roll does not replay old damage callout',
+  !root.innerHTML.includes('class="injury-impact"'));
+
+presentation.stage = null;
+presentation.highlight = null;
+state.phase = 'over';
+state.pending = null;
+state.winnerId = 'a';
+state.winner = state.fighters.a.name;
+state.round = 3;
+state.showEndModal = true;
+state.finalCause = { type:'injury', location:'Right Arm', severity:'serious',
+  hpLost:4, remaining:0, maxHp:4, victim:state.fighters.b.name,
+  consequence:'Incapacitated' };
+api.render();
+check('Finishing injury recap highlights correct body location',
+  root.innerHTML.includes('class="finish-location-figure"') &&
+  root.innerHTML.includes('Finishing wound at Right Arm'));
+check('Recap includes concrete injury and bout round',
+  root.innerHTML.includes('Serious wound · Right Arm') &&
+  root.innerHTML.includes('Encounter ended in round 3'));
+state.finalCause = { type:'concession', victim:state.fighters.b.name };
+api.render();
+check('Concession recap has no invented injury diagram',
+  root.innerHTML.includes('Concession') &&
+  !root.innerHTML.includes('finish-location-figure'));
+state.winnerId = 'b';
+state.winner = state.fighters.b.name;
+api.render();
+check('Defeat retains appropriate result heading',
+  root.innerHTML.includes('>DEFEAT</h2>'));
 
 console.log('Practice Combat UX smoke checks passed.');
