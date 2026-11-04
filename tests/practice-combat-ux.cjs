@@ -403,4 +403,36 @@ document.querySelector=savedQuery;
 sandbox.window.requestAnimationFrame=savedRAF;
 api.resetRoll();
 
+
+/* Pass 06: the same round number in a new encounter still gets keyboard focus. */
+state.phase='fight';
+state.pending=null;
+state.wave=41;
+state.round=1;
+state.cycle=1;
+state.turnIndex=0;
+let focusCount=0;
+const originalQuery6=document.querySelector;
+const originalRAF6=sandbox.window.requestAnimationFrame;
+const focusTarget={focus(){focusCount++;},getBoundingClientRect(){return {top:200,bottom:260};},
+  scrollIntoView(){throw new Error('Visible button should never scroll');}};
+document.querySelector=selector=>selector.startsWith('.roll-await .roll-now,')?focusTarget:originalQuery6(selector);
+sandbox.window.requestAnimationFrame=callback=>callback();
+api.render();
+const focusBeforeNextWave=focusCount;
+state.wave=42;
+api.render();
+check('New encounter refocuses the decision even if round and turn repeat',
+  focusBeforeNextWave>0&&focusCount===focusBeforeNextWave+1);
+document.querySelector=originalQuery6;
+sandbox.window.requestAnimationFrame=originalRAF6;
+presentation.busy=true;
+presentation.stage={kind:'hit',primary:'ATTACK',entry:state.logs[0],rolling:false};
+api.render();
+check('Playback exposes a direct Show results control',
+  root.innerHTML.includes('data-act="skip"') &&
+  root.innerHTML.includes('Show results'));
+presentation.busy=false;
+presentation.stage=null;
+
 console.log('Practice Combat UX smoke checks passed.');
