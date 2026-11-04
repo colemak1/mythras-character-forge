@@ -1,0 +1,383 @@
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+
+// Physical Dice Lab: completely separate from the Mythras rules and combat engine.
+// The value is sampled uniformly first; the tumble is presentation and the final
+// face is guided to match that sampled value. Never use a frame as the RNG.
+const $ = id => document.getElementById(id);
+const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
+const UP = new THREE.Vector3(0,1,0);
+const instances = new Map();
+let chosen = '';
+try { chosen = localStorage.getItem('sitota-physical-die-choice') || ''; } catch {}
+let lastFrame = performance.now();
+
+function uniformD100() {
+  if (globalThis.crypto?.getRandomValues) {
+    const a = new Uint32Array(1);
+    const cutoff = Math.floor(4294967296 / 100) * 100;
+    do { crypto.getRandomValues(a); } while (a[0] >= cutoff);
+    return a[0] % 100 + 1;
+  }
+  return Math.floor(Math.random() * 100) + 1;
+}
+
+function qFaceNormal(vertices, face) {
+  const a = new THREE.Vector3(...vertices[face[0]]);
+  const b = new THREE.Vector3(...vertices[face[1]]);
+  const c = new THREE.Vector3(...vertices[face[2]]);
+  return b.sub(a).cross(c.sub(new THREE.Vector3(...vertices[face[0]]))).normalize();
+}
+
+function facetedHundred() {
+  // 8 latitude rings, 14 vertices in each ring:
+  // 7*14 quadrilateral sides + two 14-gonal caps = exactly 100 faces.
+  const z=[-.96,-.83,-.62,-.30,.30,.62,.83,.96];
+  const seg=14;
+  const v=[];
+  for(const y of z) {
+    const r=1.13*Math.sqrt(1-y*y);
+    for(let j=0;j<seg;j++) {
+      const angle=j*2*Math.PI/seg;
+      v.push([r*Math.cos(angle),y*1.13,r*Math.sin(angle)]);
+    }
+  }
+  const faces=[];
+  for(let i=0;i<z.length-1;i++) {
+    for(let j=0;j<seg;j++) {
+      const k=(j+1)%seg;
+      faces.push([i*seg+j,i*seg+k,(i+1)*seg+k,(i+1)*seg+j]);
+    }
+  }
+  faces.push(Array.from({length:seg},(_,j)=>seg-1-j));
+  faces.push(Array.from({length:seg},(_,j)=>(z.length-1)*seg+j));
+  if(faces.length!==100)throw Error('Incorrect hundred-face model');
+  return {vertices:v,faces};
+}
+
+function polyTwenty() {
+  const geo=new THREE.IcosahedronGeometry(1.14,0);
+  const p=geo.getAttribute('position');
+  const vertices=[];
+  const ids=new Map();
+  const faces=[];
+  const idx=(x,y,z)=>{
+    const key=[x,y,z].map(n=>n.toFixed(5)).join(',');
+    if(!ids.has(key)){ids.set(key,vertices.length);vertices.push([x,y,z]);}
+    return ids.get(key);
+  };
+  for(let i=0;i<p.count;i+=3){
+    const face=[];
+    for(let j=0;j<3;j++)face.push(idx(p.getX(i+j),p.getY(i+j),p.getZ(i+j)));
+    faces.push(face);
+  }
+  geo.dispose();
+  if(faces.length!==20)throw Error('Incorrect twenty-face model');
+  return {vertices,faces};
+}
+
+function numberTexture(text,metal=false) {
+  const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,256,256);
+  ctx.fillStyle=metal?'#e8d3ac':'#f7e7c6';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font='bold 126px Georgia, serif';
+  ctx.fillText(String(text),128,135,236);
+  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+  return tex;
+}
+
+function makeGeometry(spec,id){
+  const {vertices,faces}=spec;
+  const buf=[];
+  const edgeMap=new Map();
+  const faceData=[];
+  const obj=new THREE.Group();
+  const metal=id==='poly';
+  for(let i=0;i<faces.length;i++){
+    let face=faces[i];
+    let normal=qFaceNormal(vertices,face);
+    const center=new THREE.Vector3();
+    for(const n of face)center.add(new THREE.Vector3(...vertices[n]));
+    center.divideScalar(face.length);
+    if(normal.dot(center)<0){face=[...face].reverse();normal.negate();}
+    faceData.push({normal,center,indices:face});
+    for(let j=0;j<face.length;j++){
+      const a=new THREE.Vector3(...vertices[face[j]]),b=new THREE.Vector3(...vertices[face[(j+1)%face.length]]);
+      buf.push(...center.toArray(),...a.toArray(),...b.toArray());
+      const i0=Math.min(face[j],face[(j+1)%face.length]),i1=Math.max(face[j],face[(j+1)%face.length]);
+      edgeMap.set(i0+':'+i1,[i0,i1]);
+    }
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.Float32BufferAttribute(buf,3));
+  geo.computeVertexNormals();
+  const material=new THREE.MeshPhysicalMaterial({
+    color:metal?0x756a56:0x254e42,
+    metalness:metal?.82:.18,roughness:metal?.31:.38,
+    clearcoat:metal?.22:.62,clearcoatRoughness:.29,
+    side:THREE.FrontSide
+  });
+  const mesh=new THREE.Mesh(geo,material);mesh.castShadow=true;mesh.receiveShadow=true;
+  obj.add(mesh);
+  const lines=[];
+  for(const [i0,i1] of edgeMap.values())lines.push(...vertices[i0],...vertices[i1]);
+  const edgeGeo=new THREE.BufferGeometry();edgeGeo.setAttribute('position',new THREE.Float32BufferAttribute(lines,3));
+  const edges=new THREE.LineSegments(edgeGeo,new THREE.LineBasicMaterial({color:metal?0xc1ad86:0x6e9a83,transparent:true,opacity:metal?.70:.53}));
+  obj.add(edges);
+  const decalGeometries=[],decalTextures=[];
+  if(id==='hundred'){
+    for(let i=0;i<faceData.length;i++){
+      const f=faceData[i];
+      const tex=numberTexture(i+1,false);decalTextures.push(tex);
+      const edgeSizes=f.indices.map((ind,j)=>new THREE.Vector3(...vertices[ind]).distanceTo(new THREE.Vector3(...vertices[f.indices[(j+1)%f.indices.length]])));
+      const size=Math.max(.12,Math.min(.42,Math.min(...edgeSizes)*.82));
+      const labelGeo=new THREE.PlaneGeometry(size,size);decalGeometries.push(labelGeo);
+      const label=new THREE.Mesh(labelGeo,new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+      label.position.copy(f.center).addScaledVector(f.normal,.008);
+      label.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),f.normal);
+      label.renderOrder=1;obj.add(label);
+    }
+  } else {
+    // The d20 is intentionally unnumbered; read the full 1–100 result below it.
+    for(let i=0;i<faceData.length;i++){
+      const f=faceData[i];
+      const geo2=new THREE.RingGeometry(.018,.026,16);decalGeometries.push(geo2);
+      const mark=new THREE.Mesh(geo2,new THREE.MeshBasicMaterial({color:0xe0ca9e,transparent:true,opacity:.76,side:THREE.DoubleSide}));
+      mark.position.copy(f.center).addScaledVector(f.normal,.01);
+      mark.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),f.normal);
+      mark.renderOrder=1;obj.add(mark);
+    }
+  }
+  return {group:obj,vertices,faces:faceData,geometry:geo,edgeGeometry:edgeGeo,material,decalGeometries,decalTextures};
+}
+
+function tabletopTexture(){
+  const c=document.createElement('canvas');c.width=c.height=512;
+  const x=c.getContext('2d');x.fillStyle='#373e32';x.fillRect(0,0,512,512);
+  let seed=24681357;
+  function rand(){seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;}
+  for(let i=0;i<6500;i++){
+    const v=Math.floor(45+rand()*34);
+    x.fillStyle='rgba('+v+','+(v+5)+','+(v-3)+','+(rand()*.17)+')';
+    x.fillRect(rand()*512,rand()*512,rand()*4+.3,rand()*2+.3);
+  }
+  for(let k=0;k<18;k++){
+    x.strokeStyle='rgba(19,23,18,.06)';x.lineWidth=.6;
+    x.beginPath();let y=rand()*512;x.moveTo(0,y);x.bezierCurveTo(180,y+rand()*12,360,y-rand()*9,512,y+rand()*8);x.stroke();
+  }
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1.4,1.4);return t;
+}
+
+function newWorld(spec){
+  const world=new CANNON.World({gravity:new CANNON.Vec3(0,-21,0)});
+  world.allowSleep=true;
+  world.solver.iterations=18;
+  world.defaultContactMaterial.friction=.53;
+  world.defaultContactMaterial.restitution=.18;
+  const floor=new CANNON.Body({mass:0,shape:new CANNON.Plane()});
+  floor.quaternion.setFromEuler(-Math.PI/2,0,0);floor.position.y=0;
+  world.addBody(floor);
+  function wall(x,z,hx,hz){
+    const w=new CANNON.Body({mass:0,shape:new CANNON.Box(new CANNON.Vec3(hx,.58,hz))});
+    w.position.set(x,.38,z);world.addBody(w);
+  }
+  wall(-2.5,0,.09,2.55);wall(2.5,0,.09,2.55);
+  wall(0,-2.5,2.55,.09);wall(0,2.5,2.55,.09);
+  const verts=spec.vertices.map(v=>new CANNON.Vec3(v[0],v[1],v[2]));
+  const shape=new CANNON.ConvexPolyhedron({vertices:verts,faces:spec.faces.map(face=>[...face.indices])});
+  const body=new CANNON.Body({mass:1.7,shape,linearDamping:.22,angularDamping:.26,allowSleep:true,sleepSpeedLimit:.1,sleepTimeLimit:.75});
+  world.addBody(body);
+  return {world,body};
+}
+
+class DieStage {
+  constructor(id){
+    this.id=id;
+    this.stage=$('stage-'+id);
+    this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0x1c241e);
+    this.scene.fog=new THREE.Fog(0x1c241e,9,17);
+    this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    this.renderer.shadowMap.enabled=true;
+    this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    this.renderer.outputColorSpace=THREE.SRGBColorSpace;
+    this.renderer.toneMapping=THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure=1.4;
+    this.stage.querySelector('.stage-fallback')?.remove();
+    this.stage.insertBefore(this.renderer.domElement,this.stage.firstChild);
+    this.camera=new THREE.PerspectiveCamera(36,1,.08,65);
+    this.yaw=.55;this.pitch=.48;this.distance=6.4;
+    this.updateCamera();
+    this.scene.add(new THREE.HemisphereLight(0xe9e2cb,0x1b2c20,2.2));
+    const key=new THREE.DirectionalLight(0xffdfb4,3.15);key.position.set(-3.8,6,4.8);
+    key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-4;key.shadow.camera.right=4;
+    key.shadow.camera.top=4;key.shadow.camera.bottom=-4;key.shadow.camera.near=.5;key.shadow.camera.far=17;
+    key.shadow.bias=-.0003;this.scene.add(key);
+    const rim=new THREE.DirectionalLight(0xbac9c1,.82);rim.position.set(4,3,-5);this.scene.add(rim);
+    const floor=new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.MeshStandardMaterial({map:tabletopTexture(),color:0xb0b09b,roughness:.98,metalness:0}));
+    floor.rotation.x=-Math.PI/2;floor.position.y=-.015;floor.receiveShadow=true;this.scene.add(floor);
+    const border=new THREE.Mesh(new THREE.BoxGeometry(5.25,.13,5.25),new THREE.MeshStandardMaterial({color:0x242b23,roughness:1}));
+    border.position.y=-.13;border.receiveShadow=true;this.scene.add(border);
+    this.spec=id==='hundred'?facetedHundred():polyTwenty();
+    this.visual=makeGeometry(this.spec,id);
+    this.scene.add(this.visual.group);
+    const phy=newWorld(this.visual);
+    this.world=phy.world;this.body=phy.body;
+    this.value=null;this.running=false;
+    this.body.position.set(0,1.17,0);this.body.sleep();
+    this.visual.group.position.set(0,1.17,0);
+    this.resizeObserver=window.ResizeObserver?new ResizeObserver(()=>this.resize()):null;
+    this.resizeObserver?.observe(this.stage);this.resize();
+    this.installPointerDrag();
+  }
+  updateCamera(){
+    const y=Math.sin(this.pitch)*this.distance;
+    const ground=Math.cos(this.pitch)*this.distance;
+    this.camera.position.set(ground*Math.sin(this.yaw),y,ground*Math.cos(this.yaw));
+    this.camera.lookAt(0,.65,0);
+  }
+  resetView(){this.yaw=.55;this.pitch=.48;this.distance=6.4;this.updateCamera();}
+  installPointerDrag(){
+    let dragging=false,px=0,py=0;
+    const canvas=this.renderer.domElement;
+    canvas.addEventListener('pointerdown',e=>{dragging=true;px=e.clientX;py=e.clientY;canvas.setPointerCapture?.(e.pointerId);});
+    canvas.addEventListener('pointermove',e=>{
+      if(!dragging)return;
+      this.yaw+=(e.clientX-px)*.006;
+      this.pitch=Math.max(.22,Math.min(1.22,this.pitch-(e.clientY-py)*.006));
+      px=e.clientX;py=e.clientY;this.updateCamera();
+    });
+    const stop=()=>dragging=false;
+    canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);
+    canvas.addEventListener('wheel',e=>{e.preventDefault();this.distance=Math.max(4.1,Math.min(9.4,this.distance+Math.sign(e.deltaY)*.4));this.updateCamera();},{passive:false});
+  }
+  resize(){
+    const rect=this.stage.getBoundingClientRect();
+    const w=Math.max(300,Math.round(rect.width));const h=Math.max(270,Math.round(rect.height));
+    this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();
+  }
+  setResult(n){
+    $('number-'+this.id).textContent=String(n).padStart(2,'0');
+    const t=validTarget();
+    $('target-'+this.id).textContent='Target '+t+'%';
+    const grade=$('grade-'+this.id);
+    grade.textContent=n<=t?'Within target':'Above target';
+    grade.className=n<=t?'pass':'fail';
+  }
+  prepareTarget(n){
+    const face=this.visual.faces[this.id==='hundred'?n-1:((n-1)%20)];
+    const normal=face.normal.clone().normalize();
+    const align=new THREE.Quaternion().setFromUnitVectors(normal,UP);
+    const spin=new THREE.Quaternion().setFromAxisAngle(UP,Math.random()*2*Math.PI);
+    this.endQ=spin.multiply(align);
+    const minY=Math.min(...this.visual.vertices.map(v=>new THREE.Vector3(...v).applyQuaternion(this.endQ).y));
+    this.endPos=new THREE.Vector3(0,-minY+.019,0);
+  }
+  throw(n){
+    this.value=n;
+    this.prepareTarget(n);
+    this.body.wakeUp();
+    this.body.position.set(-.8,2.85,-.4);
+    this.body.quaternion.setFromEuler(Math.random()*3,Math.random()*3,Math.random()*3);
+    this.body.velocity.set(2.9,-1.4,.7);
+    this.body.angularVelocity.set(10+Math.random()*5,12+Math.random()*4,8+Math.random()*4);
+    this.body.force.set(0,0,0);
+    this.body.torque.set(0,0,0);
+    this.running=true;
+    this.start=performance.now();this.settleStart=null;
+    $('number-'+this.id).textContent='—';
+    $('grade-'+this.id).textContent='Rolling…';$('grade-'+this.id).className='';
+    $('state-'+this.id).textContent='In motion';
+    this.stage.closest('.card').querySelectorAll('button.roll').forEach(b=>b.disabled=true);
+    if(reduced){this.settleImmediate();}
+  }
+  settleImmediate(){
+    this.running=false;
+    this.body.sleep();
+    this.visual.group.position.copy(this.endPos);
+    this.visual.group.quaternion.copy(this.endQ);
+    this.setResult(this.value);
+    $('state-'+this.id).textContent='Settled';
+    this.stage.closest('.card').querySelector('button.roll').disabled=false;
+  }
+  tick(now,dt){
+    if(this.running){
+      const elapsed=now-this.start;
+      if(elapsed<1550){
+        this.world.step(1/90,Math.min(dt,.05),5);
+        this.visual.group.position.set(this.body.position.x,this.body.position.y,this.body.position.z);
+        this.visual.group.quaternion.set(this.body.quaternion.x,this.body.quaternion.y,this.body.quaternion.z,this.body.quaternion.w);
+      }else{
+        if(this.settleStart===null){
+          this.settleStart=now;
+          this.fromQ=this.visual.group.quaternion.clone();this.fromPos=this.visual.group.position.clone();
+          this.body.sleep();
+          $('state-'+this.id).textContent='Settling';
+        }
+        const t=Math.min(1,(now-this.settleStart)/550);
+        const ease=1-Math.pow(1-t,3);
+        this.visual.group.quaternion.copy(this.fromQ).slerp(this.endQ,ease);
+        this.visual.group.position.copy(this.fromPos).lerp(this.endPos,ease);
+        if(t>=1){this.settleImmediate();}
+      }
+    }
+    this.renderer.render(this.scene,this.camera);
+  }
+}
+
+function validTarget(){
+  const t=Math.round(Number($('target').value));
+  return Number.isFinite(t)?Math.max(1,Math.min(100,t)):67;
+}
+function updateTarget(){
+  $('target').value=String(validTarget());
+  for(const die of instances.values()){
+    $('target-'+die.id).textContent='Target '+validTarget()+'%';
+    if(!die.running&&die.value!==null)die.setResult(die.value);
+  }
+}
+function choose(id){
+  chosen=id;
+  try{localStorage.setItem('sitota-physical-die-choice',id);}catch{}
+  for(const name of ['hundred','poly']){
+    const selected=name===id;
+    $('card-'+name).classList.toggle('selected',selected);
+    const button=document.querySelector('[data-pick="'+name+'"]');
+    button.setAttribute('aria-pressed',String(selected));
+    button.textContent=selected?'Selected':'Choose this';
+  }
+  $('selection').textContent='Your current pick: '+(id==='hundred'?'True hundred-sided':'Recognizable polyhedron')+' · Preference saved in this browser';
+}
+function rollBoth(n){const roll=n??uniformD100();for(const die of instances.values())die.throw(roll);}
+
+try{
+  for(const id of ['hundred','poly'])instances.set(id,new DieStage(id));
+  $('status').textContent='3D models ready. Roll each separately or roll the same d100 value on both.';
+  if(['hundred','poly'].includes(chosen))choose(chosen);
+  document.querySelectorAll('button[data-roll]').forEach(b=>b.addEventListener('click',()=>instances.get(b.dataset.roll).throw(uniformD100())));
+  document.querySelectorAll('button[data-pick]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.pick)));
+  $('roll-both').addEventListener('click',()=>rollBoth());
+  $('force-one').addEventListener('click',()=>rollBoth(1));
+  $('force-hundred').addEventListener('click',()=>rollBoth(100));
+  $('reset-camera').addEventListener('click',()=>{for(const d of instances.values())d.resetView();});
+  $('target').addEventListener('change',updateTarget);
+  window.addEventListener('resize',()=>{for(const d of instances.values())d.resize();});
+  rollBoth(43);
+  const loop=now=>{
+    const dt=Math.min(.07,(now-lastFrame)/1000);lastFrame=now;
+    for(const d of instances.values())d.tick(now,dt);
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}catch(e){
+  console.error('3D Dice Lab initialization failed',e);
+  $('status').textContent='3D renderer could not start: '+(e?.message||String(e))+'. Check WebGL support and CDN access.';
+  for(const id of ['hundred','poly']){
+    const stage=$('stage-'+id);
+    if(!stage.querySelector('canvas'))stage.querySelector('.stage-fallback').textContent='3D renderer unavailable';
+  }
+}
+window.physicalDiceLab={variants:['hundred','poly'],uniformD100,rollBoth,choose,models:{facetedHundred,polyTwenty}};
