@@ -986,7 +986,57 @@ function inspectedLocationHtml(f,loc){
  </section>`;
 }
 
-function fighterCard(f,cls){let injuries=HIT_LOCS.filter(l=>f.hp[l]<f.maxHp[l]);let worst=injuries.reduce((w,l)=>Math.max(w,zoneClass(f,l)==='major'?3:zoneClass(f,l)==='serious'?2:1),0);let status=f.status==='Defeated'?'Incapacitated':worst===0?'Uninjured':worst===1?'Minor wounds':worst===2?'Serious wound':'Major wound';let selected=S.sel?.[f.id];return `<article class="fighter ${cls} ${V.highlight?.id===f.id?'just-hit':''}"><div class="fighter-head"><span class="tag">${cls==='player'?'PLAYER ONE':(S.mode==='pvp'?'PLAYER TWO':'OPPONENT')}</span><h2>${esc(f.name)}</h2><div class="sub">${f.kind==='ai'?`Skill ${f.style}% · Utility AI`: `Combat Style ${f.style}%`} · ${esc(WEAPONS[f.weapon].name)}${f.shield!=='none'?' + '+SHIELDS[f.shield].name:''} · ${reachName(f)} reach</div><div class="tracks"><div class="track"><label>Action Points</label><b>${f.ap}<small> / ${f.apMax}</small></b><div class="dots">${Array.from({length:f.apMax},(_,i)=>`<i class="${i>=f.ap?'off':''}"></i>`).join('')}</div></div><div class="track"><label>Initiative</label><b>${f.initiative??'—'}</b><div style="font:11px system-ui,sans-serif;color:#87745c;margin-top:5px">${f.prone?'Prone · ':''}${f.braced?'Braced · ':''}${f.disarmed?'Disarmed · ':''}${f.skipAttack?'Attack restricted':'Ready'}</div></div></div></div><div class="figure-area"><div class="figure-title"><span>Hit locations / D20</span><span>AP ${f.armor} armour · DM ${damageModifierFor(f.str,f.siz).label}</span></div><div class="fig">${figureSvg(f)}${impactFeedbackHtml(f)}</div><div class="location-list">${HIT_LOCS.map(loc=>`<button type="button" class="loc ${f.hp[loc]<f.maxHp[loc]?'wounded':''} ${selected===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}" aria-label="Inspect ${loc}, ${f.hp[loc]} of ${f.maxHp[loc]} hit points" aria-pressed="${selected===loc}"><span>${loc.replace('Right ','R. ').replace('Left ','L. ')}</span><span>${f.hp[loc]}<small> / ${f.maxHp[loc]}</small></span></button>`).join('')}</div></div><div class="fighter-foot"><div class="condition ${f.status==='Defeated'?'danger':worst===0?'safe':''}">${status}${f.prone?' · Prone':''}${f.bleeding?' · Bleeding':''}${f.fatigue>0?' · '+FATIGUE_NAMES[f.fatigue]:''}${f.impaledWounds?.length?' · Impaled':''}${Object.keys(f.stunnedLocations||{}).length?' · Stunned':''}${f.blindedTurns?' · Blinded':''}${Object.keys(f.partialLimbs||{}).length?' · Partial limb function':''}</div>${injurySummaryHtml(f)}${selected?`<p>${selected}: ${f.hp[selected]}/${f.maxHp[selected]} HP · ${armourAt(f,selected)} AP</p>`:''}</div></article>`}
+function fighterCard(f,cls){
+ const injuries=HIT_LOCS.filter(loc=>f.hp[loc]<f.maxHp[loc]);
+ const worst=injuries.reduce((value,loc)=>Math.max(value,zoneClass(f,loc)==='major'?3:zoneClass(f,loc)==='serious'?2:1),0);
+ const status=f.status==='Defeated'?'Incapacitated':worst===0?'Uninjured':worst===1?'Minor wounds':worst===2?'Serious wound':'Major wound';
+ const selected=S.sel?.[f.id];
+ const label=cls==='player'?'PLAYER ONE':S.mode==='pvp'?'PLAYER TWO':'OPPONENT';
+ const conditions=[
+   f.prone?'Prone':'',f.bleeding?'Bleeding':'',f.fatigue>0?FATIGUE_NAMES[f.fatigue]:'',
+   f.impaledWounds?.length?'Impaled':'',Object.keys(f.stunnedLocations||{}).length?'Stunned':'',
+   f.blindedTurns?'Blinded':'',Object.keys(f.partialLimbs||{}).length?'Partial limb function':''
+ ].filter(Boolean);
+ const hitRows=HIT_LOCS.map(loc=>{
+   const severity=zoneClass(f,loc),wounded=f.hp[loc]<f.maxHp[loc];
+   const ratio=f.maxHp[loc]>0?Math.max(0,Math.min(100,Math.round(100*f.hp[loc]/f.maxHp[loc]))):0;
+   const name=loc.replace('Right ','R. ').replace('Left ','L. ');
+   return `<button type="button" class="loc ${severity} ${wounded?'wounded':''} ${selected===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}" aria-label="Inspect ${loc}, d20 ${HIT_SPANS[loc]}, ${f.hp[loc]} of ${f.maxHp[loc]} HP, ${severity}" aria-pressed="${selected===loc}">
+     <span class="loc-ident"><span class="loc-name">${name}</span><span class="loc-rolls">${HIT_SPANS[loc]}</span></span>
+     <span class="loc-hp">${f.hp[loc]}<small> / ${f.maxHp[loc]}</small></span>
+     <span class="loc-gauge" aria-hidden="true"><i style="width:${ratio}%"></i></span>
+   </button>`;
+ }).join('');
+ return `<article class="fighter ${cls} ${V.highlight?.id===f.id?'just-hit':''}">
+   <div class="fighter-head"><span class="tag">${label}</span><h2>${esc(f.name)}</h2>
+     <div class="fighter-profile">
+       <div class="profile-weapon"><span class="profile-label">Armed with</span>
+         <strong>${esc(WEAPONS[f.weapon].name)}${f.shield!=='none'?' · '+esc(SHIELDS[f.shield].name):''}</strong>
+         <small>${reachName(f)} reach</small></div>
+       <div class="profile-skill"><span class="profile-label">Combat Style</span><strong>${f.style}%</strong></div>
+     </div>
+     <div class="tracks">
+       <div class="track"><label>Action Points</label><b>${f.ap}<small> / ${f.apMax}</small></b>
+         <div class="dots">${Array.from({length:f.apMax},(_,i)=>`<i class="${i>=f.ap?'off':''}"></i>`).join('')}</div></div>
+       <div class="track"><label>Initiative</label><b>${f.initiative??'—'}</b>
+         <div style="font:11px system-ui,sans-serif;color:#b3a58c;margin-top:5px">${f.disarmed?'Disarmed':f.skipAttack?'Attack restricted':f.braced?'Braced':'Ready'}</div></div>
+     </div></div>
+   <div class="figure-area">
+     <div class="figure-title"><span>Hit locations / d20</span><span>DM ${damageModifierFor(f.str,f.siz).label}</span></div>
+     <div class="fig">${figureSvg(f)}${impactFeedbackHtml(f)}</div>
+     <div class="location-list">${hitRows}</div>
+     <div class="anatomy-key" aria-label="Wound severity key">
+       <span><i></i>Unhurt</span><span class="minor"><i></i>Minor</span>
+       <span class="serious"><i></i>Serious</span><span class="major"><i></i>Major</span>
+     </div>
+   </div>
+   <div class="fighter-foot">
+     <div class="condition ${f.status==='Defeated'?'danger':worst===0?'safe':''}">${status}${conditions.length?' · '+esc(conditions.join(' · ')):''}</div>
+     ${injurySummaryHtml(f)}
+     ${selected?inspectedLocationHtml(f,selected):''}
+   </div>
+ </article>`;
+}
 function arenaHtml(){
  const a=V.busy&&V.shown?.a?V.shown.a:S.fighters.a,b=V.busy&&V.shown?.b?V.shown.b:S.fighters.b;
  const info=currentExchange();
