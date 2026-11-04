@@ -310,7 +310,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .effects-ref-grid b{font:600 11px system-ui,sans-serif;color:#d6c4a7}
 .effects-ref-grid span{font:10px system-ui,sans-serif;color:#9f9585}
 </style>
-<link rel="stylesheet" href="practice-combat-ux.css?v=2">
+<link rel="stylesheet" href="practice-combat-ux.css?v=3">
 </head>
 <body>
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>Practice Combat</span><span class="hide-mobile">Independent demo · no account required</span><a href="#" id="homeLink">Reset</a></div></header>
@@ -715,6 +715,12 @@ function outcomeStrip(info){
   }else if(V.busy&&x){
     headline=x.rolling?'Rolling dice…':x.kind==='hurt'?(x.result||'Damage resolved'):x.kind==='miss'?'No damaging hit':x.kind==='final'?'The bout is over':x.result||x.primary||'Exchange resolved';
     sub='';
+    if(!x.rolling&&x.kind==='hurt'&&x.loc&&x.target){
+      const hitFighter=entry?.view?.[x.target];
+      const severity=hitFighter?zoneClass(hitFighter,x.loc):'ok';
+      headline=`${x.loc} · ${x.result||'Strike resolved'}`;
+      sub=hitFighter?(severity==='ok'?'No ongoing wound':severity==='minor'?'Minor wound':severity==='serious'?'Serious wound':'Major wound'):'';
+    }
     css=x.kind==='hurt'?'impact':x.kind==='effect'?'effect':'';
     mark=x.kind==='hurt'?'✕':x.kind==='defense'?'◇':'⚔';
   }else if(p?.kind==='reaction'){
@@ -781,14 +787,14 @@ function playBeat(){
     V.diceTimer=setInterval(cycle,72);
   }
   const hasDice=(V.stage.dice||[]).length>0;
-  const windup=V.reduced?0:V.quick?(hasDice?380:160):(hasDice?Math.min(2400,1020+V.stage.dice.length*260):320);
+  const windup=V.reduced?0:V.quick?(hasDice?220:80):(hasDice?Math.min(1450,650+V.stage.dice.length*200):190);
   V.timer=setTimeout(()=>{
     clearPresentationTimers();
     V.stage.rolling=false;V.visibleCount=(S.logs||[]).indexOf(e)+1;
     if(e.view)V.shown=clone(e.view);
     V.highlight=V.stage.target?{id:V.stage.target,loc:V.stage.loc}:null;
     render();
-    const dwell=V.reduced?0:V.quick?320:V.stage.kind==='hurt'?1580:V.stage.kind==='final'?1720:hasDice?1220:760;
+    const dwell=V.reduced?0:V.quick?190:V.stage.kind==='hurt'?980:V.stage.kind==='final'?1100:hasDice?760:440;
     V.timer=setTimeout(()=>{V.step++;playBeat();},dwell);
   },windup);
 }
@@ -875,6 +881,30 @@ function rangeReact(option){
 }
 function newHero(){const f=mkFighter('a',config.charname,'human',config.style,config.weapon,config.armor,config.evade,3,config.str,config.siz,config.shield);f.firstAid=config.firstAid;f.willpower=config.willpower;return f;};
 function newEnemy(wave){if(S.mode==='pvp')return mkFighter('b',config.pvpName,'human',config.pvpSkill,config.pvpWeapon,1,50,3,config.pvpStr,config.pvpSiz,config.pvpShield);const lvl=S.mode==='tutorial'?1:wave;const type=ENEMY_NAMES[Math.min(ENEMY_NAMES.length-1,Math.floor((wave-1)/2))];let weaponKeys=['dagger','sword','mace','spear','greatsword'];let weapon=weaponKeys[(wave+die(5)-1)%weaponKeys.length];if(wave===1)weapon='dagger';let skill=Math.min(105,43+(wave-1)*5+die(10));if(S.mode==='tutorial')skill=45;let armor=S.mode==='tutorial'?0:Math.min(5,Math.floor((wave-1)/3));let foe=mkFighter('b',type,'ai',skill,weapon,armor,Math.min(90,42+wave*3),wave,11+Math.min(5,Math.floor(wave/3)),12+Math.min(4,Math.floor(wave/4)),!WEAPONS[weapon].twoHanded&&wave>2&&(wave%3===0)?'heater':'none');foe.brawn=Math.min(95,46+3*wave);foe.endurance=Math.min(95,51+2*wave);return foe;}
+
+/* UI-only injury presentation; wound severity always comes from existing Mythras state. */
+function injurySummaryHtml(f){
+ const injured=HIT_LOCS.filter(loc=>f.hp[loc]<f.maxHp[loc]);
+ if(!injured.length)return '';
+ const score=loc=>({major:3,serious:2,minor:1,ok:0})[zoneClass(f,loc)]||0;
+ const loc=injured.sort((a,b)=>score(b)-score(a)||(f.hp[a]-f.hp[b]))[0];
+ const grade=zoneClass(f,loc);
+ const name=grade==='major'?'Major wound':grade==='serious'?'Serious wound':'Minor wound';
+ return `<div class="injury-summary ${grade}"><span>Most serious injury</span><strong>${esc(loc)} · ${name}</strong><small>${f.hp[loc]} / ${f.maxHp[loc]} HP</small></div>`;
+}
+function impactFeedbackHtml(f){
+ const loc=V.highlight?.id===f.id?V.highlight.loc:null;
+ if(!loc||!HIT_LOCS.includes(loc))return '';
+ const damage=f.lastDamage?.loc===loc?Math.max(0,Number(f.lastDamage.wound)||0):null;
+ const grade=zoneClass(f,loc);
+ const result=damage===null?'Location struck':damage===0?'No HP lost':`${damage} HP lost · ${grade==='ok'?'No remaining injury':grade+' wound'}`;
+ return `<div class="injury-impact" aria-label="${esc(loc)}: ${esc(result)}"><strong>${esc(loc)}</strong><span>${esc(result)}</span></div>`;
+}
+function finishingLocationSvg(loc){
+ if(!HIT_LOCS.includes(loc))return '';
+ return `<svg class="finish-location-figure" viewBox="0 0 240 360" role="img" aria-label="Finishing wound at ${esc(loc)}">${HIT_LOCS.map(part=>`<g class="${part===loc?'struck':'unstruck'}">${SHAPES[part]}</g>`).join('')}</svg>`;
+}
+
 function resultModalHtml(){
   if(!S.showEndModal||V.busy||!['between','over'].includes(S.phase))return '';
   const victory=S.winnerId==='a',result=victory?'VICTORY':'DEFEAT';
@@ -893,8 +923,12 @@ function resultModalHtml(){
     <div class="result-eyebrow">${S.mode==='pvp'?'DUEL':S.mode==='tutorial'?'TRAINING':'GAUNTLET'} · ROUND ${S.round}</div>
     <h2 id="resultTitle">${result}</h2><div class="result-winner">${esc(S.winner)} wins</div>
     <div class="result-rule"></div>
-    <div class="result-why" id="resultCause"><div class="result-eyebrow">${injury?'FINISHING INJURY':'BOUT ENDED BY'}</div>
-      <strong>${esc(injuryTitle)}</strong><span>${esc(injuryDetail)}</span><small>${esc(consequence)}</small></div>
+    <div class="result-finish ${injury?'has-location':''}" id="resultCause">
+      ${injury?`<div class="result-figure">${finishingLocationSvg(cause.location)}</div>`:''}
+      <div class="result-why"><div class="result-eyebrow">${injury?'FINISHING INJURY':'BOUT ENDED BY'}</div>
+        <strong>${esc(injuryTitle)}</strong><span>${esc(injuryDetail)}</span><small>${esc(consequence)}</small></div>
+    </div>
+    <div class="result-meta">Encounter ended in round ${S.round}${injury?' · Final hit to '+esc(cause.location):''}</div>
     ${['normal','hardcore'].includes(S.mode)?`<div class="result-streak">Streak <strong>${S.wins}</strong></div>`:''}
     <div class="result-actions">${next&&S.mode==='hardcore'&&fieldAidCandidates(S.fighters.a).length?'<button type="button" class="result-secondary" data-act="openAid">First Aid</button>':''}${nextButton}<button type="button" class="result-secondary" data-act="dismissResult">View battlefield</button></div>
   </section></div>`;
@@ -920,7 +954,7 @@ function modeName(m){return {tutorial:'Guided Tutorial',normal:'Normal Gauntlet'
 function setupHtml(){let modes=[['tutorial','01','Guided Tutorial','One beginner-friendly bout with reminders about Mythras decisions.'],['normal','02','Normal Gauntlet','Infinite escalating enemies. Your wounds reset after each win.'],['hardcore','03','Hardcore Gauntlet','Same escalating enemies. Wounds and injuries persist between fights.'],['pvp','04','Local PvP','Two players take turns on one screen; online matching comes later.']];return `<div class="setup"><h2>Choose your challenge</h2><p class="intro">A working combat loop with selectable reactions, hit locations, a tactical computer opponent, and a local streak board.</p><div class="modes">${modes.map(([k,n,t,d])=>`<button class="mode ${config.mode===k?'on':''}" data-act="mode" data-val="${k}" aria-pressed="${config.mode===k}"><span class="n">MODE ${n}</span><strong>${t}</strong><small>${d}</small></button>`).join('')}</div><div class="setup-bottom"><div class="formcard"><div class="setup-fighter-intro"><h3>Practice fighter</h3><p>${esc(config.charname)} · ${esc(WEAPONS[config.weapon].name)} · ${config.style}% Combat Style</p></div><details class="fighter-customize"><summary>Customize fighter <span>Skills, weapons and attributes</span></summary><div class="formgrid"><label>Username<input id="username" maxlength="30" value="${esc(config.username)}"></label><label>Character name<input id="charname" maxlength="45" value="${esc(config.charname)}"></label><label>Combat Style %<input id="style" type="number" min="20" max="110" value="${config.style}"></label><label>Evade %<input id="evade" type="number" min="20" max="110" value="${config.evade}"></label><label>Armor AP (all locations)<input id="armor" type="number" min="0" max="6" value="${config.armor}"></label><label>Weapon<select id="weapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.weapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Shield<select id="shield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.shield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>First Aid % (sample)<input id="firstAid" type="number" min="1" max="100" value="${config.firstAid}"></label><label>Willpower % (sample)<input id="willpower" type="number" min="1" max="110" value="${config.willpower}"></label><label>Strength (STR)<input id="str" type="number" min="5" max="20" value="${config.str}"></label><label>Size (SIZ)<input id="siz" type="number" min="5" max="20" value="${config.siz}"></label>${config.mode==='pvp'?`<label>Second player name<input id="pvpName" maxlength="45" value="${esc(config.pvpName)}"></label><label>Second player Combat Style %<input id="pvpSkill" type="number" min="20" max="110" value="${config.pvpSkill}"></label><label>Second player weapon<select id="pvpWeapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.pvpWeapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Second player shield<select id="pvpShield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.pvpShield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>Second player STR<input id="pvpStr" type="number" min="5" max="20" value="${config.pvpStr}"></label><label>Second player SIZ<input id="pvpSiz" type="number" min="5" max="20" value="${config.pvpSiz}"></label>`:''}</div><p class="formhint">These are sample statistics, not an imported character. Armour AP is uniform across seven locations. Two-handed weapons cannot equip a shield.</p></details><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px"><button class="cta" data-act="start">${config.mode==='pvp'?'Start Duel':'Enter Training Grounds'} &nbsp;→</button><span class="modehint">Runs entirely on your device.</span></div></div><div class="setup-right"><div class="statbox"><strong>Gauntlet leaderboard</strong><p>Stored in this browser, not published online. Rankings count consecutive opponents defeated.</p><div class="badges"><button class="lbtab ${S.lbMode==='normal'?'on':''}" data-act="lbmode" data-val="normal">Normal</button><button class="lbtab ${S.lbMode==='hardcore'?'on':''}" data-act="lbmode" data-val="hardcore">Hardcore</button></div>${scoresHtml(S.lbMode)}</div><details class="statbox rules-disclosure"><summary>The rules we're testing</summary><div class="badges"><span class="notechip">d100 Skill checks</span><span class="notechip">d20 Hit location</span><span class="notechip">Parry by size</span><span class="notechip">Shields &amp; wards</span><span class="notechip">Damage modifier</span><span class="notechip">Armour initiative</span><span class="notechip">Action points</span><span class="notechip">Special Effects</span><span class="notechip">Optional weapon reach</span><span class="notechip">Serious/Major wounds</span></div><p>Some results and effects remain simplified for this prototype, including full fatigue, weapon durability, and shield attacks. Actual Forge integration would reuse your existing character data and sourcebook-verified engine.</p></details></div></div></div>`}
 function zoneClass(f,loc){const x=f.hp[loc],m=f.maxHp[loc];return x<=-m?'major':x<=0?'serious':x<m?'minor':'ok'}
 function figureSvg(f){const sel=S.sel?.[f.id];return `<svg viewBox="0 0 240 360" role="img" aria-label="Clickable hit-location figure for ${esc(f.name)}">${HIT_LOCS.map(loc=>`<g class="zone ${zoneClass(f,loc)} ${V.highlight?.id===f.id&&V.highlight.loc===loc?'impact-zone':''} ${sel===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}"><title>${loc} · ${f.hp[loc]}/${f.maxHp[loc]} HP · ${f.armor} AP armour</title>${SHAPES[loc]}</g>`).join('')}</svg>`}
-function fighterCard(f,cls){let injuries=HIT_LOCS.filter(l=>f.hp[l]<f.maxHp[l]);let worst=injuries.reduce((w,l)=>Math.max(w,zoneClass(f,l)==='major'?3:zoneClass(f,l)==='serious'?2:1),0);let status=f.status==='Defeated'?'Incapacitated':worst===0?'Uninjured':worst===1?'Minor wounds':worst===2?'Serious wound':'Major wound';let selected=S.sel?.[f.id];return `<article class="fighter ${cls} ${V.highlight?.id===f.id?'just-hit':''}"><div class="fighter-head"><span class="tag">${cls==='player'?'PLAYER ONE':(S.mode==='pvp'?'PLAYER TWO':'OPPONENT')}</span><h2>${esc(f.name)}</h2><div class="sub">${f.kind==='ai'?`Skill ${f.style}% · Utility AI`: `Combat Style ${f.style}%`} · ${esc(WEAPONS[f.weapon].name)}${f.shield!=='none'?' + '+SHIELDS[f.shield].name:''} · ${reachName(f)} reach</div><div class="tracks"><div class="track"><label>Action Points</label><b>${f.ap}<small> / ${f.apMax}</small></b><div class="dots">${Array.from({length:f.apMax},(_,i)=>`<i class="${i>=f.ap?'off':''}"></i>`).join('')}</div></div><div class="track"><label>Initiative</label><b>${f.initiative??'—'}</b><div style="font:11px system-ui,sans-serif;color:#87745c;margin-top:5px">${f.prone?'Prone · ':''}${f.braced?'Braced · ':''}${f.disarmed?'Disarmed · ':''}${f.skipAttack?'Attack restricted':'Ready'}</div></div></div></div><div class="figure-area"><div class="figure-title"><span>Hit locations / D20</span><span>AP ${f.armor} armour · DM ${damageModifierFor(f.str,f.siz).label}</span></div><div class="fig">${figureSvg(f)}</div><div class="location-list">${HIT_LOCS.map(loc=>`<button type="button" class="loc ${f.hp[loc]<f.maxHp[loc]?'wounded':''} ${selected===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}" aria-label="Inspect ${loc}, ${f.hp[loc]} of ${f.maxHp[loc]} hit points" aria-pressed="${selected===loc}"><span>${loc.replace('Right ','R. ').replace('Left ','L. ')}</span><span>${f.hp[loc]}<small> / ${f.maxHp[loc]}</small></span></button>`).join('')}</div></div><div class="fighter-foot"><div class="condition ${f.status==='Defeated'?'danger':worst===0?'safe':''}">${status}${f.prone?' · Prone':''}${f.bleeding?' · Bleeding':''}${f.fatigue>0?' · '+FATIGUE_NAMES[f.fatigue]:''}${f.impaledWounds?.length?' · Impaled':''}${Object.keys(f.stunnedLocations||{}).length?' · Stunned':''}${f.blindedTurns?' · Blinded':''}${Object.keys(f.partialLimbs||{}).length?' · Partial limb function':''}</div>${selected?`<p>${selected}: ${f.hp[selected]}/${f.maxHp[selected]} HP · ${armourAt(f,selected)} AP</p>`:''}</div></article>`}
+function fighterCard(f,cls){let injuries=HIT_LOCS.filter(l=>f.hp[l]<f.maxHp[l]);let worst=injuries.reduce((w,l)=>Math.max(w,zoneClass(f,l)==='major'?3:zoneClass(f,l)==='serious'?2:1),0);let status=f.status==='Defeated'?'Incapacitated':worst===0?'Uninjured':worst===1?'Minor wounds':worst===2?'Serious wound':'Major wound';let selected=S.sel?.[f.id];return `<article class="fighter ${cls} ${V.highlight?.id===f.id?'just-hit':''}"><div class="fighter-head"><span class="tag">${cls==='player'?'PLAYER ONE':(S.mode==='pvp'?'PLAYER TWO':'OPPONENT')}</span><h2>${esc(f.name)}</h2><div class="sub">${f.kind==='ai'?`Skill ${f.style}% · Utility AI`: `Combat Style ${f.style}%`} · ${esc(WEAPONS[f.weapon].name)}${f.shield!=='none'?' + '+SHIELDS[f.shield].name:''} · ${reachName(f)} reach</div><div class="tracks"><div class="track"><label>Action Points</label><b>${f.ap}<small> / ${f.apMax}</small></b><div class="dots">${Array.from({length:f.apMax},(_,i)=>`<i class="${i>=f.ap?'off':''}"></i>`).join('')}</div></div><div class="track"><label>Initiative</label><b>${f.initiative??'—'}</b><div style="font:11px system-ui,sans-serif;color:#87745c;margin-top:5px">${f.prone?'Prone · ':''}${f.braced?'Braced · ':''}${f.disarmed?'Disarmed · ':''}${f.skipAttack?'Attack restricted':'Ready'}</div></div></div></div><div class="figure-area"><div class="figure-title"><span>Hit locations / D20</span><span>AP ${f.armor} armour · DM ${damageModifierFor(f.str,f.siz).label}</span></div><div class="fig">${figureSvg(f)}${impactFeedbackHtml(f)}</div><div class="location-list">${HIT_LOCS.map(loc=>`<button type="button" class="loc ${f.hp[loc]<f.maxHp[loc]?'wounded':''} ${selected===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}" aria-label="Inspect ${loc}, ${f.hp[loc]} of ${f.maxHp[loc]} hit points" aria-pressed="${selected===loc}"><span>${loc.replace('Right ','R. ').replace('Left ','L. ')}</span><span>${f.hp[loc]}<small> / ${f.maxHp[loc]}</small></span></button>`).join('')}</div></div><div class="fighter-foot"><div class="condition ${f.status==='Defeated'?'danger':worst===0?'safe':''}">${status}${f.prone?' · Prone':''}${f.bleeding?' · Bleeding':''}${f.fatigue>0?' · '+FATIGUE_NAMES[f.fatigue]:''}${f.impaledWounds?.length?' · Impaled':''}${Object.keys(f.stunnedLocations||{}).length?' · Stunned':''}${f.blindedTurns?' · Blinded':''}${Object.keys(f.partialLimbs||{}).length?' · Partial limb function':''}</div>${injurySummaryHtml(f)}${selected?`<p>${selected}: ${f.hp[selected]}/${f.maxHp[selected]} HP · ${armourAt(f,selected)} AP</p>`:''}</div></article>`}
 function arenaHtml(){
  const a=V.busy&&V.shown?.a?V.shown.a:S.fighters.a,b=V.busy&&V.shown?.b?V.shown.b:S.fighters.b;
  const info=currentExchange();
