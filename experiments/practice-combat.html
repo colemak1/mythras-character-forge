@@ -310,7 +310,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .effects-ref-grid b{font:600 11px system-ui,sans-serif;color:#d6c4a7}
 .effects-ref-grid span{font:10px system-ui,sans-serif;color:#9f9585}
 </style>
-<link rel="stylesheet" href="practice-combat-ux.css?v=4">
+<link rel="stylesheet" href="practice-combat-ux.css?v=5">
 </head>
 <body>
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>Practice Combat</span><span class="hide-mobile">Independent demo · no account required</span><a href="#" id="homeLink">Reset</a></div></header>
@@ -568,7 +568,7 @@ function rollPrompt(actor){
 // Presentation is separate from the rules state: rolls resolve immediately,
 // then the screen unveils the recorded, immutable events in order.
 const V={capturing:false,busy:false,quick:false,reduced:!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches),
-  events:[],step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,timer:null,diceTimer:null,showLog:false};
+  events:[],step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,timer:null,diceTimer:null,showLog:false,openChronicle:new Set()};
 function clearPresentationTimers(){if(V.timer)clearTimeout(V.timer);if(V.diceTimer)clearInterval(V.diceTimer);V.timer=V.diceTimer=null;}
 function makeDie(sides,value,role='',variant='',display=''){return {sides,value,role,variant,display:display||String(value)}}
 function d100Dice(value){const n=Math.max(1,Math.min(100,Number(value)||1));const tens=n===100?0:Math.floor(n/10);const ones=n%10;return [makeDie(10,tens,'10s','percent',tens===0?'00':String(tens*10)),makeDie(10,ones,'1s','percent',String(ones))]}
@@ -758,13 +758,60 @@ function conciseLog(entry){
   if(/Hit Location/.test(entry.title)){const m=/: ([A-Za-z ]+)\./.exec(body);return m?m[1]:body;}
   return body;
 }
-function combatHistory(){
-  const logs=V.busy?S.logs.slice(0,V.visibleCount):S.logs;
-  const recent=logs.slice(-3);
-  const summaryRows=recent.map(l=>`<div class="recent-entry"><span>${esc(l.title)}</span><small>${esc(conciseLog(l))}</small></div>`).join('');
-  return `<section class="combat-history"><div class="history-header"><h3>Combat log</h3><button type="button" class="history-toggle" data-act="togglelog" aria-expanded="${V.showLog?'true':'false'}">${V.showLog?'Hide full log':'Full log'} · ${logs.length}</button></div>
-   ${V.showLog?`<div class="log" id="combatLog">${logs.map(l=>`<div class="entry ${l.kind}"><div class="t">${esc(l.title)}</div><p>${esc(l.body)}</p>${l.detail?`<small>${esc(l.detail)}</small>`:''}</div>`).join('')}</div>`:`<div class="recent-list">${summaryRows||'<div class="recent-empty">Combat events will appear here.</div>'}</div>`}</section>`;
+
+/* UX pass 05: chronicle presentation. The original event record remains authoritative. */
+function chronicleSummary(entry) {
+ const title=String(entry.title||'Combat update'),body=String(entry.body||'');
+ const hit=/^(.+?) hits (Head|Chest|Abdomen|Right Arm|Left Arm|Right Leg|Left Leg)$/i.exec(title);
+ if(hit) {
+   const damage=/=\s*(\d+)\s+HP lost/i.exec(body);
+   return {headline:hit[1]+' strikes '+hit[2],summary:damage?(Number(damage[1])===0?'No HP lost':damage[1]+' HP lost'):'Damage resolved'};
+ }
+ const action=/^(.+?) (attacks|parries|evades)$/i.exec(title);
+ if(action) {
+   const grade=/\b(CRITICAL|SUCCESS|FAILURE|FUMBLE)\b/i.exec(body);
+   const roll=/\b(\d{1,3})\s+(?:against|vs)\b/i.exec(body);
+   return {headline:title,summary:(grade?grade[1].toLowerCase():'Roll resolved')+(roll?' · d100 '+roll[1]:'')};
+ }
+ if(title==='Hit Location'||title==='Choose Location') {
+   const loc=entry.meta?.location;
+   const roll=entry.meta?.roll;
+   return {headline:title==='Hit Location'?'Hit location rolled':'Hit location chosen',
+     summary:loc?(loc+(roll!=null?' · d20 '+roll:'')):conciseLog(entry)};
+ }
+ if(/^FIGHT ENDS$/i.test(title)) {
+   const winner=/^(.+?) wins\./i.exec(body);
+   return {headline:'Fight ends',summary:winner?winner[1]+' wins':body};
+ }
+ const concise=String(conciseLog(entry)||'').replace(/\s+/g,' ').trim();
+ return {headline:title,summary:concise.length>135?concise.slice(0,132)+'…':concise};
 }
+function chronicleEntryHtml(entry){
+ const view=chronicleSummary(entry);
+ const expanded=V.openChronicle.has(Number(entry.id));
+ const id=Number(entry.id)||0;
+ const kind=entry.kind==='hurt'?'hurt':entry.kind==='hit'?'hit':'plain';
+ const meta=entry.detail?'<p class="chronicle-source">'+esc(entry.detail)+'</p>':'';
+ return '<details class="chronicle-entry '+kind+'" data-log-id="'+id+'"'+(expanded?' open':'')+'>'+
+   '<summary><span class="chronicle-main"><strong>'+esc(view.headline)+'</strong>'+
+   (view.summary?'<span class="chronicle-summary">'+esc(view.summary)+'</span>':'')+
+   '</span><span class="chronicle-disclose">Details</span></summary>'+
+   '<div class="chronicle-mechanics"><span class="chronicle-mechanics-label">Recorded result</span>'+
+   '<p>'+esc(entry.body||'No additional calculation recorded.')+'</p>'+meta+'</div></details>';
+}
+function combatHistory(){
+ // Do not reveal events before their presentation beat has finished.
+ const logs=V.busy?S.logs.slice(0,V.visibleCount):S.logs;
+ const shown=V.showLog?logs:logs.slice(-3);
+ return '<section class="combat-history" aria-label="Combat chronicle">'+
+   '<div class="history-header"><div><h3>Combat chronicle</h3><p class="history-intro">What happened, with the calculations one click away.</p></div>'+
+   '<button type="button" class="history-toggle" data-act="togglelog" aria-expanded="'+(V.showLog?'true':'false')+'">'+
+   (V.showLog?'Latest exchanges':'View full history')+' · '+logs.length+'</button></div>'+
+   '<div class="chronicle-list '+(V.showLog?'is-full':'is-recent')+'">'+
+   (shown.length?shown.map(chronicleEntryHtml).join(''):'<div class="chronicle-empty">Your first exchange will appear here.</div>')+
+   '</div></section>';
+}
+
 function playCaptured(fn,reset=false){
   clearPresentationTimers();
   const before=S.fighters?clone(S.fighters):null,prior=reset?0:(S.logs?.length||0);
@@ -1045,10 +1092,10 @@ function arenaHtml(){
  <h2>Round ${S.round} <span style="color:#a88b5b;font-size:15px">/ Cycle ${S.cycle}</span></h2>
  <div class="roundbar"><div class="side">${esc(a.name)} · ${a.initiative??'—'} INI</div><div class="vs">✧ &nbsp; VS &nbsp; ✧<div style="font:700 10px system-ui,sans-serif;color:#e9c68e;margin-top:5px">${S.disengaged?'SEPARATED · '+S.gapMetres+'m':engagementInfo().active?(S.engagement==='short'?'SHORT REACH':'LONG REACH'):'MATCHED REACH'}</div></div><div class="side">${esc(b.name)} · ${b.initiative??'—'} INI</div></div></div>
  <div class="exchange-board">${exchangeHalf('a',info)}${exchangeHalf('b',info)}</div>
- ${S.phase==='fight'&&!V.busy&&!R?`<section class="decision-panel" aria-label="Current combat decision"><div class="decision-kicker">Your next decision</div>${decisionHtml()}<p class="choice-help" id="choiceHelp" role="status">${esc(decisionHelpPrompt())}</p></section>`:''}
+ ${S.mode==='tutorial'&&R&&!V.busy?tutorialGuideHtml():''}
+ ${S.phase==='fight'&&!V.busy&&!R?`<section class="decision-panel" aria-label="Current combat decision"><div class="decision-kicker">Your next decision</div>${decisionHtml()}${S.mode==='tutorial'?tutorialGuideHtml():`<p class="choice-help" id="choiceHelp" role="status">${esc(decisionHelpPrompt())}</p>`}</section>`:''}
  ${outcomeStrip(info)}
  ${S.phase==='between'||S.phase==='over'?`<div class="center-content"><div class="actionbox">${actionHtml()}</div></div>`:''}
- ${S.mode==='tutorial'&&S.phase==='fight'?`<details class="tutorial-why"><summary>Combat tip</summary><p>${esc(tutorialHint())}</p></details>`:''}
  <div class="statusbar">${S.phase==='fight'?`${S.pending?'Response needed':`Turn: ${esc(S.fighters[S.order[S.turnIndex]]?.name||'—')}`}`:'Encounter complete'}</div>
  </section>${fighterCard(b,'enemy')}${combatHistory()}</div>`;
 }
@@ -1087,6 +1134,50 @@ function decisionHelpPrompt(){
  if(p?.kind==='location')return 'Choose the location for your attack.';
  if(p?.kind==='range')return 'Choose how to respond to the change in range.';
  return 'Select an action to see its details. Additional options are under More actions.';
+}
+
+
+/* Short just-in-time guidance only in Guided Tutorial mode. */
+function tutorialGuideHtml(){
+ if(S.mode!=='tutorial'||S.phase!=='fight'||V.busy)return '';
+ let heading='',prompt='',reason='';
+ if(R) {
+   const label=String(R.label||'');
+   if(/initiative/i.test(label)){
+     heading='Set the order';prompt='Roll the d10 to establish who acts first.';
+     reason='The combat engine adds your existing initiative modifiers after the roll.';
+   }else if(/hit location|location\s*[·:]|d20/i.test(label)){
+     heading='Find the hit location';prompt='Roll the d20 to find which body region was struck.';
+     reason='The body chart shows the seven locations and their corresponding d20 ranges.';
+   }else if(/damage/i.test(label)){
+     heading='Roll damage';prompt='Roll the requested damage dice to resolve this strike.';
+     reason='The simulator applies the recorded damage and displays which location loses HP.';
+   }else{
+     heading='Make your roll';prompt='Use the Roll button on the correct fighter’s side.';
+     reason='The result is compared against the relevant skill or resistance in this exchange.';
+   }
+ }else if(S.pending?.kind==='reaction'){
+   heading='Defend against the attack';prompt='Parry, Evade, or save your Action Points.';
+   reason='A parry can reduce incoming damage. Evade can avoid the strike, but leaves you prone.';
+ }else if(S.pending?.kind==='effect'){
+   heading='Spend your advantage';prompt='Choose an available Special Effect before the strike is fully resolved.';
+   reason='A better success grade can create tactical choices beyond simply dealing damage.';
+ }else if(S.pending?.kind==='location'){
+   heading='Choose a body region';prompt='Pick the location you want the attack to target.';
+   reason='Each location has its own HP. The location list shows their current condition.';
+ }else if(S.pending?.kind==='range'){
+   heading='Respond to the movement';prompt='Allow the range change, oppose it, or intercept.';
+   reason='Different weapons have different reach. The range decision changes the engagement.';
+ }else if(S.pending?.kind==='ward'){
+   heading='Choose shield coverage';prompt='Select the body locations covered by your shield.';
+   reason='Covered locations benefit from the existing passive ward when a strike lands.';
+ }else{
+   heading='Your decision';prompt='Choose a main action, or open More actions for other tactics.';
+   reason='Action Points are used for both attacks and many reactions; think about what to preserve.';
+ }
+ return '<aside class="tutorial-guide" aria-label="Guided combat help">'+
+   '<div class="tutorial-guide-main"><strong>'+esc(heading)+'</strong><span>'+esc(prompt)+'</span></div>'+
+   '<details class="tutorial-guide-details"><summary>Why?</summary><p>'+esc(reason)+'</p></details></aside>';
 }
 
 function tutorialHint(){let p=S.pending;if(p?.kind==='reaction')return 'Choose weapon parry, shield parry, Evade, or conserve AP. Weapon and shield Size determine damage reduction.';if(p?.kind==='effect')return 'A better success grade can grant Special Effects before damage is resolved.';if(p?.kind==='range')return 'The defender may allow the Change Range action, oppose with Evade, or intercept by attacking against the mover’s Evade. Closing succeeds even if an interception hits.';if(p?.kind==='location')return 'Choose Location lets you target a normally reachable area of the opponent rather than roll the d20 location die.';return 'Each combatant gets one proactive action in initiative order per cycle. Reactive actions also cost an Action Point. Track both fighters’ location HP.'}
@@ -1702,6 +1793,13 @@ $('#root').addEventListener('keydown',e=>{
     decoratedClick({target:zone});
   }
 });
+$('#root').addEventListener('toggle',e=>{
+ const item=e.target;
+ if(!item?.classList?.contains('chronicle-entry'))return;
+ const id=Number(item.dataset.logId);
+ if(!id)return;
+ if(item.open)V.openChronicle.add(id);else V.openChronicle.delete(id);
+},true);
 $('#root').addEventListener('click',decoratedClick);$('#homeLink').addEventListener('click',e=>{e.preventDefault();clearPresentationTimers();V.busy=false;V.stage=null;R=null;S={phase:'setup',lbMode:'normal'};render()});
 // Expose transparent inspection helpers for prototype debugging and automated tests.
 window.prototypeCombat={moveEngage,limbDisabled,damageModifierFor,armourInitiativePenalty,parryAbsorption,SHIELDS,pendingRoll:()=>R?({id:R.id,actor:R.actor,label:R.label,defs:R.defs}):null,state:()=>S,presentation:()=>V,skipPresentation,rollSkill,HIT_TABLE,zoneClass,engagementInfo,canAttackBody,canParryAtReach,proposedRange,beginChangeRange,rangeReact,availableEffects,effectCatalog:()=>SPECIAL_EFFECT_CATALOG,armourAt,guardWeapon,impaleGrade,effectiveSkill,roundBloodLoss,beginWithdrawImpale,finishWithdrawImpale,chooseImpaleDamage,refreshFighterAP,FATIGUE_NAMES,registerWound,fieldAidCandidates,beginFieldAid,reopenBandage,disadvantagedForSurrender};
