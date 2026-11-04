@@ -1084,3 +1084,51 @@ button:focus-visible,.loc:focus-visible {
  .tutorial-guide { padding:13px 15px; }
  .decision-panel .tutorial-guide { margin:15px -15px -18px; padding:14px 15px; }
 }
+
+
+/* UX pass 06 — direction, pacing and focus with no new decorative surfaces. */
+.pacebutton {
+  white-space:nowrap;
+  letter-spacing:0;
+}
+.pacebutton[aria-pressed="true"] {
+  border-color:#817158;
+  color:#f0dfc4;
+}
+.decision-panel .decision-kicker {
+  color:#826747;
+  letter-spacing:.08em;
+  font-size:11px;
+}
+.decision-panel .choice:focus-visible,
+.exchange-half .roll-now:focus-visible,
+.strip-skip:focus-visible {
+  outline:2px solid #a68151;
+  outline-offset:3px;
+}
+.decision-panel,
+.roll-await .roll-now {
+  scroll-margin-block:18px;
+}
+.outcome-strip .strip-skip {
+  font-size:12px;
+  text-transform:none;
+  font-weight:600;
+  letter-spacing:0;
+  padding:9px 12px;
+}
+.chronicle-list.is-recent .chronicle-entry:first-child,
+.chronicle-list.is-full .chronicle-entry:first-child {
+  background:#292e28;
+  border-left:2px solid #a68d68;
+}
+.chronicle-list .chronicle-entry:first-child .chronicle-main strong {
+  color:#f2dfc1;
+}
+.chronicle-list .chronicle-entry:first-child .chronicle-summary {
+  color:#e2d5c1;
+}
+@media(max-width:740px) {
+  .outcome-strip { flex-wrap:wrap; }
+  .outcome-strip .strip-skip { margin-left:auto; }
+}
