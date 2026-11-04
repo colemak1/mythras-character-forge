@@ -536,4 +536,35 @@ api.render();
 check('Initiative of next encounter stays free of stale damage',
   !root.innerHTML.includes('strikes Right Arm · 4 HP lost'));
 
+
+/* UX pass 07: consequence wording reflects the result, not just the roll type. */
+const eBleedResist={id:3351,title:'Bleed',body:recapTarget+' Endurance 17: the bleed is avoided.',kind:'hurt'};
+const eBleedStart={id:3352,title:'Bleed',body:recapTarget+' Endurance 98: bleeding begins; lose one Fatigue level.',kind:'hurt'};
+const eStunResist={id:3353,title:'Stun Location',body:recapTarget+' resists the stun.',kind:'hurt'};
+const eStunApplied={id:3354,title:'Stun Location',body:recapTarget+"'s Right Arm is stunned for 2 turns.",kind:'hurt'};
+const eBash={id:3355,title:'Bash',body:recapActor+' knocks '+recapTarget+' 3m back. Knockback: 3m.',kind:'hit'};
+state.logs=[eAttack,eHit,eBleedResist,eStunResist];
+api.render();
+check('Resisted bleed and stun are reported as resisted',
+  root.innerHTML.includes('Bleed resisted')&&root.innerHTML.includes('Stun resisted'));
+state.logs=[eAttack,eHit,eBleedStart,eStunApplied];
+api.render();
+check('Applied bleed and stun are reported as consequences',
+  root.innerHTML.includes('Bleeding begins')&&root.innerHTML.includes('Location stunned'));
+state.logs=[eAttack,eHit,eBash];
+api.render();
+check('Bash outcome reports the actual knockback distance',
+  root.innerHTML.includes('Knocked back 3m'));
+state.logs=[eAttack,eHit,
+ {id:3356,title:'Wound Resisted',body:'Additional wound consequence resisted.',kind:'system'}];
+api.render();
+check('Wound resistance is clearly distinguished from wound severity',
+  root.innerHTML.includes('Serious wound')&&
+  root.innerHTML.includes('Additional wound effect resisted'));
+state.logs=[eAttack,eHit,
+ {id:3357,title:'Sunder',body:'Armour reduced.',kind:'hit'}];
+api.render();
+check('Damage to armour is noted as a separate consequence',
+  root.innerHTML.includes('Armour damaged'));
+
 console.log('Practice Combat UX smoke checks passed.');
