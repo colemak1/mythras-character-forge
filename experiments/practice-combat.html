@@ -1426,7 +1426,9 @@ function conditionInsightsHtml(f){
  if(f.impaledWeapon)add('Weapon embedded','Your weapon is lodged in an opponent; withdraw it before using it again.');
  if(f.impaledWounds?.length){
    const locs=[...new Set(f.impaledWounds.map(w=>w.loc).filter(Boolean))];
-   add('Impaled',(locs.length?locs.join(', ')+' · ':'')+'Embedded weapon increases skill difficulty.');
+   const grade=impaleGrade(f);
+   add('Impaled',(locs.length?locs.join(', ')+' · ':'')+
+     (grade>0?'Embedded weapon increases skill difficulty.':'Lodged weapon; no additional skill penalty from its size.'));
  }
  for(const loc of f.disabled||[])add(loc+' disabled','This location cannot be used normally until recovered.');
  const arm=f.weaponHand;
