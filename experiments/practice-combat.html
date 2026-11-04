@@ -705,7 +705,7 @@ function rollPrompt(actor){
 // Presentation is separate from the rules state: rolls resolve immediately,
 // then the screen unveils the recorded, immutable events in order.
 const V={capturing:false,busy:false,quick:false,reduced:!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches),
-  events:[],step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,timer:null,diceTimer:null,showLog:false,moreActionsOpen:false,guideWhyOpen:false,openChronicle:new Set()};
+  events:[],step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,timer:null,diceTimer:null,showLog:false,moreActionsOpen:false,guideWhyOpen:false,expandedConditions:new Set(),openChronicle:new Set()};
 function clearPresentationTimers(){if(V.timer)clearTimeout(V.timer);if(V.diceTimer)clearInterval(V.diceTimer);V.timer=V.diceTimer=null;}
 function makeDie(sides,value,role='',variant='',display=''){return {sides,value,role,variant,display:display||String(value)}}
 function d100Dice(value){const n=Math.max(1,Math.min(100,Number(value)||1));const tens=n===100?0:Math.floor(n/10);const ones=n%10;return [makeDie(10,tens,'10s','percent',tens===0?'00':String(tens*10)),makeDie(10,ones,'1s','percent',String(ones))]}
@@ -797,11 +797,7 @@ function exchangeHalf(id,info){
   const initialInitiative=V.busy&&/^Encounter.*Initiative/i.test(V.stage?.entry?.title||'');
   const fighter=S.fighters[id]||S.fighters.a;
   const p=info.pending,deciding=!V.busy&&S.phase==='fight';
-  const decisionId=p?.kind==='reaction'?p.def:
-    p?.kind==='range'?p.defender:
-    (p?.kind==='effect'||p?.kind==='location'||p?.kind==='impalePick')?p.owner||p.atk:
-    p?.kind==='impaleResist'?p.target:
-    S.order?.[S.turnIndex];
+  const decisionId=currentDecisionOwner();
   const decisionHere=deciding&&decisionId===id&&!R;
   const current=V.stage,entry=current?.entry||null;
   const explicitOwner=entry?.meta?.actor;
@@ -1159,7 +1155,7 @@ function playCaptured(fn,reset=false){
   const events=(S.logs||[]).slice(prior);
   if(!events.length){render();return;}
   V.busy=true;V.events=events;V.step=0;V.visibleCount=prior;
-  V.shown=before||clone(S.fighters);V.stage=null;V.highlight=null; if(reset){V.openChronicle.clear();V.moreActionsOpen=false;V.guideWhyOpen=false;}
+  V.shown=before||clone(S.fighters);V.stage=null;V.highlight=null; if(reset){V.openChronicle.clear();V.expandedConditions.clear();V.moreActionsOpen=false;V.guideWhyOpen=false;}
   playBeat();
 }
 function playBeat(){
@@ -1390,11 +1386,89 @@ function inspectedLocationHtml(f,loc){
  </section>`;
 }
 
+
+/* UX 10: explain existing conditions without modifying their calculations. */
+function currentDecisionOwner(){
+ if(S.phase!=='fight'||V.busy)return null;
+ if(R)return R.actor;
+ const p=S.pending;
+ if(!p)return S.order?.[S.turnIndex]||null;
+ if(p.kind==='reaction')return p.def;
+ if(p.kind==='range')return p.defender;
+ if(p.kind==='effect'||p.kind==='location'||p.kind==='impalePick')return p.owner||p.atk;
+ if(p.kind==='tripResistChoice'||p.kind==='blindResistChoice')return p.other;
+ if(p.kind==='footingSkillChoice')return p.actor;
+ if(p.kind==='footingDefendChoice')return p.target;
+ if(p.kind==='impaleResist')return p.target;
+ if(p.kind==='ward')return p.actor;
+ if(p.kind==='pinChoice'||p.kind==='counterChoice'||p.kind==='counterRetaliation')return p.owner||p.atk;
+ return S.order?.[S.turnIndex]||null;
+}
+function conditionInsightsHtml(f){
+ const items=[],add=(name,meaning)=>items.push({name,meaning});
+ if(f.prone)add('Prone','Attack and Evade targets are halved. Regaining footing uses 1 AP.');
+ if(f.skipAttack>0)add('Attack restricted',f.skipAttack+' turn'+(f.skipAttack===1?'':'s')+
+   ' remaining. Other permitted actions and reactions remain available.');
+ if(f.blindedTurns>0)add('Blinded',f.blindedTurns+' turn'+(f.blindedTurns===1?'':'s')+
+   ' remaining. Combat Style and Evade targets are heavily reduced.');
+ if(f.bleeding)add('Bleeding','Fatigue increases each new Combat Round until the bleeding is controlled.');
+ if((f.fatigue||0)>0)add(FATIGUE_NAMES[Math.min(f.fatigue,FATIGUE_NAMES.length-1)]+' fatigue',
+   (FATIGUE_GRADES[Math.min(9,f.fatigue)]||0)>0?'Combat skill targets are reduced by Fatigue.':'No Fatigue skill penalty yet.');
+ for(const [loc,turns] of Object.entries(f.stunnedLocations||{})){
+   if(!(turns>0))continue;
+   const consequence=loc==='Head'?' Cannot respond while the head is stunned.':
+      ['Chest','Abdomen'].includes(loc)?' Attacking is restricted while stunned.':
+      loc===f.weaponHand?' Weapon use may be restricted.':'';
+   add(loc+' stunned',turns+' turn'+(turns===1?'':'s')+' left.'+consequence);
+ }
+ if(f.disarmed)add('Disarmed',f.droppedMetres>3?'Weapon out of reach; move to recover it.':'Recover and ready your weapon before attacking.');
+ if(f.pinnedGear)add('Pinned '+f.pinnedGear,'Spend 1 AP to free the pinned item.');
+ if(f.impaledWeapon)add('Weapon embedded','Your weapon is lodged in an opponent; withdraw it before using it again.');
+ if(f.impaledWounds?.length){
+   const locs=[...new Set(f.impaledWounds.map(w=>w.loc).filter(Boolean))];
+   add('Impaled',(locs.length?locs.join(', ')+' · ':'')+'Embedded weapon increases skill difficulty.');
+ }
+ for(const loc of f.disabled||[])add(loc+' disabled','This location cannot be used normally until recovered.');
+ const arm=f.weaponHand;
+ if(arm&&zoneClass(f,arm)==='serious'&&!f.disabled?.includes(arm))
+   add('Serious '+arm+' wound','Attacks with this arm are one difficulty grade harder.');
+ for(const loc of ['Left Leg','Right Leg']){
+   if(zoneClass(f,loc)==='serious'||f.partialLimbs?.[loc])
+     add(loc+' injury','Evade is one difficulty grade harder for this leg.');
+ }
+ if(f.braced)add('Braced','Effective SIZ is doubled against Bash.');
+ if(!items.length)return '';
+ const itemHtml=x=>'<div class="condition-row"><strong>'+esc(x.name)+'</strong><span>'+esc(x.meaning)+'</span></div>';
+ const visible=items.slice(0,3),extra=items.slice(3);
+ return '<section class="condition-insights" aria-label="Active conditions and effects">'+
+   '<div class="condition-insights-title">Active conditions</div>'+
+   visible.map(itemHtml).join('')+
+   (extra.length?'<details class="condition-overflow" data-id="'+esc(f.id)+'"'+
+     (V.expandedConditions?.has(f.id)?' open':'')+'><summary>+'+extra.length+
+     ' more condition'+(extra.length===1?'':'s')+'</summary>'+extra.map(itemHtml).join('')+'</details>':'')+
+   '</section>';
+}
+function reachContextHtml(){
+ const reach=engagementInfo();
+ if(S.disengaged)return '<p class="reach-context" role="note"><strong>Separated by '+
+   esc(S.gapMetres||0)+'m.</strong> Re-engage before attempting a body strike.</p>';
+ if(!reach.active)return '';
+ const longer=S.fighters[reach.longer],shorter=S.fighters[reach.longer==='a'?'b':'a'];
+ if(!longer||!shorter)return '';
+ if(S.engagement==='long')return '<p class="reach-context" role="note"><strong>'+esc(longer.name)+
+   ' controls long reach.</strong> '+esc(shorter.name)+' must close distance before a body attack.</p>';
+ if(S.engagement==='short')return '<p class="reach-context" role="note"><strong>'+esc(shorter.name)+
+   ' has moved inside the longer weapon’s reach.</strong> '+esc(longer.name)+
+   ' attacks awkwardly and cannot parry with that weapon.</p>';
+ return '';
+}
+
 function fighterCard(f,cls){
  const injuries=HIT_LOCS.filter(loc=>f.hp[loc]<f.maxHp[loc]);
  const worst=injuries.reduce((value,loc)=>Math.max(value,zoneClass(f,loc)==='major'?3:zoneClass(f,loc)==='serious'?2:1),0);
  const status=f.status==='Defeated'?'Incapacitated':worst===0?'Uninjured':worst===1?'Minor wounds':worst===2?'Serious wound':'Major wound';
  const selected=S.sel?.[f.id];
+ const decisionFocus=currentDecisionOwner()===f.id;
  const label=cls==='player'?'PLAYER ONE':S.mode==='pvp'?'PLAYER TWO':'OPPONENT';
  const conditions=[
    f.prone?'Prone':'',f.bleeding?'Bleeding':'',f.fatigue>0?FATIGUE_NAMES[f.fatigue]:'',
@@ -1411,7 +1485,7 @@ function fighterCard(f,cls){
      <span class="loc-gauge" aria-hidden="true"><i style="width:${ratio}%"></i></span>
    </button>`;
  }).join('');
- return `<article class="fighter ${cls} ${V.highlight?.id===f.id?'just-hit':''}">
+ return `<article class="fighter ${cls} ${decisionFocus?'decision-focus':''} ${V.highlight?.id===f.id?'just-hit':''}">
    <div class="fighter-head"><span class="tag">${label}</span><h2>${esc(f.name)}</h2>
      <div class="fighter-profile">
        <div class="profile-weapon"><span class="profile-label">Armed with</span>
@@ -1435,7 +1509,8 @@ function fighterCard(f,cls){
      </div>
    </div>
    <div class="fighter-foot">
-     <div class="condition ${f.status==='Defeated'?'danger':worst===0?'safe':''}">${status}${conditions.length?' · '+esc(conditions.join(' · ')):''}</div>
+     <div class="condition ${f.status==='Defeated'?'danger':worst===0?'safe':''}">${status}</div>
+     ${conditionInsightsHtml(f)}
      ${injurySummaryHtml(f)}
      ${selected?inspectedLocationHtml(f,selected):''}
    </div>
@@ -1448,6 +1523,7 @@ function arenaHtml(){
  <div class="center-top"><div class="label">${S.mode==='pvp'?'Friendly duel':'Training grounds'} · ${S.mode==='tutorial'?'Learning encounter':`Encounter ${S.wave}`}</div>
  <h2>Round ${S.round} <span style="color:#a88b5b;font-size:15px">/ Cycle ${S.cycle}</span></h2>
  <div class="roundbar"><div class="side">${esc(a.name)} · ${a.initiative??'—'} INI</div><div class="vs">✧ &nbsp; VS &nbsp; ✧<div style="font:700 10px system-ui,sans-serif;color:#e9c68e;margin-top:5px">${S.disengaged?'SEPARATED · '+S.gapMetres+'m':engagementInfo().active?(S.engagement==='short'?'SHORT REACH':'LONG REACH'):'MATCHED REACH'}</div></div><div class="side">${esc(b.name)} · ${b.initiative??'—'} INI</div></div></div>
+ ${reachContextHtml()}
  <div class="exchange-board">${exchangeHalf('a',info)}${exchangeHalf('b',info)}</div>
  ${exchangeRecapHtml(info)}
  ${S.mode==='tutorial'&&R&&!V.busy?tutorialGuideHtml():''}
@@ -2349,6 +2425,7 @@ $('#root').addEventListener('keydown',e=>{
 });
 $('#root').addEventListener('toggle',e=>{
  const item=e.target;
+ if(item?.classList?.contains('condition-overflow')){if(item.open)V.expandedConditions.add(item.dataset.id);else V.expandedConditions.delete(item.dataset.id);return;}
  if(item?.classList?.contains('secondary-actions')){V.moreActionsOpen=!!item.open;return;}
  if(item?.classList?.contains('tutorial-guide-details')){V.guideWhyOpen=!!item.open;return;}
  if(!item?.classList?.contains('chronicle-entry'))return;
