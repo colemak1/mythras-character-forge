@@ -802,7 +802,7 @@ function chronicleEntryHtml(entry){
 function combatHistory(){
  // Do not reveal events before their presentation beat has finished.
  const logs=V.busy?S.logs.slice(0,V.visibleCount):S.logs;
- const shown=V.showLog?logs:logs.slice(-3);
+ const shown=(V.showLog?logs:logs.slice(-3)).slice().reverse();
  return '<section class="combat-history" aria-label="Combat chronicle">'+
    '<div class="history-header"><div><h3>Combat chronicle</h3><p class="history-intro">What happened, with the calculations one click away.</p></div>'+
    '<button type="button" class="history-toggle" data-act="togglelog" aria-expanded="'+(V.showLog?'true':'false')+'">'+
