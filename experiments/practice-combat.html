@@ -1656,10 +1656,10 @@ function nextEncounter(){if(S.phase!=='between')return;S.showEndModal=false;S.fi
 function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let act=n.dataset.act,v=n.dataset.val;switch(act){case 'mode':readSetupInputs();config.mode=v;render();break;case 'lbmode':S.lbMode=v;render();break;case 'start':readSetupInputs();startRun();break;case 'dismissResult':S.showEndModal=false;render();break;case 'openAid':S.showEndModal=false;render();document.querySelector('.field-dressing')?.scrollIntoView({block:'center'});break;case 'reset':R=null;S={phase:'setup',mode:'normal',lbMode:S.lbMode||'normal'};render();break;case 'retry':startRun();break;case 'next':nextEncounter();break;case 'fieldAid':{const [woundId,action]=v.split(':');beginFieldAid(Number(woundId),action);break;}case 'selectloc':{
   if(!S.sel)S.sel={};S.sel[n.dataset.id]=v;render();
   // Inspection remains keyboard-navigable after the screen is regenerated.
-  if(n.tagName==='BUTTON'){
+  if(n.tagName==='BUTTON'||n.classList?.contains('zone')){
     const targetId=n.dataset.id,targetLocation=v;
     window.requestAnimationFrame?.(()=>{
-      const match=[...document.querySelectorAll('button.loc')].find(x=>x.dataset.id===targetId&&x.dataset.val===targetLocation);
+      const match=[...document.querySelectorAll(n.tagName==='BUTTON'?'button.loc':'g.zone')].find(x=>x.dataset.id===targetId&&x.dataset.val===targetLocation);
       match?.focus?.({preventScroll:true});
     });
   }
@@ -1695,6 +1695,13 @@ function updateChoiceHelp(e){
 }
 $('#root').addEventListener('pointerover',updateChoiceHelp);
 $('#root').addEventListener('focusin',updateChoiceHelp);
+$('#root').addEventListener('keydown',e=>{
+  const zone=e.target.closest?.('g.zone[data-act="selectloc"]');
+  if(zone&&(e.key==='Enter'||e.key===' ')){
+    e.preventDefault();
+    decoratedClick({target:zone});
+  }
+});
 $('#root').addEventListener('click',decoratedClick);$('#homeLink').addEventListener('click',e=>{e.preventDefault();clearPresentationTimers();V.busy=false;V.stage=null;R=null;S={phase:'setup',lbMode:'normal'};render()});
 // Expose transparent inspection helpers for prototype debugging and automated tests.
 window.prototypeCombat={moveEngage,limbDisabled,damageModifierFor,armourInitiativePenalty,parryAbsorption,SHIELDS,pendingRoll:()=>R?({id:R.id,actor:R.actor,label:R.label,defs:R.defs}):null,state:()=>S,presentation:()=>V,skipPresentation,rollSkill,HIT_TABLE,zoneClass,engagementInfo,canAttackBody,canParryAtReach,proposedRange,beginChangeRange,rangeReact,availableEffects,effectCatalog:()=>SPECIAL_EFFECT_CATALOG,armourAt,guardWeapon,impaleGrade,effectiveSkill,roundBloodLoss,beginWithdrawImpale,finishWithdrawImpale,chooseImpaleDamage,refreshFighterAP,FATIGUE_NAMES,registerWound,fieldAidCandidates,beginFieldAid,reopenBandage,disadvantagedForSurrender};
