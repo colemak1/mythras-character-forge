@@ -312,7 +312,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .effects-ref-grid span{font:10px system-ui,sans-serif;color:#9f9585}
 .recovery-options{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 0 16px;border-bottom:1px solid #9d876145;margin-bottom:10px}.recovery-options button{padding:9px 13px;border:1px solid #af9972;border-radius:2px;background:transparent;color:inherit;cursor:pointer;font:600 12px system-ui}.recovery-options button:disabled{opacity:.45;cursor:not-allowed}.recovery-options small{font:11px/1.5 system-ui;color:#b6a48c;max-width:330px}
 </style>
-<link rel="stylesheet" href="practice-combat-ux.css?v=11">
+<link rel="stylesheet" href="practice-combat-ux.css?v=12">
 </head>
 <body>
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>Practice Combat</span><span class="hide-mobile">Independent demo · no account required</span><a href="#" id="homeLink">Reset</a></div></header>
@@ -692,12 +692,16 @@ function rollPrompt(actor){
   const fighter=S.fighters[actor];
   const ds=R.defs;
   const title=ds.map(d=>d.sides===100?'d100':'d'+d.sides).join(' + ');
-  const placeholders=ds.flatMap(d=>d.sides===100?
-    [makeDie(10,0,'Tens','percent','??'),makeDie(10,0,'Ones','percent','?')]:
-    [makeDie(d.sides,d.fixed??0,d.fixed!=null?'Maximized':(d.label||'d'+d.sides),'',d.fixed!=null?String(d.fixed):'?')]);
+  const placeholders=ds.map(d=>d.sides===100?
+    makeDie(100,0,'d100','percentile','?'):
+    makeDie(d.sides,d.fixed??0,d.fixed!=null?'Maximized':(d.label||'d'+d.sides),'',d.fixed!=null?String(d.fixed):'?'));
+  const targets=[...String(R.label||'').matchAll(/(\d{1,3})%/g)];
+  const finalTarget=ds.length===1&&ds[0].sides===100&&targets.length?
+    Number(targets[targets.length-1][1]):null;
+  const targetLine=finalTarget!==null?'<div class="roll-target-line">Target <strong>'+finalTarget+'%</strong></div>':'';
   return `<div class="roll-await" role="group" aria-label="Manual ${esc(title)} roll for ${esc(fighter.name)}">
      <div class="roll-await-kicker">${esc(title)} · ${esc(fighter.name)}</div>
-     <h3>${esc(R.label)}</h3>${rollDifficultyHtml(actor)}<div class="roll-await-dice">${renderDice(placeholders,false)}</div>
+     <h3>${esc(R.label)}</h3>${rollDifficultyHtml(actor)}${targetLine}<div class="roll-await-dice">${renderDice(placeholders,false)}</div>
      <button type="button" class="roll-now" data-act="roll" aria-label="Roll ${esc(title)} now">Roll ${esc(title)}</button>
   </div>`;
 }
@@ -708,8 +712,8 @@ const V={capturing:false,busy:false,quick:false,reduced:!!(window.matchMedia&&wi
   events:[],step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,timer:null,diceTimer:null,showLog:false,moreActionsOpen:false,guideWhyOpen:false,expandedConditions:new Set(),openChronicle:new Set()};
 function clearPresentationTimers(){if(V.timer)clearTimeout(V.timer);if(V.diceTimer)clearInterval(V.diceTimer);V.timer=V.diceTimer=null;}
 function makeDie(sides,value,role='',variant='',display=''){return {sides,value,role,variant,display:display||String(value)}}
-function d100Dice(value){const n=Math.max(1,Math.min(100,Number(value)||1));const tens=n===100?0:Math.floor(n/10);const ones=n%10;return [makeDie(10,tens,'10s','percent',tens===0?'00':String(tens*10)),makeDie(10,ones,'1s','percent',String(ones))]}
-function randomFaceForDie(d){const s=Number(d?.sides)||6;const variant=d?.variant||'';const role=d?.role||'';if(variant==='percent'&&role==='10s'){const n=Math.floor(Math.random()*10)*10;return n===0?'00':String(n);}if(variant==='percent')return String(Math.floor(Math.random()*10));if(s===10)return String(Math.floor(Math.random()*10)+1);return String(Math.floor(Math.random()*s)+1)}
+function d100Dice(value){const n=Math.max(1,Math.min(100,Number(value)||1));return [makeDie(100,n,'d100','percentile',String(n))]}
+function randomFaceForDie(d){const s=Number(d?.sides)||6;if(s===100)return String(Math.floor(Math.random()*100)+1);if(s===10)return String(Math.floor(Math.random()*10)+1);return String(Math.floor(Math.random()*s)+1)}
 function dieClass(sides){return 'd'+(Number(sides)||6)}
 function renderDice(dice,rolling){return `<div class="stage-dice" aria-label="dice tray">${dice.map((d,i)=>`<div class="die-wrap"><div class="die-shape ${dieClass(d.sides)} ${d.variant||''}" data-sides="${d.sides}" data-role="${esc(d.role||'')}" data-variant="${esc(d.variant||'')}"><span class="die-face">${rolling?randomFaceForDie(d):esc(d.display??d.value)}</span></div><div class="die-role">${esc(d.role||('d'+d.sides))}</div></div>`).join('')}</div>`}
 function fallbackDice(title,body){const roll=/^(\d{1,3})\s+(?:against|vs)\b/.exec(body)||/\b(?:rolls?\s+Endurance\s+|roll\s*:?\s*)(\d{1,3})\s*(?:\/|vs)/i.exec(body);if(roll)return d100Dice(Number(roll[1]));return []}
