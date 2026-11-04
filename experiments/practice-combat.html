@@ -310,7 +310,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .effects-ref-grid b{font:600 11px system-ui,sans-serif;color:#d6c4a7}
 .effects-ref-grid span{font:10px system-ui,sans-serif;color:#9f9585}
 </style>
-<link rel="stylesheet" href="practice-combat-ux.css?v=6">
+<link rel="stylesheet" href="practice-combat-ux.css?v=7">
 </head>
 <body>
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>Practice Combat</span><span class="hide-mobile">Independent demo · no account required</span><a href="#" id="homeLink">Reset</a></div></header>
@@ -744,6 +744,124 @@ function outcomeStrip(info){
   }
   return `<div class="outcome-strip ${css}" aria-live="polite"><div class="outcome-mark">${mark}</div><div><div class="outcome-headline">${esc(headline)}</div>${sub?`<div class="outcome-sub">${esc(sub)}</div>`:''}</div>${V.busy?'<button class="toolbutton strip-skip" data-act="skip">Show results</button>':''}</div>`;
 }
+
+/* UX pass 07: progressive summary built ONLY from revealed engine events.
+   No additional dice rolls, results or Mythras rules are inferred here. */
+function exchangeRecapModel(){
+ const all=V.busy?(S.logs||[]).slice(0,V.visibleCount):(S.logs||[]);
+ if(!all.length)return null;
+ let boundary=0;
+ for(let i=all.length-1;i>=0;i--){
+   if(/^Encounter \d+ · Initiative$|^New Opponent$/i.test(all[i].title||'')){boundary=i;break;}
+ }
+ const logs=all.slice(boundary);
+ let start=-1;
+ for(let i=logs.length-1;i>=0;i--){
+   if(/ attacks$/i.test(logs[i].title||'')){start=i;break;}
+ }
+ if(start<0)return null;
+ const entries=logs.slice(start);
+ const attack=entries[0];
+ const attacker=String(attack.title).replace(/ attacks$/i,'');
+ const resultGrade=body=>(/\b(CRITICAL|SUCCESS|FAILURE|FUMBLE)\b/i.exec(String(body||''))||[])[1]||'';
+ const rollInfo=entry=>{
+   if(!entry)return null;
+   const body=String(entry.body||'');
+   const pair=/\b(\d{1,3})\s+(?:against|vs)\s+(?:Combat Style\s+)?(\d{1,3})%/i.exec(body);
+   return {roll:pair?.[1]||null,target:pair?.[2]||null,grade:resultGrade(body)};
+ };
+ const attackRoll=rollInfo(attack);
+ const defense=entries.find(entry=>/ (?:parries(?: with shield)?|evades|does not defend)$/i.test(entry.title||''))||null;
+ const defenseRoll=rollInfo(defense);
+ const undefended=!!defense&&/ does not defend$/i.test(defense.title||'');
+ const effectNames=new Set(Object.values(SPECIAL_EFFECT_NAMES));
+ const picked=entries.filter(entry=>effectNames.has(entry.title||'')).map(entry=>entry.title);
+ const skipped=entries.some(entry=>/Special Effects skipped/i.test(entry.title||''));
+ const offered=entries.some(entry=>/^(Offensive|Defensive|Interception) Special Effects$/i.test(entry.title||''));
+ const hit=entries.findLast(entry=>/^.+ hits (Head|Chest|Abdomen|Right Arm|Left Arm|Right Leg|Left Leg)$/i.test(entry.title||''))||null;
+ const noHit=entries.findLast(entry=>entry.title==='No Damaging Hit')||null;
+ const location=entries.findLast(entry=>(entry.title==='Hit Location'||entry.title==='Choose Location')&&entry.meta?.location)||null;
+ const hitLocation=hit?(/ hits (Head|Chest|Abdomen|Right Arm|Left Arm|Right Leg|Left Leg)$/i.exec(hit.title)||[])[1]:location?.meta?.location||null;
+ const impact=hit?(/=\s*(\d+)\s+total;\s*(\d+)\s+parry;\s*(\d+)\s+armour;\s*(\d+)\s+HP lost/i.exec(hit.body||'')):null;
+ const hpLost=impact?Number(impact[4]):null;
+ const defender=defense?String(defense.title).replace(/ (?:parries(?: with shield)?|evades|does not defend)$/i,''):null;
+ const cleanGrade=g=>g?g[0].toUpperCase()+g.slice(1).toLowerCase():'';
+ const rollText=info=>info?.roll?(info.roll+(info.target?' / '+info.target+'%':'')+(info.grade?' · '+cleanGrade(info.grade):'')):'Awaiting roll';
+ let headline='',note='',resultKind='progress',impactSummary='';
+ if(hit){
+   headline=hpLost===null?attacker+' strikes '+hitLocation:hpLost>0?attacker+' strikes '+hitLocation+' · '+hpLost+' HP lost':attacker+' strikes '+hitLocation+' · no HP lost';
+   resultKind=hpLost>0?'injury':'blocked';
+   if(impact)note=impact[1]+' damage − '+impact[2]+' parry − '+impact[3]+' armour = '+impact[4]+' HP lost';
+   const victimId=S.fighters?.a?.name===attacker?'b':S.fighters?.b?.name===attacker?'a':null;
+   const after=hit.view?.[victimId];
+   if(after&&hitLocation&&hpLost>0){
+     const severity=zoneClass(after,hitLocation);
+     if(severity==='minor'||severity==='serious'||severity==='major'){
+       impactSummary=severity[0].toUpperCase()+severity.slice(1)+' wound';
+     }
+   }
+ }else if(noHit){
+   headline='No damaging hit';
+   note=String(noHit.body||'').trim();
+   resultKind='blocked';
+ }else if(defense){
+   headline='Attack and defense resolved';
+   note=offered?'Special Effect decision': 'Resolving the exchange';
+ }else{
+   headline=attackRoll?.grade==='FAILURE'||attackRoll?.grade==='FUMBLE'?'Attack roll failed':attacker+' attacks';
+   note='Awaiting the response';
+ }
+ const extra=[];
+ const hasLog=title=>entries.some(entry=>entry.title===title);
+ if(hasLog('Limb Disabled'))extra.push('Limb disabled');
+ if(hasLog('Impaled Weapon'))extra.push('Weapon lodged');
+ if(hasLog('Stun Location'))extra.push('Stun resolved');
+ if(hasLog('Bleed'))extra.push('Bleeding tested');
+ if(hasLog('Bash'))extra.push('Knockback resolved');
+ if(hasLog('FIGHT ENDS'))extra.push('Bout ended');
+ if(impactSummary)extra.unshift(impactSummary);
+ const unique=[...new Set(extra)];
+ const effectText=picked.length?picked.slice(0,2).join(' + ')+(picked.length>2?' +'+(picked.length-2):''):
+   skipped?'Declined':offered?'Available':'None';
+ const stepItems=[
+   {label:'Attack',value:rollText(attackRoll),state:attackRoll?.grade||'pending'},
+   {label:'Defense',value:undefended?'Not defended':defense?
+      (defense.title.includes('parries with shield')?'Shield parry':defense.title.includes('parries')?'Parry':'Evade')+' · '+rollText(defenseRoll):
+      'Awaiting response',state:defense?(undefended?'neutral':defenseRoll?.grade||'complete'):'pending'},
+   {label:'Effect',value:effectText,state:picked.length?'complete':offered?'pending':'neutral'},
+   {label:'Impact',value:hit?hitLocation+' · '+(hpLost===null?'resolved':hpLost+' HP'):
+      noHit?'No HP lost':location?hitLocation+' · awaiting damage':'Not yet resolved',
+     state:hit?(hpLost>0?'hit':'neutral'):noHit?'neutral':'pending'}
+ ];
+ const finished=!!(hit||noHit||hasLog('FIGHT ENDS'));
+ const next=R&&!V.busy?'Roll '+String(R.label||'the requested dice'):
+   !V.busy&&S.phase==='fight'&&S.pending?.kind==='reaction'?'Choose a defense':
+   !V.busy&&S.phase==='fight'&&S.pending?.kind==='effect'?'Choose a Special Effect':
+   !V.busy&&S.phase==='fight'&&S.pending?.kind==='location'?'Choose the hit location':
+   !V.busy&&S.phase==='fight'&&S.pending?.kind==='impalePick'?'Select impale damage':
+   !V.busy&&S.phase==='fight'&&S.pending?.kind==='impaleResist'?'Respond to withdrawal':
+   '';
+ return {headline,note,kind:resultKind,attacker,extra:unique,steps:stepItems,
+   status:V.busy?'Revealing exchange':finished?'Last exchange':'Exchange in progress',
+   next,hasResult:finished};
+}
+function exchangeRecapHtml(info){
+ const recap=exchangeRecapModel();
+ if(!recap)return outcomeStrip(info);
+ const item=(step,i)=>'<div class="recap-step '+(step.state==='pending'?'awaiting':step.state==='hit'?'is-hit':'')+'">'+
+   '<span class="recap-step-label">'+(i+1)+'. '+esc(step.label)+'</span>'+
+   '<strong>'+esc(step.value)+'</strong></div>';
+ return '<section class="exchange-recap '+recap.kind+'" aria-label="Exchange outcome">'+
+   '<div class="recap-heading"><span>'+esc(recap.status)+'</span><span>'+esc(recap.attacker)+'</span></div>'+
+   '<h3>'+esc(recap.headline)+'</h3>'+
+   (recap.note?'<p class="recap-explanation">'+esc(recap.note)+'</p>':'')+
+   (recap.extra.length?'<p class="recap-consequences">'+esc(recap.extra.join(' · '))+'</p>':'')+
+   '<div class="recap-steps">'+recap.steps.map(item).join('')+'</div>'+
+   (recap.next?'<div class="recap-next"><span>Next</span><strong>'+esc(recap.next)+'</strong></div>':'')+
+   (V.busy?'<div class="recap-toolbar"><span>Showing results as they resolve</span><button type="button" class="toolbutton" data-act="skip">Show results</button></div>':'')+
+   '</section>';
+}
+
 function conciseLog(entry){
   const body=String(entry.body||'');
   if(/ attacks$| parries$| evades$/i.test(entry.title)){
@@ -1106,7 +1224,7 @@ function arenaHtml(){
  <div class="exchange-board">${exchangeHalf('a',info)}${exchangeHalf('b',info)}</div>
  ${S.mode==='tutorial'&&R&&!V.busy?tutorialGuideHtml():''}
  ${S.phase==='fight'&&!V.busy&&!R?`<section class="decision-panel" aria-label="Current combat decision"><div class="decision-kicker">${esc(decisionKicker())}</div>${decisionHtml()}${S.mode==='tutorial'?tutorialGuideHtml():`<p class="choice-help" id="choiceHelp" role="status">${esc(decisionHelpPrompt())}</p>`}</section>`:''}
- ${outcomeStrip(info)}
+ ${exchangeRecapHtml(info)}
  ${S.phase==='between'||S.phase==='over'?`<div class="center-content"><div class="actionbox">${actionHtml()}</div></div>`:''}
  <div class="statusbar">${S.phase==='fight'?`${S.pending?'Response needed':`Turn: ${esc(S.fighters[S.order[S.turnIndex]]?.name||'—')}`}`:'Encounter complete'}</div>
  </section>${fighterCard(b,'enemy')}${combatHistory()}</div>`;
