@@ -341,15 +341,18 @@ presentation.busy=false;
 presentation.visibleCount=Infinity;
 presentation.showLog=false;
 
-check('Quick presentation is the default',presentation.quick===true);
+check('Detailed presentation is the default',presentation.quick===false);
 api.render();
-check('Quick presentation has a labelled toggle',
-  root.innerHTML.includes('QUICK · PACE') &&
+check('Detailed presentation has a labelled toggle',
+  root.innerHTML.includes('DETAILED · PACE') &&
   root.innerHTML.includes('aria-label="Toggle combat presentation pace"'));
 handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
-check('Pace can be switched to detailed without changing the combat state',
-  presentation.quick===false && root.innerHTML.includes('DETAILED · PACE') &&
+check('Pace can be switched to Quick without changing combat state',
+  presentation.quick===true && root.innerHTML.includes('QUICK · PACE') &&
   state.phase==='fight');
+handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
+check('Pace can be returned to Detailed',
+  presentation.quick===false && root.innerHTML.includes('DETAILED · PACE'));
 presentation.busy=true;
 presentation.events=[state.logs[0],state.logs[1]];
 handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
