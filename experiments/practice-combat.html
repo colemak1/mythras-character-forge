@@ -822,7 +822,7 @@ function exchangeRecapModel(){
  if(impactSummary)extra.unshift(impactSummary);
  const unique=[...new Set(extra)];
  const effectText=picked.length?picked.slice(0,2).join(' + ')+(picked.length>2?' +'+(picked.length-2):''):
-   skipped?'Declined':offered?'Available':'None';
+   skipped?'Declined':offered?'Available':defense||hit||noHit?'None':'Awaiting response';
  const stepItems=[
    {label:'Attack',value:rollText(attackRoll),state:attackRoll?.grade||'pending'},
    {label:'Defense',value:undefended?'Not defended':defense?
@@ -1222,9 +1222,9 @@ function arenaHtml(){
  <h2>Round ${S.round} <span style="color:#a88b5b;font-size:15px">/ Cycle ${S.cycle}</span></h2>
  <div class="roundbar"><div class="side">${esc(a.name)} · ${a.initiative??'—'} INI</div><div class="vs">✧ &nbsp; VS &nbsp; ✧<div style="font:700 10px system-ui,sans-serif;color:#e9c68e;margin-top:5px">${S.disengaged?'SEPARATED · '+S.gapMetres+'m':engagementInfo().active?(S.engagement==='short'?'SHORT REACH':'LONG REACH'):'MATCHED REACH'}</div></div><div class="side">${esc(b.name)} · ${b.initiative??'—'} INI</div></div></div>
  <div class="exchange-board">${exchangeHalf('a',info)}${exchangeHalf('b',info)}</div>
+ ${exchangeRecapHtml(info)}
  ${S.mode==='tutorial'&&R&&!V.busy?tutorialGuideHtml():''}
  ${S.phase==='fight'&&!V.busy&&!R?`<section class="decision-panel" aria-label="Current combat decision"><div class="decision-kicker">${esc(decisionKicker())}</div>${decisionHtml()}${S.mode==='tutorial'?tutorialGuideHtml():`<p class="choice-help" id="choiceHelp" role="status">${esc(decisionHelpPrompt())}</p>`}</section>`:''}
- ${exchangeRecapHtml(info)}
  ${S.phase==='between'||S.phase==='over'?`<div class="center-content"><div class="actionbox">${actionHtml()}</div></div>`:''}
  <div class="statusbar">${S.phase==='fight'?`${S.pending?'Response needed':`Turn: ${esc(S.fighters[S.order[S.turnIndex]]?.name||'—')}`}`:'Encounter complete'}</div>
  </section>${fighterCard(b,'enemy')}${combatHistory()}</div>`;
