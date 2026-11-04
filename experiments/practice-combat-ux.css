@@ -275,3 +275,124 @@ button:focus-visible,.loc:focus-visible {
 @media(prefers-reduced-motion:reduce) {
   .decision-panel .choice,.fighter .loc { transition:none; }
 }
+
+/* Practice Combat UX pass 02 — purposeful decision hierarchy and keyboard navigation. */
+.decision-panel .primary-actions {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:stretch;
+  gap:11px;
+}
+.decision-panel .primary-actions .choice {
+  min-height:76px;
+  padding:18px 19px;
+}
+.decision-panel .primary-actions .choice strong {
+  font-size:17px;
+  line-height:1.3;
+}
+.decision-panel .primary-actions .choice[data-act="attack"] {
+  background:#3b4035;
+  color:#f5efdf;
+  border-color:#3b4035;
+}
+.decision-panel .primary-actions .choice[data-act="attack"]:hover:not(:disabled) {
+  background:#515a48;
+  color:#fff4e0;
+}
+.decision-panel .primary-actions .choice:only-child {
+  grid-column:1 / -1;
+}
+.decision-panel .secondary-actions {
+  border-top:1px solid #c9bca7;
+  margin:17px 0 0;
+  padding-top:12px;
+}
+.decision-panel .secondary-actions summary {
+  color:#5c4e3f;
+  cursor:pointer;
+  font:600 13px/1.5 system-ui,sans-serif;
+  padding:7px 3px;
+  list-style-position:inside;
+}
+.decision-panel .secondary-actions summary:hover { color:#2f3029; }
+.decision-panel .secondary-actions summary span {
+  font-weight:400;
+  color:#87735b;
+}
+.decision-panel .secondary-actions[open] .choicegrid {
+  margin-top:11px;
+}
+.decision-panel .secondary-actions .choice {
+  min-height:52px;
+}
+.decision-panel .choice-help {
+  min-height:25px;
+  border-top:1px solid #d7cbb8;
+  margin-top:17px;
+  padding:13px 2px 0;
+  font-size:13px;
+  line-height:1.5;
+}
+.decision-panel .choice[data-act="none"],
+.decision-panel .choice[data-act="yield"],
+.decision-panel .choice[data-act="dither"] {
+  background:#e6dbca;
+  border-color:#d5c5b0;
+}
+.decision-panel .choice[data-act="none"]:hover:not(:disabled),
+.decision-panel .choice[data-act="yield"]:hover:not(:disabled),
+.decision-panel .choice[data-act="dither"]:hover:not(:disabled) {
+  background:#dccdb8;
+}
+.fighter .location-list {
+  min-width:0;
+}
+.fighter button.loc {
+  display:flex;
+  width:100%;
+  background:transparent;
+  border:0;
+  border-bottom:1px solid #383a33;
+  color:#eadcca;
+  padding:10px 2px;
+  text-align:left;
+  cursor:pointer;
+  font:12px/1.4 system-ui,sans-serif;
+}
+.fighter button.loc.wounded { color:#eab494; }
+.fighter button.loc:hover,
+.fighter button.loc.sel,
+.fighter button.loc:focus-visible { background:#35382f; }
+.fighter button.loc:focus-visible { outline:2px solid #c5a67d; outline-offset:2px; }
+.fighter button.loc span:last-child { font-size:13px; font-variant-numeric:tabular-nums; }
+.fighter button.loc small { font-size:11px; color:#a99b87; }
+.recent-entry:last-child {
+  background:#2b302a;
+  border-left:3px solid #b99b70;
+  padding-left:12px;
+  padding-right:9px;
+  margin:0 -8px;
+}
+.outcome-strip .outcome-mark { display:none; }
+.outcome-strip .outcome-headline { line-height:1.25; }
+.rules-disclosure summary {
+  cursor:pointer;
+  color:#514333;
+  font:600 15px/1.5 system-ui,sans-serif;
+}
+.rules-disclosure summary:hover { color:#2f342d; }
+@media(max-width:1320px) {
+  .decision-panel .primary-actions .choice { min-height:70px; padding:15px; }
+  .fighter button.loc { font-size:11px; padding:8px 1px; }
+}
+@media(max-width:740px) {
+  .decision-panel .primary-actions { grid-template-columns:1fr; }
+  .decision-panel .primary-actions .choice { min-height:58px; }
+  .decision-panel .primary-actions .choice strong { font-size:16px; }
+  .decision-panel .secondary-actions .choicegrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .fighter button.loc { padding:9px 2px; }
+}
+@media(max-width:420px) {
+  .decision-panel .secondary-actions .choicegrid { grid-template-columns:1fr; }
+}
