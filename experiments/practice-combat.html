@@ -310,7 +310,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .effects-ref-grid b{font:600 11px system-ui,sans-serif;color:#d6c4a7}
 .effects-ref-grid span{font:10px system-ui,sans-serif;color:#9f9585}
 </style>
-<link rel="stylesheet" href="practice-combat-ux.css?v=7">
+<link rel="stylesheet" href="practice-combat-ux.css?v=8">
 </head>
 <body>
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>Practice Combat</span><span class="hide-mobile">Independent demo · no account required</span><a href="#" id="homeLink">Reset</a></div></header>
@@ -550,6 +550,28 @@ function performManualRoll(){
   const result=request.defs.map(d=>d.fixed!=null?d.fixed:die(d.sides));
   request.callback(result);
 }
+/* Only describe a harder roll when the engine's actual target has changed.
+   The injury example is shown only for an isolated serious weapon-arm modifier. */
+function rollDifficultyHtml(actor){
+ const f=S.fighters?.[actor];
+ const label=String(R?.label||'');
+ if(!f||!/^(Attack · Combat Style|Parry ·|Evade ·)/.test(label))return '';
+ const targets=[...label.matchAll(/(\d+)%/g)];
+ if(!targets.length)return '';
+ const final=Number(targets[targets.length-1][1]);
+ const isEvade=/^Evade ·/.test(label);
+ const base=Number(isEvade?f.evade:f.style);
+ if(!Number.isFinite(base)||!Number.isFinite(final)||final>=base)return '';
+ const isolatedWound=/^Attack · Combat Style/.test(label)&&
+   zoneClass(f,f.weaponHand)==='serious'&&!f.prone&&!f.blindedTurns&&
+   !f.fatigue&&!(f.impaledWounds?.length)&&
+   Math.ceil(base*2/3)===final;
+ return '<p class="roll-difficulty-note">'+
+   '<span>'+(isolatedWound?'One difficulty grade harder':'Adjusted roll target')+'</span>'+
+   '<strong>'+base+'% → '+final+'%</strong>'+
+   '<small>'+(isolatedWound?'Standard → Hard · serious '+esc(f.weaponHand)+' wound':
+   'Target reduced by combat conditions')+'</small></p>';
+}
 function rollPrompt(actor){
   if(!R||R.actor!==actor)return '';
   const fighter=S.fighters[actor];
@@ -560,7 +582,7 @@ function rollPrompt(actor){
     [makeDie(d.sides,d.fixed??0,d.fixed!=null?'Maximized':(d.label||'d'+d.sides),'',d.fixed!=null?String(d.fixed):'?')]);
   return `<div class="roll-await" role="group" aria-label="Manual ${esc(title)} roll for ${esc(fighter.name)}">
      <div class="roll-await-kicker">${esc(title)} · ${esc(fighter.name)}</div>
-     <h3>${esc(R.label)}</h3><div class="roll-await-dice">${renderDice(placeholders,false)}</div>
+     <h3>${esc(R.label)}</h3>${rollDifficultyHtml(actor)}<div class="roll-await-dice">${renderDice(placeholders,false)}</div>
      <button type="button" class="roll-now" data-act="roll" aria-label="Roll ${esc(title)} now">Roll ${esc(title)}</button>
   </div>`;
 }
@@ -816,7 +838,7 @@ function exchangeRecapModel(){
  const hasLog=title=>!!record(title);
  if(impactSummary)extra.push(impactSummary);
  if(hasLog('Limb Disabled'))extra.push('Limb disabled');
- if(hasLog('Wound Resisted'))extra.push('Additional wound effect resisted');
+ if(hasLog('Wound Resisted'))extra.push('Extra injury effect resisted');
  const bleed=record('Bleed');
  if(bleed)extra.push(/bleeding begins/i.test(bleed.body||'')?'Bleeding begins':'Bleed resisted');
  const stun=record('Stun Location');
@@ -832,6 +854,13 @@ function exchangeRecapModel(){
  if(hasLog('Sunder'))extra.push('Armour damaged');
  if(hasLog('Damage Weapon'))extra.push('Weapon damaged');
  if(hasLog('FIGHT ENDS'))extra.push('Bout ended');
+ const resisted=record('Wound Resisted');
+ // This text is a persistent injury consequence, not a change to the Endurance
+ // roll that just succeeded. Keep difficulty grades separate from success grades.
+ const difficultyReminder=resisted&&/one difficulty grade harder/i.test(resisted.body||'')?
+   {loc:(/^(?:SERIOUS|MAJOR) WOUND · (.+)$/i.exec(
+     (entries.slice(0,entries.indexOf(resisted)).reverse().find(entry=>
+       /^(?:SERIOUS|MAJOR) WOUND · /i.test(entry.title||''))||{}).title||'')||[])[1]||null}:null;
  const unique=[...new Set(extra)];
  const effectText=picked.length?picked.slice(0,2).join(' + ')+(picked.length>2?' +'+(picked.length-2):''):
    skipped?'Declined':offered?'Available':defense||hit||noHit?'None':'Awaiting response';
@@ -853,7 +882,7 @@ function exchangeRecapModel(){
    !V.busy&&S.phase==='fight'&&S.pending?.kind==='impalePick'?'Select impale damage':
    !V.busy&&S.phase==='fight'&&S.pending?.kind==='impaleResist'?'Respond to withdrawal':
    '';
- return {headline,note,kind:resultKind,attacker,extra:unique,steps:stepItems,
+ return {headline,note,kind:resultKind,attacker,extra:unique,difficultyReminder,steps:stepItems,
    status:V.busy?'Revealing exchange':finished?'Last exchange':'Exchange in progress',
    next,hasResult:finished};
 }
@@ -868,6 +897,12 @@ function exchangeRecapHtml(info){
    '<h3>'+esc(recap.headline)+'</h3>'+
    (recap.note?'<p class="recap-explanation">'+esc(recap.note)+'</p>':'')+
    (recap.extra.length?'<p class="recap-consequences">'+esc(recap.extra.slice(0,3).join(' · ')+(recap.extra.length>3?' · +'+(recap.extra.length-3)+' more':''))+'</p>':'')+
+   (recap.difficultyReminder?'<div class="recap-difficulty" role="note">'+
+     '<span class="recap-difficulty-label">Endurance resisted the extra wound effect</span>'+
+     '<strong>Injured-body tasks are one difficulty grade harder</strong>'+
+     '<span>For example: Standard → Hard'+
+     (recap.difficultyReminder.loc?' · '+esc(recap.difficultyReminder.loc):'')+
+     ' · Until the wound heals to Minor</span></div>':'')+
    '<div class="recap-steps">'+recap.steps.map(item).join('')+'</div>'+
    (recap.next?'<div class="recap-next"><span>Next</span><strong>'+esc(recap.next)+'</strong></div>':'')+
    (V.busy?'<div class="recap-toolbar"><span>Showing results as they resolve</span><button type="button" class="toolbutton" data-act="skip">Show results</button></div>':'')+
