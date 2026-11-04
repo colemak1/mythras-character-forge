@@ -918,12 +918,17 @@ function exchangeRecapModel(){
  const hitLocation=hit?(/ hits (Head|Chest|Abdomen|Right Arm|Left Arm|Right Leg|Left Leg)$/i.exec(hit.title)||[])[1]:location?.meta?.location||null;
  const impact=hit?(/=\s*(\d+)\s+total;\s*(\d+)\s+parry;\s*(\d+)\s+armour;\s*(\d+)\s+HP lost/i.exec(hit.body||'')):null;
  const hpLost=impact?Number(impact[4]):null;
- const defender=defense?String(defense.title).replace(/ (?:parries(?: with shield)?|evades|does not defend)$/i,''):null;
+ const defender=defense?String(defense.title).replace(/ (?:parries(?: with shield)?|evades|does not defend)$/i,''):(Object.values(S.fighters||{}).find(f=>f.name!==attacker)?.name||'the opponent');
  const cleanGrade=g=>g?g[0].toUpperCase()+g.slice(1).toLowerCase():'';
  const rollText=info=>info?.roll?(info.roll+(info.target?' / '+info.target+'%':'')+(info.grade?' · '+cleanGrade(info.grade):'')):'Awaiting roll';
+ const lodged=entries.some(entry=>entry.title==='Impaled Weapon'&&/lodges\b/i.test(entry.body||''));
+ const blockedImpale=entries.some(entry=>entry.title==='Impale blocked');
+ const trip=entries.findLast(entry=>entry.title==='Trip Opponent')||null;
  let headline='',note='',resultKind='progress',impactSummary='';
  if(hit){
-   headline=hpLost===null?attacker+' strikes '+hitLocation:hpLost>0?attacker+' strikes '+hitLocation+' · '+hpLost+' HP lost':attacker+' strikes '+hitLocation+' · no HP lost';
+   const action=lodged?' impales '+defender+' in the ':' strikes the ';
+   headline=attacker+action+hitLocation+
+     (hpLost===null?'':hpLost>0?' · '+hpLost+' HP lost':' · no HP lost');
    resultKind=hpLost>0?'injury':'blocked';
    if(impact)note=impact[1]+' damage − '+impact[2]+' parry − '+impact[3]+' armour = '+impact[4]+' HP lost';
    const victimId=S.fighters?.a?.name===attacker?'b':S.fighters?.b?.name===attacker?'a':null;
@@ -935,12 +940,21 @@ function exchangeRecapModel(){
      }
    }
  }else if(noHit){
-   headline='No damaging hit';
+   const evaded=/evades the incoming strike/i.test(noHit.body||'');
+   headline=evaded?defender+' evades '+attacker+'’s strike':attacker+'’s strike misses';
    note=String(noHit.body||'').trim();
    resultKind='blocked';
+ }else if(trip){
+   if(/falls prone|is knocked prone/i.test(trip.body||''))headline=attacker+' trips '+defender;
+   else if(/remains standing|keeps footing/i.test(trip.body||''))headline=defender+' resists '+attacker+'’s trip';
+   else headline=attacker+' attempts to trip '+defender;
+   note='Trip Opponent · '+String(trip.body||'').trim();
+ }else if(picked.includes('Impale')){
+   headline=attacker+' attempts to impale '+defender;
+   note='Impale is not confirmed until the weapon lodges.';
  }else if(defense){
-   headline='Attack and defense resolved';
-   note=offered?'Special Effect decision': 'Resolving the exchange';
+   headline=offered?attacker+' gains a tactical opening':'Attack and defense resolved';
+   note=offered?'Special Effect decision':'Resolving the exchange';
  }else{
    headline=attackRoll?.grade==='FAILURE'||attackRoll?.grade==='FUMBLE'?'Attack roll failed':attacker+' attacks';
    note='Awaiting the response';
@@ -958,6 +972,8 @@ function exchangeRecapModel(){
  const stagger=record('Serious Wound · Stunned');
  if(stagger)extra.push('Attack temporarily restricted');
  if(hasLog('Impaled Weapon'))extra.push('Weapon lodged');
+ if(blockedImpale)extra.push('Impale blocked');
+ if(trip){if(/falls prone|is knocked prone/i.test(trip.body||''))extra.push('Opponent knocked prone');else if(/remains standing|keeps footing/i.test(trip.body||''))extra.push('Trip resisted');}
  const bash=record('Bash');
  if(bash){
    const metres=/knocks\s+.+?\s+(\d+)m back/i.exec(bash.body||'');
@@ -998,14 +1014,45 @@ function exchangeRecapModel(){
    status:V.busy?'Revealing exchange':finished?'Last exchange':'Exchange in progress',
    next,hasResult:finished};
 }
+
+/* One live-action sentence inside the existing recap, never an extra panel.
+   Pre-reveal captions describe intent only; resolved results come from visible logs. */
+function exchangeLiveNarration(){
+ const pending=S.pending,who=id=>S.fighters?.[id]?.name||'A fighter';
+ if(!V.busy&&R){
+   const label=String(R.label||'');
+   if(/^Trip resistance/i.test(label)&&pending?.owner&&pending?.other)
+     return who(pending.owner)+' attempts to trip '+who(pending.other);
+   if(/^Damage · /i.test(label)){
+     const loc=/^Damage · (Head|Chest|Abdomen|Right Arm|Left Arm|Right Leg|Left Leg)/i.exec(label)?.[1];
+     return who(R.actor)+' rolls damage'+(loc?' against '+loc:'');
+   }
+   if(/^Hit Location/i.test(label))return who(R.actor)+' rolls for hit location';
+   return '';
+ }
+ if(!V.busy||!V.stage?.rolling||!V.stage.entry)return '';
+ const title=V.stage.entry.title||'';
+ if(/ attacks$/i.test(title))return title.replace(/ attacks$/i,'')+' attacks';
+ if(/ parries(?: with shield)?$/i.test(title))return title.replace(/ parries(?: with shield)?$/i,'')+' attempts to parry';
+ if(/ evades$/i.test(title))return title.replace(/ evades$/i,'')+' attempts to evade';
+ if(title==='Trip Opponent')return 'A trip attempt is being resolved';
+ if(title==='Impale')return 'An impale attempt is being resolved';
+ if(title==='Hit Location')return 'Determining hit location';
+ if(/^.+ hits (?:Head|Chest|Abdomen|Right Arm|Left Arm|Right Leg|Left Leg)$/i.test(title))
+   return 'Resolving damage'; // Do not reveal the hit before the dice stop.
+ return '';
+}
+
 function exchangeRecapHtml(info){
  const recap=exchangeRecapModel();
  if(!recap)return outcomeStrip(info);
+ const live=exchangeLiveNarration();
  const item=(step,i)=>'<div class="recap-step '+(step.state==='pending'?'awaiting':step.state==='hit'?'is-hit':'')+'">'+
    '<span class="recap-step-label">'+(i+1)+'. '+esc(step.label)+'</span>'+
    '<strong>'+esc(step.value)+'</strong></div>';
  return '<section class="exchange-recap '+recap.kind+'" aria-label="Exchange outcome">'+
    '<div class="recap-heading"><span>'+esc(recap.status)+'</span><span>'+esc(recap.attacker)+'</span></div>'+
+   (live?'<p class="recap-live"><span>NOW</span> '+esc(live)+'</p>':'')+
    '<h3>'+esc(recap.headline)+'</h3>'+
    (recap.note?'<p class="recap-explanation">'+esc(recap.note)+'</p>':'')+
    (recap.extra.length?'<p class="recap-consequences">'+esc(recap.extra.slice(0,3).join(' · ')+(recap.extra.length>3?' · +'+(recap.extra.length-3)+' more':''))+'</p>':'')+
