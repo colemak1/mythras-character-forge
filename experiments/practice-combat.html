@@ -944,9 +944,19 @@ function exchangeRecapModel(){
      }
    }
  }else if(noHit){
+   const evadeAttempt=!!defense&&/ evades$/i.test(defense.title||'');
    const evaded=/evades the incoming strike/i.test(noHit.body||'');
-   headline=evaded?defender+' evades '+attacker+'’s strike':attacker+'’s strike misses';
-   note=String(noHit.body||'').trim();
+   const attackFailed=attackRoll?.grade==='FAILURE'||attackRoll?.grade==='FUMBLE';
+   if(attackFailed){
+     headline=attacker+' misses';
+     note=evadeAttempt?defender+' attempts to evade and ends prone.':'The attack roll failed.';
+   }else if(evaded&&evadeAttempt){
+     headline=defender+' evades '+attacker+'’s strike';
+     note=defender+' ends prone.';
+   }else{
+     headline=attacker+'’s attack does not connect';
+     note=String(noHit.body||'').trim();
+   }
    resultKind='blocked';
  }else if(!V.busy&&S.pending?.kind==='tripResistChoice'){
    headline=tripActor+' attempts to trip '+tripVictim;
@@ -1340,13 +1350,15 @@ function focusActiveDecision(){
    const target=document.querySelector('.roll-await .roll-now, .decision-panel .primary-actions .choice:not(:disabled), .decision-panel .choice:not(:disabled)');
    if(!target)return;
    target.focus?.({preventScroll:true});
-   // Bring a new prompt into view only when genuinely outside the viewport.
-   // 'nearest' avoids the disorienting jump to the top of the page.
-   const bounds=target.getBoundingClientRect?.();
+   // A roll is a single decision unit: heading, modified target, dice, button.
+   // Scrolling only the button into view can conceal the modifier explanation.
+   const prompt=R?document.querySelector('.roll-await'):null;
+   const anchor=prompt||target;
+   const bounds=anchor.getBoundingClientRect?.();
    const viewHeight=window.innerHeight;
    if(bounds&&Number.isFinite(viewHeight)&&viewHeight>0&&
       (bounds.top<76||bounds.bottom>viewHeight-34)){
-     target.scrollIntoView?.({block:'nearest',behavior:V.reduced?'auto':'smooth'});
+     anchor.scrollIntoView?.({block:prompt?'start':'nearest',behavior:V.reduced?'auto':'smooth'});
    }
  });
 }
@@ -1534,7 +1546,12 @@ function arenaHtml(){
  ${S.mode==='tutorial'&&R&&!V.busy?tutorialGuideHtml():''}
  ${S.phase==='fight'&&!V.busy&&!R?`<section class="decision-panel" aria-label="Current combat decision"><div class="decision-kicker">${esc(decisionKicker())}</div>${decisionHtml()}${S.mode==='tutorial'?tutorialGuideHtml():`<p class="choice-help" id="choiceHelp" role="status">${esc(decisionHelpPrompt())}</p>`}</section>`:''}
  ${S.phase==='between'||S.phase==='over'?`<div class="center-content"><div class="actionbox">${actionHtml()}</div></div>`:''}
- <div class="statusbar">${S.phase==='fight'?`${S.pending?'Response needed':`Turn: ${esc(S.fighters[S.order[S.turnIndex]]?.name||'—')}`}`:'Encounter complete'}</div>
+ <div class="statusbar">${S.phase==='fight'?
+   (R&&/\bInitiative\b/i.test(R.label||'')?
+     'Initiative: '+esc(S.fighters[R.actor]?.name||'—')+' to roll':
+     S.pending?'Response needed':
+       'Turn: '+esc(S.fighters[S.order[S.turnIndex]]?.name||'—')):
+   'Encounter complete'}</div>
  </section>${fighterCard(b,'enemy')}${combatHistory()}</div>`;
 }
 
