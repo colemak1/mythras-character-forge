@@ -287,4 +287,18 @@ api.render();
 check('Normal mode stays free of tutorial prompts',
   !root.innerHTML.includes('class="tutorial-guide"'));
 
+
+/* Pass 05: focus updates the existing tutorial copy, without adding a panel. */
+const tutorialCopy={textContent:'Default prompt'};
+const originalQuery=document.querySelector;
+document.querySelector=selector=>
+  selector==='.decision-panel .tutorial-guide-main span'?tutorialCopy:originalQuery(selector);
+handlers.focusin({target:{closest(selector){
+  return selector==='.decision-panel button.choice'?
+    {dataset:{help:'A parry can absorb damage'},textContent:'Parry'}:null;
+}}});
+check('Tutorial choice focus replaces the hint in the existing guidance line',
+  tutorialCopy.textContent==='A parry can absorb damage');
+document.querySelector=originalQuery;
+
 console.log('Practice Combat UX smoke checks passed.');
