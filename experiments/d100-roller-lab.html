@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>d100 Dice Lab · New Sit’ota</title>
+<style>
+:root{--bg:#161a18;--panel:#242925;--panel2:#2d332e;--ink:#e8e0d1;--muted:#a9ab9f;--line:#4a5149;--gold:#c5b08b;--success:#a3bba1;--fail:#d5a48e;--duration:1450ms}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px;line-height:1.5}
+button,input{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid #e9cc99;outline-offset:3px}
+a{color:#d5c29e;text-underline-offset:4px}
+.wrap{max-width:1280px;padding:35px 28px 80px;margin:auto}
+.topline{display:flex;justify-content:space-between;gap:12px;align-items:center;color:var(--muted);font-size:12px;letter-spacing:.04em}
+.topline .brand{font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+.topline a{text-decoration:none;color:#c8c8b6}
+header{border-bottom:1px solid var(--line);padding:36px 0 28px}
+.eyebrow{font-size:11px;color:var(--gold);letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+h1{font:normal clamp(36px,5vw,57px)/1.1 Georgia,"Times New Roman",serif;margin:12px 0}
+.lead{font-size:16px;line-height:1.65;max-width:760px;color:#b9bbb0;margin:0}
+.toolbar{display:flex;align-items:end;gap:14px;flex-wrap:wrap;margin:26px 0 13px}
+.primary,.secondary,.choose{border-radius:3px;border:1px solid #82745d;background:#bda77f;color:#161b17;font-weight:700;padding:11px 17px;min-height:44px}
+.primary:hover{background:#d2bc92}
+.secondary,.choose{background:transparent;color:#e1d8c8;border-color:#646b60}
+.secondary:hover,.choose:hover{background:#363d36}
+.secondary[aria-pressed="true"]{border-color:#c7ad82;background:#3e4238}
+.target-control{display:flex;flex-direction:column;gap:5px;letter-spacing:.04em;color:#c6c3b4;font-size:11px;font-weight:700;text-transform:uppercase}
+.target-control input{width:94px;padding:10px 12px;min-height:44px;border:1px solid #6b7165;background:#242923;color:#eee1c9;border-radius:3px;font-size:16px}
+.active-summary{padding:10px 0 18px;color:#bfc4b7;min-height:40px}
+.active-summary strong{color:#e9d2a6}
+.lab-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.card{background:var(--panel);border:1px solid #4b534a;border-radius:4px;overflow:hidden;min-width:0;transition:border-color .16s,box-shadow .16s}
+.card.selected{border-color:#bca77c;box-shadow:inset 0 0 0 1px rgba(188,167,124,.22)}
+.card-head{display:flex;justify-content:space-between;align-items:start;gap:14px;padding:20px 22px 0}
+.style-index{font-size:11px;font-weight:700;color:#bcaa88;letter-spacing:.12em}
+.card h2{font:normal 25px/1.2 Georgia,serif;margin:5px 0 8px}
+.card-desc{font-size:12px;line-height:1.55;color:#bfc1b4;margin:0;max-width:380px}
+.selection{font:700 10px/1.5 system-ui,sans-serif;color:#d4bd91;text-transform:uppercase;letter-spacing:.11em;white-space:nowrap}
+.selection:empty{display:none}
+.visual{height:196px;margin:20px 22px 8px;border:1px solid #424a42;background:#1b211d;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.visual .value{font-variant-numeric:tabular-nums}
+.card-output{padding:0 22px 18px;display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:47px}
+.rolled{color:#d8d0c1;font-size:13px;font-variant-numeric:tabular-nums}
+.rolled strong{font-size:17px;font-weight:700}
+.rolled[data-grade="under"] strong{color:var(--success)}
+.rolled[data-grade="over"] strong{color:var(--fail)}
+.card-footer{padding:15px 22px 20px;border-top:1px solid #444c44;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.card-footer button{min-width:95px}
+.choose[aria-pressed="true"]{background:#404638;border-color:#c4ae80;color:#f0dfc0}
+.note{font-size:11px;color:#9ca99a}
+.hint{color:#aeb1a6;font-size:12px;margin:19px 0 0;line-height:1.65}
+.footer{padding-top:33px;margin-top:36px;border-top:1px solid #4a5149;color:#a6a99e;font-size:12px}
+.visual[data-style="minimal"]{background:#202621}
+.minimal-result{display:flex;align-items:baseline;gap:8px;position:relative}
+.minimal .value{font:normal 84px/.95 Georgia,serif;letter-spacing:-.065em;color:#f0e4cc;min-width:125px;text-align:center}
+.minimal .unit{font:700 12px system-ui,sans-serif;color:#a4ab9e;letter-spacing:.1em}
+.minimal::after{content:"";position:absolute;left:20%;right:20%;height:1px;bottom:25px;background:#586057;transform:scaleX(.38);transition:transform .55s}
+.minimal.rolling::after{transform:scaleX(1);transition-duration:var(--duration)}
+.minimal.rolling .value{animation:minimal-flash .18s steps(2,end) infinite alternate}
+@keyframes minimal-flash{from{opacity:.65;filter:blur(1px)}to{opacity:1;filter:blur(0)}}
+.visual[data-style="facet"]{perspective:600px}
+.facet-body{width:132px;height:132px;display:flex;align-items:center;justify-content:center;position:relative;transform-style:preserve-3d;clip-path:polygon(24% 1%,76% 1%,99% 29%,99% 71%,76% 99%,24% 99%,1% 71%,1% 29%);border:1px solid #c1ad89;background:linear-gradient(145deg,#5e635a 0%,#383f38 44%,#1e2922 100%);box-shadow:inset 0 0 0 10px #2a342c}
+.facet-body::before{content:"";position:absolute;inset:12px;clip-path:polygon(26% 1%,74% 1%,99% 27%,99% 73%,74% 99%,26% 99%,1% 73%,1% 27%);border:1px solid #8b9683;pointer-events:none}
+.facet-body::after{content:"";position:absolute;inset:0;background:linear-gradient(125deg,transparent 38%,rgba(222,208,163,.15) 44%,transparent 54%);pointer-events:none}
+.facet-body .value{color:#e8deca;font:normal 54px Georgia,serif;z-index:1;text-shadow:none}
+.facet-label{position:absolute;bottom:14px;color:#b0ac9a;font-weight:700;font-size:10px;letter-spacing:.16em}
+.facet.rolling .facet-body{animation:facet-tumble var(--duration) cubic-bezier(.17,.77,.3,1) both}
+@keyframes facet-tumble{0%{transform:rotate(-8deg) scale(.9) translateY(-12px)}17%{transform:rotate(48deg) scale(.95) translateY(3px)}41%{transform:rotate(200deg) translateY(-13px)}64%{transform:rotate(317deg) translateY(2px)}84%{transform:rotate(367deg) translateY(-4px)}100%{transform:rotate(360deg) translateY(0)}}
+.visual[data-style="reel"]{background:#1e251f}
+.reel-housing{width:184px;padding:12px 14px 13px;background:#343a32;border:1px solid #a29377;border-radius:6px;box-shadow:0 4px 0 #1b201b}
+.reel-header{font:700 9px system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#c4bda8;text-align:center;margin-bottom:10px}
+.reel-digits{display:flex;justify-content:center;gap:3px}
+.reel-window{background:#ddd1b9;border:1px solid #857967;color:#292d29;min-width:45px;height:70px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;box-shadow:inset 0 4px 12px rgba(26,28,24,.2)}
+.reel-window:not(:last-child)::after{content:"";position:absolute;top:0;right:0;height:100%;width:1px;background:#655949}
+.reel-window span{font:normal 49px/.9 Georgia,serif;font-variant-numeric:tabular-nums;letter-spacing:-.06em}
+.reel.rolling .reel-window span{animation:reel-shift .14s linear infinite alternate}
+@keyframes reel-shift{from{transform:translateY(-9px);filter:blur(1px)}to{transform:translateY(9px);filter:blur(1px)}}
+.visual[data-style="dial"]{background:#20251f}
+.dial-ring{width:158px;height:158px;border-radius:50%;border:1px solid #8d8e79;background:repeating-conic-gradient(from 0deg,#979781 0deg 1deg,transparent 1deg 15deg),#333b32;position:relative;box-shadow:0 0 0 7px #242c25,inset 0 0 0 12px #333b32}
+.dial-center{position:absolute;inset:27px;background:#242e27;border-radius:50%;border:1px solid #697563;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.dial-label{font:700 10px system-ui,sans-serif;color:#bba982;letter-spacing:.13em}
+.dial-center .value{font:normal 48px/1.1 Georgia,serif;color:#f1dfc2}
+.dial-pointer{position:absolute;left:calc(50% - 4px);top:-10px;width:8px;height:25px;background:#dbc6a0;clip-path:polygon(50% 0,100% 100%,0 100%);transform-origin:4px 89px;transform:rotate(0deg);z-index:2}
+.dial.rolling .dial-pointer{transition:transform var(--duration) cubic-bezier(.08,.6,.14,1)}
+.visual[data-style="stamp"]{background:#27291f}
+.stamp-sheet{position:relative;background:#d8cfb7;color:#2e342c;min-width:192px;min-height:128px;transform:rotate(-2deg);box-shadow:0 6px 14px rgba(0,0,0,.3);padding:12px;border:1px solid #a3a18d}
+.stamp-sheet::before{content:"";position:absolute;inset:8px;border:1px dotted #777d6c}
+.stamp-kicker{position:relative;z-index:1;font:700 10px system-ui,sans-serif;letter-spacing:.16em;color:#6b7364}
+.stamp-mark{margin:8px auto 0;width:112px;height:80px;border:3px double #6d493b;color:#6a3b31;display:flex;align-items:center;justify-content:center;transform:rotate(-7deg)}
+.stamp-mark .value{font:normal 59px/.9 Georgia,serif}
+.stamp.rolling .stamp-mark{animation:stamp-drop var(--duration) steps(1,end) forwards}
+@keyframes stamp-drop{0%,69%{opacity:0;transform:translateY(-25px) rotate(-9deg) scale(1.2)}75%{opacity:1;transform:translateY(3px) rotate(-7deg) scale(.95)}100%{opacity:1;transform:translateY(0) rotate(-7deg) scale(1)}}
+@media(min-width:1200px){.lab-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:780px){.wrap{padding:20px 16px 60px}.lab-grid{grid-template-columns:1fr}.visual{height:178px}.card-head{padding:18px 16px 0}.card-footer{padding:14px 16px 17px}.card-output{padding:0 16px 16px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<div class="topline"><span class="brand">New Sit’ota / Experiments</span><a href="./practice-combat.html">Back to Practice Combat</a></div>
+<header><div class="eyebrow">Prototype · compare real interactions</div><h1>d100 Roller Lab</h1>
+<p class="lead">Five working d100 presentations. Roll each separately, or roll the same number on all five to compare their animation and readability. The main combat simulator is untouched.</p></header>
+<div class="toolbar">
+<button type="button" class="primary" id="all">Roll all · same result</button>
+<button type="button" class="secondary" id="edge1">Try 01</button>
+<button type="button" class="secondary" id="edge100">Try 100</button>
+<label class="target-control">Example target <input id="target" type="number" value="67" min="1" max="100" step="1" inputmode="numeric"></label>
+<label class="target-control">Animation speed <select id="speed" aria-label="Animation speed" style="min-height:44px;padding:10px;background:#242923;border:1px solid #6b7165;color:#eee1c9;border-radius:3px"><option value="950">Fast</option><option value="1450" selected>Normal</option><option value="2100">Slow</option></select></label>
+</div>
+<div class="active-summary" id="selected" role="status" aria-live="polite">No favorite selected yet. These are standalone experiments, not live combat options.</div>
+<section class="lab-grid" id="grid" aria-label="Dice roller comparisons"></section>
+<p class="hint">The same number is used when you choose “Roll all,” so you can compare presentation rather than luck. The success/above-target indicator is a threshold demo only, not a full Mythras critical/fumble calculation. All dice are visually a single d100 roller; the mechanical counter uses three digits inside one housing.</p>
+<footer class="footer">Dice Lab v1 · No changes to Practice Combat, character data, or rules engine. Motion respects your device’s reduced-motion setting.</footer>
+</main>
+<script>
+(function(){
+'use strict';
+const styles=[
+{id:'minimal',name:'Bare Number',desc:'Numbers roll rapidly, then stop. No die illustration or ornament.',motion:'Rapid count'},
+{id:'facet',name:'Faceted Toss',desc:'A compact faceted token tumbles and lands. The most physical option.',motion:'Tumble'},
+{id:'reel',name:'Counter Reel',desc:'An old mechanical counter with three moving number windows.',motion:'Reels'},
+{id:'dial',name:'Dial & Pointer',desc:'A numbered dial spins down, then reveals the result.',motion:'Spin'},
+{id:'stamp',name:'Ink Impression',desc:'A printed result lands on a paper slip, then stays in place.',motion:'Stamp'}
+];
+const grid=document.getElementById('grid'),selectedText=document.getElementById('selected');
+const targetInput=document.getElementById('target'),speedInput=document.getElementById('speed');
+const active=new Map();
+let selected='';
+try{selected=localStorage.getItem('sitota-d100-lab-pick')||'';}catch{}
+if(!styles.some(s=>s.id===selected))selected='';
+function visualFor(id){
+ if(id==='minimal')return '<div class="minimal-result"><span class="value" aria-hidden="true">—</span><span class="unit">d100</span></div>';
+ if(id==='facet')return '<div class="facet-body"><span class="value" aria-hidden="true">—</span></div><div class="facet-label">d100</div>';
+ if(id==='reel')return '<div class="reel-housing"><div class="reel-header">d100 · mechanical</div><div class="reel-digits"><div class="reel-window"><span class="d0">–</span></div><div class="reel-window"><span class="d1">–</span></div><div class="reel-window"><span class="d2">–</span></div></div></div>';
+ if(id==='dial')return '<div class="dial-ring"><div class="dial-pointer"></div><div class="dial-center"><span class="dial-label">d100</span><span class="value" aria-hidden="true">—</span></div></div>';
+ return '<div class="stamp-sheet"><span class="stamp-kicker">d100 / combat record</span><div class="stamp-mark"><span class="value" aria-hidden="true">—</span></div></div>';
+}
+grid.innerHTML=styles.map((s,i)=>'<article class="card'+(selected===s.id?' selected':'')+'" id="card-'+s.id+'" data-id="'+s.id+'">'+
+'<div class="card-head"><div><div class="style-index">OPTION '+String(i+1).padStart(2,'0')+' · '+s.motion+'</div><h2>'+s.name+'</h2><p class="card-desc">'+s.desc+'</p></div><span class="selection">'+(selected===s.id?'Selected':'')+'</span></div>'+
+'<div class="visual '+s.id+'" data-style="'+s.id+'">'+visualFor(s.id)+'</div>'+
+'<div class="card-output"><div class="rolled" data-grade="none" aria-live="polite">Not rolled yet</div><span class="note">1–100</span></div>'+
+'<div class="card-footer"><button class="secondary roll" type="button" data-id="'+s.id+'">Roll this</button><button type="button" class="choose" data-id="'+s.id+'" aria-pressed="'+(selected===s.id?'true':'false')+'">'+(selected===s.id?'Selected':'Choose this')+'</button></div></article>').join('');
+function target(){let n=Number(targetInput.value);return Math.max(1,Math.min(100,Number.isFinite(n)?Math.round(n):67));}
+function secureRoll(){
+ if(self.crypto&&typeof self.crypto.getRandomValues==='function'){
+   const u=new Uint32Array(1),max=4294967200;
+   do{self.crypto.getRandomValues(u);}while(u[0]>=max);
+   return u[0]%100+1;
+ }
+ return Math.floor(Math.random()*100)+1;
+}
+function visualNumber(card,id,value){
+ const visual=card.querySelector('.visual');
+ if(id==='reel'){
+   const digits=String(value).padStart(3,'0');
+   ['d0','d1','d2'].forEach((k,i)=>{visual.querySelector('.'+k).textContent=digits[i];});
+ }else visual.querySelector('.value').textContent=String(value);
+}
+function settle(id,n,token){
+ const state=active.get(id);if(!state||state.token!==token)return;
+ const card=document.getElementById('card-'+id),visual=card.querySelector('.visual');
+ visual.classList.remove('rolling');
+ visualNumber(card,id,n);
+ state.value=n;
+ const grade=n<=target()?'under':'over';
+ const outcome=n<=target()?'Within target':'Above target';
+ const label=card.querySelector('.rolled');
+ label.dataset.grade=grade;
+ label.innerHTML='<strong>'+n+'</strong> / 100 · '+outcome+' ('+target()+'%)';
+ card.querySelector('.roll').disabled=false;
+ active.delete(id);
+}
+function rollOne(id,n){
+ const card=document.getElementById('card-'+id),state=active.get(id);
+ if(state){cancelAnimationFrame(state.frame);clearTimeout(state.timer);}
+ const token=(state?.token||0)+1;
+ const reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const duration=reduced?0:Number(speedInput.value)||1450;
+ const next={token,frame:null,timer:null,value:null};
+ active.set(id,next);
+ const visual=card.querySelector('.visual');
+ visual.classList.remove('rolling');
+ void visual.offsetWidth; // restart the authored CSS motion for successive rolls
+ card.querySelector('.roll').disabled=true;
+ card.querySelector('.rolled').textContent='Rolling…';
+ card.querySelector('.rolled').dataset.grade='none';
+ visualNumber(card,id,'–');
+ if(!duration){settle(id,n,token);return;}
+ visual.style.setProperty('--duration',duration+'ms');
+ visual.classList.add('rolling');
+ if(id==='dial'){
+   const pointer=visual.querySelector('.dial-pointer');
+   const start=Number(pointer.dataset.angle||0);
+   const angle=start+1080+(n/100)*360;
+   pointer.dataset.angle=String(angle);
+   requestAnimationFrame(()=>{if(active.get(id)?.token===token)pointer.style.transform='rotate('+angle+'deg)';});
+ }
+ const start=performance.now();
+ let last=0;
+ const tick=now=>{
+   if(active.get(id)?.token!==token)return;
+   const elapsed=now-start;
+   if(elapsed>=duration){settle(id,n,token);return;}
+   if(now-last>65 && id!=='stamp'){
+     visualNumber(card,id,Math.floor(Math.random()*100)+1);
+     last=now;
+   }
+   next.frame=requestAnimationFrame(tick);
+ };
+ next.frame=requestAnimationFrame(tick);
+ next.timer=setTimeout(()=>settle(id,n,token),duration+100);
+}
+function rollAll(n){const value=n||secureRoll();styles.forEach(s=>rollOne(s.id,value));}
+function choose(id){
+ selected=id;
+ try{localStorage.setItem('sitota-d100-lab-pick',id);}catch{}
+ styles.forEach(s=>{
+   const card=document.getElementById('card-'+s.id);
+   const chosen=s.id===id;card.classList.toggle('selected',chosen);
+   const button=card.querySelector('.choose');button.setAttribute('aria-pressed',String(chosen));button.textContent=chosen?'Selected':'Choose this';
+   card.querySelector('.selection').textContent=chosen?'Selected':'';
+ });
+ const found=styles.find(s=>s.id===id);
+ selectedText.innerHTML='Your current choice: <strong>'+found.name+'</strong>. Selection saved in this browser; Practice Combat has not been changed.';
+}
+grid.addEventListener('click',e=>{
+ const roll=e.target.closest('button.roll');
+ if(roll){rollOne(roll.dataset.id,secureRoll());return;}
+ const chooseButton=e.target.closest('button.choose');
+ if(chooseButton){choose(chooseButton.dataset.id);}
+});
+document.getElementById('all').addEventListener('click',()=>rollAll());
+document.getElementById('edge1').addEventListener('click',()=>rollAll(1));
+document.getElementById('edge100').addEventListener('click',()=>rollAll(100));
+targetInput.addEventListener('change',()=>{targetInput.value=String(target());
+ styles.forEach(s=>{const state=active.get(s.id);if(state)return;const card=document.getElementById('card-'+s.id);const out=card.querySelector('.rolled');const match=/^(\d+)\s*\/\s*100/.exec(out.textContent||'');if(!match)return;const n=Number(match[1]);out.dataset.grade=n<=target()?'under':'over';out.innerHTML='<strong>'+n+'</strong> / 100 · '+(n<=target()?'Within target':'Above target')+' ('+target()+'%)';});
+});
+if(selected){choose(selected);}
+window.diceLab={styles:styles.map(s=>s.id),rollAll,choose,secureRoll};
+})();
+</script>
+</body>
+</html>
