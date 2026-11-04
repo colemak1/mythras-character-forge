@@ -1335,3 +1335,29 @@ button:focus-visible,.loc:focus-visible {
   .exchange-recap .recap-difficulty { margin-top:12px;padding:10px 0 0 10px; }
   .exchange-recap .recap-difficulty strong { font-size:13px; }
 }
+
+
+/* UX 09: a single live caption within the existing exchange, no notifications. */
+.exchange-recap .recap-live {
+  margin:12px 0 4px;
+  padding:0 0 0 10px;
+  border-left:2px solid #c7a471;
+  color:#efdec4;
+  font:600 13px/1.5 system-ui,sans-serif;
+}
+.exchange-recap .recap-live span {
+  display:inline-block;
+  margin-right:9px;
+  color:#c9ad85;
+  letter-spacing:.11em;
+  font:700 10px/1.4 system-ui,sans-serif;
+}
+.exchange-recap .recap-live + h3 { margin-top:7px; }
+.exchange-half .roll-difficulty-note small {
+  font-weight:500;
+  color:#60462c;
+  overflow-wrap:anywhere;
+}
+@media(max-width:740px){
+ .exchange-recap .recap-live {font-size:12px;padding-left:8px;}
+}
