@@ -927,6 +927,11 @@ function exchangeRecapModel(){
  const lodged=entries.some(entry=>entry.title==='Impaled Weapon'&&/lodges\b/i.test(entry.body||''));
  const blockedImpale=entries.some(entry=>entry.title==='Impale blocked');
  const trip=entries.findLast(entry=>entry.title==='Trip Opponent')||null;
+ const tripOwnerId=trip?.meta?.actor||S.pending?.kind==='tripResistChoice'&&S.pending.owner||null;
+ const tripActor=S.fighters?.[tripOwnerId]?.name||attacker;
+ const tripVictimId=S.pending?.kind==='tripResistChoice'?S.pending.other:
+   tripOwnerId==='a'?'b':tripOwnerId==='b'?'a':null;
+ const tripVictim=S.fighters?.[tripVictimId]?.name||defender;
  let headline='',note='',resultKind='progress',impactSummary='';
  if(hit){
    const action=lodged?' impales '+defender+' in the ':' strikes the ';
@@ -948,12 +953,12 @@ function exchangeRecapModel(){
    note=String(noHit.body||'').trim();
    resultKind='blocked';
  }else if(!V.busy&&S.pending?.kind==='tripResistChoice'){
-   headline=attacker+' attempts to trip '+defender;
+   headline=tripActor+' attempts to trip '+tripVictim;
    note='Choose how to resist the trip.';
  }else if(trip){
-   if(/falls prone|is knocked prone/i.test(trip.body||''))headline=attacker+' trips '+defender;
-   else if(/remains standing|keeps footing/i.test(trip.body||''))headline=defender+' resists '+attacker+'’s trip';
-   else headline=attacker+' attempts to trip '+defender;
+   if(/falls prone|is knocked prone/i.test(trip.body||''))headline=tripActor+' trips '+tripVictim;
+   else if(/remains standing|keeps footing/i.test(trip.body||''))headline=tripVictim+' resists '+tripActor+'’s trip';
+   else headline=tripActor+' attempts to trip '+tripVictim;
    note='Trip Opponent · '+String(trip.body||'').trim();
  }else if(picked.includes('Impale')){
    headline=attacker+' attempts to impale '+defender;
@@ -979,7 +984,7 @@ function exchangeRecapModel(){
  if(stagger)extra.push('Attack temporarily restricted');
  if(hasLog('Impaled Weapon'))extra.push('Weapon lodged');
  if(blockedImpale)extra.push('Impale blocked');
- if(trip){if(/falls prone|is knocked prone/i.test(trip.body||''))extra.push('Opponent knocked prone');else if(/remains standing|keeps footing/i.test(trip.body||''))extra.push('Trip resisted');}
+ if(trip){if(/falls prone|is knocked prone/i.test(trip.body||''))extra.push('Target knocked prone');else if(/remains standing|keeps footing/i.test(trip.body||''))extra.push('Trip resisted');}
  const bash=record('Bash');
  if(bash){
    const metres=/knocks\s+.+?\s+(\d+)m back/i.exec(bash.body||'');
@@ -1055,7 +1060,8 @@ function exchangeLiveNarration(){
 function exchangeRecapHtml(info){
  const recap=exchangeRecapModel();
  if(!recap)return outcomeStrip(info);
- const live=exchangeLiveNarration();
+ const currentLive=exchangeLiveNarration();
+ const live=currentLive===recap.headline?'':currentLive;
  const item=(step,i)=>'<div class="recap-step '+(step.state==='pending'?'awaiting':step.state==='hit'?'is-hit':'')+'">'+
    '<span class="recap-step-label">'+(i+1)+'. '+esc(step.label)+'</span>'+
    '<strong>'+esc(step.value)+'</strong></div>';
