@@ -1465,3 +1465,102 @@ button:focus-visible,.loc:focus-visible {
 @media (max-height: 680px) {
   .roll-await { scroll-margin-top: 48px; }
 }
+
+
+/* UX 12: one purposeful die per actual d100 value; restrained tabletop finish.
+   Deliberately replaces glossy gradients and heavy toy-like shadows. */
+.exchange-half .stage-dice {
+  gap:10px;
+  align-items:center;
+  justify-content:center;
+  margin:12px auto 9px;
+}
+.exchange-half .die-wrap {
+  gap:6px;
+  min-width:76px;
+}
+.exchange-half .die-shape {
+  width:76px;
+  height:76px;
+  box-sizing:border-box;
+  background:#d9c9ab;
+  background-image:linear-gradient(154deg,#e6d8bd 0%,#d0be9f 100%);
+  color:#302a21;
+  border:1px solid #9c8668;
+  text-shadow:none;
+  font:600 29px/1 Georgia,serif;
+  font-variant-numeric:tabular-nums;
+  box-shadow:inset 0 1px 0 #f7ead2,0 2px 0 #867459,0 5px 10px rgba(28,23,16,.13);
+  transform:none;
+}
+.exchange-half .die-shape::before {
+  inset:6px;
+  border:1px solid rgba(84,70,48,.3);
+}
+.exchange-half .die-shape.percentile,
+.exchange-half .die-shape.d100 {
+  width:95px;
+  height:95px;
+  background:#343b37;
+  background-image:linear-gradient(155deg,#4b554d,#303b35);
+  color:#f0dfbf;
+  border:1px solid #9d8868;
+  text-shadow:none;
+  font:600 39px/1 Georgia,serif;
+  letter-spacing:-.035em;
+  box-shadow:inset 0 1px 0 rgba(239,219,180,.18),0 2px 0 #252c28,0 5px 12px rgba(16,19,17,.23);
+  clip-path:polygon(21% 0,79% 0,100% 21%,100% 79%,79% 100%,21% 100%,0 79%,0 21%);
+}
+.exchange-half .die-shape.d100::before {
+  inset:8px;
+  border:1px solid rgba(234,212,175,.32);
+  clip-path:polygon(17% 0,83% 0,100% 17%,100% 83%,83% 100%,17% 100%,0 83%,0 17%);
+}
+.exchange-half .die-role {
+  color:#817057;
+  font:700 10px/1.3 system-ui,sans-serif;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+}
+.exchange-half .roll-await .die-shape.d100 {
+  width:112px;
+  height:112px;
+  font-size:46px;
+}
+.exchange-half .roll-await .die-role {
+  color:#6a634f;
+  font-size:11px;
+}
+.exchange-half .roll-await-dice {
+  display:flex;
+  justify-content:center;
+  padding:7px 0 10px;
+}
+.exchange-half .roll-await .roll-target-line {
+  text-align:center;
+  font:600 12px/1.5 system-ui,sans-serif;
+  color:#756248;
+  letter-spacing:.015em;
+  margin:10px 0 4px;
+}
+.exchange-half .roll-await .roll-target-line strong {
+  color:#3d4d3e;
+  margin-left:6px;
+  font-size:17px;
+  font-variant-numeric:tabular-nums;
+}
+.exchange-half.is-rolling .die-shape {
+  animation:diceJitter .19s steps(2,end) infinite alternate;
+}
+@media (max-width:1260px) {
+  .exchange-half .die-shape.d100 { width:83px;height:83px;font-size:34px; }
+  .exchange-half .roll-await .die-shape.d100 {width:100px;height:100px;font-size:40px;}
+}
+@media (max-width:740px) {
+  .exchange-half .die-shape {width:65px;height:65px;font-size:25px;}
+  .exchange-half .die-shape.d100 {width:75px;height:75px;font-size:30px;}
+  .exchange-half .roll-await .die-shape.d100 {width:90px;height:90px;font-size:37px;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .exchange-half.is-rolling .die-shape { animation:none!important; }
+}
