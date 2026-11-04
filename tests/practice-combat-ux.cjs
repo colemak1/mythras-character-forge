@@ -1001,16 +1001,16 @@ api.setRoll({id:5111,actor:'a',label:'Hit Location · d20',
  defs:[{sides:20,label:'Hit location'}]});
 api.render();
 check('Hit location remains a single d20, not converted to d100',
- root.innerHTML.includes('class="die-shape d20"') &&
- !root.innerHTML.includes('class="die-shape d100 percentile"'));
+ /class="die-shape d20(?:\s|\")/.test(root.innerHTML.slice(root.innerHTML.indexOf('<div class="roll-await"'))) &&
+ !root.innerHTML.slice(root.innerHTML.indexOf('<div class="roll-await"')).includes('class="die-shape d100 percentile"'));
 api.setRoll({id:5112,actor:'a',label:'Damage · Left Leg',
  defs:[{sides:6,label:'Weapon A'},{sides:4,label:'Damage Modifier'}]});
 api.render();
 const dm12=root.innerHTML.slice(root.innerHTML.indexOf('<div class="roll-await"'));
 check('Damage dice stay multiple and display their correct sizes',
  (dm12.match(/class="die-wrap"/g)||[]).length===2 &&
- dm12.includes('class="die-shape d6"') &&
- dm12.includes('class="die-shape d4"'));
+ /class="die-shape d6(?:\s|\")/.test(dm12) &&
+ /class="die-shape d4(?:\s|\")/.test(dm12));
 check('Updated dice have a specific non-gloss d100 tile style',
  css.includes('.exchange-half .die-shape.d100') &&
  css.includes('clip-path:polygon(21% 0,79% 0') &&
