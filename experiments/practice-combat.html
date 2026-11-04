@@ -990,8 +990,8 @@ function focusActiveDecision(){
  if(S.phase!=='fight'||V.busy)return;
  const f=S.fighters?.[S.order?.[S.turnIndex]];
  const key=R?('roll:'+R.id):
-   S.pending?('pending:'+S.round+':'+S.cycle+':'+S.turnIndex+':'+S.pending.kind+':'+(S.pending.effectsLeft??'')):
-   ('action:'+S.round+':'+S.cycle+':'+S.turnIndex+':'+(f?.id||''));
+   S.pending?('pending:'+S.wave+':'+S.round+':'+S.cycle+':'+S.turnIndex+':'+S.pending.kind+':'+(S.pending.effectsLeft??'')):
+   ('action:'+S.wave+':'+S.round+':'+S.cycle+':'+S.turnIndex+':'+(f?.id||''));
  if(key===lastDecisionFocusKey)return;
  lastDecisionFocusKey=key;
  window.requestAnimationFrame?.(()=>{
