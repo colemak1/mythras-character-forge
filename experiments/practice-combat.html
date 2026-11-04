@@ -742,7 +742,7 @@ function outcomeStrip(info){
   }else if(info.latest){
     const st=stageFor(info.latest);headline=st.result||st.primary||'Exchange resolved';sub='';css=st.kind==='hurt'?'impact':st.kind==='effect'?'effect':'';mark=st.kind==='hurt'?'✕':'✦';
   }
-  return `<div class="outcome-strip ${css}" aria-live="polite"><div class="outcome-mark">${mark}</div><div><div class="outcome-headline">${esc(headline)}</div>${sub?`<div class="outcome-sub">${esc(sub)}</div>`:''}</div>${V.busy?'<button class="toolbutton strip-skip" data-act="skip">Skip ↠</button>':''}</div>`;
+  return `<div class="outcome-strip ${css}" aria-live="polite"><div class="outcome-mark">${mark}</div><div><div class="outcome-headline">${esc(headline)}</div>${sub?`<div class="outcome-sub">${esc(sub)}</div>`:''}</div>${V.busy?'<button class="toolbutton strip-skip" data-act="skip">Show results</button>':''}</div>`;
 }
 function conciseLog(entry){
   const body=String(entry.body||'');
@@ -1105,7 +1105,7 @@ function arenaHtml(){
  <div class="roundbar"><div class="side">${esc(a.name)} · ${a.initiative??'—'} INI</div><div class="vs">✧ &nbsp; VS &nbsp; ✧<div style="font:700 10px system-ui,sans-serif;color:#e9c68e;margin-top:5px">${S.disengaged?'SEPARATED · '+S.gapMetres+'m':engagementInfo().active?(S.engagement==='short'?'SHORT REACH':'LONG REACH'):'MATCHED REACH'}</div></div><div class="side">${esc(b.name)} · ${b.initiative??'—'} INI</div></div></div>
  <div class="exchange-board">${exchangeHalf('a',info)}${exchangeHalf('b',info)}</div>
  ${S.mode==='tutorial'&&R&&!V.busy?tutorialGuideHtml():''}
- ${S.phase==='fight'&&!V.busy&&!R?`<section class="decision-panel" aria-label="Current combat decision"><div class="decision-kicker">Your next decision</div>${decisionHtml()}${S.mode==='tutorial'?tutorialGuideHtml():`<p class="choice-help" id="choiceHelp" role="status">${esc(decisionHelpPrompt())}</p>`}</section>`:''}
+ ${S.phase==='fight'&&!V.busy&&!R?`<section class="decision-panel" aria-label="Current combat decision"><div class="decision-kicker">${esc(decisionKicker())}</div>${decisionHtml()}${S.mode==='tutorial'?tutorialGuideHtml():`<p class="choice-help" id="choiceHelp" role="status">${esc(decisionHelpPrompt())}</p>`}</section>`:''}
  ${outcomeStrip(info)}
  ${S.phase==='between'||S.phase==='over'?`<div class="center-content"><div class="actionbox">${actionHtml()}</div></div>`:''}
  <div class="statusbar">${S.phase==='fight'?`${S.pending?'Response needed':`Turn: ${esc(S.fighters[S.order[S.turnIndex]]?.name||'—')}`}`:'Encounter complete'}</div>
@@ -1139,6 +1139,20 @@ function decisionHtml(){
    '<details class="secondary-actions"'+(V.moreActionsOpen?' open':'')+'><summary>More actions <span>('+rest.length+')</span></summary>'+
    '<div class="choicegrid">'+rest.map(b=>b.markup).join('')+'</div></details>'+suffix;
 }
+function decisionKicker(){
+ const p=S.pending;
+ if(p?.kind==='reaction')return 'Choose your defense';
+ if(p?.kind==='effect')return 'Choose a Special Effect';
+ if(p?.kind==='location')return 'Choose a hit location';
+ if(p?.kind==='range')return 'Respond to movement';
+ if(p?.kind==='ward')return 'Set shield coverage';
+ if(p?.kind==='impalePick')return 'Resolve the impale';
+ if(p?.kind==='impaleResist')return 'Respond to withdrawal';
+ const id=S.order?.[S.turnIndex];
+ const name=S.fighters?.[id]?.name;
+ return name?name+' · Your turn':'Your next action';
+}
+
 function decisionHelpPrompt(){
  const p=S.pending;
  if(p?.kind==='reaction')return 'Choose how to defend. Hover or focus on a choice to see its effect.';
@@ -1193,7 +1207,7 @@ function tutorialGuideHtml(){
 }
 
 function tutorialHint(){let p=S.pending;if(p?.kind==='reaction')return 'Choose weapon parry, shield parry, Evade, or conserve AP. Weapon and shield Size determine damage reduction.';if(p?.kind==='effect')return 'A better success grade can grant Special Effects before damage is resolved.';if(p?.kind==='range')return 'The defender may allow the Change Range action, oppose with Evade, or intercept by attacking against the mover’s Evade. Closing succeeds even if an interception hits.';if(p?.kind==='location')return 'Choose Location lets you target a normally reachable area of the opponent rather than roll the d20 location die.';return 'Each combatant gets one proactive action in initiative order per cycle. Reactive actions also cost an Action Point. Track both fighters’ location HP.'}
-function actionHtml(){if(V.busy)return `<div class="resolving"><span class="resolving-icon">✦</span><div><strong>RESOLVING THE EXCHANGE</strong><small>Player rolls are prompted; enemy dice resolve automatically.</small></div><button data-act="skip" class="toolbutton">Skip ↠</button></div>`;if(S.phase==='between')return `<div class="endpanel"><span class="eyebrow">Victory · streak ${S.wins}</span><h3>Opponent Defeated</h3><p>${S.mode==='normal'?'Your character will be restored to full health for the next encounter.':'Your wounds and injuries will carry into the next encounter. Action Points will refresh.'} Your next opponent will be stronger.</p><div class="endbuttons"><button class="cta" data-act="next">Face Opponent ${S.wave+1} →</button><button class="cta alt" data-act="reset">Finish Run</button></div>${fieldDressingHtml()}</div>`;
+function actionHtml(){if(V.busy)return `<div class="resolving"><span class="resolving-icon">✦</span><div><strong>RESOLVING THE EXCHANGE</strong><small>Player rolls are prompted; enemy dice resolve automatically.</small></div><button data-act="skip" class="toolbutton">Show results</button></div>`;if(S.phase==='between')return `<div class="endpanel"><span class="eyebrow">Victory · streak ${S.wins}</span><h3>Opponent Defeated</h3><p>${S.mode==='normal'?'Your character will be restored to full health for the next encounter.':'Your wounds and injuries will carry into the next encounter. Action Points will refresh.'} Your next opponent will be stronger.</p><div class="endbuttons"><button class="cta" data-act="next">Face Opponent ${S.wave+1} →</button><button class="cta alt" data-act="reset">Finish Run</button></div>${fieldDressingHtml()}</div>`;
 if(S.phase==='over')return `<div class="endpanel"><span class="eyebrow">${S.mode==='pvp'?'Duel finished':S.mode==='tutorial'?'Lesson finished':'Gauntlet finished'}</span><h3>${esc(S.winner||'Bout ended')}</h3><p>${esc(S.endReason||'Combat concluded.')} ${['normal','hardcore'].includes(S.mode)?`Your final win streak was ${S.wins}.`:''}</p><div class="endbuttons"><button class="cta" data-act="retry">${S.mode==='pvp'?'Rematch':S.mode==='tutorial'?'Try Lesson Again':'Run Again'}</button><button class="cta alt" data-act="reset">Back to Modes</button></div></div>`;
 const p=S.pending;
 if(p?.kind==='range'){
