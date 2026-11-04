@@ -396,3 +396,190 @@ button:focus-visible,.loc:focus-visible {
 @media(max-width:420px) {
   .decision-panel .secondary-actions .choicegrid { grid-template-columns:1fr; }
 }
+
+
+/* Practice Combat UX pass 03 — consequence-first feedback, no decorative overload. */
+.fighter .fig { position:relative; }
+.fighter.just-hit .fig { animation:none; }
+.fig .zone.impact-zone {
+  fill:#b56a4d!important;
+  stroke:#e7b68f!important;
+  stroke-width:4;
+  filter:drop-shadow(0 0 3px rgba(202,108,69,.38));
+  animation:uxInjuryPulse .55s ease-out;
+}
+.injury-impact {
+  position:absolute;
+  z-index:2;
+  bottom:5px;
+  left:50%;
+  transform:translateX(-50%);
+  width:max-content;
+  max-width:calc(100% + 10px);
+  min-width:120px;
+  background:rgba(27,31,28,.96);
+  border-left:3px solid #c07a59;
+  color:#f0dfc7;
+  padding:9px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  box-shadow:0 8px 24px rgba(0,0,0,.27);
+  pointer-events:none;
+  animation:uxInjuryAppear .27s ease-out;
+}
+.injury-impact strong {
+  font:600 12px/1.2 system-ui,sans-serif;
+}
+.injury-impact span {
+  font:12px/1.3 system-ui,sans-serif;
+  color:#e1b39c;
+}
+.fighter .injury-summary {
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:3px 8px;
+  padding-top:12px;
+  margin-top:11px;
+  border-top:1px solid #45483e;
+  font-family:system-ui,sans-serif;
+}
+.injury-summary span {
+  grid-column:1/-1;
+  font-size:11px;
+  color:#b5a78f;
+}
+.injury-summary strong {
+  font-size:13px;
+  font-weight:600;
+  color:#e1be9e;
+}
+.injury-summary small {
+  font-size:12px;
+  font-variant-numeric:tabular-nums;
+  color:#d8cbb8;
+  white-space:nowrap;
+}
+.injury-summary.serious strong { color:#e3a68a; }
+.injury-summary.major strong { color:#e79585; }
+.outcome-strip.impact {
+  background:#392b25;
+  border-color:#765443;
+}
+.outcome-strip.impact .outcome-headline {
+  color:#f1cfb5;
+  animation:uxOutcomeAppear .25s ease-out;
+}
+.outcome-strip.impact .outcome-sub {
+  color:#d9aa8e;
+  font-size:12px;
+}
+.outcome-strip.effect { background:#312f26; }
+.result-modal {
+  width:min(590px,100%);
+  max-height:min(92vh,800px);
+  overflow:auto;
+  padding:31px 33px 29px;
+}
+.result-modal:before { border-color:rgba(206,177,127,.09); }
+.result-modal h2 {
+  font-size:clamp(39px,5vw,56px);
+  margin:9px 0 6px;
+}
+.result-modal .result-winner {
+  font-size:18px;
+  margin-bottom:20px;
+}
+.result-finish {
+  display:block;
+  margin:18px 0;
+}
+.result-finish.has-location {
+  display:grid;
+  grid-template-columns:140px minmax(0,1fr);
+  align-items:center;
+  gap:23px;
+  text-align:left;
+}
+.result-figure {
+  background:#2a302b;
+  border:1px solid #4e5649;
+  padding:9px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:205px;
+}
+.finish-location-figure {
+  width:112px;
+  height:185px;
+  display:block;
+}
+.finish-location-figure .unstruck {
+  fill:#343e36;
+  stroke:#999b88;
+  stroke-width:2;
+}
+.finish-location-figure .struck {
+  fill:#b36b54;
+  stroke:#f0ba97;
+  stroke-width:3;
+}
+.result-finish.has-location .result-why {
+  align-items:flex-start;
+  text-align:left;
+  gap:10px;
+}
+.result-finish.has-location .result-why .result-eyebrow { font-size:11px; }
+.result-finish.has-location .result-why strong {
+  color:#f2dfc4;
+  font:normal clamp(23px,2.5vw,30px)/1.15 Georgia,serif;
+}
+.result-finish .result-why span {
+  font:13px/1.6 system-ui,sans-serif;
+  color:#e0d1bc;
+}
+.result-finish .result-why small {
+  font:12px/1.55 system-ui,sans-serif;
+  color:#c1b097;
+}
+.result-meta {
+  margin:18px 0 0;
+  color:#ac9c84;
+  font:12px/1.5 system-ui,sans-serif;
+}
+.result-actions { margin-top:23px; }
+.result-actions button {
+  min-height:45px;
+  font-size:13px;
+  letter-spacing:0;
+}
+@keyframes uxOutcomeAppear {
+  from { opacity:.6; transform:translateY(3px); }
+  to { opacity:1; transform:none; }
+}
+@keyframes uxInjuryAppear {
+  from { opacity:0; transform:translate(-50%,5px); }
+  to { opacity:1; transform:translate(-50%,0); }
+}
+@keyframes uxInjuryPulse {
+  0% { filter:drop-shadow(0 0 0 rgba(202,108,69,0)); }
+  40% { filter:drop-shadow(0 0 7px rgba(202,108,69,.45)); }
+  100% { filter:drop-shadow(0 0 3px rgba(202,108,69,.25)); }
+}
+@media(max-width:740px) {
+  .result-modal { padding:27px 22px; }
+  .result-finish.has-location { grid-template-columns:96px minmax(0,1fr);gap:15px; }
+  .result-figure { min-height:164px; padding:6px; }
+  .finish-location-figure { width:84px;height:145px; }
+  .result-finish.has-location .result-why strong { font-size:23px; }
+}
+@media(max-width:390px) {
+  .result-finish.has-location { display:flex;flex-direction:column; }
+  .result-finish.has-location .result-why { align-items:center;text-align:center; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .fig .zone.impact-zone,.injury-impact,.outcome-strip.impact .outcome-headline {
+    animation:none!important;
+  }
+}
