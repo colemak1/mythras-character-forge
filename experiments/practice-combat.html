@@ -290,6 +290,14 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .result-close{position:absolute;right:13px;top:10px;background:none;border:0;color:#cbb89b;cursor:pointer;font:23px Georgia,serif;padding:2px 6px}
 @media(max-width:550px){.result-modal{padding:26px 19px 24px}.result-actions button{flex:1}}
 @media(prefers-reduced-motion:reduce){.result-backdrop{backdrop-filter:none}}
+/* v13 rules catalogue lives below combat history rather than crowding the split board */
+.effects-reference{margin:9px 0 5px;color:#bbac91;font:11px system-ui,sans-serif;border-top:1px solid #514837;padding-top:9px}
+.effects-reference summary{cursor:pointer;font:600 11px system-ui,sans-serif;letter-spacing:.035em}
+.effects-reference p{max-width:800px;line-height:1.5;color:#ab9b83}
+.effects-ref-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:6px 10px;margin:12px 0}
+.effects-ref-grid>div{display:flex;flex-direction:column;gap:4px;padding:8px;border:1px solid #4a4539}
+.effects-ref-grid b{font:600 11px system-ui,sans-serif;color:#d6c4a7}
+.effects-ref-grid span{font:10px system-ui,sans-serif;color:#9f9585}
 </style>
 </head>
 <body>
@@ -301,6 +309,63 @@ const HIT_LOCS=['Head','Chest','Abdomen','Right Arm','Left Arm','Right Leg','Lef
 const HIT_TABLE=['Right Leg','Right Leg','Right Leg','Left Leg','Left Leg','Left Leg','Abdomen','Abdomen','Abdomen','Chest','Chest','Chest','Right Arm','Right Arm','Right Arm','Left Arm','Left Arm','Left Arm','Head','Head'];
 const BASE_HP={'Head':5,'Chest':7,'Abdomen':6,'Right Arm':4,'Left Arm':4,'Right Leg':5,'Left Leg':5};
 const WEAPONS={sword:{name:'Broadsword',dice:[1,8],bonus:0,size:2,reach:2,notes:'Medium size · Medium reach · 1d8'},spear:{name:'Short Spear',dice:[1,8],bonus:1,size:2,reach:3,notes:'Medium size · Long reach · 1d8+1'},mace:{name:'Mace',dice:[1,8],bonus:0,size:2,reach:1,notes:'Medium size · Short reach · 1d8'},dagger:{name:'Dagger',dice:[1,4],bonus:1,size:1,reach:1,notes:'Small size · Short reach · 1d4+1'},greatsword:{name:'Greatsword',dice:[2,8],bonus:0,size:4,reach:3,twoHanded:true,notes:'Huge size · Long reach · 2d8'}};
+// Special Effects from Mythras Core, printed pp.95-101. The catalogue is complete;
+// only effects supported by this melee-only simulator are offered as choices.
+const SPECIAL_EFFECT_CATALOG=[
+ ['accidental','Accidental Injury','defensive','Attacker fumbles'],
+ ['arise','Arise','defensive',''],
+ ['bash','Bash','offensive','Shield or bludgeoning weapon'],
+ ['bleed','Bleed','offensive','Cutting weapon'],
+ ['blind','Blind Opponent','defensive','Defender critical'],
+ ['bypassArmour','Bypass Armour','offensive','Attacker critical'],
+ ['choose','Choose Location','offensive','Melee hand-to-hand'],
+ ['circumventCover','Circumvent Cover','offensive','Ranged only'],
+ ['circumventParry','Circumvent Parry','offensive','Attacker critical'],
+ ['close','Close Range','both','Optional reach rules'],
+ ['compel','Compel Surrender','both','Disadvantaged opponent'],
+ ['damageWeapon','Damage Weapon','both',''],
+ ['disarm','Disarm Opponent','both',''],
+ ['drop','Drop Foe','offensive','Ranged only'],
+ ['duck','Duck Back','offensive','Ranged only'],
+ ['enhance','Enhance Parry','defensive','Defender critical'],
+ ['entangle','Entangle','both','Entangling weapon'],
+ ['flurry','Flurry','offensive','Unarmed'],
+ ['forceFailure','Force Failure','both','Opponent fumbles; combine with opposed effect'],
+ ['grip','Grip','offensive','Unarmed'],
+ ['impale','Impale','offensive','Impaling weapon'],
+ ['killSilently','Kill Silently','offensive','Assassination style, surprised opponent'],
+ ['marksman','Marksman','offensive','Ranged only'],
+ ['maximize','Maximise Damage','offensive','Attacker critical; stackable'],
+ ['open','Open Range','defensive','Optional reach rules'],
+ ['overextend','Overextend Opponent','defensive','Stackable'],
+ ['overpenetration','Overpenetration','offensive','Ranged only'],
+ ['pinDown','Pin Down','offensive','Ranged only; stackable'],
+ ['pinWeapon','Pin Weapon','both','Critical only'],
+ ['prepareCounter','Prepare Counter','defensive','Stackable'],
+ ['press','Press Advantage','offensive',''],
+ ['rapidReload','Rapid Reload','offensive','Ranged only; stackable'],
+ ['remise','Remise','offensive','Small weapon'],
+ ['scar','Scar Foe','both',''],
+ ['selectTarget','Select Target','defensive','Attacker fumbles'],
+ ['slip','Slip Free','defensive','Defender critical'],
+ ['standFast','Stand Fast','defensive',''],
+ ['stun','Stun Location','offensive','Bludgeoning weapon'],
+ ['sunder','Sunder','offensive','Axe or two-handed weapon'],
+ ['takeWeapon','Take Weapon','both','Unarmed'],
+ ['trip','Trip Opponent','both',''],
+ ['malfunction','Weapon Malfunction','offensive','Ranged firearms, attacker fumbles'],
+ ['withdraw','Withdraw','defensive','']
+].map(([id,name,role,condition])=>({id,name,role,condition}));
+const SPECIAL_EFFECT_NAMES=Object.fromEntries(SPECIAL_EFFECT_CATALOG.map(x=>[x.id,x.name]));
+// Weapon AP/HP and combat effects are read from the printed Core pp.63-64 tables.
+const WEAPON_DURABILITY={sword:[6,10],spear:[4,5],mace:[6,6],dagger:[6,8],greatsword:[6,12]};
+const WEAPON_TRAITS={sword:['bleed','impale'],spear:['impale'],mace:['bash','stun'],dagger:['bleed','impale'],greatsword:['bleed','impale','sunder']};
+function guardWeapon(f){return f?.weaponGuard||{ap:WEAPON_DURABILITY[f.weapon][0],hp:WEAPON_DURABILITY[f.weapon][1]};}
+function armourAt(f,loc){return f.armourLocations?.[loc]??f.armor;}
+function ensureEffectState(f){if(!f)return;f.weaponGuard??={ap:WEAPON_DURABILITY[f.weapon][0],hp:WEAPON_DURABILITY[f.weapon][1]};f.armourLocations??=Object.fromEntries(HIT_LOCS.map(loc=>[loc,f.armor]));f.scars??=[];}
+function meleeEffectReference(){const live=new Set(['accidental','arise','bypassArmour','choose','circumventParry','close','damageWeapon','disarm','enhance','forceFailure','maximize','open','overextend','press','scar','sunder','trip']);
+ return `<details class="effects-reference"><summary>Special Effects catalogue · ${SPECIAL_EFFECT_CATALOG.length} Core entries</summary><p>The list below follows the Core summary table on page 100. This prototype enables the displayed melee subset only when legal; other effects require combat mechanics not yet modelled.</p><div class="effects-ref-grid">${SPECIAL_EFFECT_CATALOG.map(e=>`<div><b>${esc(e.name)}</b><span>${live.has(e.id)?'Implemented':'Not yet simulated'}${e.condition?' · '+esc(e.condition):''}</span></div>`).join('')}</div></details>`;
+}
 const REACH_NAMES=['Touch','Short','Medium','Long','Very Long'];
 // Mythras Core pp.58, 63, 90, 93-94 and 105; the prototype uses uniform armour on seven locations.
 const ARMOUR_ENC_BY_AP={0:0,1:2,2:1,3:2,4:3,5:4,6:5,7:6,8:7};
@@ -700,12 +765,12 @@ function resultModalHtml(){
     <div class="result-actions">${nextButton}<button type="button" class="result-secondary" data-act="dismissResult">View battlefield</button></div>
   </section></div>`;
 }
-function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle animation speed">${V.quick?'FAST':'CINEMATIC'} · SPEED</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v12 · Parry and equipment</span>`}</div></section>${setup?setupHtml():arenaHtml()}${!setup?resultModalHtml():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, selected Special Effects, wounds, initiative and optional reach. Implemented in this prototype: weapon and shield Size parries, a selected-location shield ward, STR+SIZ Damage Modifier, and initiative penalty for seven equally armoured hit locations. Still simplified: armour material/individual location mix, shield attacks, full Special Effects, Luck, fatigue, character-derived HP, weapon damage, and recovery. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;}}
+function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle animation speed">${V.quick?'FAST':'CINEMATIC'} · SPEED</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v13 · Special Effects</span>`}</div></section>${setup?setupHtml():arenaHtml()}${!setup?resultModalHtml():''}${!setup?meleeEffectReference():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, sourcebook-gated Special Effects, wounds, initiative and optional reach. Implemented in this prototype: weapon and shield Size parries, a selected-location shield ward, STR+SIZ Damage Modifier, and initiative penalty for seven equally armoured hit locations. Still simplified: armour material/individual location mix, shield attacks, advanced conditions for several Special Effects, Luck, fatigue, character-derived HP, and recovery. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110; Special Effects summary and descriptions pp. 95–101.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;}}
 function modeName(m){return {tutorial:'Guided Tutorial',normal:'Normal Gauntlet',hardcore:'Hardcore Gauntlet',pvp:'Local PvP'}[m]||m}
 function setupHtml(){let modes=[['tutorial','01','Guided Tutorial','One beginner-friendly bout with reminders about Mythras decisions.'],['normal','02','Normal Gauntlet','Infinite escalating enemies. Your wounds reset after each win.'],['hardcore','03','Hardcore Gauntlet','Same escalating enemies. Wounds and injuries persist between fights.'],['pvp','04','Local PvP','Two players take turns on one screen; online matching comes later.']];return `<div class="setup"><h2>Choose your challenge</h2><p class="intro">A working combat loop with selectable reactions, hit locations, a tactical computer opponent, and a local streak board.</p><div class="modes">${modes.map(([k,n,t,d])=>`<button class="mode ${config.mode===k?'on':''}" data-act="mode" data-val="${k}"><span class="n">MODE ${n}</span><strong>${t}</strong><small>${d}</small></button>`).join('')}</div><div class="setup-bottom"><div class="formcard"><h3>Build your practice fighter</h3><div class="formgrid"><label>Username<input id="username" maxlength="30" value="${esc(config.username)}"></label><label>Character name<input id="charname" maxlength="45" value="${esc(config.charname)}"></label><label>Combat Style %<input id="style" type="number" min="20" max="110" value="${config.style}"></label><label>Evade %<input id="evade" type="number" min="20" max="110" value="${config.evade}"></label><label>Armor AP (all locations)<input id="armor" type="number" min="0" max="6" value="${config.armor}"></label><label>Weapon<select id="weapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.weapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Shield<select id="shield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.shield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>Strength (STR)<input id="str" type="number" min="5" max="20" value="${config.str}"></label><label>Size (SIZ)<input id="siz" type="number" min="5" max="20" value="${config.siz}"></label>${config.mode==='pvp'?`<label>Second player name<input id="pvpName" maxlength="45" value="${esc(config.pvpName)}"></label><label>Second player Combat Style %<input id="pvpSkill" type="number" min="20" max="110" value="${config.pvpSkill}"></label><label>Second player weapon<select id="pvpWeapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.pvpWeapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Second player shield<select id="pvpShield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.pvpShield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>Second player STR<input id="pvpStr" type="number" min="5" max="20" value="${config.pvpStr}"></label><label>Second player SIZ<input id="pvpSiz" type="number" min="5" max="20" value="${config.pvpSiz}"></label>`:''}</div><p class="formhint">These are sample statistics, not an imported character. Armour AP is uniform across seven locations. Two-handed weapons cannot equip a shield.</p><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px"><button class="cta" data-act="start">${config.mode==='pvp'?'Start Duel':'Enter Training Grounds'} &nbsp;→</button><span class="modehint">Runs entirely on your device.</span></div></div><div class="setup-right"><div class="statbox"><strong>Gauntlet leaderboard</strong><p>Stored in this browser, not published online. Rankings count consecutive opponents defeated.</p><div class="badges"><button class="lbtab ${S.lbMode==='normal'?'on':''}" data-act="lbmode" data-val="normal">Normal</button><button class="lbtab ${S.lbMode==='hardcore'?'on':''}" data-act="lbmode" data-val="hardcore">Hardcore</button></div>${scoresHtml(S.lbMode)}</div><div class="statbox"><strong>The rules we're testing</strong><div class="badges"><span class="notechip">d100 Skill checks</span><span class="notechip">d20 Hit location</span><span class="notechip">Parry by size</span><span class="notechip">Shields &amp; wards</span><span class="notechip">Damage modifier</span><span class="notechip">Armour initiative</span><span class="notechip">Action points</span><span class="notechip">Special Effects</span><span class="notechip">Optional weapon reach</span><span class="notechip">Serious/Major wounds</span></div><p>Some results and effects remain simplified for this prototype, including full fatigue, weapon durability, and shield attacks. Actual Forge integration would reuse your existing character data and sourcebook-verified engine.</p></div></div></div></div>`}
 function zoneClass(f,loc){const x=f.hp[loc],m=f.maxHp[loc];return x<=-m?'major':x<=0?'serious':x<m?'minor':'ok'}
 function figureSvg(f){const sel=S.sel?.[f.id];return `<svg viewBox="0 0 240 360" role="img" aria-label="Clickable hit-location figure for ${esc(f.name)}">${HIT_LOCS.map(loc=>`<g class="zone ${zoneClass(f,loc)} ${V.highlight?.id===f.id&&V.highlight.loc===loc?'impact-zone':''} ${sel===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}"><title>${loc} · ${f.hp[loc]}/${f.maxHp[loc]} HP · ${f.armor} AP armour</title>${SHAPES[loc]}</g>`).join('')}</svg>`}
-function fighterCard(f,cls){let injuries=HIT_LOCS.filter(l=>f.hp[l]<f.maxHp[l]);let worst=injuries.reduce((w,l)=>(zoneClass(f,l)==='major'?3:zoneClass(f,l)==='serious'?2:1)>w?w: w,0);let status=f.status==='Defeated'?'Incapacitated':worst===0?'Uninjured':worst===1?'Minor wounds':worst===2?'Serious wound':'Major wound';let selected=S.sel?.[f.id];return `<article class="fighter ${cls} ${V.highlight?.id===f.id?'just-hit':''}"><div class="fighter-head"><span class="tag">${cls==='player'?'PLAYER ONE':(S.mode==='pvp'?'PLAYER TWO':'OPPONENT')}</span><h2>${esc(f.name)}</h2><div class="sub">${f.kind==='ai'?`Skill ${f.style}% · Utility AI`: `Combat Style ${f.style}%`} · ${esc(WEAPONS[f.weapon].name)}${f.shield!=='none'?' + '+SHIELDS[f.shield].name:''} · ${reachName(f)} reach</div><div class="tracks"><div class="track"><label>Action Points</label><b>${f.ap}<small> / ${f.apMax}</small></b><div class="dots">${Array.from({length:f.apMax},(_,i)=>`<i class="${i>=f.ap?'off':''}"></i>`).join('')}</div></div><div class="track"><label>Initiative</label><b>${f.initiative??'—'}</b><div style="font:11px system-ui,sans-serif;color:#87745c;margin-top:5px">${f.prone?'Prone · ':''}${f.skipAttack?'Attack restricted':'Ready'}</div></div></div></div><div class="figure-area"><div class="figure-title"><span>Hit locations / D20</span><span>AP ${f.armor} armour · DM ${damageModifierFor(f.str,f.siz).label}</span></div><div class="fig">${figureSvg(f)}</div><div class="location-list">${HIT_LOCS.map(loc=>`<div class="loc ${f.hp[loc]<f.maxHp[loc]?'wounded':''} ${selected===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}"><span>${loc.replace('Right ','R. ').replace('Left ','L. ')}</span><span>${f.hp[loc]}<small> / ${f.maxHp[loc]}</small></span></div>`).join('')}</div></div><div class="fighter-foot"><div class="condition ${f.status==='Defeated'?'danger':worst===0?'safe':''}">${status}${f.prone?' · Prone':''}</div>${selected?`<p>${selected}: ${f.hp[selected]}/${f.maxHp[selected]} HP · ${f.armor} AP</p>`:''}</div></article>`}
+function fighterCard(f,cls){let injuries=HIT_LOCS.filter(l=>f.hp[l]<f.maxHp[l]);let worst=injuries.reduce((w,l)=>(zoneClass(f,l)==='major'?3:zoneClass(f,l)==='serious'?2:1)>w?w: w,0);let status=f.status==='Defeated'?'Incapacitated':worst===0?'Uninjured':worst===1?'Minor wounds':worst===2?'Serious wound':'Major wound';let selected=S.sel?.[f.id];return `<article class="fighter ${cls} ${V.highlight?.id===f.id?'just-hit':''}"><div class="fighter-head"><span class="tag">${cls==='player'?'PLAYER ONE':(S.mode==='pvp'?'PLAYER TWO':'OPPONENT')}</span><h2>${esc(f.name)}</h2><div class="sub">${f.kind==='ai'?`Skill ${f.style}% · Utility AI`: `Combat Style ${f.style}%`} · ${esc(WEAPONS[f.weapon].name)}${f.shield!=='none'?' + '+SHIELDS[f.shield].name:''} · ${reachName(f)} reach</div><div class="tracks"><div class="track"><label>Action Points</label><b>${f.ap}<small> / ${f.apMax}</small></b><div class="dots">${Array.from({length:f.apMax},(_,i)=>`<i class="${i>=f.ap?'off':''}"></i>`).join('')}</div></div><div class="track"><label>Initiative</label><b>${f.initiative??'—'}</b><div style="font:11px system-ui,sans-serif;color:#87745c;margin-top:5px">${f.prone?'Prone · ':''}${f.disarmed?'Disarmed · ':''}${f.skipAttack?'Attack restricted':'Ready'}</div></div></div></div><div class="figure-area"><div class="figure-title"><span>Hit locations / D20</span><span>AP ${f.armor} armour · DM ${damageModifierFor(f.str,f.siz).label}</span></div><div class="fig">${figureSvg(f)}</div><div class="location-list">${HIT_LOCS.map(loc=>`<div class="loc ${f.hp[loc]<f.maxHp[loc]?'wounded':''} ${selected===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}"><span>${loc.replace('Right ','R. ').replace('Left ','L. ')}</span><span>${f.hp[loc]}<small> / ${f.maxHp[loc]}</small></span></div>`).join('')}</div></div><div class="fighter-foot"><div class="condition ${f.status==='Defeated'?'danger':worst===0?'safe':''}">${status}${f.prone?' · Prone':''}</div>${selected?`<p>${selected}: ${f.hp[selected]}/${f.maxHp[selected]} HP · ${armourAt(f,selected)} AP</p>`:''}</div></article>`}
 function arenaHtml(){
  const a=V.busy&&V.shown?.a?V.shown.a:S.fighters.a,b=V.busy&&V.shown?.b?V.shown.b:S.fighters.b;
  const info=currentExchange();
@@ -732,7 +797,7 @@ if(p?.kind==='effect'){let win=S.fighters[p.owner],offense=p.owner===p.atk,opts=
 if(p?.kind==='ward'){const f=S.fighters[p.actor],cover=SHIELDS[f.shield].coverage;return `<div class="turnline"><h3>Ward Shield · ${p.selected.length}/${cover}</h3><span>Free action</span></div><div class="inlineopts">${HIT_LOCS.map(l=>`<button class="choice ${p.selected.includes(l)?'gold':''}" data-act="wardloc" data-val="${esc(l)}"><strong>${l.replace('Right ','R. ').replace('Left ','L. ')}</strong></button>`).join('')}</div><div class="choicegrid"><button class="choice gold" data-act="saveward"><strong>Set Ward</strong></button><button class="choice" data-act="clearward"><strong>Clear Ward</strong></button></div>`;}
 if(p?.kind==='location')return `<div class="turnline"><h3>Choose Hit Location</h3><span>Special Effect</span></div><div class="inlineopts">${HIT_LOCS.map(l=>`<button class="choice" data-act="pickloc" data-val="${esc(l)}"><strong>${l.replace('Right ','R. ').replace('Left ','L. ')}</strong></button>`).join('')}</div>`;
 let id=S.order[S.turnIndex],f=S.fighters[id];if(!f)return '<p class="desc">Waiting for combat to begin.</p>';
-return `<div class="turnline"><h3>${esc(f.name)} · Your Turn</h3><span>${f.ap} AP remaining</span></div><div class="choicegrid"><button class="choice gold" data-act="attack" ${f.ap<1||f.skipAttack>0||!canUseWeapon(f)||!canAttackBody(id)?'disabled':''}><strong>Attack · 1 AP</strong><small>${f.skipAttack>0?'Stunned / pressured: cannot attack this turn':!canUseWeapon(f)?'Weapon arm disabled: swap weapon hand or concede':isCrampedAtReach(id)?'Awkward strike with the haft · 1d3+1':!canAttackBody(id)?'Body out of reach — close range first':'Roll Combat Style, allow a reaction, resolve damage'}</small></button><button class="choice" data-act="changeRange" ${f.ap<1||!proposedRange(id)?'disabled':''}><strong>Change Range · 1 AP</strong><small>${proposedRange(id)==='short'?'Close to shorter reach':proposedRange(id)==='long'?'Open to longer reach':'No contested reach difference'}</small></button>${f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded?`<button class="choice" data-act="swapHand"><strong>Switch Weapon Hand · 1 AP</strong><small>Ready your weapon in the usable hand</small></button>`:''}${f.shield!=='none'?`<button class="choice" data-act="ward" title="Free action before an incoming attack"><strong>${f.warded?.length?'Change Shield Ward':'Ward Shield'}</strong></button>`:''}<button class="choice" data-act="dither" ${f.ap<1?'disabled':''}><strong>Dither · 1 AP</strong><small>Use your action without attacking</small></button><button class="choice" data-act="stand" ${f.ap<1||!canRegainFooting(f)?'disabled':''}><strong>Regain Footing · 1 AP</strong><small>Opposed Brawn test if engaged (Core p.92)</small></button><button class="choice" data-act="yield"><strong>Concede Bout</strong><small>End this training fight without a death</small></button><button class="choice" data-act="help"><strong>Combat reference</strong><small>Show the rules this prototype implements</small></button></div>`}
+return `<div class="turnline"><h3>${esc(f.name)} · Your Turn</h3><span>${f.ap} AP remaining</span></div><div class="choicegrid"><button class="choice gold" data-act="attack" ${f.ap<1||f.skipAttack>0||!canUseWeapon(f)||!canAttackBody(id)?'disabled':''}><strong>Attack · 1 AP</strong><small>${f.skipAttack>0?'Stunned / pressured: cannot attack this turn':!canUseWeapon(f)?'Weapon arm disabled: swap weapon hand or concede':isCrampedAtReach(id)?'Awkward strike with the haft · 1d3+1':!canAttackBody(id)?'Body out of reach — close range first':'Roll Combat Style, allow a reaction, resolve damage'}</small></button>${f.disarmed?`<button class="choice" data-act="recoverWeapon" ${f.ap<1?'disabled':''}><strong>Recover Weapon · 1 AP</strong></button>`:''}<button class="choice" data-act="changeRange" ${f.ap<1||!proposedRange(id)?'disabled':''}><strong>Change Range · 1 AP</strong><small>${proposedRange(id)==='short'?'Close to shorter reach':proposedRange(id)==='long'?'Open to longer reach':'No contested reach difference'}</small></button>${f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded?`<button class="choice" data-act="swapHand"><strong>Switch Weapon Hand · 1 AP</strong><small>Ready your weapon in the usable hand</small></button>`:''}${f.shield!=='none'?`<button class="choice" data-act="ward" title="Free action before an incoming attack"><strong>${f.warded?.length?'Change Shield Ward':'Ward Shield'}</strong></button>`:''}<button class="choice" data-act="dither" ${f.ap<1?'disabled':''}><strong>Dither · 1 AP</strong><small>Use your action without attacking</small></button><button class="choice" data-act="stand" ${f.ap<1||!canRegainFooting(f)?'disabled':''}><strong>Regain Footing · 1 AP</strong><small>Opposed Brawn test if engaged (Core p.92)</small></button><button class="choice" data-act="yield"><strong>Concede Bout</strong><small>End this training fight without a death</small></button><button class="choice" data-act="help"><strong>Combat reference</strong><small>Show the rules this prototype implements</small></button></div>`}
 function log(title,body,kind='system',detail='',meta=null){S.logs.push({id:nextLogId++,title,body,kind,detail,meta,view:S.fighters?clone(S.fighters):null});if(S.logs.length>110)S.logs.shift();}
 function rollSkill(pct,forcedRoll=null){const r=forcedRoll==null?d100():forcedRoll;const grade=r===100||(r===99&&pct<=100)?'fumble':r>=96?'failure':r<=Math.ceil(pct/10)?'critical':r<=pct||r<=5?'success':'failure';return {roll:r,grade:({critical:3,success:2,failure:1,fumble:0})[grade],label:grade.toUpperCase(),name:grade};}
 function opposedBetter(x,y){return x.grade>y.grade || (x.grade===y.grade&&x.grade>=2&&x.roll>y.roll)}
@@ -743,7 +808,7 @@ function combatTarget(f){let pct=f.style;if(f.prone)pct=Math.ceil(pct/2);if(f.we
  if(f.weaponHand==='Left Arm'&&zoneClass(f,'Left Arm')==='serious')pct=Math.ceil(pct*2/3);
  return pct;}
 function evadeTarget(f){return f.prone?Math.ceil(f.evade/2):f.evade;}
-function canUseWeapon(f){return !f.disabled.includes(f.weaponHand||'Right Arm')&&!(WEAPONS[f.weapon].twoHanded&&f.disabled.some(x=>x.endsWith('Arm')));}
+function canUseWeapon(f){return !f.disarmed&&guardWeapon(f).hp>0&&!f.disabled.includes(f.weaponHand||'Right Arm')&&!(WEAPONS[f.weapon].twoHanded&&f.disabled.some(x=>x.endsWith('Arm')));}
 function advanceStun(f){if(f?.skipAttack>0)f.skipAttack--;}
 function canRegainFooting(f){return f.prone&&!f.disabled.some(x=>x.endsWith('Leg'));}
 // Engaged Regain Footing: opposed Brawn/Athletics per Core p.92. This
@@ -770,25 +835,43 @@ function adjustDifferentialRolls(attacker,defender,attackRoll,defenseRoll,attack
  return [aa,dd];
 }
 function availableEffects(p){
- const offensive=p.owner===p.atk,actor=S.fighters[p.owner],target=S.fighters[p.other];
- const out=offensive?[['choose','Choose Location','Pick a reachable hit location'],['press','Press Advantage','Prevent the opponent attacking next turn']]:[['overextend','Overextend Opponent','Prevent the attacker attacking next turn']];
- if(!target.prone)out.push(['trip','Trip Opponent','Opposed Brawn / Evade to knock prone']);
- if(offensive&&p.attackRoll.grade===3){
-   out.push(['bypassArmour','Bypass Armour','Critical: ignore worn armour at the struck location']);
-   if(p.reaction==='parry'&&p.defenseRoll?.grade>=2)out.push(['circumventParry','Circumvent Parry','Critical: negate a successful parry']);
-   if((p.maximize||0)<WEAPONS[S.fighters[p.atk].weapon].dice[0])out.push(['maximize','Maximise Damage','Critical: maximise a weapon damage die']);
+ if(!p||!p.owner||!p.other)return [];
+ const offense=p.owner===p.atk,actor=S.fighters[p.owner],target=S.fighters[p.other];
+ if(!actor||!target)return [];
+ ensureEffectState(actor);ensureEffectState(target);
+ const ownWeapon=WEAPON_TRAITS[actor.weapon]||[],crit=offense?p.attackRoll?.grade===3:p.defenseRoll?.grade===3;
+ const enemyFumbled=offense?p.defenseRoll?.grade===0:p.attackRoll?.grade===0;
+ const out=[];
+ function add(id,desc){const e=SPECIAL_EFFECT_CATALOG.find(e=>e.id===id);if(e)out.push([id,e.name,desc||e.condition]);}
+ if(offense){
+  add('choose','Select the hit location');add('press','Opponent cannot attack next turn');
+  if(ownWeapon.includes('sunder')&&HIT_LOCS.some(loc=>armourAt(target,loc)>0))add('sunder','Reduce armour protection at the struck location');
+  if(crit){add('bypassArmour','Critical attack ignores worn armour');if(p.reaction==='parry'&&p.defenseRoll?.grade>=2)add('circumventParry','Critical attack bypasses parry');
+    const diceCount=WEAPONS[S.fighters[p.atk].weapon].dice[0];if((p.maximize||0)<diceCount)add('maximize','Maximise one weapon die');}
+ }else{
+  add('overextend','Opponent cannot attack next turn');
+  if(actor.prone)add('arise','Regain footing immediately');
+  if(crit&&p.reaction==='parry')add('enhance','Critical parry stops all damage');
+  if(enemyFumbled)add('accidental','Fumbled attacker damages self');
  }
+ // These options work on either an offensive or defensive advantage, not exclusively on attacks.
+ if(!target.prone)add('trip','Brawn/Evade/Acrobatics opposed check');
+ if(!target.disarmed&&guardWeapon(target).hp>0)add('disarm','Opposed Combat Style, adjusted for Size');
+ if(guardWeapon(target).hp>0)add('damageWeapon','Strike their weapon instead');
+ add('scar','Cosmetic scar if strike injures target');
+ // On a fumble Force Failure must be combined with another effect requiring an opposed roll.
+ if(enemyFumbled&&p.effectsLeft>=2&&!p.forceFailure)add('forceFailure','Make the next opposed effect automatically fail');
  const reach=engagementInfo();
- if(reach.active){
-   if(p.owner!==reach.longer&&S.engagement==='long')out.push(['close','Close Range','Finish at the shorter weapon’s reach']);
-   if(!offensive&&p.owner===reach.longer&&S.engagement==='short')out.push(['open','Open Range','Finish at the longer weapon’s reach']);
- }
- if(!offensive&&actor.prone)out.push(['arise','Arise','Defensive effect: regain footing']);
- return out.filter(o=>o[0]==='maximize'||!p.chosen.includes(o[0]));
+ if(reach.active){if(S.engagement==='long'&&p.owner!==reach.longer)add('close','Move to shorter weapon reach');
+ if(!offense&&S.engagement==='short'&&p.owner===reach.longer)add('open','Move to longer weapon reach');}
+ // Some effects are stackable and can be selected repeatedly. The rest are unique within an exchange.
+ const stacked=new Set(['maximize','overextend']);
+ return out.filter(([id])=>stacked.has(id)||!p.chosen.includes(id));
 }
 function startRun(){R=null;S={phase:'fight',mode:config.mode,wave:1,wins:0,sel:{},lbMode:'normal',logs:[],fighters:{},round:1,cycle:1,turnIndex:0,pending:null,endReason:'',winner:null};S.fighters={a:newHero(),b:newEnemy(1)};beginEncounter();}
 function beginEncounter(){
   let a=S.fighters.a,b=S.fighters.b;
+  ensureEffectState(a);ensureEffectState(b);
   a.status='Ready';b.status='Ready';a.ap=a.apMax;b.ap=b.apMax;
   S.phase='fight';S.round=1;S.cycle=1;S.turnIndex=0;S.pending=null;
   S.order=['a','b'];S.engagement=engagementInfo().active?'long':'equal';
@@ -813,6 +896,7 @@ function advance(){if(S.phase!=='fight'||S.pending)return;let tries=0;while(trie
 let id=S.order[S.turnIndex],f=S.fighters[id];if(f.ap<=0){S.turnIndex++;continue;}if(f.skipAttack>0&&f.kind==='ai'){f.ap--;advanceStun(f);log('Cannot Attack',`${f.name} uses a non-attacking turn while pressured.`, 'system');S.turnIndex++;continue;}
 if(f.kind==='ai'){
   if(!canUseWeapon(f)){
+    if(f.disarmed&&guardWeapon(f).hp>0){f.disarmed=false;f.ap--;advanceStun(f);log('Ready Weapon',`${f.name} recovers the dropped weapon (1 AP).`,'system');S.turnIndex++;continue;}
     if(f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded){
       f.weaponHand='Left Arm';f.ap--;advanceStun(f);
       log('Ready Weapon',`${f.name} transfers their weapon to the uninjured hand (1 AP).`,'system');S.turnIndex++;continue;
@@ -873,50 +957,99 @@ function react(action){
 }
 // Small utility AI: evaluates *legal* options; noise keeps opponents from behaving identically.
 function aiChooseEffect(p){
- const options=availableEffects(p),offensive=p.owner===p.atk,actor=S.fighters[p.owner],target=S.fighters[p.other];
- const weights={choose:47+(Math.min(...HIT_LOCS.map(l=>target.hp[l]))<=2?32:0),press:38+(target.ap>=2?20:0),
- trip:target.prone?0:38+Math.floor(actor.brawn/10),maximize:65,bypassArmour:target.armor>0?66:18,
- circumventParry:80,overextend:43+(target.ap>=2?18:0),close:75,open:72,arise:84};
- const scored=options.map(([id])=>[id,(weights[id]??20)+Math.random()*10]);
- return scored.sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
+ const options=availableEffects(p),actor=S.fighters[p.owner],target=S.fighters[p.other];
+ const weights={choose:46+(Math.min(...HIT_LOCS.map(l=>target.hp[l]))<=2?29:0),press:40+(target.ap>=2?20:0),
+  trip:target.prone?0:36+Math.floor(actor.brawn/10),maximize:64,bypassArmour:target.armor>0?75:20,
+  circumventParry:90,overextend:44+(target.ap>=2?18:0),close:75,open:72,arise:88,
+  disarm:70,damageWeapon:target.weaponGuard?.hp<=4?80:34,enhance:85,accidental:92,scar:19,sunder:target.armor>1?60:18,forceFailure:52};
+ return options.map(([id])=>[id,(weights[id]??12)+Math.random()*13]).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
 }
 function chooseAIEffectOrRender(){const p=S.pending;if(!p||p.kind!=='effect')return;if(S.fighters[p.owner].kind!=='ai'){render();return;}const x=aiChooseEffect(p);if(x)applyEffect(x);else resolveHit();}
+function targetOpposedSkill(target,originPct,originRoll,basePct,label,callback){
+ requestSkill(target.id,Math.max(1,basePct),label,res=>{
+  const succeeds=opposedBetter(res,originRoll);
+  callback(succeeds,res);
+ });
+}
+function rollWeaponDamageForEffect(f,label,callback){
+ const w=WEAPONS[f.weapon],mod=damageModifierFor(f.str,f.siz);
+ const defs=[...Array.from({length:w.dice[0]},(_,i)=>({sides:w.dice[1],label:'Weapon '+(i+1)})),...modifierDiceDefs(mod)];
+ requestDice(f.id,defs,label,rolls=>{const weapon=rolls.slice(0,w.dice[0]).reduce((a,b)=>a+b,0)+w.bonus;
+  const modifier=(mod.sign||0)*rolls.slice(w.dice[0]).reduce((a,b)=>a+b,0);
+  callback(Math.max(0,weapon+modifier),rolls);
+ });
+}
 function applyEffect(effect){
- const p=S.pending;if(!p||p.kind!=='effect'||!availableEffects(p).some(([id])=>id===effect))return;
- const actor=S.fighters[p.owner],target=S.fighters[p.other];
+ const p=S.pending;
+ if(!p||p.kind!=='effect'||!availableEffects(p).some(([id])=>id===effect)||R)return;
+ const actor=S.fighters[p.owner],target=S.fighters[p.other],origin=p.owner===p.atk?p.attackRoll:p.defenseRoll;
  p.chosen.push(effect);
+ const note=(title,body)=>log(title,body,'hit','',{actor:actor.id});
  if(effect==='choose'){
    p.chosenLoc=null;
-   if(actor.kind==='ai'){p.chosenLoc=HIT_LOCS.slice().sort((a,b)=>target.hp[a]-target.hp[b])[0];
-     log('Choose Location',`${actor.name} targets ${target.name}'s ${p.chosenLoc}.`,'hit');finishOneEffect();}
+   if(actor.kind==='ai'){p.chosenLoc=HIT_LOCS.slice().sort((a,b)=>target.hp[a]-target.hp[b])[0];note('Choose Location',`${actor.name} targets ${target.name}'s ${p.chosenLoc}.`);finishOneEffect();}
    else{p.kind='location';render();}return;
  }
  if(effect==='press'||effect==='overextend'){
    target.skipAttack=(target.skipAttack||0)+1;
-   log(effect==='press'?'Press Advantage':'Overextend Opponent',`${target.name} cannot attack on their next Turn but can take another action.`,'hit');
- }
- if(effect==='maximize'){
+   note(SPECIAL_EFFECT_NAMES[effect],`${target.name} cannot attack on the next Turn, but may act otherwise.`);
+ }else if(effect==='maximize'){
    p.maximize=(p.maximize||0)+1;
-   log('Maximise Damage',`${actor.name} maximises ${p.maximize} weapon damage ${p.maximize===1?'die':'dice'} (Core p.98).`,'hit');
- }
- if(effect==='circumventParry'){
-   p.bypassParry=true;log('Circumvent Parry',`${actor.name}'s critical attack bypasses the successful parry.`,'hit');
- }
- if(effect==='bypassArmour'){
-   p.bypassArmour=true;log('Bypass Armour',`${actor.name}'s critical attack ignores worn armour at the struck location.`,'hit');
- }
- if(effect==='close'||effect==='open'){
-   p.rangeAfter=effect==='close'?'short':'long';
-   log(effect==='close'?'Close Range':'Open Range',`${actor.name} will finish the exchange at ${p.rangeAfter} reach.`,'hit');
- }
- if(effect==='arise'){actor.prone=false;log('Arise',`${actor.name} regains footing using a defensive Special Effect.`,'hit');}
- if(effect==='trip'){
+   note('Maximise Damage',`${actor.name} maximises ${p.maximize} weapon damage ${p.maximize===1?'die':'dice'}; damage modifier rolls normally.`);
+ }else if(effect==='circumventParry'){
+   p.bypassParry=true;note('Circumvent Parry','The successful parry is bypassed.');
+ }else if(effect==='bypassArmour'){
+   p.bypassArmour=true;note('Bypass Armour','Worn armour on the final hit location will not absorb this attack.');
+ }else if(effect==='close'||effect==='open'){
+   p.rangeAfter=effect==='close'?'short':'long';note(SPECIAL_EFFECT_NAMES[effect],`The engagement changes to ${p.rangeAfter} reach after this exchange.`);
+ }else if(effect==='enhance'){
+   p.enhanceParry=true;note('Enhance Parry','Critical defense completely stops weapon damage, regardless of weapon Size.');
+ }else if(effect==='scar'){
+   target.scars??=[];target.scars.push({loc:'Visible',from:actor.name});note('Scar Foe',`${actor.name} leaves ${target.name} with a lasting scar. This effect is cosmetic.`);
+ }else if(effect==='sunder'){
+   p.sunder=true;note('Sunder','Damage remaining after parry will be applied to armour AP rather than body HP.');
+ }else if(effect==='forceFailure'){
+   p.forceFailure=true;note('Force Failure',`${target.name}'s next opposition roll for this exchange automatically fails.`);
+ }else if(effect==='disarm'){
+   const ownSize=WEAPONS[actor.weapon].size,otherSize=WEAPONS[target.weapon].size;
+   const steps=ownSize-otherSize;
+   const gradeShift=steps>=3?.1:steps===2?.5:steps===1?2/3:steps===-1?1.5:steps<=-2?2:1;
+   const pct=Math.min(200,Math.max(1,Math.round(target.style*gradeShift)));
+   if(p.forceFailure){target.disarmed=true;note('Disarm Opponent',`${target.name} automatically fails after Force Failure; weapon dropped.`);finishOneEffect();return;}
+   requestSkill(target.id,pct,`Resist disarm · ${target.name}`,res=>{
+     const resists=opposedBetter(res,origin);
+     if(!resists)target.disarmed=true;
+     note('Disarm Opponent',`${target.name} rolls ${res.roll} against ${pct}% (${res.label}). ${resists?'Keeps weapon.':'Weapon dropped.'}`);
+     finishOneEffect();
+   });return;
+ }else if(effect==='damageWeapon'){
+   const guard=guardWeapon(target);
+   rollWeaponDamageForEffect(actor,`Damage Weapon · ${actor.name}`, (amount,rolls)=>{
+     const lost=Math.max(0,amount-guard.ap);guard.hp=Math.max(0,guard.hp-lost);
+     if(guard.hp<=0)target.disarmed=true;
+     note('Damage Weapon',`${actor.name} inflicts ${amount} damage on ${target.name}'s ${WEAPONS[target.weapon].name}; ${guard.ap} AP protects it, ${lost} HP lost (${guard.hp} remaining).${guard.hp===0?' Weapon breaks.':''}`);
+     if(p.owner===p.atk)p.weaponTargeted=true;finishOneEffect();
+   });return;
+ }else if(effect==='accidental'){
+   // Defensive effect on attacker fumble, damage to attacker with their own weapon; armour ignored.
+   const foe=S.fighters[p.atk];
+   requestDice(foe.id,[{sides:20,label:'Self hit location'}],`Accidental Injury · ${foe.name} hit location`,([index])=>{
+    const loc=HIT_TABLE[index-1];rollWeaponDamageForEffect(foe,`Accidental Injury · ${foe.name} damage`,(amount)=>{
+      const armour=armourAt(foe,loc),wound=Math.max(0,amount-armour);foe.hp[loc]-=wound;foe.lastDamage={loc,wound,attacker:foe.name,weapon:WEAPONS[foe.weapon].name};
+      note('Accidental Injury',`${foe.name} strikes their own ${loc}: ${amount} damage − ${armour} armour = ${wound} HP lost.`);
+      // The existing prototype wound pipeline handles any serious/major consequences.
+      const severity=zoneClass(foe,loc);
+      if(wound>0&&(severity==='serious'||severity==='major')){resolveWound(actor,foe,loc,severity,wound,p.attackRoll,()=>finishOneEffect());return;}
+      finishOneEffect();
+    });
+   });return;
+ }else if(effect==='trip'){
    const pct=Math.max(target.brawn,target.evade);
-   requestSkill(target.id,pct,`Trip resistance · ${target.name}`,test=>{
-     const origin=p.owner===p.atk?p.attackRoll:p.defenseRoll;
-     const resist=opposedBetter(test,origin);
-     if(!resist)target.prone=true;
-     log('Trip Opponent',`${target.name} rolls ${test.roll} vs ${pct}% — ${test.label}. ${resist?'They keep their footing.':'They fall prone.'}`,'hit','Brawn/Evade vs original winning roll (Core p.101).',{actor:target.id,dice:d100Dice(test.roll)});
+   if(p.forceFailure){target.prone=true;note('Trip Opponent',`${target.name} automatically fails due to Force Failure and falls prone.`);finishOneEffect();return;}
+   requestSkill(target.id,pct,`Trip resistance · ${target.name}`,res=>{
+     const stands=opposedBetter(res,origin);
+     if(!stands)target.prone=true;
+     note('Trip Opponent',`${target.name} rolls ${res.roll} vs ${pct}% (${res.label}): ${stands?'remains standing':'falls prone'}.`);
      finishOneEffect();
    });return;
  }
@@ -927,6 +1060,7 @@ function chooseLocation(loc){const p=S.pending;if(!p||p.kind!=='location'||!HIT_
 function resolveHit(){
   const p=S.pending;if(!p)return;
   const atk=S.fighters[p.atk],def=S.fighters[p.def];
+  if(p.weaponTargeted){log('Weapon struck','Damage Weapon resolves instead of a blow to the body.','system');endAction();return;}
   if(p.attackRoll.grade<2||p.evaded){
     log('No Damaging Hit',p.evaded?`${def.name} evades the incoming strike, ending prone.`:`${atk.name}'s attack failed to connect.`, 'system');endAction();return;
   }
@@ -944,13 +1078,15 @@ function resolveHit(){
       if(p.reaction==='parry'&&p.defenseRoll?.grade>=2&&!p.bypassParry){
         const attackSize=cramped?Math.max(1,WEAPONS[atk.weapon].size-engagementInfo().gap):WEAPONS[atk.weapon].size;
         const parrySize=p.parryTool==='shield'?SHIELDS[def.shield].size:WEAPONS[def.weapon].size;
-        parry=parryAbsorption(dmg.total,attackSize,parrySize);
+        parry=p.enhanceParry?dmg.total:parryAbsorption(dmg.total,attackSize,parrySize);
         parryText=`Successful ${p.parryTool==='shield'?'shield':'weapon'} parry: ${parry} absorbed (Size ${parrySize} vs ${attackSize}).`;
       }
       const passive=def.warded?.includes(loc)&&!p.bypassParry?parryAbsorption(dmg.total,cramped?Math.max(1,WEAPONS[atk.weapon].size-engagementInfo().gap):WEAPONS[atk.weapon].size,SHIELDS[def.shield].size):0;
       if(passive>parry){parry=passive;parryText=`Passive shield ward on ${loc}: ${parry} damage stopped.`;}
-      const armour=p.bypassArmour?0:def.armor,afterParry=Math.max(0,dmg.total-parry),wound=Math.max(0,afterParry-armour),old=def.hp[loc];
+      const armour=p.bypassArmour&&!p.sunder?0:armourAt(def,loc),afterParry=Math.max(0,dmg.total-parry),wound=p.sunder?0:Math.max(0,afterParry-armour),old=def.hp[loc];
+      if(p.sunder){const apLost=Math.max(0,afterParry-armour);def.armourLocations[loc]=Math.max(0,armourAt(def,loc)-apLost);log('Sunder',`${atk.name} damages armour on ${def.name}'s ${loc}: ${apLost} AP removed (${def.armourLocations[loc]} AP remains).`,'hit');}
       def.hp[loc]-=wound;def.lastDamage={loc,wound,attacker:atk.name,weapon:WEAPONS[atk.weapon].name};
+
       log(`${atk.name} hits ${loc}`,`${weaponDmg.total} weapon (${weaponDmg.detail}) ${mod.label} (${dmValue>=0?'+':''}${dmValue}) = ${dmg.total} total; ${parry} parry; ${Math.min(afterParry,armour)} armour; ${wound} HP lost.`,'hurt',`${parryText} ${loc}: ${old} → ${def.hp[loc]} HP.`,{actor:atk.id,dice:[...weaponDice.map((r,i)=>makeDie(dmg.sides,r,`Weapon ${i+1}`)),...dmDice.map((r,i)=>makeDie(Array.isArray(mod.sides)?mod.sides[i]:mod.sides,r,`Modifier ${i+1}`))]});
       const cls=zoneClass(def,loc);
       if(wound>0&&(cls==='serious'||cls==='major')){
@@ -1020,7 +1156,7 @@ function endFight(winnerId,reason){
   if(winnerId==='a'){S.wins++;saveScore();S.phase='between';}else S.phase='over';render();
 }
 function nextEncounter(){if(S.phase!=='between')return;S.showEndModal=false;S.finalCause=null;S.wave++;let hero=S.mode==='normal'?newHero():S.fighters.a;hero.prone=false;hero.skipAttack=0;if(S.mode==='normal')hero.disabled=[];hero.status='Ready';S.fighters={a:hero,b:newEnemy(S.wave)};log('New Opponent',`${S.fighters.b.name} steps forward. ${S.mode==='normal'?'Your HP was restored.':'Your current HP carries over.'}`,'system');beginEncounter();}
-function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let act=n.dataset.act,v=n.dataset.val;switch(act){case 'mode':readSetupInputs();config.mode=v;render();break;case 'lbmode':S.lbMode=v;render();break;case 'start':readSetupInputs();startRun();break;case 'dismissResult':S.showEndModal=false;render();break;case 'reset':R=null;S={phase:'setup',mode:'normal',lbMode:S.lbMode||'normal'};render();break;case 'retry':startRun();break;case 'next':nextEncounter();break;case 'selectloc':if(!S.sel)S.sel={};S.sel[n.dataset.id]=v;render();break;case 'attack':{const id=S.order[S.turnIndex];if(S.fighters[id].kind==='human')beginAttack(id);break;}case 'react':react(v);break;case 'ward':{const id=S.order[S.turnIndex],f=S.fighters[id];if(f?.kind==='human'&&f.shield!=='none'&&!R&&!S.pending){S.pending={kind:'ward',actor:id,selected:[...(f.warded||[])]};render();}break;}case 'wardloc':{const p=S.pending;if(p?.kind==='ward'&&HIT_LOCS.includes(v)){const max=SHIELDS[S.fighters[p.actor].shield].coverage;p.selected=p.selected.includes(v)?p.selected.filter(x=>x!==v):p.selected.length<max?[...p.selected,v]:p.selected;render();}break;}case 'saveward':{const p=S.pending;if(p?.kind==='ward'){S.fighters[p.actor].warded=[...p.selected];S.pending=null;log('Ward Shield',`${S.fighters[p.actor].name} covers ${p.selected.join(', ')||'no locations'} with the shield.`,'system');render();}break;}case 'clearward':{const p=S.pending;if(p?.kind==='ward'){S.fighters[p.actor].warded=[];S.pending=null;log('Ward Cleared',`${S.fighters[p.actor].name} releases the shield ward.`,'system');render();}break;}case 'changeRange':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')beginChangeRange(id);break;}case 'rangeRespond':rangeReact(v);break;case 'effect':applyEffect(v);break;case 'skipEffect':{const p=S.pending;if(p?.kind==='effect'){log('Special Effects skipped',`${S.fighters[p.owner].name} declines the remaining effect(s).`);resolveHit();}break;}case 'pickloc':chooseLocation(v);break;case 'swapHand':{let f=S.fighters[S.order[S.turnIndex]];if(f?.kind==='human'&&f.ap>=1&&f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded){f.ap--;advanceStun(f);f.weaponHand='Left Arm';log('Ready Weapon',`${f.name} transfers their weapon to the functioning left hand (1 AP).`,'system');S.turnIndex++;advance();}break;}case 'yield':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')endFight(id==='a'?'b':'a',`${S.fighters[id].name} concedes the training bout.`);break;}case 'dither':{let f=S.fighters[S.order[S.turnIndex]];if(f.ap>0&&f.kind==='human'){f.ap--;advanceStun(f);log('Dither',`${f.name} spends 1 AP without taking an offensive action.`);S.turnIndex++;advance();}break;}case 'stand':{const id=S.order[S.turnIndex],f=S.fighters[id];if(f?.kind==='human')regainFooting(id);break;}case 'help':alert('Prototype Mythras subset:\n• Initiative: d10 + bonus − uniform armour encumbrance penalty, rounded up (Core pp.58, 90).\n• Each combatant has one proactive turn per cycle; reactions cost AP (Core pp.90–92).\n• Differential success grades yield Special Effects, selected before damage/location.\n• Weapon or shield parry reduces damage by comparative Size; warded locations are passively blocked. Armour absorbs what remains.\n• Serious and major wounds have different limb and torso/head effects (Core p.110); engaged standing is opposed (p.92).\n• Optional Closing and Opening Range (Core pp.106–107) included. Opposed Evade or interception.\n• Unimplemented: disarm, bleed, impale, shield attacks, weapon damage, full recovery, Luck and Fatigue.');break;}}
+function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let act=n.dataset.act,v=n.dataset.val;switch(act){case 'mode':readSetupInputs();config.mode=v;render();break;case 'lbmode':S.lbMode=v;render();break;case 'start':readSetupInputs();startRun();break;case 'dismissResult':S.showEndModal=false;render();break;case 'reset':R=null;S={phase:'setup',mode:'normal',lbMode:S.lbMode||'normal'};render();break;case 'retry':startRun();break;case 'next':nextEncounter();break;case 'selectloc':if(!S.sel)S.sel={};S.sel[n.dataset.id]=v;render();break;case 'attack':{const id=S.order[S.turnIndex];if(S.fighters[id].kind==='human')beginAttack(id);break;}case 'react':react(v);break;case 'ward':{const id=S.order[S.turnIndex],f=S.fighters[id];if(f?.kind==='human'&&f.shield!=='none'&&!R&&!S.pending){S.pending={kind:'ward',actor:id,selected:[...(f.warded||[])]};render();}break;}case 'wardloc':{const p=S.pending;if(p?.kind==='ward'&&HIT_LOCS.includes(v)){const max=SHIELDS[S.fighters[p.actor].shield].coverage;p.selected=p.selected.includes(v)?p.selected.filter(x=>x!==v):p.selected.length<max?[...p.selected,v]:p.selected;render();}break;}case 'saveward':{const p=S.pending;if(p?.kind==='ward'){S.fighters[p.actor].warded=[...p.selected];S.pending=null;log('Ward Shield',`${S.fighters[p.actor].name} covers ${p.selected.join(', ')||'no locations'} with the shield.`,'system');render();}break;}case 'clearward':{const p=S.pending;if(p?.kind==='ward'){S.fighters[p.actor].warded=[];S.pending=null;log('Ward Cleared',`${S.fighters[p.actor].name} releases the shield ward.`,'system');render();}break;}case 'changeRange':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')beginChangeRange(id);break;}case 'rangeRespond':rangeReact(v);break;case 'effect':applyEffect(v);break;case 'skipEffect':{const p=S.pending;if(p?.kind==='effect'){log('Special Effects skipped',`${S.fighters[p.owner].name} declines the remaining effect(s).`);resolveHit();}break;}case 'pickloc':chooseLocation(v);break;case 'recoverWeapon':{let f=S.fighters[S.order[S.turnIndex]];if(f?.kind==='human'&&f.ap>0&&f.disarmed&&guardWeapon(f).hp>0){f.ap--;f.disarmed=false;advanceStun(f);log('Ready Weapon',`${f.name} retrieves the dropped weapon (1 AP).`,'system');S.turnIndex++;advance();}break;}case 'swapHand':{let f=S.fighters[S.order[S.turnIndex]];if(f?.kind==='human'&&f.ap>=1&&f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded){f.ap--;advanceStun(f);f.weaponHand='Left Arm';log('Ready Weapon',`${f.name} transfers their weapon to the functioning left hand (1 AP).`,'system');S.turnIndex++;advance();}break;}case 'yield':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')endFight(id==='a'?'b':'a',`${S.fighters[id].name} concedes the training bout.`);break;}case 'dither':{let f=S.fighters[S.order[S.turnIndex]];if(f.ap>0&&f.kind==='human'){f.ap--;advanceStun(f);log('Dither',`${f.name} spends 1 AP without taking an offensive action.`);S.turnIndex++;advance();}break;}case 'stand':{const id=S.order[S.turnIndex],f=S.fighters[id];if(f?.kind==='human')regainFooting(id);break;}case 'help':alert('Prototype Mythras subset:\n• Initiative: d10 + bonus − uniform armour encumbrance penalty, rounded up (Core pp.58, 90).\n• Each combatant has one proactive turn per cycle; reactions cost AP (Core pp.90–92).\n• Differential success grades yield Special Effects, selected before damage/location.\n• Weapon or shield parry reduces damage by comparative Size; warded locations are passively blocked. Armour absorbs what remains.\n• Serious and major wounds have different limb and torso/head effects (Core p.110); engaged standing is opposed (p.92).\n• Optional Closing and Opening Range (Core pp.106–107) included. Opposed Evade or interception.\n• Special Effects are gated by the Core table (pp.95–101). The catalogue reference lists melee effects not yet simulated.\n• Unimplemented: bleeding, impaling, shield attacks, full recovery, Luck and Fatigue.');break;}}
 function readSetupInputs(){for(let k of ['username','charname','pvpName'])if($('#'+k))config[k]=$('#'+k).value.trim().slice(0,45)||config[k];for(let k of ['style','evade','armor','pvpSkill','str','siz','pvpStr','pvpSiz'])if($('#'+k)){let v=Number($('#'+k).value);config[k]=Math.max(k==='armor'?0:(['str','siz','pvpStr','pvpSiz'].includes(k)?5:20),Math.min(k==='armor'?6:(['str','siz','pvpStr','pvpSiz'].includes(k)?20:110),Number.isFinite(v)?Math.round(v):config[k]));}if($('#weapon')&&WEAPONS[$('#weapon').value])config.weapon=$('#weapon').value;if($('#pvpWeapon')&&WEAPONS[$('#pvpWeapon').value])config.pvpWeapon=$('#pvpWeapon').value;for(const key of ['shield','pvpShield'])if($('#'+key)&&SHIELDS[$('#'+key).value])config[key]=$('#'+key).value;}
 const coreClick=handleClick;
 function decoratedClick(e){
@@ -1032,7 +1168,7 @@ function decoratedClick(e){
   if(act==='roll'){if(!V.busy&&R)playCaptured(performManualRoll);return;}
   if(V.busy)return;
   if(R&&act!=='reset'&&act!=='selectloc'&&act!=='help')return;
-  if(['start','retry','next','attack','react','changeRange','rangeRespond','effect','skipEffect','pickloc','ward','wardloc','saveward','clearward','dither','stand'].includes(act)){
+  if(['start','retry','next','attack','react','changeRange','rangeRespond','effect','skipEffect','pickloc','recoverWeapon','ward','wardloc','saveward','clearward','dither','stand'].includes(act)){
     // Capture one user decision and all chained computer responses as a sequence.
     playCaptured(()=>coreClick(e),act==='start'||act==='retry');
     return;
@@ -1041,7 +1177,7 @@ function decoratedClick(e){
 }
 $('#root').addEventListener('click',decoratedClick);$('#homeLink').addEventListener('click',e=>{e.preventDefault();clearPresentationTimers();V.busy=false;V.stage=null;R=null;S={phase:'setup',lbMode:'normal'};render()});
 // Expose transparent inspection helpers for prototype debugging and automated tests.
-window.prototypeCombat={damageModifierFor,armourInitiativePenalty,parryAbsorption,SHIELDS,pendingRoll:()=>R?({id:R.id,actor:R.actor,label:R.label,defs:R.defs}):null,state:()=>S,presentation:()=>V,skipPresentation,rollSkill,HIT_TABLE,zoneClass,engagementInfo,canAttackBody,canParryAtReach,proposedRange,beginChangeRange,rangeReact};
+window.prototypeCombat={damageModifierFor,armourInitiativePenalty,parryAbsorption,SHIELDS,pendingRoll:()=>R?({id:R.id,actor:R.actor,label:R.label,defs:R.defs}):null,state:()=>S,presentation:()=>V,skipPresentation,rollSkill,HIT_TABLE,zoneClass,engagementInfo,canAttackBody,canParryAtReach,proposedRange,beginChangeRange,rangeReact,availableEffects,effectCatalog:()=>SPECIAL_EFFECT_CATALOG,armourAt,guardWeapon};
 render();
 </script>
 </body>
