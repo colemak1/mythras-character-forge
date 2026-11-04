@@ -54,7 +54,7 @@ The stable eight-subsystem progress plan is in [subsystem-plan.md](subsystem-pla
 | EQ-03 | Tools and ordinary equipment, one child per entry | 56–61 | automate / reference | not assessed |
 | EQ-04 | Melee weapons and shields, one child per entry and property | 61–64 | automate / reference | partial |
 | EQ-05 | Ranged weapons and ammunition, one child per entry and property | 61–66 | automate / reference | partial |
-| EQ-06 | Siege weapons, vehicles, manufacture, quality and repair | 62–65 | decision | not assessed |
+| EQ-06 | Siege weapons, vehicles, manufacture, quality and repair | 62–67 | reference / GM-assisted | source checked, live follow-up pending |
 | GS-01 | Time, movement, armour and skill interactions | 69–70, 38–39, 43 | automate / GM-assisted | partial |
 | GS-02 | Ageing checks, losses and recovery | 70–71 | automate / GM-assisted | partial |
 | GS-03 | Characteristic and skill improvement; training and optional permanent method | 71–73 | automate / GM-assisted | partial |

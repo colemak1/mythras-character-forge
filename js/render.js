@@ -1092,6 +1092,40 @@ function moneyTotal(){return baseStartingMoney()+(S.money.eventAdjustment??0);}
 // rather than re-deriving it, now that gear cost isn't purely manual.
 function moneySpentTotal(){return gearCostTotal()+inventoryCostTotal()+(S.money.spent||0);}
 function moneyRemaining(){return moneyTotal()-moneySpentTotal();}
+function equipmentReference(){
+  // Mythras Core p.64. These tables describe crew-operated gear and transport.
+  const siege=[
+    ["Scorpion","3d6","150 / 300",4,"1 / 1","Impale, Sunder","4 / 15","A–M",750],
+    ["Ballista","4d6","200 / 400",5,"2 / 4","Impale, Sunder","4 / 25","A–M",1000],
+    ["Mangonel","5d6","250 / 500",6,"2 / 4","Bash, Stun","4 / 50","M",1250],
+    ["Onager","6d6","300 / 600",7,"3 / 6","Bash, Stun","4 / 75","A–M",1500],
+    ["Couillard","7d6","350 / 700",8,"3 / 6","Bash, Stun","4 / 100","M",3000],
+    ["Trebuchet","8d6","400 / 800",9,"4 / 8","Bash, Stun","4 / 150","M",5000]
+  ];
+  const vehicles=[
+    ["Two-wheeled cart",6,60,1,"A–I",60],
+    ["Two-wheeled wagon",10,100,1,"A–I",175],
+    ["Four-wheeled freight wagon",10,200,2,"A–I",500],
+    ["War chariot",2,20,2,"A–I",1200],
+    ["Sedan chair",1,10,2,"A–I",400],
+    ["Palanquin",4,40,8,"A–I",2000],
+    ["Stage coach",8,200,4,"R, I",8000],
+    ["Heavy coach",12,400,8,"R, I",15000]
+  ];
+  const table=(caption,headers,rows)=>'<div class="pm-tablewrap"><table class="rt"><caption>'+caption+'</caption><thead><tr>'
+    +headers.map(label=>'<th scope="col">'+label+'</th>').join("")+'</tr></thead><tbody>'
+    +rows.map(([name,...values])=>'<tr><th scope="row">'+name+'</th>'+values.map(value=>'<td>'+value+'</td>').join("")+'</tr>').join("")
+    +'</tbody></table></div>';
+  return '<details class="card"><summary>Equipment reference and GM procedures</summary>'
+    +'<h3>Ammunition and ordinary gear</h3><p>Core p.62 bundles: arrows 12 for 4 sp, quarrels 12 for 3 sp, sling bullets 20 for 1 sp, blowgun darts 6 for 2 sp, thrown darts 12 for 2 sp. Enter bundles as Inventory items using GM-approved ENC. For ordinary gear, services and upkeep, use the prices on pp.54–61 and apply local availability.</p>'
+    +table("Siege weapons (Core p.64)",["Weapon","Damage","Range (m)","Load (rounds)","Crew min / max","Effects","AP / HP","Milieu","sp"],siege)
+    +'<p>Siege projectiles are Beyond Enormous. Use effective and long ranges, and reduce loading by one Combat Round per crew member above the minimum, up to the listed maximum. Resolve shots and fortification damage with the GM (p.62).</p>'
+    +table("Vehicles (Core p.64)",["Vehicle","Occupants","Cargo ENC","Draw","Milieu","sp"],vehicles)
+    +'<p>Occupants include the driver. For animal-drawn transport, full draw gives the animals’ normal movement. With fewer animals, scale movement by the fraction of the listed draw. Sedan chairs and palanquins use human carriers (pp.62, 64). Track vehicle cargo separately from character ENC.</p>'
+    +'<h3>Manufacture and repair</h3><p>Use the applicable Craft, Engineering or Mechanisms skill. The GM sets the Task Round duration and decides whether the work is possible. Core p.65 lists Hopeless without tools, Herculean with improvised tools, and Formidable with poor or incomplete tools or missing key resources.</p>'
+    +'<p>Per Task Round, critical adds 50%, success adds 25%, failure adds 0%, and fumble subtracts 25%. At 100% the result is acceptable. Use the quality and enhancement rules on pp.66–67 for substandard work, enhancements earned within four rounds and optional refinement. Track the result with the GM.</p>'
+    +'<p>Use Additional silver spent for off-character purchases if they come out of these funds. The reference does not add cargo or crew equipment to personal ENC.</p></details>';
+}
 function stepMoney(){
   const mult=S.creationMode==="quick"?S.money.quickMult:(S.culture?CULTURES[S.culture].money:null);
   let h=head("Money & Gear","Starting silver comes from culture and social class; weapon and armour cost is totalled automatically as you pick gear. Encumbrance is calculated automatically; excessive load and the STR&times;4 carrying limit are validated before completion.");
@@ -1143,7 +1177,7 @@ function stepMoney(){
    +(zeroEncItemCount()?' &nbsp;&middot;&nbsp; Zero-ENC items: '+zeroEncItemCount()+' ('+Math.floor(zeroEncItemCount()/20)+' ENC per complete group of 20)':'')
    +(encLimit()!==null?' &nbsp;&middot;&nbsp; Unencumbered limit (STR&times;2): <b style="font-family:var(--mono)">'+encLimit()+'</b>':"")+'</span>'
    +(encStatus()&&encStatus().level!=="ok"?'<p class="'+(encStatus().level==="bad"?"warn":"note")+'" style="margin-top:4px">'+encStatus().msg+'</p>'+encEffectPanel():"")+'</p></div>';
-  return h;
+  return h+equipmentReference();
 }
 /* ---- step: sheet & export ---- */
 // One key/value row for the dense sheet's small boxes (Player & Character,

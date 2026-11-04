@@ -215,6 +215,16 @@ test('Core pp.21,24 culture money multipliers and social class modifiers',()=>{
   for(const [name,mod] of classes){ctx.className=name;run('APP.pickSocialClass(className)');assert.equal(run('S.money.mod'),mod);assert.equal(run('moneyTotal()'),10*mult*mod);}
  }
 });
+test('Core pp.62–67 crew equipment and vehicle reference stays separate from personal gear',()=>{
+ reset();
+ const before=run('JSON.stringify(S)');
+ const html=run('stepMoney()');
+ assert.match(html,/Equipment reference and GM procedures/);
+ assert.match(html,/Ballista<\/th><td>4d6<\/td><td>200 \/ 400<\/td><td>5<\/td><td>2 \/ 4/);
+ assert.match(html,/Four-wheeled freight wagon<\/th><td>10<\/td><td>200<\/td><td>2/);
+ assert.match(html,/Herculean with improvised tools/);
+ assert.equal(run('JSON.stringify(S)'),before);
+});
 test('background wealth adjusts available funds once without changing purchases',()=>{
  reset();
  run('S.culture="Civilised";S.money.dice=[1,2,3,4];S.money.spent=10;S.age.events=[{effect:{type:"silver",pct:40}}];APP.applyLifeEvent(0);APP.applyLifeEvent(0);');
