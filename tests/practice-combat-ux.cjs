@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=10/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=11/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -387,21 +387,32 @@ state.mode='normal';
 const savedQuery=document.querySelector;
 const savedRAF=sandbox.window.requestAnimationFrame;
 const button={focused:false,scrolled:false,focus(){this.focused=true;},
-  getBoundingClientRect(){return {top:1200,bottom:1250};},
+  getBoundingClientRect(){return {top:180,bottom:240};},
   scrollIntoView(){this.scrolled=true;}};
-document.querySelector=selector=>selector.startsWith('.roll-await .roll-now,')?button:savedQuery(selector);
+const rollPanel={scrolled:false,scrollOptions:null,
+  getBoundingClientRect(){return {top:-210,bottom:500};},
+  scrollIntoView(options){this.scrolled=true;this.scrollOptions=options;}};
+document.querySelector=selector=>selector.startsWith('.roll-await .roll-now,')?button:
+  selector==='.roll-await'?rollPanel:savedQuery(selector);
 sandbox.window.requestAnimationFrame=callback=>callback();
 sandbox.window.innerHeight=800;
 api.setRoll({id:3041,actor:'a',label:'Manual d20 roll',defs:[{sides:20,label:'Hit location'}]});
 api.render();
-check('Next required roll gets focus and scrolls into view only when offscreen',
-  button.focused && button.scrolled);
-button.focused=false;button.scrolled=false;
-button.getBoundingClientRect=()=>({top:180,bottom:240});
+check('Roll prompt heading is brought back into view even when the Roll button is visible',
+  button.focused && !button.scrolled && rollPanel.scrolled &&
+  rollPanel.scrollOptions?.block==='start');
+button.focused=false;button.scrolled=false;rollPanel.scrolled=false;
+rollPanel.getBoundingClientRect=()=>({top:180,bottom:640});
 api.setRoll({id:3042,actor:'a',label:'Another manual d20 roll',defs:[{sides:20,label:'Hit location'}]});
 api.render();
-check('A visible roll is focused without scrolling the page',
-  button.focused && !button.scrolled);
+check('An entirely visible roll prompt is focused without scrolling the page',
+  button.focused && !button.scrolled && !rollPanel.scrolled);
+rollPanel.scrolled=false;
+rollPanel.getBoundingClientRect=()=>({top:120,bottom:950});
+api.setRoll({id:3043,actor:'a',label:'Tall manual roll',defs:[{sides:100,label:'d100'}]});
+api.render();
+check('An oversized prompt aligns at its top rather than hiding the modifier',
+  rollPanel.scrolled && rollPanel.scrollOptions?.block==='start');
 document.querySelector=savedQuery;
 sandbox.window.requestAnimationFrame=savedRAF;
 api.resetRoll();
@@ -906,5 +917,56 @@ check('Size-zero impalement grade does not invent a skill modifier',
  root.innerHTML.includes('Lodged weapon; no additional skill penalty from its size.'));
 state.fighters.a.siz=previousSiz10;
 state.fighters.a.impaledWounds=[];
+
+
+/* Work-mode desktop Chrome findings — PvP initiative ownership and false dodge. */
+state.phase='fight';state.mode='pvp';state.pending=null;state.logs=[];
+state.order=['a','b'];state.turnIndex=0;presentation.busy=false;
+api.setRoll({id:4010,actor:'b',label:'Initiative · d10',
+ defs:[{sides:10,label:'Initiative'}]});
+api.render();
+check('PvP second-player initiative does not call the first fighter the active turn',
+ root.innerHTML.includes('Initiative: '+state.fighters.b.name+' to roll') &&
+ !root.innerHTML.includes('Turn: '+state.fighters.a.name+'</div>'));
+check('PvP initiative keeps the die on second-player lane',
+ root.innerHTML.indexOf('data-combatant="b"') <
+ root.innerHTML.indexOf('Initiative: '+state.fighters.b.name+' to roll') &&
+ root.innerHTML.includes('data-combatant="b"'));
+api.setRoll({id:4011,actor:'a',label:'Initiative · d10',
+ defs:[{sides:10,label:'Initiative'}]});
+api.render();
+check('PvP first-player initiative identifies the first player',
+ root.innerHTML.includes('Initiative: '+state.fighters.a.name+' to roll'));
+api.resetRoll();
+state.mode='tutorial';state.pending=null;
+const otherName=state.fighters.b.name,playerName=state.fighters.a.name;
+const failedAttack={id:4012,title:otherName+' attacks',
+ body:'75 against Combat Style 45% — FAILURE.',kind:'system'};
+const failedDodge={id:4013,title:playerName+' evades',
+ body:'28 vs 67% — SUCCESS. 1 AP remaining.',kind:'system'};
+const noHit={id:4014,title:'No Damaging Hit',
+ body:playerName+' evades the incoming strike, ending prone.',kind:'system'};
+state.logs=[failedAttack,failedDodge,noHit];
+api.render();
+check('Failed attack remains a miss even if the defender also evades successfully',
+ root.innerHTML.includes(otherName+' misses') &&
+ root.innerHTML.includes(playerName+' attempts to evade and ends prone.') &&
+ !root.innerHTML.includes(playerName+' evades '+otherName+'’s strike'));
+check('Miss recap retains the failed attack and resolved defensive roll',
+ root.innerHTML.includes('75 / 45% · Failure') &&
+ root.innerHTML.includes('Evade · 28 / 67% · Success') &&
+ root.innerHTML.includes('No HP lost'));
+state.logs=[{...failedAttack,id:4015,body:'20 against Combat Style 45% — SUCCESS.'},
+ failedDodge,noHit];
+api.render();
+check('An attack successfully evaded is still described as a dodge',
+ root.innerHTML.includes(playerName+' evades '+otherName+'’s strike') &&
+ root.innerHTML.includes(playerName+' ends prone.'));
+state.logs=[failedAttack,noHit];
+api.render();
+check('An undefended failed attack is simply a miss',
+ root.innerHTML.includes(otherName+' misses') &&
+ !root.innerHTML.includes('attempts to evade and ends prone.'));
+api.resetRoll();
 
 console.log('Practice Combat UX smoke checks passed.');
