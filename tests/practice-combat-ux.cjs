@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=6/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=7/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -437,5 +437,102 @@ check('Playback exposes a direct Show results control',
   root.innerHTML.includes('Show results'));
 presentation.busy=false;
 presentation.stage=null;
+
+
+/* UX pass 07: resolve a whole exchange in place; never require the chronicle. */
+const recapActor=state.fighters.a.name,recapTarget=state.fighters.b.name;
+const eAttack={id:3301,title:recapActor+' attacks',body:'23 against Combat Style 67% — SUCCESS.',
+  kind:'system',meta:{actor:'a'}};
+const eDefense={id:3302,title:recapTarget+' parries',body:'48 vs 63% — SUCCESS. 2 AP remaining.',
+  kind:'system',meta:{actor:'b'}};
+const eAdvantage={id:3303,title:'Offensive Special Effects',body:recapActor+' gains 1 Special Effect.',kind:'hit'};
+const eEffect={id:3304,title:'Bleed',body:'Bleeding is tested after penetrating damage.',kind:'hit'};
+const eLocation={id:3305,title:'Hit Location',body:recapActor+' rolls 13 (d20): Right Arm.',
+  kind:'system',meta:{actor:'a',target:'b',location:'Right Arm',roll:13}};
+state.fighters.b.hp['Right Arm']=0;
+const eHit={id:3306,title:recapActor+' hits Right Arm',
+ body:'7 weapon (7) +0 (0) = 7 total; 2 parry; 1 armour; 4 HP lost.',
+ kind:'hurt',view:JSON.parse(JSON.stringify(state.fighters)),meta:{actor:'a'}};
+const eDisabled={id:3307,title:'Limb Disabled',body:recapTarget+"'s Right Arm becomes unusable.",kind:'hurt'};
+state.phase='fight';state.mode='normal';state.pending=null;state.wave=3;
+state.order=['a','b'];state.turnIndex=0;
+state.logs=[{id:3300,title:'Encounter 3 · Initiative',body:'Rolls completed.',kind:'system'}];
+presentation.busy=false;presentation.visibleCount=Infinity;
+presentation.showLog=false;presentation.stage=null;presentation.highlight=null;
+api.resetRoll();api.render();
+check('Before an attack there is no invented exchange result',
+  !root.innerHTML.includes('class="exchange-recap'));
+
+state.logs.push(eAttack);
+api.render();
+check('After an attack the recap clearly shows its roll and awaits defense',
+  root.innerHTML.includes('class="exchange-recap progress"') &&
+  root.innerHTML.includes('23 / 67% · Success') &&
+  root.innerHTML.includes('Awaiting response'));
+check('Recap appears directly beneath the combatant dice before the next action',
+  root.innerHTML.indexOf('class="exchange-board"') <
+  root.innerHTML.indexOf('class="exchange-recap') &&
+  root.innerHTML.indexOf('class="exchange-recap') <
+  root.innerHTML.indexOf('class="decision-panel'));
+
+state.pending={kind:'reaction',atk:'a',def:'b',attackRoll:{grade:2,label:'SUCCESS',roll:23}};
+api.render();
+check('An unresolved attack tells the player to choose a defense',
+  root.innerHTML.includes('Choose a defense'));
+state.pending=null;
+state.logs.push(eDefense,eAdvantage,eEffect,eLocation,eHit,eDisabled);
+api.render();
+check('Complete exchange recap explains the attacker and hit body part',
+  root.innerHTML.includes('strikes Right Arm · 4 HP lost') &&
+  root.innerHTML.includes('class="exchange-recap injury"'));
+check('Recap shows attack, parry, Special Effect and hit together',
+  root.innerHTML.includes('23 / 67% · Success') &&
+  root.innerHTML.includes('Parry · 48 / 63% · Success') &&
+  root.innerHTML.includes('Bleed') &&
+  root.innerHTML.includes('Right Arm · 4 HP'));
+check('Damage calculation is visible without opening the chronicle',
+  root.innerHTML.includes('7 damage − 2 parry − 1 armour = 4 HP lost'));
+check('Engine-recorded wound consequence is visible in the recap',
+  root.innerHTML.includes('Serious wound · Limb disabled'));
+check('Recap is derived from the same newest combat events as the chronicle',
+  root.innerHTML.includes('data-log-id="3307"'));
+
+presentation.busy=true;presentation.visibleCount=2;
+api.render();
+check('Playback summary hides unrevealed wound and effect results',
+  root.innerHTML.includes('class="exchange-recap progress"') &&
+  !root.innerHTML.includes('class="recap-explanation"') &&
+  !root.innerHTML.includes('strikes Right Arm · 4 HP lost'));
+check('Recap keeps an explicit Show results option during detailed playback',
+  root.innerHTML.includes('class="recap-toolbar"') &&
+  root.innerHTML.includes('data-act="skip"'));
+presentation.busy=false;presentation.visibleCount=Infinity;
+state.logs=[eAttack,{id:3311,title:recapTarget+' does not defend',
+  body:recapTarget+' preserves Action Points.',kind:'system'},
+  {id:3312,title:'No Damaging Hit',body:recapActor+"'s attack failed to connect.",kind:'system'}];
+api.render();
+check('Undefended miss is explained without incorrectly claiming damage',
+  root.innerHTML.includes('No damaging hit') &&
+  root.innerHTML.includes('Not defended') &&
+  root.innerHTML.includes('No HP lost'));
+
+const eBlocked={...eHit,id:3313,body:'4 weapon (4) +0 (0) = 4 total; 2 parry; 2 armour; 0 HP lost.'};
+state.logs=[eAttack,eDefense,eBlocked];
+api.render();
+check('Armour/parry absorbing everything shows zero actual HP loss',
+  root.innerHTML.includes('strikes Right Arm · no HP lost') &&
+  root.innerHTML.includes('4 damage − 2 parry − 2 armour = 0 HP lost') &&
+  root.innerHTML.includes('class="exchange-recap blocked"'));
+
+state.logs=[eAttack,eHit,{id:3320,title:'New Opponent',
+  body:'New foe enters.',kind:'system'}];
+api.render();
+check('New opponent does not inherit previous encounter recap',
+  !root.innerHTML.includes('class="exchange-recap'));
+state.logs.push({id:3321,title:'Encounter 4 · Initiative',
+  body:'Initiative completed.',kind:'system'});
+api.render();
+check('Initiative of next encounter stays free of stale damage',
+  !root.innerHTML.includes('strikes Right Arm · 4 HP lost'));
 
 console.log('Practice Combat UX smoke checks passed.');
