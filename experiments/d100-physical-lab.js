@@ -76,11 +76,48 @@ function polyTwenty() {
   return {vertices,faces};
 }
 
-function numberTexture(text,metal=false) {
+
+/* A mathematically planar pentagonal trapezohedron (10 kite-shaped faces).
+   Even faces are tens (00,10,...90), odd die uses units (0,...9). */
+function d10Trapezohedron(){
+  const radius=.52,offset=.059;
+  const apex=offset*(1+Math.cos(Math.PI/5))/(1-Math.cos(Math.PI/5));
+  const vertices=Array.from({length:10},(_,j)=>{
+    const angle=j*Math.PI/5;
+    return [radius*Math.cos(angle),j%2===0?offset:-offset,radius*Math.sin(angle)];
+  });
+  vertices.push([0,apex,0],[0,-apex,0]);
+  const faces=[];
+  for(let j=0;j<10;j+=2)faces.push([10,j,(j+1)%10,(j+2)%10]);
+  for(let j=1;j<10;j+=2)faces.push([11,j,(j+1)%10,(j+2)%10]);
+  // ConvexPolyhedron requires outward winding. Three.js uses this too.
+  for(const face of faces){
+    const n=qFaceNormal(vertices,face);
+    const center=new THREE.Vector3();
+    for(const i of face)center.add(new THREE.Vector3(...vertices[i]));
+    center.divideScalar(face.length);
+    if(n.dot(center)<0)face.reverse();
+  }
+  return {vertices,faces};
+}
+function splitPercentile(value){
+  const n=Number(value);
+  if(!Number.isInteger(n)||n<1||n>100)throw Error('d100 result must be 1..100');
+  const normalized=n===100?0:n;
+  const tens=Math.floor(normalized/10)*10,ones=normalized%10;
+  return {tens,ones,tensLabel:String(tens).padStart(2,'0'),onesLabel:String(ones)};
+}
+function combinePercentile(tens,ones){
+  if(!Number.isInteger(tens)||tens<0||tens>90||tens%10!==0||
+     !Number.isInteger(ones)||ones<0||ones>9)throw Error('Invalid percentile dice');
+  const n=tens+ones;return n===0?100:n;
+}
+
+function numberTexture(text,metal=false,ink=null) {
   const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,256,256);
-  ctx.fillStyle=metal?'#e8d3ac':'#f7e7c6';
+  ctx.fillStyle=ink||(metal?'#e8d3ac':'#f7e7c6');
   ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.font='bold 126px Georgia, serif';
   ctx.fillText(String(text),128,135,236);
@@ -94,7 +131,7 @@ function makeGeometry(spec,id){
   const edgeMap=new Map();
   const faceData=[];
   const obj=new THREE.Group();
-  const metal=id==='poly';
+  const metal=id==='poly',isTens=id==='tens',isOnes=id==='ones',pair=isTens||isOnes;
   for(let i=0;i<faces.length;i++){
     let face=faces[i];
     let normal=qFaceNormal(vertices,face);
@@ -114,8 +151,8 @@ function makeGeometry(spec,id){
   geo.setAttribute('position',new THREE.Float32BufferAttribute(buf,3));
   geo.computeVertexNormals();
   const material=new THREE.MeshPhysicalMaterial({
-    color:metal?0x756a56:0x254e42,
-    metalness:metal?.82:.18,roughness:metal?.31:.38,
+    color:isTens?0x335449:isOnes?0xd8c9ab:metal?0x756a56:0x254e42,
+    metalness:metal?.82:pair?.12:.18,roughness:metal?.31:pair?.32:.38,
     clearcoat:metal?.22:.62,clearcoatRoughness:.29,
     side:THREE.FrontSide
   });
@@ -124,15 +161,16 @@ function makeGeometry(spec,id){
   const lines=[];
   for(const [i0,i1] of edgeMap.values())lines.push(...vertices[i0],...vertices[i1]);
   const edgeGeo=new THREE.BufferGeometry();edgeGeo.setAttribute('position',new THREE.Float32BufferAttribute(lines,3));
-  const edges=new THREE.LineSegments(edgeGeo,new THREE.LineBasicMaterial({color:metal?0xc1ad86:0x6e9a83,transparent:true,opacity:metal?.70:.53}));
+  const edges=new THREE.LineSegments(edgeGeo,new THREE.LineBasicMaterial({color:metal?0xc1ad86:isOnes?0x92785b:0x6e9a83,transparent:true,opacity:metal?.70:pair?.68:.53}));
   obj.add(edges);
   const decalGeometries=[],decalTextures=[];
-  if(id==='hundred'){
+  if(id==='hundred'||pair){
     for(let i=0;i<faceData.length;i++){
       const f=faceData[i];
-      const tex=numberTexture(i+1,false);decalTextures.push(tex);
+      const faceLabel=id==='hundred'?i+1:isTens?String(i*10).padStart(2,'0'):String(i);
+      const tex=numberTexture(faceLabel,false,isOnes?'#483b2e':null);decalTextures.push(tex);
       const edgeSizes=f.indices.map((ind,j)=>new THREE.Vector3(...vertices[ind]).distanceTo(new THREE.Vector3(...vertices[f.indices[(j+1)%f.indices.length]])));
-      const size=Math.max(.12,Math.min(.42,Math.min(...edgeSizes)*.82));
+      const size=Math.max(id==='hundred'?.12:.115,Math.min(id==='hundred'?.42:.30,Math.min(...edgeSizes)*(pair?.65:.82)));
       const labelGeo=new THREE.PlaneGeometry(size,size);decalGeometries.push(labelGeo);
       const label=new THREE.Mesh(labelGeo,new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,side:THREE.DoubleSide}));
       label.position.copy(f.center).addScaledVector(f.normal,.008);
@@ -150,7 +188,7 @@ function makeGeometry(spec,id){
       mark.renderOrder=1;obj.add(mark);
     }
   }
-  return {group:obj,vertices,faces:faceData,geometry:geo,edgeGeometry:edgeGeo,material,decalGeometries,decalTextures};
+  return {group:obj,vertices,faces:faceData,geometry:geo,edgeGeometry:edgeGeo,material,edgeMaterial:edges.material,decalGeometries,decalTextures};
 }
 
 function tabletopTexture(){
@@ -191,6 +229,17 @@ function newWorld(spec){
   const body=new CANNON.Body({mass:1.7,shape,linearDamping:.22,angularDamping:.26,allowSleep:true,sleepSpeedLimit:.1,sleepTimeLimit:.75});
   world.addBody(body);
   return {world,body};
+}
+
+
+function addPercentileBody(world,model){
+  const vertices=model.vertices.map(v=>new CANNON.Vec3(...v));
+  const shape=new CANNON.ConvexPolyhedron({vertices,faces:model.faces.map(f=>[...f.indices])});
+  const body=new CANNON.Body({
+    mass:.58,shape,linearDamping:.24,angularDamping:.29,
+    allowSleep:true,sleepSpeedLimit:.1,sleepTimeLimit:.75
+  });
+  world.addBody(body);return body;
 }
 
 class DieStage {
