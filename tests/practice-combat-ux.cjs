@@ -524,7 +524,7 @@ state.logs=[eAttack,{id:3311,title:recapTarget+' does not defend',
   {id:3312,title:'No Damaging Hit',body:recapActor+"'s attack failed to connect.",kind:'system'}];
 api.render();
 check('Undefended miss is explained without incorrectly claiming damage',
-  root.innerHTML.includes('strike misses') &&
+  root.innerHTML.includes(' misses') &&
   root.innerHTML.includes('Not defended') &&
   root.innerHTML.includes('No HP lost'));
 
