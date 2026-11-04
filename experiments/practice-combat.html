@@ -812,14 +812,26 @@ function exchangeRecapModel(){
    note='Awaiting the response';
  }
  const extra=[];
- const hasLog=title=>entries.some(entry=>entry.title===title);
+ const record=title=>entries.findLast(entry=>entry.title===title)||null;
+ const hasLog=title=>!!record(title);
+ if(impactSummary)extra.push(impactSummary);
  if(hasLog('Limb Disabled'))extra.push('Limb disabled');
+ if(hasLog('Wound Resisted'))extra.push('Additional wound effect resisted');
+ const bleed=record('Bleed');
+ if(bleed)extra.push(/bleeding begins/i.test(bleed.body||'')?'Bleeding begins':'Bleed resisted');
+ const stun=record('Stun Location');
+ if(stun)extra.push(/\bresists\b/i.test(stun.body||'')?'Stun resisted':'Location stunned');
+ const stagger=record('Serious Wound · Stunned');
+ if(stagger)extra.push('Attack temporarily restricted');
  if(hasLog('Impaled Weapon'))extra.push('Weapon lodged');
- if(hasLog('Stun Location'))extra.push('Stun resolved');
- if(hasLog('Bleed'))extra.push('Bleeding tested');
- if(hasLog('Bash'))extra.push('Knockback resolved');
+ const bash=record('Bash');
+ if(bash){
+   const metres=/knocks\s+.+?\s+(\d+)m back/i.exec(bash.body||'');
+   extra.push(metres?'Knocked back '+metres[1]+'m':'No knockback');
+ }
+ if(hasLog('Sunder'))extra.push('Armour damaged');
+ if(hasLog('Damage Weapon'))extra.push('Weapon damaged');
  if(hasLog('FIGHT ENDS'))extra.push('Bout ended');
- if(impactSummary)extra.unshift(impactSummary);
  const unique=[...new Set(extra)];
  const effectText=picked.length?picked.slice(0,2).join(' + ')+(picked.length>2?' +'+(picked.length-2):''):
    skipped?'Declined':offered?'Available':defense||hit||noHit?'None':'Awaiting response';
@@ -855,7 +867,7 @@ function exchangeRecapHtml(info){
    '<div class="recap-heading"><span>'+esc(recap.status)+'</span><span>'+esc(recap.attacker)+'</span></div>'+
    '<h3>'+esc(recap.headline)+'</h3>'+
    (recap.note?'<p class="recap-explanation">'+esc(recap.note)+'</p>':'')+
-   (recap.extra.length?'<p class="recap-consequences">'+esc(recap.extra.join(' · '))+'</p>':'')+
+   (recap.extra.length?'<p class="recap-consequences">'+esc(recap.extra.slice(0,3).join(' · ')+(recap.extra.length>3?' · +'+(recap.extra.length-3)+' more':''))+'</p>':'')+
    '<div class="recap-steps">'+recap.steps.map(item).join('')+'</div>'+
    (recap.next?'<div class="recap-next"><span>Next</span><strong>'+esc(recap.next)+'</strong></div>':'')+
    (V.busy?'<div class="recap-toolbar"><span>Showing results as they resolve</span><button type="button" class="toolbutton" data-act="skip">Show results</button></div>':'')+
