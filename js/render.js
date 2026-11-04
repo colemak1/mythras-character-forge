@@ -1002,7 +1002,20 @@ function gearCostTotal(){return Math.round(weaponsCost()+armorCostTotal());}
 // confirmed against page image). "Each Arm"/"Each Leg" are single pickers
 // covering two physical locations apiece, so they're weighted x2 here to
 // match the book's 7-location totals (Head, Chest, Abdomen, R/L Arm, R/L Leg).
-function armorEncAt(loc){const m=armorMaterialByName(armorNameAt(loc));return m.encPerLoc*0.5;}
+function armorSubstanceAt(loc){
+  const material=S.armorSubstance?.[loc];
+  const construction=armorNameAt(loc);
+  return construction!=="None"&&Object.hasOwn(ARMOR_MAP,construction)&&Object.hasOwn(MATERIAL_ENC_MULT,material)?material:"";
+}
+function armorDisplayName(loc){
+  const material=armorSubstanceAt(loc);
+  return armorNameAt(loc)+(material?" — "+material:"");
+}
+function armorPackedEncAt(loc){
+  const construction=armorMaterialByName(armorNameAt(loc));
+  return construction.encPerLoc*(MATERIAL_ENC_MULT[armorSubstanceAt(loc)]??1);
+}
+function armorEncAt(loc){return armorPackedEncAt(loc)*0.5;}
 function armorLocWeight(loc){return (loc==="Each Arm"||loc==="Each Leg")?2:1;}
 function armorEncTotal(){return ARMOR_LOCATIONS.reduce((a,l)=>a+armorEncAt(l)*armorLocWeight(l),0);}
 function armorApAt(loc){const m=armorMaterialByName(armorNameAt(loc));return m.ap;}
@@ -1023,7 +1036,7 @@ function gearEncTotal(){return inventoryEncTotal()+weaponsEnc()+armorEncTotal()+
 // a full Plated Mail suit (ENC 6/location x 7 locations = 42) => 42/5 = 8.4,
 // rounded up to 9 => Initiative Penalty -9.
 function armourPenaltyToInit(){
-  const total=ARMOR_LOCATIONS.reduce((a,l)=>{const m=armorMaterialByName(armorNameAt(l));return a+m.encPerLoc*armorLocWeight(l);},0);
+  const total=ARMOR_LOCATIONS.reduce((a,l)=>a+armorPackedEncAt(l)*armorLocWeight(l),0);
   return total<=0?0:Math.ceil(total/5);
 }
 // Encumbrance (core rulebook, Encumbrance section, confirmed against page
@@ -1070,11 +1083,11 @@ function baseMult(){
   if(S.creationMode==="quick")return S.money.quickMult||0;
   return S.culture&&Object.hasOwn(CULTURES,S.culture)?CULTURES[S.culture].money:0;
 }
-function moneyTotal(){const base=S.money.dice.reduce((a,b)=>a+b,0);
-  return Math.round(base*baseMult()*(S.money.mod||1));}
+function baseStartingMoney(){const base=S.money.dice.reduce((a,b)=>a+b,0);
+  return base*baseMult()*(S.money.mod||1);}
+function moneyTotal(){return baseStartingMoney()+(S.money.eventAdjustment??0);}
 // Total silver spent: auto-summed weapon/armour cost plus whatever's in
-// S.money.spent (miscellaneous spending, and the +/- adjustments life
-// events apply directly to that field). Every "remaining silver" display
+// S.money.spent (miscellaneous spending). Every "remaining silver" display
 // in the app (ledger, Play Mode, sheet export) should read through this
 // rather than re-deriving it, now that gear cost isn't purely manual.
 function moneySpentTotal(){return gearCostTotal()+inventoryCostTotal()+(S.money.spent||0);}
@@ -1093,11 +1106,12 @@ function stepMoney(){
    +(SOCIAL_CLASSES[S.culture]?'<p><button class="chip" onclick="APP.rollSocialClass()">Roll social class (d100)</button> '+(S.money.classRoll&&S.money.classRoll.culture===S.culture&&S.money.classRoll.className===S.money.socialClass?'<span class="note">Rolled '+esc(String(S.money.classRoll.roll))+': '+esc(S.money.classRoll.className)+'.</span>':'')+'</p><p class="note">Core p.21: roll unless already determined; choosing or rerolling requires GM agreement. Background resources remain a GM decision.</p>':'')
    +'<div class="grid3" style="margin-top:8px">'
    +fld("Social class (free text, overrides the picker above)",'<input type="text" value="'+esc(S.money.socialClass)+'" placeholder="e.g. Freeman" onchange="APP.mon(\'socialClass\',this.value)">')
-   +fld("Money modifier (from your social class table)",'<input type="number" step="0.5" value="'+S.money.mod+'" onchange="APP.mon(\'mod\',this.value)">')
-   +fld("Additional silver spent (miscellaneous only; inventory costs below are automatic)",'<input type="number" value="'+S.money.spent+'" onchange="APP.mon(\'spent\',this.value)">')
+   +fld("Money modifier (from your social class table)",'<input type="number" step="any" value="'+S.money.mod+'" onchange="APP.mon(\'mod\',this.value)">')
+   +fld("Additional silver spent (miscellaneous only; inventory costs below are automatic)",'<input type="number" step="any" value="'+S.money.spent+'" onchange="APP.mon(\'spent\',this.value)">')
    +'</div>'
    +(()=>{const gc=gearCostTotal(),ic=inventoryCostTotal(),extra=S.money.spent||0,spent=gc+ic+extra,total=moneyTotal(),remaining=total-spent,over=remaining<0;
      return (S.money.dice.length?'<p style="margin-top:6px">Starting money: <b style="font-family:var(--mono);color:var(--bronze-hi)">'+total+' sp</b>'
+       +(S.money.eventAdjustment?' &nbsp;&middot;&nbsp;  includes '+S.money.eventAdjustment+' sp from background events':'')
        +' &nbsp;&middot;&nbsp; weapons &amp; armour: <b style="font-family:var(--mono)">'+gc+' sp</b>'+' &nbsp;&middot;&nbsp; inventory: <b style="font-family:var(--mono)">'+ic+' sp</b>'
        +(extra?' &nbsp;&middot;&nbsp; additional: <b style="font-family:var(--mono)">'+extra+' sp</b>':'')
        +' &nbsp;&middot;&nbsp; remaining: <b class="'+(over?"warn":"")+'" style="font-family:var(--mono)">'+remaining+' sp</b></p>':'')
@@ -1115,6 +1129,9 @@ function stepMoney(){
    +'<div class="grid3">'+ARMOR_LOCATIONS.map(loc=>fld(loc,'<select onchange="APP.setArmor(\''+jsq(loc)+'\',this.value)">'
      +allArmorMaterialsFor(loc).map(m=>'<option value="'+esc(m.name)+'" '+(armorNameAt(loc)===m.name?"selected":"")+'>'+esc(m.name)+(m.custom?" ★":"")+' (AP '+m.ap+')</option>').join("")+'</select>')).join("")+'</div>'
    +'<p class="note">Set both limbs together:</p><div class="grid2">'+["Each Arm","Each Leg"].map(loc=>fld(loc,'<select onchange="APP.setArmor(\''+jsq(loc)+'\',this.value)"><option value="" selected disabled>Choose armour for both</option>'+allArmorMaterialsFor(loc).map(m=>'<option value="'+esc(m.name)+'">'+esc(m.name)+' (AP '+m.ap+')</option>').join("")+'</select>')).join("")+'</div>'
+   +'<details'+(ARMOR_LOCATIONS.some(armorSubstanceAt)?' open':'')+'><summary>Armour material overrides (GM approved)</summary><p class="note">Core p.58. Choose a material when your GM confirms it is suitable for the construction. Changes apply to ENC and Initiative. Default uses the listed construction ENC.</p><div class="grid3">'
+   +ARMOR_LOCATIONS.filter(loc=>armorNameAt(loc)!=="None"&&Object.hasOwn(ARMOR_MAP,armorNameAt(loc))).map(loc=>fld(loc+' material','<select onchange="APP.setArmorSubstance(\''+jsq(loc)+'\',this.value)"><option value="">Default</option>'
+     +Object.entries(MATERIAL_ENC_MULT).map(([name,mult])=>'<option value="'+esc(name)+'" '+(armorSubstanceAt(loc)===name?'selected':'')+'>'+esc(name)+' (&times;'+mult+')</option>').join("")+'</select>')).join("")+'</div></details>'
    +'<p class="note" style="margin-top:6px">Armour ENC (worn, halved): <b style="font-family:var(--mono)">'+armorEncTotal()+'</b> &nbsp;&middot;&nbsp; Armour Penalty to Initiative: <b style="font-family:var(--mono)">-'+armourPenaltyToInit()+'</b></p></div>';
   h+='<div class="card"><h3>Inventory</h3><table class="alloc"><tr><th>Item</th><th class="num">Qty</th><th class="num">ENC each</th><th class="num">sp each</th><th></th></tr>'
    +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.inv('+i+',\'name\',this.value)"></td>'

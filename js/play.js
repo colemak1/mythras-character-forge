@@ -330,7 +330,7 @@ function pmLocRow(loc){
   return '<div class="pm-locrow st-'+st+(sel?' sel':'')+'" onclick="APP.playSelectLoc(\''+loc+'\')" role="button" tabindex="0">'
    +'<span class="dot" style="background:'+pmZoneFill(loc)+'"></span>'
    +'<span class="nm">'+pmShortName(loc)+'</span>'
-   +'<span class="ap" title="AP '+ap+' — '+esc(armorNameAt(armLoc))+'">'+PM_SHIELD_SVG+ap+'</span>'
+   +'<span class="ap" title="AP '+ap+' — '+esc(armorDisplayName(armLoc))+'">'+PM_SHIELD_SVG+ap+'</span>'
    +'<span class="hp">'+cur+'<span>/'+max+'</span></span></div>';
 }
 // Redesigned damage entry (was a flat row of −1/−3/amount-input/−dmg/+heal/
@@ -387,7 +387,7 @@ function pmLocDetail(){
   const note=PM_DMG_NOTE&&PM_DMG_NOTE.loc===loc?PM_DMG_NOTE:null, recovery=naturalRecoveryInfo(loc);
   return '<div class="pm-locdetail">'
    +'<div class="dt"><b>'+esc(loc)+'</b><span class="d20">d20: '+hitD20For(loc)+'</span></div>'
-   +'<div class="arm">'+esc(armorNameAt(armLoc))+' &mdash; AP '+ap+'</div>'
+   +'<div class="arm">'+esc(armorDisplayName(armLoc))+' &mdash; AP '+ap+'</div>'
    +'<details class="pm-fx-item"><summary>Permanent injury: location maximum</summary><p>After GM adjudication, enter the location’s reduced maximum HP (Core p.80). Wound thresholds use the reduced maximum. This does not determine the injury, alter hit-location rolls, or automatically treat the wound.</p><label>Maximum HP <input type="number" id="injuryMax" min="1" value="'+max+'" style="width:65px"></label> <label><input type="checkbox" id="injuryConfirm"> GM confirms this adjustment</label> <button type="button" class="pm-btn sm" onclick="APP.playSetMaxHP(\''+loc+'\',document.getElementById(\'injuryMax\').value,document.getElementById(\'injuryConfirm\').checked)">Set maximum</button> <button type="button" class="pm-btn sm" onclick="APP.playClearMaxHP(\''+loc+'\',document.getElementById(\'injuryConfirm\').checked)">Restore calculated maximum</button></details>'
    +'<div class="hpline">'+cur+' <span>/ '+max+' HP</span><span class="pm-woundtag '+st.cls+'">'+st.tag+'</span></div>'
    +'<div class="fx">'+esc(playWoundEffectText(loc,st.cls))+'</div>'
@@ -1092,7 +1092,7 @@ function renderPlayView(){
     }
   }else if(tab==="inventory"){
     h+='<div class="pm-tablewrap"><table class="pm-atktable"><tr><th>Location</th><th>Armour</th><th>AP</th></tr>'
-     +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(armorNameAt(l))+'</td><td>'+armorApAt(l)+'</td></tr>').join("")+'</table></div>';
+     +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(armorDisplayName(l))+'</td><td>'+armorApAt(l)+'</td></tr>').join("")+'</table></div>';
     h+='<p class="pm-invmeta">Gear ENC '+gearEncTotal()+' / '+(encLimit()??"—")+' unencumbered'+(S.money.dice.length?(' &middot; '+moneyRemaining()+' / '+moneyTotal()+' sp'):"")+'</p>';
     if(inventoryBlock()){
       // Plain party-member view of a teammate's sheet: static list, no controls.
@@ -1317,7 +1317,7 @@ function characterSheetBody(){
      +S.community.connections.map(x=>'<div><b>'+esc(x.type)+':</b> '+esc(x.name)+(x.notes?' — '+esc(x.notes):'')+'</div>').join('')+'</div>':'')+'</div>';
   h+='<div class="mbox"><div class="mbox-t">Equipment &amp; Armour</div>'
    +'<table class="mtiny"><tr><th>Loc</th><th>Armour</th><th class="num">AP</th></tr>'
-   +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(armorNameAt(l))+'</td><td class="num">'+armorApAt(l)+'</td></tr>').join("")+'</table>'
+   +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(armorDisplayName(l))+'</td><td class="num">'+armorApAt(l)+'</td></tr>').join("")+'</table>'
    +mkv("Init. penalty",initPenalty?"−"+initPenalty:"0")
    +mkv("Silver",S.money.dice.length?moneyRemaining()+" / "+moneyTotal()+" sp":"—")+'</div>';
   h+='</div>'; // /mhead-grid
@@ -1487,7 +1487,7 @@ function rulesNotes(){
   +'<li>Passions starting values per the Passions Table (Culture &amp; Community, p.23), confirmed against the page image: a person (romantic/familial) 30 + loved one&rsquo;s POW+CHA; a person (platonic or averse) 30 + own POW + subject&rsquo;s CHA; an organisation, place or concept 30 + POW+INT; a race/species or an object 30 + POW&times;2.</li>'
   +'<li>Starting money per culture (Barbarian 4d6&times;50, Civilised 4d6&times;75, Nomadic 4d6&times;25, Primitive 4d6&times;10 silver) and the Social Class / Money Modifier tables (Culture &amp; Community, p.24, four per-culture tables: Barbarian, Civilised, Nomad, Primitive) are transcribed and confirmed against page images &mdash; no longer a reconstruction. The free-text Social Class field and Money Modifier number still let you override with a house rule if your table plays it differently.</li>'
   +'<li>Success tiers (Skills chapter, p.37&ndash;38, confirmed against page image): critical = one tenth of skill, fractions rounded up; 01&ndash;05 always succeeds; 96&ndash;00 always fails, regardless of skill value; fumble on 99&ndash;00, or only 00 for skills over 100. (Mythras has four tiers &mdash; no &ldquo;special&rdquo; tier.)</li>'
-  +'<li>Weapons (Economics &amp; Equipment, pp.63&ndash;66: One-Handed, Shields, Two-Handed, Ranged tables) and Armour (p.58 Armour Table, 8 Construction tiers from Natural/Cured to Articulated Plate, plus the Material Types ENC-multiplier table) are transcribed and confirmed against page images. <b>Correction:</b> weapons have no STR/DEX minimum in Mythras &mdash; an earlier pass fabricated that mechanic entirely; it has been removed. Every Combat Style uses STR+DEX as its Basic Percentage (Core p.12); the GM defines its weapons and setting context.</li>'
+  +'<li>Weapons (Economics &amp; Equipment, pp.63&ndash;66: One-Handed, Shields, Two-Handed, Ranged tables) and Armour (p.58 Armour Table, 8 Construction tiers from Natural/Cured to Articulated Plate, plus the Material Types ENC-multiplier table, applied via GM-approved overrides) are transcribed and confirmed against page images. <b>Correction:</b> weapons have no STR/DEX minimum in Mythras &mdash; an earlier pass fabricated that mechanic entirely; it has been removed. Every Combat Style uses STR+DEX as its Basic Percentage (Core p.12); the GM defines its weapons and setting context.</li>'
   +'<li><b>Armour Penalty to Initiative</b> (p.58, confirmed against page image): total the ENC of every location of armour worn (full, not halved), divide by 5, round up, subtract from Initiative Bonus. Shown on the Sheet step next to Initiative and in the Armour card.</li>'
   +'<li><b>Quick Character</b> (Character Creation Workbook, Attribute Summary): a single 100-point pool spent across all Standard Skills, three chosen Professional Skills, and an optional Combat Style, replacing the Culture/Career/Bonus pipeline entirely. 5&ndash;15 points on any skill you invest in (0 is fine for the rest &mdash; with 20+ eligible skills, a mandatory 5 on literally every one wouldn&rsquo;t fit in 100 points). Characteristics still use the normal roll or 80-point build; there&rsquo;s no per-culture money multiplier in this mode, so enter one manually on the Money &amp; Gear step.</li>'
   +'<li><b>Pulp Hero &amp; Paragon</b> (Mythras Companion, &ldquo;Pyramids, Pulp, &amp; Paragons&rdquo;, pp.54&ndash;55, verified against page scans): different characteristic dice/point pools, 2 or 3 non-stacking Advantages, and extra Bonus Skill Points at a higher per-skill cap (Pulp +50 pts/20% cap, Paragon +100 pts/40% cap). <b>Quirk:</b> the book&rsquo;s Paragon bonus-points line is literally labelled &ldquo;Heroic characters&rdquo; rather than &ldquo;Paragon characters&rdquo; &mdash; preserved as printed.</li>'

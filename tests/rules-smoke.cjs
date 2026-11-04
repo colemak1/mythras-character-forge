@@ -254,12 +254,50 @@ test('Update 05: Community HTML renders with all relationship fields',()=>{
 });
 
 
+test('Core pp.58, 77: all eight armour tiers, per-location prices and worn ENC',()=>{
+ ctx.window={addEventListener(){}};
+ vm.runInContext(fs.readFileSync(path.join(root,"js","cloud.js"),"utf8"),ctx);
+ const expected=[[1,2,20],[2,1,80],[3,2,180],[4,3,320],[5,4,500],[6,5,900],[7,6,1400],[8,7,2400]];
+ evalRule('S=freshState();');
+ for(const [i,[ap,enc,cost]] of expected.entries()){
+  evalRule(`S.armor=Object.fromEntries(ARMOR_LOCATIONS.map(loc=>[loc,ARMOR_MATERIALS[${i+1}].name]));`);
+  assert.equal(evalRule('armorApAt("Chest")'),ap);
+  assert.equal(evalRule('armorCostAt("Chest")'),cost);
+  assert.equal(evalRule('armorCostTotal()'),cost*7);
+  assert.equal(evalRule('armorEncTotal()'),enc*7/2);
+  assert.equal(evalRule('armourPenaltyToInit()'),Math.ceil(enc*7/5));
+ }
+ evalRule('S.armor={"Each Arm":ARMOR_MATERIALS[4].name,"Left Arm":"None"};');
+ assert.equal(evalRule('armorCostTotal()'),320);
+ assert.equal(evalRule('armorEncTotal()'),1.5);
+});
+test('Core p.58 armour material changes worn ENC and initiative but not AP or cost',()=>{
+ evalRule('S=freshState();S.armor.Chest=ARMOR_MATERIALS[8].name;S.armor.Head=ARMOR_MATERIALS[3].name;S.armorSubstance={Chest:"Steel",Head:"Linen"};');
+ assert.equal(evalRule('armorEncTotal()'),3.625);
+ assert.equal(evalRule('armourPenaltyToInit()'),2);
+ assert.equal(evalRule('armorApAt("Chest")'),8);
+ assert.equal(evalRule('armorCostTotal()'),2580);
+ evalRule('S.armorSubstance.Chest="unknown"');
+ assert.equal(evalRule('armorEncTotal()'),4.5);
+});
+test('Core p.65 thrown dagger and atlatl match the ranged table',()=>{
+ assert.equal(evalRule('WEAPON_MAP["Dagger (thrown)"].enc'),0);
+ assert.equal(evalRule('WEAPON_MAP.Atlatl.range'),'+0/+25/+75');
+});
 test('Update 06: inventory quantity times unit price updates silver ledger',()=>{
  evalRule('S=freshState();S.culture="Civilised";S.chars={STR:13,CON:13,SIZ:13,DEX:13,INT:13,POW:13,CHA:13};S.money.dice=[3,3,3,3];S.inventory=[{name:"Torch",qty:3,enc:1,cost:4}];');
  evalRule('armorCostTotal=()=>0;weaponsCost=()=>0;');
  assert.equal(evalRule('inventoryCostTotal()'),12);
  assert.equal(evalRule('moneySpentTotal()'),evalRule('gearCostTotal()')+12);
  assert.equal(evalRule('moneyRemaining()'),evalRule('moneyTotal()')-evalRule('moneySpentTotal()'));
+});
+test('Core starting money preserves fractional silver and legacy event credits',()=>{
+ evalRule('S=freshState();S.culture="Civilised";S.money.dice=[1,1,1,2];S.money.mod=0.25;');
+ assert.equal(evalRule('moneyTotal()'),93.75);
+ evalRule('S.money.spent=-25;S.age.events=[{applied:true,effect:{type:"silver",pct:25}}];normalizeState();normalizeState();');
+ assert.equal(evalRule('S.money.spent'),0);
+ assert.equal(evalRule('moneyTotal()'),118.75);
+ assert.equal(evalRule('validate(currentSteps().indexOf("Money & Gear")).ok'),true);
 });
 test('Update 06: inventory legacy item without price is safely zero-priced',()=>{
  evalRule('S=freshState();S.inventory=[{name:"Old Save Item",qty:2,enc:1}];');
@@ -396,7 +434,7 @@ test('Update 10: complete ranged catalogue and Core p.65 range/load/force data',
   assert(w,name); assert.deepEqual([w.dmg,w.range,w.load,w.reach,w.dmgMod,w.impaleSize||null],expected,name);
  }
  for(const w of items){
-  assert(/^(?:\d+\/?\d+\/?\d+|0\+\/25\+\/75\+)$/.test(w.range),w.name+' has invalid range');
+  assert(/^(?:\d+\/?\d+\/?\d+|\+0\/\+25\/\+75)$/.test(w.range),w.name+' has invalid range');
   assert(typeof w.load==='number'||w.load==='—',w.name+' has invalid reload');
   assert(w.effects.includes('Impale')?!!w.impaleSize:!w.impaleSize,w.name+' impale size issue');
  }

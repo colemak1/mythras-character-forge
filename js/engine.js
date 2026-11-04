@@ -309,9 +309,10 @@ function freshState(){return {
  qProf:[null,null,null], qProfSpec:["","",""], qStyleOn:false, qStyleName:"",
  alloc:{culture:{},career:{},bonus:{},quick:{}},
  passions:[],
- money:{dice:[],mod:1,socialClass:"",spent:0,quickMult:50},
+ money:{dice:[],mod:1,socialClass:"",spent:0,eventAdjustment:0,quickMult:50},
  inventory:[],
  gearWeapons:[],
+ armorSubstance:{},
  armor:{Head:"None",Chest:"None",Abdomen:"None","Each Arm":"None","Each Leg":"None"},
  rollLog:[],
  // Play Mode — session-to-session tracking, separate from the static
@@ -427,6 +428,13 @@ function normalizeState(){
   S.cultMembership=S.cultMembership||{archetype:null,name:"",rank:0};
   if(typeof S.cultMembership.rank!=="number")S.cultMembership.rank=0; // migrate old string ranks
   if(S.money&&S.money.quickMult==null)S.money.quickMult=50;
+  // Older applied wealth events could leave a negative spending balance.
+  S.money.eventAdjustment??=0;
+  if(S.money.eventAdjustment===0&&Number.isFinite(S.money.spent)&&S.money.spent<0&&
+     S.age.events.some(ev=>ev?.applied&&ev.effect?.type==="silver")){
+    S.money.eventAdjustment=-S.money.spent;
+    S.money.spent=0;
+  }
   S.play=S.play||{hp:{},luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null};
   S.play.hp=S.play.hp||{};
   if(!S.play.hpMaxOverride||typeof S.play.hpMaxOverride!=="object"||Array.isArray(S.play.hpMaxOverride))S.play.hpMaxOverride={};
@@ -1154,6 +1162,7 @@ function validate(step){
     // manual "additional" spending is entered must not exceed starting money
     // -- going under budget is fine, only going over blocks the step.
     if(!Number.isFinite(S.money.spent)||S.money.spent<0)return bad("Additional spending must be zero or a positive amount.");
+    if(!Number.isFinite(S.money.eventAdjustment??0))return bad("The background money adjustment must be a finite number.");
     if(!Number.isFinite(S.money.mod)||S.money.mod<=0)return bad("Money modifier must be positive.");
     if(S.money.dice.length&& (S.money.dice.length!==4||S.money.dice.some(x=>!Number.isInteger(x)||x<1||x>6)))return bad("Starting money must use four valid six-sided dice.");
     if(S.inventory.some(it=>!Number.isInteger(it.qty)||it.qty<0||!Number.isFinite(it.enc)||it.enc<0||!Number.isFinite(Number(it.cost||0))||Number(it.cost||0)<0))return bad("Inventory needs whole nonnegative quantities, nonnegative ENC and nonnegative prices.");

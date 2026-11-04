@@ -340,10 +340,10 @@ const WEAPONS=[
  // Ranged Weapons (Core p.65). "reach" holds Force (S/M/L/H/E) for these.
  // impaleSize is the distinct Impale Size column, not the Force/size of the projectile.
  // Numeric load values are Action Points, whereas em dash indicates no reload action.
- {name:"Atlatl",group:"Ranged",dmg:"—",dmgMod:"—",size:"",reach:"+1 Step",range:"0+/25+/75+",load:1,effects:"—",enc:1,apHp:"1/4",traits:"",milieu:"P",cost:10},
+ {name:"Atlatl",group:"Ranged",dmg:"—",dmgMod:"—",size:"",reach:"+1 Step",range:"+0/+25/+75",load:1,effects:"—",enc:1,apHp:"1/4",traits:"",milieu:"P",cost:10},
  {name:"Blowgun",group:"Ranged",dmg:"—",dmgMod:"N",size:"",reach:"—",range:"10/20/30",load:2,effects:"—",enc:0,apHp:"1/4",traits:"",milieu:"P",cost:30},
  {name:"Bolas",group:"Ranged",dmg:"1d4",dmgMod:"N",size:"",reach:"—",range:"10/25/50",load:"—",effects:"Entangle",enc:0,apHp:"2/2",traits:"",milieu:"P-A",cost:10},
- {name:"Dagger (thrown)",group:"Ranged",impaleSize:"S",dmg:"1d4",dmgMod:"Y",size:"S",reach:"S",range:"5/10/20",load:"—",effects:"Impale",enc:1,apHp:"6/8",traits:"",milieu:"All",cost:30},
+ {name:"Dagger (thrown)",group:"Ranged",impaleSize:"S",dmg:"1d4",dmgMod:"Y",size:"S",reach:"S",range:"5/10/20",load:"—",effects:"Impale",enc:0,apHp:"6/8",traits:"",milieu:"All",cost:30},
  {name:"Dart",group:"Ranged",impaleSize:"S",dmg:"1d4",dmgMod:"Y",size:"S",reach:"S",range:"5/10/20",load:"—",effects:"Impale",enc:0,apHp:"2/1",traits:"",milieu:"P-A",cost:10},
  {name:"Discus",group:"Ranged",dmg:"1d4+1",dmgMod:"Y",size:"L",reach:"L",range:"5/20/40",load:"—",effects:"Stun Location",enc:0,apHp:"2/3",traits:"",milieu:"A",cost:30},
  {name:"Hatchet (thrown)",group:"Ranged",dmg:"1d6",dmgMod:"Y",size:"S",reach:"S",range:"10/20/30",load:"—",effects:"Bleed",enc:1,apHp:"4/6",traits:"",milieu:"All",cost:25},
@@ -494,10 +494,7 @@ const ARMOR_MATERIALS=[
 ];
 const ARMOR_MAP=Object.fromEntries(ARMOR_MATERIALS.map(a=>[a.name,a]));
 const ARMOR_LOCATIONS=["Head","Chest","Abdomen","Right Arm","Left Arm","Right Leg","Left Leg"];
-// Material Types Table (p.58) — ENC multiplier layered on top of the base
-// Construction ENC above, if you want to track a specific material. Not
-// wired into the AP/ENC picker (would double the picker surface for a
-// refinement most tables won't need) — informational only, in Rules Notes.
+// Core p.58 material multipliers for GM-approved armour construction.
 const MATERIAL_ENC_MULT={"Bone":1.5,"Bronze":1,"Chitin":0.75,"Iron":1,"Ivory":1.25,
  "Leather":2,"Linen":1,"Shell":2,"Silk":0.75,"Steel":0.75,"Stone":3};
 

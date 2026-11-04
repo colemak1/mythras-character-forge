@@ -428,9 +428,9 @@ window.APP={
      // Expressed as a percentage of starting money so it scales with culture
      // and social class instead of being a flat number that means something
      // different to a Primitive and a Civilised character.
-     const t=moneyTotal();
+     const t=baseStartingMoney();
      if(!t){BUILDER_MSG="Roll your starting money on the Money & Gear step first — this event adjusts it by "+f.pct+"%.";render();return;}
-     S.money.spent=Math.round((S.money.spent||0)-t*f.pct/100);
+     S.money.eventAdjustment=(S.money.eventAdjustment??0)+Math.round(t*f.pct/100);
    }
    ev.applied=true;render();},
  /* species (non-human characters) */
@@ -727,7 +727,22 @@ window.APP={
  /* weapons & armour */
  toggleWeapon(name){const i=S.gearWeapons.indexOf(name);
    if(i>=0)S.gearWeapons.splice(i,1);else S.gearWeapons.push(name);render();},
- setArmor(loc,material){if(loc==="Each Arm"||loc==="Each Leg"){const suffix=loc.slice(5);S.armor["Right "+suffix]=material;S.armor["Left "+suffix]=material;}else S.armor[loc]=material;render();},
+ setArmor(loc,material){
+   const locations=loc==="Each Arm"||loc==="Each Leg"?["Right "+loc.slice(5),"Left "+loc.slice(5)]:[loc];
+   S.armorSubstance??={};
+   for(const location of locations){
+     if(armorNameAt(location)!==material)delete S.armorSubstance[location];
+     S.armor[location]=material;
+   }
+   render();
+ },
+ setArmorSubstance(loc,material){
+   if(!ARMOR_LOCATIONS.includes(loc)||armorNameAt(loc)==="None"||!Object.hasOwn(ARMOR_MAP,armorNameAt(loc)))return;
+   S.armorSubstance??={};
+   if(Object.hasOwn(MATERIAL_ENC_MULT,material))S.armorSubstance[loc]=material;
+   else delete S.armorSubstance[loc];
+   render();
+ },
  /* combat style composition — any number of weapons/traits, Character Builder only */
  toggleStyleWeapon(key,name){toggleInList(styleDef(key).weapons,name);render();},
  toggleStyleTrait(key,name){toggleInList(styleDef(key).traits,name);render();},
@@ -1722,7 +1737,7 @@ function buildMD(){
   if(S.passions.length)md+="## Passions\n\n| Passion | % |\n|---|---|\n"+S.passions.map(p=>"| "+(p.name||"(unnamed)")+" | "+passionVal(p)+"% |").join("\n")+"\n\n";
   if(S.gearWeapons.length)md+="## Weapons\n\n| Weapon | Damage | Reach | Effects | ENC | AP/HP |\n|---|---|---|---|---|---|\n"
     +S.gearWeapons.map(nm=>{const w=weaponByName(nm);return w?"| "+w.name+" | "+w.dmg+" | "+w.reach+" | "+w.effects+" | "+w.enc+" | "+w.apHp+" |":"";}).filter(Boolean).join("\n")+"\n\n";
-  md+="## Armour\n\n| Location | Construction | AP |\n|---|---|---|\n"+ARMOR_LOCATIONS.map(l=>"| "+l+" | "+armorNameAt(l)+" | "+armorApAt(l)+" |").join("\n")
+  md+="## Armour\n\n| Location | Construction | AP |\n|---|---|---|\n"+ARMOR_LOCATIONS.map(l=>"| "+l+" | "+armorDisplayName(l)+" | "+armorApAt(l)+" |").join("\n")
     +"\n\nArmour Penalty to Initiative: -"+armourPenaltyToInit()+"\n\n";
   if(S.money.dice.length)md+="## Money\n\nStarting: "+moneyTotal()+" sp — remaining: "+moneyRemaining()+" sp\n\n";
   if(S.inventory.length)md+="## Equipment\n\n"+S.inventory.map(it=>"- "+it.name+" ×"+it.qty+" (ENC "+((it.qty||0)*(it.enc||0))+")").join("\n")+"\n\n";

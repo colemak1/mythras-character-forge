@@ -212,8 +212,15 @@ test('Core pp.21,24 culture money multipliers and social class modifiers',()=>{
  const expected={Barbarian:[50,[["Outcast",0.25],["Slave",0.5],["Freeman",1],["Gentry",3],["Ruling",5]]],Civilised:[75,[["Outcast",0.25],["Slave",0.5],["Freeman",1],["Gentry",3],["Aristocracy",5],["Ruling",10]]],Nomadic:[25,[["Outcast",0.25],["Slave",0.5],["Freeman",1],["Ruling",3]]],Primitive:[10,[["Outcast",0.25],["Freeman",1],["Ruling",2]]]};
  for(const [culture,[mult,classes]] of Object.entries(expected)){
   reset();ctx.culture=culture;run('S.culture=culture;S.money.dice=[1,2,3,4];');assert.equal(run('baseMult()'),mult);
-  for(const [name,mod] of classes){ctx.className=name;run('APP.pickSocialClass(className)');assert.equal(run('S.money.mod'),mod);assert.equal(run('moneyTotal()'),Math.round(10*mult*mod));}
+  for(const [name,mod] of classes){ctx.className=name;run('APP.pickSocialClass(className)');assert.equal(run('S.money.mod'),mod);assert.equal(run('moneyTotal()'),10*mult*mod);}
  }
+});
+test('background wealth adjusts available funds once without changing purchases',()=>{
+ reset();
+ run('S.culture="Civilised";S.money.dice=[1,2,3,4];S.money.spent=10;S.age.events=[{effect:{type:"silver",pct:40}}];APP.applyLifeEvent(0);APP.applyLifeEvent(0);');
+ assert.equal(run('S.money.spent'),10);
+ assert.equal(run('moneyTotal()'),1050);
+ assert.equal(run('moneyRemaining()'),1040);
 });
 test('Core p.22 personal connections explain manually tracked Group Luck',()=>{
  reset();assert.match(run('stepCommunity()'),/Group Luck starts at 2 plus 1 per character/);assert.match(run('stepCommunity()'),/Track this shared pool with the GM/);
