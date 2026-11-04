@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=7/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=8/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -560,11 +560,73 @@ state.logs=[eAttack,eHit,
 api.render();
 check('Wound resistance is clearly distinguished from wound severity',
   root.innerHTML.includes('Serious wound')&&
-  root.innerHTML.includes('Additional wound effect resisted'));
+  root.innerHTML.includes('Extra injury effect resisted'));
 state.logs=[eAttack,eHit,
  {id:3357,title:'Sunder',body:'Armour reduced.',kind:'hit'}];
 api.render();
 check('Damage to armour is noted as a separate consequence',
   root.innerHTML.includes('Armour damaged'));
+
+
+/* UX 08: difficulty grade is a lasting injury consequence, not a success grade. */
+const woundResolution={id:3401,title:'SERIOUS WOUND · Right Arm',
+ body:recapTarget+' Endurance 29/60% (SUCCESS) opposed by attack 23 (SUCCESS). Resists the additional consequence.',kind:'hurt'};
+const woundResisted={id:3402,title:'Wound Resisted',
+ body:recapTarget+' remains functional; injured-body tasks are one difficulty grade harder until healed to a Minor Wound.',
+ kind:'system'};
+state.mode='normal';state.phase='fight';state.pending=null;
+state.order=['a','b'];state.turnIndex=0;state.wave=3;
+state.logs=[eAttack,eDefense,eHit,woundResolution,woundResisted];
+presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;presentation.highlight=null;
+api.resetRoll();api.render();
+check('Wound resistance does not erase the serious wound',
+ root.innerHTML.includes('Serious wound') &&
+ root.innerHTML.includes('Extra injury effect resisted'));
+check('One-grade difficulty penalty is visible beside the exchange, not buried in chronicle',
+ root.innerHTML.includes('class="recap-difficulty"') &&
+ root.innerHTML.includes('Injured-body tasks are one difficulty grade harder'));
+check('Difficulty example names the actual wounded location and endpoint',
+ root.innerHTML.includes('Standard → Hard · Right Arm · Until the wound heals to Minor'));
+check('Wound-resistance explanation distinguishes the Endurance result from the penalty',
+ root.innerHTML.includes('Endurance resisted the extra wound effect'));
+state.logs=[eAttack,eDefense,eHit];
+api.render();
+check('One-grade difficulty is not fabricated for exchanges without wound resistance',
+ !root.innerHTML.includes('class="recap-difficulty"'));
+state.logs=[eAttack,eDefense,eHit,woundResolution,woundResisted];
+presentation.busy=true;presentation.visibleCount=3;
+api.render();
+check('Pending wound-resistance result remains hidden until revealed',
+ !root.innerHTML.includes('class="recap-difficulty"'));
+presentation.busy=false;presentation.visibleCount=Infinity;
+
+const attacker=state.fighters.a;
+attacker.hp['Right Arm']=0;attacker.weaponHand='Right Arm';
+attacker.prone=false;attacker.blindedTurns=0;attacker.fatigue=0;attacker.impaledWounds=[];
+const normalStyle=attacker.style;
+const hardTarget=Math.ceil(normalStyle*2/3);
+api.setRoll({id:3403,actor:'a',label:'Attack · Combat Style '+hardTarget+'%',
+ defs:[{sides:100,label:'d100'}]});
+api.render();
+check('An isolated serious weapon-arm modifier shows before and after targets',
+ root.innerHTML.includes('class="roll-difficulty-note"') &&
+ root.innerHTML.includes(normalStyle+'% → '+hardTarget+'%') &&
+ root.innerHTML.includes('Standard → Hard · serious Right Arm wound'));
+attacker.prone=true;
+const combinedTarget=Math.ceil(Math.ceil(normalStyle/2)*2/3);
+api.setRoll({id:3404,actor:'a',label:'Attack · Combat Style '+combinedTarget+'%',
+ defs:[{sides:100,label:'d100'}]});
+api.render();
+check('Combined conditions do not mislabel the whole reduction as just one grade',
+ root.innerHTML.includes('Adjusted roll target') &&
+ root.innerHTML.includes('Target reduced by combat conditions') &&
+ !root.innerHTML.includes('Standard → Hard · serious Right Arm wound'));
+attacker.prone=false;attacker.hp['Right Arm']=attacker.maxHp['Right Arm'];
+api.setRoll({id:3405,actor:'a',label:'Attack · Combat Style '+normalStyle+'%',
+ defs:[{sides:100,label:'d100'}]});
+api.render();
+check('Unmodified rolls do not show an invented difficulty penalty',
+ !root.innerHTML.includes('class="roll-difficulty-note"'));
+api.resetRoll();
 
 console.log('Practice Combat UX smoke checks passed.');
