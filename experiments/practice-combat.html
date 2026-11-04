@@ -854,7 +854,7 @@ function outcomeStrip(info){
   if(R&&!V.busy){
     headline=`Roll · ${R.label}`;sub='';mark='';css='roll-required';
   }else if(V.busy&&x){
-    headline=x.rolling?'Rolling dice…':x.kind==='hurt'?(x.result||'Damage resolved'):x.kind==='miss'?'No damaging hit':x.kind==='final'?'The bout is over':x.result||x.primary||'Exchange resolved';
+    headline=x.rolling?(exchangeLiveNarration()||'Rolling dice…'):x.kind==='hurt'?(x.result||'Damage resolved'):x.kind==='miss'?'No damaging hit':x.kind==='final'?'The bout is over':x.result||x.primary||'Exchange resolved';
     sub='';
     if(!x.rolling&&x.kind==='hurt'&&x.loc&&x.target){
       const hitFighter=entry?.view?.[x.target];
