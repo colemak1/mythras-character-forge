@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mythras — Physics Dice Lab</title><style>
-*{box-sizing:border-box}body{margin:0;background:#08090c;color:#e9e0d3;font-family:Georgia,serif}main{max-width:980px;margin:25px auto;padding:0 20px;text-align:center}header{font:11px system-ui;letter-spacing:.2em;color:#c3a47b}h1{font-size:34px;font-weight:normal;margin:12px 0}p{font:13px/1.7 system-ui;color:#a99b8c}.stage{position:relative;margin:22px auto 16px;height:min(65vw,550px);min-height:370px;border:1px solid #685339;background:radial-gradient(ellipse at center,#252033,#0d0e17 70%);overflow:hidden;box-shadow:0 25px 80px #0009}canvas{display:block;width:100%;height:100%}.frame{pointer-events:none;position:absolute;inset:15px;border:1px solid #9b7950;border-radius:48% 48% 42% 42% / 17% 17% 20% 20%;box-shadow:inset 0 0 30px #0007}.frame:before,.frame:after{content:"✦";position:absolute;color:#ac8a59;font-size:26px;top:-15px}.frame:before{left:30px}.frame:after{right:30px}.readout{position:absolute;top:8%;left:0;right:0;pointer-events:none;text-shadow:0 2px 12px #000}.readout small{font:11px system-ui;letter-spacing:.22em;color:#c6aa80}.readout strong{display:block;font-size:57px;font-weight:normal;color:#f6e5c7}.readout .hint{font:11px system-ui;color:#c6a98a}.readout.done{top:15%}.readout.done strong{font-size:90px}.controls{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap}button,select{padding:13px 24px;border:1px solid #a88b60;background:#292331;color:#f0dec1;font:12px system-ui;letter-spacing:.12em;cursor:pointer}button:hover{background:#49374b}button:disabled{opacity:.45;cursor:wait}.history{font:12px system-ui;color:#a79b90;margin-top:16px}.history span{display:inline-block;margin:5px;padding:7px 12px;border:1px solid #5e4d3e}.note{max-width:600px;margin:18px auto}#error{color:#e9a89c;font:13px system-ui;margin:20px}@media(max-width:550px){.stage{min-height:390px}.readout.done strong{font-size:64px}}
+*{box-sizing:border-box}body{margin:0;background:#08090c;color:#e9e0d3;font-family:Georgia,serif}main{max-width:980px;margin:25px auto;padding:0 20px;text-align:center}header{font:11px system-ui;letter-spacing:.2em;color:#c3a47b}h1{font-size:34px;font-weight:normal;margin:12px 0}p{font:13px/1.7 system-ui;color:#a99b8c}.stage{position:relative;margin:22px auto 16px;height:min(65vw,550px);min-height:370px;border:1px solid #685339;background:radial-gradient(ellipse at center,#252033,#0d0e17 70%);overflow:hidden;box-shadow:0 25px 80px #0009}canvas{display:block;width:100%;height:100%}.frame{pointer-events:none;position:absolute;inset:15px;border:1px solid #9b7950;border-radius:48% 48% 42% 42% / 17% 17% 20% 20%;box-shadow:inset 0 0 30px #0007}.frame:before,.frame:after{content:"✦";position:absolute;color:#ac8a59;font-size:26px;top:-15px}.frame:before{left:30px}.frame:after{right:30px}.readout{position:absolute;top:8%;left:0;right:0;pointer-events:none;text-shadow:0 2px 12px #000}.readout small{font:11px system-ui;letter-spacing:.22em;color:#c6aa80}.readout strong{display:block;font-size:57px;font-weight:normal;color:#f6e5c7}.readout .hint{font:11px system-ui;color:#c6a98a}.readout.done{top:5%}.readout.done strong{font-size:58px}.controls{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap}button,select{padding:13px 24px;border:1px solid #a88b60;background:#292331;color:#f0dec1;font:12px system-ui;letter-spacing:.12em;cursor:pointer}button:hover{background:#49374b}button:disabled{opacity:.45;cursor:wait}.history{font:12px system-ui;color:#a79b90;margin-top:16px}.history span{display:inline-block;margin:5px;padding:7px 12px;border:1px solid #5e4d3e}.note{max-width:600px;margin:18px auto}#error{color:#e9a89c;font:13px system-ui;margin:20px}@media(max-width:550px){.stage{min-height:390px}.readout.done strong{font-size:46px}}
 </style></head><body><main><header>NEW SIT’OTA / STANDALONE EXPERIMENT</header><h1>Physics Dice Lab</h1><p>Two real 3D ten-sided dice. Throw, collide, bounce, roll and settle on the tabletop.</p><section class="stage" id="stage"><div class="frame"></div><div class="readout" id="readout"><small>PERCENTILE ROLL</small><strong id="total">—</strong><span class="hint" id="status">Press Roll to throw</span></div></section><div class="controls"><button id="roll" disabled>LOADING PHYSICS…</button><select id="strength"><option value="1">Natural throw</option><option value="1.45">Hard throw</option><option value=".65">Soft throw</option></select></div><div class="history" id="history"></div><div id="error"></div><p class="note">Physics powered by Three.js and cannon-es. Dice results are read from the upward-facing surfaces after the bodies settle. Requires an internet connection to load the 3D libraries.</p></main>
 <script type="module">
 try{
@@ -30,12 +30,12 @@ function normalOf(ids){const a=verts[ids[0]],b=verts[ids[1]],c=verts[ids[2]];let
 const normals=faceIndices.map(normalOf);
 function makeFaceTexture(txt){
  const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');
- ctx.fillStyle='#b4b0b5';ctx.fillRect(0,0,512,512);
+ ctx.fillStyle='#aaa7b0';ctx.fillRect(0,0,512,512);
  // A full-size numeral painted onto the same planar triangle as the die surface.
  ctx.textAlign='center';ctx.textBaseline='middle';
- ctx.font=(txt.length>1?'bold 212px Georgia':'bold 278px Georgia');
+ ctx.font=(txt.length>1?'bold 295px Georgia':'bold 350px Georgia');
  ctx.lineWidth=6;ctx.strokeStyle='#49434a';ctx.fillStyle='#29252d';
- ctx.strokeText(txt,256,327);ctx.fillText(txt,256,327);
+ ctx.strokeText(txt,256,270);ctx.fillText(txt,256,270);
  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t;
 }
 function makeDie(tens){const group=new THREE.Group();faceIndices.forEach((ids,i)=>{
@@ -49,9 +49,9 @@ function makeDie(tens){const group=new THREE.Group();faceIndices.forEach((ids,i)
  const uv=order.map((v,j)=>j===tip?[.5,1]:j===(tip+1)%3?[0,0]:[1,0]);
  geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv.flat(),2));
  geo.setAttribute('normal',new THREE.Float32BufferAttribute([...n.toArray(),...n.toArray(),...n.toArray()],3));
- const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:makeFaceTexture(String(tens?i*10:i)),metalness:0,roughness:.83,side:THREE.FrontSide,flatShading:true}));
+ const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:makeFaceTexture(String(tens?i*10:i)),metalness:0,roughness:1,side:THREE.FrontSide,flatShading:true}));
  mesh.castShadow=true;group.add(mesh);
- const edge=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x302c33,transparent:true,opacity:.85}));group.add(edge);
+ 
 });
 group.scale.setScalar(.88);
 const points=verts.map(v=>new CANNON.Vec3(v.x*.88,v.y*.88,v.z*.88));
@@ -62,7 +62,7 @@ const dice=[makeDie(true),makeDie(false)];let rolling=false,elapsed=0,history=[]
 const rollLabels=dice.map((d,i)=>{const node=document.createElement('div');node.style.cssText='position:absolute;z-index:5;pointer-events:none;display:none;transform:translate(-50%,-100%);padding:5px 10px;border:1px solid #b99a6a;background:#16121ee8;color:#f6e8cc;font:700 20px Georgia,serif;text-align:center;min-width:55px;box-shadow:0 3px 15px #0009';stage.appendChild(node);return node});
 let resultVisible=false,centering=false,held=false,centerStart=0,showTotalAt=0;
 const centerFrom=[];
-const centerTargets=[new THREE.Vector3(-1.08,1.18,.35),new THREE.Vector3(1.08,1.18,.35)];
+const centerTargets=[new THREE.Vector3(-1.05,2.3,2.7),new THREE.Vector3(1.05,2.3,2.7)];
 const centerQuats=[];let pendingTotal=0,pendingDetail='';
 function throwDice(){held=false;centering=false;showTotalAt=0;resultVisible=false;rollLabels.forEach(n=>n.style.display='none');rolling=true;elapsed=0;button.disabled=true;readout.classList.remove('done');total.textContent='—';status.textContent='ROLLING';const power=Number(document.getElementById('strength').value);dice.forEach((d,i)=>{const b=d.body;b.wakeUp();b.position.set(i?1.2:-1.2,4.0+i*.5,(Math.random()-.5)*.8);b.quaternion.setFromEuler(Math.random()*6,Math.random()*6,Math.random()*6);b.velocity.set((i?-1.5:1.5)*power,(Math.random()+.5)*power,(Math.random()-.5)*3.2*power);b.angularVelocity.set((Math.random()-.5)*23*power,(Math.random()-.5)*26*power,(Math.random()-.5)*24*power)})}
 function topFace(d){const q=new THREE.Quaternion(d.body.quaternion.x,d.body.quaternion.y,d.body.quaternion.z,d.body.quaternion.w);let best=0,max=-Infinity;d.normals.forEach((n,i)=>{const y=n.clone().applyQuaternion(q).y;if(y>max){max=y;best=i}});return best}
