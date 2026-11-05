@@ -5,6 +5,10 @@
 - **Ownership:** ChatGPT verifies the rules; Claude implements and writes automated tests; ChatGPT checks the result live.
 - **Rules for implementers:** keep GM adjudication where Core leaves something to the setting. Never switch on an optional rule silently, and never replace Core with a Sit'ota house rule. This inventory doesn't close the subsystem.
 
+## Overlap with the cases in `magic-subsystem-cases.md`
+
+ChatGPT also wrote 58 cases in PR #111 (`magic-subsystem-cases.md`, "batch 1" section). The Shared Magic and Folk Magic ones overlap with this file: MG-B01 = MG-033, MG-B02 = MG-034, MG-B03 = MG-040/041, MG-B04 = MG-044, MG-B05 = MG-043, FM-B01 = FM-002/003, FM-B02 = FM-004, FM-B03 = FM-007/008, FM-B04–B06 = FM-009–012, FM-B07 = FM-013, FM-B08 = FM-018. Status is tracked here for those. The Animism, Mysticism, Sorcery, Theism and organization cases (AN-B, MY-B, SO-B, TH-B, OR-B) are mapped separately.
+
 ## Status key
 
 | Status | Meaning |
