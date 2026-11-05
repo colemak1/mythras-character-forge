@@ -1,16 +1,7 @@
-name: Publish dice experiment
+name: Manual Pages deployment
+# Normal pushes are published by the repository's existing branch-based Pages
+# workflow. Keep this as an explicit fallback so each push has one publisher.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'experiments/bg3-d100-test.html'
-      - 'experiments/practice-combat.html'
-      - 'experiments/practice-combat-ux.css'
-      - 'experiments/practice-character.js'
-      - 'js/practice.js'
-      - 'js/cloud.js'
-      - 'index.html'
-      - '.github/workflows/publish-dice-experiment.yml'
   workflow_dispatch:
 permissions:
   contents: read
