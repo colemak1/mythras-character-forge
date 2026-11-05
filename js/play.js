@@ -859,17 +859,17 @@ function magicPanel(){
       else if(t.key==="mysticism"){const det=mysticismDetails(m);meta=(det?det.cost+" MP":"Confirm Talent category and Intensity")+" · Intensity "+(m.intensity||1)+(m.active?" · ACTIVE":"");}
       else meta=(m.cost||0)+(t.pool==="devotional"?" from pool":" MP")+" · Intensity "+(m.intensity||1)+(t.key==="mysticism"&&m.active?" · ACTIVE":"");
       const body=(t.key==="folk"&&m.spell)?m.spell.d:(m.notes||"");
-      if(t.key==="sorcery"&&S.play.sorceryCasting && S.play.sorceryCasting.index===idx){
-        meta+=" · CASTING "+S.play.sorceryCasting.completed+"/"+S.play.sorceryCasting.total;
-      }
+      const castingKey={sorcery:"sorceryCasting",mysticism:"mysticismCasting",theism:"theismCasting"}[t.key];
+      const casting=castingKey&&S.play[castingKey]?.index===idx?S.play[castingKey]:null;
+      if(casting)meta+=" · CASTING "+casting.completed+"/"+casting.total;
       if(t.key==="mysticism"&&m.active&&m.durationTurns>0)meta+=" · "+(m.remainingTurns||0)+" turns left";
-      return '<details class="pm-fx-item"><summary>'+esc(magicLabel(m))
+      return '<details class="pm-fx-item"'+(casting?' open':'')+'><summary>'+esc(magicLabel(m))
        +' <span class="pm-fx-badge">'+esc(meta)+'</span>'
        +'<button class="pm-btn roll" onclick="event.preventDefault();event.stopPropagation();'+(t.key==="animism"?'APP.commandSpirit('+idx+')':'APP.castMagic('+idx+')')+'">'+(t.key==="animism"?"Command spirit":"cast")+'</button></summary>'
+       +(casting?'<button class="pm-btn sm" onclick="APP.'+({sorcery:"sorceryCancel",mysticism:"mysticismCancel",theism:"theismCancel"}[t.key])+'()">Cancel casting</button>':'')
        +(t.key==="animism"?'<div class="pm-fx-resolve">Contact: '+esc(m.spiritContact||"unknown")+' · Attitude: '+esc(m.spiritAttitude||"neutral")+' · Vessel: '+esc(m.bindingType||"none")+'. Summoning and ritual binding require GM resolution (Core pp.134–137).</div>'
         +'<div class="pm-fx-resolve">Spirit combat MP (manual): '+(Number.isInteger(m.spiritMP)?m.spiritMP:'not tracked')+' <button class="pm-btn sm" onclick="APP.spiritMPAdjust('+idx+',-1)">−1</button> <button class="pm-btn sm" onclick="APP.spiritMPAdjust('+idx+',1)">+1</button></div>'
         +(m.spiritCombatNote?'<p>'+esc(m.spiritCombatNote)+'</p>':''): '')
-       +(t.key==="sorcery"&&S.play.sorceryCasting&&S.play.sorceryCasting.index===idx?'<button class="pm-btn sm" onclick="APP.sorceryCancel()">Cancel invocation</button>':'')
        +(t.key==="mysticism"&&m.active&&m.durationTurns>0?'<button class="pm-btn sm" onclick="APP.talentTurn('+ (idx-S.magic.folk.length) +')">Advance Talent 1 turn</button>':'')
        +(body?'<p>'+esc(body)+'</p>':'<p class="pm-empty">No effect text recorded — add it on the Magic step.</p>')+'</details>';
     }).join("");
