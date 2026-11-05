@@ -5,6 +5,18 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Folk Magic spell catalogue
+
+- The builder's Folk Magic picker now lists all 70 spells from Mythras Core pp.123–129, with traits, full descriptions and page numbers. Play Mode spell cards show each spell's traits. Spells typed in by hand before still work, and if the name matches a Core spell, they now show its details.
+- Data comes from `docs/folk-magic-catalogue.json` (ChatGPT, PR #114). `scripts/build-folk-magic.py` copies it into `js/data.js`, and a test fails if the two differ.
+- Fixed PDF-extraction errors in the source: Bladesharp's damage steps had lost every "8" (now 1d4>1d6>1d8>1d10>2d6>2d8>2d10), two stray "·" characters, one missing space.
+- Added the Trigger trait explanation.
+- Spell effects (damage steps, durations, resistance) are still resolved at the table (decision D-3).
+
+To test: in the builder's Magic step, give a character Folk Magic, open the spell list and pick Beastcall (X). It should show its traits, "Core p.124" and a speciality box for the animal type. In Play Mode the card should list its traits.
+
+---
+
 ## Documentation: Folk Magic catalogue, Animism case inventory, and Magic decisions (2026-11-05)
 
 - ChatGPT prepared `docs/folk-magic-catalogue.json` from the user-provided Mythras Core pp.123–129: all 70 spells, printed names and traits, full reflowed descriptions, page numbers and two `(X)` specialization hints (PR #114). **Claude implementation in `FOLK_MAGIC` is still pending.**

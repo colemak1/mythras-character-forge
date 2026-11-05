@@ -84,8 +84,9 @@ test('Athletics improves running and sprinting (Core pp.39, 70)',()=>{
  assert.equal(evalRule('moveGaits().run'),21);
  assert.equal(evalRule('moveGaits().sprint'),40);
 });
-test('Core-first: Imperative Folk Magic catalogue is not loaded',()=>{
- assert.equal(evalRule('FOLK_MAGIC.length'),0);
+test('Core-first: Folk Magic catalogue is the Core pp.123-129 list, not the Imperative one',()=>{
+ assert.equal(evalRule('FOLK_MAGIC.length'),70);
+ assert(evalRule('FOLK_MAGIC.every(s=>Number.isInteger(s.p)&&s.p>=123&&s.p<=129)'),'every spell cites a Core page');
 });
 test('Core-first: human characteristic dice remain available',()=>{
  assert.equal(evalRule('SPECIES_MAP.human.dice.STR'),'3d6');

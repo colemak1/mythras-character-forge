@@ -24,7 +24,7 @@ Live evidence is still needed for every case marked Pass.
 ## Summary
 
 - Folk Magic casting costs, the 0 MP block, the single Folk Magic skill, and the 1 Turn / Intensity 1 / Magnitude 1 / range display pass, with tests in `tests/magic-folk-cases.cjs`.
-- **The app has no Folk Magic spell catalogue.** Players type spell names, and effects are free text (`FOLK_MAGIC` is deliberately empty, `js/data.js`). So every individual spell case (FM-S01–S70, FM-F01–F06) is GM-assisted today. The owner approved building one from the rulebook (D-1); ChatGPT supplies the data.
+- **Folk Magic spell catalogue loaded** (D-1): all 70 Core spells with traits, descriptions and pages. Effects remain GM-resolved.
 - Magic Points are a manual counter. There are no recovery sources, no committed MP for ongoing magic, and no optional exhaustion rules. The owner decided to keep recovery manual (D-2).
 - No active-spell tracking exists for Folk Magic: concentration, trigger, dismissal and duration (FM-015–017, FM-021, MG-039). The owner decided not to add it (D-3); Mysticism Talents keep their active state.
 
@@ -114,7 +114,7 @@ Live evidence is still needed for every case marked Pass.
 
 ### Individual Folk Magic spells
 
-All 70 spells are **GM-assisted**: the app records the player's spell name and notes, but has no spell data, traits or effects. Each case below becomes testable only if the owner chooses to build a spell catalogue (D-1). The general casting cases above still apply to every spell.
+**Catalogue loaded** (D-1): all 70 spells, with Core traits, descriptions and page numbers, come from `folk-magic-catalogue.json` and appear in the builder and in Play Mode (tests: `tests/magic-folk-catalogue.cjs`). Each spell's **name, traits, description and specialisation pass**. Spell **effects stay GM-assisted**: the app doesn't apply damage steps, durations or resistance automatically (D-3). The general casting cases above still apply to every spell.
 
 | ID | Given | Core says | Expected app behaviour |
 |---|---|---|---|
@@ -191,7 +191,7 @@ All 70 spells are **GM-assisted**: the app records the player's spell name and n
 
 ### Find (X) variants — children of FM-S27
 
-Also **GM-assisted** today. The app does store a specialisation for "(X)" spells, so each variant is recorded separately, as p.126 requires.
+Find (X) is in the catalogue with all six printed variants in its description. The player records the variant as the spell's specialisation, so each learned variant is stored separately, as p.126 requires (**Pass**, tested). Detection effects stay GM-assisted.
 
 | ID | Given | Core says | Expected app behaviour |
 |---|---|---|---|
@@ -209,8 +209,8 @@ Also **GM-assisted** today. The app does store a specialisation for "(X)" spells
 | D-1 | Build a Folk Magic spell catalogue? | **Yes** (owner, 2026-11-05). The owner has permission to use the rulebook text. ChatGPT supplies the data in the format in `folk-magic-catalogue-format.md`; Claude loads it. FM-S and FM-F cases become testable for name, traits and specialisation; effects stay GM-resolved unless a later decision says otherwise. |
 | D-2 | Model MP sources and recovery? | **No**: recovery stays manual (owner, 2026-11-05). MG-008 to MG-020 and MG-044 remain GM-assisted by decision. |
 | D-3 | Track active Folk, Sorcery and Theism effects? | **No** (owner, 2026-11-05). MG-039, MG-041, FM-015, FM-016 and FM-021 remain GM-assisted by decision. |
-| D-4 | Rounding for specialist starting spells (FM-002) and recovery ceilings (MG-013). | Waiting on ChatGPT. Recovery ceilings no longer affect code (D-2). |
-| D-5 | Automate casting interruptions (MG-033, MG-035 to 038)? | Waiting on ChatGPT's recommendation. |
+| D-4 | Rounding for specialist starting spells (FM-002) and recovery ceilings (MG-013). | ChatGPT recommends rounding up (35% → 4 spells) as an interpretation; see `decisions.md`. Awaiting owner confirmation. The app only shows this as GM guidance today. |
+| D-5 | Automate casting interruptions (MG-033, MG-035 to 038)? | ChatGPT recommends leaving it to the GM; see `decisions.md`. Awaiting owner confirmation. |
 
 ## Live checks for ChatGPT (Work session)
 

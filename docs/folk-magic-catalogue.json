@@ -51,7 +51,7 @@
       "Ranged",
       "Resist (Willpower)"
     ],
-    "d": "Befuddle causes confusion within the mind of a corporeal target. The subject of the spell has difficulty thinking straight, forgetting where it is, what it is doing, and why · often lapsing into disassociated lines of thought. Befuddled targets can still act in self defence, but cannot initiate any constructive activity until the spell ends. Any sort of attack or threatening action instantly breaks the spell, whether or not it was directed specifically at the befuddled target.",
+    "d": "Befuddle causes confusion within the mind of a corporeal target. The subject of the spell has difficulty thinking straight, forgetting where it is, what it is doing, and why — often lapsing into disassociated lines of thought. Befuddled targets can still act in self defence, but cannot initiate any constructive activity until the spell ends. Any sort of attack or threatening action instantly breaks the spell, whether or not it was directed specifically at the befuddled target.",
     "p": 124
   },
   {
@@ -59,7 +59,7 @@
     "t": [
       "Touch"
     ],
-    "d": "Bladesharp is cast on edged and piercing melee weapons. It increases the damage of a weapon by one dice step, and incidentally leaves the edge honed after the spell concludes. This spell is often used on tools such as logging axes, ploughs and razors. Thus casting this spell on a dagger increases it to 1d6+1 damage, whereas the same spell on a great axe would increase it to 2d +2 damage. (1d4>1d6>1d >1d10>2d6>2d >2d10)",
+    "d": "Bladesharp is cast on edged and piercing melee weapons. It increases the damage of a weapon by one dice step, and incidentally leaves the edge honed after the spell concludes. This spell is often used on tools such as logging axes, ploughs and razors. Thus casting this spell on a dagger increases it to 1d6+1 damage, whereas the same spell on a great axe would increase it to 2d8+2 damage. (1d4>1d6>1d8>1d10>2d6>2d8>2d10)",
     "p": 124
   },
   {
@@ -93,7 +93,7 @@
       "Instant",
       "Ranged"
     ],
-    "d": "Calculate allows the immediate calculation of numbers, weight or size of a thing, be it soldiers amassed in battle formation, the length of a rope or weight of a sack of rice. The spell always yields a precise quantity, but not value or quality. Only items which are directly observable (seen, lifted, smelled, and so on), and within range can be calculated. The spell will work when cast on a container · assuming, of course, that the container is not empty.",
+    "d": "Calculate allows the immediate calculation of numbers, weight or size of a thing, be it soldiers amassed in battle formation, the length of a rope or weight of a sack of rice. The spell always yields a precise quantity, but not value or quality. Only items which are directly observable (seen, lifted, smelled, and so on), and within range can be calculated. The spell will work when cast on a container — assuming, of course, that the container is not empty.",
     "p": 124
   },
   {
@@ -317,7 +317,7 @@
       "Touch",
       "Trigger"
     ],
-    "d": "Incognito alters the facial features of the recipient to a bland, unmemorable countenance. It does not affect the voice, mannerisms or physical size/presence of the recipient, but ensures that visually they do not stand out from the crowd.Anyone under the effects of Incognito is actively ignored by those who might otherwise be searching for him; he is simply overlooked and discounted.",
+    "d": "Incognito alters the facial features of the recipient to a bland, unmemorable countenance. It does not affect the voice, mannerisms or physical size/presence of the recipient, but ensures that visually they do not stand out from the crowd. Anyone under the effects of Incognito is actively ignored by those who might otherwise be searching for him; he is simply overlooked and discounted.",
     "p": 127
   },
   {

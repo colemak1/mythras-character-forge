@@ -116,8 +116,8 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
  await test('folk magic supports manually recorded spells and skill-based starting guidance',async()=>{
   run('S=freshState();magicSkillPct=()=>41;');
   assert.match(run('folkMagicPicker()'),/3 at 41%/);assert.doesNotMatch(run('folkMagicPicker()'),/1d4\+1/);
-  const oldGet=ctx.document.getElementById;ctx.document.getElementById=id=>id==='folkManualName'?{value:'Light'}:null;
-  run('APP.addFolkManual()');assert.equal(run('S.magic.folk[0].name'),'Light');assert.match(run('folkMagicPicker()'),/Player-recorded spell/);
+  const oldGet=ctx.document.getElementById;ctx.document.getElementById=id=>id==='folkManualName'?{value:'Hearthward'}:null;
+  run('APP.addFolkManual()');assert.equal(run('S.magic.folk[0].name'),'Hearthward');assert.match(run('folkMagicPicker()'),/Player-recorded spell/);
   run('APP.addFolkManual()');assert.equal(run('S.magic.folk.length'),1);ctx.document.getElementById=oldGet;
  });
  await test('Sorcery rechecks shaping and applies Combine difficulty to the final roll',async()=>{
