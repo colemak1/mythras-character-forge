@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=19/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=20/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -344,7 +344,7 @@ presentation.showLog=false;
 check('Detailed presentation is the default',presentation.quick===false);
 api.render();
 check('Detailed presentation has a labelled toggle',
-  root.innerHTML.includes('Manual pace') &&
+  root.innerHTML.includes('Standard pace') &&
   root.innerHTML.includes('aria-label="Toggle combat presentation pace"'));
 handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
 check('Pace can be switched to Quick without changing combat state',
@@ -352,7 +352,7 @@ check('Pace can be switched to Quick without changing combat state',
   state.phase==='fight');
 handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
 check('Pace can be returned to Detailed',
-  presentation.quick===false && root.innerHTML.includes('Manual pace'));
+  presentation.quick===false && root.innerHTML.includes('Standard pace'));
 presentation.busy=true;
 presentation.events=[state.logs[0],state.logs[1]];
 handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
@@ -1216,33 +1216,83 @@ check('Hardcore carries the same injured fighter through the next opponent intro
  generatedBout.carries);
 
 
-// Playback remains on the recorded event until Continue, including after dice settle.
-const manualPlayback=vm.runInContext(`
+// Playback pauses at a new automatic action, while decisions remain their own stops.
+const measuredPlayback=vm.runInContext(`
  (() => {
    R=null;
    S.phase='fight';S.order=['a','b'];S.turnIndex=0;S.pending=null;
    V.quick=false;
    const first={id:90001,title:'Opponent attacks',body:'32 against Combat Style 60% — SUCCESS.',kind:'system'};
-   const second={id:90002,title:'Opening created',body:'A follow-up decision.',kind:'system'};
-   S.logs=[first,second];
-   V.events=[first,second];
+   const result={id:90002,title:'No Damaging Hit',body:'The blow is parried.',kind:'system'};
+   const next={id:90003,title:'Opponent attacks',body:'45 against Combat Style 60% — SUCCESS.',kind:'system'};
+   S.logs=[first,result,next];
+   V.events=[first,result,{checkpoint:true,actor:'b'},next];
    V.busy=true;V.step=0;V.visibleCount=0;
    playBeat();
-   const paused=V.awaitingContinue&&V.timer===null&&V.stage.entry===first&&V.visibleCount===1;
-   continuePresentation();
-   const advanced=V.awaitingContinue&&V.stage.entry===second&&V.visibleCount===2;
-   continuePresentation();
-   const finished=!V.busy&&!V.awaitingContinue;
-   V.busy=true;V.step=0;V.events=[first];
-   V.awaitingContinue=false;
+   const automatic=!V.awaitingContinue&&!!V.timer&&V.stage.entry===first&&
+     !presentationControlsHtml().includes('data-act="continue"');
    continuePresentation();
    const blocked=V.step===0;
-   pausePresentation(330);
-   const settled=V.awaitingContinue&&V.timer===null;
+   advancePresentation();
+   const resultShown=!V.awaitingContinue&&V.stage.entry===result;
+   advancePresentation();
+   const boundary=V.awaitingContinue&&V.timer===null&&V.stage.entry===result&&
+     V.visibleCount===2&&presentationControlsHtml().includes('acts next');
+   continuePresentation();
+   const nextAction=!V.awaitingContinue&&V.stage.entry===next;
+   advancePresentation();
+   const decision=!V.busy&&!V.awaitingContinue;
+   // A trailing checkpoint cannot become the result when Show results is used.
+   V.busy=true;V.events=[first,result,{checkpoint:true,actor:'b'}];
    skipPresentation();
-   return {paused,advanced,finished,blocked,settled};
+   const skip=V.stage.entry===result&&!V.busy;
+   V.capturing=true;V.queue=[];
+   captureActionBoundary('b');
+   const noEmpty=V.queue.length===0;
+   V.queue=[result];captureActionBoundary('b');captureActionBoundary('b');
+   const once=V.queue.length===2&&V.queue[1].checkpoint;
+   V.queue=[];V.capturing=false;
+   V.quick=true;V.events=[result,{checkpoint:true,actor:'b'}];V.step=1;V.busy=true;
+   playBeat();
+   const quick=!!V.timer;
+   skipPresentation();V.quick=false;
+   // A matching die/result stays together; narration gives the actual result.
+   V.busy=true;V.events=[first];V.step=0;V.stage=null;
+   V.roll={actor:'b',defs:[{sides:100}],values:[32],settled:true};
+   first.meta={actor:'b',dice:d100Dice(32)};
+   const combined=rollMatchesResult(V.roll,first);
+   V.stage=stageFor(first);
+   const narrated=combatNarrationHtml().includes('success')&&!combatNarrationHtml().includes(' rolls.');
+   skipPresentation();
+   return {automatic,blocked,resultShown,boundary,nextAction,decision,skip,noEmpty,once,quick,combined,narrated};
  })()
 `,sandbox);
-check('Manual playback reveals one event and waits without an automatic timer',manualPlayback.paused);
-check('Continue reveals the next event and then returns control to the player',manualPlayback.advanced&&manualPlayback.finished);
-check('Continue is blocked during dice motion and settled dice wait for input',manualPlayback.blocked&&manualPlayback.settled);
+check('Roll results advance automatically and expose no redundant Continue',measuredPlayback.automatic&&measuredPlayback.blocked);
+check('A completed result waits before the next automatic action without revealing it',measuredPlayback.resultShown&&measuredPlayback.boundary);
+check('Continue starts the next action; real choices need no extra Continue',measuredPlayback.nextAction&&measuredPlayback.decision);
+check('Show results skips checkpoint markers and Quick pace still advances automatically',measuredPlayback.skip&&measuredPlayback.quick);
+check('Action checkpoints require earlier information and cannot be duplicated',measuredPlayback.noEmpty&&measuredPlayback.once);
+check('Matching dice and their result stay together, with the result narrated',measuredPlayback.combined&&measuredPlayback.narrated);
+
+const capturedOpening=vm.runInContext(`
+ (() => {
+   clearPresentationTimers();V.busy=false;V.stage=null;V.queue=[];V.quick=false;
+   config.mode='normal';startRun();
+   S.fighters.a.init=0;S.fighters.b.init=30;
+   S.fighters.b.weapon='sword';S.fighters.a.weapon='sword';
+   S.engagement='equal';
+   V.capturing=true;
+   performManualRoll();
+   V.capturing=false;
+   const events=V.queue;
+   const checkpoint=events.findIndex(e=>e.checkpoint);
+   const summary=events.findIndex(e=>/^Encounter.*Initiative/.test(e.title||''));
+   const attack=events.findIndex(e=>e.roll?.actor==='b'&&/^Attack/.test(e.roll.label));
+   const reaction=S.pending?.kind==='reaction';
+   V.queue=[];R=null;
+   return {correct:summary>=0&&checkpoint>summary&&attack>checkpoint,
+     count:events.filter(e=>e.checkpoint).length,reaction};
+ })()
+`,sandbox);
+check('Opponent initiative creates exactly one stop after the order summary, before their attack',
+ capturedOpening.correct&&capturedOpening.count===1&&capturedOpening.reaction);

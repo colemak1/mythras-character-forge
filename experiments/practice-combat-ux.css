@@ -1805,3 +1805,8 @@ button:focus-visible,.loc:focus-visible {
   text-transform:none;
   color:var(--exchange-muted);
 }
+
+.presentation-controls .playback-status {
+  color:var(--exchange-muted);
+  font:400 14px/1.5 system-ui,sans-serif;
+}
