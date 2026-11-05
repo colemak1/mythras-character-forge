@@ -24,3 +24,11 @@ Active Sorcery, Mysticism and Theism entries now open to show casting progress a
 Live evidence: a dedicated Quick Character with Invocation and Shaping completed a two-turn Duration-shaped cast. Reload preserved turn 1/2 and 11 MP. The final successful roll spent 2 MP. The fixture remains saved for subsequent tests.
 
 To test, begin a multi-turn cast, reload, then cancel. The casting marker should clear without a roll or MP charge.
+
+## Recover an unconfirmed account save
+
+- A reload can offer the signed-in owner a local draft when its account save was not confirmed. Accept restores the draft; Cancel loads the account copy. The choice protects against silently overwriting changes made on another device.
+- Successful account writes acknowledge only the exact matching local snapshot, preserving newer unsynced edits.
+- Regression coverage exercises recovery of an in-progress Mysticism cast, declining recovery, and owner isolation. A live immediate-reload retest remains open.
+
+To test, begin a two-turn cast and reload before account sync finishes. Accept recovery and verify preparation remains at turn 1/2. Repeat and decline to open the account copy.

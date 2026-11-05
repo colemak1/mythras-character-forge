@@ -164,5 +164,17 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   run('APP.commandSpirit(0)');assert.match(run('PM_MSG'),/exceeds/);assert.equal(run('S.play.magic'),10);assert.equal(run('S.rollLog.length'),0);
   run('S.magic.known[0].pow=15;APP.commandSpirit(0)');assert.equal(run('S.rollLog.length'),1);
  });
+ await test('owner can recover an unsynced casting draft on a cold character route',async()=>{
+  run('AUTH_USER={id:"draft-owner"};MOCK_AUTH=false;S=freshState();S._libId="draft-character";S.concept.name="Recovery";S.play.mysticismCasting={index:0,total:2,completed:1,signature:"test"};var draftState=JSON.parse(JSON.stringify(S));');
+  run('localStorage.setItem(autosaveKey(),JSON.stringify({S:draftState,pendingCloud:true}));var cloudState=freshState();openCharUnified=async()=>({id:"draft-character",state:cloudState,ownerId:"draft-owner",campaignId:null});S=freshState();confirm=()=>true;');
+  await run('loadCharacterInto("draft-character")');
+  assert.equal(run('S.play.mysticismCasting.completed'),1);
+  run('S=freshState();confirm=()=>false;');
+  await run('loadCharacterInto("draft-character")');
+  assert.equal(run('S.play.mysticismCasting'),null);
+  run('S=freshState();AUTH_USER={id:"someone-else"};confirm=()=>{throw new Error("must not prompt for another owner")};');
+  await run('loadCharacterInto("draft-character")');
+  assert.equal(run('S.play.mysticismCasting'),null);
+ });
  console.log(passed+' unified route/workflow tests passed (Supabase calls stubbed; no live account writes)');
 })().catch(e=>{console.error(e);process.exitCode=1;});

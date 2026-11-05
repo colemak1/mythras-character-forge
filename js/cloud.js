@@ -719,6 +719,13 @@ async function saveToLibraryUnified(explicit,actor=S){
       career:(snapshot.customCareer&&snapshot.customCareer.isCustom?snapshot.customCareer.name:snapshot.career)||"",
       state:snapshot});
     actor._libId=saved.id;actor._pendingClaim=false;
+    // A completed older write must not acknowledge a newer local draft.
+    try{
+      const key=AUTOSAVE_KEY+":"+owner,raw=localStorage.getItem(key),draft=raw?JSON.parse(raw):null;
+      if(draft?.pendingCloud&&JSON.stringify(draft.S)===JSON.stringify(snapshot)){
+        draft.pendingCloud=false;localStorage.setItem(key,JSON.stringify(draft));
+      }
+    }catch(e){/* Keep the draft available when acknowledgement storage fails. */}
     CLOUD_LAST_SAVED=Date.now();CLOUD_FAILED_ACTORS.delete(actor);
     CLOUD_SAVE_ERROR=[...CLOUD_FAILED_ACTORS.values()].join(" ");
     return saved;
@@ -828,7 +835,7 @@ function scheduleDmInventoryPush(){
 }
 let LOCAL_SAVE_ERROR="";
 function saveAutosave(){
-  try{localStorage.setItem(autosaveKey(),JSON.stringify({S,ts:Date.now()}));LOCAL_SAVE_ERROR="";}
+  try{localStorage.setItem(autosaveKey(),JSON.stringify({S,ts:Date.now(),pendingCloud:cloudActive()&&!VIEW_ONLY}));LOCAL_SAVE_ERROR="";}
   catch(e){LOCAL_SAVE_ERROR="This browser could not save the character. Export JSON now to avoid losing changes (storage may be full or disabled).";}
   // Also keep the character library (mythrasForgeCharLib_v1) in sync on
   // every autosave, not just on an explicit "Save to Library" click. The

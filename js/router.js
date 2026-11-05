@@ -95,7 +95,18 @@ async function loadCharacterInto(charId){
   if(S._libId&&S._libId===charId)return true;
   const entry=await openCharUnified(charId);
   if(!entry)return false;
-  S=Object.assign(freshState(),entry.state);if(!Object.prototype.hasOwnProperty.call(entry.state,"_creationFlowVersion"))S._creationFlowVersion=1;normalizeState();
+  let state=entry.state;
+  // Account-scoped draft recovery is offered only to the current owner.
+  // Another device may have changed the account copy, so recovery is explicit.
+  if(cloudActive()&&entry.ownerId===AUTH_USER.id){
+    let draft=null;
+    try{draft=JSON.parse(localStorage.getItem(autosaveKey())||"null");}catch(e){}
+    if(draft?.pendingCloud&&draft.S?._libId===entry.id&&
+       confirm("This browser has a local draft of this character whose account save was not confirmed. Restore that draft? Cancel opens the account copy.")){
+      state=draft.S;
+    }
+  }
+  S=Object.assign(freshState(),state);if(!Object.prototype.hasOwnProperty.call(state,"_creationFlowVersion"))S._creationFlowVersion=1;normalizeState();
   S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
   S._pendingClaim=(entry.ownerId==="local");
   return true;
