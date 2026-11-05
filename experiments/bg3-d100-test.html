@@ -34,14 +34,15 @@ function makeDie(tens){const group=new THREE.Group();faceIndices.forEach((ids,i)
  const forward=new THREE.Vector3().subVectors(b,a).cross(new THREE.Vector3().subVectors(c,a)).dot(n)>0;
  const order=forward?[a,b,c]:[a,c,b];
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(order.flatMap(v=>v.toArray()),3));geo.computeVertexNormals();
- const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:i%2?0x73717c:0x99959e,metalness:.42,roughness:.4,side:THREE.DoubleSide,flatShading:true}));mesh.castShadow=true;group.add(mesh);
+ geo.setAttribute('normal',new THREE.Float32BufferAttribute([...n.toArray(),...n.toArray(),...n.toArray()],3));
+ const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0xaaa7af,metalness:.18,roughness:.68,side:THREE.FrontSide,flatShading:true}));mesh.castShadow=true;group.add(mesh);
  const mid=ids.reduce((p,id)=>p.add(verts[id]),new THREE.Vector3()).multiplyScalar(1/3);
  // Put the numeral directly on the planar triangular face, rather than on a square billboard.
- const uv=new Float32Array(6);const uvs=order.map(v=>{const offset=v.clone().sub(mid);const tangent=new THREE.Vector3(0,1,0).cross(n).normalize();if(tangent.lengthSq()<.01)tangent.set(1,0,0);const bitangent=new THREE.Vector3().crossVectors(n,tangent).normalize();return [.5+offset.dot(tangent)/2.1,.5+offset.dot(bitangent)/2.1]});
+ const uvs=order.map(v=>{const offset=v.clone().sub(mid);const tangent=new THREE.Vector3(0,1,0).cross(n).normalize();if(tangent.lengthSq()<.01)tangent.set(1,0,0);const bitangent=new THREE.Vector3().crossVectors(n,tangent).normalize();return [.5+offset.dot(tangent)/2.1,.5+offset.dot(bitangent)/2.1]});
  geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs.flat(),2));
- const numberMesh=new THREE.Mesh(geo.clone(),new THREE.MeshBasicMaterial({map:makeLabel(String(tens?i*10:i)),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,side:THREE.DoubleSide}));
+ const numberMesh=new THREE.Mesh(geo.clone(),new THREE.MeshBasicMaterial({map:makeLabel(String(tens?i*10:i)),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,side:THREE.FrontSide}));
  numberMesh.position.copy(n).multiplyScalar(.003);group.add(numberMesh);
- const edge=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x27252c,transparent:true,opacity:.9}));group.add(edge)
+ const edge=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x38343e,transparent:true,opacity:.9}));group.add(edge)
 });
 group.scale.setScalar(.88);
 const points=verts.map(v=>new CANNON.Vec3(v.x*.88,v.y*.88,v.z*.88));
