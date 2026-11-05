@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=14/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=15/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -480,16 +480,17 @@ check('After an attack the recap clearly shows its roll and awaits defense',
   root.innerHTML.includes('class="exchange-recap progress"') &&
   root.innerHTML.includes('23 / 67% · Success') &&
   root.innerHTML.includes('Awaiting response'));
-check('Recap appears directly beneath the combatant dice before the next action',
+check('The next action appears before the dice and recap',
+  root.innerHTML.indexOf('class="decision-panel') <
+  root.innerHTML.indexOf('class="exchange-board"') &&
   root.innerHTML.indexOf('class="exchange-board"') <
   root.innerHTML.indexOf('class="exchange-recap') &&
-  root.innerHTML.indexOf('class="exchange-recap') <
-  root.innerHTML.indexOf('class="decision-panel'));
+  root.innerHTML.includes('<summary>Roll breakdown</summary>'));
 
 state.pending={kind:'reaction',atk:'a',def:'b',attackRoll:{grade:2,label:'SUCCESS',roll:23}};
 api.render();
 check('An unresolved attack tells the player to choose a defense',
-  root.innerHTML.includes('Choose a defense'));
+  root.innerHTML.includes('Choose your defense'));
 state.pending=null;
 state.logs.push(eDefense,eAdvantage,eEffect,eLocation,eHit,eDisabled);
 api.render();
@@ -926,17 +927,15 @@ state.order=['a','b'];state.turnIndex=0;presentation.busy=false;
 api.setRoll({id:4010,actor:'b',label:'Initiative · d10',
  defs:[{sides:10,label:'Initiative'}]});
 api.render();
-check('PvP second-player initiative does not call the first fighter the active turn',
- root.innerHTML.includes('Initiative: '+state.fighters.b.name+' to roll') &&
- !root.innerHTML.includes('Turn: '+state.fighters.a.name+'</div>'));
-check('PvP initiative keeps the prompt on the second-player lane',
- root.innerHTML.indexOf('data-combatant="b"') < root.innerHTML.indexOf('data-act="roll"') &&
- root.innerHTML.includes('Manual d10 roll for '+state.fighters.b.name));
+check('PvP initiative names the active second player in the action panel',
+ root.innerHTML.includes('class="decision-kicker">'+state.fighters.b.name) &&
+ root.innerHTML.includes('Manual d10 roll for '+state.fighters.b.name) &&
+ root.innerHTML.indexOf('data-act="roll"') < root.innerHTML.indexOf('data-combatant="a"'));
 api.setRoll({id:4011,actor:'a',label:'Initiative · d10',
  defs:[{sides:10,label:'Initiative'}]});
 api.render();
 check('PvP first-player initiative identifies the first player',
- root.innerHTML.includes('Initiative: '+state.fighters.a.name+' to roll'));
+ root.innerHTML.includes('class="decision-kicker">'+state.fighters.a.name));
 api.resetRoll();
 state.mode='tutorial';state.pending=null;
 const otherName=state.fighters.b.name,playerName=state.fighters.a.name;
@@ -1022,6 +1021,31 @@ check('The tray receives the same mixed roll values as combat, ahead of its resu
  capturedRoll.queue[1].body==='100 + 8 + 2');
 
 // Scheduling regressions exercise the same entry points as the combat controls.
+const locationFlow=vm.runInContext(`
+ (() => {
+   config.mode='pvp';
+   startRun();
+   R=null;
+   const success={grade:2,roll:32,label:'SUCCESS'};
+   const failure={grade:1,roll:90,label:'FAILURE'};
+   S.pending={kind:'effect',atk:'a',def:'b',owner:'a',other:'b',
+     attackRoll:success,defenseRoll:failure,effectsLeft:1,chosen:[]};
+   render();
+   const offered=document.querySelector('#root').innerHTML.includes('data-val="choose"');
+   applyEffect('choose');
+   const picker=document.querySelector('#root').innerHTML;
+   chooseLocation('Left Arm');
+   const damage=R?.label;
+   R=null;
+   return {offered,picker,damage};
+ })()
+`, sandbox);
+check('A normal melee success that earns an effect can choose a location',
+ locationFlow.offered && locationFlow.picker.includes('Choose where the hit lands') &&
+ locationFlow.picker.includes('data-val="Left Arm"'));
+check('A chosen location goes straight to damage for that body part',
+ locationFlow.damage==='Damage · Left Arm');
+
 const scheduling = vm.runInContext(`
 ;({
   setup() {

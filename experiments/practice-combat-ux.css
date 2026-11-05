@@ -1686,3 +1686,51 @@ button:focus-visible,.loc:focus-visible {
   .arena .fighter.enemy { grid-column:3; grid-row:1; }
 }
 .fighter button.loc .loc-ident { flex-wrap:wrap; gap:2px 5px; }
+
+/* Keep the actionable prompt in the same place from initiative to damage. */
+.center .decision-panel {
+  background:#292e26;
+  border-top:0;
+  border-bottom:1px solid var(--exchange-rule);
+  padding-top:15px;
+}
+.center .decision-kicker { font-size:11px; margin-bottom:7px; }
+.center .decision-panel .turnline h3 { text-transform:none; }
+.center .decision-context {
+  margin:0 0 8px;
+  color:var(--exchange-muted);
+  font:500 12px/1.5 system-ui,sans-serif;
+}
+.center .roll-panel .roll-await {
+  flex-direction:row;
+  justify-content:space-between;
+  align-items:center;
+  padding:0;
+  gap:10px 16px;
+}
+.roll-prompt-copy { min-width:0; }
+.center .roll-panel .roll-prompt-actions { margin:0; flex-shrink:0; }
+.center .roll-panel .roll-target-line { margin-top:4px; }
+.center .decision-panel .choice small {
+  display:block;
+  color:inherit;
+  opacity:.88;
+  font:400 11px/1.4 system-ui,sans-serif;
+  margin-top:4px;
+}
+.center .decision-panel .choice[data-act="pickloc"] { text-align:left; }
+.center .exchange-board:not(.has-roll) .lane-body { min-height:12px; }
+.center .exchange-board:not(.has-roll) .lane-body:not(:empty) { padding:5px 0; }
+.center .exchange-board.has-roll .lane-body { min-height:142px; }
+.center .exchange-breakdown { margin-top:10px; }
+.center .exchange-breakdown summary {
+  width:max-content;
+  color:var(--exchange-muted);
+  font:600 12px/1.4 system-ui,sans-serif;
+  cursor:pointer;
+  padding:3px 0;
+}
+.center .exchange-breakdown summary:hover { color:var(--exchange-text); }
+.center .exchange-breakdown summary:focus-visible { outline:2px solid var(--exchange-accent); outline-offset:3px; }
+.center .decision-panel .tutorial-guide-main { min-width:0; }
+.center .decision-panel .tutorial-guide-main strong { display:none; }
