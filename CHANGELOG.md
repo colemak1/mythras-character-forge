@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Documentation: Folk Magic catalogue, Animism case inventory, and Magic decisions (2026-11-05)
+
+- ChatGPT prepared `docs/folk-magic-catalogue.json` from the user-provided Mythras Core pp.123–129: all 70 spells, printed names and traits, full reflowed descriptions, page numbers and two `(X)` specialization hints (PR #114). **Claude implementation in `FOLK_MAGIC` is still pending.**
+- D-4: proposed rounding up for fractional specialist starting-spell counts and Magical Strength ceilings; neither Core p.121 nor p.116 specifies a fractional example. D-5: recommended GM-led casting interruptions, pending owner decision (`docs/decisions.md`).
+- Separately, ChatGPT opened PR #115 with 66 initial Animism source cases (pp.130–145) and explicitly identified unfinished spirit-type and ability children.
+- Docs-only source work. No code, tests or deployments changed; CI and subsequent live checks remain necessary.
+
+---
+
 ## Magic cases Batch 1 and Folk Magic card details
 
 - Filed ChatGPT's Subsystem 6 Batch 1 cases (Core pp.112–129) in `docs/magic-cases-batch-1.md`, with the app's current status for each case and five open decisions.
