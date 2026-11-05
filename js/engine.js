@@ -876,6 +876,14 @@ function spiritCommandPreflight(m,mp,bindingPct){
 function startingMagicReviewSignature(){
   return JSON.stringify({folk:S.magic.folk,known:S.magic.known.map(m=>[m.tradition,m.name,m.miracleLevel]),rank:S.magic.devotionalRank,cult:S.cultMembership,culture:S.culture,career:S.career,skills:["Folk Magic","Binding","Mysticism","Invocation","Devotion"].map(magicSkillPct)});
 }
+// Core pp.122–123 (ChatGPT case FM-007, FM-013, FM-018): Folk Magic casts in
+// one Turn at Intensity 1 and Magnitude 1. Ranged spells reach the Folk Magic
+// percentage in metres; difficulty grades change the casting chance only,
+// never the spell's reach (Core p.120, MG-043).
+function folkMagicRangeMetres(folkPct){
+  const pct=Number(folkPct);
+  return Number.isFinite(pct)&&pct>0?Math.floor(pct):0;
+}
 function magicEntryCost(entry){
   if(entry.tradition==="sorcery")return sorceryCost(entry).mp;
   if(entry.tradition==="theism")return theismDetails(entry)?.cost||0;
