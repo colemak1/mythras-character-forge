@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=21/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=22/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -39,7 +39,8 @@ const sandbox = {
   setInterval,
   clearInterval,
 };
-const api = vm.runInNewContext(match[1] +
+const guidance = fs.readFileSync(path.join(__dirname, '../experiments/practice-guidance.js'), 'utf8');
+const api = vm.runInNewContext(guidance + '\n' + match[1] +
   '\n;({startRun, render, state: () => S, resetRoll: () => { R = null; V.busy = false; }, setRoll: value => { R = value; }, availableEffects, d100Dice, rollSummary})',
   sandbox, { filename: 'practice-combat-inline.js' });
 
@@ -288,19 +289,11 @@ check('Normal mode stays free of tutorial prompts',
   !root.innerHTML.includes('class="tutorial-guide"'));
 
 
-/* Pass 05: focus updates the existing tutorial copy, without adding a panel. */
-const tutorialCopy={textContent:'Default prompt'};
-const originalQuery=document.querySelector;
-document.querySelector=selector=>
-  selector==='.decision-panel .tutorial-guide-main span'?tutorialCopy:originalQuery(selector);
-handlers.focusin({target:{closest(selector){
-  return selector==='.decision-panel button.choice'?
-    {dataset:{help:'A parry can absorb damage'},textContent:'Parry'}:null;
-}}});
-check('Tutorial choice focus replaces the hint in the existing guidance line',
-  tutorialCopy.textContent==='A parry can absorb damage');
-document.querySelector=originalQuery;
-
+/* Guidance context is persistent; action explanations are on the choices. */
+check('Normal gauntlet includes an optional contextual guidance panel',
+  root.innerHTML.includes('class="combat-guide"'));
+check('Hover-only choice helper is no longer duplicated under the choices',
+  !root.innerHTML.includes('id="choiceHelp"'));
 
 /* UX pass 06: newest-first chronology and faster, stable combat navigation. */
 state.mode='normal';

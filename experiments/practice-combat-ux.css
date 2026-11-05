@@ -1827,3 +1827,28 @@ button:focus-visible,.loc:focus-visible {
   color:var(--exchange-muted);
   font:400 14px/1.5 system-ui,sans-serif;
 }
+
+/* Recenter update 2: readable choices and optional contextual guidance. */
+.header-actions { flex-wrap:wrap; justify-content:flex-end; }
+.center .decision-panel .primary-actions,
+.center .decision-panel .reaction-choices,
+.center .decision-panel .effect-group .choicegrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.center .decision-panel .primary-actions .choice { min-width:0; width:auto; }
+.center .decision-panel .choice strong { font-size:14px; }
+.center .decision-panel .choice small { font-size:12px; line-height:1.5; }
+.center .decision-panel .choice:disabled { opacity:.65; }
+.center .decision-panel .combat-guide,.center .decision-panel .tutorial-guide { margin:0 0 14px; padding:0 0 12px; border-top:0; border-bottom:1px solid var(--exchange-rule); }
+.combat-guide-main { display:grid; gap:5px; }
+.center .combat-guide-main strong { font:600 14px/1.35 system-ui,sans-serif; color:var(--exchange-accent); }
+.center .combat-guide-main span { font:400 14px/1.5 system-ui,sans-serif; color:var(--exchange-text); }
+.combat-guide .tutorial-guide-details { margin-top:6px; }
+.combat-guide .tutorial-guide-details p { color:var(--exchange-muted); font-size:13px; }
+.combat-guide .tutorial-guide-details summary { color:var(--exchange-accent); }
+.guide-source { font-size:11px!important; opacity:.85; }
+.effect-groups { display:grid; gap:16px; }
+.effect-group h4 { margin:0 0 7px; color:var(--exchange-accent); font:600 13px/1.4 system-ui,sans-serif; }
+@media(max-width:650px) {
+ .center .decision-panel .primary-actions,.center .decision-panel .reaction-choices,.center .decision-panel .effect-group .choicegrid { grid-template-columns:1fr; }
+}
+
+.center .reaction-choices .choice:last-child:nth-child(3) { grid-column:1/-1; }
