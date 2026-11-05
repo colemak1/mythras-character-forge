@@ -10,6 +10,9 @@ const scene=new THREE.Scene();scene.background=new THREE.Color('#101019');
 const camera=new THREE.PerspectiveCamera(35,1,.1,100);camera.position.set(0,12.5,17.5);camera.lookAt(0,.5,0);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;stage.prepend(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xc4c7e9,0x251b23,2.1));const light=new THREE.DirectionalLight(0xffe3bc,3);light.position.set(-3,12,6);light.castShadow=true;light.shadow.mapSize.set(2048,2048);light.shadow.camera.left=-12;light.shadow.camera.right=12;light.shadow.camera.top=12;light.shadow.camera.bottom=-12;scene.add(light);
+const fillLight=new THREE.DirectionalLight(0xd9deff,1.2);
+fillLight.position.set(4,5,10);
+scene.add(fillLight);
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.MeshStandardMaterial({color:0x282333,roughness:.89,metalness:.06}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
 const ring=new THREE.Mesh(new THREE.TorusGeometry(5.4,.022,6,120),new THREE.MeshStandardMaterial({color:0x9d784d,metalness:.8,roughness:.3}));ring.rotation.x=Math.PI/2;ring.position.y=.015;scene.add(ring);
 const world=new CANNON.World({gravity:new CANNON.Vec3(0,-24,0)});world.allowSleep=true;world.solver.iterations=16;world.defaultContactMaterial.friction=.44;world.defaultContactMaterial.restitution=.28;
@@ -26,49 +29,149 @@ for(let i=0;i<5;i++){const a=i*Math.PI*2/5-Math.PI/2;verts.push(new THREE.Vector
 const faceIndices=[];
 for(let i=0;i<5;i++){const a=2+i,b=2+(i+1)%5;faceIndices.push([0,a,b])}
 for(let i=0;i<5;i++){const a=2+i,b=2+(i+1)%5;faceIndices.push([1,b,a])}
-function normalOf(ids){const a=verts[ids[0]],b=verts[ids[1]],c=verts[ids[2]];let n=new THREE.Vector3().subVectors(b,a).cross(new THREE.Vector3().subVectors(c,a)).normalize();const center=ids.reduce((p,i)=>p.add(verts[i]),new THREE.Vector3()).multiplyScalar(1/ids.length);if(n.dot(center)<0)n.negate();return n}
-const normals=faceIndices.map(normalOf);
+// Wind every face outward so the render, collision hull and result reader agree.
+const faces=faceIndices.map(([a,b,c])=>{
+ const normal=new THREE.Vector3().subVectors(verts[b],verts[a]).cross(new THREE.Vector3().subVectors(verts[c],verts[a]));
+ return normal.dot(verts[a])>0?[a,b,c]:[a,c,b];
+});
+const faceFrames=faces.map(([tip,left,right])=>{
+ const baseMidpoint=verts[left].clone().add(verts[right]).multiplyScalar(.5);
+ const up=verts[tip].clone().sub(baseMidpoint).normalize();
+ const across=verts[right].clone().sub(verts[left]).normalize();
+ const normal=across.clone().cross(up);
+ return {up,normal};
+});
+const normals=faceFrames.map(face=>face.normal);
+const dieScale=.88;
+// Keep the printed panels flat and join them with a narrow, outward-facing chamfer.
+const panels=faces.map(ids=>{
+ const center=ids.reduce((sum,id)=>sum.add(verts[id]),new THREE.Vector3()).multiplyScalar(1/3);
+ return ids.map(id=>verts[id].clone().lerp(center,.06));
+});
+const bevelPositions=[];
+const openEdges=new Map();
+const corners=verts.map(()=>[]);
+const addBevelTriangle=(a,b,c)=>bevelPositions.push(...a.toArray(),...b.toArray(),...c.toArray());
+faces.forEach((ids,faceIndex)=>{
+ ids.forEach((id,i)=>{
+  const j=(i+1)%ids.length;
+  const a=panels[faceIndex][i],b=panels[faceIndex][j];
+  corners[id].push(a);
+  const matchingEdge=openEdges.get(ids[j]*verts.length+id);
+  if(matchingEdge){
+   const [oppositeB,oppositeA]=matchingEdge;
+   addBevelTriangle(b,a,oppositeA);
+   addBevelTriangle(b,oppositeA,oppositeB);
+  }else{
+   openEdges.set(id*verts.length+ids[j],[a,b]);
+  }
+ });
+});
+corners.forEach((points,i)=>{
+ const axis=verts[i].clone().normalize();
+ const center=points.reduce((sum,point)=>sum.add(point),new THREE.Vector3()).multiplyScalar(1/points.length);
+ const across=points[0].clone().sub(center).normalize();
+ const up=axis.clone().cross(across);
+ const angle=point=>{
+  const offset=point.clone().sub(center);
+  return Math.atan2(offset.dot(up),offset.dot(across));
+ };
+ points.sort((a,b)=>angle(a)-angle(b));
+ for(let j=1;j<points.length-1;j++)addBevelTriangle(points[0],points[j],points[j+1]);
+});
+const bevelGeometry=new THREE.BufferGeometry();
+bevelGeometry.setAttribute('position',new THREE.Float32BufferAttribute(bevelPositions,3));
+bevelGeometry.computeVertexNormals();
+const bevelMaterial=new THREE.MeshStandardMaterial({color:0xc6c1bc,roughness:.72});
 function makeFaceTexture(txt){
  const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');
- ctx.fillStyle='#aaa7b0';ctx.fillRect(0,0,512,512);
- // A full-size numeral painted onto the same planar triangle as the die surface.
- ctx.textAlign='center';ctx.textBaseline='middle';
- ctx.font=(txt.length>1?'bold 295px Georgia':'bold 350px Georgia');
- ctx.lineWidth=6;ctx.strokeStyle='#49434a';ctx.fillStyle='#29252d';
- ctx.strokeText(txt,256,270);ctx.fillText(txt,256,270);
- const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t;
+ ctx.fillStyle='#bcb7b2';ctx.fillRect(0,0,c.width,c.height);
+ ctx.font='900 320px Arial, sans-serif';
+ ctx.textAlign='center';
+ ctx.textBaseline='alphabetic';
+ const ink=ctx.measureText(txt);
+ const double=txt.length>1;
+ // UVs map to a triangle, so the top of the ink sets the available width.
+ const top=c.height*(double ? .52 : .45);
+ const bottom=c.height*.94;
+ const maxWidth=c.width*(double ? .45 : .40);
+ const inkWidth=ink.actualBoundingBoxLeft+ink.actualBoundingBoxRight;
+ const inkHeight=ink.actualBoundingBoxAscent+ink.actualBoundingBoxDescent;
+ const scaleX=Math.min(maxWidth/inkWidth,(bottom-top)/inkHeight);
+ const scaleY=(bottom-top)/inkHeight;
+ ctx.translate(c.width/2+(ink.actualBoundingBoxLeft-ink.actualBoundingBoxRight)*scaleX/2,top+ink.actualBoundingBoxAscent*scaleY);
+ ctx.scale(scaleX,scaleY);
+ ctx.fillStyle='#201b23';
+ ctx.fillText(txt,0,0);
+ const texture=new THREE.CanvasTexture(c);
+ texture.colorSpace=THREE.SRGBColorSpace;
+ texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+ return texture;
 }
-function makeDie(tens){const group=new THREE.Group();faceIndices.forEach((ids,i)=>{
- const a=verts[ids[0]],b=verts[ids[1]],c=verts[ids[2]],n=normals[i];
- const forward=new THREE.Vector3().subVectors(b,a).cross(new THREE.Vector3().subVectors(c,a)).dot(n)>0;
- const order=forward?[a,b,c]:[a,c,b];
- const geo=new THREE.BufferGeometry();
- geo.setAttribute('position',new THREE.Float32BufferAttribute(order.flatMap(v=>v.toArray()),3));
- // Map the entire texture across each actual flat triangular face, not a second overlay.
- const tip=order.findIndex(v=>v===verts[0]||v===verts[1]);
- const uv=order.map((v,j)=>j===tip?[.5,1]:j===(tip+1)%3?[0,0]:[1,0]);
- geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv.flat(),2));
- geo.setAttribute('normal',new THREE.Float32BufferAttribute([...n.toArray(),...n.toArray(),...n.toArray()],3));
- const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:makeFaceTexture(String(tens?i*10:i)),metalness:0,roughness:1,side:THREE.FrontSide,flatShading:true}));
- mesh.castShadow=true;group.add(mesh);
- 
-});
-group.scale.setScalar(.88);
-const points=verts.map(v=>new CANNON.Vec3(v.x*.88,v.y*.88,v.z*.88));
-const faces=faceIndices.map((ids,i)=>{const [a,b,c]=ids;const cross=new THREE.Vector3().subVectors(verts[b],verts[a]).cross(new THREE.Vector3().subVectors(verts[c],verts[a]));return cross.dot(normals[i])>0?[a,b,c]:[a,c,b]});
+function makeDie(tens){
+ const group=new THREE.Group();
+ const bevel=new THREE.Mesh(bevelGeometry,bevelMaterial);
+ bevel.castShadow=true;
+ group.add(bevel);
+ panels.forEach((panel,i)=>{
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(panel.flatMap(v=>v.toArray()),3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute([.5,1,0,0,1,0],2));
+  geometry.computeVertexNormals();
+  const label=tens?String(i*10).padStart(2,'0'):String(i);
+  const material=new THREE.MeshStandardMaterial({map:makeFaceTexture(label),roughness:.9});
+  const mesh=new THREE.Mesh(geometry,material);
+  mesh.castShadow=true;
+  group.add(mesh);
+ });
+ group.scale.setScalar(dieScale);
+ const points=verts.map(v=>new CANNON.Vec3(v.x*dieScale,v.y*dieScale,v.z*dieScale));
 const body=new CANNON.Body({mass:1,linearDamping:.13,angularDamping:.12,allowSleep:true,sleepSpeedLimit:.16,sleepTimeLimit:.65});
 body.addShape(new CANNON.ConvexPolyhedron({vertices:points,faces}));world.addBody(body);scene.add(group);return{body,group,normals,tens}}
 const dice=[makeDie(true),makeDie(false)];let rolling=false,elapsed=0,history=[];
-const rollLabels=dice.map((d,i)=>{const node=document.createElement('div');node.style.cssText='position:absolute;z-index:5;pointer-events:none;display:none;transform:translate(-50%,-100%);padding:5px 10px;border:1px solid #b99a6a;background:#16121ee8;color:#f6e8cc;font:700 20px Georgia,serif;text-align:center;min-width:55px;box-shadow:0 3px 15px #0009';stage.appendChild(node);return node});
-let resultVisible=false,centering=false,held=false,centerStart=0,showTotalAt=0;
+let centering=false,held=false,centerStart=0,showTotalAt=0;
 const centerFrom=[];
-const centerTargets=[new THREE.Vector3(-1.05,2.3,2.7),new THREE.Vector3(1.05,2.3,2.7)];
-const centerQuats=[];let pendingTotal=0,pendingDetail='';
-function throwDice(){held=false;centering=false;showTotalAt=0;resultVisible=false;rollLabels.forEach(n=>n.style.display='none');rolling=true;elapsed=0;button.disabled=true;readout.classList.remove('done');total.textContent='—';status.textContent='ROLLING';const power=Number(document.getElementById('strength').value);dice.forEach((d,i)=>{const b=d.body;b.wakeUp();b.position.set(i?1.2:-1.2,4.0+i*.5,(Math.random()-.5)*.8);b.quaternion.setFromEuler(Math.random()*6,Math.random()*6,Math.random()*6);b.velocity.set((i?-1.5:1.5)*power,(Math.random()+.5)*power,(Math.random()-.5)*3.2*power);b.angularVelocity.set((Math.random()-.5)*23*power,(Math.random()-.5)*26*power,(Math.random()-.5)*24*power)})}
+const centerTargets=[new THREE.Vector3(-1.36,3.9,6.4),new THREE.Vector3(1.36,3.9,6.4)];
+const centerQuats=[];
+let pendingTotal=0,pendingDetail='';
+function revealQuaternion(face,target){
+ const localRight=face.up.clone().cross(face.normal);
+ const localBasis=new THREE.Matrix4().makeBasis(localRight,face.up,face.normal);
+ const cameraNormal=camera.position.clone().sub(target).normalize();
+ const viewUp=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion);
+ const cameraRight=viewUp.cross(cameraNormal).normalize();
+ const cameraUp=cameraNormal.clone().cross(cameraRight);
+ const cameraBasis=new THREE.Matrix4().makeBasis(cameraRight,cameraUp,cameraNormal);
+ return new THREE.Quaternion().setFromRotationMatrix(cameraBasis.multiply(localBasis.transpose()));
+}
+function throwDice(){held=false;centering=false;showTotalAt=0;rolling=true;elapsed=0;button.disabled=true;readout.classList.remove('done');total.textContent='—';status.textContent='ROLLING';const power=Number(document.getElementById('strength').value);dice.forEach((d,i)=>{const b=d.body;b.wakeUp();b.position.set(i?1.2:-1.2,4.0+i*.5,(Math.random()-.5)*.8);b.quaternion.setFromEuler(Math.random()*6,Math.random()*6,Math.random()*6);b.velocity.set((i?-1.5:1.5)*power,(Math.random()+.5)*power,(Math.random()-.5)*3.2*power);b.angularVelocity.set((Math.random()-.5)*23*power,(Math.random()-.5)*26*power,(Math.random()-.5)*24*power)})}
 function topFace(d){const q=new THREE.Quaternion(d.body.quaternion.x,d.body.quaternion.y,d.body.quaternion.z,d.body.quaternion.w);let best=0,max=-Infinity;d.normals.forEach((n,i)=>{const y=n.clone().applyQuaternion(q).y;if(y>max){max=y;best=i}});return best}
-function finish(){rolling=false;held=true;centering=true;centerStart=performance.now();showTotalAt=centerStart+1050;centerFrom.length=0;centerQuats.length=0;dice.forEach(d=>centerFrom.push({position:d.group.position.clone(),quaternion:d.group.quaternion.clone()}));button.disabled=false;const t=topFace(dice[0]),o=topFace(dice[1]),value=t*10+o||100;dice.forEach((d,i)=>{const face=d.normals[i===0?t:o].clone().normalize();const q=new THREE.Quaternion().setFromUnitVectors(face,new THREE.Vector3(0,.55,.835).normalize());centerQuats.push(q)});rollLabels.forEach(n=>n.style.display='none');resultVisible=false;pendingTotal=value;pendingDetail=String(t*10).padStart(2,'0')+' + '+o;total.textContent='—';status.textContent='';readout.classList.remove('done');history.unshift(value);history=history.slice(0,12);document.getElementById('history').innerHTML='RECENT ROLLS<br>'+history.map(x=>'<span>'+x+'</span>').join('')}
+function finish(){
+ rolling=false;
+ held=true;
+ centering=true;
+ centerStart=performance.now();
+ showTotalAt=centerStart+1050;
+ centerFrom.length=0;
+ centerQuats.length=0;
+ const results=dice.map(topFace);
+ dice.forEach((d,i)=>{
+  centerFrom.push({position:d.group.position.clone(),quaternion:d.group.quaternion.clone()});
+  centerQuats.push(revealQuaternion(faceFrames[results[i]],centerTargets[i]));
+ });
+ button.disabled=false;
+ const [tens,ones]=results;
+ pendingTotal=tens*10+ones||100;
+ pendingDetail=String(tens*10).padStart(2,'0')+' + '+ones;
+ total.textContent='—';
+ status.textContent='';
+ readout.classList.remove('done');
+ history.unshift(pendingTotal);
+ history=history.slice(0,12);
+ document.getElementById('history').innerHTML='RECENT ROLLS<br>'+history.map(x=>'<span>'+x+'</span>').join('');
+}
 function resize(){const w=stage.clientWidth,h=stage.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}
-function updateLabels(){if(!resultVisible)return;dice.forEach((d,i)=>{const v=d.group.position.clone();v.y+=1.6;v.project(camera);rollLabels[i].style.left=((v.x+1)*.5*stage.clientWidth)+'px';rollLabels[i].style.top=((-v.y+1)*.5*stage.clientHeight)+'px'})}new ResizeObserver(resize).observe(stage);resize();
-let last=performance.now(),acc=0;function frame(now){requestAnimationFrame(frame);let dt=Math.min((now-last)/1000,.05);last=now;acc+=dt;while(acc>=1/120){world.step(1/120);acc-=1/120;if(rolling)elapsed+=1/120}if(!held){dice.forEach(d=>{d.group.position.copy(d.body.position);d.group.quaternion.copy(d.body.quaternion)})}if(rolling&&(elapsed>2.1&&dice.every(d=>d.body.velocity.length()<.25&&d.body.angularVelocity.length()<.3)||elapsed>8)){dice.forEach(d=>{d.body.velocity.setZero();d.body.angularVelocity.setZero();d.body.sleep()});finish()}if(centering){const t=Math.min(1,(now-centerStart)/650);const ease=1-Math.pow(1-t,3);dice.forEach((d,i)=>{d.group.position.lerpVectors(centerFrom[i].position,centerTargets[i],ease);d.group.quaternion.copy(centerFrom[i].quaternion).slerp(centerQuats[i],ease)});if(t>=1){centering=false;resultVisible=false}}if(showTotalAt&&now>=showTotalAt){showTotalAt=0;total.textContent=pendingTotal;status.textContent=pendingDetail;readout.classList.add('done')}renderer.render(scene,camera)}requestAnimationFrame(frame);button.disabled=false;button.textContent='ROLL D100';button.onclick=throwDice;throwDice();
+new ResizeObserver(resize).observe(stage);resize();
+let last=performance.now(),acc=0;function frame(now){requestAnimationFrame(frame);let dt=Math.min((now-last)/1000,.05);last=now;acc+=dt;while(acc>=1/120){world.step(1/120);acc-=1/120;if(rolling)elapsed+=1/120}if(!held){dice.forEach(d=>{d.group.position.copy(d.body.position);d.group.quaternion.copy(d.body.quaternion)})}if(rolling&&(elapsed>2.1&&dice.every(d=>d.body.velocity.length()<.25&&d.body.angularVelocity.length()<.3)||elapsed>8)){dice.forEach(d=>{d.body.velocity.setZero();d.body.angularVelocity.setZero();d.body.sleep()});finish()}if(centering){const t=Math.min(1,(now-centerStart)/650);const ease=1-Math.pow(1-t,3);dice.forEach((d,i)=>{d.group.position.lerpVectors(centerFrom[i].position,centerTargets[i],ease);d.group.quaternion.copy(centerFrom[i].quaternion).slerp(centerQuats[i],ease)});if(t>=1)centering=false}if(showTotalAt&&now>=showTotalAt){showTotalAt=0;total.textContent=pendingTotal;status.textContent=pendingDetail;readout.classList.add('done')}renderer.render(scene,camera)}requestAnimationFrame(frame);button.disabled=false;button.textContent='ROLL D100';button.onclick=throwDice;throwDice();
 }catch(e){document.getElementById('error').textContent='3D engine could not load: '+e.message;document.getElementById('roll').textContent='LOAD FAILED';console.error(e)}
 </script></body></html>
