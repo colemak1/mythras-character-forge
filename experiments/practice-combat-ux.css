@@ -1781,3 +1781,27 @@ button:focus-visible,.loc:focus-visible {
   .combat-narration p { font-size:25px; }
   .combat-narration > div { font-size:15px; }
 }
+
+.presentation-controls {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:0 var(--exchange-gutter) 18px;
+  border-bottom:1px solid var(--exchange-rule);
+}
+.presentation-controls .continue-combat {
+  background:#d2b784;
+  border-color:#d2b784;
+  color:#26241d;
+  min-width:140px;
+  font:600 15px/1.4 system-ui,sans-serif;
+  letter-spacing:0;
+  text-transform:none;
+}
+.presentation-controls .toolbutton {
+  border:0;
+  padding:9px 2px;
+  font-size:12px;
+  text-transform:none;
+  color:var(--exchange-muted);
+}

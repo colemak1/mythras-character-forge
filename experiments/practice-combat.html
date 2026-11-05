@@ -313,7 +313,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .recovery-options{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 0 16px;border-bottom:1px solid #9d876145;margin-bottom:10px}.recovery-options button{padding:9px 13px;border:1px solid #af9972;border-radius:2px;background:transparent;color:inherit;cursor:pointer;font:600 12px system-ui}.recovery-options button:disabled{opacity:.45;cursor:not-allowed}.recovery-options small{font:11px/1.5 system-ui;color:#b6a48c;max-width:330px}
 
 </style>
-<link rel="stylesheet" href="practice-combat-ux.css?v=18">
+<link rel="stylesheet" href="practice-combat-ux.css?v=19">
 </head>
 <body>
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>Practice Combat</span><span class="hide-mobile">Independent demo · no account required</span><a href="#" id="homeLink">Reset</a></div></header>
@@ -713,10 +713,11 @@ function rollPrompt(actor){
 // Presentation is separate from the rules state: rolls resolve immediately,
 // then the screen unveils the recorded, immutable events in order.
 const V={capturing:false,busy:false,quick:false,reduced:!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches),
-  events:[],queue:[],roll:null,step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,impact:null,timer:null,showLog:false,moreActionsOpen:false,guideWhyOpen:false,breakdownOpen:false,expandedConditions:new Set(),openChronicle:new Set()};
+  events:[],queue:[],roll:null,awaitingContinue:false,step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,impact:null,timer:null,showLog:false,moreActionsOpen:false,guideWhyOpen:false,breakdownOpen:false,expandedConditions:new Set(),openChronicle:new Set()};
 function clearPresentationTimers(keepRoll=false){
   clearTimeout(V.timer);
   V.timer=null;
+  V.awaitingContinue=false;
   if(!keepRoll){
     V.roll?.cancel?.();
     V.roll=null;
@@ -876,7 +877,7 @@ function outcomeStrip(info){
   }else if(info.latest){
     const st=stageFor(info.latest);headline=st.result||st.primary||'Exchange resolved';sub='';css=st.kind==='hurt'?'impact':st.kind==='effect'?'effect':'';mark=st.kind==='hurt'?'✕':'✦';
   }
-  return `<div class="outcome-strip ${css}" aria-live="polite"><div class="outcome-mark">${mark}</div><div><div class="outcome-headline">${esc(headline)}</div>${sub?`<div class="outcome-sub">${esc(sub)}</div>`:''}</div>${V.busy?'<button class="toolbutton strip-skip" data-act="skip">Show results</button>':''}</div>`;
+  return `<div class="outcome-strip ${css}" aria-live="polite"><div class="outcome-mark">${mark}</div><div><div class="outcome-headline">${esc(headline)}</div>${sub?`<div class="outcome-sub">${esc(sub)}</div>`:''}</div></div>`;
 }
 
 /* UX pass 07: progressive summary built ONLY from revealed engine events.
@@ -1075,7 +1076,6 @@ function exchangeRecapHtml(info){
      (recap.difficultyReminder.loc?' · '+esc(recap.difficultyReminder.loc):'')+
      ' · Until the wound heals to Minor</span></div>':'')+
    '<details class="exchange-breakdown"'+(V.breakdownOpen?' open':'')+'><summary>Roll breakdown</summary><dl class="recap-steps">'+recap.steps.map(item).join('')+'</dl></details>'+
-   (V.busy?'<div class="recap-toolbar"><button type="button" class="toolbutton" data-act="skip">Show results</button></div>':'')+
    '</section>';
 }
 
@@ -1205,7 +1205,7 @@ function playDiceBeat(roll){
       status.textContent=String(roll.values[0]);
       status.setAttribute('aria-label',values[0]);
     }
-    V.timer=setTimeout(()=>{V.step++;playBeat();},V.reduced?600:V.quick?330:1050);
+    pausePresentation(330);
   };
   // Combat remains playable if the graphics libraries or Canvas are unavailable.
   V.timer=setTimeout(()=>done(true),1100);
@@ -1238,10 +1238,25 @@ function playBeat(){
   V.visibleCount=S.logs.filter(entry=>entry.id<=e.id).length;
   if(e.view)V.shown=clone(e.view);
   V.highlight=V.stage.target?{id:V.stage.target,loc:V.stage.loc}:null;
+  pausePresentation(130);
+}
+function pausePresentation(quickDelay){
+  V.awaitingContinue=true;
   render();
-  const impact=['hurt','final','location'].includes(V.stage.kind);
-  const dwell=V.quick?130:impact?1350:keepRoll?900:650;
-  V.timer=setTimeout(()=>{V.step++;playBeat();},dwell);
+  if(V.quick)V.timer=setTimeout(continuePresentation,quickDelay);
+}
+function continuePresentation(){
+  if(!V.busy||!V.awaitingContinue)return;
+  V.awaitingContinue=false;
+  V.step++;
+  playBeat();
+}
+function presentationControlsHtml(){
+  if(!V.busy)return '';
+  return `<div class="presentation-controls" role="group" aria-label="Combat playback">
+    <button class="cta continue-combat" data-act="continue" ${V.awaitingContinue?'':'disabled'}>${V.awaitingContinue?'Continue':'Rolling…'}</button>
+    <button class="toolbutton" data-act="skip">Show results</button>
+  </div>`;
 }
 function skipPresentation(){
   if(!V.busy)return;
@@ -1476,7 +1491,7 @@ function focusActiveDecision(){
  });
 }
 
-function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Steady pace'}</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v23 · Turn scheduling</span>`}</div></section>${setup?setupHtml():S.phase==='intro'?opponentIntroHtml():arenaHtml()}${!setup?resultModalHtml():''}${!setup?meleeEffectReference():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, sourcebook-gated Special Effects, wounds, initiative and optional reach. Implemented: sourcebook-derived AP (INT+DEX), hit-location HP (CON+SIZ), initiative bonus (average INT/DEX), mixed-location armour and armour ENC penalty, weapon/shield Size parries, shield wards, STR+SIZ Damage Modifier, and Withdraw. Still simplified: shield attacks, unarmed grapples, complex terrain for Bash beyond a 6m training-ring clearance, Luck and long-term natural recovery over days/weeks; exertion Fatigue uses Core pp.78–79 and Hardcore rest uses training-arena pacing. Delay holds an AP for an available reaction until the next turn. The prototype serializes tied initiative with the left fighter first and does not implement Interrupt. A short separated gap can be re-engaged without a Move AP; beyond 3m the training prototype charges 1 AP. Hardcore First Aid restores partial function after Serious Wounds, but not HP. Major Wounds remain incapacitating. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110; Special Effects summary and descriptions pp. 95–101.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.dataset.help=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}if(!b||!['react','effect','pickloc'].includes(b.dataset.act))n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;mountDiceTray();focusActiveDecision();}}
+function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Manual pace'}</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v23 · Turn scheduling</span>`}</div></section>${setup?setupHtml():S.phase==='intro'?opponentIntroHtml():arenaHtml()}${!setup?resultModalHtml():''}${!setup?meleeEffectReference():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, sourcebook-gated Special Effects, wounds, initiative and optional reach. Implemented: sourcebook-derived AP (INT+DEX), hit-location HP (CON+SIZ), initiative bonus (average INT/DEX), mixed-location armour and armour ENC penalty, weapon/shield Size parries, shield wards, STR+SIZ Damage Modifier, and Withdraw. Still simplified: shield attacks, unarmed grapples, complex terrain for Bash beyond a 6m training-ring clearance, Luck and long-term natural recovery over days/weeks; exertion Fatigue uses Core pp.78–79 and Hardcore rest uses training-arena pacing. Delay holds an AP for an available reaction until the next turn. The prototype serializes tied initiative with the left fighter first and does not implement Interrupt. A short separated gap can be re-engaged without a Move AP; beyond 3m the training prototype charges 1 AP. Hardcore First Aid restores partial function after Serious Wounds, but not HP. Major Wounds remain incapacitating. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110; Special Effects summary and descriptions pp. 95–101.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.dataset.help=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}if(!b||!['react','effect','pickloc'].includes(b.dataset.act))n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;mountDiceTray();focusActiveDecision();}}
 function modeName(m){return {tutorial:'Guided Tutorial',normal:'Normal Gauntlet',hardcore:'Hardcore Gauntlet',pvp:'Local PvP'}[m]||m}
 function setupHtml(){let modes=[['tutorial','01','Guided Tutorial','One beginner-friendly bout with reminders about Mythras decisions.'],['normal','02','Normal Gauntlet','Infinite escalating enemies. Your wounds reset after each win.'],['hardcore','03','Hardcore Gauntlet','Same escalating enemies. Wounds and injuries persist between fights.'],['pvp','04','Local PvP','Two players take turns on one screen; online matching comes later.']];return `<div class="setup"><h2>Choose your challenge</h2><p class="intro">A working combat loop with selectable reactions, hit locations, a tactical computer opponent, and a local streak board.</p><div class="modes">${modes.map(([k,n,t,d])=>`<button class="mode ${config.mode===k?'on':''}" data-act="mode" data-val="${k}" aria-pressed="${config.mode===k}"><span class="n">MODE ${n}</span><strong>${t}</strong><small>${d}</small></button>`).join('')}</div><div class="setup-bottom"><div class="formcard"><div class="setup-fighter-intro"><h3>Practice fighter</h3><p>${esc(config.charname)} · ${esc(WEAPONS[config.weapon].name)} · ${config.style}% Combat Style</p></div><details class="fighter-customize"><summary>Customize fighter <span>Skills, weapons and attributes</span></summary><div class="formgrid"><label>Username<input id="username" maxlength="30" value="${esc(config.username)}"></label><label>Character name<input id="charname" maxlength="45" value="${esc(config.charname)}"></label><label>Combat Style %<input id="style" type="number" min="20" max="110" value="${config.style}"></label><label>Evade %<input id="evade" type="number" min="20" max="110" value="${config.evade}"></label><label>Armour AP (all locations)<input id="armor" type="number" min="0" max="8" value="${config.armor}"></label><label>Weapon<select id="weapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.weapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Shield<select id="shield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.shield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>First Aid % (sample)<input id="firstAid" type="number" min="1" max="100" value="${config.firstAid}"></label><label>Willpower % (sample)<input id="willpower" type="number" min="1" max="110" value="${config.willpower}"></label><label>Strength (STR)<input id="str" type="number" min="5" max="20" value="${config.str}"></label><label>Size (SIZ)<input id="siz" type="number" min="5" max="20" value="${config.siz}"></label><label>Constitution (CON)<input id="con" type="number" min="5" max="20" value="${config.con}"></label><label>Dexterity (DEX)<input id="dex" type="number" min="5" max="20" value="${config.dex}"></label><label>Intelligence (INT)<input id="int" type="number" min="5" max="20" value="${config.int}"></label><details style="grid-column:1/-1"><summary>Optional: armour by hit location</summary><label style="display:block;margin:8px 0"><input id="mixedArmour" type="checkbox" ${config.mixedArmour?'checked':''}> Use separate armour values</label><div class="formgrid">${HIT_LOCS.map(loc=>`<label>${loc} AP<input id="armour_${loc.replace(/ /g,'_')}" type="number" min="0" max="8" value="${config.armourByLocation[loc]??config.armor}"></label>`).join('')}</div></details>${config.mode==='pvp'?`<label>Second player name<input id="pvpName" maxlength="45" value="${esc(config.pvpName)}"></label><label>Second player Combat Style %<input id="pvpSkill" type="number" min="20" max="110" value="${config.pvpSkill}"></label><label>Second player Evade %<input id="pvpEvade" type="number" min="20" max="110" value="${config.pvpEvade}"></label><label>Second player armour AP<input id="pvpArmor" type="number" min="0" max="8" value="${config.pvpArmor}"></label><label>Second player weapon<select id="pvpWeapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.pvpWeapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Second player shield<select id="pvpShield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.pvpShield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>Second player STR<input id="pvpStr" type="number" min="5" max="20" value="${config.pvpStr}"></label><label>Second player SIZ<input id="pvpSiz" type="number" min="5" max="20" value="${config.pvpSiz}"></label><label>Second player CON<input id="pvpCon" type="number" min="5" max="20" value="${config.pvpCon}"></label><label>Second player DEX<input id="pvpDex" type="number" min="5" max="20" value="${config.pvpDex}"></label><label>Second player INT<input id="pvpInt" type="number" min="5" max="20" value="${config.pvpInt}"></label><details style="grid-column:1/-1"><summary>Optional: second player armour by location</summary><label style="display:block;margin:8px 0"><input id="pvpMixedArmour" type="checkbox" ${config.pvpMixedArmour?'checked':''}> Use separate armour values</label><div class="formgrid">${HIT_LOCS.map(loc=>`<label>${loc} AP<input id="pvpArmour_${loc.replace(/ /g,'_')}" type="number" min="0" max="8" value="${config.pvpArmourByLocation[loc]??config.pvpArmor}"></label>`).join('')}</div></details>`:''}</div><p class="formhint">These are sample statistics, not an imported character. Uniform armour is the default. Expand the armour-by-location section for mixed equipment; two-handed weapons cannot equip a shield.</p></details><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px"><button class="cta" data-act="start">${config.mode==='pvp'?'Start Duel':'Enter Training Grounds'} &nbsp;→</button><span class="modehint">Runs entirely on your device.</span></div></div><div class="setup-right"><div class="statbox"><strong>Gauntlet leaderboard</strong><p>Stored in this browser, not published online. Rankings count consecutive opponents defeated.</p><div class="badges"><button class="lbtab ${S.lbMode==='normal'?'on':''}" data-act="lbmode" data-val="normal">Normal</button><button class="lbtab ${S.lbMode==='hardcore'?'on':''}" data-act="lbmode" data-val="hardcore">Hardcore</button></div>${scoresHtml(S.lbMode)}</div><details class="statbox rules-disclosure"><summary>The rules we're testing</summary><div class="badges"><span class="notechip">d100 Skill checks</span><span class="notechip">d20 Hit location</span><span class="notechip">Parry by size</span><span class="notechip">Shields &amp; wards</span><span class="notechip">Damage modifier</span><span class="notechip">Armour initiative</span><span class="notechip">Action points</span><span class="notechip">Special Effects</span><span class="notechip">Optional weapon reach</span><span class="notechip">Serious/Major wounds</span></div><p>Some results and effects remain simplified for this prototype, including full fatigue, weapon durability, and shield attacks. Actual Forge integration would reuse your existing character data and sourcebook-verified engine.</p></details></div></div></div>`}
 function zoneClass(f,loc){const x=f.hp[loc],m=f.maxHp[loc];return x<=-m?'major':x<=0?'serious':x<m?'minor':'ok'}
@@ -1697,6 +1712,7 @@ function arenaHtml(){
    <div class="round-context"><span>${esc(range)}</span></div>
  </header>
  ${combatNarrationHtml()}
+ ${presentationControlsHtml()}
  ${reachContextHtml()}
  ${nextActionHtml()}
  <div class="exchange-board${V.roll?' has-roll':''}">${exchangeHalf('a',info)}${exchangeHalf('b',info)}</div>
@@ -2672,6 +2688,7 @@ function decoratedClick(e){
     return;
   }
   if(act==='togglelog'){V.showLog=!V.showLog;render();document.querySelector('.history-toggle')?.focus?.({preventScroll:true});return;}
+  if(act==='continue'){continuePresentation();return;}
   if(act==='skip'){skipPresentation();return;}
   if(act==='roll'){if(!V.busy&&R)playCaptured(performManualRoll);return;}
   if(V.busy)return;

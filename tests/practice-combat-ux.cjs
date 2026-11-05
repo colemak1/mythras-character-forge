@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=18/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=19/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -344,7 +344,7 @@ presentation.showLog=false;
 check('Detailed presentation is the default',presentation.quick===false);
 api.render();
 check('Detailed presentation has a labelled toggle',
-  root.innerHTML.includes('Steady pace') &&
+  root.innerHTML.includes('Manual pace') &&
   root.innerHTML.includes('aria-label="Toggle combat presentation pace"'));
 handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
 check('Pace can be switched to Quick without changing combat state',
@@ -352,7 +352,7 @@ check('Pace can be switched to Quick without changing combat state',
   state.phase==='fight');
 handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
 check('Pace can be returned to Detailed',
-  presentation.quick===false && root.innerHTML.includes('Steady pace'));
+  presentation.quick===false && root.innerHTML.includes('Manual pace'));
 presentation.busy=true;
 presentation.events=[state.logs[0],state.logs[1]];
 handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
@@ -517,7 +517,7 @@ check('Playback summary hides unrevealed wound and effect results',
   !root.innerHTML.includes('7 damage − 2 parry − 1 armour = 4 HP lost') &&
   !root.innerHTML.includes('strikes the Right Arm · 4 HP lost'));
 check('Recap keeps an explicit Show results option during detailed playback',
-  root.innerHTML.includes('class="recap-toolbar"') &&
+  root.innerHTML.includes('class="presentation-controls"') &&
   root.innerHTML.includes('data-act="skip"'));
 presentation.busy=false;presentation.visibleCount=Infinity;
 state.logs=[{...eAttack,body:'93 against Combat Style 67% — FAILURE.'},
@@ -1214,3 +1214,35 @@ check('Generated fighting styles respect equipment and vary across opponents',
  generatedBout.valid&&generatedBout.styles>=3);
 check('Hardcore carries the same injured fighter through the next opponent introduction',
  generatedBout.carries);
+
+
+// Playback remains on the recorded event until Continue, including after dice settle.
+const manualPlayback=vm.runInContext(`
+ (() => {
+   R=null;
+   S.phase='fight';S.order=['a','b'];S.turnIndex=0;S.pending=null;
+   V.quick=false;
+   const first={id:90001,title:'Opponent attacks',body:'32 against Combat Style 60% — SUCCESS.',kind:'system'};
+   const second={id:90002,title:'Opening created',body:'A follow-up decision.',kind:'system'};
+   S.logs=[first,second];
+   V.events=[first,second];
+   V.busy=true;V.step=0;V.visibleCount=0;
+   playBeat();
+   const paused=V.awaitingContinue&&V.timer===null&&V.stage.entry===first&&V.visibleCount===1;
+   continuePresentation();
+   const advanced=V.awaitingContinue&&V.stage.entry===second&&V.visibleCount===2;
+   continuePresentation();
+   const finished=!V.busy&&!V.awaitingContinue;
+   V.busy=true;V.step=0;V.events=[first];
+   V.awaitingContinue=false;
+   continuePresentation();
+   const blocked=V.step===0;
+   pausePresentation(330);
+   const settled=V.awaitingContinue&&V.timer===null;
+   skipPresentation();
+   return {paused,advanced,finished,blocked,settled};
+ })()
+`,sandbox);
+check('Manual playback reveals one event and waits without an automatic timer',manualPlayback.paused);
+check('Continue reveals the next event and then returns control to the player',manualPlayback.advanced&&manualPlayback.finished);
+check('Continue is blocked during dice motion and settled dice wait for input',manualPlayback.blocked&&manualPlayback.settled);
