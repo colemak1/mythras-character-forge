@@ -25,3 +25,13 @@ Complete the source and child-case inventory alongside this work. User-entered n
 Local workflow tests substitute skill lookups, random rolls and cloud calls. They establish useful behavior under controlled inputs, but do not prove the live skill-selection and save path.
 
 Temporary changes on Creation Audit — Human were removed after each magic walkthrough. Existing test roll histories can remain. No valid multi-turn magic walkthrough has yet been completed live.
+
+## Paired-skill live batch — November 5, 2026
+
+Fixture: Magic Audit — Paired Skills, a dedicated Quick Character created through the normal signed-in builder. Professional selections were changed through Quick Skills between tests. This character is retained for further checks.
+
+- Sorcery: Duration 1, full cost 2 MP, two turns. Turn 1/2 survived reload at 11 MP. Final roll 41 against Invocation 49% succeeded, leaving 9 MP. A second preparation was cancelled at 9 MP using the deployed control.
+- Mysticism: Mysticism (Audit Path) with Meditation, Augment category, Intensity 2. Turn 1/2 spent no MP. A normal character reopen preserved preparation. Final roll fumbled and spent the full 2 MP, leaving 7/11. A second preparation was cancelled without another charge. The Talent remained inactive.
+- Theism: Exhort and Devotion (Audit Cult), recorded High Priest pool rank, pool 6, one Acolyte instance. Turn 1/2 survived reopening. Final roll succeeded and spent 2 devotional points, leaving 4/6. Cancellation of a second preparation left 4/6.
+- Persistence failure: an immediate reload after the first Mysticism preparation lost that step. The preceding UI showed 1/2. Repeating the step and reopening normally preserved it. The cause and recovery path remain unverified. Do not close persistence on the basis of normal reopen alone.
+- Remaining: all outcome branches, invalidation after edits, pool limits and donation live cases, Animism, individual ability inventory and broader magic interactions. These live cases do not close the subsystem.
