@@ -606,6 +606,8 @@ test('Core pp.94–95: parry calculation needs explicit result and compares all 
  }
  assert.equal(run('parryDamage(7,"Huge","Large","success").remaining'),3.5);
  assert.equal(run('parryDamage(7,"Huge","Huge","failed").remaining'),7);
+ for(const result of ["none","failed"])assert.equal(run(`parryDamage(7,"","","${result}").remaining`),7);
+ assert.equal(run('parryDamage(7,"","","success")'),null);
  assert.equal(run('parryDamage(7,"Huge","Huge","none").remaining'),7);
  assert.equal(run('parryDamage(7,"Huge","Huge","")'),null);
  assert.equal(run('parryDamage(-1,"Huge","Large","success")'),null);
