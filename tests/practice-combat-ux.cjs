@@ -40,7 +40,7 @@ const sandbox = {
   clearInterval,
 };
 const api = vm.runInNewContext(match[1] +
-  '\n;({startRun, render, state: () => S, resetRoll: () => { R = null; V.busy = false; }, setRoll: value => { R = value; }, availableEffects, d100Dice, renderDice, randomFaceForDie})',
+  '\n;({startRun, render, state: () => S, resetRoll: () => { R = null; V.busy = false; }, setRoll: value => { R = value; }, availableEffects, d100Dice, rollSummary})',
   sandbox, { filename: 'practice-combat-inline.js' });
 
 function check(name, predicate) {
@@ -589,7 +589,7 @@ const woundResisted={id:3402,title:'Wound Resisted',
 state.mode='normal';state.phase='fight';state.pending=null;
 state.order=['a','b'];state.turnIndex=0;state.wave=3;
 state.logs=[eAttack,eDefense,eHit,woundResolution,woundResisted];
-presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;presentation.highlight=null;
+presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;presentation.roll=null;presentation.highlight=null;
 api.resetRoll();api.render();
 check('Wound resistance does not erase the serious wound',
  root.innerHTML.includes('Serious wound') &&
@@ -651,7 +651,7 @@ const impaleBlocked={id:3603,title:'Impale blocked',
  body:'Armour/parry prevents a wound; the weapon does not lodge.',kind:'system'};
 state.phase='fight';state.mode='normal';state.pending=null;state.wave=3;
 state.logs=[eAttack,eDefense,eAdvantage,impaleIntent,eLocation];
-presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;
+presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;presentation.roll=null;
 api.resetRoll();api.render();
 check('Unresolved impale describes intent, not a confirmed injury',
  root.innerHTML.includes('attempts to impale '+recapTarget) &&
@@ -683,20 +683,20 @@ api.render();
 check('Successful trip narrates the knockdown',
  root.innerHTML.includes('trips '+recapTarget) &&
  root.innerHTML.includes('Target knocked prone'));
-const extraLiveStage={entry:{id:3610,title:recapActor+' attacks'},kind:'attack',rolling:true};
 state.logs=[eAttack,eDefense];
 presentation.busy=true;presentation.visibleCount=2;
-presentation.stage=extraLiveStage;
+presentation.stage=null;
+presentation.roll={actor:'a',label:'Attack · Combat Style 67%'};
 api.render();
 check('Live attack narration appears inside recap before a result is revealed',
  root.innerHTML.includes('class="recap-live"') &&
  root.innerHTML.includes('NOW</span> '+recapActor+' attacks'));
-presentation.stage={entry:{id:3611,title:recapActor+' hits Right Arm'},kind:'hurt',rolling:true};
+presentation.roll={actor:'a',label:'Damage · Right Arm'};
 api.render();
 check('Damage animation does not leak an unrevealed injury in live caption',
  root.innerHTML.includes('NOW</span> Resolving damage') &&
  !root.innerHTML.includes('NOW</span> '+recapActor+' hits Right Arm'));
-presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;
+presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;presentation.roll=null;
 
 const causalFighter=state.fighters.a;
 causalFighter.prone=false;causalFighter.blindedTurns=0;
@@ -739,24 +739,24 @@ api.resetRoll();
 /* The first action has narration even before an exchange recap exists. */
 state.phase='fight';state.logs=[];state.pending=null;state.mode='normal';
 presentation.busy=true;presentation.visibleCount=0;
-presentation.stage={kind:'attack',rolling:true,entry:{id:3617,title:recapActor+' attacks'}};
+presentation.roll={actor:'a',label:'Attack · Combat Style 67%'};
 api.render();
 check('Opening attack has live narration before any recap exists',
  root.innerHTML.includes('class="outcome-strip') &&
  root.innerHTML.includes('>'+recapActor+' attacks</div>'));
-presentation.stage={kind:'hurt',rolling:true,entry:{id:3618,title:recapActor+' hits Left Leg'}};
+presentation.roll={actor:'a',label:'Damage · Left Leg'};
 api.render();
 check('First-exchange damage windup does not reveal the hit location',
  root.innerHTML.includes('Resolving damage') &&
  !root.innerHTML.includes('STRIKE · LEFT LEG'));
-presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;
+presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;presentation.roll=null;
 
 
 /* Defensive trip belongs to the effect owner, not the original attacker. */
 const defensiveTrip={...tripIntent,id:3620,meta:{actor:'b'}};
 state.phase='fight';state.mode='normal';
 state.logs=[eAttack,eDefense,defensiveTrip];state.pending=null;
-presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;
+presentation.busy=false;presentation.visibleCount=Infinity;presentation.stage=null;presentation.roll=null;
 api.resetRoll();api.render();
 check('A defensive trip credits the actual effect owner',
  root.innerHTML.includes(recapTarget+' resists '+recapTarget+'’s trip')===false &&
@@ -971,56 +971,56 @@ check('An undefended failed attack is simply a miss',
 api.resetRoll();
 
 
-/* UX 12: single d100 presentation and matte die design, mechanics unchanged. */
-check('One actual d100 is rendered for any percentile result, including 100',
-  api.d100Dice(43).length===1 && api.d100Dice(43)[0].sides===100 &&
-  api.d100Dice(43)[0].display==='43' &&
-  api.d100Dice(100).length===1 && api.d100Dice(100)[0].display==='100' &&
-  api.d100Dice(1)[0].display==='1');
-check('Single percentile die always displays one tile rather than tens and ones',
-  (api.renderDice(api.d100Dice(75),false).match(/class="die-wrap"/g)||[]).length===1 &&
-  api.renderDice(api.d100Dice(75),false).includes('class="die-shape d100 percentile"') &&
-  !api.renderDice(api.d100Dice(75),false).includes('10s'));
-check('Percentile animation can display values from 1 to 100',
-  Array.from({length:150},()=>Number(api.randomFaceForDie({sides:100})))
-   .every(n=>Number.isInteger(n)&&n>=1&&n<=100));
-state.phase='fight';state.pending=null;state.mode='tutorial';
+/* Inline rolls use the active combatant's lane; recaps print recorded values. */
+state.phase='fight';state.pending=null;state.mode='pvp';
 presentation.busy=false;presentation.stage=null;presentation.visibleCount=Infinity;
 api.setRoll({id:5110,actor:'a',label:'Attack · Combat Style 34%',
  defs:[{sides:100,label:'d100'}]});
 api.render();
-const p12=root.innerHTML.slice(root.innerHTML.indexOf('<div class="roll-await"'));
-check('Manual percentile prompt has one tile with target in the same block',
- (p12.match(/class="die-wrap"/g)||[]).length===1 &&
- p12.includes('class="die-shape d100 percentile"') &&
- p12.includes('Target <strong>34%</strong>'));
-check('Roll heading, die and roll button remain in the same reading order',
- p12.indexOf('<h3>')<p12.indexOf('class="die-shape d100 percentile"') &&
- p12.indexOf('class="die-shape d100 percentile"')<p12.indexOf('data-act="roll"'));
-api.setRoll({id:5111,actor:'a',label:'Hit Location · d20',
- defs:[{sides:20,label:'Hit location'}]});
+const percentilePrompt=root.innerHTML.slice(root.innerHTML.indexOf('<div class="roll-await"'));
+check('Manual percentile prompt shows the target and one roll button',
+ percentilePrompt.includes('Target <strong>34%</strong>') &&
+ percentilePrompt.includes('Roll d100</button>') &&
+ !percentilePrompt.includes('class="die-shape'));
+check('Recorded percentile history uses the exact result as text',
+ api.rollSummary({title:'Skill check',meta:{dice:api.d100Dice(100)}}).includes('d100 100') &&
+ api.rollSummary({title:'Skill check',meta:{dice:api.d100Dice(75)}}).includes('d100 75'));
+api.setRoll({id:5111,actor:'a',label:'Hit Location · d20',defs:[{sides:20,label:'Hit location'}]});
 api.render();
-check('Hit location remains a single d20, not converted to d100',
- /class="die-shape d20(?:\s|\")/.test(root.innerHTML.slice(root.innerHTML.indexOf('<div class="roll-await"'))) &&
- !root.innerHTML.slice(root.innerHTML.indexOf('<div class="roll-await"')).includes('class="die-shape d100 percentile"'));
+check('Hit location prompts for a d20',root.innerHTML.includes('Roll d20</button>'));
 api.setRoll({id:5112,actor:'a',label:'Damage · Left Leg',
- defs:[{sides:6,label:'Weapon A'},{sides:4,label:'Damage Modifier'}]});
+ defs:[{sides:6,label:'Weapon'},{sides:4,label:'Damage Modifier'}]});
 api.render();
-const dm12=root.innerHTML.slice(root.innerHTML.indexOf('<div class="roll-await"'));
-check('Damage dice stay multiple and display their correct sizes',
- (dm12.match(/class="die-wrap"/g)||[]).length===2 &&
- /class="die-shape d6(?:\s|\")/.test(dm12) &&
- /class="die-shape d4(?:\s|\")/.test(dm12));
-check('Updated dice have a specific non-gloss d100 tile style',
- css.includes('.exchange-half .die-shape.d100') &&
- css.includes('clip-path:polygon(21% 0,79% 0') &&
- css.includes('background:#343b37'));
-check('One d100 still shows the exact recorded d100 roll in history',
- api.renderDice(api.d100Dice(100),false).includes('>100</span>') &&
- api.renderDice(api.d100Dice(75),false).includes('>75</span>'));
+check('Damage prompt identifies every die in the pool',root.innerHTML.includes('Roll d6 + d4</button>'));
+presentation.busy=true;
+presentation.roll={actor:'b',label:'Initiative · d10'};
+api.render();
+check('One inline tray appears in the second player lane while that player rolls',
+ (root.innerHTML.match(/data-inline-dice/g)||[]).length===1 &&
+ root.innerHTML.indexOf('data-combatant="b"')<root.innerHTML.indexOf('data-inline-dice') &&
+ !root.innerHTML.includes('class="die-shape') && !root.innerHTML.includes('<iframe'));
+presentation.roll=null;
 api.resetRoll();
 
 
+const capturedRoll = vm.runInContext(`
+  V.capturing=true;
+  V.queue=[];
+  let received;
+  const defs=[{sides:100,fixed:100},{sides:8,fixed:8},{sides:3,fixed:2}];
+  resolveDice('b',defs,'Mixed roll',values=>{
+    received=values;
+    log('Resolved roll',values.join(' + '));
+  });
+  V.capturing=false;
+  const queue=V.queue;
+  V.queue=[];
+  ({received,queue});
+`, sandbox);
+check('The tray receives the same mixed roll values as combat, ahead of its result log',
+ capturedRoll.queue.length===2 && capturedRoll.queue[0].roll.actor==='b' &&
+ capturedRoll.queue[0].roll.values===capturedRoll.received &&
+ capturedRoll.queue[1].body==='100 + 8 + 2');
 
 // Scheduling regressions exercise the same entry points as the combat controls.
 const scheduling = vm.runInContext(`
