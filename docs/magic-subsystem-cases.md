@@ -35,3 +35,11 @@ Fixture: Magic Audit — Paired Skills, a dedicated Quick Character created thro
 - Theism: Exhort and Devotion (Audit Cult), recorded High Priest pool rank, pool 6, one Acolyte instance. Turn 1/2 survived reopening. Final roll succeeded and spent 2 devotional points, leaving 4/6. Cancellation of a second preparation left 4/6.
 - Persistence failure: an immediate reload after the first Mysticism preparation lost that step. The preceding UI showed 1/2. Repeating the step and reopening normally preserved it. The cause and recovery path remain unverified. Do not close persistence on the basis of normal reopen alone.
 - Remaining: all outcome branches, invalidation after edits, pool limits and donation live cases, Animism, individual ability inventory and broader magic interactions. These live cases do not close the subsystem.
+
+## Recovery and Animism live batch — November 5, 2026
+
+- On the deployed draft-recovery build, began an Acolyte miracle and immediately reloaded. The recovery prompt appeared. Accepting restored CASTING 1/2 with devotional pool 4/6. Cancelling cleared preparation and retained 4/6. This verifies the owner acceptance path. Decline and cross-owner behavior remain covered locally.
+- Binding 29% gives a critical range of 3 and a spirit POW ceiling of 9. A GM-confirmed bound POW 10 spirit was rejected before rolling or charging MP.
+- Changing the spirit to POW 9 allowed the command roll. The roll failed, the spirit ignored the command, and personal MP fell from 7 to 6. Uploaded Core p.136 was checked visually for the one-MP command and failure outcome.
+- Marking that POW 9 spirit unbound blocked another command without charging MP. The fixture retains the unbound Audit Spirit for later work.
+- Still open: legal command success/critical/fumble branches, maximum bound spirits by rank and CHA, spirit interaction and combat inventory, complete spell/Talent/miracle child cases, and remaining pool interactions. No subsystem closeout follows from this batch.
