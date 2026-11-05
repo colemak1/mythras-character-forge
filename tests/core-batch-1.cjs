@@ -569,6 +569,21 @@ test('Core pp.34,70–71: ageing review tracks human bands without changing char
  }
  run('S.species="other";S.age.category="senior";');assert.equal(run('humanAgeingInfo()'),null);assert.match(run('ageingReviewBlock()'),/may not apply/);
 });
+test('Core pp.70–71: recorded ageing applies both losses once and survives reload',()=>{
+ reset();run('S.age.years=54');
+ const base=run('finalPct("std:Brawn")');
+ run('APP.recordAgeing(40,"failure",2,2,"failure",4,1,true)');
+ assert.equal(run('effectiveChars().STR'),10);
+ assert.equal(run('effectiveChars().POW'),11);
+ assert.equal(run('S.chars.STR'),12);
+ assert.equal(run('finalPct("std:Brawn")'),base-2);
+ run('APP.recordAgeing(40,"failure",2,2,"failure",4,1,true)');
+ assert.equal(run('S.age.ageingEvents.length'),1);
+ run('S=JSON.parse(JSON.stringify(S));normalizeState()');
+ assert.equal(run('effectiveChars().STR'),10);
+ run('APP.undoAgeing()');
+ assert.equal(run('finalPct("std:Brawn")'),base);
+});
 test('Core p.58: legacy armour migrates and limbs can differ without changing totals',()=>{
  reset();run('S.armor={Head:"None",Chest:"None",Abdomen:"None","Each Arm":"Half Plate (hoplite plate)","Each Leg":"None"};normalizeState();');
  const right=run('S.armor["Right Arm"]');assert.equal(run('S.armor["Left Arm"]'),right);
