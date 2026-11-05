@@ -313,7 +313,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .recovery-options{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 0 16px;border-bottom:1px solid #9d876145;margin-bottom:10px}.recovery-options button{padding:9px 13px;border:1px solid #af9972;border-radius:2px;background:transparent;color:inherit;cursor:pointer;font:600 12px system-ui}.recovery-options button:disabled{opacity:.45;cursor:not-allowed}.recovery-options small{font:11px/1.5 system-ui;color:#b6a48c;max-width:330px}
 
 </style>
-<link rel="stylesheet" href="practice-combat-ux.css?v=13">
+<link rel="stylesheet" href="practice-combat-ux.css?v=14">
 </head>
 <body>
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>Practice Combat</span><span class="hide-mobile">Independent demo · no account required</span><a href="#" id="homeLink">Reset</a></div></header>
@@ -1628,7 +1628,7 @@ function arenaHtml(){
  const turn=V.busy?'':R&&/\bInitiative\b/i.test(R.label||'')?
    'Initiative: '+S.fighters[R.actor].name+' to roll':
    !R&&!S.pending&&S.phase==='fight'?'Turn: '+(S.fighters[S.order[S.turnIndex]]?.name||'—'):'';
- return `<div class="arena">${fighterCard(a,'player')}<section class="center" aria-label="Combat exchange">
+ return `<div class="arena">${fighterCard(a,'player')}<div class="exchange-column"><section class="center" aria-label="Combat exchange">
  <header class="center-top">
    <div><div class="label">${S.mode==='pvp'?'Friendly duel':S.mode==='tutorial'?'Guided tutorial':`Encounter ${S.wave}`}</div>
    <h2>Round ${S.round}<small>Cycle ${S.cycle}</small></h2></div>
@@ -1640,7 +1640,7 @@ function arenaHtml(){
  ${S.mode==='tutorial'&&R&&!V.busy?tutorialGuideHtml():''}
  ${S.phase==='fight'&&!V.busy&&!R?`<section class="decision-panel" aria-label="Current combat decision"><div class="decision-kicker">${esc(decisionKicker())}</div>${decisionHtml()}${S.mode==='tutorial'?tutorialGuideHtml():`<p class="choice-help" id="choiceHelp" role="status">${esc(decisionHelpPrompt())}</p>`}</section>`:''}
  ${S.phase==='between'||S.phase==='over'?`<div class="center-content"><div class="actionbox">${actionHtml()}</div></div>`:''}
- </section>${fighterCard(b,'enemy')}${combatHistory()}</div>`;
+ </section>${combatHistory()}</div>${fighterCard(b,'enemy')}</div>`;
 }
 
 /* UX pass 02: a compact primary-action tray. All underlying actions remain available

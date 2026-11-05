@@ -233,8 +233,7 @@ button:focus-visible,.loc:focus-visible {
   .arena { grid-template-columns:minmax(210px,.78fr) minmax(430px,1.5fr); }
   .arena .fighter.player { grid-column:1; grid-row:1; }
   .arena .fighter.enemy { grid-column:1; grid-row:2; }
-  .arena .center { grid-column:2; grid-row:1/span 2; }
-  .arena .combat-history { grid-column:1/-1; grid-row:3; }
+  .arena .exchange-column { grid-column:2; grid-row:1/span 2; }
   .decision-panel .choicegrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .setup-bottom { grid-template-columns:1fr; }
 }
@@ -1467,6 +1466,14 @@ button:focus-visible,.loc:focus-visible {
 }
 
 
+/* The exchange and its chronicle sit together between the fighters. */
+.exchange-column { display:grid; gap:14px; min-width:0; }
+.exchange-column .combat-history { margin:0; }
+.exchange-column .chronicle-main { flex-wrap:wrap; }
+@media(max-width:740px){
+  .exchange-column { width:100%; }
+}
+
 /* The exchange, tabletop and controls share one surface. */
 .center {
   --exchange-surface:#232721;
@@ -1656,7 +1663,7 @@ button:focus-visible,.loc:focus-visible {
 .center .secondary-actions { border-color:var(--exchange-rule); margin-top:9px; }
 .center .secondary-actions summary,.center .secondary-actions summary span { color:var(--exchange-muted); }
 .center .secondary-actions summary:hover { color:var(--exchange-text); }
-.center .choice-help { margin:9px 0 0; }
+.center .choice-help { margin:9px 0 0; border-color:var(--exchange-rule); }
 .center .tutorial-guide,.center .decision-panel .tutorial-guide {
   background:transparent;
   color:var(--exchange-text);
@@ -1673,3 +1680,9 @@ button:focus-visible,.loc:focus-visible {
   .center .half-heading { min-height:52px; }
   .round-context { max-width:45%; }
 }
+@media(min-width:1061px){
+  .arena .fighter.player { grid-column:1; grid-row:1; }
+  .arena .exchange-column { grid-column:2; grid-row:1; }
+  .arena .fighter.enemy { grid-column:3; grid-row:1; }
+}
+.fighter button.loc .loc-ident { flex-wrap:wrap; gap:2px 5px; }
