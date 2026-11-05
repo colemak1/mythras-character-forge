@@ -852,7 +852,7 @@ function magicPanel(){
     h+='<div class="pm-skillgroup"><h4>'+esc(t.label)+' <span class="pm-empty">'+esc(t.castSkill)+' '+pctTxt+'</span></h4>';
     h+=items.map(({m,idx})=>{
       let meta="";
-      if(t.key==="folk"&&m.spell)meta=m.spell.t.join(", ");
+      if(t.key==="folk")meta="1 MP base · Intensity 1"+(m.spell?.t?.length?" · "+m.spell.t.join(", "):"");
       else if(t.key==="sorcery"){const c=sorceryCost(m);meta=c.mp+" MP · "+c.turns+" turn"+(c.turns>1?"s":"")+(c.shapings?" · "+Object.entries(sorceryLevels(m)).map(([k,v])=>k+" "+v).join(", "):" · unshaped")+(c.combinedSpells?" · +"+c.combinedSpells+" combined":"");}
       else if(t.key==="animism")meta="POW "+(m.pow||0)+" · CHA "+(m.cha||0)+" · Intensity "+(m.intensity||1)+" · "+(m.spiritStatus==="bound"?"BOUND":"UNBOUND")+(Number.isInteger(m.spiritMP)?" · spirit MP "+m.spiritMP:"");
       else if(t.key==="theism"){const d=theismDetails(m);meta=d?d.cost+" from pool · "+d.turns+" turns":"Confirm miracle level in builder";}
