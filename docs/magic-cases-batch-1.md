@@ -24,9 +24,9 @@ Live evidence is still needed for every case marked Pass.
 ## Summary
 
 - Folk Magic casting costs, the 0 MP block, the single Folk Magic skill, and the 1 Turn / Intensity 1 / Magnitude 1 / range display pass, with tests in `tests/magic-folk-cases.cjs`.
-- **The app has no Folk Magic spell catalogue.** Players type spell names, and effects are free text (`FOLK_MAGIC` is deliberately empty, `js/data.js`). So every individual spell case (FM-S01–S70, FM-F01–F06) is GM-assisted today. Building a catalogue is a decision for the owner (see D-1).
-- Magic Points are a manual counter. There are no recovery sources, no committed MP for ongoing magic, and no optional exhaustion rules. That suits the GM-controlled cases but not MG-044 (see D-2).
-- No active-spell tracking exists for Folk Magic: concentration, trigger, dismissal and duration (FM-015–017, FM-021, MG-039). Mysticism Talents are the only magic with an active state (see D-3).
+- **The app has no Folk Magic spell catalogue.** Players type spell names, and effects are free text (`FOLK_MAGIC` is deliberately empty, `js/data.js`). So every individual spell case (FM-S01–S70, FM-F01–F06) is GM-assisted today. The owner approved building one from the rulebook (D-1); ChatGPT supplies the data.
+- Magic Points are a manual counter. There are no recovery sources, no committed MP for ongoing magic, and no optional exhaustion rules. The owner decided to keep recovery manual (D-2).
+- No active-spell tracking exists for Folk Magic: concentration, trigger, dismissal and duration (FM-015–017, FM-021, MG-039). The owner decided not to add it (D-3); Mysticism Talents keep their active state.
 
 ## A. General Magic — Core pp. 112–120
 
@@ -41,19 +41,19 @@ Live evidence is still needed for every case marked Pass.
 | MG-005 | A novice requests an advanced spell. | pp.114–115: Organizations may restrict abilities by rank and approval. | Respect GM-defined access; rank doesn't automatically grant every ability. | **GM-assisted.** Nothing is granted by rank. |
 | MG-006 | GM permits ritual preparation to improve casting chances. | p.115: One minute's preparation may give Easy; one hour Very Easy. | Only when this optional rule is enabled, including its resistance interaction. | **GM-assisted.** The roller's manual difficulty grade covers it; the resistance interaction isn't tracked. |
 | MG-007 | A campaign uses longer ritual casting. | p.115: Casting units may change from Turns to Rounds, Minutes, Hours or Days; optional accelerated casting with grade penalties. | Keep default timings unless configured; distinguish unit changes from skill penalties. | **GM-assisted.** Defaults are kept; no setting exists. |
-| MG-008 | POW 14 but no usable energy source. | p.115: MP derive from POW as storage capacity, not guaranteed energy. | Show maximum 14 but respect the energy source. | **Pass (capacity)**: max MP = POW. Energy sources: **Not implemented** (D-2). |
+| MG-008 | POW 14 but no usable energy source. | p.115: MP derive from POW as storage capacity, not guaranteed energy. | Show maximum 14 but respect the energy source. | **Pass (capacity)**: max MP = POW. Energy sources: **GM-assisted** by decision (D-2). |
 | MG-009 | A campaign defines its MP source. | p.115: Self, Sacrifice, Magical Locations, Destruction, Consumption, Veneration. | Support a GM-defined source and recovery conditions; don't assume natural regeneration. | **GM-assisted.** No automatic regeneration exists; MP is adjusted by hand. |
 | MG-010 | Caster can't access their energy source. | p.115: MP can't be recovered until the source is available. | Don't grant recovery merely because time passes. | **Pass (by design).** Nothing restores MP over time. No test. |
 | MG-011 | Sacrificial energy is used. | p.116: Default yield is the creature's POW, subject to GM alteration. | GM-controlled awards; not every death is a usable sacrifice. | **GM-assisted.** |
 | MG-012 | GM uses sacrifice-size guidelines. | p.117: Tiny 1 MP; small 1d3; medium 1d6; large 2d6; huge, magical or sapient 3d6+. | Optional GM reference, separate from the POW default. | **GM-assisted.** |
-| MG-013 | Max 16 MP at a 25% shrine. | p.116: Location strengths 25/50/75/100%; this shrine allows recovery only up to 4 MP. | Apply the ceiling without deleting MP already held. | **Not implemented** (D-2). Rounding for odd maxima still needs a ruling. |
-| MG-014 | A magical substance is destroyed or consumed. | p.116: Strength 25/50/75/100%. | Apply the resource's ceiling and rate. | **Not implemented** (D-2). |
-| MG-015 | Veneration with 80, 500, 5,000 or 12,000 worshippers. | p.116: Strength 25/50/75/100% respectively. | Calculate the percentage from the participation band when enabled. | **Not implemented** (D-2). |
+| MG-013 | Max 16 MP at a 25% shrine. | p.116: Location strengths 25/50/75/100%; this shrine allows recovery only up to 4 MP. | Apply the ceiling without deleting MP already held. | **GM-assisted** by decision (D-2). Rounding for odd maxima still needs a ruling. |
+| MG-014 | A magical substance is destroyed or consumed. | p.116: Strength 25/50/75/100%. | Apply the resource's ceiling and rate. | **GM-assisted** by decision (D-2). |
+| MG-015 | Veneration with 80, 500, 5,000 or 12,000 worshippers. | p.116: Strength 25/50/75/100% respectively. | Calculate the percentage from the participation band when enabled. | **GM-assisted** by decision (D-2). |
 | MG-016 | Natural recovery via Sacrifice or Consumption. | p.117: Only Self, Magical Locations and Veneration permit natural recovery. | Require a new resource or ritual instead of rest recovery. | **GM-assisted.** No rest recovery exists to misapply. |
 | MG-017 | Rest in unsafe conditions. | p.117: Natural recovery assumes complete rest, comfort and safety. | GM controls eligibility; no automatic restore. | **Pass (by design).** |
-| MG-018 | GM picks Magic Rich, Medium or Low recovery. | p.117: 1 MP per hour, day or week; conjunctions are another option. | Apply only the selected schedule. | **Not implemented** (D-2). |
+| MG-018 | GM picks Magic Rich, Medium or Low recovery. | p.117: 1 MP per hour, day or week; conjunctions are another option. | Apply only the selected schedule. | **GM-assisted** by decision (D-2). |
 | MG-019 | Recharge ritual with sacrifice or consumables. | p.117: Normally at least one hour; haste risks losing the energy. | GM-adjustable guideline; record the outcome. | **GM-assisted.** |
-| MG-020 | Several low-strength recharges in a row. | p.117: The Rule of Recovery stops ceilings adding together. | When enabled, don't add successive ceilings. | **Not implemented** (D-2). |
+| MG-020 | Several low-strength recharges in a row. | p.117: The Rule of Recovery stops ceilings adding together. | When enabled, don't add successive ceilings. | **GM-assisted** by decision (D-2). |
 | MG-021 | Character reaches 0 MP (default rules). | p.117: No further magic, no other automatic consequences. | Block magic at 0 MP without Fatigue, damage or unconsciousness. | **Pass** for Folk Magic (test). Other MP traditions are blocked when cost exceeds MP. |
 | MG-022 | Optional Fatigue Accrual. | p.117: One Fatigue level per MP spent. | Only when enabled. | **Not implemented.** Never applied, which is correct while disabled. |
 | MG-023 | Optional Hit Point Attrition. | p.117: 1 HP to every location per attempt. | All locations; only when enabled. | **Not implemented.** Never applied. |
@@ -77,12 +77,12 @@ Live evidence is still needed for every case marked Pass.
 | MG-036 | Serious Wound while casting. | p.119: Willpower; success one grade harder, failure two. | Apply the right penalty. | **Not implemented.** |
 | MG-037 | Major Wound while casting. | p.119: Casting automatically fails. | Fail the cast; no normal roll. | **Not implemented.** |
 | MG-038 | Mental domination while casting. | p.119: Casting automatically fails. | Fail and record the cause. | **Not implemented.** |
-| MG-039 | Dismissing your own magic. | p.119: Free Action, no roll. | Dismiss without a roll or MP. | **Not implemented** for Folk Magic, Sorcery and Theism (D-3). Mysticism Talents can be ended. |
+| MG-039 | Dismissing your own magic. | p.119: Free Action, no roll. | Dismiss without a roll or MP. | **GM-assisted** by decision (D-3) for Folk Magic, Sorcery and Theism. Mysticism Talents can be ended. |
 | MG-040 | Similar enhancements would stack. | p.120: Incompatible enhancements don't stack. | Prevent forbidden stacking; keep records. | **GM-assisted.** The app applies no spell effects. |
 | MG-041 | Two incompatible effects are active. | p.120: Higher Intensity wins; at equal Intensity the newer replaces the older. | Resolve by Intensity and order. | **GM-assisted** (D-3). |
 | MG-042 | Effect with Magnitude 3 and Intensity 5. | p.120: Magnitude is resistance to dispelling; Intensity is strength. | Track separately. | **Partial.** Folk Magic now shows both. Other traditions show Intensity; Sorcery shows Magnitude only as a Shaping level. |
 | MG-043 | Hard roll with skill-derived Intensity or Magnitude. | p.120: Grades don't change those values. | Change the chance, not the potency. | **Pass** for Folk Magic range (test: range uses the skill, not the Hard chance). Mysticism limits also use the raw skill. |
-| MG-044 | Caster maintains ongoing magic. | p.120: MP committed to active magic can't recover until it ends. | Track commitments separately; release on end. | **Not implemented** (D-2, D-3). |
+| MG-044 | Caster maintains ongoing magic. | p.120: MP committed to active magic can't recover until it ends. | Track commitments separately; release on end. | **GM-assisted** by decision (D-2, D-3). |
 
 ## B. Folk Magic — Core pp. 121–129
 
@@ -104,13 +104,13 @@ Live evidence is still needed for every case marked Pass.
 | FM-012 | Fumble. | p.122: Fails, 1d3 MP. | Roll 1d3 MP loss; no effect. | **Pass** (test). Never spends more MP than the caster has. |
 | FM-013 | No special potency rule. | p.122: Intensity and Magnitude both 1. | Fixed at 1. | **Pass (display)** (test). |
 | FM-014 | Learning more spells. | p.122: No universal maximum. | No global cap. | **Pass.** Only a warning above the starting allowance for new characters. |
-| FM-015 | Spell without Concentration, Instant or a duration exception. | p.123: Lasts the scene or action. | Track scene or task duration. | **Not implemented** (D-3). |
-| FM-016 | Concentration trait. | p.123: Lasts while the caster concentrates. | Track; end when broken. | **Not implemented** (D-3). |
+| FM-015 | Spell without Concentration, Instant or a duration exception. | p.123: Lasts the scene or action. | Track scene or task duration. | **GM-assisted** by decision (D-3). |
+| FM-016 | Concentration trait. | p.123: Lasts while the caster concentrates. | Track; end when broken. | **GM-assisted** by decision (D-3). |
 | FM-017 | Instant trait. | p.123: Immediate, no ongoing duration. | Resolve at casting. | **Pass (by design).** Nothing ongoing is ever tracked. |
 | FM-018 | Folk Magic 65%, unseen known target 60 m away. | p.123: Range is skill % in metres; an unseen known target is one grade harder. | Allow with the penalty; reject beyond range. | **Partial.** The card shows "ranged 65 m" (test); the visibility penalty and target distance are left to the player and GM. |
 | FM-019 | Resist (Endurance), (Willpower) or (Evade). | p.123: Opposed roll; Evade costs an AP, others passive. | Prompt the right test; AP only for Evade. | **GM-assisted** (D-1). |
 | FM-020 | Touch spell. | p.123: Contact during casting; carried gear can count. | Require contact; GM handles unwilling targets. | **GM-assisted.** |
-| FM-021 | Trigger trait. | p.123: Effect can be delayed after casting; expires at scene end; no second cost. | Armed, triggered and expired states. | **Not implemented** (D-3). |
+| FM-021 | Trigger trait. | p.123: Effect can be delayed after casting; expires at scene end; no second cost. | Armed, triggered and expired states. | **GM-assisted** by decision (D-3). |
 
 ### Individual Folk Magic spells
 
@@ -202,15 +202,15 @@ Also **GM-assisted** today. The app does store a specialisation for "(X)" spells
 | FM-F05 | Find Object known. | p.126: A lost personal possession. | Eligible personal objects only. |
 | FM-F06 | Find Sickness known. | p.126: Presence of disease or illness. | Detect, not diagnose. |
 
-## Decisions needed
+## Decisions
 
-| ID | Question | For | Notes |
-|---|---|---|---|
-| D-1 | Build a Folk Magic spell catalogue (names, traits, resist type, short mechanical notes)? | Owner | Needed before any FM-S/FM-F case can pass. Store only short mechanical summaries in our own words, not rulebook text: the site is public. A catalogue would also allow trait-based features (resist prompts, Evade AP, range checks). |
-| D-2 | Model Magic Point sources and recovery (source, strength %, recovery schedule, committed MP)? | Owner, then ChatGPT for rounding | Covers MG-008–020 and MG-044. Without it, MP stays a manual counter, which is Core-compliant but GM-heavy. |
-| D-3 | Track active Folk, Sorcery and Theism effects (duration, concentration, trigger, dismissal, MP commitment)? | Owner | Covers MG-039, MG-041, MG-044, FM-015, FM-016, FM-021. Mysticism already has an active-Talent model that could be generalized. |
-| D-4 | Rounding: specialist starting spells at non-multiples of ten (FM-002); recovery ceilings (MG-013). | ChatGPT | Record the ruling here before code hard-codes a convention. |
-| D-5 | Casting interruptions (MG-033, MG-035–038): automate prompts during pending casts, or keep as GM guidance? | Owner | Automation affects Sorcery, Mysticism and Theism pending casts. |
+| ID | Question | Outcome |
+|---|---|---|
+| D-1 | Build a Folk Magic spell catalogue? | **Yes** (owner, 2026-11-05). The owner has permission to use the rulebook text. ChatGPT supplies the data in the format in `folk-magic-catalogue-format.md`; Claude loads it. FM-S and FM-F cases become testable for name, traits and specialisation; effects stay GM-resolved unless a later decision says otherwise. |
+| D-2 | Model MP sources and recovery? | **No**: recovery stays manual (owner, 2026-11-05). MG-008 to MG-020 and MG-044 remain GM-assisted by decision. |
+| D-3 | Track active Folk, Sorcery and Theism effects? | **No** (owner, 2026-11-05). MG-039, MG-041, FM-015, FM-016 and FM-021 remain GM-assisted by decision. |
+| D-4 | Rounding for specialist starting spells (FM-002) and recovery ceilings (MG-013). | Waiting on ChatGPT. Recovery ceilings no longer affect code (D-2). |
+| D-5 | Automate casting interruptions (MG-033, MG-035 to 038)? | Waiting on ChatGPT's recommendation. |
 
 ## Live checks for ChatGPT (Work session)
 
