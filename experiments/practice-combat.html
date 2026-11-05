@@ -311,6 +311,9 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .effects-ref-grid b{font:600 11px system-ui,sans-serif;color:#d6c4a7}
 .effects-ref-grid span{font:10px system-ui,sans-serif;color:#9f9585}
 .recovery-options{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 0 16px;border-bottom:1px solid #9d876145;margin-bottom:10px}.recovery-options button{padding:9px 13px;border:1px solid #af9972;border-radius:2px;background:transparent;color:inherit;cursor:pointer;font:600 12px system-ui}.recovery-options button:disabled{opacity:.45;cursor:not-allowed}.recovery-options small{font:11px/1.5 system-ui;color:#b6a48c;max-width:330px}
+
+/* Physics percentile roller — separate visual layer, no rules changes. */
+.physics-roll-modal{position:fixed;inset:0;z-index:10000;background:#080907dc;display:flex;align-items:center;justify-content:center;padding:18px}.physics-roll-panel{width:min(780px,96vw);background:#171916;border:1px solid #a88b60;box-shadow:0 25px 100px #000b}.physics-roll-head{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid #66563f;color:#eee0c4;font:700 12px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}.physics-roll-panel iframe{display:block;width:100%;height:min(72vh,590px);border:0}.physics-roll-foot{padding:10px 16px;color:#b8a88c;font:11px system-ui,sans-serif;display:flex;align-items:center;justify-content:space-between;gap:12px}.physics-roll-foot button,.physics-roll-head button{background:transparent;border:1px solid #8e7855;color:#e5d8bf;padding:7px 10px;font:11px system-ui,sans-serif;cursor:pointer}
 </style>
 <link rel="stylesheet" href="practice-combat-ux.css?v=12">
 </head>
@@ -632,6 +635,31 @@ function requestSkill(actor,percent,label,callback){
  });
 }
 
+let physicsRollPending=null;
+function closePhysicsRoll(){document.getElementById('physicsRollModal')?.remove();physicsRollPending=null;}
+function openPhysicsRoll(){
+ if(!R||V.busy||physicsRollPending)return;
+ // Only percentile rolls use the verified two-d10 engine. Other dice retain
+ // their existing dice logic until equivalent physical meshes are validated.
+ if(R.defs.length!==1||Number(R.defs[0].sides)!==100||R.defs[0].fixed!=null){playCaptured(performManualRoll);return;}
+ const request=R;
+ physicsRollPending=request;
+ const modal=document.createElement('div');modal.id='physicsRollModal';modal.className='physics-roll-modal';
+ modal.innerHTML='<div class="physics-roll-panel" role="dialog" aria-modal="true" aria-label="Roll percentile dice"><div class="physics-roll-head"><span>Combat Dice · '+esc(request.label)+'</span><button type="button" id="physicsCancel">Cancel</button></div><iframe id="physicsRollFrame" title="Physical percentile dice" src="combat-dice-theme-preview.html?embed=1"></iframe><div class="physics-roll-foot"><span>Roll the two dice. Their upward faces determine the result.</span><button type="button" id="physicsFallback">Use standard roll</button></div></div>';
+ document.body.appendChild(modal);
+ document.getElementById('physicsCancel').onclick=closePhysicsRoll;
+ document.getElementById('physicsFallback').onclick=()=>{closePhysicsRoll();playCaptured(performManualRoll)};
+}
+window.addEventListener('message',event=>{
+ if(event.origin!==location.origin||event.data?.type!=='sitota-physics-roll-complete')return;
+ const frame=document.getElementById('physicsRollFrame');
+ if(!physicsRollPending||event.source!==frame?.contentWindow)return;
+ const request=physicsRollPending,value=Number(event.data.value);
+ if(!Number.isInteger(value)||value<1||value>100)return;
+ closePhysicsRoll();
+ if(R?.id!==request.id)return;
+ playCaptured(()=>{R=null;request.callback([value])});
+});
 function performManualRoll(){
   if(!R||V.busy)return;
   const request=R;
@@ -2493,7 +2521,7 @@ function decoratedClick(e){
   }
   if(act==='togglelog'){V.showLog=!V.showLog;render();document.querySelector('.history-toggle')?.focus?.({preventScroll:true});return;}
   if(act==='skip'){skipPresentation();return;}
-  if(act==='roll'){if(!V.busy&&R)playCaptured(performManualRoll);return;}
+  if(act==='roll'){if(!V.busy&&R)openPhysicsRoll();return;}
   if(V.busy)return;
   if(R&&act!=='reset'&&act!=='selectloc'&&act!=='help')return;
   if(['start','retry','next','fieldAid','rest','attack','react','changeRange','rangeRespond','effect','skipEffect','pickloc','impaleChoose','impaleResist','withdrawImpale','recoverWeapon','freePin','pinChoose','counterWatch','counterReturn','tripResist','blindResist','footingSkill','footingDefend','reengage','swapHand','yield','brace','ward','wardloc','saveward','clearward','delay','dither','stand'].includes(act)){
