@@ -923,7 +923,8 @@ function stepCommunity(){
 }
 /* ---- step: cult & community ---- */
 function stepCult(){
-  let h=head("Cult & Community","Optional: a religious cult, order, or plain community affiliation. Grants access to the skill it teaches plus a starter Passion (added on the next step) — entirely skippable if this character isn't affiliated with anything.");
+  let h=head("Cult & Community","Optional: record a religious cult, order, guild or community affiliation. The Forge archetypes supply a skill and a Passion suggestion. Confirm the actual benefits and any magic access with your GM.");
+  h+='<p class="note rulesrc">Core pp.196–199: new members normally enter at Common rank after demonstrating suitability. Common membership can coexist across compatible groups. Dedicated membership usually takes a full-time commitment. Promotion requires the organisation’s approval, even when the character meets the suggested thresholds. Forge tracks one affiliation.</p>';
   h+='<div class="pickgrid">'+CULT_ARCHETYPES.map(a=>'<button class="pick '+(S.cultMembership.archetype===a.key?"on":"")+'" onclick="APP.pickCult(\''+a.key+'\')"><span class="pn">'+esc(a.name)+'</span><div class="pd">'+esc(a.blurb)+' &mdash; '+esc(cultOrgType(a).label)+'</div></button>').join("")+'</div>';
   if(!S.cultMembership.archetype){
     h+='<p class="note">No affiliation selected &mdash; that&rsquo;s a fine choice for plenty of characters. Pick an archetype above only if it fits the concept.</p>';
@@ -933,8 +934,8 @@ function stepCult(){
   h+='<div class="card"><h3>Details</h3>'
    +fld("Name it for Sit&#39;ota (deity, order, town, clan &mdash; your call)",'<input type="text" value="'+esc(S.cultMembership.name)+'" placeholder="e.g. '+esc(a.name)+'" onchange="APP.cultField(\'name\',this.value)">')
    +fld("Rank ("+esc(cultOrgType(a).label)+")",'<select onchange="APP.cultField(\'rank\',this.value)">'+CULT_TIERS.map((t,i)=>'<option value="'+i+'" '+(tier===i?"selected":"")+'>'+esc(cultRankTitle(a,i))+' ('+t+')</option>').join("")+'</select>')
-   +'<p class="note" style="margin-top:6px">Grants access to <b>'+esc(a.skill)+'</b> ('+esc(S.cultMembership.name||a.name)+'), shown on the Sheet step under Magic/Professional skills. Rank itself carries no skill % bonus in the book &mdash; it gates which magic the organisation teaches you and a Training Discount of <b>'+CULT_TIER_TRAINING_DISCOUNT[tier]+'%</b> off future skill training (an economic modifier between sessions, not applied here).</p>'
-   +'<p class="note" style="margin-top:6px"><b>Requirement for '+esc(cultRankTitle(a,tier))+':</b> '+CULT_TIER_REQUIREMENTS[tier]+(tier>0?' &mdash; a starting character usually won&rsquo;t meet this yet; pick a higher rank only for a returning/veteran PC with your GM&rsquo;s sign-off.':"")+'</p>'
+   +'<p class="note" style="margin-top:6px">Grants access to <b>'+esc(a.skill)+'</b> ('+esc(S.cultMembership.name||a.name)+'), shown on the Sheet step under Magic/Professional skills. Confirm access to training and rank-restricted magic with the GM. The Core training guideline for this rank is <b>'+CULT_TIER_TRAINING_DISCOUNT[tier]+'%</b> off training (p.199). Track actual prices at the table.</p>'
+   +'<p class="note" style="margin-top:6px"><b>Suggested requirements for '+esc(cultRankTitle(a,tier))+':</b> '+CULT_TIER_REQUIREMENTS[tier]+(tier>0?' &mdash; a starting character usually won&rsquo;t meet this yet; pick a higher rank only for a returning/veteran PC with your GM&rsquo;s sign-off.':"")+'</p>'
    +'<p style="margin-top:8px"><button class="chip" onclick="APP.leaveCult()">Remove this affiliation</button></p>'
    +'</div>';
   return h;
