@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-05 by ChatGPT (Chat)_
+_Last updated: 2026-11-05 by Claude_
 
 ## Priorities
 
@@ -16,19 +16,16 @@ Practice Combat features remain paused. Subsystem progress remains **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Folk Magic catalogue / 70 Core spells | ChatGPT (Chat) → Claude | PR #114, `docs/folk-magic-catalogue.json` | Complete source data in prescribed schema; Claude to review/merge and separately load in `js/data.js` with tests. Do not add active-effect tracking (D-3). |
-| D-4 specialist/recovery rounding | ChatGPT (Chat) → Claude/owner | PR #114 `docs/decisions.md` | Recommend rounding up (Core pp.118,148,155 examples/conventions); **pp.121/116 do not explicitly specify fractional rounding**, so log as interpretation rather than verbatim Core. Recovery remains manual (D-2). |
-| D-5 casting interruption automation | ChatGPT (Chat) → owner | PR #114 `docs/decisions.md` | Recommend GM adjudication, concise guidance and manual cancel/fail; **owner confirmation pending**. Do not automatically infer casting interruption from HP changes. |
-| Animism child cases, initial 66 | ChatGPT (Chat) → Claude | PR #115, `docs/magic-cases-batch-2-animism.md` | Source cases delivered; remaining spirit abilities, example spirit-stat tables and interactions are still open for further inventory. |
-| Cross-tradition case status/test mapping | Claude | `docs/magic-subsystem-cases.md` | Review existing AN-B/MY-B/SO-B/TH-B/OR-B cases and avoid duplicate IDs/counts. |
-| Preparation-reload regression | Claude → ChatGPT (Work) | PR #110 merged/deployed | Code fix with tests; signed-in live test still pending for immediate reload in Mysticism, Sorcery, Theism and recovery prompt accept/decline. |
+| Folk Magic catalogue in the app | Claude | this PR | 70 spells loaded into `FOLK_MAGIC` from `docs/folk-magic-catalogue.json` via `scripts/build-folk-magic.py`, with tests. Fixed PDF artefacts: Bladesharp's dropped "8"s, two stray "·", one missing space. Trigger trait added |
+| Map PR #111's AN-B, MY-B, SO-B, TH-B, OR-B cases and Batch 2 Animism (`magic-cases-batch-2-animism.md`) to app status and tests | Claude | next | Not started |
+| Animism remaining children (spirit abilities, example spirits pp.145–153), then Mysticism, Sorcery, Theism children | ChatGPT (Chat) | docs-only PRs | Next |
+| Live checks | ChatGPT (Work) | — | Reload regression (PR #110); Folk Magic checks at the end of `magic-cases-batch-1.md`; catalogue spot check in Play Mode |
 
 ## Waiting on someone
 
-- **Claude:** read this handoff; review and merge PR #114 (catalogue) and PR #115 (Animism) after Tests check; implement Folk catalogue load with tests in **Claude-owned** code branch. Review exact sources and flag questionable entries rather than silently changing them.
-- **Owner:** confirm or adjust D-5 recommendation; D-4 is a documented interpretation awaiting owner/Claude confirmation.
-- **ChatGPT (Chat):** continue remaining Animism ability and example-type children in a later source batch; proceed to Mysticism/Sorcery/Theism child cases afterward.
-- **ChatGPT (Work):** batch signed-in live checks with the reload regression when Work browser access is available.
+- **Owner:** confirm D-4 (round up specialist starting spells: 35% → 4) and D-5 (casting interruptions left to the GM). Both recommended by ChatGPT in `docs/decisions.md`.
+- **ChatGPT (Chat):** spot-check the catalogue for other dropped "8"s or digits (the PDF extraction lost every "8"; only Bladesharp was visibly affected). Then continue Animism children.
+- **ChatGPT (Work):** the live checks above, in one session.
 
 ## Notes
 

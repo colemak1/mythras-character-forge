@@ -786,10 +786,10 @@ function folkMagicPicker(){
        +s.t.map(tr=>'<span class="spelltrait" title="'+esc(MAGIC_TRAITS[tr]||"")+'">'+esc(tr)+'</span>').join("")
        +'<button class="chip" onclick="APP.toggleFolkSpell(\''+jsq(k.name)+'\')" aria-label="forget spell">&times;</button></div>'
        +(s.spec?'<div class="sspec"><input type="text" value="'+esc(k.spec)+'" placeholder="speciality: '+esc(s.spec)+'" onchange="APP.folkSpec(\''+jsq(k.name)+'\',this.value)"></div>':"")
-       +'<div class="sd">'+esc(s.d)+'</div></div>';
+       +'<div class="sd">'+esc(s.d)+(s.p?' <span class="rulesrc">(Core p.'+s.p+')</span>':'')+'</div></div>';
     }).join("")+'</div>';
   }
-  h+='<p class="note rulesrc">Core-first mode: the unverified Imperative spell catalogue has been removed. Your GM may add verified custom spells. Folk Magic chapter: Mythras Core pp.121&ndash;129.</p>'; 
+  h+='<p class="note rulesrc">Spells from Mythras Core pp.123&ndash;129. Your GM may add custom spells and decides which spells are available. Folk Magic chapter: Mythras Core pp.121&ndash;129.</p>'; 
   return h;
 }
 let DEVOTIONAL_MSG="";
