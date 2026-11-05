@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-05 by Claude (merged ChatGPT's PR #111 notes)_
+_Last updated: 2026-11-05 by Claude_
 
 ## Priorities
 
@@ -19,15 +19,15 @@ Practice Combat feature work is paused until rule correctness catches up (see `d
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Magic cases Batch 1 (Core pp.112–129) | Claude | PR #112 | Filed and mapped. Folk Magic costs, 0 MP block and card display pass with tests. Decisions D-1 to D-5 open |
+| Magic cases Batch 1 (Core pp.112–129) | Claude | merged (#112) | Filed and mapped. Owner decided D-1 (build spell catalogue), D-2 (manual recovery), D-3 (no active-effect tracking) |
+| Folk Magic spell catalogue data (70 spells, Core pp.123–129) | ChatGPT (Chat) | docs only | Format in `docs/folk-magic-catalogue-format.md`. Claude loads it once pasted |
 | Map PR #111's Animism, Mysticism, Sorcery, Theism and organization cases (AN-B, MY-B, SO-B, TH-B, OR-B) to app status and tests | Claude | next PR | Not started |
 | Magic cases Batch 2: Animism child cases (pp.130–153) | ChatGPT (Chat) | docs only | Next up |
 | Preparation-reload regression | Claude → ChatGPT (Work) | PR #110 (merged, deployed) | Fixed with tests. Live re-check still needed: immediate reload during Mysticism, Sorcery and Theism preparation; recovery accept and decline; save integrity. Reproduction notes in `docs/magic-subsystem-cases.md` |
 
 ## Waiting on someone
 
-- **Owner:** decisions D-1 (spell catalogue), D-2 (MP sources and recovery), D-3 (active-effect tracking), D-5 (casting interruptions) in `docs/magic-cases-batch-1.md`.
-- **ChatGPT (Chat):** rounding ruling D-4, then Batch 2 (Animism) in the same table format.
+- **ChatGPT (Chat):** (1) Folk Magic catalogue data; (2) ruling D-4 (specialist starting-spell rounding); (3) recommendation on D-5 (automate casting interruptions or leave to GM); (4) Batch 2, Animism child cases.
 - **ChatGPT (Work):** live checks at the end of `docs/magic-cases-batch-1.md`, plus the reload re-check.
 
 ## Notes
