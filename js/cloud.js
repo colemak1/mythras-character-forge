@@ -819,6 +819,15 @@ window.addEventListener("beforeunload",e=>{
   if(CLOUD_PENDING_ACTORS.size||CLOUD_SAVE_JOBS.size||CLOUD_SAVE_ERROR||LOCAL_SAVE_ERROR){e.preventDefault();e.returnValue="";}
 });
 window.addEventListener("online",()=>{if(cloudActive()&&!VIEW_ONLY){CLOUD_SEEN_STATE.delete(S);scheduleCloudPush();}});
+// A reload, tab switch or mobile backgrounding inside the 1.5s debounce used
+// to leave the account copy one step behind (e.g. a lost casting turn). Start
+// any waiting save at once; the local draft and recovery prompt still cover a
+// request the browser abandons during unload.
+function flushPendingCloudSavesNow(){
+  if(CLOUD_PENDING_ACTORS.size)flushCloudSaves().catch(()=>{});
+}
+window.addEventListener("pagehide",flushPendingCloudSavesNow);
+if(typeof document!=="undefined")document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flushPendingCloudSavesNow();});
 
 let DM_INV_PUSH_TIMER=null;
 // Separate debounced push for the DM-editing-a-player's-inventory case.

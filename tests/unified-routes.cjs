@@ -172,9 +172,26 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   run('S=freshState();confirm=()=>false;');
   await run('loadCharacterInto("draft-character")');
   assert.equal(run('S.play.mysticismCasting'),null);
+  run('S=freshState();confirm=()=>{throw new Error("a declined draft must not be offered again")};');
+  await run('loadCharacterInto("draft-character")');
+  assert.equal(run('S.play.mysticismCasting'),null);
   run('S=freshState();AUTH_USER={id:"someone-else"};confirm=()=>{throw new Error("must not prompt for another owner")};');
   await run('loadCharacterInto("draft-character")');
   assert.equal(run('S.play.mysticismCasting'),null);
+ });
+ await test('leaving or reloading the page starts a waiting account save immediately',async()=>{
+  run('MOCK_AUTH=null;AUTH_USER={id:"flush-owner"};APPVIEW="play";VIEW_ONLY=false;S=freshState();S.concept.name="Flush";S._libId="22222222-2222-4222-8222-222222222222";var flushSaves=[];cloudUpsertCharacter=async entry=>{flushSaves.push(JSON.parse(JSON.stringify(entry.state)));return {id:entry.id};};');
+  run('S.play.mysticismCasting={index:0,total:2,completed:1,signature:"flush"};saveAutosave();');
+  assert.equal(run('CLOUD_PENDING_ACTORS.size'),1,'the edit waits in the debounce window');
+  assert.equal(typeof events.pagehide,'function');
+  events.pagehide();
+  assert.equal(run('CLOUD_PENDING_ACTORS.size'),0,'pagehide must not leave the save waiting for the timer');
+  await new Promise(r=>setTimeout(r,0));
+  assert.equal(run('flushSaves.length'),1);
+  assert.equal(run('flushSaves[0].play.mysticismCasting.completed'),1);
+  assert.equal(JSON.parse(run('localStorage.getItem(autosaveKey())')).pendingCloud,false,'the confirmed save acknowledges the local draft');
+  events.pagehide();await new Promise(r=>setTimeout(r,0));
+  assert.equal(run('flushSaves.length'),1,'nothing pending means no extra save');
  });
  console.log(passed+' unified route/workflow tests passed (Supabase calls stubbed; no live account writes)');
 })().catch(e=>{console.error(e);process.exitCode=1;});
