@@ -32,6 +32,8 @@ The in-app text uses concise teaching summaries and the book's action names. Sou
 
 ## Validation
 
+319 automated checks passed: 14 tactical-guidance checks, 175 practice UX/pacing checks, 14 character-practice checks, 96 rules smoke checks and 20 unified workflow checks. The browser review used a synthetic practice fighter and the actual arena runtime.
+
 - Tactical-guidance integration checks verify displayed targets, disabled reactions, retained legal effects, AP-safe preference changes, source-verified shield ward transitions, last-AP decisions and relevant reach choices.
 - Existing practice UX/pacing, character handoff, rules smoke and unified workflow checks passed.
 - Browser preview checked ordinary choices, a missed attack, weapon/shield Size comparisons, an active parry from a shield ward, Special Effect grouping, a reach disadvantage and the Guidance Off view.
