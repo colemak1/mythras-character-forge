@@ -12,6 +12,23 @@
   --ux-quiet: #b4a790;
 }
 body { background:var(--ux-bg); background-image:none; color:#e9ddca; }
+.setup h2,.setup h3,.setup .statbox>strong { color:var(--ux-paper-ink); }
+.practice-profile { color:var(--ux-paper-ink); }
+.practice-profile h3 { margin:8px 0 12px; font:normal 28px Georgia,serif; }
+.practice-profile .eyebrow { color:#66502e; }
+.practice-profile p { font:14px/1.6 system-ui,sans-serif; }
+.practice-profile a { color:#493a25; text-underline-offset:3px; }
+.forge-setup .modes { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.practice-loadout { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:20px 0; }
+.practice-loadout label:first-child { grid-column:1/-1; }
+.practice-loadout label { display:grid; gap:7px; font:600 13px system-ui,sans-serif; }
+.practice-loadout select { width:100%; min-height:44px; padding:9px; background:#f5eddf; border:1px solid #9c8a6c; color:#30281e; border-radius:2px; }
+.practice-coverage { border-block:1px solid #b9a98d; padding:14px 0; margin:14px 0; }
+.practice-coverage summary { cursor:pointer; font:600 14px system-ui,sans-serif; }
+.practice-profile .practice-limits { font-size:12px; color:#60503d; }
+@media(max-width:650px) {
+  .forge-setup .modes,.practice-loadout { grid-template-columns:1fr; }
+}
 .main { max-width:1840px; padding:26px clamp(18px,2.4vw,46px) 64px; }
 .topbar { height:65px; background:#141714; border-color:#403b32; }
 .brand { font-size:23px; letter-spacing:0; font-weight:normal; }

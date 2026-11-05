@@ -6,6 +6,10 @@ on:
       - 'experiments/bg3-d100-test.html'
       - 'experiments/practice-combat.html'
       - 'experiments/practice-combat-ux.css'
+      - 'experiments/practice-character.js'
+      - 'js/practice.js'
+      - 'js/cloud.js'
+      - 'index.html'
       - '.github/workflows/publish-dice-experiment.yml'
   workflow_dispatch:
 permissions:

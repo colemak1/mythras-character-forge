@@ -1049,6 +1049,7 @@ function libraryHTML(){
      +'<div class="mmenu-charcard-ts">Saved '+new Date(c.updated_at).toLocaleString()+'</div>'
      +'<div class="mmenu-charcard-actions">'
      +'<button class="mmenu-cta-secondary" onclick="APP.openCharToPlay(\''+c.id+'\')">Play &rarr;</button>'
+     +'<button class="mmenu-cta-secondary" onclick="APP.openCharToPractice(\''+c.id+'\')">Practice Combat</button>'
      +'<button class="mmenu-cta-ghost sm" onclick="APP.openCharToEdit(\''+c.id+'\')">Edit</button>'
      +'<button class="mmenu-cta-ghost sm" onclick="APP.openCharToSheet(\''+c.id+'\')">Print</button>'
      +'<button class="mmenu-charcard-del" onclick="APP.deleteLibChar(\''+c.id+'\',\''+jsq(c.name||"this character")+'\')" title="Delete">&times;</button>'
