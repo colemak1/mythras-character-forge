@@ -38,7 +38,9 @@ const faceFrames=faces.map(([tip,left,right])=>{
  const baseMidpoint=verts[left].clone().add(verts[right]).multiplyScalar(.5);
  const up=verts[tip].clone().sub(baseMidpoint).normalize();
  const across=verts[right].clone().sub(verts[left]).normalize();
- const normal=across.clone().cross(up);
+ // Outward normal: the previous cross-product order pointed INTO the die,
+ // so topFace selected the opposite surface from the one actually facing up.
+ const normal=up.clone().cross(across);
  return {up,normal};
 });
 const normals=faceFrames.map(face=>face.normal);
