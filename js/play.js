@@ -341,7 +341,7 @@ function pmLocRow(loc){
 // raw damage a weapon/attack rolled and subtracts this location's AP
 // automatically (core p.27, "Armour Points... reduce the amount of damage
 // inflicted"), and a secondary row for adjustments that were never meant to
-// go through armour at all -- ongoing bleed/poison/fire ticks, healing,
+// go through armour at all -- GM-resolved direct damage, healing,
 // GM fiat -- kept small and explicitly labelled so it reads as the
 // exception, not the default.
 // Incident records stay separate from current location HP and require the
@@ -404,7 +404,7 @@ function pmLocDetail(){
      ?'Last hit: <b>'+note.raw+'</b> dealt &minus; AP <b>'+note.ap+'</b> &rarr; <b>'+note.applied+'</b> HP taken'+(note.applied===0?' (armour stopped it)':"")
      :'AP <b>'+ap+'</b> subtracted automatically')+'</div>'
    +'<div class="pm-dmgsec">'
-   +'<span class="pm-dmgseclbl" title="For direct HP effects (poison, fire, GM rulings). Bleed Special Effect causes Fatigue loss instead; see Core p.96.">Ignores armour (direct HP only):</span>'
+   +'<span class="pm-dmgseclbl" title="Use for damage the GM has resolved as bypassing armour, such as a fall. Bleed Special Effect causes Fatigue loss instead (Core p.96).">Ignores armour (direct HP only):</span>'
    +'<button class="pm-sbtn dmg sm" onclick="APP.playQuickDamage(\''+loc+'\',1)">&minus;1</button>'
    +'<button class="pm-sbtn dmg sm" onclick="APP.playQuickDamage(\''+loc+'\',3)">&minus;3</button>'
    +'<button class="pm-sbtn sm" onclick="APP.playHeal(\''+loc+'\')">+heal</button>'
@@ -547,6 +547,12 @@ function pmCombatSection(){
     }).join("");
   }else h+='<p class="pm-empty">No weapons carried — add some on the Money &amp; Gear step.</p>';
   h+=pmFatiguePanel();
+  h+='<details class="pm-notes"><summary>Hazards and recovery (Core pp.74–80)</summary>'
+   +'<p><b>Disease and poison:</b> Oppose Potency with the listed resistance skill, usually Endurance or Willpower. The GM tracks onset, duration, conditions and treatment. A successful treatment prevents further conditions, but existing effects can linger.</p>'
+   +'<p><b>Falls:</b> Apply the distance table after any SIZ, Acrobatics or landing-surface adjustment. Roll damage separately for each affected random location. Armour does not reduce it. Record resolved damage with the direct HP control.</p>'
+   +'<p><b>Fire:</b> Use intensity to find damage and affected locations. If clothing or armour ignites, the burning material damages its own HP and the flesh beneath it, ignoring armour. Track ignition and spread at the table.</p>'
+   +'<p><b>Exertion and sleep:</b> Check the Physical Effort table for when to roll, which skill to use and its grade. Each failed check adds one Fatigue level. After twice CON hours awake, check Endurance, then check again after each half-CON hours following a success, one grade harder each time.</p>'
+   +'<p><b>Healing:</b> Apply one elapsed interval per location at its current wound severity. A Major Wound needs successful Healing treatment before natural recovery. Magical healing of physical trauma can stop bleeding and immediate death even if it leaves the injury itself.</p></details>';
   h+='</div>';
   return h;
 }
