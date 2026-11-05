@@ -771,6 +771,12 @@ function currentExchange(){
   if(!atkId&&attack){atkId=attack.title.startsWith(S.fighters.a.name)?'a':attack.title.startsWith(S.fighters.b.name)?'b':null}
   if(!atkId){atkId=S.order?.[S.turnIndex]||S.order?.[0]||'a'}
   if(!defId)defId=atkId==='a'?'b':'a';
+  const roll=V.roll||(!V.busy?R:null);
+  if(roll&&/^Attack ·/i.test(roll.label)){
+    atkId=roll.actor;defId=atkId==='a'?'b':'a';
+  }else if(roll&&/^(?:Parry|Evade) ·/i.test(roll.label)){
+    defId=roll.actor;atkId=defId==='a'?'b':'a';
+  }
   return {attack,defense,atkId,defId,pending:pend,latest:logs[logs.length-1]||null};
 }
 function rollSummary(entry,diceOverride=null){
