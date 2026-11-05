@@ -1296,3 +1296,17 @@ const capturedOpening=vm.runInContext(`
 `,sandbox);
 check('Opponent initiative creates exactly one stop after the order summary, before their attack',
  capturedOpening.correct&&capturedOpening.count===1&&capturedOpening.reaction);
+
+const checkpointRoles=vm.runInContext(`
+ (() => {
+   V.busy=true;V.roll=null;
+   const attack={id:91000,title:S.fighters.a.name+' attacks',body:'31 against Combat Style 67% — SUCCESS.'};
+   const result={id:91001,title:'No Damaging Hit',body:'The blow was parried.'};
+   S.logs=[attack,result];V.visibleCount=2;V.stage=stageFor(result);
+   S.pending={kind:'reaction',atk:'b',def:'a'};
+   const held=currentExchange();
+   V.busy=false;S.pending=null;
+   return held.atkId==='a'&&held.defId==='b'&&!held.pending;
+ })()
+`,sandbox);
+check('Held results keep the previous fighter roles while the next opponent attack is hidden',checkpointRoles);

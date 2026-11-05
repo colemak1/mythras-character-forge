@@ -14,7 +14,7 @@ Walkthrough: Normal Gauntlet with the opponent winning initiative; checked a mis
 | Completed result before another automatic opponent action | Useful; otherwise the new action overwrites the result | One Continue at the action boundary |
 | Pick Up Weapon before another player action | The next action already waits | Show action choices automatically |
 
-Changes: Standard pace replaces the per-event Manual pace. Rolls and recorded results advance with a short reading delay. Continue appears only at a boundary before a new automatic action, and names the fighter acting next. Quick pace and Show results remain available. Result narration now takes priority over the generic rolling caption once the result appears.
+Changes: Standard pace replaces the per-event Manual pace. Rolls and recorded results advance with a short reading delay. Continue appears only at a boundary before a new automatic action, and names the fighter acting next. Quick pace and Show results remain available. Fighter roles at a checkpoint follow the visible exchange instead of the already prepared next action. Result narration now takes priority over the generic rolling caption once the result appears.
 
 Validation: Practice Combat UX tests cover automatic roll/result playback, hidden future events at a checkpoint, real-choice handoff, Quick pace, skip behavior, matching dice/results, and an actual opponent-first initiative capture. Combat-turn and effect-selection suites also pass.
 

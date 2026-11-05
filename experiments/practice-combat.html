@@ -765,8 +765,10 @@ function currentExchange(){
   let attack=attackIndex>=0?logs[attackIndex]:null;
   const recent=attackIndex>=0?logs.slice(attackIndex+1):[];
   let defense=recent.find(l=>/ (?:parries|evades)$| does not defend$/i.test(l.title))||null;
-  if((!V.busy&&!S.pending&&S.phase==='fight')||S.pending?.kind==='range'){attack=null;defense=null;}
-  const pend=S.pending;
+  if(!V.busy&&((!S.pending&&S.phase==='fight')||S.pending?.kind==='range')){attack=null;defense=null;}
+  // The engine may already be preparing the next action while its predecessor
+  // is held at a checkpoint. Fighter roles must follow the revealed exchange.
+  const pend=V.busy?null:S.pending;
   let atkId=pend?.atk||pend?.mover||null;
   let defId=pend?.def||pend?.defender||null;
   if(!atkId&&attack){atkId=attack.title.startsWith(S.fighters.a.name)?'a':attack.title.startsWith(S.fighters.b.name)?'b':null}
