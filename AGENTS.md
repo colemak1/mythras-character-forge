@@ -24,7 +24,7 @@ The owner does not alternate messages between assistants. Each assistant works t
 - **Keep going** while the next step is yours. Don't hand off for something you can do yourself.
 - **When the next step is the other assistant's**, update `HANDOFF.md`, then end your reply with:
   1. **Next: Claude**, **Next: ChatGPT (Chat)** or **Next: ChatGPT (Work)**, and one line saying why.
-     - **ChatGPT (Chat)**, the regular chat: rulebook work, case specs, rulings, reviewing docs. No credits needed. Because it can't push, it puts its output in its reply for the owner to paste to Claude, who commits it.
+     - **ChatGPT (Chat)**, the regular chat: rulebook work, case specs, rulings, reviewing docs. No credits needed. It can write files and open PRs through its GitHub connector, but can't run the tests. For large output (case tables, data), it opens a docs-only PR; Claude reviews and merges it. For short answers, it replies in chat and the owner pastes them to Claude.
      - **ChatGPT (Work)**, the agent session with a browser: only for signed-in testing on the live site. It uses Work credits, so batch live checks together.
      - Prefer Chat whenever a browser isn't needed.
   2. A short message in a block the owner can paste as-is. It must say what changed (PR number or files), what to do next, and to read `HANDOFF.md` first.

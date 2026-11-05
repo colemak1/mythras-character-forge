@@ -37,4 +37,4 @@ One JSON array, one object per spell, in the book's order:
 - All 70 spells, no extras. Find (X) is one entry; the player records the variant.
 - Copy names and traits exactly. If a trait reads differently from the list above, use the book's wording and say so.
 - Use straight quotes, and escape any double quotes inside `d`.
-- Send it in your reply as one code block. If it's too long for one reply, split it into numbered parts (Part 1: spells 1–35, Part 2: 36–70).
+- Save it as `docs/folk-magic-catalogue.json` on a new branch and open a docs-only PR. Don't edit `js/`. Claude checks the JSON, loads it into the app with tests, and merges.
