@@ -1744,3 +1744,10 @@ button:focus-visible,.loc:focus-visible {
   background:#332b25;
   box-shadow:inset 2px 0 #c98c68;
 }
+
+.setup .modes [data-val="spearman"] {
+  grid-column:1 / -1;
+  min-height:0;
+}
+.setup .modes [data-val="spearman"] strong { margin:6px 0 4px; }
+.setup .formcard > .cta { margin-top:12px; }

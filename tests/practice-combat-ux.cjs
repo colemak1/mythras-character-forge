@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=16/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=17/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -1172,3 +1172,46 @@ check('A stationary attack preserves Brace and prompts the fighter to roll',
   a.braced && scheduling.pending()?.actor === 'a');
 
 console.log('Practice Combat UX and scheduling checks passed.');
+
+const spearBout=vm.runInContext(`
+ (() => {
+   const random=Math.random;
+   Math.random=()=>.79;
+   try{
+     config.mode='spearman';
+     startRun();
+     R=null;
+     S.order=['a','b'];
+     const [hero,spear]=[S.fighters.a,S.fighters.b];
+     const long=reachContextHtml();
+     const options=decisionHtml();
+     beginChangeRange('a');
+     const intercepted=R?.actor==='a'&&/^Change Range ·/.test(R.label)&&
+       S.pending.intercepting&&decisionReason().includes('Roll Evade');
+     performManualRoll();
+     const inside=S.engagement==='short'&&canAttackBody('a')&&!canParryAtReach('b');
+     const backsAway=S.pending?.kind==='range'&&S.pending.mover==='b'&&
+       reachContextHtml().includes('He steps back');
+     rangeReact('permit');
+     const reopened=S.engagement==='long';
+     S.pending=null;
+     S.turnIndex=0;
+     spear.ap=0;
+     hero.ap=2;
+     const opening=reachContextHtml();
+     beginChangeRange('a');
+     const cleanClose=S.engagement==='short'&&!R;
+     endFight('a','Test bout');
+     return {long,options,intercepted,inside,backsAway,reopened,opening,cleanClose,phase:S.phase};
+   }finally{Math.random=random;}
+ })()
+`,sandbox);
+check('Spearman bout starts with a real reach gap and two clear opening options',
+ spearBout.long.includes('try to intercept')&&spearBout.options.includes('Close Inside')&&
+ spearBout.options.includes('Hold for a Reaction'));
+check('The spear intercept uses a manual Evade roll and closing changes weapon reach',
+ spearBout.intercepted&&spearBout.inside);
+check('The spearman tries to reopen distance and allowing it restores spear reach',
+ spearBout.backsAway&&spearBout.reopened);
+check('An exhausted spearman allows an uncontested close and the bout ends after one fight',
+ spearBout.opening.includes('close without a contest')&&spearBout.cleanClose&&spearBout.phase==='over');
