@@ -314,7 +314,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 
 /* Dice roll in the owning fighter's existing exchange lane. */
 .inline-dice{width:100%;min-width:0;margin:8px auto;text-align:center}
-.inline-dice-tray{width:100%;height:110px;display:grid;place-items:center;overflow:hidden;border:1px solid #79644560;background:radial-gradient(ellipse at 50% 40%,#383229,#211f19);box-shadow:inset 0 1px 10px #0005}
+.inline-dice-tray{width:100%;height:110px;display:block;overflow:hidden;border:1px solid #79644560;background:radial-gradient(ellipse at 50% 40%,#383229,#211f19);box-shadow:inset 0 1px 10px #0005}
 .inline-dice-tray.multirow{height:172px}
 .inline-dice-tray[hidden]{display:none}
 .inline-dice-tray canvas{display:block;width:100%;height:100%}
@@ -797,7 +797,7 @@ function exchangeHalf(id,info){
   // Only the ATTACKER / DEFENDER role changes as initiative and reactions change.
   const isPlayer=id==='a',isAtk=info.atkId===id,isDef=info.defId===id;
   const initialInitiative=V.busy&&/^Encounter.*Initiative/i.test(V.stage?.entry?.title||'');
-  const fighter=S.fighters[id]||S.fighters.a;
+  const fighter=(V.busy&&V.shown?.[id])||S.fighters[id]||S.fighters.a;
   const p=info.pending,deciding=!V.busy&&S.phase==='fight';
   const decisionId=currentDecisionOwner();
   const decisionHere=deciding&&decisionId===id&&!R;
@@ -1178,7 +1178,7 @@ function playCaptured(fn,reset=false){
   playBeat();
 }
 
-const inlineDiceEngine=typeof document.createElement==='function'?import('./practice-dice.mjs?v=1').catch(()=>null):Promise.resolve(null);
+const inlineDiceEngine=typeof document.createElement==='function'?import('./practice-dice.mjs?v=2').catch(()=>null):Promise.resolve(null);
 function mountDiceTray(){
   if(V.roll?.view)document.querySelector('[data-inline-dice]')?.append(V.roll.view);
 }

@@ -88,6 +88,7 @@ function getShape(sides) {
   numbered.forEach((face, i) => { face.index = i; });
   const shape = {
     points, faces, numbered,
+    radius: Math.max(...points.map(point => point.length())),
     hull: new CANNON.ConvexPolyhedron({
       vertices: points.map(p => new CANNON.Vec3(p.x, p.y, p.z)),
       faces: faces.map(face => face.indices),
@@ -156,7 +157,7 @@ export function animateDice(canvas, defs, values, duration, onSettled) {
   let handle = 0, start, last = 0;
   let canvasWidth = 0, canvasHeight = 0, pixelRatio = 1;
 
-  function draw() {
+  function draw(reveal) {
     const width = canvas.clientWidth || canvasWidth || 240;
     const height = canvas.clientHeight || canvasHeight || 100;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -169,12 +170,18 @@ export function animateDice(canvas, defs, values, duration, onSettled) {
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
-    const scale = Math.min(width / (columns * 2.5 + .55), height / (rows * 2.48 + .2));
+    const scale = Math.min(width / (columns * 2.5 + .55), height / (rows * 2.48 + .2)) * (.68 + .32 * reveal);
     const project = p => [width / 2 + p.x * scale, height / 2 - p.dot(viewUp) * scale + .47 * scale];
     const polygons = [];
     for (const [i, die] of dice.entries()) {
-      const transform = v => v.clone().applyQuaternion(die.rotation).add(die.position);
-      const [x, y] = project(die.position);
+      // Keep the whole die visible even at the peak of its bounce.
+      const [rawX, rawY] = project(die.position);
+      const margin = die.shape.radius * scale + 2;
+      const x = Math.max(margin, Math.min(width - margin, rawX));
+      const y = Math.max(margin, Math.min(height - margin, rawY));
+      const position = die.position.clone().addScaledVector(viewUp, (rawY - y) / scale);
+      position.x += (x - rawX) / scale;
+      const transform = v => v.clone().applyQuaternion(die.rotation).add(position);
       ctx.fillStyle = 'rgba(0,0,0,.25)';
       ctx.beginPath();
       ctx.ellipse(x + 2, y + scale * .94, scale * .81, scale * .18, 0, 0, Math.PI * 2);
@@ -236,7 +243,7 @@ export function animateDice(canvas, defs, values, duration, onSettled) {
         die.rotation.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w).slerp(die.final, ease);
       }
     }
-    draw();
+    draw(ease);
     last = elapsed;
     if (elapsed < duration) handle = requestAnimationFrame(frame);
     else onSettled();
