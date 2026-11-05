@@ -101,9 +101,13 @@ async function loadCharacterInto(charId){
   if(cloudActive()&&entry.ownerId===AUTH_USER.id){
     let draft=null;
     try{draft=JSON.parse(localStorage.getItem(autosaveKey())||"null");}catch(e){}
-    if(draft?.pendingCloud&&draft.S?._libId===entry.id&&
-       confirm("This browser has a local draft of this character whose account save was not confirmed. Restore that draft? Cancel opens the account copy.")){
-      state=draft.S;
+    if(draft?.pendingCloud&&draft.S?._libId===entry.id){
+      if(confirm("This browser has a local draft of this character whose account save was not confirmed. Restore that draft? Cancel opens the account copy.")){
+        state=draft.S;
+      }else{
+        // The owner chose the account copy; don't offer the same stale draft again.
+        try{draft.pendingCloud=false;localStorage.setItem(autosaveKey(),JSON.stringify(draft));}catch(e){}
+      }
     }
   }
   S=Object.assign(freshState(),state);if(!Object.prototype.hasOwnProperty.call(state,"_creationFlowVersion"))S._creationFlowVersion=1;normalizeState();

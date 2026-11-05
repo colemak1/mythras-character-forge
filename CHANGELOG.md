@@ -5,6 +5,17 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Account save on reload and tab switch
+
+- Play Mode changes reach the account 1.5 seconds after the last click. A reload inside that window opened the older account copy, which explains the lost Mysticism preparation turn in the November 5 paired-skill batch. Waiting saves now start as soon as the page is hidden, reloaded or closed instead of waiting for the timer.
+- If the owner declines the "restore local draft" prompt, that draft is no longer offered again on the next open.
+- The local draft and recovery prompt remain the fallback when the browser abandons a request during unload.
+- Regression tests cover the immediate save on page hide, draft acknowledgement, and the declined draft not being offered again.
+
+To test (signed in): start a two-turn Mysticism preparation, then reload immediately. Turn 1/2 should be kept, either directly or through the recovery prompt. Repeat, decline the prompt, then reopen the character: no second prompt should appear.
+
+---
+
 <!-- merged from CHANGELOG-PRACTICE-RECENTER-2.md, added 2026-11-05 -->
 ## Practice Combat — Recenter update 2
 
