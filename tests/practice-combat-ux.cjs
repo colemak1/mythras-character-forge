@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=12/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=13/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -344,15 +344,15 @@ presentation.showLog=false;
 check('Detailed presentation is the default',presentation.quick===false);
 api.render();
 check('Detailed presentation has a labelled toggle',
-  root.innerHTML.includes('DETAILED · PACE') &&
+  root.innerHTML.includes('Steady pace') &&
   root.innerHTML.includes('aria-label="Toggle combat presentation pace"'));
 handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
 check('Pace can be switched to Quick without changing combat state',
-  presentation.quick===true && root.innerHTML.includes('QUICK · PACE') &&
+  presentation.quick===true && root.innerHTML.includes('Quick pace') &&
   state.phase==='fight');
 handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
 check('Pace can be returned to Detailed',
-  presentation.quick===false && root.innerHTML.includes('DETAILED · PACE'));
+  presentation.quick===false && root.innerHTML.includes('Steady pace'));
 presentation.busy=true;
 presentation.events=[state.logs[0],state.logs[1]];
 handlers.click({target:{closest(sel){return sel==='[data-act]'?{dataset:{act:'speed'}}:null;}}});
@@ -929,10 +929,9 @@ api.render();
 check('PvP second-player initiative does not call the first fighter the active turn',
  root.innerHTML.includes('Initiative: '+state.fighters.b.name+' to roll') &&
  !root.innerHTML.includes('Turn: '+state.fighters.a.name+'</div>'));
-check('PvP initiative keeps the die on second-player lane',
- root.innerHTML.indexOf('data-combatant="b"') <
- root.innerHTML.indexOf('Initiative: '+state.fighters.b.name+' to roll') &&
- root.innerHTML.includes('data-combatant="b"'));
+check('PvP initiative keeps the prompt on the second-player lane',
+ root.innerHTML.indexOf('data-combatant="b"') < root.innerHTML.indexOf('data-act="roll"') &&
+ root.innerHTML.includes('Manual d10 roll for '+state.fighters.b.name));
 api.setRoll({id:4011,actor:'a',label:'Initiative · d10',
  defs:[{sides:10,label:'Initiative'}]});
 api.render();

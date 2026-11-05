@@ -312,17 +312,8 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .effects-ref-grid span{font:10px system-ui,sans-serif;color:#9f9585}
 .recovery-options{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 0 16px;border-bottom:1px solid #9d876145;margin-bottom:10px}.recovery-options button{padding:9px 13px;border:1px solid #af9972;border-radius:2px;background:transparent;color:inherit;cursor:pointer;font:600 12px system-ui}.recovery-options button:disabled{opacity:.45;cursor:not-allowed}.recovery-options small{font:11px/1.5 system-ui;color:#b6a48c;max-width:330px}
 
-/* Dice roll in the owning fighter's existing exchange lane. */
-.inline-dice{width:100%;min-width:0;margin:8px auto;text-align:center}
-.inline-dice-tray{width:100%;height:110px;display:block;overflow:hidden;border:1px solid #79644560;background:radial-gradient(ellipse at 50% 40%,#383229,#211f19);box-shadow:inset 0 1px 10px #0005}
-.inline-dice-tray.multirow{height:172px}
-.inline-dice-tray[hidden]{display:none}
-.inline-dice-tray canvas{display:block;width:100%;height:100%}
-.inline-dice-label{margin:6px 0;color:#594631;font:600 12px/1.4 system-ui,sans-serif}
-.inline-dice-result{margin:6px 0;color:#5b442b;font:600 12px/1.4 system-ui,sans-serif;min-height:17px}
-.inline-dice-result.percentile-total{font:700 26px/1.15 Georgia,serif;color:#3e2d1e}
 </style>
-<link rel="stylesheet" href="practice-combat-ux.css?v=12">
+<link rel="stylesheet" href="practice-combat-ux.css?v=13">
 </head>
 <body>
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>Practice Combat</span><span class="hide-mobile">Independent demo · no account required</span><a href="#" id="homeLink">Reset</a></div></header>
@@ -701,6 +692,9 @@ function rollDifficultyHtml(actor){
    '<small>'+esc(reasons.join(' · '))+(singleGrade?' · Standard → Hard':'')+'</small></p>';
 }
 
+function rollHeading(label){
+  return label.replace(/\s+\d{1,3}%(?: · \d{1,3}% \([^)]+\))?$/,'').replace(/ · (?:1?d\d+)$/i,'');
+}
 function rollPrompt(actor){
   if(!R||R.actor!==actor)return '';
   const fighter=S.fighters[actor];
@@ -711,9 +705,8 @@ function rollPrompt(actor){
     Number(targets[targets.length-1][1]):null;
   const targetLine=finalTarget!==null?'<div class="roll-target-line">Target <strong>'+finalTarget+'%</strong></div>':'';
   return `<div class="roll-await" role="group" aria-label="Manual ${esc(title)} roll for ${esc(fighter.name)}">
-     <div class="roll-await-kicker">${esc(title)} · ${esc(fighter.name)}</div>
-     <h3>${esc(R.label)}</h3>${rollDifficultyHtml(actor)}${targetLine}
-     <button type="button" class="roll-now" data-act="roll" aria-label="Roll ${esc(title)} now">Roll ${esc(title)}</button>
+     <h3>${esc(rollHeading(R.label))}</h3>${rollDifficultyHtml(actor)}
+     <div class="roll-prompt-actions">${targetLine}<button type="button" class="roll-now" data-act="roll" aria-label="Roll ${esc(title)} now">Roll ${esc(title)}</button></div>
   </div>`;
 }
 
@@ -721,11 +714,13 @@ function rollPrompt(actor){
 // then the screen unveils the recorded, immutable events in order.
 const V={capturing:false,busy:false,quick:false,reduced:!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches),
   events:[],queue:[],roll:null,step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,timer:null,showLog:false,moreActionsOpen:false,guideWhyOpen:false,expandedConditions:new Set(),openChronicle:new Set()};
-function clearPresentationTimers(){
+function clearPresentationTimers(keepRoll=false){
   clearTimeout(V.timer);
   V.timer=null;
-  V.roll?.cancel?.();
-  V.roll=null;
+  if(!keepRoll){
+    V.roll?.cancel?.();
+    V.roll=null;
+  }
 }
 function makeDie(sides,value,role='',variant='',display=''){return {sides,value,role,variant,display:display||String(value)}}
 function d100Dice(value){const n=Math.max(1,Math.min(100,Number(value)||1));return [makeDie(100,n,'d100','percentile',String(n))]}
@@ -812,7 +807,8 @@ function exchangeHalf(id,info){
   const activeStage=!!(V.busy&&current&&!initialInitiative&&(rollOwner===id||sideDice?.[id]));
   const ownRecord=isAtk?info.attack:isDef?info.defense:null;
   const liveRecord=activeStage?entry:null;
-  const role=initialInitiative?'INITIATIVE':isAtk?'ATTACKING':isDef?'DEFENDING':'READY';
+  const initiative=initialInitiative||/\bInitiative\b/i.test((V.roll||R)?.label||'');
+  const role=initiative?'Initiative':isAtk?'Attacking':isDef?'Defending':'Ready';
   let content='';
   if(V.roll?.actor===id){
     content='<div data-inline-dice></div>';
@@ -821,36 +817,35 @@ function exchangeHalf(id,info){
   }else if(R&&!V.busy&&R.actor===id){
     content=rollPrompt(id);
   }else if(R&&!V.busy){
-    content=ownRecord?`<div class="half-role">Last action</div>${rollSummary(ownRecord)}`:'<div class="half-placeholder"><strong>Ready</strong></div>';
+    content=ownRecord?`<div class="half-role">Last action</div>${rollSummary(ownRecord)}`:'<div class="half-placeholder">Awaiting roll</div>';
   }else if(isAtk&&p?.kind==='range'&&!V.busy){
     content=`<div class="half-placeholder"><strong>${p.desired==='short'?'Closing range':'Opening range'}</strong></div>`;
   }else if(decisionHere){
     // Decisions sit below the two permanent fighter lanes; rolls remain on their owner's side.
-    content=ownRecord?rollSummary(ownRecord):'<div class="half-placeholder decision-wait"><strong>Decision pending</strong><span>Choose below</span></div>';
+    content=ownRecord?rollSummary(ownRecord):'<div class="half-placeholder decision-wait">To act</div>';
   }else if(liveRecord){
     const stage=stageFor(liveRecord),grade=stage.result||stage.sub||'RESOLVED';
     content=`<div class="half-role">${esc(stage.beat||'roll')}</div>${rollSummary(liveRecord,sideDice?.[id]||null)}`;
   }else if(ownRecord){
     const showAsOpen=isDef&&info.pending?.kind==='reaction';
-    content=showAsOpen?`<div class="half-placeholder"><strong>Choose a defense</strong></div>`:`<div class="half-role">${esc(fighter.name)}</div>${rollSummary(ownRecord)}`;
+    content=showAsOpen?'<div class="half-placeholder">Defense pending</div>':rollSummary(ownRecord);
   }else if(V.busy){
-    content='<div class="half-placeholder"><strong>Waiting</strong></div>';
+    content='<div class="half-placeholder">Waiting</div>';
   }else{
     const canAct=S.order?.[S.turnIndex]===id;
-    content=`<div class="half-placeholder"><strong>${canAct?'Your turn':isDef?'Ready to defend':'Ready'}</strong></div>`;
+    content=`<div class="half-placeholder">${canAct?'To act':'Ready'}</div>`;
   }
-  const heading=S.mode==='pvp'?(isPlayer?'PLAYER ONE':'PLAYER TWO'):(isPlayer?'YOUR CHARACTER':'OPPONENT');
-  return `<section class="exchange-half ${decisionHere?'active':''} ${V.roll?.actor===id?'is-rolling':''}" data-combatant="${id}" aria-label="${isPlayer?'Player':'Opponent'} combatant">
-    <div class="half-heading"><strong>${heading}</strong><span>${role}</span></div>
-    <div class="half-fighter">${esc(fighter.name)} <small>· ${fighter.ap} AP</small></div>${content}</section>`;
+  const heading=S.mode==='pvp'?(isPlayer?'Player one':'Player two'):(isPlayer?'Your character':'Opponent');
+  return `<section class="exchange-half ${decisionHere?'active':''} ${V.roll?.actor===id?'is-rolling':''}" data-combatant="${id}" aria-label="${esc(heading)}">
+    <div class="half-heading"><strong>${esc(fighter.name)}</strong><span>${role}</span></div>
+    <div class="lane-body">${content}</div></section>`;
 }
 function outcomeStrip(info){
   const p=info.pending,x=V.stage,entry=x?.entry;
+  if(!V.busy&&(R||(!p&&S.phase==='fight')))return '';
   let headline='Choose an action',sub='',css='',mark='✧';
-  if(V.roll){
+  if(V.roll&&!V.stage){
     headline=exchangeLiveNarration();mark='';
-  }else if(R&&!V.busy){
-    headline=`Roll · ${R.label}`;sub='';mark='';css='roll-required';
   }else if(V.busy&&x){
     headline=x.rolling?(exchangeLiveNarration()||'Rolling dice…'):x.kind==='hurt'?(x.result||'Damage resolved'):x.kind==='miss'?'No damaging hit':x.kind==='final'?'The bout is over':x.result||x.primary||'Exchange resolved';
     sub='';
@@ -1054,7 +1049,7 @@ function exchangeLiveNarration(){
  }
  if(!V.busy&&pending?.kind==='tripResistChoice'&&pending.owner&&pending.other)
    return who(pending.owner)+' attempts to trip '+who(pending.other);
- if(V.roll){
+ if(V.roll&&!V.stage){
    const name=who(V.roll.actor),label=V.roll.label;
    if(/^Attack ·/i.test(label))return name+' attacks';
    if(/^Parry ·/i.test(label))return name+' attempts to parry';
@@ -1071,11 +1066,11 @@ function exchangeRecapHtml(info){
  if(!recap)return outcomeStrip(info);
  const currentLive=exchangeLiveNarration();
  const live=currentLive===recap.headline?'':currentLive;
- const item=(step,i)=>'<div class="recap-step '+(step.state==='pending'?'awaiting':step.state==='hit'?'is-hit':'')+'">'+
-   '<span class="recap-step-label">'+(i+1)+'. '+esc(step.label)+'</span>'+
-   '<strong>'+esc(step.value)+'</strong></div>';
+ const item=step=>'<div class="recap-step '+(step.state==='pending'?'awaiting':step.state==='hit'?'is-hit':'')+'">'+
+   '<dt class="recap-step-label">'+esc(step.label)+'</dt>'+
+   '<dd>'+esc(step.value)+'</dd></div>';
  return '<section class="exchange-recap '+recap.kind+'" aria-label="Exchange outcome">'+
-   '<div class="recap-heading"><span>'+esc(recap.status)+'</span><span>'+esc(recap.attacker)+'</span></div>'+
+   '<div class="recap-heading"><span>'+esc(recap.status)+'</span></div>'+
    (live?'<p class="recap-live"><span>NOW</span> '+esc(live)+'</p>':'')+
    '<h3>'+esc(recap.headline)+'</h3>'+
    (recap.note?'<p class="recap-explanation">'+esc(recap.note)+'</p>':'')+
@@ -1086,9 +1081,9 @@ function exchangeRecapHtml(info){
      '<span>For example: Standard → Hard'+
      (recap.difficultyReminder.loc?' · '+esc(recap.difficultyReminder.loc):'')+
      ' · Until the wound heals to Minor</span></div>':'')+
-   '<div class="recap-steps">'+recap.steps.map(item).join('')+'</div>'+
-   (recap.next?'<div class="recap-next"><span>Next</span><strong>'+esc(recap.next)+'</strong></div>':'')+
-   (V.busy?'<div class="recap-toolbar"><span>Showing results as they resolve</span><button type="button" class="toolbutton" data-act="skip">Show results</button></div>':'')+
+   '<dl class="recap-steps">'+recap.steps.map(item).join('')+'</dl>'+
+   (recap.next&&!R?'<div class="recap-next"><span>Next</span><strong>'+esc(recap.next)+'</strong></div>':'')+
+   (V.busy?'<div class="recap-toolbar"><button type="button" class="toolbutton" data-act="skip">Show results</button></div>':'')+
    '</section>';
 }
 
@@ -1192,7 +1187,7 @@ function playDiceBeat(roll){
   const fixed=roll.defs.every(die=>die.fixed!=null);
   const view=document.createElement('div');
   view.className='inline-dice';
-  view.innerHTML=`<div class="inline-dice-label">${esc(roll.label)}</div><div class="inline-dice-result" role="status">${fixed?'Maximized':'Rolling…'}</div><div class="inline-dice-tray${count>2?' multirow':''}"><canvas aria-hidden="true"></canvas></div>`;
+  view.innerHTML=`<div class="inline-dice-heading"><span>${esc(rollHeading(roll.label))}</span><span class="inline-dice-result" role="status">${fixed?'Maximized':'Rolling…'}</span></div><div class="inline-dice-tray${count>2?' multirow':''}"><canvas aria-hidden="true"></canvas></div>`;
   active.view=view;
   render();
   const tray=view.querySelector('.inline-dice-tray');
@@ -1205,12 +1200,14 @@ function playDiceBeat(roll){
       tray.hidden=true;
     }
     status.textContent=values.join(' · ');
+    active.settled=true;
+    view.classList.add('is-settled');
     if(roll.defs.length===1&&roll.defs[0].sides===100){
       status.classList.add('percentile-total');
       status.textContent=String(roll.values[0]);
       status.setAttribute('aria-label',values[0]);
     }
-    V.timer=setTimeout(()=>{V.step++;playBeat();},V.reduced?250:V.quick?330:620);
+    V.timer=setTimeout(()=>{V.step++;playBeat();},V.reduced?600:V.quick?330:1050);
   };
   // Combat remains playable if the graphics libraries or Canvas are unavailable.
   V.timer=setTimeout(()=>done(true),1100);
@@ -1219,16 +1216,23 @@ function playDiceBeat(roll){
     clearTimeout(V.timer);
     if(!engine){done(true);return;}
     try{
-      const duration=fixed||V.reduced?0:V.quick?350:860;
+      const duration=fixed||V.reduced?0:V.quick?350:1100;
       V.timer=setTimeout(()=>done(true),duration+800);
       active.cancel=engine.animateDice(tray.querySelector('canvas'),roll.defs,roll.values,duration,()=>done());
     }catch{done(true);}
   });
 }
 
+function rollMatchesResult(roll,entry){
+  const dice=entry?.meta?.dice||entry?.meta?.sideDice?.[roll?.actor];
+  return !!(roll?.settled&&!V.stage&&dice?.length===roll.defs.length&&
+    (!entry.meta.actor||entry.meta.actor===roll.actor)&&
+    dice.every((die,i)=>die.sides===roll.defs[i].sides&&die.value===roll.values[i]));
+}
 function playBeat(){
-  clearPresentationTimers();
   const e=V.events[V.step];
+  const keepRoll=rollMatchesResult(V.roll,e);
+  clearPresentationTimers(keepRoll);
   if(!e){V.busy=false;V.visibleCount=Infinity;V.shown=null;V.highlight=null;render();return;}
   if(e.roll){playDiceBeat(e.roll);return;}
   V.stage=stageFor(e);
@@ -1236,7 +1240,8 @@ function playBeat(){
   if(e.view)V.shown=clone(e.view);
   V.highlight=V.stage.target?{id:V.stage.target,loc:V.stage.loc}:null;
   render();
-  const dwell=V.reduced?0:V.quick?130:V.stage.kind==='hurt'?900:V.stage.kind==='final'?1000:390;
+  const impact=['hurt','final','location'].includes(V.stage.kind);
+  const dwell=V.quick?130:impact?1350:keepRoll?900:650;
   V.timer=setTimeout(()=>{V.step++;playBeat();},dwell);
 }
 function skipPresentation(){
@@ -1444,7 +1449,7 @@ function focusActiveDecision(){
  });
 }
 
-function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'QUICK':'DETAILED'} · PACE</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v23 · Turn scheduling</span>`}</div></section>${setup?setupHtml():arenaHtml()}${!setup?resultModalHtml():''}${!setup?meleeEffectReference():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, sourcebook-gated Special Effects, wounds, initiative and optional reach. Implemented: sourcebook-derived AP (INT+DEX), hit-location HP (CON+SIZ), initiative bonus (average INT/DEX), mixed-location armour and armour ENC penalty, weapon/shield Size parries, shield wards, STR+SIZ Damage Modifier, and Withdraw. Still simplified: shield attacks, unarmed grapples, complex terrain for Bash beyond a 6m training-ring clearance, Luck and long-term natural recovery over days/weeks; exertion Fatigue uses Core pp.78–79 and Hardcore rest uses training-arena pacing. Delay holds an AP for an available reaction until the next turn. The prototype serializes tied initiative with the left fighter first and does not implement Interrupt. A short separated gap can be re-engaged without a Move AP; beyond 3m the training prototype charges 1 AP. Hardcore First Aid restores partial function after Serious Wounds, but not HP. Major Wounds remain incapacitating. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110; Special Effects summary and descriptions pp. 95–101.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.dataset.help=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;mountDiceTray();focusActiveDecision();}}
+function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Steady pace'}</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v23 · Turn scheduling</span>`}</div></section>${setup?setupHtml():arenaHtml()}${!setup?resultModalHtml():''}${!setup?meleeEffectReference():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, sourcebook-gated Special Effects, wounds, initiative and optional reach. Implemented: sourcebook-derived AP (INT+DEX), hit-location HP (CON+SIZ), initiative bonus (average INT/DEX), mixed-location armour and armour ENC penalty, weapon/shield Size parries, shield wards, STR+SIZ Damage Modifier, and Withdraw. Still simplified: shield attacks, unarmed grapples, complex terrain for Bash beyond a 6m training-ring clearance, Luck and long-term natural recovery over days/weeks; exertion Fatigue uses Core pp.78–79 and Hardcore rest uses training-arena pacing. Delay holds an AP for an available reaction until the next turn. The prototype serializes tied initiative with the left fighter first and does not implement Interrupt. A short separated gap can be re-engaged without a Move AP; beyond 3m the training prototype charges 1 AP. Hardcore First Aid restores partial function after Serious Wounds, but not HP. Major Wounds remain incapacitating. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110; Special Effects summary and descriptions pp. 95–101.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.dataset.help=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;mountDiceTray();focusActiveDecision();}}
 function modeName(m){return {tutorial:'Guided Tutorial',normal:'Normal Gauntlet',hardcore:'Hardcore Gauntlet',pvp:'Local PvP'}[m]||m}
 function setupHtml(){let modes=[['tutorial','01','Guided Tutorial','One beginner-friendly bout with reminders about Mythras decisions.'],['normal','02','Normal Gauntlet','Infinite escalating enemies. Your wounds reset after each win.'],['hardcore','03','Hardcore Gauntlet','Same escalating enemies. Wounds and injuries persist between fights.'],['pvp','04','Local PvP','Two players take turns on one screen; online matching comes later.']];return `<div class="setup"><h2>Choose your challenge</h2><p class="intro">A working combat loop with selectable reactions, hit locations, a tactical computer opponent, and a local streak board.</p><div class="modes">${modes.map(([k,n,t,d])=>`<button class="mode ${config.mode===k?'on':''}" data-act="mode" data-val="${k}" aria-pressed="${config.mode===k}"><span class="n">MODE ${n}</span><strong>${t}</strong><small>${d}</small></button>`).join('')}</div><div class="setup-bottom"><div class="formcard"><div class="setup-fighter-intro"><h3>Practice fighter</h3><p>${esc(config.charname)} · ${esc(WEAPONS[config.weapon].name)} · ${config.style}% Combat Style</p></div><details class="fighter-customize"><summary>Customize fighter <span>Skills, weapons and attributes</span></summary><div class="formgrid"><label>Username<input id="username" maxlength="30" value="${esc(config.username)}"></label><label>Character name<input id="charname" maxlength="45" value="${esc(config.charname)}"></label><label>Combat Style %<input id="style" type="number" min="20" max="110" value="${config.style}"></label><label>Evade %<input id="evade" type="number" min="20" max="110" value="${config.evade}"></label><label>Armour AP (all locations)<input id="armor" type="number" min="0" max="8" value="${config.armor}"></label><label>Weapon<select id="weapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.weapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Shield<select id="shield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.shield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>First Aid % (sample)<input id="firstAid" type="number" min="1" max="100" value="${config.firstAid}"></label><label>Willpower % (sample)<input id="willpower" type="number" min="1" max="110" value="${config.willpower}"></label><label>Strength (STR)<input id="str" type="number" min="5" max="20" value="${config.str}"></label><label>Size (SIZ)<input id="siz" type="number" min="5" max="20" value="${config.siz}"></label><label>Constitution (CON)<input id="con" type="number" min="5" max="20" value="${config.con}"></label><label>Dexterity (DEX)<input id="dex" type="number" min="5" max="20" value="${config.dex}"></label><label>Intelligence (INT)<input id="int" type="number" min="5" max="20" value="${config.int}"></label><details style="grid-column:1/-1"><summary>Optional: armour by hit location</summary><label style="display:block;margin:8px 0"><input id="mixedArmour" type="checkbox" ${config.mixedArmour?'checked':''}> Use separate armour values</label><div class="formgrid">${HIT_LOCS.map(loc=>`<label>${loc} AP<input id="armour_${loc.replace(/ /g,'_')}" type="number" min="0" max="8" value="${config.armourByLocation[loc]??config.armor}"></label>`).join('')}</div></details>${config.mode==='pvp'?`<label>Second player name<input id="pvpName" maxlength="45" value="${esc(config.pvpName)}"></label><label>Second player Combat Style %<input id="pvpSkill" type="number" min="20" max="110" value="${config.pvpSkill}"></label><label>Second player Evade %<input id="pvpEvade" type="number" min="20" max="110" value="${config.pvpEvade}"></label><label>Second player armour AP<input id="pvpArmor" type="number" min="0" max="8" value="${config.pvpArmor}"></label><label>Second player weapon<select id="pvpWeapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.pvpWeapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Second player shield<select id="pvpShield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.pvpShield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>Second player STR<input id="pvpStr" type="number" min="5" max="20" value="${config.pvpStr}"></label><label>Second player SIZ<input id="pvpSiz" type="number" min="5" max="20" value="${config.pvpSiz}"></label><label>Second player CON<input id="pvpCon" type="number" min="5" max="20" value="${config.pvpCon}"></label><label>Second player DEX<input id="pvpDex" type="number" min="5" max="20" value="${config.pvpDex}"></label><label>Second player INT<input id="pvpInt" type="number" min="5" max="20" value="${config.pvpInt}"></label><details style="grid-column:1/-1"><summary>Optional: second player armour by location</summary><label style="display:block;margin:8px 0"><input id="pvpMixedArmour" type="checkbox" ${config.pvpMixedArmour?'checked':''}> Use separate armour values</label><div class="formgrid">${HIT_LOCS.map(loc=>`<label>${loc} AP<input id="pvpArmour_${loc.replace(/ /g,'_')}" type="number" min="0" max="8" value="${config.pvpArmourByLocation[loc]??config.pvpArmor}"></label>`).join('')}</div></details>`:''}</div><p class="formhint">These are sample statistics, not an imported character. Uniform armour is the default. Expand the armour-by-location section for mixed equipment; two-handed weapons cannot equip a shield.</p></details><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px"><button class="cta" data-act="start">${config.mode==='pvp'?'Start Duel':'Enter Training Grounds'} &nbsp;→</button><span class="modehint">Runs entirely on your device.</span></div></div><div class="setup-right"><div class="statbox"><strong>Gauntlet leaderboard</strong><p>Stored in this browser, not published online. Rankings count consecutive opponents defeated.</p><div class="badges"><button class="lbtab ${S.lbMode==='normal'?'on':''}" data-act="lbmode" data-val="normal">Normal</button><button class="lbtab ${S.lbMode==='hardcore'?'on':''}" data-act="lbmode" data-val="hardcore">Hardcore</button></div>${scoresHtml(S.lbMode)}</div><details class="statbox rules-disclosure"><summary>The rules we're testing</summary><div class="badges"><span class="notechip">d100 Skill checks</span><span class="notechip">d20 Hit location</span><span class="notechip">Parry by size</span><span class="notechip">Shields &amp; wards</span><span class="notechip">Damage modifier</span><span class="notechip">Armour initiative</span><span class="notechip">Action points</span><span class="notechip">Special Effects</span><span class="notechip">Optional weapon reach</span><span class="notechip">Serious/Major wounds</span></div><p>Some results and effects remain simplified for this prototype, including full fatigue, weapon durability, and shield attacks. Actual Forge integration would reuse your existing character data and sourcebook-verified engine.</p></details></div></div></div>`}
 function zoneClass(f,loc){const x=f.hp[loc],m=f.maxHp[loc];return x<=-m?'major':x<=0?'serious':x<m?'minor':'ok'}
@@ -1619,22 +1624,22 @@ function fighterCard(f,cls){
 function arenaHtml(){
  const a=V.busy&&V.shown?.a?V.shown.a:S.fighters.a,b=V.busy&&V.shown?.b?V.shown.b:S.fighters.b;
  const info=currentExchange();
- return `<div class="arena">${fighterCard(a,'player')}<section class="center">
- <div class="center-top"><div class="label">${S.mode==='pvp'?'Friendly duel':'Training grounds'} · ${S.mode==='tutorial'?'Learning encounter':`Encounter ${S.wave}`}</div>
- <h2>Round ${S.round} <span style="color:#a88b5b;font-size:15px">/ Cycle ${S.cycle}</span></h2>
- <div class="roundbar"><div class="side">${esc(a.name)} · ${a.initiative??'—'} INI</div><div class="vs">✧ &nbsp; VS &nbsp; ✧<div style="font:700 10px system-ui,sans-serif;color:#e9c68e;margin-top:5px">${S.disengaged?'SEPARATED · '+S.gapMetres+'m':engagementInfo().active?(S.engagement==='short'?'SHORT REACH':'LONG REACH'):'MATCHED REACH'}</div></div><div class="side">${esc(b.name)} · ${b.initiative??'—'} INI</div></div></div>
+ const range=S.disengaged?'Separated · '+S.gapMetres+' m':engagementInfo().active?'Reach advantage':'Matched reach';
+ const turn=V.busy?'':R&&/\bInitiative\b/i.test(R.label||'')?
+   'Initiative: '+S.fighters[R.actor].name+' to roll':
+   !R&&!S.pending&&S.phase==='fight'?'Turn: '+(S.fighters[S.order[S.turnIndex]]?.name||'—'):'';
+ return `<div class="arena">${fighterCard(a,'player')}<section class="center" aria-label="Combat exchange">
+ <header class="center-top">
+   <div><div class="label">${S.mode==='pvp'?'Friendly duel':S.mode==='tutorial'?'Guided tutorial':`Encounter ${S.wave}`}</div>
+   <h2>Round ${S.round}<small>Cycle ${S.cycle}</small></h2></div>
+   <div class="round-context"><span>${esc(range)}</span>${turn?`<div class="round-turn">${esc(turn)}</div>`:''}</div>
+ </header>
  ${reachContextHtml()}
  <div class="exchange-board">${exchangeHalf('a',info)}${exchangeHalf('b',info)}</div>
  ${exchangeRecapHtml(info)}
  ${S.mode==='tutorial'&&R&&!V.busy?tutorialGuideHtml():''}
  ${S.phase==='fight'&&!V.busy&&!R?`<section class="decision-panel" aria-label="Current combat decision"><div class="decision-kicker">${esc(decisionKicker())}</div>${decisionHtml()}${S.mode==='tutorial'?tutorialGuideHtml():`<p class="choice-help" id="choiceHelp" role="status">${esc(decisionHelpPrompt())}</p>`}</section>`:''}
  ${S.phase==='between'||S.phase==='over'?`<div class="center-content"><div class="actionbox">${actionHtml()}</div></div>`:''}
- <div class="statusbar">${V.roll?'Rolling: '+esc(S.fighters[V.roll.actor]?.name||'—'):V.busy?'Resolving exchange':S.phase==='fight'?
-   (R&&/\bInitiative\b/i.test(R.label||'')?
-     'Initiative: '+esc(S.fighters[R.actor]?.name||'—')+' to roll':
-     S.pending?'Response needed':
-       'Turn: '+esc(S.fighters[S.order[S.turnIndex]]?.name||'—')):
-   'Encounter complete'}</div>
  </section>${fighterCard(b,'enemy')}${combatHistory()}</div>`;
 }
 
