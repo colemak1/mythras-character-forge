@@ -1,0 +1,57 @@
+name: Repair stalled Pages deployment
+# Incident-specific maintenance: cancel only the unpublished deployment that
+# Pages continued to report active after its publishing job timed out.
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/repair-stalled-pages.yml']
+  workflow_dispatch:
+permissions:
+  pages: write
+concurrency:
+  group: repair-stalled-pages
+  cancel-in-progress: false
+jobs:
+  cancel-stale-record:
+    if: github.repository == 'colemak1/mythras-character-forge'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Cancel the specific stalled Pages deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys, time, urllib.error, urllib.request
+          deployment = '5e02ae6997be25145f15bf282c9f612d89d9780c'
+          url = 'https://api.github.com/repos/colemak1/mythras-character-forge/pages/deployments/' + deployment
+          headers = {
+              'Accept': 'application/vnd.github+json',
+              'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+              'X-GitHub-Api-Version': '2026-03-10',
+          }
+          def request(method, suffix=''):
+              req = urllib.request.Request(url + suffix, headers=headers, method=method)
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  body = response.read()
+                  return response.status, json.loads(body) if body else {}
+          try:
+              _, before = request('GET')
+              print('Specific deployment status before repair:', before.get('status'))
+              if before.get('status') == 'succeed':
+                  print('The deployment already succeeded; leaving it unchanged.')
+                  sys.exit(0)
+              code, _ = request('POST', '/cancel')
+              print('Cancellation response:', code)
+              for attempt in range(12):
+                  _, result = request('GET')
+                  status = result.get('status', '')
+                  print('Specific deployment status after cancellation:', status)
+                  if status in {'cancelled', 'canceled', 'failed', 'failure', 'succeed'}:
+                      sys.exit(0)
+                  time.sleep(5)
+              raise SystemExit('Pages has not cleared the stalled record after cancellation.')
+          except urllib.error.HTTPError as exc:
+              print('Pages repair request returned HTTP', exc.code)
+              raise SystemExit(1)
+          PY
