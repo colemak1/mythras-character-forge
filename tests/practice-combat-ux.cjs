@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=15/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=16/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -1045,6 +1045,38 @@ check('A normal melee success that earns an effect can choose a location',
  locationFlow.picker.includes('data-val="Left Arm"'));
 check('A chosen location goes straight to damage for that body part',
  locationFlow.damage==='Damage · Left Arm');
+
+const decisionFeedback=vm.runInContext(`
+ (() => {
+   config.mode='pvp';
+   startRun();
+   R=null;
+   const success={grade:2,roll:32,label:'SUCCESS'};
+   const failure={grade:1,roll:90,label:'FAILURE'};
+   S.pending={kind:'effect',atk:'a',def:'b',owner:'a',other:'b',
+     reaction:'parry',attackRoll:success,defenseRoll:failure,
+     offenseCount:1,effectsLeft:1,chosen:[]};
+   const reason=decisionReason();
+   S.pending=null;
+   const hit={title:'Test hit',kind:'hurt',meta:{impact:{target:'b',location:'Left Arm',hpLost:3}}};
+   V.busy=true;
+   V.events=[hit,{title:'End turn',kind:'system'}];
+   skipPresentation();
+   const after=document.querySelector('#root').innerHTML;
+   playCaptured(()=>{});
+   const cleared=document.querySelector('#root').innerHTML;
+   return {reason,after,cleared};
+ })()
+`, sandbox);
+check('Special Effect decision explains the attack and defense grades',
+ decisionFeedback.reason.includes('The attack succeeded. The parry failed.') &&
+ decisionFeedback.reason.includes('earned 1 Special Effect.'));
+check('Skipping playback keeps the wound beside the next prompt and marks the location',
+ decisionFeedback.after.includes('left arm lost 3 HP.') &&
+ decisionFeedback.after.includes('recent-impact'));
+check('The next captured action clears the previous wound emphasis',
+ !decisionFeedback.cleared.includes('left arm lost 3 HP.') &&
+ !decisionFeedback.cleared.includes('recent-impact'));
 
 const scheduling = vm.runInContext(`
 ;({

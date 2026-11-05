@@ -313,7 +313,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .recovery-options{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 0 16px;border-bottom:1px solid #9d876145;margin-bottom:10px}.recovery-options button{padding:9px 13px;border:1px solid #af9972;border-radius:2px;background:transparent;color:inherit;cursor:pointer;font:600 12px system-ui}.recovery-options button:disabled{opacity:.45;cursor:not-allowed}.recovery-options small{font:11px/1.5 system-ui;color:#b6a48c;max-width:330px}
 
 </style>
-<link rel="stylesheet" href="practice-combat-ux.css?v=15">
+<link rel="stylesheet" href="practice-combat-ux.css?v=16">
 </head>
 <body>
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>Practice Combat</span><span class="hide-mobile">Independent demo · no account required</span><a href="#" id="homeLink">Reset</a></div></header>
@@ -713,7 +713,7 @@ function rollPrompt(actor){
 // Presentation is separate from the rules state: rolls resolve immediately,
 // then the screen unveils the recorded, immutable events in order.
 const V={capturing:false,busy:false,quick:false,reduced:!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches),
-  events:[],queue:[],roll:null,step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,timer:null,showLog:false,moreActionsOpen:false,guideWhyOpen:false,breakdownOpen:false,expandedConditions:new Set(),openChronicle:new Set()};
+  events:[],queue:[],roll:null,step:0,visibleCount:Infinity,shown:null,stage:null,highlight:null,impact:null,timer:null,showLog:false,moreActionsOpen:false,guideWhyOpen:false,breakdownOpen:false,expandedConditions:new Set(),openChronicle:new Set()};
 function clearPresentationTimers(keepRoll=false){
   clearTimeout(V.timer);
   V.timer=null;
@@ -730,7 +730,7 @@ function stageFor(entry){
   const outcome=/(?:—\s*|\(\s*)(CRITICAL|SUCCESS|FAILURE|FUMBLE)\b/i.exec(body);
   let kind=entry.kind||'system',primary=title.toUpperCase(),result=outcome?outcome[1].toUpperCase():'',target=null,loc=null;
   const hit=/\bhits\s+(Head|Chest|Abdomen|Right Arm|Left Arm|Right Leg|Left Leg)\b/i.exec(title);
-  if(hit){loc=hit[1];const dmg=/=\s*(\d+)\s+HP lost/i.exec(body);result=(dmg?'−'+dmg[1]:'0')+' HP';primary='STRIKE · '+loc.toUpperCase();kind='hurt';target=title.startsWith(S.fighters?.a?.name)?'b':'a';}
+  if(hit){loc=hit[1];const dmg=/=\s*(\d+)\s+HP lost/i.exec(body);result=(dmg?'−'+dmg[1]:'0')+' HP';primary='STRIKE · '+loc.toUpperCase();kind='hurt';target=entry.meta?.impact?.target||(title.startsWith(S.fighters?.a?.name)?'b':'a');}
   else if(title==='Hit Location'&&entry.meta?.location){loc=entry.meta.location;target=entry.meta.target||null;primary='HIT LOCATION';result=loc.toUpperCase();kind='location';}
   else if(title==='Choose Location'&&entry.meta?.location){loc=entry.meta.location;target=entry.meta.target||null;primary='CHOSEN LOCATION';result=loc.toUpperCase();kind='location';}
   else if(/No Damaging Hit/i.test(title)){primary='ATTACK DEFLECTED';result='NO DAMAGE';kind='miss';}
@@ -1150,6 +1150,8 @@ function combatHistory(){
 // Capture roll batches and rules events in their original order.
 function playCaptured(fn,reset=false){
   clearPresentationTimers();
+  V.impact=null;
+  V.events=[];
   const before=S.fighters?clone(S.fighters):null;
   V.queue=[];
   V.capturing=true;
@@ -1228,6 +1230,7 @@ function playBeat(){
   if(!e){V.busy=false;V.visibleCount=Infinity;V.shown=null;V.highlight=null;render();return;}
   if(e.roll){playDiceBeat(e.roll);return;}
   V.stage=stageFor(e);
+  if(e.meta?.impact)V.impact=e.meta.impact;
   V.visibleCount=S.logs.filter(entry=>entry.id<=e.id).length;
   if(e.view)V.shown=clone(e.view);
   V.highlight=V.stage.target?{id:V.stage.target,loc:V.stage.loc}:null;
@@ -1241,6 +1244,7 @@ function skipPresentation(){
   clearPresentationTimers();
   const e=V.events.findLast(event=>!event.roll);
   V.stage=e?stageFor(e):null;V.busy=false;V.visibleCount=Infinity;V.shown=null;V.highlight=null;
+  V.impact=V.events.findLast(event=>event?.meta?.impact)?.meta.impact||null;
   render();
 }
 
@@ -1452,7 +1456,7 @@ function figureSvg(f){
   <path class="anatomy-guide" d="M120 6 V349 M25 76 H43 M197 76 H215 M25 214 H43 M197 214 H215"/>
   ${HIT_LOCS.map(loc=>{
     const severity=zoneClass(f,loc),injured=f.hp[loc]<f.maxHp[loc],mark=ANATOMY_MARKERS[loc];
-    return `<g class="zone ${severity} ${V.highlight?.id===f.id&&V.highlight.loc===loc?'impact-zone':''} ${sel===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}" tabindex="0" role="button" aria-label="Inspect ${loc}, ${f.hp[loc]} of ${f.maxHp[loc]} hit points, ${severity}" aria-pressed="${sel===loc}">
+    return `<g class="zone ${severity} ${V.highlight?.id===f.id&&V.highlight.loc===loc?'impact-zone':''} ${V.impact?.target===f.id&&V.impact.location===loc?'recent-impact':''} ${sel===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}" tabindex="0" role="button" aria-label="Inspect ${loc}, ${f.hp[loc]} of ${f.maxHp[loc]} hit points, ${severity}" aria-pressed="${sel===loc}">
       <title>${loc} · d20 ${HIT_SPANS[loc]} · ${f.hp[loc]}/${f.maxHp[loc]} HP · ${armourAt(f,loc)} armour AP</title>
       ${SHAPES[loc]}
       ${injured?`<circle class="anatomy-wound-mark ${severity}" cx="${mark[0]}" cy="${mark[1]}" r="5"/>`:''}
@@ -1576,7 +1580,7 @@ function fighterCard(f,cls){
    const severity=zoneClass(f,loc),wounded=f.hp[loc]<f.maxHp[loc];
    const ratio=f.maxHp[loc]>0?Math.max(0,Math.min(100,Math.round(100*f.hp[loc]/f.maxHp[loc]))):0;
    const name=loc.replace('Right ','R. ').replace('Left ','L. ');
-   return `<button type="button" class="loc ${severity} ${wounded?'wounded':''} ${selected===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}" aria-label="Inspect ${loc}, d20 ${HIT_SPANS[loc]}, ${f.hp[loc]} of ${f.maxHp[loc]} HP, ${severity}" aria-pressed="${selected===loc}">
+   return `<button type="button" class="loc ${severity} ${wounded?'wounded':''}${V.impact?.target===f.id&&V.impact.location===loc?' recent-impact':''} ${selected===loc?'sel':''}" data-act="selectloc" data-id="${f.id}" data-val="${loc}" aria-label="Inspect ${loc}, d20 ${HIT_SPANS[loc]}, ${f.hp[loc]} of ${f.maxHp[loc]} HP, ${severity}" aria-pressed="${selected===loc}">
      <span class="loc-ident"><span class="loc-name">${name}</span><span class="loc-rolls">${HIT_SPANS[loc]}</span></span>
      <span class="loc-hp">${f.hp[loc]}<small> / ${f.maxHp[loc]} · ${armourAt(f,loc)} AP</small></span>
      <span class="loc-gauge" aria-hidden="true"><i style="width:${ratio}%"></i></span>
@@ -1658,16 +1662,62 @@ function decisionHtml(){
    '<details class="secondary-actions"'+(V.moreActionsOpen?' open':'')+'><summary>More actions <span>('+rest.length+')</span></summary>'+
    '<div class="choicegrid">'+rest.map(b=>b.markup).join('')+'</div></details>'+suffix;
 }
+function decisionReason(){
+ const p=S.pending;
+ const label=R?.label||'';
+ if(R){
+   if(/^Initiative/i.test(label))return 'Roll to see who acts first.';
+   if(/^Attack ·/i.test(label))return 'Roll against Combat Style to see how well the attack lands.';
+   if(/^(Parry|Evade) ·/i.test(label))return 'Compare this defense roll with the attack.';
+   if(/^Hit Location/i.test(label))return 'The attack succeeded. Roll to find where it lands.';
+   if(/^Damage ·/i.test(label)){
+     const location=V.events.findLast(entry=>['Hit Location','Choose Location'].includes(entry?.title));
+     const hitLocation=location?.meta?.location||p?.chosenLoc;
+     if(hitLocation){
+       const loc=hitLocation.toLowerCase();
+       return p?.chosenLoc||location?.title==='Choose Location'?`You chose the ${loc}. Roll damage for that hit.`:`The hit landed on the ${loc}. Roll damage for that hit.`;
+     }
+   }
+   return '';
+ }
+ if(p?.kind==='reaction'){
+   return `${S.fighters[p.atk].name} rolled ${p.attackRoll.roll} · ${String(p.attackRoll.label||'').toLowerCase()}.`;
+ }
+ if(p?.kind==='effect'){
+   const grade=roll=>['fumbled','failed','succeeded','scored a critical success'][roll?.grade];
+   const attack=grade(p.attackRoll),defense=grade(p.defenseRoll);
+   const reaction=p.reaction==='parry'?'parry':p.reaction==='evade'?'evade':'defense';
+   const comparison=attack?(defense?`The attack ${attack}. The ${reaction} ${defense}.`:
+     `The attack ${attack}. ${S.fighters[p.def].name} did not defend.`):'';
+   const count=p.owner===p.atk?p.offenseCount:p.defenseCount;
+   const earned=count?`${S.fighters[p.owner].name} earned ${count} Special Effect${count===1?'':'s'}.`:'';
+   return [comparison,earned].filter(Boolean).join(' ');
+ }
+ if(p?.kind==='location')return 'You chose Choose Location. Pick where the hit lands.';
+ if(!p&&!V.impact&&V.events.some(entry=>entry?.title==='No Damaging Hit')){
+   return 'The last exchange ended without a damaging hit.';
+ }
+ return '';
+}
+function impactContextHtml(){
+ const impact=V.impact;
+ if(!impact)return '';
+ const target=S.fighters[impact.target];
+ if(!target)return '';
+ const loc=impact.location.toLowerCase();
+ const result=impact.hpLost>0?`${target.name}’s ${loc} lost ${impact.hpLost} HP.`:
+   `The hit to ${target.name}’s ${loc} caused no HP loss.`;
+ return `<p class="decision-context decision-impact">${esc(result)}</p>`;
+}
 function nextActionHtml(){
  if(V.busy||(!R&&S.phase!=='fight'))return '';
  const owner=S.fighters[R?.actor||currentDecisionOwner()];
  const lead=owner?(S.mode==='pvp'?owner.name:R?'Your roll':'Your move'):'Next action';
  const content=R?rollPrompt(R.actor):decisionHtml();
- const p=S.pending;
- const incoming=!R&&p?.kind==='reaction'?`${S.fighters[p.atk].name} rolled ${p.attackRoll.roll} · ${String(p.attackRoll.label||'').toLowerCase()}.`:'';
- const context=incoming?`<p class="decision-context">${esc(incoming)}</p>`:'';
+ const reason=decisionReason();
+ const context=reason?`<p class="decision-context">${esc(reason)}</p>`:'';
  const help=S.mode==='tutorial'?tutorialGuideHtml():R?'':`<p class="choice-help" id="choiceHelp" role="status">${esc(decisionHelpPrompt())}</p>`;
- return `<section class="decision-panel${R?' roll-panel':''}" aria-label="Current combat decision"><div class="decision-kicker">${esc(lead)}</div>${context}${content}${help}</section>`;
+ return `<section class="decision-panel${R?' roll-panel':''}" aria-label="Current combat decision"><div class="decision-kicker">${esc(lead)}</div>${impactContextHtml()}${context}${content}${help}</section>`;
 }
 
 function decisionHelpPrompt(){
@@ -2253,7 +2303,7 @@ function applyEffect(effect){
       foe.hp[loc]-=wound;
       registerWound(foe,loc,wound);
       foe.lastDamage={loc,wound,attacker:foe.name,weapon:WEAPONS[foe.weapon].name};
-      log('Accidental Injury',`${foe.name} accidentally hits ${loc}: ${amount} self-inflicted damage, armour ignored. ${old} → ${foe.hp[loc]} HP.`, 'hurt','Mythras Core p.96: armour does not protect against Accidental Injury.',{actor:foe.id,target:foe.id,location:loc});
+      log('Accidental Injury',`${foe.name} accidentally hits ${loc}: ${amount} self-inflicted damage, armour ignored. ${old} → ${foe.hp[loc]} HP.`, 'hurt','Mythras Core p.96: armour does not protect against Accidental Injury.',{actor:foe.id,target:foe.id,location:loc,impact:{target:foe.id,location:loc,hpLost:wound}});
       // The normal Serious/Major Wound resolution still applies to the injury.
       const severity=zoneClass(foe,loc);
       if(wound>0&&(severity==='serious'||severity==='major')){resolveWound(actor,foe,loc,severity,wound,p.attackRoll,()=>finishOneEffect());return;}
@@ -2319,7 +2369,7 @@ function resolveHit(){
         const armour=p.bypassArmour&&!p.sunder?0:armourAt(def,loc),afterParry=Math.max(0,dmg.total-parry),wound=p.sunder?0:Math.max(0,afterParry-armour),old=def.hp[loc];
         if(p.sunder){const apLost=Math.max(0,afterParry-armour);def.armourLocations[loc]=Math.max(0,armourAt(def,loc)-apLost);log('Sunder',`${atk.name} damages armour on ${def.name}'s ${loc}: ${apLost} AP removed (${def.armourLocations[loc]} AP remains).`,'hit');}
         def.hp[loc]-=wound;const sourceWound=registerWound(def,loc,wound);def.lastDamage={loc,wound,attacker:atk.name,weapon:WEAPONS[atk.weapon].name};
-        log(`${atk.name} hits ${loc}`,`${weaponDmg.total} weapon (${weaponDmg.detail}) ${mod.label} (${dmValue>=0?'+':''}${dmValue}) = ${dmg.total} total; ${parry} parry; ${Math.min(afterParry,armour)} armour; ${wound} HP lost.`,'hurt',`${parryText} ${loc}: ${old} → ${def.hp[loc]} HP.`,{actor:atk.id,dice:[...chosen.map((r,i)=>makeDie(dmg.sides,r,`Weapon ${i+1}`)),...dmDice.map((r,i)=>makeDie(Array.isArray(mod.sides)?mod.sides[i]:mod.sides,r,`Modifier ${i+1}`))]});
+        log(`${atk.name} hits ${loc}`,`${weaponDmg.total} weapon (${weaponDmg.detail}) ${mod.label} (${dmValue>=0?'+':''}${dmValue}) = ${dmg.total} total; ${parry} parry; ${Math.min(afterParry,armour)} armour; ${wound} HP lost.`,'hurt',`${parryText} ${loc}: ${old} → ${def.hp[loc]} HP.`,{actor:atk.id,impact:{target:def.id,location:loc,hpLost:wound},dice:[...chosen.map((r,i)=>makeDie(dmg.sides,r,`Weapon ${i+1}`)),...dmDice.map((r,i)=>makeDie(Array.isArray(mod.sides)?mod.sides[i]:mod.sides,r,`Modifier ${i+1}`))]});
         if(p.bash){
           // Core p.96: bludgeons push 1m per 3 unmitigated damage; shield bash 1m/2.
           const metres=p.standFast?0:(def.siz*(def.braced?2:1)<=atk.siz*2?Math.floor(dmg.total/3):0);
@@ -2432,7 +2482,7 @@ function finishWithdrawImpale(id,opposed){
     const raw=values.reduce((a,b)=>a+b,0)+wd.bonus,wound=Math.max(0,Math.ceil(raw/2));
     target.hp[embedded.loc]-=wound;
     target.lastDamage={loc:embedded.loc,wound,attacker:f.name,weapon:wd.name};
-    log('Withdrawal injury',`${f.name} withdraws ${wd.name}: ${raw} normal weapon damage, halved to ${wound}. No Damage Modifier or armour reduction. ${target.name}'s ${embedded.loc} is now ${target.hp[embedded.loc]} HP.`,'hurt','',{actor:f.id,target:target.id,location:embedded.loc,dice:values.map(v=>makeDie(wd.dice[1],v,'Withdrawal'))});
+    log('Withdrawal injury',`${f.name} withdraws ${wd.name}: ${raw} normal weapon damage, halved to ${wound}. No Damage Modifier or armour reduction. ${target.name}'s ${embedded.loc} is now ${target.hp[embedded.loc]} HP.`,'hurt','',{actor:f.id,target:target.id,location:embedded.loc,impact:{target:target.id,location:embedded.loc,hpLost:wound},dice:values.map(v=>makeDie(wd.dice[1],v,'Withdrawal'))});
     const cls=zoneClass(target,embedded.loc);
     if(wound>0&&(cls==='serious'||cls==='major')){
      resolveWound(f,target,embedded.loc,cls,wound,br,()=>endAction());
@@ -2517,7 +2567,7 @@ function endFight(winnerId,reason){
   if(winnerId==='a'){S.wins++;saveScore();S.phase='between';S.fighters.a.restUsed=false;}else S.phase='over';render();
 }
 function nextEncounter(){if(S.phase!=='between')return;S.showEndModal=false;S.finalCause=null;S.wave++;let hero=S.mode==='normal'?newHero():S.fighters.a;hero.prone=false;hero.skipAttack=0;hero.blindedTurns=0;hero.blindSkipTick=false;hero.recoveringWeapon=false;if(S.mode==='normal')hero.disabled=[];if(S.mode==='hardcore'&&hero.impaledWeapon){hero.impaledWeapon=null;}hero.status='Ready';hero.restUsed=false;S.fighters={a:hero,b:newEnemy(S.wave)};log('New Opponent',`${S.fighters.b.name} steps forward. ${S.mode==='normal'?'Your HP was restored.':'Your current HP carries over.'}`,'system');beginEncounter();}
-function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let act=n.dataset.act,v=n.dataset.val;switch(act){case 'mode':readSetupInputs();config.mode=v;render();break;case 'lbmode':S.lbMode=v;render();break;case 'start':readSetupInputs();startRun();break;case 'dismissResult':S.showEndModal=false;render();break;case 'openAid':S.showEndModal=false;render();document.querySelector('.field-dressing')?.scrollIntoView({block:'center'});break;case 'reset':R=null;S={phase:'setup',mode:'normal',lbMode:S.lbMode||'normal'};render();break;case 'retry':startRun();break;case 'next':nextEncounter();break;case 'rest':restBetweenEncounters();break;case 'fieldAid':{const [woundId,action]=v.split(':');beginFieldAid(Number(woundId),action);break;}case 'selectloc':{
+function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let act=n.dataset.act,v=n.dataset.val;switch(act){case 'mode':readSetupInputs();config.mode=v;render();break;case 'lbmode':S.lbMode=v;render();break;case 'start':readSetupInputs();startRun();break;case 'dismissResult':S.showEndModal=false;render();break;case 'openAid':S.showEndModal=false;render();document.querySelector('.field-dressing')?.scrollIntoView({block:'center'});break;case 'reset':V.impact=null;R=null;S={phase:'setup',mode:'normal',lbMode:S.lbMode||'normal'};render();break;case 'retry':startRun();break;case 'next':nextEncounter();break;case 'rest':restBetweenEncounters();break;case 'fieldAid':{const [woundId,action]=v.split(':');beginFieldAid(Number(woundId),action);break;}case 'selectloc':{
   if(!S.sel)S.sel={};S.sel[n.dataset.id]=v;render();
   // Inspection remains keyboard-navigable after the screen is regenerated.
   if(n.tagName==='BUTTON'||n.classList?.contains('zone')){
@@ -2578,7 +2628,7 @@ $('#root').addEventListener('toggle',e=>{
  if(!id)return;
  if(item.open)V.openChronicle.add(id);else V.openChronicle.delete(id);
 },true);
-$('#root').addEventListener('click',decoratedClick);$('#homeLink').addEventListener('click',e=>{e.preventDefault();clearPresentationTimers();V.busy=false;V.stage=null;R=null;S={phase:'setup',lbMode:'normal'};render()});
+$('#root').addEventListener('click',decoratedClick);$('#homeLink').addEventListener('click',e=>{e.preventDefault();clearPresentationTimers();V.busy=false;V.stage=null;V.impact=null;R=null;S={phase:'setup',lbMode:'normal'};render()});
 // Expose transparent inspection helpers for prototype debugging and automated tests.
 window.prototypeCombat={moveEngage,limbDisabled,damageModifierFor,armourInitiativePenalty,parryAbsorption,SHIELDS,pendingRoll:()=>R?({id:R.id,actor:R.actor,label:R.label,defs:R.defs}):null,state:()=>S,presentation:()=>V,skipPresentation,rollSkill,HIT_TABLE,zoneClass,engagementInfo,canAttackBody,canParryAtReach,proposedRange,beginChangeRange,rangeReact,availableEffects,effectCatalog:()=>SPECIAL_EFFECT_CATALOG,armourAt,guardWeapon,impaleGrade,effectiveSkill,roundBloodLoss,beginWithdrawImpale,finishWithdrawImpale,chooseImpaleDamage,refreshFighterAP,FATIGUE_NAMES,registerWound,fieldAidCandidates,beginFieldAid,reopenBandage,disadvantagedForSurrender};
 render();

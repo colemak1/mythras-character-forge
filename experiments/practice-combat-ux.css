@@ -1734,3 +1734,13 @@ button:focus-visible,.loc:focus-visible {
 .center .exchange-breakdown summary:focus-visible { outline:2px solid var(--exchange-accent); outline-offset:3px; }
 .center .decision-panel .tutorial-guide-main { min-width:0; }
 .center .decision-panel .tutorial-guide-main strong { display:none; }
+
+.center .decision-impact { color:#e7ba9c; font-weight:600; }
+.fighter .fig .zone.recent-impact:not(.impact-zone) {
+  stroke:#e7b68f;
+  stroke-width:4;
+}
+.fighter button.loc.recent-impact {
+  background:#332b25;
+  box-shadow:inset 2px 0 #c98c68;
+}
