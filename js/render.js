@@ -802,6 +802,11 @@ function knownMagicEditor(t){
   const restriction={mysticism:'Starting mystics choose one path; talents must be available to a novice of that path (Core p.155).',sorcery:'Starting sorcerers choose one school and its source; starting spells come from that school (Core p.163).',theism:'Starting theists choose one cult; miracles must be available at their cult rank (Core p.179).',animism:'Confirm starting spirit access with your GM; recorded spirits may include encounters or spirits acquired later.'}[t.key]||'';
   h+='<p class="note rulesrc">Core p.118: a starting magician normally knows one relevant ability per 20% (or part) of '+esc(abilitySkill)+': '+(starting===null?'confirm the skill with your GM':starting+' at '+skill+'%')+'. '+esc(restriction)+' This is starting-character guidance, not a limit on experienced or imported characters; GM decisions and later learning are not tracked here.</p>';
   if(S.magic.startingReviewMode!=="experienced"&&t.key!=="animism"&&starting!==null&&named>starting)h+='<p class="note">'+named+' named abilities are recorded, more than the general starting allowance of '+starting+'. If this is a new character, review the choices with the GM; existing abilities are preserved.</p>';
+  if(t.key==="sorcery"){
+    const int=effectiveChars().INT;
+    h+='<p class="note rulesrc">Core p.165: INT caps memorised spells. A sorcerer can maintain several spells but focus on only one Concentration spell at a time. Swapping memorised spells takes a week in seclusion. The GM tracks which recorded spells are memorised.</p>';
+    if(Number.isInteger(int)&&named>int)h+='<p class="warn">This character has '+named+' named Sorcery entries and can memorise '+int+'. Confirm which spells are memorised before casting.</p>';
+  }
   if(t.key==="theism"){
     const rank=S.magic.devotionalRank||"",limit=devotionalRankLimit(),pool=devotionalMax();
     h+='<p class="note rulesrc">Core p.180: each cult has a separate pool. Confirm the rank for this pool; the tracker handles one pool and does not enforce the combined limit for multiple cults. Confirm fractional rounding and other pools with the GM.</p>';
