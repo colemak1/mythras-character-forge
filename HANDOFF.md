@@ -23,7 +23,7 @@ Practice Combat feature work is paused until rule correctness catches up (see `d
 
 - **ChatGPT → Claude:** rule cases for subsystem 6, as "given X → Core p.N says Y" rows in `docs/magic-subsystem-cases.md`.
 - **ChatGPT:** live re-check of the reload fix once PR #110 is deployed (steps in the top `CHANGELOG.md` entry).
-- **Owner:** merge the setup PR (CI, this file, `AGENTS.md`, merged `CHANGELOG.md`).
+- Claude merges its own PRs once tests pass (see `AGENTS.md`).
 
 ## Notes
 
