@@ -1020,4 +1020,100 @@ check('One d100 still shows the exact recorded d100 roll in history',
  api.renderDice(api.d100Dice(75),false).includes('>75</span>'));
 api.resetRoll();
 
-console.log('Practice Combat UX smoke checks passed.');
+
+
+// Scheduling regressions exercise the same entry points as the combat controls.
+const scheduling = vm.runInContext(`
+;({
+  setup() {
+    config.mode = 'pvp';
+    V.busy = false;
+    startRun();
+    R = null;
+    S.order = ['a', 'b'];
+    return S;
+  },
+  advance, delayTurn, react, endAction, restrictNextAttack, advanceStun,
+  attackRestrictionTurns, beginChangeRange, rangeReact, beginAttack, rollSkill, render,
+  pending: () => R,
+  resolve(value) {
+    const request = R;
+    R = null;
+    request.callback([value]);
+  },
+  clearRoll() { R = null; }
+})`, sandbox, { filename: 'practice-combat-scheduling.js' });
+
+const bout = scheduling.setup();
+const { a, b } = bout.fighters;
+a.ap = b.ap = 3;
+scheduling.render();
+check('Human can select Delay', root.innerHTML.includes('data-act="delay"'));
+scheduling.delayTurn(a);
+check('Delay holds one AP and gives the opponent their turn',
+  a.delaying && a.ap === 3 && bout.order[bout.turnIndex] === 'b');
+bout.pending = { kind: 'reaction', atk: 'b', def: 'a', attackTarget: 65,
+  attackRoll: scheduling.rollSkill(65, 30) };
+scheduling.react('parry');
+check('Parrying after Delay uses one AP and prompts the correct fighter',
+  !a.delaying && a.ap === 2 && scheduling.pending()?.actor === 'a');
+scheduling.clearRoll();
+bout.pending = null;
+bout.turnIndex = 0;
+scheduling.delayTurn(a);
+scheduling.endAction();
+check('An unused Delay costs exactly one AP at the next turn',
+  !a.delaying && a.ap === 1 && bout.order[bout.turnIndex] === 'a');
+
+scheduling.restrictNextAttack(a, 'overextend');
+scheduling.restrictNextAttack(a, 'overextend');
+scheduling.advanceStun(a);
+check('Stacked Overextend survives the turn on which it was applied',
+  scheduling.attackRestrictionTurns(a) === 2);
+scheduling.restrictNextAttack(a, 'press');
+scheduling.advanceStun(a);
+check('Press Advantage overlaps with Overextend',
+  scheduling.attackRestrictionTurns(a) === 1);
+scheduling.advanceStun(a);
+
+a.weapon = 'dagger';
+b.weapon = 'greatsword';
+a.ap = b.ap = 3;
+bout.engagement = 'long';
+b.disarmed = true;
+scheduling.beginChangeRange('a');
+check('A disarmed fighter cannot intercept a range change',
+  /data-val="intercept" disabled/.test(root.innerHTML));
+scheduling.rangeReact('intercept');
+check('An illegal interception spends no AP and rolls no dice',
+  b.ap === 3 && !scheduling.pending());
+b.disarmed = false;
+b.style = a.evade = 65;
+scheduling.rangeReact('intercept');
+check('A legal interception spends one AP and prompts the interceptor',
+  b.ap === 2 && scheduling.pending()?.actor === 'b');
+scheduling.resolve(25);
+check('An intercepted mover rolls their own Evade',
+  scheduling.pending()?.actor === 'a');
+scheduling.resolve(25);
+check('An exact tie on interception causes no hit and the range changes',
+  bout.engagement === 'short' && !a.prone && !scheduling.pending());
+
+bout.turnIndex = 1;
+bout.disengaged = true;
+bout.gapMetres = 2;
+b.kind = 'ai';
+b.prone = true;
+b.disabled = ['Left Leg'];
+b.ap = 2;
+scheduling.advance();
+check('An AI that cannot stand or close the gap passes its turn',
+  b.ap === 1 && bout.order[bout.turnIndex] === 'a');
+
+a.braced = true;
+bout.disengaged = false;
+scheduling.beginAttack('a');
+check('A stationary attack preserves Brace and prompts the fighter to roll',
+  a.braced && scheduling.pending()?.actor === 'a');
+
+console.log('Practice Combat UX and scheduling checks passed.');

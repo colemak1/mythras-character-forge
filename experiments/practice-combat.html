@@ -398,7 +398,7 @@ function ensureEffectState(f){
  f.armourLocations??=Object.fromEntries(HIT_LOCS.map(loc=>[loc,f.armor]));
  f.scars??=[];f.bleeding??=false;f.fatigue??=0;f.bloodFatigue??=0;f.exertionRounds??=0;f.restUsed??=false;
  f.stunnedLocations??={};f.impaledWounds??=[];f.impaledWeapon??=null;
- f.wounds??=[];f.bandagedBleed??=false;f.firstAid??=40;f.willpower??=50;f.braced??=false;f.partialLimbs??={};f.blindedTurns??=0;f.blindSkipTick??=false;f.standFast??=false;f.athletics??=50;f.recoveringWeapon??=false;f.droppedMetres??=0;f.pinnedGear??=null;f.pinnedBy??=null;f.preparedCounters??=[];
+ f.wounds??=[];f.bandagedBleed??=false;f.firstAid??=40;f.willpower??=50;f.braced??=false;f.partialLimbs??={};f.blindedTurns??=0;f.blindSkipTick??=false;f.athletics??=50;f.recoveringWeapon??=false;f.droppedMetres??=0;f.pinnedGear??=null;f.pinnedBy??=null;f.preparedCounters??=[];
 }
 // Core pp.78–79: combat is strenuous exertion; Endurance is tested after
 // CON seconds (rounded up to a combat round). Core p.79 governs recovery;
@@ -1231,7 +1231,29 @@ function proposedRange(id){if(S.disengaged)return null;const r=engagementInfo(),
   return null;
 }
 function setCombatRange(next,detail){S.engagement=next;log('Engagement Range',detail,'hit');}
-function endRangeAction(){advanceStun(S.fighters[S.order[S.turnIndex]]);S.pending=null;S.turnIndex++;advance()}
+function spendReaction(f){
+  f.ap--;
+  f.delaying=false;
+}
+function canOpposeRange(f){
+  return f.ap>0&&!cannotRespond(f);
+}
+function canInterceptRange(f){
+  return canOpposeRange(f)&&canMakeAttack(f);
+}
+function endRangeAction(){endAction();}
+function delayTurn(f){
+  if(S.phase!=='fight'||S.pending||R||S.disengaged||f.ap<1||f.delaying)return;
+  f.delaying=true;
+  log('Delay',`${f.name} holds an Action Point for a reaction until their next turn.`,'system','',{actor:f.id});
+  endAction();
+}
+function expireDelay(f){
+  if(!f.delaying)return;
+  f.delaying=false;
+  f.ap=Math.max(0,f.ap-1);
+  log('Delay expires',`${f.name} did not use the held reaction and loses the Action Point.`,'system','',{actor:f.id});
+}
 function beginChangeRange(id){
   if(S.phase!=='fight'||S.pending)return;
   const next=proposedRange(id),f=S.fighters[id],d=S.fighters[id==='a'?'b':'a'];
@@ -1240,42 +1262,53 @@ function beginChangeRange(id){
   S.pending={kind:'range',mover:id,defender:d.id,desired:next};
   log(`${f.name} changes range`,`${f.name} spends 1 AP to ${next==='short'?'close inside':'open beyond'} ${d.name}'s reach. ${d.name} may permit, oppose with Evade, or intercept with an attack.`,'system');
   if(d.kind==='ai'){
-    if(d.ap<=0)return rangeReact('permit');
-    const wantIntercept=Math.random()<.55;
+    if(!canOpposeRange(d))return rangeReact('permit');
+    const wantIntercept=canInterceptRange(d)&&Math.random()<.55;
     rangeReact(wantIntercept?'intercept':'oppose');
   }else render();
 }
 function rangeReact(option){
   const p=S.pending;if(p?.kind!=='range'||R)return;
   const mover=S.fighters[p.mover],d=S.fighters[p.defender];
-  if(option==='permit'||d.ap<=0){
+  if(option==='permit'||!canOpposeRange(d)){
+    mover.braced=false;
     setCombatRange(p.desired,`${d.name} does not resist. ${p.desired==='short'?mover.name+' closes into shorter reach.':mover.name+' opens to longer reach.'}`);endRangeAction();return;
   }
   if(option==='oppose'){
-    d.ap--;
-    requestSkill(mover.id,mover.evade,`Change Range · ${mover.name} Evade`,mr=>{
-      requestSkill(d.id,d.evade,`Oppose Range · ${d.name} Evade`,dr=>{
+    spendReaction(d);
+    d.braced=false;
+    mover.braced=false;
+    requestOpposedSkills(mover,evadeTarget(mover),'Change Range',d,evadeTarget(d),'Oppose Range',(mr,dr)=>{
         const winner=opposedBetter(mr,dr);
-        log('Change Range · Evade contest',`${mover.name} Evade ${mr.roll}/${mover.evade}% (${mr.label}) vs ${d.name} Evade ${dr.roll}/${d.evade}% (${dr.label}). ${winner?'Change succeeds.':'Original range maintained.'}`,'system','',{sideDice:{[mover.id]:d100Dice(mr.roll),[d.id]:d100Dice(dr.roll)}});
+        log('Change Range · Evade contest',`${mover.name} Evade ${mr.roll}/${mr.effectiveTarget}% (${mr.label}) vs ${d.name} Evade ${dr.roll}/${dr.effectiveTarget}% (${dr.label}). ${winner?'Change succeeds.':'Original range maintained.'}`,'system','',{sideDice:{[mover.id]:d100Dice(mr.roll),[d.id]:d100Dice(dr.roll)}});
         if(winner)setCombatRange(p.desired,`${mover.name} ${p.desired==='short'?'closes to the shorter':'opens to the longer'} reach.`);
         endRangeAction();
-      });
     });return;
   }
-  if(option==='intercept'){
-    d.ap--;
-    requestSkill(d.id,d.style,`Intercept · ${d.name} Combat Style`,dr=>{
-      requestSkill(mover.id,mover.evade,`Change Range · ${mover.name} Evade`,mr=>{
-        log('Change Range · Interception',`${d.name} Combat Style ${dr.roll}/${d.style}% (${dr.label}) vs ${mover.name} Evade ${mr.roll}/${mover.evade}% (${mr.label}). The range changes even if the attack lands.`,'system','',{sideDice:{[d.id]:d100Dice(dr.roll),[mover.id]:d100Dice(mr.roll)}});
-        const p2={kind:'effect',atk:d.id,def:mover.id,attackRoll:dr,defenseRoll:mr,reaction:'evade',evaded:opposedBetter(mr,dr),owner:null,other:null,effectsLeft:0,chosen:[],chosenLoc:null,maximize:0,rangeAfter:p.desired,rangeIntercept:true};
+  if(option==='intercept'&&canInterceptRange(d)){
+    spendReaction(d);
+    mover.braced=false;
+    reopenBandage(d,'an interception');
+    requestOpposedSkills(d,combatTarget(d),'Intercept',mover,evadeTarget(mover),'Change Range',(dr,mr)=>{
+        log('Change Range · Interception',`${d.name} Combat Style ${dr.roll}/${dr.effectiveTarget}% (${dr.label}) vs ${mover.name} Evade ${mr.roll}/${mr.effectiveTarget}% (${mr.label}). The range changes even if the attack lands.`,'system','',{sideDice:{[d.id]:d100Dice(dr.roll),[mover.id]:d100Dice(mr.roll)}});
+        const p2={kind:'effect',atk:d.id,def:mover.id,attackRoll:dr,defenseRoll:mr,reaction:'evade',evaded:!opposedBetter(dr,mr),owner:null,other:null,effectsLeft:0,chosen:[],chosenLoc:null,maximize:0,rangeAfter:p.desired,rangeIntercept:true};
         S.pending=p2;
         const o=Math.max(0,dr.grade-mr.grade),def=Math.max(0,mr.grade-dr.grade);
         if(o){p2.owner=d.id;p2.other=mover.id;p2.effectsLeft=o;log('Interception Special Effects',`${d.name} gains ${o} Special Effect${o===1?'':'s'} from the intercept.`,'hit');chooseAIEffectOrRender();}
         else if(def){p2.owner=mover.id;p2.other=d.id;p2.effectsLeft=def;log('Defensive Special Effects',`${mover.name} gains ${def} Special Effect${def===1?'':'s'} while changing range.`,'hit');chooseAIEffectOrRender();}
         else resolveHit();
-      });
     });
   }
+}
+function requestOpposedSkills(a,aPct,aLabel,b,bPct,bLabel,resolve){
+  const first=effectiveSkill(a,aPct),second=effectiveSkill(b,bPct);
+  const excess=Math.max(0,first-100,second-100);
+  const aTarget=Math.max(0,first-excess),bTarget=Math.max(0,second-excess);
+  requestDice(a.id,[{sides:100,label:'d100'}],`${aLabel} · ${a.name} ${aTarget}%`,([ar])=>{
+    requestDice(b.id,[{sides:100,label:'d100'}],`${bLabel} · ${b.name} ${bTarget}%`,([br])=>{
+      resolve({...rollSkill(aTarget,ar),effectiveTarget:aTarget},{...rollSkill(bTarget,br),effectiveTarget:bTarget});
+    });
+  });
 }
 function applyCustomArmour(f,enabled,values){
  if(enabled){f.armourLocations=Object.fromEntries(HIT_LOCS.map(loc=>[loc,Math.max(0,Math.min(8,Number(values?.[loc]??f.armor)))]));}
@@ -1367,7 +1400,7 @@ function focusActiveDecision(){
  });
 }
 
-function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'QUICK':'DETAILED'} · PACE</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v22 · Opposed combat choices</span>`}</div></section>${setup?setupHtml():arenaHtml()}${!setup?resultModalHtml():''}${!setup?meleeEffectReference():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, sourcebook-gated Special Effects, wounds, initiative and optional reach. Implemented: sourcebook-derived AP (INT+DEX), hit-location HP (CON+SIZ), initiative bonus (average INT/DEX), mixed-location armour and armour ENC penalty, weapon/shield Size parries, shield wards, STR+SIZ Damage Modifier, and Withdraw. Still simplified: shield attacks, unarmed grapples, complex terrain for Bash beyond a 6m training-ring clearance, Luck and long-term natural recovery over days/weeks; exertion Fatigue uses Core pp.78–79 and Hardcore rest uses training-arena pacing. A short separated gap can be re-engaged without a Move AP; beyond 3m the training prototype charges 1 AP. Hardcore First Aid restores partial function after Serious Wounds, but not HP. Major Wounds remain incapacitating. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110; Special Effects summary and descriptions pp. 95–101.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.dataset.help=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;focusActiveDecision();}}
+function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'QUICK':'DETAILED'} · PACE</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v23 · Turn scheduling</span>`}</div></section>${setup?setupHtml():arenaHtml()}${!setup?resultModalHtml():''}${!setup?meleeEffectReference():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, sourcebook-gated Special Effects, wounds, initiative and optional reach. Implemented: sourcebook-derived AP (INT+DEX), hit-location HP (CON+SIZ), initiative bonus (average INT/DEX), mixed-location armour and armour ENC penalty, weapon/shield Size parries, shield wards, STR+SIZ Damage Modifier, and Withdraw. Still simplified: shield attacks, unarmed grapples, complex terrain for Bash beyond a 6m training-ring clearance, Luck and long-term natural recovery over days/weeks; exertion Fatigue uses Core pp.78–79 and Hardcore rest uses training-arena pacing. Delay holds an AP for an available reaction until the next turn. The prototype serializes tied initiative with the left fighter first and does not implement Interrupt. A short separated gap can be re-engaged without a Move AP; beyond 3m the training prototype charges 1 AP. Hardcore First Aid restores partial function after Serious Wounds, but not HP. Major Wounds remain incapacitating. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110; Special Effects summary and descriptions pp. 95–101.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.dataset.help=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;focusActiveDecision();}}
 function modeName(m){return {tutorial:'Guided Tutorial',normal:'Normal Gauntlet',hardcore:'Hardcore Gauntlet',pvp:'Local PvP'}[m]||m}
 function setupHtml(){let modes=[['tutorial','01','Guided Tutorial','One beginner-friendly bout with reminders about Mythras decisions.'],['normal','02','Normal Gauntlet','Infinite escalating enemies. Your wounds reset after each win.'],['hardcore','03','Hardcore Gauntlet','Same escalating enemies. Wounds and injuries persist between fights.'],['pvp','04','Local PvP','Two players take turns on one screen; online matching comes later.']];return `<div class="setup"><h2>Choose your challenge</h2><p class="intro">A working combat loop with selectable reactions, hit locations, a tactical computer opponent, and a local streak board.</p><div class="modes">${modes.map(([k,n,t,d])=>`<button class="mode ${config.mode===k?'on':''}" data-act="mode" data-val="${k}" aria-pressed="${config.mode===k}"><span class="n">MODE ${n}</span><strong>${t}</strong><small>${d}</small></button>`).join('')}</div><div class="setup-bottom"><div class="formcard"><div class="setup-fighter-intro"><h3>Practice fighter</h3><p>${esc(config.charname)} · ${esc(WEAPONS[config.weapon].name)} · ${config.style}% Combat Style</p></div><details class="fighter-customize"><summary>Customize fighter <span>Skills, weapons and attributes</span></summary><div class="formgrid"><label>Username<input id="username" maxlength="30" value="${esc(config.username)}"></label><label>Character name<input id="charname" maxlength="45" value="${esc(config.charname)}"></label><label>Combat Style %<input id="style" type="number" min="20" max="110" value="${config.style}"></label><label>Evade %<input id="evade" type="number" min="20" max="110" value="${config.evade}"></label><label>Armour AP (all locations)<input id="armor" type="number" min="0" max="8" value="${config.armor}"></label><label>Weapon<select id="weapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.weapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Shield<select id="shield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.shield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>First Aid % (sample)<input id="firstAid" type="number" min="1" max="100" value="${config.firstAid}"></label><label>Willpower % (sample)<input id="willpower" type="number" min="1" max="110" value="${config.willpower}"></label><label>Strength (STR)<input id="str" type="number" min="5" max="20" value="${config.str}"></label><label>Size (SIZ)<input id="siz" type="number" min="5" max="20" value="${config.siz}"></label><label>Constitution (CON)<input id="con" type="number" min="5" max="20" value="${config.con}"></label><label>Dexterity (DEX)<input id="dex" type="number" min="5" max="20" value="${config.dex}"></label><label>Intelligence (INT)<input id="int" type="number" min="5" max="20" value="${config.int}"></label><details style="grid-column:1/-1"><summary>Optional: armour by hit location</summary><label style="display:block;margin:8px 0"><input id="mixedArmour" type="checkbox" ${config.mixedArmour?'checked':''}> Use separate armour values</label><div class="formgrid">${HIT_LOCS.map(loc=>`<label>${loc} AP<input id="armour_${loc.replace(/ /g,'_')}" type="number" min="0" max="8" value="${config.armourByLocation[loc]??config.armor}"></label>`).join('')}</div></details>${config.mode==='pvp'?`<label>Second player name<input id="pvpName" maxlength="45" value="${esc(config.pvpName)}"></label><label>Second player Combat Style %<input id="pvpSkill" type="number" min="20" max="110" value="${config.pvpSkill}"></label><label>Second player Evade %<input id="pvpEvade" type="number" min="20" max="110" value="${config.pvpEvade}"></label><label>Second player armour AP<input id="pvpArmor" type="number" min="0" max="8" value="${config.pvpArmor}"></label><label>Second player weapon<select id="pvpWeapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.pvpWeapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Second player shield<select id="pvpShield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.pvpShield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>Second player STR<input id="pvpStr" type="number" min="5" max="20" value="${config.pvpStr}"></label><label>Second player SIZ<input id="pvpSiz" type="number" min="5" max="20" value="${config.pvpSiz}"></label><label>Second player CON<input id="pvpCon" type="number" min="5" max="20" value="${config.pvpCon}"></label><label>Second player DEX<input id="pvpDex" type="number" min="5" max="20" value="${config.pvpDex}"></label><label>Second player INT<input id="pvpInt" type="number" min="5" max="20" value="${config.pvpInt}"></label><details style="grid-column:1/-1"><summary>Optional: second player armour by location</summary><label style="display:block;margin:8px 0"><input id="pvpMixedArmour" type="checkbox" ${config.pvpMixedArmour?'checked':''}> Use separate armour values</label><div class="formgrid">${HIT_LOCS.map(loc=>`<label>${loc} AP<input id="pvpArmour_${loc.replace(/ /g,'_')}" type="number" min="0" max="8" value="${config.pvpArmourByLocation[loc]??config.pvpArmor}"></label>`).join('')}</div></details>`:''}</div><p class="formhint">These are sample statistics, not an imported character. Uniform armour is the default. Expand the armour-by-location section for mixed equipment; two-handed weapons cannot equip a shield.</p></details><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px"><button class="cta" data-act="start">${config.mode==='pvp'?'Start Duel':'Enter Training Grounds'} &nbsp;→</button><span class="modehint">Runs entirely on your device.</span></div></div><div class="setup-right"><div class="statbox"><strong>Gauntlet leaderboard</strong><p>Stored in this browser, not published online. Rankings count consecutive opponents defeated.</p><div class="badges"><button class="lbtab ${S.lbMode==='normal'?'on':''}" data-act="lbmode" data-val="normal">Normal</button><button class="lbtab ${S.lbMode==='hardcore'?'on':''}" data-act="lbmode" data-val="hardcore">Hardcore</button></div>${scoresHtml(S.lbMode)}</div><details class="statbox rules-disclosure"><summary>The rules we're testing</summary><div class="badges"><span class="notechip">d100 Skill checks</span><span class="notechip">d20 Hit location</span><span class="notechip">Parry by size</span><span class="notechip">Shields &amp; wards</span><span class="notechip">Damage modifier</span><span class="notechip">Armour initiative</span><span class="notechip">Action points</span><span class="notechip">Special Effects</span><span class="notechip">Optional weapon reach</span><span class="notechip">Serious/Major wounds</span></div><p>Some results and effects remain simplified for this prototype, including full fatigue, weapon durability, and shield attacks. Actual Forge integration would reuse your existing character data and sourcebook-verified engine.</p></details></div></div></div>`}
 function zoneClass(f,loc){const x=f.hp[loc],m=f.maxHp[loc];return x<=-m?'major':x<=0?'serious':x<m?'minor':'ok'}
@@ -1423,7 +1456,9 @@ function currentDecisionOwner(){
 function conditionInsightsHtml(f){
  const items=[],add=(name,meaning)=>items.push({name,meaning});
  if(f.prone)add('Prone','Attack and Evade targets are halved. Regaining footing uses 1 AP.');
- if(f.skipAttack>0)add('Attack restricted',f.skipAttack+' turn'+(f.skipAttack===1?'':'s')+
+ if(f.delaying)add('Delaying','One AP is held for a reaction until the next turn.');
+ const restricted=attackRestrictionTurns(f);
+ if(restricted>0)add('Attack restricted',restricted+' turn'+(restricted===1?'':'s')+
    ' remaining. Other permitted actions and reactions remain available.');
  if(f.blindedTurns>0)add('Blinded',f.blindedTurns+' turn'+(f.blindedTurns===1?'':'s')+
    ' remaining. Combat Style and Evade targets are heavily reduced.');
@@ -1518,7 +1553,7 @@ function fighterCard(f,cls){
        <div class="track"><label>Action Points</label><b>${f.ap}<small> / ${f.apMax}</small></b>
          <div class="dots">${Array.from({length:f.apMax},(_,i)=>`<i class="${i>=f.ap?'off':''}"></i>`).join('')}</div></div>
        <div class="track"><label>Initiative</label><b>${f.initiative??'—'}</b>
-         <div style="font:11px system-ui,sans-serif;color:#b3a58c;margin-top:5px">${f.disarmed?('Disarmed'+(f.droppedMetres>0?' · '+f.droppedMetres+'m away':'')):f.skipAttack?'Attack restricted':f.braced?'Braced':'Ready'}</div></div>
+         <div style="font:11px system-ui,sans-serif;color:#b3a58c;margin-top:5px">${f.disarmed?('Disarmed'+(f.droppedMetres>0?' · '+f.droppedMetres+'m away':'')):attackRestrictionTurns(f)?'Attack restricted':f.braced?'Braced':'Ready'}</div></div>
      </div></div>
    <div class="figure-area">
      <div class="figure-title"><span>Hit locations / d20</span><span>DM ${damageModifierFor(f.str,f.siz).label}</span></div>
@@ -1659,7 +1694,7 @@ if(S.phase==='over')return `<div class="endpanel"><span class="eyebrow">${S.mode
 const p=S.pending;
 if(p?.kind==='range'){
   const mover=S.fighters[p.mover],d=S.fighters[p.defender];
-  return `<div class="turnline"><h3>${esc(d.name)} · Change Range</h3><span>${d.ap} AP available</span></div><div class="choicegrid"><button class="choice" data-act="rangeRespond" data-val="permit"><strong>Allow Change</strong><small>Keep your AP; range changes automatically.</small></button><button class="choice gold" data-act="rangeRespond" data-val="oppose" ${d.ap<1?'disabled':''}><strong>Oppose · 1 AP</strong><small>Opposed Evade rolls; preserve the present range if you win.</small></button><button class="choice red" data-act="rangeRespond" data-val="intercept" ${d.ap<1?'disabled':''} style="grid-column:span 2"><strong>Intercept · 1 AP</strong><small>Attack versus mover’s Evade; range changes regardless of the hit.</small></button></div>`;
+  return `<div class="turnline"><h3>${esc(d.name)} · Change Range</h3><span>${d.ap} AP available</span></div><div class="choicegrid"><button class="choice" data-act="rangeRespond" data-val="permit"><strong>Allow Change</strong><small>Keep your AP; range changes automatically.</small></button><button class="choice gold" data-act="rangeRespond" data-val="oppose" ${!canOpposeRange(d)?'disabled':''}><strong>Oppose · 1 AP</strong><small>Opposed Evade rolls; preserve the present range if you win.</small></button><button class="choice red" data-act="rangeRespond" data-val="intercept" ${!canInterceptRange(d)?'disabled':''} style="grid-column:span 2"><strong>Intercept · 1 AP</strong><small>Attack versus mover’s Evade; range changes regardless of the hit.</small></button></div>`;
 }
 if(p?.kind==='reaction'){let d=S.fighters[p.def],atk=S.fighters[p.atk];return `<div class="turnline"><h3>${esc(d.name)} · Reaction</h3><span>${d.ap} AP available</span></div><div class="choicegrid"><button class="choice gold" data-act="react" data-val="parry" ${d.ap<=0||!canParryAtReach(d.id)?'disabled':''}><strong>Parry (Weapon) · 1 AP</strong><small>${canParryAtReach(d.id)?`Combat Style ${d.style}% · weapon size matters`:'Cannot parry with this weapon in your current condition/reach'}</small></button>${d.shield!=='none'?`<button class="choice" data-act="react" data-val="shield" ${d.ap<=0||!canShieldParry(d)?'disabled':''} title="Use your shield Size ${SHIELDS[d.shield].size} to reduce damage"><strong>Parry (Shield) · 1 AP</strong></button>`:''}<button class="choice" data-act="react" data-val="evade" ${d.ap<=0||cannotRespond(d)?'disabled':''}><strong>Evade · 1 AP</strong><small>Evade ${d.evade}% · ends prone</small></button><button class="choice" data-act="react" data-val="none" style="grid-column:span 2"><strong>Do Not Defend · 0 AP</strong><small>Save AP, but accept the attack if it succeeds.</small></button></div>`}
 if(p?.kind==='effect'){let win=S.fighters[p.owner],offense=p.owner===p.atk,opts=availableEffects(p);return `<div class="turnline"><h3>${esc(win.name)} · Special Effect</h3><span>${p.effectsLeft} remaining</span></div><div class="choicegrid">${opts.map(([id,n,description])=>`<button class="choice ${id==='choose'?'gold':''}" data-act="effect" data-val="${id}"><strong>${n}</strong><small>${description}</small></button>`).join('')}</div><button class="toolbutton" style="width:100%;margin-top:9px" data-act="skipEffect">Skip remaining effects</button>`}
@@ -1678,15 +1713,15 @@ if(p?.kind==='impaleResist')return `<div class="turnline"><h3>Resist weapon with
 if(p?.kind==='location')return `<div class="turnline"><h3>Choose Hit Location</h3><span>Special Effect</span></div><div class="inlineopts">${HIT_LOCS.map(l=>`<button class="choice" data-act="pickloc" data-val="${esc(l)}"><strong>${l.replace('Right ','R. ').replace('Left ','L. ')}</strong></button>`).join('')}</div>`;
 let id=S.order[S.turnIndex],f=S.fighters[id];if(!f)return '<p class="desc">Waiting for combat to begin.</p>';
 if(S.disengaged)return `<div class="turnline"><h3>${esc(f.name)} · Separated</h3><span>${S.gapMetres||0}m gap</span></div><div class="choicegrid"><button class="choice gold" data-act="reengage" ${f.prone?'disabled':''}><strong>Move to Engage${S.gapMetres>3?' · 1 AP':''}</strong></button>${f.prone&&canRegainFooting(f)?'<button class="choice" data-act="stand"><strong>Regain Footing · 1 AP</strong></button>':''}<button class="choice" data-act="dither"><strong>Wait · 1 AP</strong></button></div>`;
-return `<div class="turnline"><h3>${esc(f.name)} · Your Turn</h3><span>${f.ap} AP remaining</span></div><div class="choicegrid"><button class="choice gold" data-act="attack" ${f.ap<1||f.skipAttack>0||cannotAttackDueToStun(f)||!canUseWeapon(f)||!canAttackBody(id)?'disabled':''}><strong>Attack · 1 AP</strong><small>${f.skipAttack>0?'Stunned / pressured: cannot attack this turn':!canUseWeapon(f)?'Weapon arm disabled: swap weapon hand or concede':isCrampedAtReach(id)?'Awkward strike with the haft · 1d3+1':!canAttackBody(id)?'Body out of reach — close range first':'Roll Combat Style, allow a reaction, resolve damage'}</small></button>${canWithdrawImpale(f)?`<button class="choice" data-act="withdrawImpale"><strong>Withdraw Embedded Weapon · 1 AP</strong><small>Ready Weapon + Brawn; withdrawal inflicts additional damage</small></button>`:''}${f.pinnedGear?`<button class="choice" data-act="freePin"><strong>Free Pinned ${f.pinnedGear==='shield'?'Shield':'Weapon'} · 1 AP</strong></button>`:''}${f.disarmed?`<button class="choice" data-act="recoverWeapon" ${f.ap<1?'disabled':''}><strong>${f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?'Ready Weapon':'Pick Up Weapon'} · 1 AP</strong></button>`:''}<button class="choice" data-act="changeRange" ${f.ap<1||!proposedRange(id)?'disabled':''}><strong>Change Range · 1 AP</strong><small>${proposedRange(id)==='short'?'Close to shorter reach':proposedRange(id)==='long'?'Open to longer reach':'No contested reach difference'}</small></button>${f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded?`<button class="choice" data-act="swapHand"><strong>Switch Weapon Hand · 1 AP</strong><small>Ready your weapon in the usable hand</small></button>`:''}${f.shield!=='none'?`<button class="choice" data-act="ward" title="Free action before an incoming attack"><strong>${f.warded?.length?'Change Shield Ward':'Ward Shield'} · 0 AP</strong></button>`:''}<button class="choice" data-act="brace" ${f.ap<1||f.braced?'disabled':''}><strong>Brace · 1 AP</strong><small>Brace against force; doubles SIZ versus Bash (Core p.91)</small></button><button class="choice" data-act="dither" ${f.ap<1?'disabled':''}><strong>Dither · 1 AP</strong><small>Use your action without attacking</small></button><button class="choice" data-act="stand" ${f.ap<1||!canRegainFooting(f)?'disabled':''}><strong>Regain Footing · 1 AP</strong><small>Opposed Brawn test if engaged (Core p.92)</small></button><button class="choice" data-act="yield"><strong>Concede Bout · 0 AP</strong><small>End this training fight without a death</small></button><button class="choice" data-act="help"><strong>Combat reference</strong><small>Show the rules this prototype implements</small></button></div>`}
+return `<div class="turnline"><h3>${esc(f.name)} · Your Turn</h3><span>${f.ap} AP remaining</span></div><div class="choicegrid"><button class="choice gold" data-act="attack" ${f.ap<1||!canMakeAttack(f)?'disabled':''}><strong>Attack · 1 AP</strong><small>${attackRestrictionTurns(f)>0||cannotAttackDueToStun(f)?'Stunned / pressured: cannot attack this turn':!canUseWeapon(f)?'Weapon arm disabled: swap weapon hand or concede':isCrampedAtReach(id)?'Awkward strike with the haft · 1d3+1':!canAttackBody(id)?'Body out of reach — close range first':'Roll Combat Style, allow a reaction, resolve damage'}</small></button>${canWithdrawImpale(f)?`<button class="choice" data-act="withdrawImpale"><strong>Withdraw Embedded Weapon · 1 AP</strong><small>Ready Weapon + Brawn; withdrawal inflicts additional damage</small></button>`:''}${f.pinnedGear?`<button class="choice" data-act="freePin"><strong>Free Pinned ${f.pinnedGear==='shield'?'Shield':'Weapon'} · 1 AP</strong></button>`:''}${f.disarmed?`<button class="choice" data-act="recoverWeapon" ${f.ap<1?'disabled':''}><strong>${f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?'Ready Weapon':'Pick Up Weapon'} · 1 AP</strong></button>`:''}<button class="choice" data-act="changeRange" ${f.ap<1||!proposedRange(id)?'disabled':''}><strong>Change Range · 1 AP</strong><small>${proposedRange(id)==='short'?'Close to shorter reach':proposedRange(id)==='long'?'Open to longer reach':'No contested reach difference'}</small></button>${f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded?`<button class="choice" data-act="swapHand"><strong>Switch Weapon Hand · 1 AP</strong><small>Ready your weapon in the usable hand</small></button>`:''}${f.shield!=='none'?`<button class="choice" data-act="ward" title="Free action before an incoming attack"><strong>${f.warded?.length?'Change Shield Ward':'Ward Shield'} · 0 AP</strong></button>`:''}<button class="choice" data-act="brace" ${f.ap<1||f.braced?'disabled':''}><strong>Brace · 1 AP</strong><small>Brace against force; doubles SIZ versus Bash (Core p.91)</small></button><button class="choice" data-act="delay"><strong>Delay</strong><small>Hold 1 AP for a reaction until your next turn</small></button><button class="choice" data-act="dither" ${f.ap<1?'disabled':''}><strong>Dither · 1 AP</strong><small>Use your action without attacking</small></button><button class="choice" data-act="stand" ${f.ap<1||!canRegainFooting(f)?'disabled':''}><strong>Regain Footing · 1 AP</strong><small>Opposed Brawn test if engaged (Core p.92)</small></button><button class="choice" data-act="yield"><strong>Concede Bout · 0 AP</strong><small>End this training fight without a death</small></button><button class="choice" data-act="help"><strong>Combat reference</strong><small>Show the rules this prototype implements</small></button></div>`}
 function log(title,body,kind='system',detail='',meta=null){S.logs.push({id:nextLogId++,title,body,kind,detail,meta,view:S.fighters?clone(S.fighters):null});if(S.logs.length>110)S.logs.shift();}
 function rollSkill(pct,forcedRoll=null){const r=forcedRoll==null?d100():forcedRoll;const grade=r===100||(r===99&&pct<=100)?'fumble':r>=96?'failure':r<=Math.ceil(pct/10)?'critical':r<=pct||r<=5?'success':'failure';return {roll:r,grade:({critical:3,success:2,failure:1,fumble:0})[grade],label:grade.toUpperCase(),name:grade};}
 function opposedBetter(x,y){return x.grade>y.grade || (x.grade===y.grade&&x.grade>=2&&x.roll>y.roll)}
 function weaponRoll(w,maxDie,cramped=false,forcedRolls=null){let v=cramped?{dice:[1,3],bonus:1}:WEAPONS[w];let arr=forcedRolls??Array.from({length:v.dice[0]},(_,i)=>i===0&&maxDie?v.dice[1]:die(v.dice[1]));return {total:arr.reduce((a,b)=>a+b,0)+v.bonus,detail:`${arr.join('+')}${v.bonus?`+${v.bonus}`:''}`,rolls:arr,sides:v.dice[1],bonus:v.bonus,count:v.dice[0]}}
 // Verified Mythras Core: page 101 (prone = Formidable), page 51 (over-100 differential rolls).
-function combatTarget(f){let pct=f.style;if(f.prone)pct=Math.ceil(pct/2);if(cannotAttackDueToStun(f)||f.weaponHand&&limbDisabled(f,f.weaponHand))return 0;
- if(f.weaponHand==='Right Arm'&&zoneClass(f,'Right Arm')==='serious')pct=Math.ceil(pct*2/3);
- if(f.weaponHand==='Left Arm'&&zoneClass(f,'Left Arm')==='serious')pct=Math.ceil(pct*2/3);
+function combatTarget(f,tool='weapon'){let pct=f.style;if(f.prone)pct=Math.ceil(pct/2);
+ const arm=tool==='shield'?'Left Arm':f.weaponHand;
+ if(arm&&zoneClass(f,arm)==='serious')pct=Math.ceil(pct*2/3);
  if(f.blindedTurns>0)pct=Math.max(1,Math.ceil(pct/10));return pct;}
 // Core p.110: a usable but seriously injured leg makes leg-dependent tasks
 // one difficulty grade harder until healed to a Minor Wound. Two injured legs
@@ -1728,7 +1763,29 @@ function beginFreePinnedGear(id){
 }
 function canUseWeapon(f){ensureEffectState(f);return f.pinnedGear!=='weapon'&&!f.disarmed&&!f.impaledWeapon&&guardWeapon(f).hp>0&&!limbDisabled(f,f.weaponHand||'Right Arm')&&!f.stunnedLocations[f.weaponHand||'Right Arm']&&!(WEAPONS[f.weapon].twoHanded&&(f.disabled.some(x=>x.endsWith('Arm')&&limbDisabled(f,x))||f.stunnedLocations['Right Arm']||f.stunnedLocations['Left Arm']));}
 
-function advanceStun(f){if(f?.skipAttack>0)f.skipAttack--;if(f){tickStunnedLocations(f);if(f.blindSkipTick)f.blindSkipTick=false;else if(f.blindedTurns>0)f.blindedTurns--;}}
+function attackRestrictionTurns(f){
+ return Math.max(f.skipAttack||0,f.pressedTurns||0,f.overextendedTurns||0);
+}
+function restrictNextAttack(f,effect){
+ const ownTurn=S.order[S.turnIndex]===f.id;
+ if(effect==='overextend'){
+   const remaining=f.overextendedTurns||0;
+   f.overextendedTurns=remaining+1+(ownTurn&&remaining===0?1:0);
+ }else f.pressedTurns=Math.max(f.pressedTurns||0,ownTurn?2:1);
+}
+function canMakeAttack(f){
+ return !cannotRespond(f)&&!cannotAttackDueToStun(f)&&attackRestrictionTurns(f)===0
+   &&canUseWeapon(f)&&canAttackBody(f.id);
+}
+function advanceStun(f){
+ if(!f)return;
+ for(const key of ['skipAttack','pressedTurns','overextendedTurns']){
+   if(f[key]>0)f[key]--;
+ }
+ tickStunnedLocations(f);
+ if(f.blindSkipTick)f.blindSkipTick=false;
+ else if(f.blindedTurns>0)f.blindedTurns--;
+}
 function canRegainFooting(f){ensureEffectState(f);return f.prone&&!f.disabled.some(x=>x.endsWith('Leg')&&limbDisabled(f,x))&&!f.stunnedLocations['Right Leg']&&!f.stunnedLocations['Left Leg'];}
 // Core p.92: engaged standing is an opposed Brawn OR Athletics test on both sides.
 // Each human chooses their skill. Athletics is initially at its STR+DEX base;
@@ -1798,7 +1855,7 @@ function availableEffects(p){
   if(actor.prone)add('arise','Regain footing immediately');
   if(!S.disengaged)add('withdraw','Automatically break engagement');
   if(crit&&p.reaction==='parry'){add('enhance','Critical parry stops all damage');add('blind','Opposed Evade: hinder vision for 1d3 turns');}
- add('standFast','Brace against knockback from a later strike');
+ add('standFast','Prevent knockback from this attack');
   if(enemyFumbled)add('accidental','Fumbled attacker damages self');
  }
  // Compel Surrender only applies to a genuinely disadvantaged foe (Core p.97).
@@ -1826,7 +1883,7 @@ function beginEncounter(){
   ensureEffectState(a);ensureEffectState(b);
   a.status='Ready';b.status='Ready';refreshFighterAP(a);refreshFighterAP(b);
   S.phase='fight';S.round=1;S.cycle=1;S.turnIndex=0;S.pending=null;S.roundProcessing=false;a.exertionRounds=0;b.exertionRounds=0;
-  S.order=['a','b'];S.engagement=engagementInfo().active?'long':'equal';S.disengaged=false;S.gapMetres=0;S.ringClearance={a:6,b:6};a.braced=false;b.braced=false;
+  S.order=['a','b'];S.engagement=engagementInfo().active?'long':'equal';S.disengaged=false;S.gapMetres=0;S.ringClearance={a:6,b:6};for(const f of [a,b]){f.braced=false;f.delaying=false;f.pressedTurns=0;f.overextendedTurns=0;}
   const rollNext=(index)=>{
     if(index>=2){
       S.order=a.initiative>=b.initiative?['a','b']:['b','a'];
@@ -1847,29 +1904,41 @@ function beginEncounter(){
 function advance(){if(S.phase!=='fight'||S.pending||S.roundProcessing)return;let tries=0;while(tries++<25){if(S.turnIndex>=2){if(S.fighters.a.ap<=0&&S.fighters.b.ap<=0){
   finishCombatRound();return;
  }else S.cycle++;S.turnIndex=0;}
-let id=S.order[S.turnIndex],f=S.fighters[id];if(f.ap<=0){S.turnIndex++;continue;}
+let id=S.order[S.turnIndex],f=S.fighters[id];expireDelay(f);if(f.ap<=0){advanceStun(f);S.turnIndex++;continue;}
  // Core p.99 Remise: on the recipient's next proactive turn, a Small-weapon
  // follow-up attack takes its place. The recipient can use AP to react.
  if(f.remiseFrom){
    const from=f.remiseFrom;f.remiseFrom=null;
    const source=S.fighters[from];
-   if(source&&source.id!==id&&!S.disengaged&&!cannotRespond(source)&&!cannotAttackDueToStun(source)&&canUseWeapon(source)&&canAttackBody(from)&&source.skipAttack<=0){
+   if(source&&source.id!==id&&canMakeAttack(source)){
      log('Remise',`${source.name} follows up as ${f.name} begins their turn; the defender must react rather than take a proactive action.`,'system','',{actor:from});
      beginAttack(from,true);return;
    }
    log('Remise lost',`The planned follow-up is no longer possible.`,'system');
  }
- if(cannotRespond(f)){
-  f.ap--;tickStunnedLocations(f);log('Incapacitated turn',`${f.name} cannot act while briefly insensible.`,'system');S.turnIndex++;continue;
+ if(cannotRespond(f)||cannotAttackDueToStun(f)){
+  if(!cannotRespond(f)&&!S.disengaged){delayTurn(f);return;}
+  f.ap--;advanceStun(f);log('Stunned turn',`${f.name} is unable to take a proactive action.`,'system');S.turnIndex++;continue;
  }
- if(f.skipAttack>0&&f.kind==='ai'){f.ap--;advanceStun(f);log('Cannot Attack',`${f.name} uses a non-attacking turn while pressured.`, 'system');S.turnIndex++;continue;}
 if(f.kind==='ai'){
-  if(S.disengaged){if(f.prone&&canRegainFooting(f)){regainFooting(id);return;}const instant=(S.gapMetres||0)<=3;moveEngage(id);if(instant&&!S.disengaged&&S.fighters[id].ap>0&&S.phase==='fight'&&S.order[S.turnIndex]===id)beginAttack(id);return;}
+  if(f.prone&&canRegainFooting(f)&&S.disengaged){regainFooting(id);return;}
+  if(S.disengaged){
+    const instant=(S.gapMetres||0)<=3;
+    if(!moveEngage(id)){
+      f.ap--;advanceStun(f);log('Dither',`${f.name} cannot get up to close the gap.`,'system');S.turnIndex++;continue;
+    }
+    if(!instant)return;
+  }
+  if(attackRestrictionTurns(f)>0){
+    if(canRegainFooting(f))regainFooting(id);
+    else delayTurn(f);
+    return;
+  }
   if(f.pinnedGear==='weapon'){beginFreePinnedGear(id);return;}
   if(!canUseWeapon(f)){
     if(canWithdrawImpale(f)){beginWithdrawImpale(id);return;}
     if(f.stunnedLocations[f.weaponHand]||cannotAttackDueToStun(f)){
-      f.ap--;tickStunnedLocations(f);log('Stunned limb',`${f.name} cannot use the weapon for this turn.`,'system');S.turnIndex++;continue;
+      f.ap--;advanceStun(f);log('Stunned limb',`${f.name} cannot use the weapon for this turn.`,'system');S.turnIndex++;continue;
     }
     if(f.disarmed&&guardWeapon(f).hp>0){f.ap--;advanceStun(f);if(f.droppedMetres>3){const metres=f.droppedMetres;f.droppedMetres=0;log('Move to Weapon',`${f.name} moves ${metres}m to the disarmed weapon (arena movement: 1 AP).`,'system');}else if(f.recoveringWeapon){f.disarmed=false;f.recoveringWeapon=false;log('Ready Weapon',`${f.name} readies their retrieved weapon (second action).`,'system');}else{f.droppedMetres=0;f.recoveringWeapon=true;log('Pick Up Weapon',`${f.name} retrieves their weapon; a later Ready Weapon action is required (Core p.92).`,'system');}S.turnIndex++;continue;}
     if(f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded){
@@ -1878,7 +1947,6 @@ if(f.kind==='ai'){
     }
     endFight(id==='a'?'b':'a',`${f.name} cannot continue using the equipped weapon and concedes the bout.`);return;
   }
-  if(cannotAttackDueToStun(f)){f.ap--;tickStunnedLocations(f);log('Stunned torso',`${f.name} spends a turn defending while stunned.`,'system');S.turnIndex++;continue;}
   if(proposedRange(id)&&(!canAttackBody(id)||Math.random()<.48)){beginChangeRange(id);return;}const standScore=f.prone?72+(f.ap>1?9:0):0;const attackScore=58+(f.style>65?7:0)+(f.prone?-25:0)+Math.random()*11;if(standScore>attackScore&&canRegainFooting(f)){regainFooting(id);return;}beginAttack(id);return;}
 render();return;}log('Turn order safety','Combat scheduling reached its safety limit.','system');render();}
 function moveEngage(id){
@@ -1886,18 +1954,18 @@ function moveEngage(id){
  const f=S.fighters[id];if(!f||f.ap<1||f.prone)return false;
  const distance=Math.max(0,S.gapMetres||0);
  const cost=distance>3?1:0; // Training-arena movement convention; Core p.91 leaves short engagement movement situational.
- f.ap-=cost;S.disengaged=false;S.gapMetres=0;
+ f.ap-=cost;f.braced=false;S.disengaged=false;S.gapMetres=0;
  if(engagementInfo().active)S.engagement='long';
  if(cost)advanceStun(f);
  log('Move to Engage',`${f.name} closes the ${distance}m gap${cost?' (1 AP Move)':' without a separate Move action'}.`,`system`,'',{actor:id});
- if(cost){S.turnIndex++;advance();}else render();
+ if(cost){S.turnIndex++;advance();}else if(f.kind==='human')render();
  return true;
 }
 function beginAttack(id,isRemise=false){
   if(S.phase!=='fight'||S.pending||R)return;
   const f=S.fighters[id],t=S.fighters[id==='a'?'b':'a'];
-  if(!f||(!isRemise&&f.ap<1)||!canAttackBody(id)||!canUseWeapon(f)||f.skipAttack>0||cannotAttackDueToStun(f))return;
-  if(!isRemise)f.ap--;f.braced=false;reopenBandage(f,isRemise?'a Remise attack':'an attack');
+  if(!f||(!isRemise&&f.ap<1)||!canMakeAttack(f))return;
+  if(!isRemise)f.ap--;reopenBandage(f,isRemise?'a Remise attack':'an attack');
   const target=combatTarget(f);
   requestSkill(f.id,target,`Attack · Combat Style ${target}%`,at=>{
     S.pending={kind:'reaction',atk:id,def:t.id,attackTarget:target,attackRoll:at,reaction:'none',defenseRoll:null,owner:null,other:null,effectsLeft:0,chosen:[],chosenLoc:null,maximize:0,evaded:false,isRemise};
@@ -1912,7 +1980,7 @@ function beginAttack(id,isRemise=false){
 function react(action){
   const p=S.pending;if(!p||p.kind!=='reaction'||R)return;
   const a=S.fighters[p.atk],d=S.fighters[p.def];
-  if(cannotRespond(d))action='none';
+  if(cannotRespond(d)||d.ap<=0)action='none';
   if(action==='parry'&&!canParryAtReach(d.id))action='none';
   if(action==='shield'&&!canShieldParry(d))action='none';
   p.parryTool=action==='shield'?'shield':'weapon';
@@ -1920,9 +1988,9 @@ function react(action){
   p.reaction=action;
   if(action!=='none')reopenBandage(d,action==='evade'?'an evasion':'a parry');
   const finalize=(dr)=>{
-    if(dr){const fixed=adjustDifferentialRolls(a,d,p.attackRoll,dr,p.attackRoll.effectiveTarget??p.attackTarget,dr.effectiveTarget??(action==='parry'?combatTarget(d):evadeTarget(d)));p.attackRoll=fixed[0];dr=fixed[1];}
+    if(dr){const fixed=adjustDifferentialRolls(a,d,p.attackRoll,dr,p.attackRoll.effectiveTarget??p.attackTarget,dr.effectiveTarget??(action==='parry'?combatTarget(d,p.parryTool):evadeTarget(d)));p.attackRoll=fixed[0];dr=fixed[1];}
     p.defenseRoll=dr;
-    if(action==='evade'&&dr)d.prone=true;
+    if(action==='evade'&&dr){d.prone=true;d.braced=false;}
     const attackGrade=p.attackRoll.grade,defenseGrade=dr?dr.grade:1;
     const offense=attackGrade>defenseGrade?attackGrade-defenseGrade:0;
     const defense=dr&&defenseGrade>attackGrade?defenseGrade-attackGrade:0;
@@ -1933,8 +2001,8 @@ function react(action){
     resolveHit();
   };
   if(action!=='none'&&d.ap>0){
-    d.ap--;
-    const pct=action==='parry'?combatTarget(d):evadeTarget(d);
+    spendReaction(d);
+    const pct=action==='parry'?combatTarget(d,p.parryTool):evadeTarget(d);
     requestSkill(d.id,pct,`${action==='parry'?'Parry':'Evade'} · ${pct}%`,dr=>{
       log(`${d.name} ${action==='parry'?(p.parryTool==='shield'?'parries with shield':'parries'):'evades'}`,`${dr.roll} vs ${pct}% — ${dr.label}. ${d.ap} AP remaining.`,'system','',{actor:d.id,dice:d100Dice(dr.roll)});
       finalize(dr);
@@ -2014,7 +2082,7 @@ function applyEffect(effect){
    if(at>=0){const prepared=target.preparedCounters.splice(at,1)[0];
     if(prepared.returnEffect==='trip')actor.prone=true;
     if(prepared.returnEffect==='disarm'){actor.disarmed=true;actor.recoveringWeapon=false;}
-    if(prepared.returnEffect==='press')actor.skipAttack=(actor.skipAttack||0)+1;
+    if(prepared.returnEffect==='press')restrictNextAttack(actor,'press');
     p.chosen.push(effect);p.effectsLeft--;
     log('Prepare Counter',`${target.name} anticipated ${SPECIAL_EFFECT_NAMES[effect]}; the effect is cancelled. ${SPECIAL_EFFECT_NAMES[prepared.returnEffect]} succeeds automatically against ${actor.name}.`,'hit','Core p.98: a prepared defensive counter replaces the predicted effect with its own offensive effect.',{actor:target.id,target:actor.id});
     if(p.effectsLeft>0){p.kind='effect';chooseAIEffectOrRender();}else resolveHit();
@@ -2045,7 +2113,7 @@ function applyEffect(effect){
    p[effect]=true;
    note(SPECIAL_EFFECT_NAMES[effect],effect==='bleed'?'Bleeding is tested after penetrating damage.':effect==='impale'?'Weapon damage will be rolled twice; choose a result.':effect==='bash'?'Knockback is based on damage before armour or parry.':'The wounded location must resist a stunning injury.');
  }else if(effect==='press'||effect==='overextend'){
-   target.skipAttack=(target.skipAttack||0)+1;
+   restrictNextAttack(target,effect);
    note(SPECIAL_EFFECT_NAMES[effect],`${target.name} cannot attack on the next Turn, but may act otherwise.`);
  }else if(effect==='maximize'){
    p.maximize=(p.maximize||0)+1;
@@ -2068,10 +2136,10 @@ function applyEffect(effect){
    const freed=actor.pinnedGear;actor.pinnedGear=null;actor.pinnedBy=null;
    note('Slip Free',`${actor.name} escapes the ${freed||'pin'} using a critical defensive Special Effect (Core p.100).`);
  }else if(effect==='standFast'){
-   actor.standFast=true;note('Stand Fast',`${actor.name} steadies their stance against the next knockback (Core p.99).`);
+   p.standFast=true;note('Stand Fast',`${actor.name} steadies their stance against knockback from this attack (Core p.99).`);
  }else if(effect==='blind'){
    const usesShield=target.shield!=='none'&&!WEAPONS[target.weapon].twoHanded&&canShieldParry(target);
-   const shieldPct=usesShield?combatTarget(target):0, evadePct=evadeTarget(target);
+   const shieldPct=usesShield?combatTarget(target,'shield'):0, evadePct=evadeTarget(target);
    const defend=(skill)=>{
      const shieldDefense=skill==='shield'&&usesShield;
      const pct=shieldDefense?shieldPct:evadePct;
@@ -2172,7 +2240,7 @@ function resolveHit(){
   const atk=S.fighters[p.atk],def=S.fighters[p.def];
   if(p.weaponTargeted){log('Weapon struck','Damage Weapon resolves instead of a blow to the body.','system');endAction();return;}
   if(p.attackRoll.grade<2||p.evaded){
-    log('No Damaging Hit',p.evaded?`${def.name} evades the incoming strike, ending prone.`:`${atk.name}'s attack failed to connect.`, 'system');endAction();return;
+    log('No Damaging Hit',p.evaded?`${def.name} evades the incoming strike${p.rangeIntercept?' while changing range':', ending prone'}.`:`${atk.name}'s attack failed to connect.`, 'system');endAction();return;
   }
   const chooseDamage=(loc)=>{
     const cramped=isCrampedAtReach(atk.id),v=cramped?{dice:[1,3],bonus:1}:WEAPONS[atk.weapon];
@@ -2204,8 +2272,8 @@ function resolveHit(){
         log(`${atk.name} hits ${loc}`,`${weaponDmg.total} weapon (${weaponDmg.detail}) ${mod.label} (${dmValue>=0?'+':''}${dmValue}) = ${dmg.total} total; ${parry} parry; ${Math.min(afterParry,armour)} armour; ${wound} HP lost.`,'hurt',`${parryText} ${loc}: ${old} → ${def.hp[loc]} HP.`,{actor:atk.id,dice:[...chosen.map((r,i)=>makeDie(dmg.sides,r,`Weapon ${i+1}`)),...dmDice.map((r,i)=>makeDie(Array.isArray(mod.sides)?mod.sides[i]:mod.sides,r,`Modifier ${i+1}`))]});
         if(p.bash){
           // Core p.96: bludgeons push 1m per 3 unmitigated damage; shield bash 1m/2.
-          const metres=def.standFast?0:(def.siz*(def.braced?2:1)<=atk.siz*2?Math.floor(dmg.total/3):0);
-          if(def.standFast){log('Stand Fast',`${def.name} resists Bash knockback.`, 'system','',{actor:def.id});def.standFast=false;}
+          const metres=p.standFast?0:(def.siz*(def.braced?2:1)<=atk.siz*2?Math.floor(dmg.total/3):0);
+          if(p.standFast)log('Stand Fast',`${def.name} resists Bash knockback.`,'system','',{actor:def.id});
           p.bashMetres=metres;
           if(def.braced)log('Brace vs Bash',`${def.name}'s Brace doubles effective SIZ for Bash resistance (Core p.91).`,'system','',{actor:def.id});
           const clearance=Math.max(0,S.ringClearance?.[def.id]??6);
@@ -2398,7 +2466,7 @@ function endFight(winnerId,reason){
   if(S.mode==='pvp'||S.mode==='tutorial'){S.phase='over';render();return;}
   if(winnerId==='a'){S.wins++;saveScore();S.phase='between';S.fighters.a.restUsed=false;}else S.phase='over';render();
 }
-function nextEncounter(){if(S.phase!=='between')return;S.showEndModal=false;S.finalCause=null;S.wave++;let hero=S.mode==='normal'?newHero():S.fighters.a;hero.prone=false;hero.skipAttack=0;hero.blindedTurns=0;hero.blindSkipTick=false;hero.standFast=false;hero.recoveringWeapon=false;if(S.mode==='normal')hero.disabled=[];if(S.mode==='hardcore'&&hero.impaledWeapon){hero.impaledWeapon=null;}hero.status='Ready';hero.restUsed=false;S.fighters={a:hero,b:newEnemy(S.wave)};log('New Opponent',`${S.fighters.b.name} steps forward. ${S.mode==='normal'?'Your HP was restored.':'Your current HP carries over.'}`,'system');beginEncounter();}
+function nextEncounter(){if(S.phase!=='between')return;S.showEndModal=false;S.finalCause=null;S.wave++;let hero=S.mode==='normal'?newHero():S.fighters.a;hero.prone=false;hero.skipAttack=0;hero.blindedTurns=0;hero.blindSkipTick=false;hero.recoveringWeapon=false;if(S.mode==='normal')hero.disabled=[];if(S.mode==='hardcore'&&hero.impaledWeapon){hero.impaledWeapon=null;}hero.status='Ready';hero.restUsed=false;S.fighters={a:hero,b:newEnemy(S.wave)};log('New Opponent',`${S.fighters.b.name} steps forward. ${S.mode==='normal'?'Your HP was restored.':'Your current HP carries over.'}`,'system');beginEncounter();}
 function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let act=n.dataset.act,v=n.dataset.val;switch(act){case 'mode':readSetupInputs();config.mode=v;render();break;case 'lbmode':S.lbMode=v;render();break;case 'start':readSetupInputs();startRun();break;case 'dismissResult':S.showEndModal=false;render();break;case 'openAid':S.showEndModal=false;render();document.querySelector('.field-dressing')?.scrollIntoView({block:'center'});break;case 'reset':R=null;S={phase:'setup',mode:'normal',lbMode:S.lbMode||'normal'};render();break;case 'retry':startRun();break;case 'next':nextEncounter();break;case 'rest':restBetweenEncounters();break;case 'fieldAid':{const [woundId,action]=v.split(':');beginFieldAid(Number(woundId),action);break;}case 'selectloc':{
   if(!S.sel)S.sel={};S.sel[n.dataset.id]=v;render();
   // Inspection remains keyboard-navigable after the screen is regenerated.
@@ -2410,7 +2478,7 @@ function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let 
     });
   }
   break;
-}case 'reengage':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')moveEngage(id);break;}case 'attack':{const id=S.order[S.turnIndex];if(S.fighters[id].kind==='human')beginAttack(id);break;}case 'react':react(v);break;case 'ward':{const id=S.order[S.turnIndex],f=S.fighters[id];if(f?.kind==='human'&&f.shield!=='none'&&!R&&!S.pending){S.pending={kind:'ward',actor:id,selected:[...(f.warded||[])]};render();}break;}case 'wardloc':{const p=S.pending;if(p?.kind==='ward'&&HIT_LOCS.includes(v)){const max=SHIELDS[S.fighters[p.actor].shield].coverage;p.selected=p.selected.includes(v)?p.selected.filter(x=>x!==v):p.selected.length<max?[...p.selected,v]:p.selected;render();}break;}case 'saveward':{const p=S.pending;if(p?.kind==='ward'){S.fighters[p.actor].warded=[...p.selected];S.pending=null;log('Ward Shield',`${S.fighters[p.actor].name} covers ${p.selected.join(', ')||'no locations'} with the shield.`,'system');render();}break;}case 'clearward':{const p=S.pending;if(p?.kind==='ward'){S.fighters[p.actor].warded=[];S.pending=null;log('Ward Cleared',`${S.fighters[p.actor].name} releases the shield ward.`,'system');render();}break;}case 'changeRange':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')beginChangeRange(id);break;}case 'rangeRespond':rangeReact(v);break;case 'effect':applyEffect(v);break;case 'pinChoose':finishPinWeapon(v);break;case 'counterWatch':{const p=S.pending;if(p?.kind==='counterChoice'){p.watchEffect=v;p.kind='counterRetaliation';render();}break;}case 'counterReturn':{const p=S.pending;if(p?.kind==='counterRetaliation')finishPrepareCounter(p.watchEffect,v);break;}case 'tripResist':{const p=S.pending;if(p?.kind==='tripResistChoice'){p.kind='effect';p.resistTrip(v);}break;}case 'blindResist':{const p=S.pending;if(p?.kind==='blindResistChoice'){p.kind='effect';p.resistBlind(v);}break;}case 'footingSkill':{const p=S.pending;if(p?.kind==='footingSkillChoice'){S.pending=null;finishRegainFooting(S.fighters[p.actor],S.fighters[p.target],v);}break;}case 'footingDefend':{const p=S.pending;if(p?.kind==='footingDefendChoice'){p.finishFootingDefense(v);}break;}case 'impaleChoose':chooseImpaleDamage(Number(v));break;case 'impaleResist':{const p=S.pending;if(p?.kind==='impaleResist'){const id=p.actor;S.pending=null;finishWithdrawImpale(id,v==='yes');}break;}case 'withdrawImpale':{const id=S.order[S.turnIndex];if(S.fighters[id].kind==='human')beginWithdrawImpale(id);break;}case 'skipEffect':{const p=S.pending;if(p?.kind==='effect'){log('Special Effects skipped',`${S.fighters[p.owner].name} declines the remaining effect(s).`);resolveHit();}break;}case 'pickloc':chooseLocation(v);break;case 'freePin':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')beginFreePinnedGear(id);break;}case 'recoverWeapon':{let f=S.fighters[S.order[S.turnIndex]];if(f?.kind==='human'&&f.ap>0&&f.disarmed&&guardWeapon(f).hp>0){f.ap--;advanceStun(f);if(f.droppedMetres>3){const metres=f.droppedMetres;f.droppedMetres=0;log('Move to Weapon',`${f.name} moves ${metres}m to the disarmed weapon (1 AP; arena movement convention).`,'system');}else if(f.recoveringWeapon){f.disarmed=false;f.recoveringWeapon=false;log('Ready Weapon',`${f.name} readies their recovered weapon (second action).`,'system');}else{f.droppedMetres=0;f.recoveringWeapon=true;log('Pick Up Weapon',`${f.name} picks up their weapon; it must be readied on a later action (Core p.92).`,'system');}S.turnIndex++;advance();}break;}case 'swapHand':{let f=S.fighters[S.order[S.turnIndex]];if(f?.kind==='human'&&f.ap>=1&&f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded){f.ap--;advanceStun(f);f.weaponHand='Left Arm';log('Ready Weapon',`${f.name} transfers their weapon to the functioning left hand (1 AP).`,'system');S.turnIndex++;advance();}break;}case 'yield':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')endFight(id==='a'?'b':'a',`${S.fighters[id].name} concedes the training bout.`);break;}case 'brace':{const f=S.fighters[S.order[S.turnIndex]];if(f?.kind==='human'&&f.ap>0&&!f.braced){f.ap--;f.braced=true;advanceStun(f);log('Brace',`${f.name} braces: SIZ increases by half for knockback/leaping attacks and doubles against Bash (Core p.91).`,'system','',{actor:f.id});S.turnIndex++;advance();}break;}case 'dither':{let f=S.fighters[S.order[S.turnIndex]];if(f.ap>0&&f.kind==='human'){f.ap--;advanceStun(f);log('Dither',`${f.name} spends 1 AP without taking an offensive action.`);S.turnIndex++;advance();}break;}case 'stand':{const id=S.order[S.turnIndex],f=S.fighters[id];if(f?.kind==='human')regainFooting(id);break;}case 'help':alert('Prototype Mythras subset:\n• Initiative: d10 + average INT/DEX − individual-location armour ENC penalty (Core pp.10, 58, 90).\n• Each combatant has one proactive turn per cycle; reactions cost AP (Core pp.90–92).\n• Differential success grades yield Special Effects, selected before damage/location.\n• Weapon or shield parry reduces damage by comparative Size; warded locations are passively blocked. Armour absorbs what remains.\n• Serious and major wounds have different limb and torso/head effects (Core p.110); engaged standing is opposed (p.92).\n• Optional Closing and Opening Range (Core pp.106–107) included. Opposed Evade or interception.\n• Special Effects are gated by the Core table (pp.95–101). The catalogue reference lists melee effects not yet simulated.\n• Bleed, Bash, Impale and Stun Location use ongoing conditions; Fatigue from strenuous combat and bleeding, with distinct recovery times.\n• Hardcore First Aid is performed between fights, once per injury (Core pp.41-42). Staunching Bleed does not protect against reopening on violent actions (p.96).\n• Compel Surrender uses disadvantaged-opponent eligibility and opposed Willpower (p.97).\n• Brace protects against Bash using doubled SIZ (p.91).\n• v16: Bash knockback changes separation; hitting the training barrier forces Hard Athletics (Core p.96).\n• v16: First Aid after a Serious Wound restores partial use without restoring HP.\n• v16: Blind Opponent and Stand Fast are available defensively.\n• v17: CON+SIZ HP, INT+DEX AP and initiative bonus are derived; armour can vary by location; Withdraw and Small-weapon Remise are implemented.\n• v18: Pin Weapon and Prepare Counter have lasting consequences; Fatigue Incapacitated retains limited AP until Semi-Conscious.\n• v22: Choose Location requires a critical attack against aware/moving foes; Trip, Blindness and engaged standing now offer legal skill choices. Athletics defaults to the STR+DEX base.\n• Still unimplemented: shield attacks, full recovery and Luck Points. Some movement and combat effects remain abstracted.');break;}}
+}case 'reengage':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')moveEngage(id);break;}case 'attack':{const id=S.order[S.turnIndex];if(S.fighters[id].kind==='human')beginAttack(id);break;}case 'react':react(v);break;case 'ward':{const id=S.order[S.turnIndex],f=S.fighters[id];if(f?.kind==='human'&&f.shield!=='none'&&!R&&!S.pending){S.pending={kind:'ward',actor:id,selected:[...(f.warded||[])]};render();}break;}case 'wardloc':{const p=S.pending;if(p?.kind==='ward'&&HIT_LOCS.includes(v)){const max=SHIELDS[S.fighters[p.actor].shield].coverage;p.selected=p.selected.includes(v)?p.selected.filter(x=>x!==v):p.selected.length<max?[...p.selected,v]:p.selected;render();}break;}case 'saveward':{const p=S.pending;if(p?.kind==='ward'){S.fighters[p.actor].warded=[...p.selected];S.pending=null;log('Ward Shield',`${S.fighters[p.actor].name} covers ${p.selected.join(', ')||'no locations'} with the shield.`,'system');render();}break;}case 'clearward':{const p=S.pending;if(p?.kind==='ward'){S.fighters[p.actor].warded=[];S.pending=null;log('Ward Cleared',`${S.fighters[p.actor].name} releases the shield ward.`,'system');render();}break;}case 'changeRange':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')beginChangeRange(id);break;}case 'rangeRespond':rangeReact(v);break;case 'effect':applyEffect(v);break;case 'pinChoose':finishPinWeapon(v);break;case 'counterWatch':{const p=S.pending;if(p?.kind==='counterChoice'){p.watchEffect=v;p.kind='counterRetaliation';render();}break;}case 'counterReturn':{const p=S.pending;if(p?.kind==='counterRetaliation')finishPrepareCounter(p.watchEffect,v);break;}case 'tripResist':{const p=S.pending;if(p?.kind==='tripResistChoice'){p.kind='effect';p.resistTrip(v);}break;}case 'blindResist':{const p=S.pending;if(p?.kind==='blindResistChoice'){p.kind='effect';p.resistBlind(v);}break;}case 'footingSkill':{const p=S.pending;if(p?.kind==='footingSkillChoice'){S.pending=null;finishRegainFooting(S.fighters[p.actor],S.fighters[p.target],v);}break;}case 'footingDefend':{const p=S.pending;if(p?.kind==='footingDefendChoice'){p.finishFootingDefense(v);}break;}case 'impaleChoose':chooseImpaleDamage(Number(v));break;case 'impaleResist':{const p=S.pending;if(p?.kind==='impaleResist'){const id=p.actor;S.pending=null;finishWithdrawImpale(id,v==='yes');}break;}case 'withdrawImpale':{const id=S.order[S.turnIndex];if(S.fighters[id].kind==='human')beginWithdrawImpale(id);break;}case 'skipEffect':{const p=S.pending;if(p?.kind==='effect'){log('Special Effects skipped',`${S.fighters[p.owner].name} declines the remaining effect(s).`);resolveHit();}break;}case 'pickloc':chooseLocation(v);break;case 'freePin':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')beginFreePinnedGear(id);break;}case 'recoverWeapon':{let f=S.fighters[S.order[S.turnIndex]];if(f?.kind==='human'&&f.ap>0&&f.disarmed&&guardWeapon(f).hp>0){f.ap--;advanceStun(f);if(f.droppedMetres>3){const metres=f.droppedMetres;f.droppedMetres=0;log('Move to Weapon',`${f.name} moves ${metres}m to the disarmed weapon (1 AP; arena movement convention).`,'system');}else if(f.recoveringWeapon){f.disarmed=false;f.recoveringWeapon=false;log('Ready Weapon',`${f.name} readies their recovered weapon (second action).`,'system');}else{f.droppedMetres=0;f.recoveringWeapon=true;log('Pick Up Weapon',`${f.name} picks up their weapon; it must be readied on a later action (Core p.92).`,'system');}S.turnIndex++;advance();}break;}case 'swapHand':{let f=S.fighters[S.order[S.turnIndex]];if(f?.kind==='human'&&f.ap>=1&&f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded){f.ap--;advanceStun(f);f.weaponHand='Left Arm';log('Ready Weapon',`${f.name} transfers their weapon to the functioning left hand (1 AP).`,'system');S.turnIndex++;advance();}break;}case 'yield':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')endFight(id==='a'?'b':'a',`${S.fighters[id].name} concedes the training bout.`);break;}case 'brace':{const f=S.fighters[S.order[S.turnIndex]];if(f?.kind==='human'&&f.ap>0&&!f.braced){f.ap--;f.braced=true;advanceStun(f);log('Brace',`${f.name} braces: SIZ increases by half for knockback/leaping attacks and doubles against Bash (Core p.91).`,'system','',{actor:f.id});S.turnIndex++;advance();}break;}case 'delay':{const f=S.fighters[S.order[S.turnIndex]];if(f?.kind==='human')delayTurn(f);break;}case 'dither':{let f=S.fighters[S.order[S.turnIndex]];if(f.ap>0&&f.kind==='human'){f.ap--;advanceStun(f);log('Dither',`${f.name} spends 1 AP without taking an offensive action.`);S.turnIndex++;advance();}break;}case 'stand':{const id=S.order[S.turnIndex],f=S.fighters[id];if(f?.kind==='human')regainFooting(id);break;}case 'help':alert('Prototype Mythras subset:\n• Initiative: d10 + average INT/DEX − individual-location armour ENC penalty (Core pp.10, 58, 90).\n• Each combatant has one proactive turn per cycle; reactions cost AP (Core pp.90–92).\n• Differential success grades yield Special Effects, selected before damage/location.\n• Weapon or shield parry reduces damage by comparative Size; warded locations are passively blocked. Armour absorbs what remains.\n• Serious and major wounds have different limb and torso/head effects (Core p.110); engaged standing is opposed (p.92).\n• Optional Closing and Opening Range (Core pp.106–107) included. Opposed Evade or interception.\n• Special Effects are gated by the Core table (pp.95–101). The catalogue reference lists melee effects not yet simulated.\n• Bleed, Bash, Impale and Stun Location use ongoing conditions; Fatigue from strenuous combat and bleeding, with distinct recovery times.\n• Hardcore First Aid is performed between fights, once per injury (Core pp.41-42). Staunching Bleed does not protect against reopening on violent actions (p.96).\n• Compel Surrender uses disadvantaged-opponent eligibility and opposed Willpower (p.97).\n• Brace protects against Bash using doubled SIZ (p.91).\n• v16: Bash knockback changes separation; hitting the training barrier forces Hard Athletics (Core p.96).\n• v16: First Aid after a Serious Wound restores partial use without restoring HP.\n• v16: Blind Opponent and Stand Fast are available defensively.\n• v17: CON+SIZ HP, INT+DEX AP and initiative bonus are derived; armour can vary by location; Withdraw and Small-weapon Remise are implemented.\n• v18: Pin Weapon and Prepare Counter have lasting consequences; Fatigue Incapacitated retains limited AP until Semi-Conscious.\n• v22: Choose Location requires a critical attack against aware/moving foes; Trip, Blindness and engaged standing now offer legal skill choices. Athletics defaults to the STR+DEX base.\n• Still unimplemented: shield attacks, full recovery and Luck Points. Some movement and combat effects remain abstracted.');break;}}
 function readSetupInputs(){for(let k of ['username','charname','pvpName'])if($('#'+k))config[k]=$('#'+k).value.trim().slice(0,45)||config[k];for(let k of ['style','evade','armor','pvpSkill','pvpEvade','pvpArmor','str','siz','con','dex','int','pvpStr','pvpSiz','pvpCon','pvpDex','pvpInt','firstAid','willpower'])if($('#'+k)){let v=Number($('#'+k).value);const attr=['str','siz','con','dex','int','pvpStr','pvpSiz','pvpCon','pvpDex','pvpInt'].includes(k);config[k]=Math.max(['armor','pvpArmor'].includes(k)?0:(attr?5:20),Math.min(['armor','pvpArmor'].includes(k)?8:(attr?20:110),Number.isFinite(v)?Math.round(v):config[k]));}
 for(const prefix of ['', 'pvp']){const checked=$('#'+(prefix?'pvpMixedArmour':'mixedArmour'));if(!checked)continue;const key=prefix?'pvpMixedArmour':'mixedArmour',dest=prefix?'pvpArmourByLocation':'armourByLocation';config[key]=checked.checked;config[dest]=Object.fromEntries(HIT_LOCS.map(loc=>{const input=$('#'+(prefix?'pvpArmour_':'armour_')+loc.replace(/ /g,'_'));return [loc,Math.max(0,Math.min(8,Number(input?.value??0)))];}));}if($('#weapon')&&WEAPONS[$('#weapon').value])config.weapon=$('#weapon').value;if($('#pvpWeapon')&&WEAPONS[$('#pvpWeapon').value])config.pvpWeapon=$('#pvpWeapon').value;for(const key of ['shield','pvpShield'])if($('#'+key)&&SHIELDS[$('#'+key).value])config[key]=$('#'+key).value;}
 const coreClick=handleClick;
@@ -2428,7 +2496,7 @@ function decoratedClick(e){
   if(act==='roll'){if(!V.busy&&R)playCaptured(performManualRoll);return;}
   if(V.busy)return;
   if(R&&act!=='reset'&&act!=='selectloc'&&act!=='help')return;
-  if(['start','retry','next','fieldAid','rest','attack','react','changeRange','rangeRespond','effect','skipEffect','pickloc','impaleChoose','impaleResist','withdrawImpale','recoverWeapon','freePin','pinChoose','counterWatch','counterReturn','tripResist','blindResist','footingSkill','footingDefend','reengage','swapHand','yield','brace','ward','wardloc','saveward','clearward','dither','stand'].includes(act)){
+  if(['start','retry','next','fieldAid','rest','attack','react','changeRange','rangeRespond','effect','skipEffect','pickloc','impaleChoose','impaleResist','withdrawImpale','recoverWeapon','freePin','pinChoose','counterWatch','counterReturn','tripResist','blindResist','footingSkill','footingDefend','reengage','swapHand','yield','brace','ward','wardloc','saveward','clearward','delay','dither','stand'].includes(act)){
     // Capture one user decision and all chained computer responses as a sequence.
     playCaptured(()=>coreClick(e),act==='start'||act==='retry');
     return;

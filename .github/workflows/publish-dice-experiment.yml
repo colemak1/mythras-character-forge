@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'experiments/bg3-d100-test.html'
+      - 'experiments/practice-combat.html'
+      - 'experiments/practice-combat-ux.css'
       - '.github/workflows/publish-dice-experiment.yml'
   workflow_dispatch:
 permissions:
