@@ -313,7 +313,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .recovery-options{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 0 16px;border-bottom:1px solid #9d876145;margin-bottom:10px}.recovery-options button{padding:9px 13px;border:1px solid #af9972;border-radius:2px;background:transparent;color:inherit;cursor:pointer;font:600 12px system-ui}.recovery-options button:disabled{opacity:.45;cursor:not-allowed}.recovery-options small{font:11px/1.5 system-ui;color:#b6a48c;max-width:330px}
 
 </style>
-<link rel="stylesheet" href="practice-combat-ux.css?v=17">
+<link rel="stylesheet" href="practice-combat-ux.css?v=18">
 </head>
 <body>
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>Practice Combat</span><span class="hide-mobile">Independent demo · no account required</span><a href="#" id="homeLink">Reset</a></div></header>
@@ -1158,6 +1158,10 @@ function playCaptured(fn,reset=false){
   try{fn();}finally{V.capturing=false;}
   const events=V.queue;
   V.queue=[];
+  if(S.phase==='intro'){
+    V.busy=false;V.visibleCount=Infinity;V.shown=null;V.stage=null;V.highlight=null;
+    render();return;
+  }
   if(!events.length){render();return;}
   V.busy=true;V.events=events;V.step=0;
   const firstLog=events.find(event=>!event.roll);
@@ -1308,7 +1312,7 @@ function beginChangeRange(id){
   log(`${f.name} changes range`,`${f.name} spends 1 AP to ${next==='short'?'close inside':'open beyond'} ${d.name}'s reach. ${d.name} may permit, oppose with Evade, or intercept with an attack.`,'system');
   if(d.kind==='ai'){
     if(!canOpposeRange(d))return rangeReact('permit');
-    const wantIntercept=canInterceptRange(d)&&(S.mode==='spearman'&&d.id==='b'||Math.random()<.55);
+    const wantIntercept=canInterceptRange(d)&&(Math.random()<(AI_STYLES[d.tactic]?.intercept??.55));
     rangeReact(wantIntercept?'intercept':'oppose');
   }else render();
 }
@@ -1361,10 +1365,34 @@ function applyCustomArmour(f,enabled,values){
  f.armourInitPenalty=armourInitiativePenalty(f.armourLocations||f.armor);
  return f;
 }
-function newHero(){if(S.mode==='spearman')return mkFighter('a','Kethan Voss','human',67,'dagger',2,55,3);
-const f=mkFighter('a',config.charname,'human',config.style,config.weapon,config.armor,config.evade,3,config.str,config.siz,config.shield,config.con,config.dex,config.int);f.firstAid=config.firstAid;f.willpower=config.willpower;return applyCustomArmour(f,config.mixedArmour,config.armourByLocation);};
-function newEnemy(wave){if(S.mode==='spearman')return mkFighter('b','The Spearman','ai',60,'spear',1,45,1,12,12,'none',12,12,12);
-if(S.mode==='pvp')return applyCustomArmour(mkFighter('b',config.pvpName,'human',config.pvpSkill,config.pvpWeapon,config.pvpArmor,config.pvpEvade,3,config.pvpStr,config.pvpSiz,config.pvpShield,config.pvpCon,config.pvpDex,config.pvpInt),config.pvpMixedArmour,config.pvpArmourByLocation);const lvl=S.mode==='tutorial'?1:wave;const type=ENEMY_NAMES[Math.min(ENEMY_NAMES.length-1,Math.floor((wave-1)/2))];let weaponKeys=['dagger','sword','mace','spear','greatsword'];let weapon=weaponKeys[(wave+die(5)-1)%weaponKeys.length];if(wave===1)weapon='dagger';let skill=Math.min(105,43+(wave-1)*5+die(10));if(S.mode==='tutorial')skill=45;let armor=S.mode==='tutorial'?0:Math.min(5,Math.floor((wave-1)/3));let foe=mkFighter('b',type,'ai',skill,weapon,armor,Math.min(90,42+wave*3),wave,11+Math.min(5,Math.floor(wave/3)),12+Math.min(4,Math.floor(wave/4)),!WEAPONS[weapon].twoHanded&&wave>2&&(wave%3===0)?'heater':'none',12+Math.min(6,Math.floor(wave/4)),12+Math.min(6,Math.floor(wave/4)),12+Math.min(6,Math.floor(wave/5)));foe.brawn=Math.min(95,46+3*wave);foe.endurance=Math.min(95,51+2*wave);return foe;}
+const AI_STYLES={
+ aggressive:{label:'Aggressive',description:'Moves forward behind committed attacks, trying to keep you responding.',intercept:.8,open:.22,defend:-12,effects:{press:30,maximize:15,impale:12,remise:20}},
+ patient:{label:'Patient',description:'Keeps a measured guard and looks for a mistake to punish.',intercept:.6,open:.5,defend:16,effects:{overextend:22,prepareCounter:30,disarm:20}},
+ elusive:{label:'Elusive',description:'Shifts weight between each exchange, looking to spoil your footing and slip away.',intercept:.25,open:.65,defend:8,effects:{trip:40,withdraw:20,blind:20}},
+ reach:{label:'Controls distance',description:'Keeps the weapon extended between you, working to make you cross its reach.',intercept:.95,open:.95,defend:6,effects:{open:35,press:16,trip:12}},
+ shield:{label:'Guarded',description:'Stays behind the shield, absorbing pressure before looking for an opening.',intercept:.35,open:.35,defend:24,effects:{enhance:20,overextend:25,disarm:15}}
+};
+function opponentIntroHtml(){
+ const f=S.fighters.b,style=AI_STYLES[f.tactic];
+ const gear=WEAPONS[f.weapon].name+(f.shield!=='none'?' · '+SHIELDS[f.shield].name:'');
+ const armour=f.armor===0?'Unarmoured':f.armor<=2?'Light armour':f.armor<=4?'Medium armour':'Heavy armour';
+ return `<section class="opponent-intro" aria-label="Next opponent">
+   <div class="eyebrow">Encounter ${S.wave}</div><h2>${esc(f.name)}</h2>
+   <p class="opponent-style">${esc(style.label)}</p><p class="opponent-description">${esc(style.description)}</p>
+   <p class="opponent-kit">${esc(gear)} · ${armour}</p>
+   <button class="cta" data-act="beginFight">Begin fight</button>
+ </section>`;
+}
+function prepareEncounter(){
+ R=null;S.phase='intro';S.pending=null;V.impact=null;V.stage=null;render();
+}
+function newHero(){const f=mkFighter('a',config.charname,'human',config.style,config.weapon,config.armor,config.evade,3,config.str,config.siz,config.shield,config.con,config.dex,config.int);f.firstAid=config.firstAid;f.willpower=config.willpower;return applyCustomArmour(f,config.mixedArmour,config.armourByLocation);};
+function newEnemy(wave){if(S.mode==='pvp')return applyCustomArmour(mkFighter('b',config.pvpName,'human',config.pvpSkill,config.pvpWeapon,config.pvpArmor,config.pvpEvade,3,config.pvpStr,config.pvpSiz,config.pvpShield,config.pvpCon,config.pvpDex,config.pvpInt),config.pvpMixedArmour,config.pvpArmourByLocation);const lvl=S.mode==='tutorial'?1:wave;const type=ENEMY_NAMES[Math.min(ENEMY_NAMES.length-1,Math.floor((wave-1)/2))];let weaponKeys=['dagger','sword','mace','spear','greatsword'];let weapon=weaponKeys[(wave+die(5)-1)%weaponKeys.length];if(S.mode==='tutorial')weapon='dagger';let skill=Math.min(105,43+(wave-1)*5+die(10));if(S.mode==='tutorial')skill=45;let armor=S.mode==='tutorial'?0:Math.min(5,Math.floor((wave-1)/3));let foe=mkFighter('b',type,'ai',skill,weapon,armor,Math.min(90,42+wave*3),wave,11+Math.min(5,Math.floor(wave/3)),12+Math.min(4,Math.floor(wave/4)),!WEAPONS[weapon].twoHanded&&wave>2&&(wave%3===0)?'heater':'none',12+Math.min(6,Math.floor(wave/4)),12+Math.min(6,Math.floor(wave/4)),12+Math.min(6,Math.floor(wave/5)));foe.brawn=Math.min(95,46+3*wave);foe.endurance=Math.min(95,51+2*wave);
+const styles=['aggressive','patient','elusive'];
+if(WEAPONS[weapon].reach>=3)styles.push('reach');
+if(foe.shield!=='none')styles.push('shield');
+foe.tactic=styles[die(styles.length)-1];
+return foe;}
 
 /* UI-only injury presentation; wound severity always comes from existing Mythras state. */
 function injurySummaryHtml(f){
@@ -1402,10 +1430,10 @@ function resultModalHtml(){
   const consequence=injury?cause.consequence:cause.type==='fatigue'?'Bleeding continued into successive combat rounds.':cause.type==='exhaustion'?'Both exhausted fighters lack the AP to act; the training bout is scored as a draw.':'Fight ended without a finishing wound';
   const next=S.phase==='between';
   const nextButton=next?`<button type="button" class="result-primary" data-act="next">Next opponent</button>`:
-    `<button type="button" class="result-primary" data-act="retry">${['pvp','spearman'].includes(S.mode)?'Rematch':'Try again'}</button>`;
+    `<button type="button" class="result-primary" data-act="retry">${S.mode==='pvp'?'Rematch':'Try again'}</button>`;
   return `<div class="result-backdrop"><section class="result-modal ${victory?'won':'lost'}" role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultCause">
     <button type="button" class="result-close" data-act="dismissResult" aria-label="Close result">×</button>
-    <div class="result-eyebrow">${['pvp','spearman'].includes(S.mode)?'DUEL':S.mode==='tutorial'?'TRAINING':'GAUNTLET'} · ROUND ${S.round}</div>
+    <div class="result-eyebrow">${S.mode==='pvp'?'DUEL':S.mode==='tutorial'?'TRAINING':'GAUNTLET'} · ROUND ${S.round}</div>
     <h2 id="resultTitle">${result}</h2><div class="result-winner">${esc(draw?"Neither combatant can continue":S.winner+" wins")}</div>
     <div class="result-rule"></div>
     <div class="result-finish ${injury?'has-location':''}" id="resultCause">
@@ -1448,14 +1476,9 @@ function focusActiveDecision(){
  });
 }
 
-function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Steady pace'}</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v23 · Turn scheduling</span>`}</div></section>${setup?setupHtml():arenaHtml()}${!setup?resultModalHtml():''}${!setup?meleeEffectReference():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, sourcebook-gated Special Effects, wounds, initiative and optional reach. Implemented: sourcebook-derived AP (INT+DEX), hit-location HP (CON+SIZ), initiative bonus (average INT/DEX), mixed-location armour and armour ENC penalty, weapon/shield Size parries, shield wards, STR+SIZ Damage Modifier, and Withdraw. Still simplified: shield attacks, unarmed grapples, complex terrain for Bash beyond a 6m training-ring clearance, Luck and long-term natural recovery over days/weeks; exertion Fatigue uses Core pp.78–79 and Hardcore rest uses training-arena pacing. Delay holds an AP for an available reaction until the next turn. The prototype serializes tied initiative with the left fighter first and does not implement Interrupt. A short separated gap can be re-engaged without a Move AP; beyond 3m the training prototype charges 1 AP. Hardcore First Aid restores partial function after Serious Wounds, but not HP. Major Wounds remain incapacitating. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110; Special Effects summary and descriptions pp. 95–101.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.dataset.help=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}if(!b||!['react','effect','pickloc'].includes(b.dataset.act))n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;mountDiceTray();focusActiveDecision();}}
-function modeName(m){return {tutorial:'Guided Tutorial',normal:'Normal Gauntlet',hardcore:'Hardcore Gauntlet',pvp:'Local PvP',spearman:'Inside the Spear'}[m]||m}
-function setupHtml(){let modes=[['tutorial','01','Guided Tutorial','One beginner-friendly bout with reminders about Mythras decisions.'],['normal','02','Normal Gauntlet','Infinite escalating enemies. Your wounds reset after each win.'],['hardcore','03','Hardcore Gauntlet','Same escalating enemies. Wounds and injuries persist between fights.'],['pvp','04','Local PvP','Two players take turns on one screen; online matching comes later.'],['spearman','05','Inside the Spear','One bout. Get past a spearman with a dagger.']];return `<div class="setup"><h2>Choose your challenge</h2><p class="intro">A working combat loop with selectable reactions, hit locations, a tactical computer opponent, and a local streak board.</p><div class="modes">${modes.map(([k,n,t,d])=>`<button class="mode ${config.mode===k?'on':''}" data-act="mode" data-val="${k}" aria-pressed="${config.mode===k}"><span class="n">MODE ${n}</span><strong>${t}</strong><small>${d}</small></button>`).join('')}</div>${config.mode==='spearman'?spearmanSetupHtml():`<div class="setup-bottom"><div class="formcard"><div class="setup-fighter-intro"><h3>Practice fighter</h3><p>${esc(config.charname)} · ${esc(WEAPONS[config.weapon].name)} · ${config.style}% Combat Style</p></div><details class="fighter-customize"><summary>Customize fighter <span>Skills, weapons and attributes</span></summary><div class="formgrid"><label>Username<input id="username" maxlength="30" value="${esc(config.username)}"></label><label>Character name<input id="charname" maxlength="45" value="${esc(config.charname)}"></label><label>Combat Style %<input id="style" type="number" min="20" max="110" value="${config.style}"></label><label>Evade %<input id="evade" type="number" min="20" max="110" value="${config.evade}"></label><label>Armour AP (all locations)<input id="armor" type="number" min="0" max="8" value="${config.armor}"></label><label>Weapon<select id="weapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.weapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Shield<select id="shield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.shield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>First Aid % (sample)<input id="firstAid" type="number" min="1" max="100" value="${config.firstAid}"></label><label>Willpower % (sample)<input id="willpower" type="number" min="1" max="110" value="${config.willpower}"></label><label>Strength (STR)<input id="str" type="number" min="5" max="20" value="${config.str}"></label><label>Size (SIZ)<input id="siz" type="number" min="5" max="20" value="${config.siz}"></label><label>Constitution (CON)<input id="con" type="number" min="5" max="20" value="${config.con}"></label><label>Dexterity (DEX)<input id="dex" type="number" min="5" max="20" value="${config.dex}"></label><label>Intelligence (INT)<input id="int" type="number" min="5" max="20" value="${config.int}"></label><details style="grid-column:1/-1"><summary>Optional: armour by hit location</summary><label style="display:block;margin:8px 0"><input id="mixedArmour" type="checkbox" ${config.mixedArmour?'checked':''}> Use separate armour values</label><div class="formgrid">${HIT_LOCS.map(loc=>`<label>${loc} AP<input id="armour_${loc.replace(/ /g,'_')}" type="number" min="0" max="8" value="${config.armourByLocation[loc]??config.armor}"></label>`).join('')}</div></details>${config.mode==='pvp'?`<label>Second player name<input id="pvpName" maxlength="45" value="${esc(config.pvpName)}"></label><label>Second player Combat Style %<input id="pvpSkill" type="number" min="20" max="110" value="${config.pvpSkill}"></label><label>Second player Evade %<input id="pvpEvade" type="number" min="20" max="110" value="${config.pvpEvade}"></label><label>Second player armour AP<input id="pvpArmor" type="number" min="0" max="8" value="${config.pvpArmor}"></label><label>Second player weapon<select id="pvpWeapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.pvpWeapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Second player shield<select id="pvpShield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.pvpShield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>Second player STR<input id="pvpStr" type="number" min="5" max="20" value="${config.pvpStr}"></label><label>Second player SIZ<input id="pvpSiz" type="number" min="5" max="20" value="${config.pvpSiz}"></label><label>Second player CON<input id="pvpCon" type="number" min="5" max="20" value="${config.pvpCon}"></label><label>Second player DEX<input id="pvpDex" type="number" min="5" max="20" value="${config.pvpDex}"></label><label>Second player INT<input id="pvpInt" type="number" min="5" max="20" value="${config.pvpInt}"></label><details style="grid-column:1/-1"><summary>Optional: second player armour by location</summary><label style="display:block;margin:8px 0"><input id="pvpMixedArmour" type="checkbox" ${config.pvpMixedArmour?'checked':''}> Use separate armour values</label><div class="formgrid">${HIT_LOCS.map(loc=>`<label>${loc} AP<input id="pvpArmour_${loc.replace(/ /g,'_')}" type="number" min="0" max="8" value="${config.pvpArmourByLocation[loc]??config.pvpArmor}"></label>`).join('')}</div></details>`:''}</div><p class="formhint">These are sample statistics, not an imported character. Uniform armour is the default. Expand the armour-by-location section for mixed equipment; two-handed weapons cannot equip a shield.</p></details><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px"><button class="cta" data-act="start">${config.mode==='pvp'?'Start Duel':'Enter Training Grounds'} &nbsp;→</button><span class="modehint">Runs entirely on your device.</span></div></div><div class="setup-right"><div class="statbox"><strong>Gauntlet leaderboard</strong><p>Stored in this browser, not published online. Rankings count consecutive opponents defeated.</p><div class="badges"><button class="lbtab ${S.lbMode==='normal'?'on':''}" data-act="lbmode" data-val="normal">Normal</button><button class="lbtab ${S.lbMode==='hardcore'?'on':''}" data-act="lbmode" data-val="hardcore">Hardcore</button></div>${scoresHtml(S.lbMode)}</div><details class="statbox rules-disclosure"><summary>The rules we're testing</summary><div class="badges"><span class="notechip">d100 Skill checks</span><span class="notechip">d20 Hit location</span><span class="notechip">Parry by size</span><span class="notechip">Shields &amp; wards</span><span class="notechip">Damage modifier</span><span class="notechip">Armour initiative</span><span class="notechip">Action points</span><span class="notechip">Special Effects</span><span class="notechip">Optional weapon reach</span><span class="notechip">Serious/Major wounds</span></div><p>Some results and effects remain simplified for this prototype, including full fatigue, weapon durability, and shield attacks. Actual Forge integration would reuse your existing character data and sourcebook-verified engine.</p></details></div></div>`}</div>`}
-function spearmanSetupHtml(){
- return '<div class="setup-bottom"><div class="formcard"><h3>Dagger against spear</h3>'+
-   '<p class="formhint">The bout starts at spear reach. Close while he can react, or hold back and look for a safer opening.</p>'+
-   '<button class="cta" data-act="start">Face the spearman</button></div></div>';
-}
+function render(){if(V.capturing)return;const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / TRAINING GROUNDS</div><h1>Practice Combat</h1>${setup?'<p>Train · Survive · Duel</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span><button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Steady pace'}</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v23 · Turn scheduling</span>`}</div></section>${setup?setupHtml():S.phase==='intro'?opponentIntroHtml():arenaHtml()}${!setup?resultModalHtml():''}${!setup?meleeEffectReference():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>This is a standalone demo, not connected to saved characters. Simplified melee, reactions, sourcebook-gated Special Effects, wounds, initiative and optional reach. Implemented: sourcebook-derived AP (INT+DEX), hit-location HP (CON+SIZ), initiative bonus (average INT/DEX), mixed-location armour and armour ENC penalty, weapon/shield Size parries, shield wards, STR+SIZ Damage Modifier, and Withdraw. Still simplified: shield attacks, unarmed grapples, complex terrain for Bash beyond a 6m training-ring clearance, Luck and long-term natural recovery over days/weeks; exertion Fatigue uses Core pp.78–79 and Hardcore rest uses training-arena pacing. Delay holds an AP for an available reaction until the next turn. The prototype serializes tied initiative with the left fighter first and does not implement Interrupt. A short separated gap can be re-engaged without a Move AP; beyond 3m the training prototype charges 1 AP. Hardcore First Aid restores partial function after Serious Wounds, but not HP. Major Wounds remain incapacitating. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110; Special Effects summary and descriptions pp. 95–101.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.dataset.help=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}if(!b||!['react','effect','pickloc'].includes(b.dataset.act))n.remove()});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;mountDiceTray();focusActiveDecision();}}
+function modeName(m){return {tutorial:'Guided Tutorial',normal:'Normal Gauntlet',hardcore:'Hardcore Gauntlet',pvp:'Local PvP'}[m]||m}
+function setupHtml(){let modes=[['tutorial','01','Guided Tutorial','One beginner-friendly bout with reminders about Mythras decisions.'],['normal','02','Normal Gauntlet','Infinite escalating enemies. Your wounds reset after each win.'],['hardcore','03','Hardcore Gauntlet','Same escalating enemies. Wounds and injuries persist between fights.'],['pvp','04','Local PvP','Two players take turns on one screen; online matching comes later.']];return `<div class="setup"><h2>Choose your challenge</h2><p class="intro">A working combat loop with selectable reactions, hit locations, a tactical computer opponent, and a local streak board.</p><div class="modes">${modes.map(([k,n,t,d])=>`<button class="mode ${config.mode===k?'on':''}" data-act="mode" data-val="${k}" aria-pressed="${config.mode===k}"><span class="n">MODE ${n}</span><strong>${t}</strong><small>${d}</small></button>`).join('')}</div><div class="setup-bottom"><div class="formcard"><div class="setup-fighter-intro"><h3>Practice fighter</h3><p>${esc(config.charname)} · ${esc(WEAPONS[config.weapon].name)} · ${config.style}% Combat Style</p></div><details class="fighter-customize"><summary>Customize fighter <span>Skills, weapons and attributes</span></summary><div class="formgrid"><label>Username<input id="username" maxlength="30" value="${esc(config.username)}"></label><label>Character name<input id="charname" maxlength="45" value="${esc(config.charname)}"></label><label>Combat Style %<input id="style" type="number" min="20" max="110" value="${config.style}"></label><label>Evade %<input id="evade" type="number" min="20" max="110" value="${config.evade}"></label><label>Armour AP (all locations)<input id="armor" type="number" min="0" max="8" value="${config.armor}"></label><label>Weapon<select id="weapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.weapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Shield<select id="shield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.shield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>First Aid % (sample)<input id="firstAid" type="number" min="1" max="100" value="${config.firstAid}"></label><label>Willpower % (sample)<input id="willpower" type="number" min="1" max="110" value="${config.willpower}"></label><label>Strength (STR)<input id="str" type="number" min="5" max="20" value="${config.str}"></label><label>Size (SIZ)<input id="siz" type="number" min="5" max="20" value="${config.siz}"></label><label>Constitution (CON)<input id="con" type="number" min="5" max="20" value="${config.con}"></label><label>Dexterity (DEX)<input id="dex" type="number" min="5" max="20" value="${config.dex}"></label><label>Intelligence (INT)<input id="int" type="number" min="5" max="20" value="${config.int}"></label><details style="grid-column:1/-1"><summary>Optional: armour by hit location</summary><label style="display:block;margin:8px 0"><input id="mixedArmour" type="checkbox" ${config.mixedArmour?'checked':''}> Use separate armour values</label><div class="formgrid">${HIT_LOCS.map(loc=>`<label>${loc} AP<input id="armour_${loc.replace(/ /g,'_')}" type="number" min="0" max="8" value="${config.armourByLocation[loc]??config.armor}"></label>`).join('')}</div></details>${config.mode==='pvp'?`<label>Second player name<input id="pvpName" maxlength="45" value="${esc(config.pvpName)}"></label><label>Second player Combat Style %<input id="pvpSkill" type="number" min="20" max="110" value="${config.pvpSkill}"></label><label>Second player Evade %<input id="pvpEvade" type="number" min="20" max="110" value="${config.pvpEvade}"></label><label>Second player armour AP<input id="pvpArmor" type="number" min="0" max="8" value="${config.pvpArmor}"></label><label>Second player weapon<select id="pvpWeapon">${Object.keys(WEAPONS).map(x=>`<option value="${x}" ${config.pvpWeapon===x?'selected':''}>${WEAPONS[x].name}</option>`).join('')}</select></label><label>Second player shield<select id="pvpShield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.pvpShield===x?'selected':''}>${SHIELDS[x].name}</option>`).join('')}</select></label><label>Second player STR<input id="pvpStr" type="number" min="5" max="20" value="${config.pvpStr}"></label><label>Second player SIZ<input id="pvpSiz" type="number" min="5" max="20" value="${config.pvpSiz}"></label><label>Second player CON<input id="pvpCon" type="number" min="5" max="20" value="${config.pvpCon}"></label><label>Second player DEX<input id="pvpDex" type="number" min="5" max="20" value="${config.pvpDex}"></label><label>Second player INT<input id="pvpInt" type="number" min="5" max="20" value="${config.pvpInt}"></label><details style="grid-column:1/-1"><summary>Optional: second player armour by location</summary><label style="display:block;margin:8px 0"><input id="pvpMixedArmour" type="checkbox" ${config.pvpMixedArmour?'checked':''}> Use separate armour values</label><div class="formgrid">${HIT_LOCS.map(loc=>`<label>${loc} AP<input id="pvpArmour_${loc.replace(/ /g,'_')}" type="number" min="0" max="8" value="${config.pvpArmourByLocation[loc]??config.pvpArmor}"></label>`).join('')}</div></details>`:''}</div><p class="formhint">These are sample statistics, not an imported character. Uniform armour is the default. Expand the armour-by-location section for mixed equipment; two-handed weapons cannot equip a shield.</p></details><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px"><button class="cta" data-act="start">${config.mode==='pvp'?'Start Duel':'Enter Training Grounds'} &nbsp;→</button><span class="modehint">Runs entirely on your device.</span></div></div><div class="setup-right"><div class="statbox"><strong>Gauntlet leaderboard</strong><p>Stored in this browser, not published online. Rankings count consecutive opponents defeated.</p><div class="badges"><button class="lbtab ${S.lbMode==='normal'?'on':''}" data-act="lbmode" data-val="normal">Normal</button><button class="lbtab ${S.lbMode==='hardcore'?'on':''}" data-act="lbmode" data-val="hardcore">Hardcore</button></div>${scoresHtml(S.lbMode)}</div><details class="statbox rules-disclosure"><summary>The rules we're testing</summary><div class="badges"><span class="notechip">d100 Skill checks</span><span class="notechip">d20 Hit location</span><span class="notechip">Parry by size</span><span class="notechip">Shields &amp; wards</span><span class="notechip">Damage modifier</span><span class="notechip">Armour initiative</span><span class="notechip">Action points</span><span class="notechip">Special Effects</span><span class="notechip">Optional weapon reach</span><span class="notechip">Serious/Major wounds</span></div><p>Some results and effects remain simplified for this prototype, including full fatigue, weapon durability, and shield attacks. Actual Forge integration would reuse your existing character data and sourcebook-verified engine.</p></details></div></div></div>`}
 function zoneClass(f,loc){const x=f.hp[loc],m=f.maxHp[loc];return x<=-m?'major':x<=0?'serious':x<m?'minor':'ok'}
 
 function figureSvg(f){
@@ -1562,23 +1585,9 @@ function reachContextHtml(){
  if(S.disengaged)return '<p class="reach-context" role="note"><strong>Separated by '+
    esc(S.gapMetres||0)+'m.</strong> Re-engage before attempting a body strike.</p>';
  if(!reach.active)return '';
+ if(reach.longer==='b'&&S.fighters.b.tactic)return '';
  const longer=S.fighters[reach.longer],shorter=S.fighters[reach.longer==='a'?'b':'a'];
  if(!longer||!shorter)return '';
- if(S.mode==='spearman'){
-   if(S.pending?.kind==='range'&&S.pending.mover==='b'){
-     return '<p class="reach-context" role="note"><strong>He steps back to bring the spear to bear.</strong> Oppose to try to keep him close. If you intercept, he gets his distance even if your strike lands.</p>';
-   }
-   if(S.engagement==='short'){
-     const payoff=canUseWeapon(longer)?'He can’t parry with the spear here. Make him fight at dagger reach.':'The distance is now in your favour.';
-     return `<p class="reach-context" role="note"><strong>You’re inside his reach.</strong> ${payoff}</p>`;
-   }
-   if(S.engagement==='long'&&!S.pending&&(!R||/^Initiative/i.test(R.label))){
-     const posture=canUseWeapon(longer)&&!longer.prone?'He levels the spear.':'The distance is still in his favour.';
-     const risk=canInterceptRange(longer)?'He’ll try to intercept if you close now.':
-       canOpposeRange(longer)?'He can still oppose your approach with Evade.':'He can’t react right now. You can close without a contest.';
-     return `<p class="reach-context" role="note"><strong>${posture}</strong> ${risk}</p>`;
-   }
- }
  if(S.engagement==='long')return '<p class="reach-context" role="note"><strong>'+esc(longer.name)+
    ' controls long reach.</strong> '+esc(shorter.name)+' must close distance before a body attack.</p>';
  if(S.engagement==='short')return '<p class="reach-context" role="note"><strong>'+esc(shorter.name)+
@@ -1640,16 +1649,54 @@ function fighterCard(f,cls){
    </div>
  </article>`;
 }
+function combatNarrationHtml(){
+ let text='',detail='';
+ const foe=S.fighters.b;
+ if(V.busy){
+   if(V.roll){text=exchangeLiveNarration()||S.fighters[V.roll.actor].name+' rolls.';}
+   else if(V.stage?.entry){
+     const view=chronicleSummary(V.stage.entry);
+     text=view.headline;detail=view.summary;
+   }
+ }else if(R){
+   text=/^Initiative/i.test(R.label)?'Who moves first?':
+     /^Attack ·/i.test(R.label)?'Commit to the attack.':
+     /^(Parry|Evade) ·/i.test(R.label)?'Meet the incoming blow.':
+     /^Damage ·/i.test(R.label)?'See what the strike costs.':rollHeading(R.label);
+   detail=decisionReason();
+ }else if(S.pending){
+   const p=S.pending;
+   text=p.kind==='reaction'?S.fighters[p.atk].name+' attacks.':
+     p.kind==='effect'?S.fighters[p.owner].name+' has an opening.':
+     p.kind==='location'?'Pick where the blow lands.':
+     p.kind==='range'?S.fighters[p.mover].name+' tries to '+(p.desired==='long'?'gain distance.':'get inside.'):
+     'The exchange continues.';
+   detail=decisionReason()||(p.kind==='range'?'Allow the movement, oppose it, or intercept with an attack.':'');
+ }else if(S.phase==='fight'){
+   const style=AI_STYLES[foe.tactic];
+   if(!canUseWeapon(foe)){text=foe.name+' struggles to bring a weapon to bear.';}
+   else if(foe.prone){text=foe.name+' is down on the ground.';}
+   else if(attackRestrictionTurns(foe)>0){text=foe.name+' is under pressure.';detail='An attack is restricted on the next turn.';}
+   else if(foe.ap===0){text=foe.name+' has spent every Action Point.';detail='They have no AP left to react before the next round.';}
+   else if(engagementInfo().active&&engagementInfo().longer==='b'){
+     text=S.engagement==='short'?'You’re inside '+foe.name+'’s reach.':foe.name+' keeps the '+WEAPONS[foe.weapon].name.toLowerCase()+' between you.';
+     detail=S.engagement==='short'?'That weapon can’t parry here. You can strike at close reach.':'Closing risks an interception while they can still react.';
+   }else {text=foe.name+' watches your next move.';detail=style?.description||'';}
+ }else if(S.phase==='between'){text='The encounter is won. Another opponent awaits.';}
+ else {text='The bout is over.';}
+ return `<section class="combat-narration" aria-label="Current situation" aria-live="polite"><p>${esc(text)}</p>${detail?`<div>${esc(detail)}</div>`:''}</section>`;
+}
 function arenaHtml(){
  const a=V.busy&&V.shown?.a?V.shown.a:S.fighters.a,b=V.busy&&V.shown?.b?V.shown.b:S.fighters.b;
  const info=currentExchange();
  const range=S.disengaged?'Separated · '+S.gapMetres+' m':engagementInfo().active?'Reach advantage':'Matched reach';
  return `<div class="arena">${fighterCard(a,'player')}<div class="exchange-column"><section class="center" aria-label="Combat exchange">
  <header class="center-top">
-   <div><div class="label">${S.mode==='spearman'?'Inside the Spear':S.mode==='pvp'?'Friendly duel':S.mode==='tutorial'?'Guided tutorial':`Encounter ${S.wave}`}</div>
+   <div><div class="label">${S.mode==='pvp'?'Friendly duel':S.mode==='tutorial'?'Guided tutorial':`Encounter ${S.wave}`}</div>
    <h2>Round ${S.round}<small>Cycle ${S.cycle}</small></h2></div>
    <div class="round-context"><span>${esc(range)}</span></div>
  </header>
+ ${combatNarrationHtml()}
  ${reachContextHtml()}
  ${nextActionHtml()}
  <div class="exchange-board${V.roll?' has-roll':''}">${exchangeHalf('a',info)}${exchangeHalf('b',info)}</div>
@@ -1675,7 +1722,7 @@ function decisionHtml(){
  const immediate=new Set(['attack','reengage','withdrawImpale','recoverWeapon','freePin','swapHand']);
  if(f?.prone&&canRegainFooting(f))immediate.add('stand');
  if(f&&(!canAttackBody(f.id)||f.disarmed||S.disengaged))immediate.add('changeRange');
- if(S.mode==='spearman'&&f&&proposedRange(f.id)==='short'){
+ if(f&&proposedRange(f.id)==='short'){
    immediate.delete('attack');
    immediate.add('delay');
  }
@@ -1695,8 +1742,8 @@ function decisionReason(){
  if(R){
    if(/^Initiative/i.test(label))return 'Roll to see who acts first.';
    if(/^Attack ·/i.test(label))return 'Roll against Combat Style to see how well the attack lands.';
-   if(S.mode==='spearman'&&/^Change Range ·/i.test(label)&&p?.intercepting&&p.mover==='a'){
-     return 'The spear is coming in. Roll Evade against his attack as you close.';
+   if(/^Change Range ·/i.test(label)&&p?.intercepting&&p.mover==='a'){
+     return 'An interception is coming. Roll Evade against the attack as you close.';
    }
    if(/^(Parry|Evade) ·/i.test(label))return 'Compare this defense roll with the attack.';
    if(/^Hit Location/i.test(label))return 'The attack succeeded. Roll to find where it lands.';
@@ -1744,8 +1791,7 @@ function nextActionHtml(){
  const owner=S.fighters[R?.actor||currentDecisionOwner()];
  const lead=owner?(S.mode==='pvp'?owner.name:R?'Your roll':'Your move'):'Next action';
  const content=R?rollPrompt(R.actor):decisionHtml();
- const reason=decisionReason();
- const context=reason?`<p class="decision-context">${esc(reason)}</p>`:'';
+ const context='';
  const help=S.mode==='tutorial'?tutorialGuideHtml():R?'':`<p class="choice-help" id="choiceHelp" role="status">${esc(decisionHelpPrompt())}</p>`;
  return `<section class="decision-panel${R?' roll-panel':''}" aria-label="Current combat decision"><div class="decision-kicker">${esc(lead)}</div>${impactContextHtml()}${context}${content}${help}</section>`;
 }
@@ -1811,7 +1857,7 @@ function tutorialGuideHtml(){
 
 function tutorialHint(){let p=S.pending;if(p?.kind==='reaction')return 'Choose weapon parry, shield parry, Evade, or conserve AP. Weapon and shield Size determine damage reduction.';if(p?.kind==='effect')return 'A better success grade can grant Special Effects before damage is resolved.';if(p?.kind==='range')return 'The defender may allow the Change Range action, oppose with Evade, or intercept by attacking against the mover’s Evade. Closing succeeds even if an interception hits.';if(p?.kind==='location')return 'Choose Location lets you target a normally reachable area of the opponent rather than roll the d20 location die.';return 'Each combatant gets one proactive action in initiative order per cycle. Reactive actions also cost an Action Point. Track both fighters’ location HP.'}
 function actionHtml(){if(V.busy)return `<div class="resolving"><span class="resolving-icon">✦</span><div><strong>RESOLVING THE EXCHANGE</strong><small>Player rolls are prompted; enemy dice resolve automatically.</small></div><button data-act="skip" class="toolbutton">Show results</button></div>`;if(S.phase==='between')return `<div class="endpanel"><span class="eyebrow">Victory · streak ${S.wins}</span><h3>Opponent Defeated</h3><p>${S.mode==='normal'?'Your character will be restored to full health for the next encounter.':'Your wounds and injuries will carry into the next encounter. Action Points will refresh.'} Your next opponent will be stronger.</p><div class="endbuttons"><button class="cta" data-act="next">Face Opponent ${S.wave+1} →</button><button class="cta alt" data-act="reset">Finish Run</button></div>${fieldDressingHtml()}</div>`;
-if(S.phase==='over')return `<div class="endpanel"><span class="eyebrow">${['pvp','spearman'].includes(S.mode)?'Duel finished':S.mode==='tutorial'?'Lesson finished':'Gauntlet finished'}</span><h3>${esc(S.winner||'Bout ended')}</h3><p>${esc(S.endReason||'Combat concluded.')} ${['normal','hardcore'].includes(S.mode)?`Your final win streak was ${S.wins}.`:''}</p><div class="endbuttons"><button class="cta" data-act="retry">${['pvp','spearman'].includes(S.mode)?'Rematch':S.mode==='tutorial'?'Try Lesson Again':'Run Again'}</button><button class="cta alt" data-act="reset">Back to Modes</button></div></div>`;
+if(S.phase==='over')return `<div class="endpanel"><span class="eyebrow">${S.mode==='pvp'?'Duel finished':S.mode==='tutorial'?'Lesson finished':'Gauntlet finished'}</span><h3>${esc(S.winner||'Bout ended')}</h3><p>${esc(S.endReason||'Combat concluded.')} ${['normal','hardcore'].includes(S.mode)?`Your final win streak was ${S.wins}.`:''}</p><div class="endbuttons"><button class="cta" data-act="retry">${S.mode==='pvp'?'Rematch':S.mode==='tutorial'?'Try Lesson Again':'Run Again'}</button><button class="cta alt" data-act="reset">Back to Modes</button></div></div>`;
 const p=S.pending;
 if(p?.kind==='range'){
   const mover=S.fighters[p.mover],d=S.fighters[p.defender];
@@ -1837,7 +1883,7 @@ if(p?.kind==='location'){
 }
 let id=S.order[S.turnIndex],f=S.fighters[id];if(!f)return '<p class="desc">Waiting for combat to begin.</p>';
 if(S.disengaged)return `<div class="turnline"><h3>${esc(f.name)} · Separated</h3><span>${S.gapMetres||0}m gap</span></div><div class="choicegrid"><button class="choice gold" data-act="reengage" ${f.prone?'disabled':''}><strong>Move to Engage${S.gapMetres>3?' · 1 AP':''}</strong></button>${f.prone&&canRegainFooting(f)?'<button class="choice" data-act="stand"><strong>Regain Footing · 1 AP</strong></button>':''}<button class="choice" data-act="dither"><strong>Wait · 1 AP</strong></button></div>`;
-return `<div class="turnline"><h3>Choose an action</h3><span>${f.ap} AP remaining</span></div><div class="choicegrid"><button class="choice gold" data-act="attack" ${f.ap<1||!canMakeAttack(f)?'disabled':''}><strong>Attack · 1 AP</strong><small>${attackRestrictionTurns(f)>0||cannotAttackDueToStun(f)?'Stunned / pressured: cannot attack this turn':!canUseWeapon(f)?'Weapon arm disabled: swap weapon hand or concede':isCrampedAtReach(id)?'Awkward strike with the haft · 1d3+1':!canAttackBody(id)?'Body out of reach — close range first':'Roll Combat Style, allow a reaction, resolve damage'}</small></button>${canWithdrawImpale(f)?`<button class="choice" data-act="withdrawImpale"><strong>Withdraw Embedded Weapon · 1 AP</strong><small>Ready Weapon + Brawn; withdrawal inflicts additional damage</small></button>`:''}${f.pinnedGear?`<button class="choice" data-act="freePin"><strong>Free Pinned ${f.pinnedGear==='shield'?'Shield':'Weapon'} · 1 AP</strong></button>`:''}${f.disarmed?`<button class="choice" data-act="recoverWeapon" ${f.ap<1?'disabled':''}><strong>${f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?'Ready Weapon':'Pick Up Weapon'} · 1 AP</strong></button>`:''}<button class="choice" data-act="changeRange" ${f.ap<1||!proposedRange(id)?'disabled':''}><strong>${S.mode==='spearman'&&proposedRange(id)==='short'?'Close Inside · 1 AP':'Change Range · 1 AP'}</strong><small>${proposedRange(id)==='short'?'Close to shorter reach':proposedRange(id)==='long'?'Open to longer reach':'No contested reach difference'}</small></button>${f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded?`<button class="choice" data-act="swapHand"><strong>Switch Weapon Hand · 1 AP</strong><small>Ready your weapon in the usable hand</small></button>`:''}${f.shield!=='none'?`<button class="choice" data-act="ward" title="Free action before an incoming attack"><strong>${f.warded?.length?'Change Shield Ward':'Ward Shield'} · 0 AP</strong></button>`:''}<button class="choice" data-act="brace" ${f.ap<1||f.braced?'disabled':''}><strong>Brace · 1 AP</strong><small>Brace against force; doubles SIZ versus Bash (Core p.91)</small></button><button class="choice" data-act="delay"><strong>${S.mode==='spearman'&&proposedRange(id)==='short'?'Hold for a Reaction':'Delay'}</strong><small>Hold 1 AP for a reaction until your next turn</small></button><button class="choice" data-act="dither" ${f.ap<1?'disabled':''}><strong>Dither · 1 AP</strong><small>Use your action without attacking</small></button><button class="choice" data-act="stand" ${f.ap<1||!canRegainFooting(f)?'disabled':''}><strong>Regain Footing · 1 AP</strong><small>Opposed Brawn test if engaged (Core p.92)</small></button><button class="choice" data-act="yield"><strong>Concede Bout · 0 AP</strong><small>End this training fight without a death</small></button><button class="choice" data-act="help"><strong>Combat reference</strong><small>Show the rules this prototype implements</small></button></div>`}
+return `<div class="turnline"><h3>Choose an action</h3><span>${f.ap} AP remaining</span></div><div class="choicegrid"><button class="choice gold" data-act="attack" ${f.ap<1||!canMakeAttack(f)?'disabled':''}><strong>Attack · 1 AP</strong><small>${attackRestrictionTurns(f)>0||cannotAttackDueToStun(f)?'Stunned / pressured: cannot attack this turn':!canUseWeapon(f)?'Weapon arm disabled: swap weapon hand or concede':isCrampedAtReach(id)?'Awkward strike with the haft · 1d3+1':!canAttackBody(id)?'Body out of reach — close range first':'Roll Combat Style, allow a reaction, resolve damage'}</small></button>${canWithdrawImpale(f)?`<button class="choice" data-act="withdrawImpale"><strong>Withdraw Embedded Weapon · 1 AP</strong><small>Ready Weapon + Brawn; withdrawal inflicts additional damage</small></button>`:''}${f.pinnedGear?`<button class="choice" data-act="freePin"><strong>Free Pinned ${f.pinnedGear==='shield'?'Shield':'Weapon'} · 1 AP</strong></button>`:''}${f.disarmed?`<button class="choice" data-act="recoverWeapon" ${f.ap<1?'disabled':''}><strong>${f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?'Ready Weapon':'Pick Up Weapon'} · 1 AP</strong></button>`:''}<button class="choice" data-act="changeRange" ${f.ap<1||!proposedRange(id)?'disabled':''}><strong>${proposedRange(id)==='short'?'Close Inside · 1 AP':'Change Range · 1 AP'}</strong><small>${proposedRange(id)==='short'?'Close to shorter reach':proposedRange(id)==='long'?'Open to longer reach':'No contested reach difference'}</small></button>${f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!WEAPONS[f.weapon].twoHanded?`<button class="choice" data-act="swapHand"><strong>Switch Weapon Hand · 1 AP</strong><small>Ready your weapon in the usable hand</small></button>`:''}${f.shield!=='none'?`<button class="choice" data-act="ward" title="Free action before an incoming attack"><strong>${f.warded?.length?'Change Shield Ward':'Ward Shield'} · 0 AP</strong></button>`:''}<button class="choice" data-act="brace" ${f.ap<1||f.braced?'disabled':''}><strong>Brace · 1 AP</strong><small>Brace against force; doubles SIZ versus Bash (Core p.91)</small></button><button class="choice" data-act="delay"><strong>${proposedRange(id)==='short'?'Hold for a Reaction':'Delay'}</strong><small>Hold 1 AP for a reaction until your next turn</small></button><button class="choice" data-act="dither" ${f.ap<1?'disabled':''}><strong>Dither · 1 AP</strong><small>Use your action without attacking</small></button><button class="choice" data-act="stand" ${f.ap<1||!canRegainFooting(f)?'disabled':''}><strong>Regain Footing · 1 AP</strong><small>Opposed Brawn test if engaged (Core p.92)</small></button><button class="choice" data-act="yield"><strong>Concede Bout · 0 AP</strong><small>End this training fight without a death</small></button><button class="choice" data-act="help"><strong>Combat reference</strong><small>Show the rules this prototype implements</small></button></div>`}
 function log(title,body,kind='system',detail='',meta=null){
  const entry={id:nextLogId++,title,body,kind,detail,meta,view:S.fighters?clone(S.fighters):null};
  S.logs.push(entry);
@@ -2007,7 +2053,7 @@ function availableEffects(p){
  const stacked=new Set(['maximize','overextend','prepareCounter']);
  return out.filter(([id])=>stacked.has(id)||!p.chosen.includes(id));
 }
-function startRun(){R=null;S={phase:'fight',mode:config.mode,wave:1,wins:0,sel:{},lbMode:'normal',logs:[],fighters:{},round:1,cycle:1,turnIndex:0,pending:null,endReason:'',winner:null};S.fighters={a:newHero(),b:newEnemy(1)};beginEncounter();}
+function startRun(showIntro=false){R=null;S={phase:'fight',mode:config.mode,wave:1,wins:0,sel:{},lbMode:'normal',logs:[],fighters:{},round:1,cycle:1,turnIndex:0,pending:null,endReason:'',winner:null};S.fighters={a:newHero(),b:newEnemy(1)};if(showIntro&&['normal','hardcore'].includes(S.mode))prepareEncounter();else beginEncounter();}
 function beginEncounter(){
   let a=S.fighters.a,b=S.fighters.b;
   ensureEffectState(a);ensureEffectState(b);
@@ -2078,8 +2124,8 @@ if(f.kind==='ai'){
     endFight(id==='a'?'b':'a',`${f.name} cannot continue using the equipped weapon and concedes the bout.`);return;
   }
   const rangeChange=proposedRange(id);
-  const spearmanOpens=S.mode==='spearman'&&id==='b'&&rangeChange==='long'&&!f.prone;
-  if(rangeChange&&(!canAttackBody(id)||spearmanOpens||Math.random()<.48)){beginChangeRange(id);return;}const standScore=f.prone?72+(f.ap>1?9:0):0;const attackScore=58+(f.style>65?7:0)+(f.prone?-25:0)+Math.random()*11;if(standScore>attackScore&&canRegainFooting(f)){regainFooting(id);return;}beginAttack(id);return;}
+  const openChance=AI_STYLES[f.tactic]?.open??.48;
+  if(rangeChange&&(!canAttackBody(id)||!f.prone&&Math.random()<openChance)){beginChangeRange(id);return;}const standScore=f.prone?72+(f.ap>1?9:0):0;const attackScore=58+(f.style>65?7:0)+(f.prone?-25:0)+Math.random()*11;if(standScore>attackScore&&canRegainFooting(f)){regainFooting(id);return;}beginAttack(id);return;}
 render();return;}log('Turn order safety','Combat scheduling reached its safety limit.','system');render();}
 function moveEngage(id){
  if(S.phase!=='fight'||S.pending||R||!S.disengaged)return false;
@@ -2104,8 +2150,10 @@ function beginAttack(id,isRemise=false){
     log(`${f.name} ${isRemise?'makes a Remise attack':'attacks'}`,`${at.roll} against Combat Style ${target}% — ${at.label}.`,'system',`${WEAPONS[f.weapon].name}. ${f.ap} AP left.`,{actor:f.id,dice:d100Dice(at.roll)});
     if(t.kind==='ai'){
       const threat=at.grade>=2?60+(at.grade===3?18:0):at.grade===0?38:10;
-      const parryValue=threat+(t.ap>1?12:-15)+(Object.values(t.hp).some(hp=>hp<=2)?12:0)+Math.random()*12;
-      react(t.ap>0&&canParryAtReach(t.id)&&parryValue>50?'parry':'none');
+      const parryValue=threat+(t.ap>1?12:-15)+(Object.values(t.hp).some(hp=>hp<=2)?12:0)+(AI_STYLES[t.tactic]?.defend??0)+Math.random()*12;
+      const tool=canShieldParry(t)?'shield':canParryAtReach(t.id)?'parry':null;
+      const evade=t.tactic==='elusive'&&!t.prone&&t.ap>0&&!cannotRespond(t)&&at.grade>=2;
+      react(evade?'evade':tool&&t.ap>0&&parryValue>50?tool:'none');
     }else render();
   });
 }
@@ -2152,7 +2200,7 @@ function aiChooseEffect(p){
   trip:target.prone?0:36+Math.floor(actor.brawn/10),maximize:64,bypassArmour:target.armor>0?75:20,
   circumventParry:90,overextend:44+(target.ap>=2?18:0),close:75,open:72,arise:88,
   compel:disadvantagedForSurrender(target)?84:0,remise:target.ap>0?66:30,withdraw:S.disengaged?0:59,disarm:70,damageWeapon:target.weaponGuard?.hp<=4?80:34,enhance:85,blind:73,standFast:27,accidental:92,scar:19,sunder:target.armor>1?60:18,forceFailure:52,pinWeapon:target.pinnedGear?0:76,prepareCounter:51};
- return options.map(([id])=>[id,(weights[id]??12)+Math.random()*13]).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
+ return options.map(([id])=>[id,(weights[id]??12)+(AI_STYLES[actor.tactic]?.effects[id]??0)+Math.random()*13]).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
 }
 function chooseAIEffectOrRender(){const p=S.pending;if(!p||p.kind!=='effect')return;if(S.fighters[p.owner].kind!=='ai'){render();return;}const x=aiChooseEffect(p);if(x)applyEffect(x);else resolveHit();}
 function targetOpposedSkill(target,originPct,originRoll,basePct,label,callback){
@@ -2595,11 +2643,11 @@ function endFight(winnerId,reason){
   }:{type:/blood loss|fatigue|exertion|exhaustion/i.test(reason)?'fatigue':'concession',victim:loser.name};
   S.showEndModal=true;
   log('FIGHT ENDS',`${winner.name} wins. ${reason}`,'hurt');
-  if(['pvp','tutorial','spearman'].includes(S.mode)){S.phase='over';render();return;}
+  if(['pvp','tutorial'].includes(S.mode)){S.phase='over';render();return;}
   if(winnerId==='a'){S.wins++;saveScore();S.phase='between';S.fighters.a.restUsed=false;}else S.phase='over';render();
 }
-function nextEncounter(){if(S.phase!=='between')return;S.showEndModal=false;S.finalCause=null;S.wave++;let hero=S.mode==='normal'?newHero():S.fighters.a;hero.prone=false;hero.skipAttack=0;hero.blindedTurns=0;hero.blindSkipTick=false;hero.recoveringWeapon=false;if(S.mode==='normal')hero.disabled=[];if(S.mode==='hardcore'&&hero.impaledWeapon){hero.impaledWeapon=null;}hero.status='Ready';hero.restUsed=false;S.fighters={a:hero,b:newEnemy(S.wave)};log('New Opponent',`${S.fighters.b.name} steps forward. ${S.mode==='normal'?'Your HP was restored.':'Your current HP carries over.'}`,'system');beginEncounter();}
-function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let act=n.dataset.act,v=n.dataset.val;switch(act){case 'mode':readSetupInputs();config.mode=v;render();break;case 'lbmode':S.lbMode=v;render();break;case 'start':readSetupInputs();startRun();break;case 'dismissResult':S.showEndModal=false;render();break;case 'openAid':S.showEndModal=false;render();document.querySelector('.field-dressing')?.scrollIntoView({block:'center'});break;case 'reset':V.impact=null;R=null;S={phase:'setup',mode:'normal',lbMode:S.lbMode||'normal'};render();break;case 'retry':startRun();break;case 'next':nextEncounter();break;case 'rest':restBetweenEncounters();break;case 'fieldAid':{const [woundId,action]=v.split(':');beginFieldAid(Number(woundId),action);break;}case 'selectloc':{
+function nextEncounter(){if(S.phase!=='between')return;S.showEndModal=false;S.finalCause=null;S.wave++;let hero=S.mode==='normal'?newHero():S.fighters.a;hero.prone=false;hero.skipAttack=0;hero.blindedTurns=0;hero.blindSkipTick=false;hero.recoveringWeapon=false;if(S.mode==='normal')hero.disabled=[];if(S.mode==='hardcore'&&hero.impaledWeapon){hero.impaledWeapon=null;}hero.status='Ready';hero.restUsed=false;S.fighters={a:hero,b:newEnemy(S.wave)};log('New Opponent',`${S.fighters.b.name} steps forward. ${S.mode==='normal'?'Your HP was restored.':'Your current HP carries over.'}`,'system');prepareEncounter();}
+function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let act=n.dataset.act,v=n.dataset.val;switch(act){case 'mode':readSetupInputs();config.mode=v;render();break;case 'lbmode':S.lbMode=v;render();break;case 'start':readSetupInputs();startRun(true);break;case 'beginFight':if(S.phase==='intro')beginEncounter();break;case 'dismissResult':S.showEndModal=false;render();break;case 'openAid':S.showEndModal=false;render();document.querySelector('.field-dressing')?.scrollIntoView({block:'center'});break;case 'reset':V.impact=null;R=null;S={phase:'setup',mode:'normal',lbMode:S.lbMode||'normal'};render();break;case 'retry':startRun(true);break;case 'next':nextEncounter();break;case 'rest':restBetweenEncounters();break;case 'fieldAid':{const [woundId,action]=v.split(':');beginFieldAid(Number(woundId),action);break;}case 'selectloc':{
   if(!S.sel)S.sel={};S.sel[n.dataset.id]=v;render();
   // Inspection remains keyboard-navigable after the screen is regenerated.
   if(n.tagName==='BUTTON'||n.classList?.contains('zone')){
@@ -2628,7 +2676,7 @@ function decoratedClick(e){
   if(act==='roll'){if(!V.busy&&R)playCaptured(performManualRoll);return;}
   if(V.busy)return;
   if(R&&act!=='reset'&&act!=='selectloc'&&act!=='help')return;
-  if(['start','retry','next','fieldAid','rest','attack','react','changeRange','rangeRespond','effect','skipEffect','pickloc','impaleChoose','impaleResist','withdrawImpale','recoverWeapon','freePin','pinChoose','counterWatch','counterReturn','tripResist','blindResist','footingSkill','footingDefend','reengage','swapHand','yield','brace','ward','wardloc','saveward','clearward','delay','dither','stand'].includes(act)){
+  if(['start','beginFight','retry','next','fieldAid','rest','attack','react','changeRange','rangeRespond','effect','skipEffect','pickloc','impaleChoose','impaleResist','withdrawImpale','recoverWeapon','freePin','pinChoose','counterWatch','counterReturn','tripResist','blindResist','footingSkill','footingDefend','reengage','swapHand','yield','brace','ward','wardloc','saveward','clearward','delay','dither','stand'].includes(act)){
     // Capture one user decision and all chained computer responses as a sequence.
     playCaptured(()=>coreClick(e),act==='start'||act==='retry');
     return;

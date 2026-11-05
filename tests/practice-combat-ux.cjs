@@ -10,7 +10,7 @@ const page = fs.readFileSync(path.join(__dirname, '../experiments/practice-comba
 const css = fs.readFileSync(path.join(__dirname, '../experiments/practice-combat-ux.css'), 'utf8');
 const match = page.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Practice Combat inline runtime exists');
-assert.match(page, /practice-combat-ux\.css\?v=17/, 'UX stylesheet is linked');
+assert.match(page, /practice-combat-ux\.css\?v=18/, 'UX stylesheet is linked');
 assert.match(css, /\.decision-panel \.primary-actions/, 'Primary-action CSS exists');
 
 const handlers = {};
@@ -1173,45 +1173,44 @@ check('A stationary attack preserves Brace and prompts the fighter to roll',
 
 console.log('Practice Combat UX and scheduling checks passed.');
 
-const spearBout=vm.runInContext(`
+const generatedBout=vm.runInContext(`
  (() => {
-   const random=Math.random;
-   Math.random=()=>.79;
-   try{
-     config.mode='spearman';
-     startRun();
-     R=null;
-     S.order=['a','b'];
-     const [hero,spear]=[S.fighters.a,S.fighters.b];
-     const long=reachContextHtml();
-     const options=decisionHtml();
-     beginChangeRange('a');
-     const intercepted=R?.actor==='a'&&/^Change Range ·/.test(R.label)&&
-       S.pending.intercepting&&decisionReason().includes('Roll Evade');
-     performManualRoll();
-     const inside=S.engagement==='short'&&canAttackBody('a')&&!canParryAtReach('b');
-     const backsAway=S.pending?.kind==='range'&&S.pending.mover==='b'&&
-       reachContextHtml().includes('He steps back');
-     rangeReact('permit');
-     const reopened=S.engagement==='long';
-     S.pending=null;
-     S.turnIndex=0;
-     spear.ap=0;
-     hero.ap=2;
-     const opening=reachContextHtml();
-     beginChangeRange('a');
-     const cleanClose=S.engagement==='short'&&!R;
-     endFight('a','Test bout');
-     return {long,options,intercepted,inside,backsAway,reopened,opening,cleanClose,phase:S.phase};
-   }finally{Math.random=random;}
+   config.mode='normal';
+   config.weapon='mace';
+   startRun(true);
+   const foe=S.fighters.b;
+   const intro=opponentIntroHtml();
+   const waits=S.phase==='intro'&&!R&&S.logs.length===0;
+   const ownWeapon=S.fighters.a.weapon;
+   handleClick({target:{closest(){return {dataset:{act:'beginFight'}};}}});
+   const began=S.phase==='fight'&&R?.actor==='a'&&S.fighters.b===foe;
+   R=null;
+   S.phase='between';
+   nextEncounter();
+   const nextWaits=S.phase==='intro'&&!R&&S.wave===2;
+   const styles=new Set();
+   let valid=true;
+   for(let i=0;i<100;i++){
+     const f=newEnemy(6);
+     styles.add(f.tactic);
+     valid&&=!!AI_STYLES[f.tactic]&&(f.tactic!=='shield'||f.shield!=='none')&&
+       (f.tactic!=='reach'||WEAPONS[f.weapon].reach>=3);
+   }
+   config.mode='hardcore';
+   startRun(true);
+   const hero=S.fighters.a;
+   hero.hp['Left Arm']--;
+   S.phase='between';
+   nextEncounter();
+   const carries=S.fighters.a===hero&&S.fighters.a.hp['Left Arm']===hero.maxHp['Left Arm']-1;
+   return {waits,began,nextWaits,ownWeapon,intro,styles:styles.size,valid,carries};
  })()
 `,sandbox);
-check('Spearman bout starts with a real reach gap and two clear opening options',
- spearBout.long.includes('try to intercept')&&spearBout.options.includes('Close Inside')&&
- spearBout.options.includes('Hold for a Reaction'));
-check('The spear intercept uses a manual Evade roll and closing changes weapon reach',
- spearBout.intercepted&&spearBout.inside);
-check('The spearman tries to reopen distance and allowing it restores spear reach',
- spearBout.backsAway&&spearBout.reopened);
-check('An exhausted spearman allows an uncontested close and the bout ends after one fight',
- spearBout.opening.includes('close without a contest')&&spearBout.cleanClose&&spearBout.phase==='over');
+check('Gauntlet introduction waits for Begin fight and preserves the selected character gear',
+ generatedBout.waits&&generatedBout.ownWeapon==='mace'&&generatedBout.intro.includes('Begin fight'));
+check('Beginning the bout uses the previewed opponent and the next wave gets its own card',
+ generatedBout.began&&generatedBout.nextWaits);
+check('Generated fighting styles respect equipment and vary across opponents',
+ generatedBout.valid&&generatedBout.styles>=3);
+check('Hardcore carries the same injured fighter through the next opponent introduction',
+ generatedBout.carries);

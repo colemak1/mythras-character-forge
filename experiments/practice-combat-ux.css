@@ -1745,9 +1745,39 @@ button:focus-visible,.loc:focus-visible {
   box-shadow:inset 2px 0 #c98c68;
 }
 
-.setup .modes [data-val="spearman"] {
-  grid-column:1 / -1;
-  min-height:0;
-}
-.setup .modes [data-val="spearman"] strong { margin:6px 0 4px; }
 .setup .formcard > .cta { margin-top:12px; }
+
+.center .center-top { padding:10px var(--exchange-gutter); }
+.center .center-top > div:first-child { display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; }
+.center .center-top h2 { font:500 13px/1.4 system-ui,sans-serif; margin:0; gap:8px; }
+.center .center-top h2 small { font-size:11px; }
+.center .center-top .label { font-size:10px; }
+.center .combat-narration {
+  padding:24px var(--exchange-gutter) 20px;
+  border-bottom:1px solid var(--exchange-rule);
+  min-height:132px;
+}
+.combat-narration p { margin:0; font:normal clamp(24px,2.2vw,32px)/1.22 Georgia,serif; color:#f1e4cd; text-wrap:pretty; }
+.combat-narration > div { margin-top:10px; font:400 16px/1.55 system-ui,sans-serif; color:#c8bda8; }
+.center .roll-await h3,.center .decision-panel .turnline h3 { font-size:20px; }
+.center .decision-panel .choice strong { font-size:15px; }
+.center .decision-panel .choice small { font-size:13px; line-height:1.45; }
+.center .roll-now { font-size:15px; min-height:44px; }
+.center .decision-panel .choice-help { font-size:13px; }
+.opponent-intro {
+  max-width:760px;
+  margin:38px auto;
+  padding:clamp(28px,5vw,60px);
+  border:1px solid #6b604d;
+  background:#232721;
+}
+.opponent-intro h2 { margin:14px 0 10px; font:normal clamp(34px,4vw,48px)/1.12 Georgia,serif; color:#f0e2c9; }
+.opponent-style { color:#d7bb87; font:600 16px/1.5 system-ui,sans-serif; }
+.opponent-description { margin:22px 0; color:#e4d8c4; font:normal 25px/1.45 Georgia,serif; }
+.opponent-kit { color:#bcb19d; font:500 15px/1.5 system-ui,sans-serif; padding-top:18px; border-top:1px solid #45483c; }
+.opponent-intro .cta { margin-top:18px; background:#d2b784; border-color:#d2b784; color:#24241c; }
+@media(max-width:740px){
+  .center .combat-narration { padding:20px 16px; }
+  .combat-narration p { font-size:25px; }
+  .combat-narration > div { font-size:15px; }
+}
