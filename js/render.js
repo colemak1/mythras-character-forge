@@ -919,6 +919,12 @@ function stepCommunity(){
   h+='<div class="card"><h3>Why this party?</h3>'
     +'<p class="note">Core p.22 suggests each character establish a relationship with another member of the party. If the group uses this option, Group Luck starts at 2 plus 1 per character with a personal connection. Track this shared pool with the GM; it is used when helping another character.</p>'
     +fld('Connection to a fellow PC','<input type="text" value="'+esc(c.partyTie||'')+'" placeholder="What brought your characters together?" onchange="APP.communityField(\'partyTie\',this.value)">')+'</div>';
+  h+='<details class="card"><summary>Cults and brotherhoods (Core pp.196–199)</summary>'
+    +'<p class="note">New members normally enter at Common rank after demonstrating suitability. Compatible groups can share a Common member. Dedicated membership usually takes a full-time commitment. The organisation decides promotion, even when a character meets the suggested requirements.</p>'
+    +'<p class="note">The GM confirms duties, access to training and magic, and actual prices. These are the Core training guidelines.</p>'
+    +'<table class="rt"><thead><tr><th scope="col">Rank</th><th scope="col">Suggested training discount</th></tr></thead><tbody>'
+    +CULT_TIERS.map((tier,i)=>'<tr><th scope="row">'+esc(tier)+'</th><td>'+CULT_TIER_TRAINING_DISCOUNT[i]+'%</td></tr>').join("")
+    +'</tbody></table></details>';
   return h;
 }
 /* ---- step: cult & community ---- */

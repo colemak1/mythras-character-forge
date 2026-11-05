@@ -12,7 +12,7 @@ To test, open the Sorcery editor on a character with more named spells than INT.
 
 ## Cult and brotherhood ranks
 
-- The affiliation editor distinguishes Forge archetype benefits from Core membership guidance. The GM decides entry, promotion, magic access and training prices.
-- The rank display explains the Core's usual starting rank, compatible Common memberships and the commitment expected at Dedicated rank. Source: uploaded Core pp.196–199.
+- Community & Connections now has an expandable reference for joining, promotion and suggested training discounts (uploaded Core pp.196–199).
+- The previous update changed a dormant affiliation editor. The reference is now available through the standard builder.
 
-To test, open Cult & Community, select an archetype, and compare the Common and Dedicated rank guidance and training discounts.
+To test, open Community and expand **Cults and brotherhoods**. Common starts at 0% and Leader reaches 100%, with 25-point steps between ranks.
