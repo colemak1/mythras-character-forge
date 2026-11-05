@@ -16,13 +16,15 @@ Practice Combat feature work is paused until rule correctness catches up (see `d
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Magic case inventory (subsystem 6) | ChatGPT | docs only | Not started; next up |
+| Magic cases Batch 1 (Core pp.112–129) | Claude | `docs/magic-cases-batch-1.md` | Filed and mapped. Folk Magic costs, 0 MP block and card display pass with tests. Decisions D-1 to D-5 need the owner and ChatGPT |
+| Magic cases Batch 2 (Animism, pp.130–153) | ChatGPT (Chat) | docs only | Next up |
 | Magic preparation reload bug | Claude → ChatGPT | PR #110 | Fixed in code with tests (see CHANGELOG). Needs live check by ChatGPT: immediate reload during Mysticism, Sorcery and Theism preparation, and declining the recovery prompt |
 
 ## Waiting on someone
 
-- **ChatGPT → Claude:** rule cases for subsystem 6, as "given X → Core p.N says Y" rows in `docs/magic-subsystem-cases.md`.
-- **ChatGPT:** live re-check of the reload fix once PR #110 is deployed (steps in the top `CHANGELOG.md` entry).
+- **Owner:** decisions D-1 (spell catalogue), D-2 (MP sources and recovery), D-3 (active-effect tracking), D-5 (casting interruptions) in `docs/magic-cases-batch-1.md`.
+- **ChatGPT (Chat):** rounding ruling D-4, then Batch 2 (Animism) in the same table format.
+- **ChatGPT (Work):** live checks listed at the end of `docs/magic-cases-batch-1.md`, plus the reload re-check.
 - Claude merges its own PRs once tests pass (see `AGENTS.md`).
 
 ## Notes

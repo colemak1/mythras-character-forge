@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Magic cases Batch 1 and Folk Magic card details
+
+- Filed ChatGPT's Subsystem 6 Batch 1 cases (Core pp.112–129) in `docs/magic-cases-batch-1.md`, with the app's current status for each case and five open decisions.
+- Folk Magic cards in Play Mode now show 1 Turn, Intensity 1, Magnitude 1 and range in metres (the Folk Magic skill, unaffected by difficulty grade).
+- New `tests/magic-folk-cases.cjs` covers Folk Magic casting costs (critical 0, success 1, failure 1, fumble 1d3 without overdrawing), the 0 MP block, the single Folk Magic skill, and the card display.
+
+To test: open Play Mode for a Folk Magic character and check a spell card reads "1 Turn · Intensity 1 · Magnitude 1 · ranged N m", where N is the Folk Magic skill.
+
+---
+
 ## Account save on reload and tab switch
 
 - Play Mode changes reach the account 1.5 seconds after the last click. A reload inside that window opened the older account copy, which explains the lost Mysticism preparation turn in the November 5 paired-skill batch. Waiting saves now start as soon as the page is hidden, reloaded or closed instead of waiting for the timer.
