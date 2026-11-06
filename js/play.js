@@ -1217,7 +1217,7 @@ function pmTrackersHTML(){
   let h='<div class="pmx-trackers">';
   h+=row("Action Points","ap",'<span class="pm-pips">'+Array.from({length:maxAP},(_,i)=>'<button class="pm-pip'+(i<remainAP?"":" off")+'" aria-label="action point '+(i+1)+'" onclick="APP.playApSetPip('+i+')"></button>').join("")+'</span>'
     +'<button type="button" class="pmx-mini" onclick="APP.playNewRound()" title="New combat round: restore all AP">New round</button>');
-  h+=row("Initiative","initiative",fatigueNoActivity()?'<span class="pmx-dim">—</span>':ini?'<b>'+ini.total+'</b> <span class="pmx-dim">d10 '+ini.roll+' + '+ini.bonus+'</span> <button type="button" class="pmx-mini" onclick="APP.playClearInitiative()">End fight</button>'
+  h+=row("Initiative","initiative",fatigueNoActivity()?'<span class="pmx-dim">—</span>':ini?'<b>'+ini.total+'</b> <span class="pmx-dim">d10 '+ini.roll+' + '+ini.bonus+'</span> <button type="button" class="pmx-mini" onclick="APP.playClearInitiative()" title="Ends the fight: clears initiative and Surprised, restores Action Points">End fight</button>'
     :'<span class="pmx-dim">+'+ib.total+'</span> <button type="button" class="pmx-mini" onclick="APP.playRollInitiative()">Roll</button>');
   h+=row("Magic Points","magic",'<b>'+v.curMagic+'</b><span class="pmx-dim">/'+v.maxMagic+'</span><span class="adj"><button class="pmx-mini" onclick="APP.playMagicAdj(-1)" aria-label="spend magic point">&minus;</button><button class="pmx-mini" onclick="APP.playMagicAdj(1)" aria-label="restore magic point">+</button></span>');
   h+=row("Luck","luck",'<span class="pm-pips">'+Array.from({length:v.maxLuck},(_,i)=>'<button class="pm-pip'+(i<v.curLuck?"":" off")+'" aria-label="luck point '+(i+1)+'" onclick="APP.playLuckSetPip('+i+')"></button>').join("")+'</span>');
@@ -1442,7 +1442,7 @@ function pmTurnStripHTML(){
   const max=playMaxAP(),remain=max-Math.min(S.play.apUsed,max);
   let h='<div class="pm-box pmx-turn">'
    +'<div class="pmx-turn-item"><span class="lbl">Initiative</span>'
-   +(rec?'<b>'+rec.total+'</b> <span class="pmx-dim">d10 '+rec.roll+' + '+rec.bonus+'</span> <button class="pmx-mini" onclick="APP.playClearInitiative()" title="Initiative lasts the whole fight unless something forces a reroll (Core p.90)">End fight</button>'
+   +(rec?'<b>'+rec.total+'</b> <span class="pmx-dim">d10 '+rec.roll+' + '+rec.bonus+'</span> <button class="pmx-mini" onclick="APP.playClearInitiative()" title="Initiative lasts the whole fight (Core p.90). Ending the fight clears it and Surprised, and restores Action Points">End fight</button>'
      :'<button class="pmx-mini" onclick="APP.playRollInitiative()" title="Roll 1d10 + Initiative Bonus '+ib.total+' (Core p.90)">Roll d10 + '+ib.total+'</button>'
       +' <label class="pmx-dim">or your d10 <input id="playInitD10" type="number" min="1" max="10" inputmode="numeric"></label> <button class="pmx-mini" onclick="APP.playSetInitiative()">Set</button>')
    +'</div>'

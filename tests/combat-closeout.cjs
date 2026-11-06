@@ -61,4 +61,12 @@ test('C5-CL10 Choose Location cannot target a passively blocked location',()=>{
 test('C5-CL11 a second throwing weapon held in the off-hand readies as a Free Action',()=>{
  assert.match(run('pmActionsInfoHTML()'),/off-hand moves to the throwing hand as a Free Action/);
 });
+test('final fight step 8: both End fight controls do the same full reset',()=>{
+ for(const how of ['APP.playClearInitiative()','APP.advanceTime("fight")']){
+  setup();run('S.play.initiative={total:23,roll:8,bonus:15};S.play.apUsed=1;S.play.surprised=true;'+how);
+  assert.equal(run('S.play.initiative'),null,how);assert.equal(run('S.play.apUsed'),0,how);assert.equal(run('S.play.surprised'),false,how);
+ }
+ setup();run('S.play.initiative={total:23,roll:8,bonus:15};S.play.apUsed=1;VIEW_ONLY=true;APP.playClearInitiative();VIEW_ONLY=false;');
+ assert.equal(run('S.play.apUsed'),1,'read-only views cannot end the fight');
+});
 console.log(passed+' combat closeout tests passed');
