@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## New site logo
+
+- The spear-and-ribbon logo now sits beside "New Sit'ota" in the site header (in ivory and red, to show on the dark bar). It's also the browser tab icon and the home-screen icon.
+
 ## Advancement options: faster skill improvement, Passion shifts
 
 - **Optional campaign rule:** the GM can set **skill improvement to 1d6+1** instead of 1d4+1 in Campaign rules (Core p.72), for faster progress without extra Experience Rolls. It applies to Passions too. Characters outside a campaign use 1d4+1.
