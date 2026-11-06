@@ -331,7 +331,9 @@ function pmLocRow(loc){
    +'<span class="dot" style="background:'+pmZoneFill(loc)+'"></span>'
    +'<span class="nm">'+pmShortName(loc)+'</span>'
    +'<span class="ap" title="AP '+ap+' — '+esc(armorDisplayName(armLoc))+'">'+PM_SHIELD_SVG+ap+'</span>'
-   +'<span class="hp">'+cur+'<span>/'+max+'</span></span></div>';
+   +'<span class="pmx-hpbar" aria-hidden="true"><i style="width:'+(max>0?Math.max(0,Math.min(100,Math.round(cur/max*100))):0)+'%"></i></span>'
+   +'<span class="hp">'+cur+'<span>/'+max+'</span></span>'
+   +'<span class="pmx-locst">'+esc(playHPState(loc).tag)+'</span></div>';
 }
 // Redesigned damage entry (was a flat row of −1/−3/amount-input/−dmg/+heal/
 // full buttons, all doing raw HP arithmetic with no armour involved at all
@@ -381,7 +383,7 @@ function pmParryCalculate(form){
 }
 function pmLocDetail(){
   const loc=S.play.selectedLoc;
-  if(!loc)return '<div class="pm-locdetail"><p class="pm-empty">Choose a body location above to record an injury.</p></div>';
+  if(!loc)return '<div class="pm-locdetail"><p class="pm-empty">Tap a location to record damage or healing.</p></div>';
   const cur=playCurHP(loc),max=playMaxHP(loc),st=playHPState(loc);
   const armLoc=loc,ap=armorApAt(armLoc);
   const idv="playdmg-"+loc.replace(/\s+/g,"_");
@@ -1039,8 +1041,10 @@ function pmSkillsPanelHTML(){
     // was always redundant with the ✓ flag above anyway, and the log entry
     // wasn't something a physical-dice table actually wanted.
     const fumbleflag='<button class="pm-xpflag'+(fumbled?" on":"")+'" title="'+(fumbled?"Fumbled — free +1% pending. Click to remove flag.":"Mark this skill as Fumbled (free +1% next Improve Skills)")+'" onclick="APP.xpToggleFumble(\''+jsq(e.key)+'\')">&#9873;</button>';
-    return '<div class="pm-skillrow'+(cbt?" cbt":"")+'">'
-     +(fluency?"":ckflag+fumbleflag)
+    const pinned=S.play.pinned.includes(e.key);
+    const pin='<button class="pmx-pin'+(pinned?" on":"")+'" aria-pressed="'+pinned+'" title="'+(pinned?"Unpin":"Pin to the top")+'" onclick="APP.playTogglePin(\''+jsq(e.key)+'\')">'+(pinned?"&#9733;":"&#9734;")+'</button>';
+    return '<div class="pm-skillrow'+(cbt?" cbt":"")+'" data-search="'+esc((e.label+" "+(e.formula||"")).toLowerCase())+'">'
+     +pin+(fluency?"":ckflag+fumbleflag)
      +'<span class="nm">'+esc(e.label)+'</span>'
      +(baseFmt?'<span class="base">'+esc(baseFmt)+'</span>':'')
      +'<span class="lead"></span>'
@@ -1050,6 +1054,10 @@ function pmSkillsPanelHTML(){
   h+='<div class="pm-box pm-skillsbox">'
    +'<div class="pm-sect-head" title="Difficulty Grade adjusts rolled skill percentages — the GM calls a harder or easier Grade for the situation, not a fixed penalty per attempt. Very Easy x2 · Easy x1.5 · Standard x1 · Hard x2/3 · Formidable x1/2 · Herculean x1/10 · Automatic/Hopeless skip the roll entirely."><span class="no">03</span> SKILLS'+(ACTIVE_GRADE!=="standard"?' <span class="pm-gradenote">('+GRADE_LABEL[ACTIVE_GRADE]+')</span>':"")+'</div>'
    +'<div class="pm-ghost">03</div>';
+  h+='<input type="search" class="pmx-skillsearch" aria-label="Search skills" placeholder="Search skills&hellip;" value="'+esc(PM_SKILL_SEARCH)+'" oninput="pmSkillFilter(this)">';
+  const pinnedEntries=S.play.pinned.map(k=>es.find(e=>e.key===k)).filter(Boolean);
+  if(pinnedEntries.length)h+='<div class="pm-skillgroup pmx-pinned"><h4>Pinned</h4>'+pinnedEntries.map(skrow).join("")+'</div>';
+  else h+='<p class="pmx-dim pmx-small pmx-pinhint">Tip: tap &#9734; to pin the skills you use most to the top.</p>';
   h+='<div class="pm-skillgroup"><h4>Standard</h4>'+grp("Standard").map(skrow).join("")+'</div>';
   h+='<div class="pm-skillgroup"><h4>Professional</h4>'+(grp("Professional").length?grp("Professional").map(skrow).join(""):'<p class="pm-empty">None.</p>')+'</div>';
   if(grp("Magic").length)h+='<div class="pm-skillgroup"><h4>Magic</h4>'+grp("Magic").map(skrow).join("")+'</div>';
@@ -1066,6 +1074,18 @@ function pmSkillsPanelHTML(){
   h+='</div>';
 
   return h;
+}
+// Client-side filter, like pmFxFilter: re-rendering on each keystroke would
+// rebuild the input and lose focus.
+let PM_SKILL_SEARCH="";
+function pmSkillFilter(input){
+  const q=input.value.trim().toLowerCase();PM_SKILL_SEARCH=input.value;
+  const box=input.closest(".pm-skillsbox")||document;
+  box.querySelectorAll(".pm-skillgroup").forEach(g=>{
+    let any=false;
+    g.querySelectorAll(".pm-skillrow").forEach(row=>{const m=!q||(row.dataset.search||"").includes(q);row.style.display=m?"":"none";if(m)any=true;});
+    g.style.display=any?"":"none";
+  });
 }
 function pmActionsPanelHTML(){
   let h='<div class="pm-box pmx-actions"><h3>Actions <span class="pmx-dim">tap to spend AP</span></h3>';
@@ -1243,6 +1263,7 @@ function renderPlayView(){
   h+=giftPopupHtml();
   $("#main").innerHTML=h;
   if(tab==="combat"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
+  if(tab==="skills"&&PM_SKILL_SEARCH){const search=document.querySelector(".pmx-skillsearch");if(search)pmSkillFilter(search);}
   pmDiceSync();
 }
 // ---- Combat tab (Play Mode redesign batch 3) ----

@@ -323,7 +323,7 @@ function freshState(){return {
  // start at null, meaning "at max" — they're only written once the player
  // actually spends/takes damage, so a freshly-finished character always
  // shows full without needing an extra initialization step.
- play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"skills",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null,initiative:null,surprised:false},
+ play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"skills",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null,initiative:null,surprised:false,pinned:[]},
  // Experience Rolls (core rulebook pp.71-73, cross-checked against the
  // Mythras Core pp.71–72, checked against the uploaded rulebook — see audit for
  // citations). pool = banked, unspent Experience Rolls. fumbled = skill
@@ -460,6 +460,8 @@ function normalizeState(){
     if(!Number.isFinite(hp))delete S.play.hp[loc];
   }
   if(S.play.selectedLoc===undefined)S.play.selectedLoc=null;
+  // Pinned skills (Play Mode): keys only, unique, capped so a bad save can't bloat the sheet.
+  S.play.pinned=Array.isArray(S.play.pinned)?[...new Set(S.play.pinned.filter(k=>typeof k==="string"&&k.length<200))].slice(0,30):[];
   S.play.surprised=S.play.surprised===true;
   S.play.giftKnown=Array.isArray(S.play.giftKnown)?S.play.giftKnown.filter(x=>typeof x==="string"&&/^[a-z0-9]{4,40}$/.test(x)).slice(-200):[];
   const ini=S.play.initiative;

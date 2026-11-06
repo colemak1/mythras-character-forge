@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode redesign, batch 4: skill search, pins and the Body tab
+
+- **Search skills:** type in the box at the top of the Skills tab to narrow the list by name or characteristic (e.g. "pow").
+- **Pin skills:** tap ☆ beside a skill to pin it to a Pinned group at the top. Pins are saved with the character.
+- **Body tab:** the figure is smaller and sits beside a clear list of hit locations, each with an HP bar, armour and wound status. Tap a location (on the figure or the list) to record damage or healing; the damage entry itself is unchanged.
+- The Fatigue picker is easier to read.
+
 ## Play Mode redesign, batch 3: combat flow
 
 - **Each weapon has Attack and Parry buttons** with your Combat Style percentage beside them. Ranged weapons show only Attack. Evade has its own button. The roll remembers whether it was an attack or a defence, so there's no dropdown to fill in afterwards.

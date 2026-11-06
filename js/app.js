@@ -1170,6 +1170,8 @@ window.APP={
  // Switching tabs (Actions/Special Effects/Inventory/Features/Notes) is
  // read-only navigation, always allowed even in a VIEW_ONLY session.
  playTab(t){S.play.tab=t;render();},
+ playTogglePin(key){if(viewOnlyBlock())return;if(typeof key!=="string"||!entryMap()[key])return;
+   const p=S.play.pinned||(S.play.pinned=[]),i=p.indexOf(key);if(i>=0)p.splice(i,1);else if(p.length<30)p.push(key);render();},
  // Keep the next step of a combat roll visible after the sheet redraws.
  playJumpToEffects(i=null){PM_EFFECT_ROLL_REF=Number.isInteger(i)?S.rollLog[i]||null:null;PM_FX_SEARCH="";S.play.tab="effects";render();requestAnimationFrame(()=>{
    const panel=$("#pm-resolve")||$("#pm-actions");if(panel)panel.scrollIntoView({block:"start"});
