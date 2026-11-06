@@ -22,3 +22,22 @@
 4. Keep Subsystem 4 **OPEN** until source-to-app reconciliation, evidence, decisions and signed-in acceptance meet `docs/subsystem-plan.md`. **Progress stays 3/8** pending Combat closeout and advancement completion.
 
 **Source:** the existing source-verified advancement ledger and reconciliation plan. This file does **not** claim independent re-verification of every hazard against rendered PDF pages.
+
+## Claude review (2026-11-06)
+
+**Tests:** every row that was "Pass (code)" now has a deterministic regression test. Most are in the new `tests/advancement-cases.cjs` (12 tests, fixed dice); ageing and characteristic training already had tests in `core-batch-1.cjs` and `campaign-setup.cjs`. No calculation errors were found.
+
+**Before Subsystem 4 can close:**
+1. **Owner decisions,** both optional:
+   - Offer 1d6+1 skill improvement as a campaign option (X14)?
+   - Add a small Weak/Moderate/Strong Passion shift helper (X19)?
+   - "No" to either is a valid answer and is simply recorded.
+2. **One owner-only Work pass on a disposable character:**
+   - (a) Award rolls with characteristic training active: one roll is used to maintain it; stop training, award again, and it atrophies.
+   - (b) Spend an Experience Roll on a fumbled skill: +1 is applied first.
+   - (c) Train a skill with a mentor 25 points higher, then try to train again: blocked until an Experience Roll is spent.
+   - (d) Learn a Professional Skill for 3 rolls.
+   - (e) Serious and Major Wounds: weekly recovery; a Major Wound refuses monthly recovery until treatment is confirmed.
+   - (f) Reload after each step.
+3. **Hazards (HZ), diseases (D), survival (S):** these stay GM-assisted by design. Chat should confirm that the Play Mode hazard notes match Core pp.74–85, a docs-only check.
+
