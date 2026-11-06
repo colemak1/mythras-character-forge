@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Advancement: regression tests
+
+- New automated tests cover Experience Rolls, fumble bonuses, skill training and teachers, learning new skills, Passion improvement, characteristic training and permanent improvement, natural healing intervals and Fatigue recovery times. No calculation errors were found. What's left for Subsystem 4 is two optional owner decisions and one live check.
+
 ## Subsystem 5 (Combat) closed: progress 4/8
 
 - The Combat audit is complete for player characters. Every section of the Core Combat chapter is mapped to tested cases (380 in all). The fixes passed live checks on the site, including one full fight from start to finish.

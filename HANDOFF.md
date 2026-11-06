@@ -29,7 +29,8 @@ Practice Combat features remain paused. Progress **4/8**.
 ## Waiting on someone
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **Claude:** Subsystem 4: deterministic tests for the advancement "Pass (code)" rows (X05–X13, C01–C16, T01–T17, H02–H07, F14–F16, AG), then map the remaining gaps.
+- **ChatGPT (Work):** Subsystem 4 owner-only live pass, steps (a)–(f) in `docs/advancement-reconciliation.md` (Claude review).
+- **ChatGPT (Chat):** docs-only check that the Play Mode hazard notes match Core pp.74–85 (HZ, D and S rows stay GM-assisted).
 - **Owner (Subsystem 4 decisions):** (1) offer 1d6+1 skill improvement as a campaign option (Core X14)? (2) add a small Weak/Moderate/Strong Passion shift helper (X19)? Both optional.
 - **ChatGPT (Chat):** Combat closeout map and missing child cases delivered in docs-only PR; `docs/advancement-reconciliation.md` begins Subsystem 4. Further S4 source/test reconciliation follows Claude's Combat closeout review.
 

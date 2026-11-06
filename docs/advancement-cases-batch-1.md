@@ -291,26 +291,26 @@ Mapped against the code after PR #124. Claude re-checked Core pp.73 (training ta
 |---|---|---|
 | X01, X02, X15, X17, X20 | **GM-assisted** | Awards, fairness, "plausibly practised" and Passion reversal are GM calls. Awards are entered in the Experience panel. |
 | X03, X04 | **Pass** | Experience Modifier from CHA (`xpMod`, rules-smoke tests); applying it is an explicit per-award choice, matching "only when plausible". |
-| X05, X06, X10, X11 | **Pass (code)** | Rolls bank in the pool; one roll per improvement attempt; each attempt uses the current skill; no 100% cap. |
-| X07–X09 | **Pass (code)** | d100 + INT compared with the skill; meeting it gives 1d4+1, falling short still gives +1. Not a skill-check critical or fumble. |
-| X12, X13 | **Pass (code)** | Fumbled skills are recorded once (no stacking) for a free +1% at the next improvement. |
+| X05, X06, X10, X11 | **Pass** (`tests/advancement-cases.cjs`) | Rolls bank in the pool; one roll per improvement attempt; each attempt uses the current skill; no 100% cap. |
+| X07–X09 | **Pass** (`tests/advancement-cases.cjs`) | d100 + INT compared with the skill; meeting it gives 1d4+1, falling short still gives +1. Not a skill-check critical or fumble. |
+| X12, X13 | **Pass** (`tests/advancement-cases.cjs`) | Fumbled skills are recorded once (no stacking) for a free +1% at the next improvement. |
 | X14 | **Not implemented** (optional) | Campaign option for 1d6+1 instead of 1d4+1. |
-| X16, X18 | **Pass (code)** | Passions improve like skills; new Passions can be added. |
+| X16, X18 | **Pass** (X16 tested in `advancement-cases.cjs`; X18 adding a Passion is a form field) | Passions improve like skills; new Passions can be added. |
 | X19 | **GM-assisted** (optional helper possible) | Weak/Moderate/Strong Passion shifts (1d10, 1d10+5, 1d10+10). |
-| C01–C08, C13 | **Pass (code)** | Training adds a tenth of the species maximum (rounded up), capped at the maximum; SIZ excluded; each future award needs one roll to maintain; stopped training atrophies one step per award. |
-| C09–C12 | **Pass (code)** | Optional permanent method chosen in campaign settings; cost 1 + current − species minimum (p.73 example: DEX 12 → 10 rolls); full cost required. |
-| C14–C16 | **Pass (code)** | Learning a new Professional Skill needs a confirmed source, a month and 3 rolls. |
-| T01–T10, T15–T17 | **Pass (code)** | Training table steps 1d2…1d6+4, +1 per further 10 points (`trainingStep`, `trainingDie`); one skill at a time and the Experience-Roll-before-retraining limit are shown as guidance. |
+| C01–C08, C13 | **Pass** (`advancement-cases.cjs`, `core-batch-1.cjs`, `campaign-setup.cjs`) | Training adds a tenth of the species maximum (rounded up), capped at the maximum; SIZ excluded; each future award needs one roll to maintain; stopped training atrophies one step per award. |
+| C09–C12 | **Pass** (`advancement-cases.cjs`: p.73 DEX 12 → 10 rolls; `campaign-setup.cjs`) | Optional permanent method chosen in campaign settings; cost 1 + current − species minimum (p.73 example: DEX 12 → 10 rolls); full cost required. |
+| C14–C16 | **Pass** (`tests/advancement-cases.cjs`) | Learning a new Professional Skill needs a confirmed source, a month and 3 rolls. |
+| T01–T10, T15–T17 | **Pass** (`tests/advancement-cases.cjs`: every table row, the re-training block) | Training table steps 1d2…1d6+4, +1 per further 10 points (`trainingStep`, `trainingDie`); one skill at a time and the Experience-Roll-before-retraining limit are shown as guidance. |
 | T02 | **Pass** (ruling) | Exactly 20 points uses the first row (1d2), per the owner's ruling in `decisions.md`; below 20 is refused (test). |
-| T11–T14 | **Pass (code)** | Teach result shifts the step: critical +2, success +1, failure 0, fumble −1 (possibly no gain). |
+| T11–T14 | **Pass** (`tests/advancement-cases.cjs`) | Teach result shifts the step: critical +2, success +1, failure 0, fumble −1 (possibly no gain). |
 | T18–T20 | **Guidance / GM-assisted** | Class size, tuition cost and discounts. |
-| AG01–AG17 | **Pass (code)** | Human ageing bands 40/50/60/70/80/90 with Easy → Hopeless grades; Endurance and Willpower separately; d6 characteristic table; 1d3 loss; terminal at 0; record and undo; Senior and Old creation categories prompt a review. Nonhuman bands are GM-assisted (AG16). |
+| AG01–AG17 | **Pass** (`core-batch-1.cjs` ageing tests) | Human ageing bands 40/50/60/70/80/90 with Easy → Hopeless grades; Endurance and Willpower separately; d6 characteristic table; 1d3 loss; terminal at 0; record and undo; Senior and Old creation categories prompt a review. Nonhuman bands are GM-assisted (AG16). |
 | F01–F06, F21, F22 | **Guidance** | Effort periods, sleep deprivation and encumbrance-as-exertion are in the Hazards and Fatigue notes; checks are made at the table. |
 | F07–F13 | **Pass** | Fatigue table: grade, movement, initiative and AP penalties applied in Play Mode (existing tests; matches p.79). |
-| F14–F16 | **Pass (code)** | Recovery period divided by Healing Rate is shown per level. |
+| F14–F16 | **Pass** (`tests/advancement-cases.cjs`) | Recovery period divided by Healing Rate is shown per level. |
 | F17–F20 | **Guidance** | Single Fatigue track; asphyxiation and blood-loss recovery text. |
 | H01 | **Pass** | Healing Rate from CON (rules-smoke tests). |
-| H02–H07, H29 | **Pass (code)** | Natural recovery per location at Healing Rate per day, week or month by wound level; Major Wounds need confirmed treatment first; never above the location maximum; a reduction can be entered for strenuous activity. |
+| H02–H07, H29 | **Pass** (`tests/advancement-cases.cjs`; Advance time in `play-advance-time.cjs`) | Natural recovery per location at Healing Rate per day, week or month by wound level; Major Wounds need confirmed treatment first; never above the location maximum; a reduction can be entered for strenuous activity. |
 | H08 | **GM-assisted** | Maiming deadline (Healing skill ÷ 20 days). |
 | H09–H23 | **Guidance / GM-assisted** | First Aid, professional Healing and surgery outcomes are recorded through the wound log and HP controls. |
 | H24–H27 | **Pass** (ruling) | Play Mode's permanent-injury box shows the three Permanent Injury results for the location (one third and two thirds lost, rounded up; or 1 HP) and fills in the new maximum; the GM confirms. Reduced maximums set the new wound thresholds (test). |
