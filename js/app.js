@@ -958,6 +958,8 @@ window.APP={
  // Apply a pending fumble bonus before determining that current percentage.
  xpSpend(key){if(VIEW_ONLY||xpRollsAvailable()<=0)return;
    const e=entryMap()[key];if(!e)return;
+   const die=skillImprovementDie();
+   if(!die){window.alert("Campaign rules are still loading. Try again in a moment; no Experience Roll was spent.");return;}
    // Resolve a free fumble improvement separately if it would consume the
    // last point of headroom; do not also spend a roll for a zero gain.
    if(literacyHeadroom(key)<=0){window.alert("Literacy is at its spoken language limit. Improve that language first; no Experience Roll was spent.");return;}
@@ -971,7 +973,7 @@ window.APP={
    const target=finalPct(key);
    const r=d100();const total=r+effectiveChars().INT;
    const success=total>=target;
-   const gain=Math.min(literacyHeadroom(key),success?(d(4)+1):1);
+   const gain=Math.min(literacyHeadroom(key),success?(d(die)+1):1);
    S.xp.bonus[key]=(S.xp.bonus[key]||0)+gain;
    S.xp.trainingPending=(S.xp.trainingPending||[]).filter(k=>k!==key);
    S.xp.checked=S.xp.checked.filter(k=>k!==key);
@@ -990,12 +992,22 @@ window.APP={
  xpSpendPassion(i){if(VIEW_ONLY||xpRollsAvailable()<=0||!Number.isInteger(i))return;
    const p=S.passions[i];if(!p)return;
    const target=passionVal(p);if(typeof target!=="number"||!Number.isFinite(target))return;
-   const r=d100(),total=r+effectiveChars().INT,success=total>=target,gain=success?(d(4)+1):1;
+   const die=skillImprovementDie();if(!die){window.alert("Campaign rules are still loading. Try again in a moment; no Experience Roll was spent.");return;}
+   const r=d100(),total=r+effectiveChars().INT,success=total>=target,gain=success?(d(die)+1):1;
    p.xpBonus=(Number(p.xpBonus)||0)+gain;
    S.xp.pool=Math.max(0,S.xp.pool-1);
    S.xp.history.unshift({type:"roll",label:p.name||"(unnamed Passion)",roll:r===100?"00":r,int:effectiveChars().INT,total,target,success,gain,newPct:passionVal(p)});
    S.xp.history=S.xp.history.slice(0,25);render();},
  // Core p.82: the GM may change a Passion as a result of events in play.
+ // Core p.82 Deepening and Waning: Weak 1d10, Moderate 1d10+5, Strong 1d10+10.
+ // The GM decides the strength and direction; a fall stops at 0.
+ passionShift(i,strength,dir){if(VIEW_ONLY||!Number.isInteger(i))return;
+   const bonus={weak:0,moderate:5,strong:10}[strength];if(bonus===undefined||![1,-1].includes(dir))return;
+   const p=S.passions[i];if(!p)return;const current=passionVal(p);if(typeof current!=="number")return;
+   const roll=d(10),amount=roll+bonus,delta=dir>0?amount:-Math.min(amount,current);
+   p.xpBonus=(Number(p.xpBonus)||0)+delta;
+   S.xp.history.unshift({type:"passion-adjustment",label:p.name||"(unnamed Passion)",delta,shift:strength,roll,newPct:passionVal(p)});
+   S.xp.history=S.xp.history.slice(0,25);render();},
  adjustPassion(i,value){if(VIEW_ONLY||!Number.isInteger(i))return;
    const p=S.passions[i],delta=Number(value);
    if(!p||String(value).trim()===""||!Number.isSafeInteger(delta)||delta===0)return;
@@ -1431,7 +1443,8 @@ window.APP={
    const choice=document.getElementById("setupImprovement")?.value;
    const selected=Array.from(document.querySelectorAll('input[name="setupBook"]:checked')).map(el=>el.value);
    const others=String(document.getElementById("setupOtherBooks")?.value||"").split(",").map(x=>x.trim()).filter(Boolean);
-   const rules=normalizedCampaignRules({characteristicImprovement:choice,books:[...selected,...others]});
+   const skillChoice=document.getElementById("setupSkillImprovement")?.value;
+   const rules=normalizedCampaignRules({characteristicImprovement:choice,skillImprovement:skillChoice,books:[...selected,...others]});
    CAMPAIGN_SETUP_DRAFT={name,rules};
    if(!name||name.length>100||!rules?.characteristicImprovement){CAMP_MSG="Enter a campaign name and choose a characteristic rule.";render();return;}
    CAMPAIGN_SETUP_BUSY=true;CAMP_MSG=null;render();

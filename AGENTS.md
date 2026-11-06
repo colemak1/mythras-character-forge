@@ -1,11 +1,13 @@
 # Working agreement for AI assistants
 
-Two assistants work on this repository: **Claude** (Claude Code) and **ChatGPT**. Read `HANDOFF.md` before starting, and update it before ending a session.
+Three assistants work on this project: **Claude** (Claude Code), **ChatGPT** and **v0** (design mockups only). Read `HANDOFF.md` before starting, and update it before ending a session.
 
 ## Roles
 
 - **Claude owns all production code.** That covers everything under `js/`, `experiments/`, `tests/`, the HTML and CSS files, `supabase/` and `.github/`, including small rule fixes.
 - **ChatGPT owns rules accuracy.** It verifies against the Mythras Core Rulebook with page references, writes rule-case specifications, records interpretations, and does independent live acceptance testing when it has browser access. It writes to `docs/` and `HANDOFF.md`, not to code.
+- **v0 designs, it doesn't commit.** v0 (by Vercel) makes clickable UI mockups of one screen at a time, matched to the owner's direction, for the owner to choose between. It never opens PRs or pushes to this repository: its React/Tailwind output can't drop into this plain-JS site. Claude rebuilds the chosen design in the existing code (`js/`, the CSS files) with tests, so rules and saved data stay intact. Approved looks can become themes for the planned player style picker (token sets under `data-pm-style`). v0 needs no `HANDOFF.md` access; the owner pastes its brief and Claude's follow-up questions.
+- A design change flows like this: the owner briefs v0, then picks a mockup and shares it (link or screenshots) with Claude. Claude builds it in a PR and screenshots the result, and ChatGPT (Work) can live-check it.
 - A rule fix flows like this: ChatGPT documents the case in `docs/` ("given X → Core p.N says Y"), Claude implements it with a test, and ChatGPT verifies it on the deployed site.
 
 ## Rules
@@ -24,7 +26,7 @@ The owner does not alternate messages between assistants. Each assistant works t
 
 - **Keep going** while the next step is yours. Don't hand off for something you can do yourself.
 - **When the next step is the other assistant's**, update `HANDOFF.md`, then end your reply with:
-  1. **Next: Claude**, **Next: ChatGPT (Chat)** or **Next: ChatGPT (Work)**, and one line saying why.
+  1. **Next: Claude**, **Next: ChatGPT (Chat)**, **Next: ChatGPT (Work)** or **Next: v0**, and one line saying why.
      - **ChatGPT (Chat)**, the regular chat: rulebook work, case specs, rulings, reviewing docs. No credits needed. It can write files and open PRs through its GitHub connector, but can't run the tests. For large output (case tables, data), it opens a docs-only PR; Claude reviews and merges it. For short answers, it replies in chat and the owner pastes them to Claude.
      - **ChatGPT (Work)**, the agent session with a browser: only for signed-in testing on the live site. It uses Work credits, so batch live checks together.
      - Prefer Chat whenever a browser isn't needed.
