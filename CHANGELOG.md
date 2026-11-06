@@ -5,6 +5,19 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode layout v2: one screen, columns that scroll, side panel
+
+Built from the owner's sketch and D&D Beyond's sheet.
+
+- **Desktop fits the window: the page itself no longer scrolls.** Three columns each scroll on their own:
+  - **left:** Characteristics with Action Points, Initiative, Magic Points, Luck and Fatigue, then the Body (figure and hit locations);
+  - **middle:** Skills, with search, pins and Passions at the foot;
+  - **right:** tabs for **Combat, Spells, Inventory, Features & traits, Notes**.
+- **A side panel, like D&D Beyond's.** Descriptions and detail open in a panel on the right, and the columns narrow to make room, so nothing is covered. This covers a hit location's damage controls, a Special Effect's rules, the roll log, combat action descriptions, fatigue, hazards, GM skill rulings and casting notes. Close it with × or Esc.
+- The header shows the character portrait (or initials), with Roll log, Sheet and Improve skills buttons.
+- Clicking something no longer jumps a column back to the top: each column keeps its scroll position.
+- **Phones:** one area at a time from the bottom bar (Stats, Skills, Combat, Spells, Items, Traits, Notes). The side panel slides up from the bottom.
+
 ## Play Mode redesign, batch 5: tips, Gear, Notes and Magic
 
 - **Short tips:** a small **?** beside Health, Action Points, Initiative, Magic, Luck, Fatigue, Surprised, Special Effects, Difficulty Grades and Encumbrance explains the term in a sentence or two. Hover on desktop, tap on a phone. The Luck tip follows Core: reroll, one extra Action Point when you're out, or downgrade a Major Wound to Serious.

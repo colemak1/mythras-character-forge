@@ -20,7 +20,7 @@ let passed=0;const test=(name,fn)=>{fn();passed++;console.log('PASS '+name);};
 const setup=()=>run('S=freshState();S.chars={STR:13,CON:12,SIZ:13,DEX:14,INT:13,POW:11,CHA:10};APPVIEW="play";VIEW_ONLY=false;normalizeState();');
 
 test('every vitals item has a short tip, and tips are escaped text',()=>{
- setup();const h=run('pmVitalsBarHTML()');
+ setup();const h=run('pmTrackersHTML()+pmBodyBoxHTML()');
  for(const id of ['health','ap','initiative','magic','luck','fatigue'])assert(h.includes(run(`esc(PM_TIPS.${id})`)),id+' tip shown');
  assert.equal(run('pmTip("nope")'),'');
  for(const t of Object.values(JSON.parse(run('JSON.stringify(PM_TIPS)'))))assert(t.length<=260,'tips stay short: '+t.slice(0,30));
