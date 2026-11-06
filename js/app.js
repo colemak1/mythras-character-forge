@@ -1105,6 +1105,13 @@ window.APP={
  // Combat Round in Mythras; this is that reset, since nothing else in
  // Play Mode currently tracks round boundaries.
  playNewRound(){if(viewOnlyBlock())return;S.play.apUsed=0;render();},
+ // Core p.90: initiative is 1d10 + Initiative Bonus, rolled once at the start
+ // of a fight and kept until an event forces a reroll.
+ playRollInitiative(){if(viewOnlyBlock())return;APP._setInitiative(d(10));},
+ playSetInitiative(){if(viewOnlyBlock())return;const el=document.getElementById("playInitD10");const v=Number(el?.value);
+   if(!Number.isInteger(v)||v<1||v>10){PM_MSG="Enter a d10 result from 1 to 10.";render();return;}APP._setInitiative(v);},
+ _setInitiative(roll){const bonus=playInitiativeBonusNow().total;S.play.initiative={roll,bonus,total:roll+bonus};PM_MSG=null;render();},
+ playClearInitiative(){if(viewOnlyBlock())return;S.play.initiative=null;render();},
  playLuckSetPip(i){if(viewOnlyBlock())return;const max=playMaxLuck();const cur=playCurLuck();
    const newCur=i<cur?i:i+1;
    S.play.luck=Math.max(0,Math.min(max,newCur));render();},

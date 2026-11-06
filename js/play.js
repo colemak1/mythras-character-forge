@@ -492,6 +492,13 @@ function pmCharacteristicRail(){
 // static image; pips are used for both here so the two identical "small
 // spendable pool" mechanics share one interaction pattern). Magic Points
 // keeps its +/- stepper since it's a wider-range pool, not a pip count.
+// Core pp.58, 90: Initiative Bonus (average of INT and DEX, rounded up) minus
+// the armour penalty (total worn armour ENC / 5, rounded up), plus the
+// current Fatigue modifier. The fight's initiative is 1d10 + this value.
+function playInitiativeBonusNow(){
+  const c=effectiveChars(),armour=armourPenaltyToInit(),fat=fatigueRow().init||0;
+  return {base:initBonus(c.INT,c.DEX),armour,fat,total:initBonus(c.INT,c.DEX)-armour+fat};
+}
 function pmTicker(){
   const c=effectiveChars(),initPenalty=armourPenaltyToInit();
   const maxAP=playMaxAP(),usedAP=Math.min(S.play.apUsed,maxAP),remainAP=maxAP-usedAP;
@@ -505,8 +512,7 @@ function pmTicker(){
   // they're marked (and titled) when they're showing something other than the
   // character's rested, unladen figure.
   const fRow=fatigueRow();
-  const initFat=fRow.init||0;
-  const initVal=initBonus(c.INT,c.DEX)-initPenalty+initFat;
+  const ib=playInitiativeBonusNow(),initFat=ib.fat,initVal=ib.total;
   h+='<div class="pm-tk"><span class="k">Initiative</span><span class="v'+(initFat?" mod":"")+'" title="'
    +esc("Base "+initBonus(c.INT,c.DEX)+(initPenalty?", armour -"+initPenalty:"")+(initFat?", Fatigue ("+fRow.name+") "+initFat:""))+'">'+initVal+'</span></div>';
   h+='<div class="pm-tk"><span class="k">Heal Rate</span><span class="v">'+healRate(c.CON)+'</span></div>';
@@ -547,6 +553,9 @@ function pmCombatSection(){
        +(inStyle.length?'<div class="meta">'+esc(inStyle.join(", "))+'</div>':'')+'</div>';
     }).join("");
   }else h+='<p class="pm-empty">No weapons carried — add some on the Money &amp; Gear step.</p>';
+  // Core pp.105–106: every human can fight unarmed with the Unarmed skill.
+  h+='<div class="pm-wpn"><div class="top"><span class="nm">Unarmed (human)</span><span class="dmg">1d3 + '+esc(dmCalc(effectiveChars().STR,effectiveChars().SIZ))+'</span></div>'
+   +'<div class="meta">SIZE S &middot; REACH T &middot; UNARMED SKILL &middot; CORE PP.105&ndash;106</div></div>';
   h+=pmFatiguePanel();
   h+='<details class="pm-notes"><summary>Hazards and recovery (Core pp.71, 74–80)</summary>'
    +'<p><b>Asphyxiation:</b> Prepared breath-holding lasts Endurance skill in seconds. Without preparation, use half that time when passive or one fifth during strenuous activity. When time runs out, check Endurance. A critical adds no Fatigue, a success adds one level, a failure adds 1d2 levels, and a fumble adds 1d3. Track subsequent rounds at the table.</p>'
@@ -1074,26 +1083,52 @@ function renderPlayView(){
     const reloadActions=(S.gearWeapons||[]).map(n=>weaponByName(n))
       .filter(w=>w&&w.group==="Ranged"&&Number.isInteger(w.load)&&w.load>0)
       .map(w=>({nm:"Reload: "+w.name,ap:w.load,note:"Proactive · Core p.109; "+w.name+" reload takes "+w.load+" AP total"}));
+    // Core pp.91–93. Every Combat Action costs 1 AP unless it is a Free
+    // Action. Delay costs nothing when declared: the AP is paid by the
+    // reaction it is later used for, or lost if unused by the next turn.
     const ACTIONS=[
-      {nm:"Attack",ap:1,note:"Proactive · core rules p.91"},
-      {nm:"Cast a Spell",ap:1,note:"Proactive, Cast Magic · p.91"},
-      {nm:"Change Combat Stance",ap:1,note:"= Change Range (close/open/disengage) · p.106 — “stance” isn’t a named action, this maps to the real Change Range action"},
-      {nm:"Ready / Draw / Sheathe Weapon",ap:1,note:"Proactive, Ready Weapon · p.92"},
+      {nm:"Attack",ap:1,kind:"Proactive",note:"Strike with a hand-to-hand weapon or use a ranged weapon · p.91"},
+      {nm:"Brace",ap:1,kind:"Proactive",note:"SIZ counts 50% higher against Knockback and Leaping attacks, doubled against Bash, until you move · p.91"},
+      {nm:"Cast Magic",ap:1,kind:"Proactive",note:"1 AP per casting turn; release any time before your next turn, then Hold Magic · p.91"},
+      {nm:"Change Range",ap:1,kind:"Proactive",note:"Close in, open range or disengage · pp.91, 106–107"},
+      {nm:"Dither",ap:1,kind:"Proactive",note:"Do nothing useful. Also what happens if you take no proactive action · p.91"},
+      {nm:"Hold Magic",ap:1,kind:"Proactive",note:"Keep a completed spell ready; allows Counter Spell with it · p.91"},
+      {nm:"Mount",ap:1,kind:"Proactive",note:"Mount or dismount; large mounts may take several turns · p.91"},
+      {nm:"Move",ap:1,kind:"Proactive",note:"Only when not engaged; reaching a foe needs no extra AP to engage · pp.91–92"},
+      {nm:"Outmanoeuvre",ap:1,kind:"Proactive",note:"Group opposed Evade; foes who fail can't attack you this round · pp.92, 104"},
+      {nm:"Ready Weapon",ap:1,kind:"Proactive",note:"Draw, sheathe or withdraw; a dropped weapon nearby takes two turns · p.92"},
       ...reloadActions,
-      {nm:"Full Move",ap:1,note:"Proactive, Move · p.91"},
-      {nm:"Shove / Grapple",ap:1,note:"Not extra AP beyond an Attack — Grapple is declared as your Attack (Unarmed) action · p.106. “Shove” isn’t independently named in the core rules; closest analog is the Bash Special Effect."},
-      {nm:"Parry",ap:1,note:"Reactive · p.93 — corrected from “Free”"},
-      {nm:"Dodge / Evade",ap:1,note:"Reactive, Evade · p.41, p.103 — corrected from “Free”"},
-      {nm:"Disengage",ap:1,note:"= Change Range, opening to beyond range · p.106 — corrected from “Free”"}
+      {nm:"Regain Footing",ap:1,kind:"Proactive",note:"Stand up; if engaged, win an opposed Brawn or Athletics roll first · p.92"},
+      {nm:"Struggle",ap:1,kind:"Proactive",note:"Try to break free of a Grapple, Pin Weapon and similar · p.92"},
+      {nm:"Counter Spell",ap:1,kind:"Reactive",note:"Needs one-turn countering magic, or magic already held · p.92"},
+      {nm:"Evade",ap:1,kind:"Reactive",note:"Dive clear; leaves you prone unless something prevents it · pp.92, 103"},
+      {nm:"Interrupt",ap:1,kind:"Reactive",note:"Delaying characters only: act after a foe declares · p.92"},
+      {nm:"Parry",ap:1,kind:"Reactive",note:"Block, deflect or dodge an incoming attack · pp.92, 94"}
     ];
+    const FREE_ACTIONS=[
+      ["Delay","Save your action for a reaction; the AP is paid by that reaction or lost if unused by your next turn · p.91"],
+      ["Assess Situation","If not engaged: a Perception roll · p.93"],
+      ["Drop Weapon","p.93"],["Signal","If not engaged · p.93"],["Speak","Short phrases only · p.93"],
+      ["Use Luck Point","p.93"],["Ward Location","Set before the attack roll; the ward lasts until that weapon attacks or parries · pp.93, 105"]
+    ];
+    const ibNow=playInitiativeBonusNow(),initRec=S.play.initiative;
+    h+='<div class="pm-actbar"><span class="apread">Initiative '+(initRec?'<b>'+initRec.total+'</b> (d10 '+initRec.roll+' + '+initRec.bonus+')':'not rolled')+'</span>'
+     +'<button class="pm-btn sm" onclick="APP.playRollInitiative()" title="Roll 1d10 + Initiative Bonus '+ibNow.total+' (Core p.90)">Roll initiative</button>'
+     +'<label class="pm-empty"> or enter your d10 <input id="playInitD10" type="number" min="1" max="10" style="width:3.5em"></label>'
+     +'<button class="pm-btn sm" onclick="APP.playSetInitiative()">Set</button>'
+     +(initRec?' <button class="pm-btn sm" onclick="APP.playClearInitiative()" title="Initiative lasts the whole fight unless something forces a reroll (p.90)">End fight</button>':'')+'</div>';
     h+='<div class="pm-actbar"><span class="apread">Action Points <b>'+remainAPnow+'</b> / '+maxAPnow+' remaining</span>'
      +'<button class="pm-newround" onclick="APP.playNewRound()" title="Reset Action Points to max for a new Combat Round">New Round</button></div>';
-    h+='<div class="pm-actlist">'+ACTIONS.map(a=>{
-      const canAfford=a.ap<=remainAPnow;
-      return '<button class="pm-act" onclick="APP.playSpendAP('+a.ap+')" title="'+esc(a.note)+'"'+(canAfford?"":" disabled")+'>'
-       +'<span class="nm">'+esc(a.nm)+'<span class="note">'+esc(a.note)+'</span></span>'
-       +'<span class="cost">'+a.ap+' AP</span></button>';
-    }).join("")+'</div>';
+    for(const kind of ["Proactive","Reactive"]){
+      h+='<p class="pm-notes" style="margin:8px 0 4px">'+kind+(kind==="Proactive"?' — one per cycle, on your turn':' — one per incoming threat, any time you have AP')+'</p>';
+      h+='<div class="pm-actlist">'+ACTIONS.filter(a=>a.kind===kind).map(a=>{
+        const canAfford=a.ap<=remainAPnow;
+        return '<button class="pm-act" onclick="APP.playSpendAP('+a.ap+')" title="'+esc(a.note)+'"'+(canAfford?"":" disabled")+'>'
+         +'<span class="nm">'+esc(a.nm)+'<span class="note">'+esc(a.note)+'</span></span>'
+         +'<span class="cost">'+a.ap+' AP</span></button>';
+      }).join("")+'</div>';
+    }
+    h+='<p class="pm-notes" style="margin:8px 0 4px">Free — no AP</p><p class="pm-notes">'+FREE_ACTIONS.map(([n,t])=>'<span title="'+esc(t)+'"><b>'+esc(n)+'</b>: '+esc(t)+'</span>').join('<br>')+'</p>';
     if(styles.length){
       const styleEntries=stylesList();
       h+='<div class="pm-atk-styles" style="margin-top:12px">'+styleEntries.map(s=>{const base=finalPct(s.key);const g=gradedPct(s.key,base);const pct=g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%";

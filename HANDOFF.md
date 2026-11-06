@@ -2,15 +2,15 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-05 (America/Los_Angeles) by ChatGPT (Work)_
+_Last updated: 2026-11-06 by Claude (merged ChatGPT's PRs #119 and #120)_
 
 ## Priorities
 
 The owner deprioritized Magic on 2026-11-06: player-facing work comes first. Magic still gets done, later.
 
-1. **Subsystem 5 — Combat:** verify actions, Special Effects, wounds and situational rules.
+1. **Subsystem 5 — Combat:** 191 source-verified cases, Core pp.86–111, in `docs/combat-cases-batch-1.md`. Claude maps them to app status and tests, then fixes player-facing gaps (AP, initiative, attacks and parries, Special Effects, damage, wounds) in separate code PRs. **Open.**
 2. **Subsystem 4 — Advancement, hazards and recovery:** finish the reopened cases.
-3. **Subsystem 6 — Magic (paused):** requested catalogue live acceptance **passed after PR #118**. Other open items in `magic-cases-batch-1.md`, `magic-cases-batch-2-animism.md` and `magic-subsystem-cases.md` remain deferred.
+3. **Subsystem 6 — Magic (paused):** Folk catalogue accepted live after PR #118. Other open items in `magic-cases-batch-1.md`, `magic-cases-batch-2-animism.md` and `magic-subsystem-cases.md` are deferred.
 
 Practice Combat features remain paused. Progress **3/8**.
 
@@ -18,20 +18,22 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Combat case inventory (subsystem 5) | ChatGPT (Chat) | docs-only PR | Next, replacing Animism children |
+| Combat cases mapped; first fixes | Claude | PR #121 | Status table at the end of `combat-cases-batch-1.md`. Fixed: Core action list, initiative roll, unarmed stats. Tests in `tests/combat-cases.cjs` |
+| Combat live checks | ChatGPT (Work) | after #121 deploys | Initiative roll, action list groups and costs, unarmed line, a parry exchange with Special Effects, damage and wound log |
+| Advancement cases (subsystem 4) | ChatGPT (Chat) | docs-only PR | Next for ChatGPT, same table format |
 
 ## Waiting on someone
 
-- **Owner:** confirm D-4 (round up specialist starting spells) and D-5 (casting interruptions left to the GM). Low priority now that Magic is paused.
-- **ChatGPT (Chat):** Combat cases (subsystem 5) in the usual table format. Magic children are paused.
-- **Claude:** review/merge this docs-only catalogue acceptance report after Tests passes. No further catalogue fix is needed for the requested checks; continue with the Combat/Advancement priorities.
+- **Owner:** confirm D-4 (round up specialist starting spells) and D-5 (casting interruptions left to the GM). Low priority while Magic is paused.
+- **ChatGPT (Chat):** Subsystem 4 Advancement, hazards and recovery cases.
+- **ChatGPT (Work):** the combat live checks above.
+- **Owner:** which optional combat fix next (list at the end of `combat-cases-batch-1.md`), or move on to Advancement.
 
 ## Notes
 
-- One continuous signed-in Test Player session: all three preparations recovered **1/2**; decline/reopen produced no repeated prompt. Folk rolls **67 failure (1 MP), 3 critical (0 MP), 56 failure (1 MP), 90 failure (1 MP), 42 failure (1 MP), 21 success (1 MP)**; 0 MP refused before a roll. Card: **1 Turn / Intensity 1 / Magnitude 1 / ranged 29 m**.
-- Post-#118 signed-in catalogue-only recheck passed: **70 Core choices** counted; toggled Beastcall (X) off/on via picker; builder showed **Instant, Ranged, Resist (Willpower)**, **Core p.124**, **speciality: animal type**; Play Mode showed all three traits. No casts or reload regressions repeated. Evidence: `docs/magic-cases-batch-1.md`.
-- Observed content-hash stamps matched **5675923**: data `cc7d574352`, render `d67cd54fd5`, cloud `153f1983e5`, play `5ffaf0d6f1`. The previous stale-picker failure is historical; PR #118's fix is accepted for these requested live checks.
-- Prior source audit: user's uploaded `pdfcoffee.com_mythras-2e-2-pdf-free.pdf`; rendered printed pp.124/128 verified five numeric spot checks, including Bladesharp d8 values. That audit was not repeated.
-- Retained **Magic Audit — Paired Skills**: Exhort 45%, Devotion (Audit Cult) 29%, Folk Magic 29%; personal MP **2/11**, pool **5/6**, one catalogue-resolved Beastcall (X), blank animal speciality, no pending preparations. Other ability entries remain. Select required paired skills again before future Mysticism/Sorcery tests.
-- All **18** Node test files passed on **5675923** with the prescribed loop, including asset-version enforcement; `git diff --check` passed. Documentation only; **no production code was touched by ChatGPT**. Subsystem 6 remains open and paused; progress **3/8**.
-- See `AGENTS.md`, `docs/decisions.md` and `docs/folk-magic-catalogue-format.md` for collaboration, rulings and format.
+- The owner uploads the Core rulebook and the Mythras Companion to Claude sessions when needed. They are **never committed** to the repo, which is public. PDF page = printed page + 1 for the Core PDF.
+- **Mythras Companion rules are optional** (owner, 2026-11-06): build them only as campaign-selectable options, never mixed into Core behaviour.
+- Folk catalogue live recheck after #118 passed: 70 choices, Beastcall (X) traits, Core p.124, animal speciality, Play Mode traits. Evidence in `magic-cases-batch-1.md`.
+- Retained live fixture **Magic Audit — Paired Skills** (`fe479efb-…`): Exhort 45%, Devotion (Audit Cult) 29%, Folk Magic 29%, MP 2/11, pool 5/6. Reselect paired skills before Mysticism or Sorcery tests.
+- ChatGPT's runtime can't clone the repo; CI is the test evidence for its PRs.
+- See `AGENTS.md`, `docs/decisions.md` and `docs/folk-magic-catalogue-format.md`.
