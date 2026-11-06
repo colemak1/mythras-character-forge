@@ -30,9 +30,10 @@ Practice Combat features remain paused. Progress **4/8**.
 ## Waiting on someone
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **ChatGPT (Work):** Subsystem 4 owner-only live pass, steps (a)–(f) in `docs/advancement-reconciliation.md` (Claude review).
+- **ChatGPT (Work):** Subsystem 4 owner-only live pass, steps (a)–(g) in `docs/advancement-reconciliation.md` (Claude review and update).
+- **v0 (design):** briefed by the owner; mockups only. Claude rebuilds the chosen design (see `AGENTS.md`).
 - **ChatGPT (Chat):** hazard-note source audit done: `docs/advancement-hazard-notes-review.md` (docs-only PR). Found **acid entirely missing** (Core p.68), and incomplete/imprecise p.74 disease treatment, p.78 falls, p.79 fire/effort and p.80 healing caveats. Numerical recovery systems not changed. **Subsystem 4 OPEN, 4/8.**
-- **Owner (Subsystem 4 decisions):** (1) offer 1d6+1 skill improvement as a campaign option (Core X14)? (2) add a small Weak/Moderate/Strong Passion shift helper (X19)? Both optional.
+- **Claude:** make the wording-only hazard-note fixes from `docs/advancement-hazard-notes-review.md` in a code PR.
 - **ChatGPT (Chat):** Combat closeout map and missing child cases delivered in docs-only PR; `docs/advancement-reconciliation.md` begins Subsystem 4. Further S4 source/test reconciliation follows Claude's Combat closeout review.
 
 

@@ -294,9 +294,9 @@ Mapped against the code after PR #124. Claude re-checked Core pp.73 (training ta
 | X05, X06, X10, X11 | **Pass** (`tests/advancement-cases.cjs`) | Rolls bank in the pool; one roll per improvement attempt; each attempt uses the current skill; no 100% cap. |
 | X07–X09 | **Pass** (`tests/advancement-cases.cjs`) | d100 + INT compared with the skill; meeting it gives 1d4+1, falling short still gives +1. Not a skill-check critical or fumble. |
 | X12, X13 | **Pass** (`tests/advancement-cases.cjs`) | Fumbled skills are recorded once (no stacking) for a free +1% at the next improvement. |
-| X14 | **Not implemented** (optional) | Campaign option for 1d6+1 instead of 1d4+1. |
+| X14 | **Pass** (`tests/advancement-options.cjs`) | Optional campaign rule (owner, 2026-11-06): the GM picks 1d6+1 in Campaign rules; default 1d4+1. |
 | X16, X18 | **Pass** (X16 tested in `advancement-cases.cjs`; X18 adding a Passion is a form field) | Passions improve like skills; new Passions can be added. |
-| X19 | **GM-assisted** (optional helper possible) | Weak/Moderate/Strong Passion shifts (1d10, 1d10+5, 1d10+10). |
+| X19 | **Pass** (`tests/advancement-options.cjs`) | Deepen and wane buttons in Improve Skills: Weak 1d10, Moderate 1d10+5, Strong 1d10+10 (Core p.82). The GM picks the strength; waning stops at 0. |
 | C01–C08, C13 | **Pass** (`advancement-cases.cjs`, `core-batch-1.cjs`, `campaign-setup.cjs`) | Training adds a tenth of the species maximum (rounded up), capped at the maximum; SIZ excluded; each future award needs one roll to maintain; stopped training atrophies one step per award. |
 | C09–C12 | **Pass** (`advancement-cases.cjs`: p.73 DEX 12 → 10 rolls; `campaign-setup.cjs`) | Optional permanent method chosen in campaign settings; cost 1 + current − species minimum (p.73 example: DEX 12 → 10 rolls); full cost required. |
 | C14–C16 | **Pass** (`tests/advancement-cases.cjs`) | Learning a new Professional Skill needs a confirmed source, a month and 3 rolls. |

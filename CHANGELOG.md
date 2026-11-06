@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## New site logo
+
+- The spear-and-ribbon logo now sits beside "New Sit'ota" in the site header (in ivory and red, to show on the dark bar). It's also the browser tab icon and the home-screen icon.
+
+## Advancement options: faster skill improvement, Passion shifts
+
+- **Optional campaign rule:** the GM can set **skill improvement to 1d6+1** instead of 1d4+1 in Campaign rules (Core p.72), for faster progress without extra Experience Rolls. It applies to Passions too. Characters outside a campaign use 1d4+1.
+- **Passion deepening and waning:** in Improve Skills, each Passion has **deepen** and **wane** buttons. Pick Weak (1d10), Moderate (1d10+5) or Strong (1d10+10), as the GM decides (Core p.82). A Passion never drops below 0.
 ## Subsystem 4 hazard notes source audit (docs only)
 
 - Checked `Body → Hazards and recovery` (`pmHazardsHTML()`) against the owner's privately uploaded Core: Acid **p.68** (not pp.71/74–85), asphyxiation and blood loss p.71, disease/poison pp.74–75, falls and sleep p.78, fire/physical effort p.79, and healing p.80. Reviewed rendered tables, not garbled PDF text alone.
