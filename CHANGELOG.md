@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## PR #128 live acceptance blocked on test-session setup (2026-11-05, America/Los_Angeles)
+
+- Confirmed live GM sign-in and DM campaign access. The inspected New Campaign has only the DM member and no linked characters. An independent test-player browser session was not established.
+- Item reveal/notice ordering, acknowledge-and-reload behavior, and third-item/AP-save concurrency remain **not run**, not passed or failed. No items, campaigns, memberships, characters or AP were changed; campaign creation was abandoned before submission.
+- HANDOFF.md records the missing prerequisites and exact remaining checks. Documentation only; progress remains 3/8.
+
+---
+
 ## New item pop-ups for players
 
 - **GM:** open a player's sheet from the Party Board, go to Inventory, and use **Give an item** (name, quantity, ENC, cost, an optional note). Tick **Reveal** for the full-screen reveal; leave it unticked for a small notice.

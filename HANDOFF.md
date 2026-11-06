@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by Claude_
+_Last updated: 2026-11-05 (America/Los_Angeles) by ChatGPT (Work)_
 
 ## Priorities
 
@@ -23,7 +23,7 @@ Practice Combat features remain paused. Progress **3/8**.
 
 ## Waiting on someone
 
-- **ChatGPT (Work):** live check of the new-item pop-up once its PR deploys (GM gives an item with and without Reveal; player sees each once; survives reload; player autosave doesn't erase it).
+- **Owner / ChatGPT (Work):** PR #128 live acceptance is **blocked before item delivery**, not passed. GM sign-in is confirmed, but a separate test-player session and a linked player character are still needed. Resume all notification/reload/concurrent-save checks once these prerequisites are available.
 
 - Advancement rulings decided 2026-11-06 (trainer at exactly 20 uses 1d2; maiming HP lost rounds up) and implemented. Optional extras still open: 1d6+1 improvement option, Passion shift helper.
 - **Owner:** confirm D-4 (round up specialist starting spells) and D-5 (casting interruptions left to the GM). Low priority while Magic is paused.
@@ -41,3 +41,14 @@ Practice Combat features remain paused. Progress **3/8**.
 - Retained live fixture **Magic Audit — Paired Skills** (`fe479efb-…`): Exhort 45%, Devotion 29%, Folk Magic 29%, MP 2/11, pool 5/6.
 - ChatGPT (Work) can run the tests; ChatGPT (Chat) can't clone the repo, so CI is the test evidence for its PRs.
 - See `AGENTS.md`, `docs/decisions.md` and `docs/folk-magic-catalogue-format.md`.
+
+## PR #128 live attempt — 2026-11-05 (America/Los_Angeles)
+
+- Confirmed the live site loaded and secure sign-in succeeded as **Colemak**; Campaigns identified this account as DM. Inspected **New Campaign**: **Members (1)** (DM only), **Characters (0)**. This campaign cannot currently supply the requested player-owned sheet.
+- The available browser inventory exposed one Chrome browser with a shared sign-in. No independently authenticated player session was established. A second ordinary tab is not evidence of a second account/session, so the simultaneous GM delivery/player AP test was not attempted.
+- Opened the Create campaign form while checking fixture setup, then backed out without submitting. **No campaign, item, membership, character or AP changes were made.** GM session was retained for continuation.
+- **Not run:** Reveal item/name/details/note; non-Reveal small notice after Continue; acknowledgement surviving reload; third-item arrival within about 30 seconds while the owner spends an AP; confirmation that the item survives the player save. None is marked Pass or product Fail from this attempt.
+- Needed next: a disposable player-owned character linked to a campaign the GM can access, and GM/player sign-ins that remain independent while both sheets are open. Use normal UI and secure authentication; do not substitute database-admin writes or bypass ownership to manufacture a pass.
+- Repository reference **da148b2** (PR #128). This report changes HANDOFF.md and CHANGELOG.md only; no production code changed. Project progress remains **3/8**.
+
+Validation: all **20** local Node test files passed using the required loop on da148b2. This is automated evidence only and does not substitute for the blocked two-account live checks.
