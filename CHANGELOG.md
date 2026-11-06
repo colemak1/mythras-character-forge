@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode redesign, batch 3: combat flow
+
+- **Each weapon has Attack and Parry buttons** with your Combat Style percentage beside them. Ranged weapons show only Attack. Evade has its own button. The roll remembers whether it was an attack or a defence, so there's no dropdown to fill in afterwards.
+- **A combat roll card** at the top of the Combat tab shows the result. You tap what your opponent rolled (or "No defence"), and the card tells you who wins how many Special Effects. If it's you, it lists **only the effects this roll allows** with that weapon, each with a Choose button. The full list of 43 is still there, folded under "Special Effects reference".
+- **A turn strip** groups Initiative, Action Points, New round and Surprised.
+- **Actions are compact chips** that spend AP; "What each action does" opens the descriptions.
+- Fatigue and the hazards rules moved to the Body tab, next to the hit locations. "Record damage" takes you there.
+- The Rolls panel now shows a short summary of each combat roll with a button back to the card. On a phone it sits below the tab content, since the dice tray already shows each result.
+
 ## Play Mode redesign, batch 2: physics dice
 
 - **Every roll now shows the physics dice from Practice Combat.** A tray in the corner (above the tab bar on a phone) tumbles the two d10s, then shows the number and result: Critical, Success, Failure or Fumble. It closes after a few seconds, or with its ×.

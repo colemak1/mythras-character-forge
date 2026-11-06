@@ -537,36 +537,8 @@ function pmTicker(){
 // the weapon list). Fatigue has nowhere in the mockup's Combat section —
 // it's real tracked state with no equivalent there, so it's appended below
 // the weapons as a flagged addition rather than invented into the ticker.
-function pmCombatSection(){
-  let h='<div class="pm-box"><div class="pm-sect-head bar"><span class="no">04</span> COMBAT</div>';
-  // Which of this character's Combat Styles (if any) cover a given weapon —
-  // built on the Combat Styles card, shown here so it's actually usable at
-  // the table instead of sitting inert in character data.
-  const stylesFor=n=>stylesList().filter(s=>styleDef(s.key).weapons.includes(n)).map(s=>s.name);
-  if(S.gearWeapons.length){
-    h+=S.gearWeapons.map(n=>{const w=weaponByName(n);if(!w)return"";
-      const meta=(w.group==="Ranged"
-        ?"RANGE "+esc(w.range||"—")+" &middot; FORCE "+esc(w.reach||"—")+" &middot; DM "+esc(w.dmgMod||"—")+" &middot; LOAD "+esc(String(w.load??"—"))+(typeof w.load==="number"?" AP":"")+(w.impaleSize?" &middot; IMPALE SIZE "+esc(w.impaleSize):"")
-        :"SIZE "+esc(w.size||"—")+" &middot; REACH "+esc(w.reach||"—"))
-       +" &middot; AP/HP "+esc(w.apHp||"—")
-       +(w.effects&&w.effects!=="—"?" &middot; "+esc(w.effects).toUpperCase():"");
-      const inStyle=stylesFor(n),covering=stylesList().filter(s=>styleDef(s.key).weapons.includes(n));
-      const rollUI=covering.length
-        ?'<div class="meta">'+covering.map(s=>'<button class="pm-btn sm roll" onclick="APP.rollWithWeapon(\''+jsq(n)+'\',\''+jsq(s.key)+'\',\'\')">Roll '+esc(s.name)+'</button>').join(" ")+'</div>'
-        :'<div class="meta">Not in your Combat Styles (Core p.88): '
-          +'<select id="fam-'+esc(n.replace(/\W+/g,"_"))+'">'+WEAPON_FAMILIARITY.filter(f=>stylesList().length||f[0]==="substantially").map(f=>'<option value="'+f[0]+'">'+esc(f[1])+'</option>').join("")+'</select> '
-          +(stylesList().length>1?'<select id="famstyle-'+esc(n.replace(/\W+/g,"_"))+'">'+stylesList().map(s=>'<option value="'+esc(s.key)+'">'+esc(s.name)+'</option>').join("")+'</select> ':'')
-          +'<button class="pm-btn sm roll" onclick="APP.rollUnfamiliarWeapon(\''+jsq(n)+'\')">Roll</button></div>';
-      return '<div class="pm-wpn"><div class="top"><span class="nm">'+esc(w.name)+'</span><span class="dmg">'+esc(w.dmg)+'</span></div>'
-       +'<div class="meta">'+meta+'</div>'
-       +(inStyle.length?'<div class="meta">'+esc(inStyle.join(", "))+'</div>':'')+rollUI+'</div>';
-    }).join("");
-  }else h+='<p class="pm-empty">No weapons carried — add some on the Money &amp; Gear step.</p>';
-  // Core pp.105–106: every human can fight unarmed with the Unarmed skill.
-  h+='<div class="pm-wpn"><div class="top"><span class="nm">Unarmed (human)</span><span class="dmg">'+esc(unarmedDamageText())+'</span></div>'
-   +'<div class="meta">SIZE S &middot; REACH T &middot; UNARMED SKILL &middot; CORE PP.105&ndash;106</div>'
-   +'<div class="meta"><button class="pm-btn sm roll" onclick="APP.rollWithWeapon(\'Unarmed\',\'std:Unarmed\',\'\')">Roll Unarmed</button></div></div>';
-  h+=pmFatiguePanel();
+function pmHazardsHTML(){
+  let h='';
   h+='<details class="pm-notes"><summary>Hazards and recovery (Core pp.71, 74–80)</summary>'
    +'<p><b>Asphyxiation:</b> Prepared breath-holding lasts Endurance skill in seconds. Without preparation, use half that time when passive or one fifth during strenuous activity. When time runs out, check Endurance. A critical adds no Fatigue, a success adds one level, a failure adds 1d2 levels, and a fumble adds 1d3. Track subsequent rounds at the table.</p>'
    +'<p><b>Blood loss:</b> Track Fatigue from the applicable wound, condition or Special Effect. Once bleeding stops, recover one level per day starting the next day.</p>'
@@ -575,11 +547,8 @@ function pmCombatSection(){
    +'<p><b>Fire:</b> Use intensity to find damage and affected locations. If clothing or armour ignites, the burning material damages its own HP and the flesh beneath it, ignoring armour. Track ignition and spread at the table.</p>'
    +'<p><b>Exertion and sleep:</b> Check the Physical Effort table for when to roll, which skill to use and its grade. Each failed check adds one Fatigue level. After twice CON hours awake, check Endurance, then check again after each half-CON hours following a success, one grade harder each time.</p>'
    +'<p><b>Healing:</b> Apply one elapsed interval per location at its current wound severity. A Major Wound needs successful Healing treatment before natural recovery. Magical healing of physical trauma can stop bleeding and immediate death even if it leaves the injury itself.</p></details>';
-  h+='</div>';
   return h;
 }
-// Fatigue, with its actual mechanical consequences spelled out and applied.
-// Previously a bare picker whose only effect was to store a string.
 function pmFatiguePanel(){
   const r=fatigueRow();
   const v=charVitals();
@@ -959,28 +928,16 @@ function playRollLogRow(r,i){
   // or Fumble can still hand the *opponent* Special Effects off the same
   // Differential Roll table, so a new player needs to see that too, not
   // just when they themselves won.
+  // The full combat flow (role, weapon, opponent result, effects) lives on
+  // the Combat tab's card; the log row is a summary that leads there.
   if(r.combat){
-    row+='<div class="pm-fx-resolve"><label>Your role <select onchange="APP.playSetCombatRole('+i+',this.value)"><option value="">Choose attack or defence</option>'
-      +(r.combatKind==="evade"?'':'<option value="attack" '+(r.combatRole==="attack"?'selected':'')+'>Attack</option>')
-      +'<option value="defence" '+(r.combatRole==="defence"?'selected':'')+'>Defence</option></select></label> Changing role clears chosen effects.</div>';
-    if(r.combatKind!=="evade"){
-      const opts=["Unarmed",...(S.gearWeapons||[])];
-      row+='<div class="pm-fx-resolve"><label>Weapon used <select onchange="APP.playSetRollWeapon('+i+',this.value)"><option value="">Not recorded (all effects shown)</option>'
-        +opts.map(n=>'<option value="'+esc(n)+'" '+(r.weapon===n?'selected':'')+'>'+esc(n)+'</option>').join("")+'</select></label> Filters weapon-specific Special Effects.</div>';
-    }
-    if(!r.oppTier){
-      row+='<div class="pm-fx-resolve">Opponent rolled: '+["Critical","Success","Failure","Fumble"].map(t=>
-        '<button class="pm-btn sm" onclick="APP.playSetOpponentTier('+i+',\''+t+'\')">'+t+'</button>').join("")
-        +(r.combatRole==="attack"?' <button class="pm-btn sm" onclick="APP.playNoParry('+i+')">No parry</button>':'')+'</div>';
-    }else{
-      const n=playEffectsWon(r.tier,r.oppTier);
-      row+='<div class="pm-fx-resolve">'+(n>0?'vs '+(r.opponentAction==='no-parry'?'no parry (Failure)':'opponent '+r.oppTier)+' &rarr; <b>you win '+n+' Special Effect'+(n>1?"s":"")+'</b>.'
-        :n<0?'vs '+(r.opponentAction==='no-parry'?'no parry (Failure)':'opponent '+r.oppTier)+' &rarr; <b>opponent wins '+(-n)+' Special Effect'+(-n>1?"s":"")+'</b> against you.'
-        :'vs '+(r.opponentAction==='no-parry'?'no parry (Failure)':'opponent '+r.oppTier)+' &rarr; no Special Effects either way.')
-        +(n>0&&r.combatRole?' <button class="pm-btn sm" onclick="APP.playJumpToEffects('+i+')">'+((r.effectsPicked||[]).length?'Change':'Choose')+' Special Effects</button>':n>0?' Choose your role before selecting effects.':n<0?' <button class="pm-btn sm" onclick="APP.playJumpToEffects()">View Special Effects</button>':'')
-        +((r.effectsPicked||[]).length?'<span>Chosen: '+esc(r.effectsPicked.join(', '))+'</span>':'')
-        +' <button class="pm-btn sm" onclick="APP.playJumpToInjury()">Record injury</button></div>';
-    }
+    let sum;
+    if(!r.combatRole||!r.oppTier)sum='Needs '+(!r.combatRole?'attack or defence':'the opponent\'s result')+'.';
+    else{const n=playEffectsWon(r.tier,r.oppTier),opp=r.opponentAction==='no-parry'?'no defence':'opponent '+r.oppTier;
+      sum='vs '+opp+' &rarr; '+(n>0?'<b>you win '+n+' Special Effect'+(n>1?"s":"")+'</b>':n<0?'<b>opponent wins '+(-n)+'</b>':'no Special Effects');}
+    row+='<div class="pm-fx-resolve">'+sum+' <button class="pm-btn sm" onclick="APP.playJumpToEffects('+i+')">'+(!r.combatRole||!r.oppTier?'Resolve':(r.effectsPicked||[]).length?'Change effects':'Open')+'</button>'
+      +(r.combatRole&&r.oppTier?' <button class="pm-btn sm" onclick="APP.playJumpToInjury()">Record injury</button>':'')
+      +((r.effectsPicked||[]).length?' <span>Chosen: '+esc(r.effectsPicked.join(', '))+'</span>':'')+'</div>';
   }
   return row+'</div>';
 }
@@ -1111,20 +1068,8 @@ function pmSkillsPanelHTML(){
   return h;
 }
 function pmActionsPanelHTML(){
-  const styles=stylesList().map(s=>{const base=finalPct(s.key);const g=gradedPct(s.key,base);return {name:s.name,pct:g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%"};});
-  let h='<div class="pm-box pmx-actions"><h3>Turn and actions</h3>';
-    // Weapon-by-weapon hit/damage now lives permanently in the 04 Combat
-    // section (col 4 top), matching D's own division of "the numbers" vs
-    // "the actions" into separate blocks. This tab carries the real,
-    // clickable Action Point cost list (.pm-act) — every cost below was
-    // re-verified against the core rulebook's Combat Actions breakdown
-    // (Proactive Actions p.91-92, Reactive Actions p.92-93, Change Range
-    // p.106, Grapple p.106, Reload table p.109) rather than trusted from
-    // the previous pass, which had Parry/Evade/Disengage wrong as "Free".
-    // Clicking a row spends its AP from the live pool below; "New Round"
-    // resets AP to max the way a fresh Combat Round does in play.
-    const styleTxt=styles.length?styles.map(s=>esc(s.name)+" "+s.pct).join(", "):"No combat style yet";
-    h+='<p class="pm-notes" style="margin-bottom:10px">Combat Styles: '+styleTxt+'</p>';
+  let h='<div class="pm-box pmx-actions"><h3>Actions <span class="pmx-dim">tap to spend AP</span></h3>';
+    // AP costs verified against Core pp.91–93, 106, 109.
     const maxAPnow=playMaxAP(),usedAPnow=Math.min(S.play.apUsed,maxAPnow),remainAPnow=maxAPnow-usedAPnow;
     // Reload is weapon-specific; using the first equipped ranged weapon silently
     // charged the wrong AP whenever a character carried two different launchers.
@@ -1159,31 +1104,18 @@ function pmActionsPanelHTML(){
       ["Drop Weapon","p.93"],["Signal","If not engaged · p.93"],["Speak","Short phrases only · p.93"],
       ["Use Luck Point","p.93"],["Ward Location","Set before the attack roll; the ward lasts until that weapon attacks or parries · pp.93, 105"]
     ];
-    const ibNow=playInitiativeBonusNow(),initRec=S.play.initiative;
-    h+='<div class="pm-actbar"><span class="apread">Initiative '+(initRec?'<b>'+initRec.total+'</b> (d10 '+initRec.roll+' + '+initRec.bonus+')':'not rolled')+'</span>'
-     +'<button class="pm-btn sm" onclick="APP.playRollInitiative()" title="Roll 1d10 + Initiative Bonus '+ibNow.total+' (Core p.90)">Roll initiative</button>'
-     +'<label class="pm-empty"> or enter your d10 <input id="playInitD10" type="number" min="1" max="10" style="width:3.5em"></label>'
-     +'<button class="pm-btn sm" onclick="APP.playSetInitiative()">Set</button>'
-     +(initRec?' <button class="pm-btn sm" onclick="APP.playClearInitiative()" title="Initiative lasts the whole fight unless something forces a reroll (p.90)">End fight</button>':'')+'</div>';
-    h+='<div class="pm-actbar"><label class="pm-empty"><input type="checkbox" '+(S.play.surprised?'checked':'')+' onchange="APP.playSetSurprised(this.checked)"> Surprised</label></div>';
-    if(S.play.surprised)h+='<p class="warn" role="status">Surprised (Core p.105): initiative −10; you can\'t defend until your initiative comes up; the first successful attack against you gains one extra Special Effect; no offensive actions for the rest of this round. New Round clears it.</p>';
-    h+='<div class="pm-actbar"><span class="apread">Action Points <b>'+remainAPnow+'</b> / '+maxAPnow+' remaining</span>'
-     +'<button class="pm-newround" onclick="APP.playNewRound()" title="Reset Action Points to max for a new Combat Round">New Round</button></div>';
+    // Chips spend AP; what each action does is one tap away, not on screen.
     for(const kind of ["Proactive","Reactive"]){
-      h+='<p class="pm-notes" style="margin:8px 0 4px">'+kind+(kind==="Proactive"?' — one per cycle, on your turn':' — one per incoming threat, any time you have AP')+'</p>';
-      h+='<div class="pm-actlist">'+ACTIONS.filter(a=>a.kind===kind).map(a=>{
-        const canAfford=a.ap<=remainAPnow&&!(S.play.surprised&&a.nm==="Attack");
-        return '<button class="pm-act" onclick="APP.playSpendAP('+a.ap+')" title="'+esc(a.note)+'"'+(canAfford?"":" disabled")+'>'
-         +'<span class="nm">'+esc(a.nm)+'<span class="note">'+esc(a.note)+'</span></span>'
-         +'<span class="cost">'+a.ap+' AP</span></button>';
-      }).join("")+'</div>';
+      h+='<div class="pmx-actgroup"><span class="lbl">'+kind+(kind==="Proactive"?' <span class="pmx-dim">on your turn</span>':' <span class="pmx-dim">against each incoming threat</span>')+'</span><div class="pmx-chips">'
+       +ACTIONS.filter(a=>a.kind===kind).map(a=>{
+        const canAfford=a.ap<=remainAPnow&&!(S.play.surprised&&a.nm==="Attack")&&!VIEW_ONLY;
+        return '<button class="pmx-chip" onclick="APP.playSpendAP('+a.ap+')" title="'+esc(a.note)+'"'+(canAfford?"":" disabled")+'>'+esc(a.nm)+' <span>'+a.ap+' AP</span></button>';
+      }).join("")+'</div></div>';
     }
-    h+='<p class="pm-notes" style="margin:8px 0 4px">Free — no AP</p><p class="pm-notes">'+FREE_ACTIONS.map(([n,t])=>'<span title="'+esc(t)+'"><b>'+esc(n)+'</b>: '+esc(t)+'</span>').join('<br>')+'</p>';
-    if(styles.length){
-      const styleEntries=stylesList();
-      h+='<div class="pm-atk-styles" style="margin-top:12px">'+styleEntries.map(s=>{const base=finalPct(s.key);const g=gradedPct(s.key,base);const pct=g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%";
-        return '<span class="pm-stylechip">'+esc(s.name)+' <b onclick="APP.toggleGradePop(\''+jsq(s.key)+'\',\''+jsq(s.name)+'\',event)" title="Click for Difficulty Grades">'+pct+'</b> <button class="pm-btn roll" onclick="APP.roll(\''+jsq(s.key)+'\')">roll</button></span>';}).join("")+'</div>';
-    }
+    h+='<details class="pmx-actinfo"><summary>What each action does</summary><dl>'
+     +ACTIONS.map(a=>'<div><dt>'+esc(a.nm)+' <span class="pmx-dim">'+a.kind+', '+a.ap+' AP</span></dt><dd>'+esc(a.note)+'</dd></div>').join("")
+     +FREE_ACTIONS.map(([n,t])=>'<div><dt>'+esc(n)+' <span class="pmx-dim">Free</span></dt><dd>'+esc(t)+'</dd></div>').join("")
+     +'</dl></details>';
   h+='</div>';
   return h;
 }
@@ -1298,8 +1230,8 @@ function renderPlayView(){
    +PM_TABS.filter(([k])=>k!=="magic"||allMagic().length).map(([k,l])=>'<button type="button" class="pmx-tab'+(tab===k?" on":"")+'"'+(tab===k?' aria-current="page"':'')+' onclick="APP.playTab(\''+k+'\')">'+l+'</button>').join("")
    +'</nav><div class="pmx-panel">';
   if(tab==="skills")h+=pmSkillsPanelHTML();
-  else if(tab==="combat")h+=pmCombatSection()+pmActionsPanelHTML()+'<div class="pm-box pmx-fx" id="pm-actions"><h3>Special Effects</h3>'+specialEffectsPanel()+'</div>';
-  else if(tab==="body")h+=pmVitalsCard();
+  else if(tab==="combat")h+=pmCombatTabHTML();
+  else if(tab==="body")h+=pmVitalsCard()+'<div class="pm-box pmx-fatigue">'+pmFatiguePanel()+pmHazardsHTML()+'</div>';
   else if(tab==="gear")h+=pmGearPanelHTML();
   else if(tab==="magic")h+='<div class="pm-box">'+magicPanel()+'</div>';
   else h+=pmNotesPanelHTML();
@@ -1312,6 +1244,120 @@ function renderPlayView(){
   $("#main").innerHTML=h;
   if(tab==="combat"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
   pmDiceSync();
+}
+// ---- Combat tab (Play Mode redesign batch 3) ----
+// One place for a fight: the turn strip, the latest combat roll with the
+// opponent's result and the Special Effects it allows, each weapon with
+// Attack and Parry, then the action list. The full Special Effects
+// reference stays available, folded away.
+function pmPctText(key){const g=gradedPct(key,finalPct(key));return g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%";}
+function pmTurnStripHTML(){
+  const ib=playInitiativeBonusNow(),rec=S.play.initiative;
+  const max=playMaxAP(),remain=max-Math.min(S.play.apUsed,max);
+  let h='<div class="pm-box pmx-turn">'
+   +'<div class="pmx-turn-item"><span class="lbl">Initiative</span>'
+   +(rec?'<b>'+rec.total+'</b> <span class="pmx-dim">d10 '+rec.roll+' + '+rec.bonus+'</span> <button class="pmx-mini" onclick="APP.playClearInitiative()" title="Initiative lasts the whole fight unless something forces a reroll (Core p.90)">End fight</button>'
+     :'<button class="pmx-mini" onclick="APP.playRollInitiative()" title="Roll 1d10 + Initiative Bonus '+ib.total+' (Core p.90)">Roll d10 + '+ib.total+'</button>'
+      +' <label class="pmx-dim">or your d10 <input id="playInitD10" type="number" min="1" max="10" inputmode="numeric"></label> <button class="pmx-mini" onclick="APP.playSetInitiative()">Set</button>')
+   +'</div>'
+   +'<div class="pmx-turn-item"><span class="lbl">Action Points</span><b>'+remain+'</b> <span class="pmx-dim">/ '+max+'</span> <button class="pmx-mini" onclick="APP.playNewRound()" title="Reset Action Points for a new Combat Round">New round</button></div>'
+   +'<label class="pmx-turn-item pmx-surprised"><input type="checkbox" '+(S.play.surprised?'checked':'')+' onchange="APP.playSetSurprised(this.checked)"> Surprised</label>'
+   +'</div>';
+  if(S.play.surprised)h+='<p class="warn pmx-warn" role="status">Surprised (Core p.105): initiative −10; you can\'t defend until your initiative comes up; the first successful attack against you gains one extra Special Effect; no offensive actions for the rest of this round. New round clears it.</p>';
+  return h;
+}
+// The roll the combat card works on: the one chosen from the log, else the
+// newest combat roll.
+function pmResolveIndex(){
+  const i=S.rollLog.indexOf(PM_EFFECT_ROLL_REF);
+  if(i>=0&&S.rollLog[i].combat)return i;
+  return S.rollLog.findIndex(r=>r.combat);
+}
+function pmResolveCardHTML(){
+  const i=pmResolveIndex();
+  if(i<0)return '<div class="pm-box pmx-resolve" id="pm-resolve"><h3>Combat roll</h3><p class="pm-empty">Press <b>Attack</b> or <b>Parry</b> on a weapon below. The result appears here, with the Special Effects it lets you choose.</p></div>';
+  const r=S.rollLog[i];
+  if(!PM_EFFECT_ROLL_REF||!S.rollLog.includes(PM_EFFECT_ROLL_REF))PM_EFFECT_ROLL_REF=r;
+  const ro=VIEW_ONLY?' disabled':'';
+  let h='<div class="pm-box pmx-resolve" id="pm-resolve"><h3>Combat roll'+(i>0?' <span class="pmx-dim">(earlier roll)</span>':'')+'</h3>'
+   +'<div class="pmx-resolve-top"><b class="pmx-resolve-d">'+(r.roll===100?"00":esc(String(r.roll)))+'</b>'
+   +'<span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span>'
+   +'<span class="pmx-resolve-lbl">'+(r.combatRole==="attack"?"Attack":r.combatRole==="defence"?(r.combatKind==="evade"?"Evade":"Parry"):"")+' '+esc(r.label)+' <span class="pmx-dim">'+r.pct+'%</span></span></div>';
+  if(!r.combatRole){
+    h+='<div class="pmx-step"><span>Was this an attack or a defence?</span> '
+     +(r.combatKind==="evade"?'':'<button class="pmx-mini"'+ro+' onclick="APP.playSetCombatRole('+i+',\'attack\')">Attack</button> ')
+     +'<button class="pmx-mini"'+ro+' onclick="APP.playSetCombatRole('+i+',\'defence\')">Defence</button></div>';
+  }
+  if(r.combatKind!=="evade"&&!r.weapon){
+    const opts=["Unarmed",...(S.gearWeapons||[])];
+    h+='<div class="pmx-step"><label>Weapon <select'+ro+' onchange="APP.playSetRollWeapon('+i+',this.value)"><option value="">Not recorded (all effects shown)</option>'
+     +opts.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("")+'</select></label></div>';
+  }
+  if(r.combatRole){
+    const noParry=r.opponentAction==="no-parry";
+    h+='<div class="pmx-step"><span>'+(r.combatRole==="attack"?"Their defence:":"Their attack:")+'</span> '
+     +["Critical","Success","Failure","Fumble"].map(t=>'<button class="pmx-mini'+(r.oppTier===t&&!noParry?' on':'')+'"'+ro+' onclick="APP.playSetOpponentTier('+i+',\''+t+'\')">'+t+'</button>').join(" ")
+     +(r.combatRole==="attack"?' <button class="pmx-mini'+(noParry?' on':'')+'"'+ro+' onclick="APP.playNoParry('+i+')" title="They didn\'t parry or evade: treat as a Failure (Core p.100)">No defence</button>':'')+'</div>';
+  }
+  if(r.combatRole&&r.oppTier){
+    const n=playEffectsWon(r.tier,r.oppTier);
+    if(n>0){
+      const picked=r.effectsPicked||[];
+      const eligible=SPECIAL_EFFECTS.filter(e=>canPickEffectForRoll(e,r));
+      h+='<p class="pmx-outcome good">You win <b>'+n+' Special Effect'+(n>1?"s":"")+'</b>: '+picked.length+' of '+n+' chosen.</p>';
+      if(picked.length)h+='<div class="pm-fx-picks">'+picked.map((name,k)=>'<button type="button" class="pmx-mini on"'+ro+' title="Remove '+esc(name)+'" onclick="APP.playRemoveEffectChoice('+k+')">'+esc(name)+' &times;</button>').join(" ")+'</div>';
+      h+='<div class="pmx-fx-eligible">'+eligible.map(fxItemHTML).join("")+'</div>'
+       +'<p class="pmx-dim pmx-small">Showing the '+eligible.length+' effects this roll allows'+(r.weapon?' with '+esc(r.weapon):'')+'. Check situational requirements with your GM.</p>';
+    }else if(n<0){
+      h+='<p class="pmx-outcome bad">Your opponent wins <b>'+(-n)+' Special Effect'+(-n>1?"s":"")+'</b> against you. They choose.</p>';
+    }else h+='<p class="pmx-outcome">No Special Effects either way.</p>';
+    h+='<div class="pmx-step"><button class="pmx-mini" onclick="APP.playJumpToInjury()">Record damage on Body</button></div>';
+  }
+  return h+'</div>';
+}
+function pmWeaponCardsHTML(){
+  const styles=stylesList();
+  const btns=(weapon,key,fam,canParry)=>{
+    const a='<button class="pmx-act atk"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollWithWeapon(\''+jsq(weapon)+'\',\''+jsq(key)+'\',\''+fam+'\',\'attack\')">Attack</button>';
+    const p=canParry?'<button class="pmx-act"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollWithWeapon(\''+jsq(weapon)+'\',\''+jsq(key)+'\',\''+fam+'\',\'defence\')">Parry</button>':'';
+    return a+p;
+  };
+  const meta=w=>(w.group==="Ranged"
+      ?["Range "+(w.range||"—"),"Force "+(w.reach||"—"),"DM "+(w.dmgMod||"—"),"Load "+(w.load??"—")+(typeof w.load==="number"?" AP":"")].concat(w.impaleSize?["Impale size "+w.impaleSize]:[])
+      :["Size "+(w.size||"—"),"Reach "+(REACH_NAME[w.reach]||w.reach||"—")])
+     .concat(["AP/HP "+(w.apHp||"—")]).concat(w.effects&&w.effects!=="—"?[w.effects]:[]).map(esc).join(" · ");
+  let h='<div class="pm-box pmx-weapons"><h3>Weapons</h3>';
+  for(const n of S.gearWeapons||[]){
+    const w=weaponByName(n);if(!w)continue;
+    const ranged=w.group==="Ranged",covering=styles.filter(s=>styleDef(s.key).weapons.includes(n));
+    h+='<div class="pmx-wpn"><div class="pmx-wpn-head"><span class="nm">'+esc(w.name)+'</span><span class="dmg">'+esc(w.dmg)+'</span></div>'
+     +'<div class="pmx-wpn-meta">'+meta(w)+'</div>';
+    if(covering.length){
+      h+=covering.map(s=>'<div class="pmx-wpn-roll"><span class="sty">'+esc(s.name)+' <b>'+pmPctText(s.key)+'</b></span>'+btns(n,s.key,"",!ranged)+'</div>').join("");
+    }else{
+      const id=esc(n.replace(/\W+/g,"_"));
+      h+='<div class="pmx-wpn-roll unfam"><span class="sty">Not in your Combat Styles (Core p.88)</span>'
+       +'<select id="fam-'+id+'">'+WEAPON_FAMILIARITY.filter(f=>styles.length||f[0]==="substantially").map(f=>'<option value="'+f[0]+'">'+esc(f[1])+'</option>').join("")+'</select>'
+       +(styles.length>1?'<select id="famstyle-'+id+'">'+styles.map(s=>'<option value="'+esc(s.key)+'">'+esc(s.name)+'</option>').join("")+'</select>':'')
+       +'<button class="pmx-act atk"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollUnfamiliarWeapon(\''+jsq(n)+'\',\'attack\')">Attack</button>'
+       +(ranged?'':'<button class="pmx-act"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollUnfamiliarWeapon(\''+jsq(n)+'\',\'defence\')">Parry</button>')+'</div>';
+    }
+    h+='</div>';
+  }
+  // Core pp.105–106: every human can fight unarmed with the Unarmed skill.
+  h+='<div class="pmx-wpn"><div class="pmx-wpn-head"><span class="nm">Unarmed</span><span class="dmg">'+esc(unarmedDamageText())+'</span></div>'
+   +'<div class="pmx-wpn-meta">Size S · Reach Touch · Core pp.105–106</div>'
+   +'<div class="pmx-wpn-roll"><span class="sty">Unarmed <b>'+pmPctText("std:Unarmed")+'</b></span>'+btns("Unarmed","std:Unarmed","",true)+'</div></div>';
+  // Evade is the defence that doesn't use a weapon (Core p.103).
+  h+='<div class="pmx-wpn pmx-evade"><div class="pmx-wpn-roll"><span class="sty">Evade <b>'+pmPctText("std:Evade")+'</b> <span class="pmx-dim">dive clear; usually leaves you prone</span></span>'
+   +'<button class="pmx-act"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.roll(\'std:Evade\')">Evade</button></div></div>';
+  if(!(S.gearWeapons||[]).length)h+='<p class="pm-empty">No weapons carried. Add some on the Money &amp; Gear step.</p>';
+  return h+'</div>';
+}
+function pmCombatTabHTML(){
+  const fxOpen=!!PM_FX_SEARCH;
+  return pmTurnStripHTML()+pmResolveCardHTML()+pmWeaponCardsHTML()+pmActionsPanelHTML()
+   +'<details class="pm-box pmx-fxref" id="pm-actions"'+(fxOpen?' open':'')+'><summary><h3>Special Effects reference</h3><span class="pmx-dim">all '+SPECIAL_EFFECTS.length+', with rules text</span></summary>'+specialEffectsPanel()+'</details>';
 }
 // ---- Roll tray (Play Mode redesign batch 2) ----
 // Each new d100 roll is shown in a small tray using the physics dice from
