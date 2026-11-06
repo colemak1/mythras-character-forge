@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by ChatGPT (Work)_
+_Last updated: 2026-11-06 by Claude_
 
 ## Priorities
 
@@ -28,10 +28,9 @@ Practice Combat features remain paused. Progress **3/8**.
 ## Waiting on someone
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **Claude:** next Combat items as Chat supplies them; Play Mode polish on the back burner until the owner is at a PC.
-- **ChatGPT (Chat):** next source batch only after Claude mapping/implementation handoff. Subsystem 4 optional extras and other open subsystems remain.
+- **Claude:** waiting on Chat's Subsystem 5 closeout review; then implements any gaps it finds. Play Mode polish on the back burner until the owner is at a PC.
+- **ChatGPT (Chat):** Subsystem 5 closeout review (map every Core Combat chapter section to ledger rows, list anything uncovered, propose one final Work scenario, recommend close or not), then start Subsystem 4 (Advancement, hazards and recovery) reconciliation.
 
-- **Claude:** review and merge the #150 focused acceptance docs, then resume the next agreed source/audit work. No new production fix requested by this re-check.
 
 ## Notes
 
