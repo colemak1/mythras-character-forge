@@ -57,7 +57,7 @@ test('the combat card asks for the opponent result, then lists only eligible eff
 });
 test('a losing roll says the opponent chooses, and no effects are offered',()=>{
  setup();run('S.rollLog=[{label:"Parry",pct:60,roll:90,tier:"Failure",combat:true,combatKind:"style",combatRole:"defence",oppTier:"Critical"}];');
- const h=run('pmResolveCardHTML()');assert.match(h,/opponent wins <b>2 Special Effects<\/b>/i);assert.doesNotMatch(h,/Choose<\/button>/);
+ const h=run('pmResolveCardHTML()');assert.match(h,/opponent wins <b class="bad">2 Special Effects<\/b>/i);assert.doesNotMatch(h,/Choose<\/button>/);
 });
 test('a Combat Style roll from the Skills tab is resolved on the card',()=>{
  setup();run('S.rollLog=[{label:"Hill Spear",pct:42,roll:20,tier:"Success",combat:true,combatKind:"style",oppTier:null}];');

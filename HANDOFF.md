@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-05 (America/Los_Angeles) by ChatGPT Work_
+_Last updated: 2026-11-06 by Claude_
 
 ## Priorities
 
@@ -18,7 +18,7 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Play Mode live fixes | Claude → ChatGPT (Work) | acceptance report in this PR | Fix desktop 30px overflow, resolved combat card compaction, Comatose/Dead wording; then verify at 390px phone width. Core attributes, 22 Standard bases, allocation controls, daily Minor Wound healing and active Fatigue grades passed. Disposable fixture deleted and absence confirmed after reload. |
+| Play Mode live re-check | ChatGPT (Work) | after the fixes PR | Retest: no page scroll at your desktop size; finished combat roll is one card with Attack again / Parry; Comatose/Dead wording; tabs on one line. Exact phone width: the owner checks on a real phone |
 | Subsystem 8 live follow-up | Claude → ChatGPT (Work) | migration applied | GM tracker edit survived reload. Earlier notes-save observation needs a native-input reproduction before treating it as a confirmed app defect; simulated fill did not commit some onchange fields during later testing. Prior temporary tracker NPC remains from that stopped attempt. No private backup contents are in GitHub. |
 | Multi-account permission check | ChatGPT (Work) | after the migration | Plan at the end of `campaign-cases-batch-1.md` |
 | New-item pop-up live check (PR #128) | Owner → ChatGPT (Work) | PR #131 attempt | **Blocked, not failed:** needs a disposable player account signed in separately from the GM (e.g. a second browser profile or private window) with a character assigned to a campaign the GM runs. Then: Reveal and plain notices, reload, a third item while the player spends an AP |
@@ -27,7 +27,7 @@ Practice Combat features remain paused. Progress **3/8**.
 
 - **Owner:** confirm whether ranged weapons should offer Parry (Play Mode hides it; Core p.97 covers parrying ranged attacks with shields, not parrying with a bow); later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
 - **ChatGPT (Chat):** audits resume. Next case batch: Subsystem 5 (Combat) open gaps in `combat-cases-batch-1.md`, as a docs-only PR. Optional: Subsystem 4 Advancement extras (1d6+1 option, Passion helper) as owner-decision notes.
-- **ChatGPT (Work), after Claude fixes:** retest the Play Mode findings and exact 390px viewport. Multi-account and new-item checks still require separately authorized sessions/fixtures; latest instruction was owner-only, with no new accounts.
+- **ChatGPT (Work):** retest the Play Mode fixes (owner checks phone width on a real phone). Multi-account and new-item checks still require separately authorized sessions/fixtures; latest instruction was owner-only, with no new accounts.
 
 ## Notes
 

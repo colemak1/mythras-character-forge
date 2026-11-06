@@ -775,6 +775,7 @@ window.APP={
  cstyleToggleCat(key,cat,isOpen){cstyleUI(key).openCats[cat]=isOpen;},
  /* roller */
  roll(key){const em=entryMap();const e=em[key];if(!e)return;
+   if(fatigueNoActivity()){PM_MSG=fatigueNoActivity();render();return;}
    if(isSpokenLanguage(key)){PM_MSG="Spoken language measures fluency. Roll the relevant skill, capped by fluency if the GM calls for it.";render();return;}
    PM_MSG=null;
    const base=finalPct(key);const g=gradedPct(key,base);
@@ -799,6 +800,7 @@ window.APP={
  // A combat roll made with a specific weapon (Core pp.88, 100): the weapon is
  // recorded so weapon-specific Special Effects can be filtered.
  rollWithWeapon(weapon,key,fam,role){if(viewOnlyBlock())return;
+   if(fatigueNoActivity()){PM_MSG=fatigueNoActivity();render();return;}
    if(weapon!=="Unarmed"&&!weaponByName(weapon))return;
    const em=entryMap(),e=key?em[key]:null;if(key&&!e)return;
    let g,label;
@@ -809,7 +811,7 @@ window.APP={
    PM_MSG=null;const r=d100(),tier=resolveRoll(r,g.pct),tag=g.grade!=="standard"?" ("+GRADE_LABEL[g.grade]+")":"";
    if(key&&!fam){if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);if(tier==="Critical")APP.markChecked(key);}
    PM_EFFECT_ROLL_REF=null;
-   const entry={label:label+tag,pct:g.pct,roll:r===100?"00":r,tier,combat:true,combatKind:"style",oppTier:null,weapon};
+   const entry={label:label+tag,pct:g.pct,roll:r===100?"00":r,tier,combat:true,combatKind:"style",oppTier:null,weapon,styleKey:key||null,fam:fam||""};
    // Attack/Parry buttons on a weapon card record the role up front (Core pp.91–92).
    if(role==="attack"||role==="defence")entry.combatRole=role;
    S.rollLog.unshift(entry);
@@ -974,7 +976,8 @@ window.APP={
    S.xp.history=S.xp.history.slice(0,25);render();},
  // A Passion is rolled like a skill against its percentage (Core p.81-82);
  // any augmentation or Grade is the GM's call and applied at the table.
- rollPassion(i){if(viewOnlyBlock()||!Number.isInteger(i))return;const p=S.passions[i];if(!p)return;
+ rollPassion(i){if(viewOnlyBlock()||!Number.isInteger(i))return;
+   if(fatigueNoActivity()){PM_MSG=fatigueNoActivity();render();return;}const p=S.passions[i];if(!p)return;
    const pct=passionVal(p);if(typeof pct!=="number"||!Number.isFinite(pct)){PM_MSG="Set this Passion's percentage first.";render();return;}
    PM_MSG=null;PM_EFFECT_ROLL_REF=null;const r=d100();
    S.rollLog.unshift({label:(p.name||"Passion")+" (Passion)",pct,roll:r===100?"00":r,tier:resolveRoll(r,pct),combat:false,oppTier:null});
@@ -1140,7 +1143,7 @@ window.APP={
  playNewRound(){if(viewOnlyBlock())return;S.play.apUsed=0;S.play.surprised=false;render();},
  // Core p.90: initiative is 1d10 + Initiative Bonus, rolled once at the start
  // of a fight and kept until an event forces a reroll.
- playRollInitiative(){if(viewOnlyBlock())return;APP._setInitiative(d(10));},
+ playRollInitiative(){if(viewOnlyBlock())return;if(fatigueNoActivity()){PM_MSG=fatigueNoActivity();render();return;}APP._setInitiative(d(10));},
  playSetInitiative(){if(viewOnlyBlock())return;const el=document.getElementById("playInitD10");const v=Number(el?.value);
    if(!Number.isInteger(v)||v<1||v>10){PM_MSG="Enter a d10 result from 1 to 10.";render();return;}APP._setInitiative(v);},
  _setInitiative(roll){const bonus=playInitiativeBonusNow().total;S.play.initiative={roll,bonus,total:roll+bonus};PM_MSG=null;render();},

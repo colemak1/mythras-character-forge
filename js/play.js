@@ -1003,7 +1003,7 @@ function pmSkillsPanelHTML(){
     // formula caption (STR+DEX etc, "x2" normalised to "×2"), and a dotted
     // .lead line — no trained/untrained bullet dot, the mockup has none.
     const fluency=isSpokenLanguage(e.key);
-    const pctTxt=fluency?String(base):g.pct===null?GRADE_LABEL[g.grade]:String(g.pct);
+    const pctTxt=fatigueNoActivity()?"—":fluency?String(base):g.pct===null?GRADE_LABEL[g.grade]:String(g.pct);
     const cbt=e.grp==="Combat Style";
     const baseFmt=(e.formula||"").replace(/x(\d)/i,"×$1").toUpperCase();
     const checked=S.xp.checked.includes(e.key);
@@ -1188,14 +1188,15 @@ function pmTrackersHTML(){
   let h='<div class="pmx-trackers">';
   h+=row("Action Points","ap",'<span class="pm-pips">'+Array.from({length:maxAP},(_,i)=>'<button class="pm-pip'+(i<remainAP?"":" off")+'" aria-label="action point '+(i+1)+'" onclick="APP.playApSetPip('+i+')"></button>').join("")+'</span>'
     +'<button type="button" class="pmx-mini" onclick="APP.playNewRound()" title="New combat round: restore all AP">New round</button>');
-  h+=row("Initiative","initiative",ini?'<b>'+ini.total+'</b> <span class="pmx-dim">d10 '+ini.roll+' + '+ini.bonus+'</span> <button type="button" class="pmx-mini" onclick="APP.playClearInitiative()">End fight</button>'
+  h+=row("Initiative","initiative",fatigueNoActivity()?'<span class="pmx-dim">—</span>':ini?'<b>'+ini.total+'</b> <span class="pmx-dim">d10 '+ini.roll+' + '+ini.bonus+'</span> <button type="button" class="pmx-mini" onclick="APP.playClearInitiative()">End fight</button>'
     :'<span class="pmx-dim">+'+ib.total+'</span> <button type="button" class="pmx-mini" onclick="APP.playRollInitiative()">Roll</button>');
   h+=row("Magic Points","magic",'<b>'+v.curMagic+'</b><span class="pmx-dim">/'+v.maxMagic+'</span><span class="adj"><button class="pmx-mini" onclick="APP.playMagicAdj(-1)" aria-label="spend magic point">&minus;</button><button class="pmx-mini" onclick="APP.playMagicAdj(1)" aria-label="restore magic point">+</button></span>');
   h+=row("Luck","luck",'<span class="pm-pips">'+Array.from({length:v.maxLuck},(_,i)=>'<button class="pm-pip'+(i<v.curLuck?"":" off")+'" aria-label="luck point '+(i+1)+'" onclick="APP.playLuckSetPip('+i+')"></button>').join("")+'</span>');
   h+=row("Fatigue","fatigue",'<select class="pm-fatsel" aria-label="Fatigue level" onchange="APP.playSetFatigue(this.value)">'+FATIGUE_LEVELS.map(f=>'<option '+(v.fatigue===f?"selected":"")+'>'+f+'</option>').join("")+'</select>');
   h+='</div>';
   const r=fatigueRow();
-  if(FATIGUE_TABLE.indexOf(r)>0)h+='<p class="pmx-small pmx-warntext">'+esc(v.fatigue)+': skill rolls '+GRADE_LABEL[r.grade]+(r.ap?', Action Points '+r.ap:'')+(r.init?', Initiative '+r.init:'')+'. <button type="button" class="pmx-link" onclick="APP.pmPopup(\'fatigue\')">Details</button></p>';
+  if(fatigueNoActivity())h+='<p class="pmx-small pmx-warntext pmx-noact" role="status">'+esc(fatigueNoActivity())+'</p>';
+  else if(FATIGUE_TABLE.indexOf(r)>0)h+='<p class="pmx-small pmx-warntext">'+esc(v.fatigue)+': skill rolls '+GRADE_LABEL[r.grade]+(r.ap?', Action Points '+r.ap:'')+(r.init?', Initiative '+r.init:'')+'. <button type="button" class="pmx-link" onclick="APP.pmPopup(\'fatigue\')">Details</button></p>';
   return h;
 }
 // D&D Beyond-style top row: the seven characteristics, then the trackers used
@@ -1270,7 +1271,12 @@ function pmSaveScroll(){const m={};document.querySelectorAll("[data-scroll]").fo
 function pmRestoreScroll(m){document.querySelectorAll("[data-scroll]").forEach(el=>{if(m[el.dataset.scroll]!=null)el.scrollTop=m[el.dataset.scroll];});}
 function pmFitDash(){
   const d=document.querySelector(".pmx-dash");if(!d||!d.getBoundingClientRect)return;
-  d.style.setProperty("--pm-top",Math.max(0,Math.round(d.getBoundingClientRect().top+(window.scrollY||0)))+"px");
+  const top=Math.max(0,Math.round(d.getBoundingClientRect().top+(window.scrollY||0)));
+  d.style.setProperty("--pm-top",top+"px");
+  // Anything below or around the dashboard (margins, site chrome) must not
+  // make the page scroll: take any remaining overflow off the height.
+  const doc=document.documentElement,extra=doc&&doc.scrollHeight-window.innerHeight;
+  if(extra>0&&extra<200)d.style.setProperty("--pm-top",(top+extra)+"px");
 }
 let PM_RESIZE_BOUND=false;
 function renderPlayView(){
@@ -1387,6 +1393,25 @@ function pmResolveCardHTML(){
   const r=S.rollLog[i];
   if(!PM_EFFECT_ROLL_REF||!S.rollLog.includes(PM_EFFECT_ROLL_REF))PM_EFFECT_ROLL_REF=r;
   const ro=VIEW_ONLY?' disabled':'';
+  // Finished roll: one summary line with the next actions on it, so the next
+  // Attack or a quick Parry is one tap away (owner, 2026-11-06).
+  const n0=r.combatRole&&r.oppTier?playEffectsWon(r.tier,r.oppTier):0;
+  if(r.combatRole&&r.oppTier&&(n0<=0||(r.effectsPicked||[]).length>=n0)&&PM_FX_EDIT!==r){
+    const picked=r.effectsPicked||[];
+    const what=r.combatRole==="attack"?"Attack":r.combatKind==="evade"?"Evade":"Parry";
+    const w=r.weapon&&r.weapon!=="Unarmed"?weaponByName(r.weapon):null;
+    const canRepeat=r.combatKind!=="evade"&&r.weapon&&(r.styleKey||r.fam);
+    const again=(role,label)=>'<button type="button" class="pmx-act'+(role==="attack"?' atk':'')+'"'+ro+' onclick="APP.rollWithWeapon(\''+jsq(r.weapon)+'\',\''+jsq(r.styleKey||'')+'\',\''+jsq(r.fam||'')+'\',\''+role+'\')">'+label+'</button>';
+    return '<div class="pm-box pmx-resolve pmx-resolve-done" id="pm-resolve">'
+     +'<div class="pmx-doneline"><b class="pmx-resolve-d">'+(r.roll===100?"00":esc(String(r.roll)))+'</b><span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span>'
+     +'<span class="pmx-donetext">'+what+' '+esc(r.weapon||r.label)+' vs '+(r.opponentAction==="no-parry"?'no defence':esc(r.oppTier))+' &rarr; '
+     +(n0>0?'<b class="good">'+esc(picked.join(", "))+'</b>':n0<0?'opponent wins <b class="bad">'+(-n0)+' Special Effect'+(-n0>1?"s":"")+'</b>':'no effects')+'</span></div>'
+     +'<div class="pmx-doneacts">'
+     +(canRepeat?again("attack","Attack again")+(w&&w.group==="Ranged"?'':again("defence","Parry")):'')
+     +(r.combatKind==="evade"?'<button type="button" class="pmx-act"'+ro+' onclick="APP.roll(\'std:Evade\')">Evade again</button>':'')
+     +'<button type="button" class="pmx-mini" onclick="PM_FX_EDIT=S.rollLog['+i+'];render()">Change</button>'
+     +'<button type="button" class="pmx-mini" onclick="APP.playJumpToInjury()">Record damage</button></div></div>';
+  }
   let h='<div class="pm-box pmx-resolve" id="pm-resolve"><h3>Combat roll'+(i>0?' <span class="pmx-dim">(earlier roll)</span>':'')+'</h3>'
    +'<div class="pmx-resolve-top"><b class="pmx-resolve-d">'+(r.roll===100?"00":esc(String(r.roll)))+'</b>'
    +'<span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span>'
@@ -1400,14 +1425,6 @@ function pmResolveCardHTML(){
     const opts=["Unarmed",...(S.gearWeapons||[])];
     h+='<div class="pmx-step"><label>Weapon <select'+ro+' onchange="APP.playSetRollWeapon('+i+',this.value)"><option value="">Not recorded (all effects shown)</option>'
      +opts.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("")+'</select></label></div>';
-  }
-  const n0=r.combatRole&&r.oppTier?playEffectsWon(r.tier,r.oppTier):0,done=r.combatRole&&r.oppTier&&(n0<=0||(r.effectsPicked||[]).length>=n0)&&PM_FX_EDIT!==r;
-  if(done){
-    const picked=r.effectsPicked||[];
-    h+='<p class="pmx-outcome '+(n0>0?'good':n0<0?'bad':'')+'">vs '+(r.opponentAction==="no-parry"?'no defence':esc(r.oppTier))+' &rarr; '
-     +(n0>0?'<b>'+esc(picked.join(", "))+'</b>':n0<0?'opponent wins <b>'+(-n0)+' Special Effect'+(-n0>1?"s":"")+'</b>':'no Special Effects')+'</p>'
-     +'<div class="pmx-step"><button type="button" class="pmx-mini" onclick="PM_FX_EDIT=S.rollLog['+i+'];render()">Change</button> <button class="pmx-mini" onclick="APP.playJumpToInjury()">Record damage</button></div>';
-    return h+'</div>';
   }
   if(r.combatRole){
     const noParry=r.opponentAction==="no-parry";

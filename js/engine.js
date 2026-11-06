@@ -116,6 +116,9 @@ function encGradeSteps(key){
   return st.steps||0;
 }
 function fatigueRow(){return FATIGUE_MAP[(S.play&&S.play.fatigue)||"Fresh"]||FATIGUE_MAP.Fresh;}
+// Core p.79: Comatose means no activities are possible, and Dead is its own
+// state, not just a Hopeless Grade like Semi-Conscious.
+function fatigueNoActivity(){const n=fatigueRow().name;return n==="Comatose"?"Comatose: no activities are possible (Core p.79).":n==="Dead"?"Dead: the character can take no actions.":null;}
 function fatigueGradeFloor(){const r=fatigueRow();return r&&r.grade?r.grade:null;}
 function gradeForEntry(key){
   let g=ACTIVE_GRADE;
