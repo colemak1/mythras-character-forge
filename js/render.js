@@ -22,6 +22,7 @@ function renderInner(){
   // on every render so it can never go stale against whatever just changed
   // (e.g. a dropdown onchange that fires without a bubbling document click).
   if($("#gradePop"))APP._closeGradePop();
+  if(APPVIEW!=="play"&&typeof pmDiceHide==="function")pmDiceHide();
   // Party Board runs a realtime subscription + a couple of timers for as
   // long as it's on screen — tear all of that down the instant navigation
   // moves anywhere else, so a stale subscription never keeps polling/pushing

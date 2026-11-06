@@ -1226,6 +1226,7 @@ function pmRollsPanelHTML(){
   let h='';
   h+='<div class="pm-box pm-rolllog-wrap pmx-rolls"><h3>Rolls</h3>'
    +(PM_MSG?'<p class="warn" style="margin-bottom:7px">'+esc(PM_MSG)+'</p>':'')
+   +'<label class="pmx-dicepref"><input type="checkbox" '+(pmDiceAnimated()?'checked':'')+' onchange="pmToggleDice3d(this.checked)"> Animated dice</label>'
    +'<details class="pmx-rollhelp"><summary>How results work</summary><p>Critical &le; 1/10 skill (round up) &middot; 01&ndash;05 auto success &middot; 96&ndash;00 auto failure &middot; Fumble 99&ndash;00 (00 only if skill&gt;100). A combat Fumble isn&#39;t just a miss &mdash; it can hand your opponent free Special Effects.</p></details>'
    +'<div class="pm-rolllog">'
    +(S.rollLog.length?S.rollLog.map((r,i)=>playRollLogRow(r,i)).join(""):'<span class="pm-empty">No rolls yet — click "roll" beside any skill.</span>')
@@ -1310,7 +1311,65 @@ function renderPlayView(){
   h+=giftPopupHtml();
   $("#main").innerHTML=h;
   if(tab==="combat"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
+  pmDiceSync();
 }
+// ---- Roll tray (Play Mode redesign batch 2) ----
+// Each new d100 roll is shown in a small tray using the physics dice from
+// Practice Combat (experiments/practice-dice.mjs). The tray lives outside
+// #main, so a re-render while the dice tumble doesn't cut the animation.
+// The roll itself is already decided and logged before the tray appears;
+// the dice only show it. Without WebGL-free canvas or the dice module (no
+// network), the tray shows the number straight away.
+let PM_DICE_ENGINE=null,PM_DICE_S=null,PM_DICE_TIMER=0,PM_DICE_CANCEL=null;
+const PM_DICE_SEEN=new WeakSet();
+function pmDiceEngine(){
+  if(!PM_DICE_ENGINE)PM_DICE_ENGINE=import("../experiments/practice-dice.mjs?v=2").catch(()=>null);
+  return PM_DICE_ENGINE;
+}
+function pmDiceAnimated(){
+  try{if(localStorage.getItem("pm-dice-3d")==="off")return false;}catch(e){}
+  return !(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+function pmDiceTier(t){return t==="Critical"?"crit":t==="Success"?"ok":t==="Fumble"?"fumble":"fail";}
+// Called at the end of every Play Mode render: animates only a roll made
+// since the last render, never the saved log restored on load.
+function pmDiceSync(){
+  const log=S.rollLog||[];
+  const first=PM_DICE_S!==S;PM_DICE_S=S;
+  const fresh=log[0],isNew=!first&&fresh&&!PM_DICE_SEEN.has(fresh);
+  log.forEach(r=>PM_DICE_SEEN.add(r));
+  if(isNew)pmDiceShow(fresh);
+}
+function pmDiceShow(r){
+  let tray=document.getElementById("pm-dicetray");
+  if(!tray){tray=document.createElement("div");tray.id="pm-dicetray";tray.className="pmx-dicetray";tray.setAttribute("role","status");tray.setAttribute("aria-live","polite");document.body.appendChild(tray);}
+  if(PM_DICE_CANCEL){try{PM_DICE_CANCEL();}catch(e){}PM_DICE_CANCEL=null;}
+  clearTimeout(PM_DICE_TIMER);
+  const value=r.roll==="00"?100:Number(r.roll);
+  tray.className="pmx-dicetray show rolling";
+  tray.innerHTML='<button class="pmx-dicetray-x" aria-label="Close" onclick="pmDiceHide()">&times;</button>'
+   +'<div class="pmx-dicetray-label">'+esc(r.label)+' <span>'+r.pct+'%</span></div>'
+   +'<canvas aria-hidden="true"></canvas>'
+   +'<div class="pmx-dicetray-out"><b>'+(r.roll==="00"?"00":String(r.roll).padStart(2,"0"))+'</b><span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span></div>';
+  const settle=()=>{if(tray.dataset.for!==String(value)+r.label)return;tray.classList.remove("rolling");tray.classList.add("settled");
+    PM_DICE_TIMER=setTimeout(pmDiceHide,r.combat?9000:5000);};
+  tray.dataset.for=String(value)+r.label;
+  if(!pmDiceAnimated()){tray.querySelector("canvas").hidden=true;settle();return;}
+  const fallback=setTimeout(()=>{tray.querySelector("canvas").hidden=true;settle();},1200);
+  pmDiceEngine().then(engine=>{
+    if(tray.dataset.for!==String(value)+r.label)return;
+    clearTimeout(fallback);
+    if(!engine){tray.querySelector("canvas").hidden=true;settle();return;}
+    try{PM_DICE_CANCEL=engine.animateDice(tray.querySelector("canvas"),[{sides:100}],[value],1000,settle);}
+    catch(e){console.warn("dice",e);tray.querySelector("canvas").hidden=true;settle();}
+  });
+}
+function pmDiceHide(){
+  clearTimeout(PM_DICE_TIMER);
+  if(PM_DICE_CANCEL){try{PM_DICE_CANCEL();}catch(e){}PM_DICE_CANCEL=null;}
+  const tray=document.getElementById("pm-dicetray");if(tray){tray.className="pmx-dicetray";tray.dataset.for="";}
+}
+function pmToggleDice3d(on){try{localStorage.setItem("pm-dice-3d",on?"on":"off");}catch(e){}render();}
 // ---- Improve Skills modal (Experience Rolls, core rulebook pp.71-73) ----
 let XP_LEARN_MSG="", XP_TRAIN_MSG="", XP_CHAR_MSG="";
 function xpModalHtml(){
