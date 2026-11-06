@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat live acceptance after PR #121 (2026-11-05, America/Los_Angeles)
+
+- Signed-in checks passed for initiative arithmetic/manual d10/New Round retention, the three action groups and sampled 1-AP buttons, human unarmed stats, a successful attack against No parry, and selecting Press Advantage.
+- Temporary chest armour AP 2 reduced 5 entered damage to 3 HP (Chest 7→4/7, Minor Wound). Restored the audit fixture's HP, armour, silver, AP and initiative; retained test roll evidence.
+- Documented a cosmetic unarmed damage double plus (`1d3 + +0`), with correct numeric values. No production code changed. Full evidence and limits are in `docs/combat-cases-batch-1.md`; `HANDOFF.md` updated. All 19 Node test files passed. Subsystem 5 remains open; progress 3/8.
+
+---
+
 ## Combat: Core action list, initiative roll, unarmed stats, and case mapping
 
 - **Action list** in Play Mode now follows Core pp.91–93: proactive actions (Attack, Brace, Cast Magic, Change Range, Dither, Hold Magic, Mount, Move, Outmanoeuvre, Ready Weapon, reloads, Regain Footing, Struggle), reactive actions (Counter Spell, Evade, Interrupt, Parry) and Free Actions at 0 AP (Delay, Assess Situation, Drop Weapon, Signal, Speak, Use Luck Point, Ward Location). Non-Core labels like "Change Combat Stance" and "Shove / Grapple" are gone. Each action shows its conditions.

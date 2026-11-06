@@ -2,13 +2,13 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by Claude (merged ChatGPT's PRs #119 and #120)_
+_Last updated: 2026-11-05 (America/Los_Angeles) by ChatGPT (Work)_
 
 ## Priorities
 
 The owner deprioritized Magic on 2026-11-06: player-facing work comes first. Magic still gets done, later.
 
-1. **Subsystem 5 — Combat:** 191 source-verified cases, Core pp.86–111, in `docs/combat-cases-batch-1.md`. Claude maps them to app status and tests, then fixes player-facing gaps (AP, initiative, attacks and parries, Special Effects, damage, wounds) in separate code PRs. **Open.**
+1. **Subsystem 5 — Combat:** 191 source-verified cases, Core pp.86–111, mapped by Claude in PR #121. Requested live batch passed for initiative/manual entry/round retention, action groups and sampled AP costs, unarmed stats, No parry → Special Effect and armour deduction. Minor unarmed double-plus formatting remains. Evidence: `docs/combat-cases-batch-1.md`. Broader closeout gaps remain **open**.
 2. **Subsystem 4 — Advancement, hazards and recovery:** finish the reopened cases.
 3. **Subsystem 6 — Magic (paused):** Folk catalogue accepted live after PR #118. Other open items in `magic-cases-batch-1.md`, `magic-cases-batch-2-animism.md` and `magic-subsystem-cases.md` are deferred.
 
@@ -18,15 +18,14 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Combat cases mapped; first fixes | Claude | PR #121 | Status table at the end of `combat-cases-batch-1.md`. Fixed: Core action list, initiative roll, unarmed stats. Tests in `tests/combat-cases.cjs` |
-| Combat live checks | ChatGPT (Work) | after #121 deploys | Initiative roll, action list groups and costs, unarmed line, a parry exchange with Special Effects, damage and wound log |
+| PR #121 live evidence / cosmetic follow-up | Claude | Review this docs-only report | Requested live checks passed; review/merge after Tests. Unarmed damage displays `1d3 + +0` (also `1d3 + +1d2` on another fixture); remove duplicate plus in a later code change if desired. |
 | Advancement cases (subsystem 4) | ChatGPT (Chat) | docs-only PR | Next for ChatGPT, same table format |
 
 ## Waiting on someone
 
 - **Owner:** confirm D-4 (round up specialist starting spells) and D-5 (casting interruptions left to the GM). Low priority while Magic is paused.
 - **ChatGPT (Chat):** Subsystem 4 Advancement, hazards and recovery cases.
-- **ChatGPT (Work):** the combat live checks above.
+- **Claude:** review/merge this docs-only live evidence PR once Tests passes. No blocking failure in the requested workflow; optional combat improvements remain in the case ledger.
 - **Owner:** which optional combat fix next (list at the end of `combat-cases-batch-1.md`), or move on to Advancement.
 
 ## Notes
@@ -35,5 +34,7 @@ Practice Combat features remain paused. Progress **3/8**.
 - **Mythras Companion rules are optional** (owner, 2026-11-06): build them only as campaign-selectable options, never mixed into Core behaviour.
 - Folk catalogue live recheck after #118 passed: 70 choices, Beastcall (X) traits, Core p.124, animal speciality, Play Mode traits. Evidence in `magic-cases-batch-1.md`.
 - Retained live fixture **Magic Audit — Paired Skills** (`fe479efb-…`): Exhort 45%, Devotion (Audit Cult) 29%, Folk Magic 29%, MP 2/11, pool 5/6. Reselect paired skills before Mysticism or Sorcery tests.
-- ChatGPT's runtime can't clone the repo; CI is the test evidence for its PRs.
+- Signed-in Test Player used **Creation Audit — Human** (`71640fe7-6a99-4cbf-b0e4-a5045b70aab9`): initiative **8+9=17**, manual **6+9=15** retained by New Round; Brace/Parry spent **1 AP** each. Audit Hunter **21 vs 35%** succeeded, No parry awarded **1 SE**, **Press Advantage** recorded. Earlier rolls **98/36** failed with no SE.
+- Temporary chest armour **AP 2** reduced **5 damage to 3 HP**, Chest **7→4/7**, Minor Wound. Restored armour to None, Chest **7/7**, all locations healthy, silver **90**, AP **2/2**, initiative not rolled. Test attack logs retained. Serious/Major wound checks were not repeated.
+- Runtime repository access worked in this Work session. All **19** Node test files passed on **8b256e6** using the required loop; `git diff --check` passed. No production code or tests changed. Progress **3/8**; Magic and Practice Combat remain paused.
 - See `AGENTS.md`, `docs/decisions.md` and `docs/folk-magic-catalogue-format.md`.
