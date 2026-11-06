@@ -461,6 +461,7 @@ function normalizeState(){
   }
   if(S.play.selectedLoc===undefined)S.play.selectedLoc=null;
   S.play.surprised=S.play.surprised===true;
+  S.play.giftKnown=Array.isArray(S.play.giftKnown)?S.play.giftKnown.filter(x=>typeof x==="string"&&/^[a-z0-9]{4,40}$/.test(x)).slice(-200):[];
   const ini=S.play.initiative;
   if(!ini||!Number.isInteger(ini.roll)||ini.roll<1||ini.roll>10||!Number.isInteger(ini.bonus)||ini.total!==ini.roll+ini.bonus)S.play.initiative=null;
   S.xp=S.xp||{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[]};

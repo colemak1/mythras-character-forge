@@ -1149,6 +1149,18 @@ window.APP={
  // and, as a narrow exception, for the campaign DM (VIEW_ONLY_IS_DM), for
  // loot distribution / adding or removing gear mid-session. Blocked for a
  // plain party member looking at a teammate's sheet. See inventoryBlock().
+ // GM gives an item to the viewed player's character (narrow inventory
+ // exception; saved through dm_update_character_inventory).
+ gmGiveItem(){if(!VIEW_ONLY_IS_DM)return;
+   const val=id=>document.getElementById(id)?.value??"";
+   const name=String(val("giftName")).trim().slice(0,120),note=String(val("giftNote")).trim().slice(0,200);
+   const qty=Number(val("giftQty")),enc=Number(val("giftEnc")),cost=Number(val("giftCost"));
+   if(!name){GIFT_MSG="Name the item first.";render();return;}
+   if(!Number.isSafeInteger(qty)||qty<1||!Number.isFinite(enc)||enc<0||!Number.isFinite(cost)||cost<0){GIFT_MSG="Quantity must be a whole number of at least 1; ENC and cost can't be negative.";render();return;}
+   const reveal=document.getElementById("giftReveal")?.checked===true;
+   S.inventory.push({name,qty,enc,cost,gift:{id:genId(),reveal,note,at:new Date().toISOString()}});
+   GIFT_MSG="Given: "+name+(reveal?" (full reveal)":"")+". The player sees it next time their sheet saves or loads.";render();},
+ giftSeen(id){if(VIEW_ONLY)return;const it=(S.inventory||[]).find(x=>giftValid(x.gift)&&x.gift.id===id);if(!it)return;it.gift.seen=true;render();},
  playInvAdd(){if(inventoryBlock())return;S.inventory.push({name:"",qty:1,enc:0,cost:0});render();},
  playInvDel(i){if(inventoryBlock())return;S.inventory.splice(i,1);render();},
  playInv(i,f,v){if(inventoryBlock())return;this.inv(i,f,v);},

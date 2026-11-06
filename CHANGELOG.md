@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## New item pop-ups for players
+
+- **GM:** open a player's sheet from the Party Board, go to Inventory, and use **Give an item** (name, quantity, ENC, cost, an optional note). Tick **Reveal** for the full-screen reveal; leave it unticked for a small notice.
+- **Player:** the next time their sheet loads or saves, or within about 30 seconds while Play Mode is open, they see "New item" with the item's name, details and your note. The full reveal is a dark crimson panel with a slow light burst (still for anyone who has reduced motion turned on). Each gift shows once; several gifts queue up one after another. Gifted items are tagged "new", then "gift", in the inventory list.
+- **Fix:** a player's open sheet used to save its whole inventory, so anything the GM added while the player was in Play Mode could be erased by the player's next autosave. Their sheet now pulls in the GM's gifts before saving. Items the GM edits in other ways (not through Give an item) can still be overwritten this way; that's a wider fix for later.
+
+To test: as GM, give a test character an item with Reveal ticked. Open that character as its player: the reveal appears; Continue dismisses it and it doesn't come back after a reload.
+
+---
+
 ## Advancement rulings: 20-point trainers and maiming
 
 - A mentor exactly 20 percentage points better than the student now trains on the first row of the Training Improvement table (1d2). The book's text says "at least 20%" but its table starts at 21%; the owner ruled for the text.
