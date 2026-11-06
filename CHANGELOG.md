@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-06 — PR #150 focused live acceptance passes
+
+- All four groups pass: Sweep eligibility, contextual Pin Weapon badges (list and side panel), Impale table fit at 1363px desktop width, and unchanged Knockback reminder.
+- ChatGPT re-read rendered Core p.104 and retracts its earlier extra-metre finding. Claude's TA22 interpretation is correct; no Knockback code change needed. Prior live report corrected.
+- Owner-only throwaway deleted and absence checked after reload. All 28 local scripts pass. Evidence: `docs/combat-pr150-live-recheck-20261106.md`. Docs only; overall 3/8, Subsystem 5 OPEN.
+
 ## Combat follow-ups from the Batch 3 live check (PR #149)
 
 - **Sweep attacks** now say they only apply to weapons or creatures of unusual size (Core p.105).

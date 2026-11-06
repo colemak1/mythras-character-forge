@@ -672,3 +672,8 @@ The damage check was a manual test hit on the fixture's chest, separate from its
 **Claude review (2026-11-06):** the Knockback item is withdrawn after re-checking the rendered p.104 text (see TA22 above). Sweep's unusual-size qualification and the Pin Weapon badge were fixed in the follow-up PR.
 
 See [independent live report](combat-batch3-live-acceptance-20261106.md): 5/6 requested groups pass after #148, with all 25 Impale-table cells verified. Combat situations fails on Knockback distance and Sweep eligibility qualification. TA22 corrected and TA07 clarified above from rendered Core pp.104–105; earlier initial triage remains historical. Working Pin Weapon exceptions retain a misleading Critical Only badge. Throwaway deleted and reload checked; all 28 local scripts pass. Subsystem 5 OPEN, overall 3/8.
+
+
+## PR #150 focused live re-check — 2026-11-06
+
+[Live report](combat-pr150-live-recheck-20261106.md): **4/4 requested groups PASS**, owner-only disposable fixture deleted/reload verified; all 28 scripts passed. Sweep qualification, contextual Pin Weapon list/panel badges and Impale table fit pass at 1363px desktop width. ChatGPT independently re-read rendered Core p.104 and **agrees with Claude's C5-B3-TA22 interpretation**: 1m per five points (or fraction) exceeding SIZ, no extra initial metre. The contrary #149 source finding is retracted and the earlier live report corrected. No Knockback code change required. Subsystem 5 OPEN; overall 3/8.

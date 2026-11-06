@@ -1,5 +1,7 @@
 # Combat Batch 3 — live acceptance, 2026-11-06
 
+> **Correction after PR #150 re-check:** the earlier Knockback failure was my source-reading error and is retracted. Core p.104 has no extra initial metre; the existing 1m per five points (or fraction) over SIZ is correct. Sweep, Pin Weapon badges and Impale table fit now pass. See [focused re-check](combat-pr150-live-recheck-20261106.md). This report otherwise records the earlier #148 session.
+
 ## Results
 
 Owner-only signed-in acceptance of deployed PR #148 (`5da5b14020ee794a2c3be79170d9e4e001d77e7d`). **Five requested groups pass; Combat situations fails its wider source spot-check.** No code changed.
@@ -10,12 +12,12 @@ Owner-only signed-in acceptance of deployed PR #148 (`5da5b14020ee794a2c3be79170
 | 2. Main Gauche plain Success Pin Weapon; Dagger needs Critical | PASS | Main Gauche **21 Success vs Failure** offers Pin Weapon. Repeat **16 Success vs Failure**, chose it and summary records Pin Weapon. Dagger **29 Success vs Failure** omits it; natural **01 Critical vs Failure** offers it. Core pp.61,63,98. |
 | 3. Javelin shield condition | PASS | **20 Success vs Failure**, same roll: unchecked checkbox omits Pin Weapon; tick **The target defended with a shield**, it appears and can be chosen; finished summary records Pin Weapon. Core pp.62,65,98. |
 | 4. Weapon notes | PASS | Lance: moving mount only. Garrotte: ambush only. Buckler: passive blocks 2 adjacent locations, doubled crouching, and can parry missiles. Atlatl: launcher, +1 Force step and +0/+25/+75m ranges to launched dart/javelin. Core pp.61,63–65; crouching p.105. |
-| 5. Combat situations | FAIL | Impale matrix passes all **25 cells** against rendered p.98. Other reminders checked below; Knockback omits an initial metre, and Sweep omits its unusual-size qualification. |
+| 5. Combat situations | FAIL | Impale matrix passes all **25 cells** against rendered p.98. Sweep omits its unusual-size qualification. The Knockback failure is retracted; see the correction above. |
 | 6. Serious chest and Major arm wording | PASS | Chest **−2/7 HP**: cannot rejoin even if revived until location healed. Right Arm **−5/4 HP**: five-times-Healing-Rate **minutes** deadline explicitly conditional on severed, punctured or ripped-off limb, in both description and urgent reminder. Core p.110. |
 
 ## Failures and confusing wording for Claude
 
-1. **Knockback distance — Core p.104.** The live reminder says 1m per five points (or part) exceeding SIZ. The book first establishes a default **one metre**, then says an excessively powerful blow also pushes the recipient back one further metre for each five points (or fraction) exceeding SIZ. Given SIZ 12 and pre-reduction damage 13, the reminder implies 1m; the source wording gives **2m**. Damage 18 gives **3m**, not 2m. Preserve the correct pre-armour/parry threshold and Easy Acrobatics / Standard Athletics balance check. **The earlier source specification C5-B3-TA22 had the same omission; this docs PR corrects that specification.** #148 followed that inaccurate row; this is a source-audit correction, not an unexplained implementation regression.
+1. **Knockback finding RETRACTED — Core p.104.** Re-reading the rendered page after #150 confirms there is no initial metre to add. My earlier claim that the opening sentence supplied one metre was incorrect. The existing reminder is correct: excess 1–5 gives 1m, excess 6–10 gives 2m, plus the balance roll. Claude's TA22 correction is accepted; no Knockback code change is required.
 2. **Sweep eligibility — Core p.105.** The live reminder starts with a single attack against a group without saying that Sweep attacks occur with weapons or creatures of unusual size. Add this qualification so ordinary human weapon attacks are not implied to have free group targeting. Its single attack roll, separate defender resolutions and simultaneous effects otherwise agree with the source. C5-B3-TA07 is clarified in this PR.
 3. **Nonblocking UI label:** Main Gauche and shield-qualified Javelin correctly offer and accept Pin Weapon on ordinary Success, but the choice still carries a **Critical Only** badge. Suppress or qualify that badge when the weapon exception applies. Eligibility and selection pass.
 
@@ -27,7 +29,7 @@ Owner-only signed-in acceptance of deployed PR #148 (`5da5b14020ee794a2c3be79170
 | Aiming | PASS | p.107: whole Combat Round, reduce one situational penalty by one grade, no stacking from further aiming. |
 | Outmanoeuvre | PASS | p.104: group opposed Evade, all participants spend AP; foes failing to beat the manoeuvrer cannot attack that round; beating all permits withdrawal or engagement with one. |
 | Sweep | FAIL | p.105: resolution agrees, but unusual-size qualification missing, as above. |
-| Knockback | FAIL | p.104: threshold and balance rolls agree; initial metre omitted, as above. |
+| Knockback | PASS (corrected after #150) | p.104: threshold, distance and balance rolls agree. Earlier extra-metre claim retracted. |
 | Pulling a blow | PASS | p.105: declare before attack; half damage. |
 | Climbing / swimming | PASS | p.106: Athletics/Swim caps; one available fighting limb when climbing; underwater thrusting half damage, unarmed exceptions. Water Combat cap exception also agrees with p.89. |
 | Mounted / aerial | PASS | pp.103–104: Ride cap / Mounted Combat exception; 1d10+10 vs lower biped, AP to defend mount, faster nonattacking mount withdrawal; opposed Fly/Ride to determine who may attack a pass, charging-through-contact reminder. |
@@ -54,4 +56,4 @@ The right-side Impale reference on the disposable fixture. The compact panel nee
 
 ## Next
 
-Claude: correct Knockback/Sweep reminders using the corrected case rows and fix the misleading Pin Weapon badge; run tests, stamp assets and request a focused live re-check. **Subsystem 5 OPEN; overall progress 3/8.**
+Resolved by #150 and the focused live re-check: Sweep qualification, Pin Weapon badges and table fit pass. Knockback finding retracted; existing distance was correct. **Subsystem 5 OPEN; overall progress 3/8.**
