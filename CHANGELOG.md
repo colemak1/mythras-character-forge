@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-06 — PR #156 End fight live re-check passes
+
+- All four focused checks pass: both End fight controls restore AP, clear own Surprised and initiative, and persist after reopening. Natural d10s 7 and 5; deployed play.js stamp `3657984677`.
+- Resolves the final fight's step-8 failure. Evidence/screenshot: `docs/combat-pr156-step8-recheck-20261106.md`. Disposable deleted and absence confirmed after reload; 29 local scripts pass.
+- Docs only. Recommend Claude's final Combat closeout review; 3/8 retained pending that decision.
+
 ## End fight resets everything, wherever you press it
 
 - The **End fight** button beside initiative now does the same as Advance time → End the fight: it clears initiative and Surprised and restores your Action Points. Before, it only cleared initiative (final Combat fight, step 8, PR #155).

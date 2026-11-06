@@ -707,3 +707,8 @@ See [independent live report](combat-batch3-live-acceptance-20261106.md): 5/6 re
 ## Final integrated fight — deployed PR #154, 2026-11-06
 
 See [one-fight live evidence](combat-final-fight-20261106.md), following `combat-closeout-review.md` §3. **Steps 1–7 PASS; step 8 FAIL.** CL01: natural 33 Success vs No defence earns 1 SE, target first-success Surprise tick changes it to exactly 2, own Surprised stays false; later bow 19 Success gets only 1 SE. Top-bar End fight clears initiative but leaves AP 2/3 and own Surprised true, including after reopening; Advance time's End the fight resets all three. Disposable deleted/reload verified; 29 local scripts pass. MP-at-full limitation and location hit-record scope are explicit in the report. No code changed. Subsystem 5 OPEN, progress 3/8; Claude to address the narrow step-8 reset contract.
+
+
+## PR #156 focused final-step resolution — 2026-11-06
+
+[Focused live re-check](combat-pr156-step8-recheck-20261106.md): **4/4 requested steps PASS**. Both initiative End fight and Advance time → End the fight restore full AP, clear own Surprised and rolled initiative, and persist after reopening. Natural d10s **7** and **5**; play/app stamps **3657984677 / 6b5bde95b8**. One disposable fixture deleted and absence confirmed after reload; all **29** scripts pass. The final fight's earlier step-8 failure is resolved; retain prior steps 1–7 and their MP-at-full limit. Recommend Claude's final closeout review under the documented gate; progress **3/8 pending that decision**. No code changed, no new full fight performed.
