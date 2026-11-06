@@ -156,4 +156,10 @@ test('unarmed damage shows the Damage Modifier with a single sign (PR #123 live 
  run('effectiveChars=()=>({STR:10,SIZ:10,DEX:10,INT:10,CON:10,POW:10,CHA:10});');
  for(const [dm,want] of [['+0','1d3'],['+1d2','1d3+1d2'],['-1d4','1d3-1d4'],['+1d6+1d4','1d3+1d6+1d4']]){run(`dmCalc=()=>${JSON.stringify(dm)};`);assert.equal(run('unarmedDamageText()'),want,dm);}
 });
+test('A4-H24..H27 maiming: one third, two thirds (HP lost rounded up), or 1 HP (Core p.80, owner ruling)',()=>{
+ const m=(max,r)=>run(`maimedMaxHP(${max},${r})`);
+ assert.equal(m(6,1),4);assert.equal(m(6,2),2);assert.equal(m(6,3),1);
+ assert.equal(m(5,1),3,'5/3 = 1.67 lost, rounded up to 2');assert.equal(m(5,2),1,'10/3 = 3.33 lost, rounded up to 4');
+ assert.equal(m(2,1),1);assert.equal(m(1,2),1,'never below 1');assert.equal(m(6,4),null);
+});
 console.log('Combat case tests passed');

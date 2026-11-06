@@ -486,10 +486,12 @@ test('Core p.73: mentor training steps, repeat gate, and persistence',()=>{
   assert.equal(run(`trainingDie(trainingStep(${diff},"trainer")).sides`),sides);
   assert.equal(run(`trainingDie(trainingStep(${diff},"trainer")).bonus`),bonus);
  }
- assert.equal(run('trainingStep(20,"trainer")'),null);
+ // Owner ruling 2026-11-06 (docs/decisions.md): exactly 20 points uses the first row.
+ assert.equal(run('trainingStep(20,"trainer")'),0);assert.equal(run('trainingDie(trainingStep(20,"trainer")).sides'),2);
+ assert.equal(run('trainingStep(19,"trainer")'),null,'below 20 points cannot train');
  assert.equal(run('trainingStep(21,"critical")'),2);
  assert.equal(run('trainingDie(trainingStep(21,"fumble")).sides'),0);
- run('APP.xpTrain("std:Athletics",46,"trainer",true)');
+ run('APP.xpTrain("std:Athletics",45,"trainer",true)'); // 19 points: refused
  assert.equal(run('finalPct("std:Athletics")'),26);assert.equal(run('S.xp.pool'),2);
  run('APP.xpTrain("std:Athletics",47,"trainer",false)');assert.equal(run('finalPct("std:Athletics")'),26);
  run('APP.xpTrain("std:Athletics",47,"trainer",true)');assert.equal(run('finalPct("std:Athletics")'),27);

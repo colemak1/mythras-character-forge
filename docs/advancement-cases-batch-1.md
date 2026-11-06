@@ -301,7 +301,7 @@ Mapped against the code after PR #124. Claude re-checked Core pp.73 (training ta
 | C09–C12 | **Pass (code)** | Optional permanent method chosen in campaign settings; cost 1 + current − species minimum (p.73 example: DEX 12 → 10 rolls); full cost required. |
 | C14–C16 | **Pass (code)** | Learning a new Professional Skill needs a confirmed source, a month and 3 rolls. |
 | T01–T10, T15–T17 | **Pass (code)** | Training table steps 1d2…1d6+4, +1 per further 10 points (`trainingStep`, `trainingDie`); one skill at a time and the Experience-Roll-before-retraining limit are shown as guidance. |
-| T02 | **Decision** | The text says a trainer needs "at least 20%" more, but the table starts at 21–30%. The app currently refuses to calculate at exactly 20 and leaves it to the GM. Recommended ruling: treat exactly 20 as the 21–30% row (1d2). |
+| T02 | **Pass** (ruling) | Exactly 20 points uses the first row (1d2), per the owner's ruling in `decisions.md`; below 20 is refused (test). |
 | T11–T14 | **Pass (code)** | Teach result shifts the step: critical +2, success +1, failure 0, fumble −1 (possibly no gain). |
 | T18–T20 | **Guidance / GM-assisted** | Class size, tuition cost and discounts. |
 | AG01–AG17 | **Pass (code)** | Human ageing bands 40/50/60/70/80/90 with Easy → Hopeless grades; Endurance and Willpower separately; d6 characteristic table; 1d3 loss; terminal at 0; record and undo; Senior and Old creation categories prompt a review. Nonhuman bands are GM-assisted (AG16). |
@@ -313,7 +313,7 @@ Mapped against the code after PR #124. Claude re-checked Core pp.73 (training ta
 | H02–H07, H29 | **Pass (code)** | Natural recovery per location at Healing Rate per day, week or month by wound level; Major Wounds need confirmed treatment first; never above the location maximum; a reduction can be entered for strenuous activity. |
 | H08 | **GM-assisted** | Maiming deadline (Healing skill ÷ 20 days). |
 | H09–H23 | **Guidance / GM-assisted** | First Aid, professional Healing and surgery outcomes are recorded through the wound log and HP controls. |
-| H24–H27 | **Pass (partial) + Decision** | A permanently reduced location maximum can be entered and sets the new wound thresholds. The app doesn't calculate the 1d3 result itself because the book doesn't say how to round a third of an odd HP value. |
+| H24–H27 | **Pass** (ruling) | Play Mode's permanent-injury box shows the three Permanent Injury results for the location (one third and two thirds lost, rounded up; or 1 HP) and fills in the new maximum; the GM confirms. Reduced maximums set the new wound thresholds (test). |
 | H28 | **GM-assisted** | Missing-limb hit-location rolls. |
 | H30 | **Pass** | Wounds, treatment flags and HP persist through save and reload (existing tests and live evidence). |
 | HZ01–HZ27 | **Guidance / GM-assisted** | Acid, falls, asphyxiation, blood loss and fire: rule summaries in Play Mode's Hazards notes; damage entered with the HP controls. No hazard simulator, per the owner's lean-scope direction. |
@@ -322,10 +322,10 @@ Mapped against the code after PR #124. Claude re-checked Core pp.73 (training ta
 | L01–L06 | **Pass (code) / GM-assisted** | Luck Points are tracked in Play Mode; what they're spent on is the table's call. |
 | L07–L09 | **GM-assisted / Pass** | Object damage is GM-assisted; encumbrance thresholds are Pass (subsystem 3). |
 
-### Rulings needed (owner)
+### Rulings (decided 2026-11-06)
 
-1. **Trainer exactly 20% better (T02):** use the 1d2 row, or require 21+?
-2. **Maiming fractions (H24, H25):** when a third or two thirds of a location's HP isn't a whole number, round the HP **lost** up (harsher) or down (kinder)? Once decided, the app can calculate the new maximum from the 1d3 result.
+1. **Trainer exactly 20% better (T02):** uses the 1d2 row.
+2. **Maiming fractions (H24, H25):** HP lost rounds up; the location keeps at least 1 HP.
 
 ### Optional extras
 
