@@ -5,6 +5,17 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat rules fixes (Combat Batch 2)
+
+- **Blind Fighting** now ignores penalties for poor light or temporary blindness, as Core p.89 says (it used to reduce them by one grade only).
+- The trait **Skirmisher** is now called **Skirmishing**, as in Core, and mentions the Athletics cap. Styles that already had it keep it.
+- **Mounted Skirmisher** is no longer labelled as a Core trait.
+- **Kill Silently** can only be chosen when the Combat Style has the Assassination trait. Your GM still confirms it's the first attack on a surprised victim.
+- **Weapon Malfunction** is only offered for firearms.
+- The optional **Reach** rule now reads correctly: inside a longer weapon's Reach, its Size drops by the difference in Reach and it only does 1d3+1 with the haft, when the two weapons are at least two Reach steps apart.
+- **Distance helper:** a new button on ranged weapon cards. Enter the distance and the target's SIZ to see how many steps harder or easier the shot is (Core p.108), and what that makes your final grade. It also explains firing into a crowd and firing on the move.
+- Ranged weapons have no Parry button (owner's decision); shields still parry incoming missiles.
+
 ## Combat Subsystem 5: Batch 2 source cases and gap triage (docs only)
 
 - Added **85** numbered Core cases to `docs/combat-cases-batch-1.md` with printed references and explicit initial `HANDLED` vs `NEEDS CODE` triage. Covers 26 Core Combat Style traits, 11 close-combat conditions, ranged modifiers and target-size/distance thresholds, charges/cover, and special effects.

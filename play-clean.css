@@ -433,3 +433,7 @@ body.play-mode.pm-style-clean .app{background:var(--pmx-bg)}
 .pmx-noact{flex-basis:100%;margin:0;font-weight:600}
 /* Tabs: tighter so all five fit on one line at common desktop widths */
 .pmx-col-right .pmx-tab{padding:9px 7px;font-size:13.5px}
+.pmx-rangeform{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.pmx-rangeform label{display:flex;flex-direction:column;gap:4px;font:600 12px var(--pmx-ui);color:var(--pmx-muted)}
+.pmx-rangeform input{font-size:16px}
+.pmx-rangeout{margin:12px 0;padding:10px 12px;border-radius:8px;background:var(--pmx-sunk);font-size:15px}

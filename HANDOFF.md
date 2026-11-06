@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by ChatGPT (Chat), Combat Batch 2 source handoff_
+_Last updated: 2026-11-06 by Claude_
 
 ## Priorities
 
@@ -18,7 +18,7 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Combat Batch 2 source gap inventory | ChatGPT (Chat) → Claude | `docs/combat-batch2-source-gaps-20261106` (docs-only PR) | **85 cases**: 26 printed Core traits plus extra metadata review, complete p.101 close/ranged p.108 tables and key SE, cover, reach and charge branches. Triage per row: HANDLED vs NEEDS CODE, no production changes. |
+| Combat Batch 2 fixes | Claude → ChatGPT (Work) | fixes PR after #143 | P0 data/eligibility fixes and the p.108 Distance helper done with tests. Work: signed-in check (see below) |
 | Play Mode live re-check | ChatGPT (Work) | after the fixes PR | Retest: no page scroll at your desktop size; finished combat roll is one card with Attack again / Parry; Comatose/Dead wording; tabs on one line. Exact phone width: the owner checks on a real phone |
 | Subsystem 8 live follow-up | Claude → ChatGPT (Work) | migration applied | GM tracker edit survived reload. Earlier notes-save observation needs a native-input reproduction before treating it as a confirmed app defect; simulated fill did not commit some onchange fields during later testing. Prior temporary tracker NPC remains from that stopped attempt. No private backup contents are in GitHub. |
 | Multi-account permission check | ChatGPT (Work) | after the migration | Plan at the end of `campaign-cases-batch-1.md` |
@@ -26,11 +26,11 @@ Practice Combat features remain paused. Progress **3/8**.
 
 ## Waiting on someone
 
-- **Owner:** confirm whether ranged weapons should offer Parry (Play Mode hides it; Core p.97 covers parrying ranged attacks with shields, not parrying with a bow); later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **Claude:** review/merge the Combat Batch 2 docs-only PR after CI. Then use source table to make narrow code/test corrections: `Blind Fighting` (p.89 ignores penalty, not -1 grade), printed `Skirmishing` name (p.89), `Kill Silently` trait prerequisite (pp.89,97), `Weapon Malfunction` firearm-only (p.101), optional shorter-Reach reduction based on Reach-category difference (p.106), and p.108 range×target-SIZ table/guidance. Existing shield Parry button appears correct; live verification pending. No Practice Combat expansion.
+- **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
+- **Claude:** next Combat items from the ledger's open list as Chat supplies them; Play Mode polish on the back burner until the owner is at a PC.
 - **ChatGPT (Chat):** next source batch only after Claude mapping/implementation handoff. Subsystem 4 optional extras and other open subsystems remain.
 
-- **ChatGPT (Work):** retest the Play Mode fixes (owner checks phone width on a real phone). Multi-account and new-item checks still require separately authorized sessions/fixtures; latest instruction was owner-only, with no new accounts.
+- **ChatGPT (Work):** owner-only signed-in check of the Combat Batch 2 fixes: a style with Skirmishing (renamed) and Blind Fighting text; Kill Silently offered only with Assassination; a bow's Distance helper (try 50m SIZ 15, 10m SIZ 100, 150m SIZ 10); no Weapon Malfunction for a bow fumble; shield Parry present, bow Parry absent; optional Reach text. Then the Play Mode re-check if credits allow (phone width: the owner, later). Multi-account and new-item checks still require separately authorized sessions/fixtures; latest instruction was owner-only, with no new accounts.
 
 ## Notes
 
