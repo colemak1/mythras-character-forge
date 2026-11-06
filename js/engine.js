@@ -323,7 +323,7 @@ function freshState(){return {
  // start at null, meaning "at max" — they're only written once the player
  // actually spends/takes damage, so a freshly-finished character always
  // shows full without needing an extra initialization step.
- play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null,initiative:null},
+ play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null,initiative:null,surprised:false},
  // Experience Rolls (core rulebook pp.71-73, cross-checked against the
  // Mythras Core pp.71–72, checked against the uploaded rulebook — see audit for
  // citations). pool = banked, unspent Experience Rolls. fumbled = skill
@@ -460,6 +460,7 @@ function normalizeState(){
     if(!Number.isFinite(hp))delete S.play.hp[loc];
   }
   if(S.play.selectedLoc===undefined)S.play.selectedLoc=null;
+  S.play.surprised=S.play.surprised===true;
   const ini=S.play.initiative;
   if(!ini||!Number.isInteger(ini.roll)||ini.roll<1||ini.roll>10||!Number.isInteger(ini.bonus)||ini.total!==ini.roll+ini.bonus)S.play.initiative=null;
   S.xp=S.xp||{pool:0,fumbled:[],bonus:{},usedThisRun:[],history:[],checked:[]};

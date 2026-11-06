@@ -11,6 +11,18 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 - Temporary chest armour AP 2 reduced 5 entered damage to 3 HP (Chest 7→4/7, Minor Wound). Restored the audit fixture's HP, armour, silver, AP and initiative; retained test roll evidence.
 - Documented a cosmetic unarmed damage double plus (`1d3 + +0`), with correct numeric values. No production code changed. Full evidence and limits are in `docs/combat-cases-batch-1.md`; `HANDOFF.md` updated. All 19 Node test files passed. Subsystem 5 remains open; progress 3/8.
 
+
+---
+
+## Combat: weapon-specific Special Effects, unfamiliar weapons, surprise
+
+- **Roll with a weapon.** Each carried weapon in Play Mode has a roll button for the Combat Style that covers it, and Unarmed has its own. The roll remembers the weapon, and the Special Effects list then hides effects that weapon can't use. A club can Bash and Stun Location but not Bleed; only ranged weapons get Marksman; only Small weapons get Remise. You can also set "Weapon used" on any combat roll. With no weapon set, every effect stays available.
+- **Unfamiliar weapons (Core p.88).** A weapon outside your Combat Styles offers the book's choices: similar (no penalty), broadly similar (1 grade harder), reasonably different (2 grades), used with a trained weapon (1 grade), substantially different (base STR+DEX). The penalty never takes you below STR+DEX.
+- **Surprised (Core p.105).** A toggle on the Actions tab: initiative −10, Attack disabled, and a reminder that you can't defend until your initiative and the first hit on you gains an extra Special Effect. New Round clears it.
+- Unarmed rolls now count as combat rolls, so they get the attack/defence and Special Effects tools.
+
+To test: in Play Mode, roll a carried club, mark it as an attack, click "No parry", and open Special Effects: Bleed should not be choosable but Stun Location should. Tick "Surprised" and roll initiative: it should be 10 lower.
+
 ---
 
 ## Combat: Core action list, initiative roll, unarmed stats, and case mapping

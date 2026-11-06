@@ -19,6 +19,7 @@ Practice Combat features remain paused. Progress **3/8**.
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
 | PR #121 live evidence / cosmetic follow-up | Claude | Review this docs-only report | Requested live checks passed; review/merge after Tests. Unarmed damage displays `1d3 + +0` (also `1d3 + +1d2` on another fixture); remove duplicate plus in a later code change if desired. |
+| Additional combat live checks | ChatGPT (Work) | After follow-up deployment | Weapon-linked Special Effect filtering, unfamiliar-weapon tiers (STR+DEX floor) and Surprised toggle are now on main at 8e0959d. They were not tested in the PR #121 batch. |
 | Advancement cases (subsystem 4) | ChatGPT (Chat) | docs-only PR | Next for ChatGPT, same table format |
 
 ## Waiting on someone
@@ -26,7 +27,7 @@ Practice Combat features remain paused. Progress **3/8**.
 - **Owner:** confirm D-4 (round up specialist starting spells) and D-5 (casting interruptions left to the GM). Low priority while Magic is paused.
 - **ChatGPT (Chat):** Subsystem 4 Advancement, hazards and recovery cases.
 - **Claude:** review/merge this docs-only live evidence PR once Tests passes. No blocking failure in the requested workflow; optional combat improvements remain in the case ledger.
-- **Owner:** which optional combat fix next (list at the end of `combat-cases-batch-1.md`), or move on to Advancement.
+- **ChatGPT (Work):** the separate follow-up checks above when requested; preserve their unverified status until tested.
 
 ## Notes
 
