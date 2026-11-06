@@ -984,11 +984,65 @@ function playRollLogRow(r,i){
   }
   return row+'</div>';
 }
+// ---- New item gifts (GM → player) ----
+// A GM gives an item from the player's Inventory tab. It is stored on the
+// item itself as gift:{id,reveal,note,at,seen}. The owner's sheet shows a
+// pop-up for each unseen gift: a small notice, or the full reveal when the
+// GM ticked "Reveal".
+function giftValid(g){return !!g&&typeof g==="object"&&typeof g.id==="string"&&/^[a-z0-9]{4,40}$/.test(g.id);}
+// Every gift id this sheet has ever held, so a gift the player later drops
+// is never pulled back in from an older account copy.
+function rememberGifts(state){
+  state=state||S;state.play=state.play||{};
+  const known=new Set(Array.isArray(state.play.giftKnown)?state.play.giftKnown:[]);
+  for(const it of state.inventory||[])if(giftValid(it.gift))known.add(it.gift.id);
+  state.play.giftKnown=[...known].slice(-200);
+  return known;
+}
+function unseenGifts(state){state=state||S;return (state.inventory||[]).filter(it=>giftValid(it.gift)&&it.gift.seen!==true);}
+function giftDetailText(it){
+  const bits=[(it.qty||1)>1?"×"+it.qty:"",Number(it.enc)>0?"ENC "+it.enc:"",Number(it.cost)>0?it.cost+" sp":""].filter(Boolean);
+  return bits.join(" · ");
+}
+function giftPopupHtml(){
+  if(VIEW_ONLY||APPVIEW!=="play")return "";
+  const gifts=unseenGifts();if(!gifts.length)return "";
+  const it=gifts[0],g=it.gift,more=gifts.length-1,detail=giftDetailText(it);
+  const note=g.note?'<p class="gift-note">'+esc(g.note)+'</p>':'';
+  const tail=more?'<span class="gift-more">'+more+' more new item'+(more>1?'s':'')+'</span>':'';
+  if(g.reveal){
+    return '<div class="gift-reveal" role="dialog" aria-modal="true" aria-labelledby="giftRevealName">'
+     +'<div class="gift-panel"><div class="gift-rays" aria-hidden="true"></div>'
+     +'<p class="gift-kicker">New item</p>'
+     +'<h2 id="giftRevealName" class="gift-name">'+esc(it.name||"Unnamed item")+'</h2>'
+     +(detail?'<p class="gift-detail">'+esc(detail)+'</p>':'')+note
+     +'<div class="gift-actions">'+tail+'<button type="button" class="pm-btn" onclick="APP.giftSeen(\''+g.id+'\')" autofocus>Continue</button></div>'
+     +'</div></div>';
+  }
+  return '<div class="gift-toast" role="status"><span class="gift-kicker">New item</span>'
+   +'<b>'+esc(it.name||"Unnamed item")+'</b>'+(detail?' <span>'+esc(detail)+'</span>':'')+note
+   +'<div class="gift-actions">'+tail+'<button type="button" class="pm-btn sm" onclick="APP.giftSeen(\''+g.id+'\')">OK</button></div></div>';
+}
+function gmGiveItemFormHtml(){
+  if(!VIEW_ONLY_IS_DM)return "";
+  return '<details class="pm-fx-item gift-give" open><summary>Give an item <span class="pm-fx-badge">GM</span></summary>'
+   +'<p class="pm-empty">The player sees a "New item" notice next time their sheet saves or loads. Tick Reveal for the full-screen reveal.</p>'
+   +'<label>Item <input type="text" id="giftName" maxlength="120"></label> '
+   +'<label>Qty <input type="number" id="giftQty" min="1" step="1" value="1" style="width:56px"></label> '
+   +'<label>ENC ea <input type="number" id="giftEnc" min="0" step="0.5" value="0" style="width:56px"></label> '
+   +'<label>sp ea <input type="number" id="giftCost" min="0" step="0.01" value="0" style="width:64px"></label><br>'
+   +'<label>Note (optional) <input type="text" id="giftNote" maxlength="200" placeholder="e.g. Found in the bandit chief\'s chest"></label> '
+   +'<label><input type="checkbox" id="giftReveal"> Reveal</label> '
+   +'<button type="button" class="pm-btn sm" onclick="APP.gmGiveItem()">Give item</button>'
+   +(GIFT_MSG?'<p role="status">'+esc(GIFT_MSG)+'</p>':'')+'</details>';
+}
+let GIFT_MSG="";
 function renderPlayView(){
   document.body.classList.remove("menu-mode","sheet-mode");
   document.body.classList.add("play-mode");
   document.body.classList.toggle("view-only",VIEW_ONLY);
   document.title=(S.concept.name?S.concept.name+" — ":"")+"Play Mode";
+  if(!VIEW_ONLY){rememberGifts(S);if(cloudActive())startGiftPoll();}
   if(!charsReady()){
     $("#main").innerHTML='<div class="pm-wrap"><p><button class="pm-btn" onclick="APP.backFromPlay()">&#8592; Edit Character</button></p>'
      +'<p class="pm-empty" style="margin-top:14px">Finish Characteristics first &mdash; Play Mode needs those numbers to work from.</p></div>';
@@ -1205,8 +1259,9 @@ function renderPlayView(){
       // character (VIEW_ONLY_IS_DM) as a narrow loot/gear exception. Deliberately
       // avoids the .pm-sbtn/.pm-pip/.pm-fatsel/.pm-dmgrow input classes that the
       // .view-only CSS rule disables, since this stays live under VIEW_ONLY for a DM.
+      h+=gmGiveItemFormHtml();
       h+='<div class="pm-tablewrap"><table class="pm-atktable"><tr><th>Item</th><th>Qty</th><th>ENC ea</th><th>Worn clothing</th><th>sp ea</th><th></th></tr>'
-       +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.playInv('+i+',\'name\',this.value)"></td>'
+       +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.playInv('+i+',\'name\',this.value)">'+(giftValid(it.gift)?'<span class="pm-fx-badge" title="Given by the GM">'+(it.gift.seen===true?'gift':'new')+'</span>':'')+'</td>'
         +'<td><input type="number" value="'+it.qty+'" style="width:56px" onchange="APP.playInv('+i+',\'qty\',this.value)"></td>'
         +'<td><input type="number" min="0" step="0.5" value="'+it.enc+'" style="width:56px" onchange="APP.playInv('+i+',\'enc\',this.value)"></td>'
         +'<td><input type="checkbox" aria-label="Worn everyday clothing" '+(it.wornClothing===true?'checked':'')+' onchange="APP.playInv('+i+',\'wornClothing\',this.checked)"></td>'
@@ -1244,6 +1299,7 @@ function renderPlayView(){
 
   h+='</div>';
   if(XP_OPEN&&!VIEW_ONLY)h+=xpModalHtml();
+  h+=giftPopupHtml();
   $("#main").innerHTML=h;
   if(S.play.tab==="effects"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
 }

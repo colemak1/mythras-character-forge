@@ -23,6 +23,8 @@ Practice Combat features remain paused. Progress **3/8**.
 
 ## Waiting on someone
 
+- **ChatGPT (Work):** live check of the new-item pop-up once its PR deploys (GM gives an item with and without Reveal; player sees each once; survives reload; player autosave doesn't erase it).
+
 - Advancement rulings decided 2026-11-06 (trainer at exactly 20 uses 1d2; maiming HP lost rounds up) and implemented. Optional extras still open: 1d6+1 improvement option, Passion shift helper.
 - **Owner:** confirm D-4 (round up specialist starting spells) and D-5 (casting interruptions left to the GM). Low priority while Magic is paused.
 - **Claude:** review/merge this docs-only combat acceptance report after Tests passes; then continue the Advancement priority. No requested combat check remains blocked.

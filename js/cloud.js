@@ -713,6 +713,12 @@ async function saveToLibraryUnified(explicit,actor=S){
   const previous=CHARACTER_SAVE_QUEUES.get(actor)||Promise.resolve();
   const job=previous.catch(()=>{}).then(async()=>{
     if(!AUTH_USER||AUTH_USER.id!==owner)throw new Error("Account changed before saving. Reopen the original account to recover the draft.");
+    // A GM may have given items through dm_update_character_inventory since
+    // this sheet loaded. Pull those gifts in first so this save can't erase them.
+    if(isUuid(actor._libId)&&(snapshot._ownerId==null||snapshot._ownerId===owner)){
+      const added=await mergeServerGifts(actor);
+      if(added){snapshot.inventory=JSON.parse(JSON.stringify(actor.inventory));if(actor===S&&typeof render==="function")setTimeout(render,0);}
+    }
     const saved=await cloudUpsertCharacter({
       id:isUuid(actor._libId)?actor._libId:undefined,campaignId:snapshot.campaignId||null,
       name:snapshot.concept.name||"Unnamed Character",tier:snapshot.archetype,culture:snapshot.culture||"",
@@ -738,6 +744,32 @@ async function saveToLibraryUnified(explicit,actor=S){
   updateSaveStatus();return job;
 }
 
+// Gifts on the account copy that this sheet doesn't have yet are appended to
+// the in-memory character. Returns how many were added. Best effort: a failed
+// read never blocks the player's own save.
+async function mergeServerGifts(actor){
+  try{
+    const {data,error}=await sb.from("characters").select("state").eq("id",actor._libId).maybeSingle();
+    if(error||!Array.isArray(data?.state?.inventory))return 0;
+    const have=rememberGifts(actor);
+    const incoming=data.state.inventory.filter(it=>it&&typeof it==="object"&&giftValid(it.gift)&&!have.has(it.gift.id));
+    if(!incoming.length)return 0;
+    actor.inventory=(actor.inventory||[]).concat(incoming.map(it=>({name:String(it.name||"").slice(0,120),qty:Number.isSafeInteger(it.qty)&&it.qty>0?it.qty:1,
+      enc:Number(it.enc)>=0?Number(it.enc):0,cost:Number(it.cost)>=0?Number(it.cost):0,
+      gift:{id:it.gift.id,reveal:it.gift.reveal===true,note:String(it.gift.note||"").slice(0,200),at:String(it.gift.at||""),seen:it.gift.seen===true}})));
+    rememberGifts(actor);
+    return incoming.length;
+  }catch(e){return 0;}
+}
+// While the owner has Play Mode open, check for new gifts now and then.
+let GIFT_POLL=null;
+function startGiftPoll(){
+  if(GIFT_POLL||typeof setInterval!=="function")return;
+  GIFT_POLL=setInterval(async()=>{
+    if(!cloudActive()||VIEW_ONLY||APPVIEW!=="play"||!isUuid(S._libId)||(typeof document!=="undefined"&&document.visibilityState==="hidden"))return;
+    const actor=S;if(await mergeServerGifts(actor)&&actor===S)render();
+  },30000);
+}
 async function unassignCharUnified(id){
   if(cloudActive()){const {error}=await sb.from("characters").update({campaign_id:null}).eq("id",id);if(error)throw error;return;}
   const lib=loadCharLibLocal();const e=lib.find(c=>c.id===id);if(!e)return;e.campaignId=null;saveCharLibListLocal(lib);

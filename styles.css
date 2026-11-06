@@ -1529,3 +1529,31 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 .forge-releasebar button{border:1px solid #b69b69;background:transparent;color:inherit;border-radius:4px;padding:3px 9px;cursor:pointer}
 #forgeSaveStatus[data-error="true"]{color:#ffc3ae;font-weight:700}
 @media print{.forge-releasebar,.save-warning{display:none!important}}
+
+/* New item pop-ups (GM gifts). The full reveal is a dark panel with a slow
+   light burst; the plain notice is a small card. */
+.gift-toast{position:fixed;right:18px;bottom:18px;z-index:400;max-width:min(360px,calc(100vw - 32px));background:#1d1612;color:#f3e9da;border:1px solid #b69b69;border-left:4px solid #c0392b;border-radius:6px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.45);font-size:.95rem}
+.gift-toast .gift-kicker{display:block;margin-bottom:2px}
+.gift-kicker{font-family:"Archivo",sans-serif;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#e5543f;font-size:.78rem}
+.gift-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:10px}
+.gift-more{font-size:.8rem;opacity:.75;margin-right:auto}
+.gift-note{margin:.4em 0 0;font-style:italic;opacity:.85}
+.gift-reveal{position:fixed;inset:0;z-index:450;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(8,5,4,.78)}
+.gift-panel{position:relative;overflow:hidden;width:min(760px,100%);min-height:340px;padding:34px 34px 22px;border-radius:4px;border-left:6px solid #c0392b;
+  background:radial-gradient(ellipse at 74% 42%,#8e1d17 0%,#4a0e0b 38%,#1c0807 78%);color:#fbefe6;box-shadow:0 24px 70px rgba(0,0,0,.6);display:flex;flex-direction:column;justify-content:flex-end}
+.gift-rays{position:absolute;left:74%;top:42%;width:900px;height:900px;margin:-450px 0 0 -450px;pointer-events:none;opacity:.55;
+  background:repeating-conic-gradient(from 0deg,rgba(255,190,170,.32) 0deg 2deg,transparent 2deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 0,#000 18%,transparent 60%);mask:radial-gradient(circle,#000 0,#000 18%,transparent 60%)}
+.gift-panel::after{content:"";position:absolute;left:74%;top:42%;width:160px;height:160px;margin:-80px 0 0 -80px;border-radius:50%;background:radial-gradient(circle,rgba(255,236,226,.9),rgba(255,120,95,.35) 45%,transparent 70%);pointer-events:none}
+.gift-panel>*:not(.gift-rays){position:relative;z-index:1}
+.gift-panel .gift-kicker{position:absolute;top:30px;left:34px;font-size:clamp(1.6rem,5vw,2.6rem);letter-spacing:.06em;color:#f0503a}
+.gift-name{margin:0;text-shadow:0 2px 10px rgba(0,0,0,.65);font-family:"Archivo",sans-serif;font-size:clamp(1.3rem,4vw,1.9rem);font-weight:700;color:#fff}
+.gift-detail{margin:.3em 0 0;opacity:.85}
+.gift-panel .gift-actions{border-top:1px solid rgba(255,255,255,.18);padding-top:12px;margin-top:22px}
+@media (prefers-reduced-motion:no-preference){
+  .gift-rays{animation:gift-spin 26s linear infinite}
+  .gift-panel{animation:gift-in .45s ease-out}
+  .gift-toast{animation:gift-in .3s ease-out}
+}
+@keyframes gift-spin{to{transform:rotate(360deg)}}
+@keyframes gift-in{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
