@@ -34,3 +34,8 @@ body.sitota-public-view #main{outline:none}
 .sitota-footer a{color:#d7b884}
 @media print{.sitota-footer,.sitota-skip{display:none}}
 .portrait-field{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}.portrait-field label{font-weight:600}.portrait-field input{max-width:100%;font-size:12px}.character-portrait{width:116px;height:116px;object-fit:cover;border:1px solid #8b7858}.mmenu-preview-portrait img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+/* Site logo (spear and ribbon), beside the wordmark */
+.sitota-brand{display:inline-flex;align-items:center;gap:12px}
+.sitota-logo{display:block;height:52px;width:auto;flex:0 0 auto}
+.sitota-brand-text{display:block}
+@media (max-width:760px){.sitota-logo{height:40px}.sitota-brand{gap:9px}}
