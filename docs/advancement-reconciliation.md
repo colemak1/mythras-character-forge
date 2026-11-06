@@ -41,3 +41,9 @@
    - (f) Reload after each step.
 3. **Hazards (HZ), diseases (D), survival (S):** these stay GM-assisted by design. Chat should confirm that the Play Mode hazard notes match Core pp.74–85, a docs-only check.
 
+**Update (2026-11-06):** both owner decisions are done.
+- X14: 1d6+1 is now an optional campaign rule.
+- X19: the Passion shift helper was added.
+
+Both have tests (`tests/advancement-options.cjs`). What remains for Subsystem 4 is the Work live pass (a)–(f), plus (g): with a campaign set to 1d6+1, a successful Experience Roll gains up to +7, and a Passion deepens by Weak 1d10. Chat's hazard-notes check is still open too.
+

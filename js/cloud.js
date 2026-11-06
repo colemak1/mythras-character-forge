@@ -687,7 +687,9 @@ function normalizedCampaignRules(v){
  if(!v||typeof v!=="object")return null;
  const method=["training","permanent"].includes(v.characteristicImprovement)?v.characteristicImprovement:null;
  const books=Array.isArray(v.books)?v.books.filter(x=>typeof x==="string"&&x.trim()).map(x=>x.trim().slice(0,100)).slice(0,20):[];
- return {characteristicImprovement:method,books:[...new Set(books)]};
+ // Core p.72: the GM may raise skill improvement from 1d4+1 to 1d6+1 for the whole campaign.
+ const skillImprovement=v.skillImprovement==="d6"?"d6":"d4";
+ return {characteristicImprovement:method,skillImprovement,books:[...new Set(books)]};
 }
 async function saveCampaignRulesUnified(camp,rules){
  if(cloudActive()){
@@ -1145,6 +1147,10 @@ function campaignSetupHTML(){
  h+='<h3>Core rules</h3><p>Mythras Core Rulebook is always included.</p><label for="setupImprovement">Characteristic improvement</label> <select id="setupImprovement">'
    +'<option value="training"'+(rules.characteristicImprovement==="training"?' selected':'')+'>Core: ongoing training and maintenance</option>'
    +'<option value="permanent"'+(rules.characteristicImprovement==="permanent"?' selected':'')+'>Optional: permanent improvement</option></select>'
+   +'<label for="setupSkillImprovement" style="display:block;margin-top:.8em">Skill improvement</label> <select id="setupSkillImprovement">'
+   +'<option value="d4"'+(rules.skillImprovement!=="d6"?' selected':'')+'>Core: 1d4+1 per successful Experience Roll</option>'
+   +'<option value="d6"'+(rules.skillImprovement==="d6"?' selected':'')+'>Optional: 1d6+1 (faster progress)</option></select>'
+   +'<p class="note">Core p.72 lets the GM raise the dice step for faster progress without giving more Experience Rolls. Set it at the start of the campaign and keep it.</p>'
    +'<p class="note">Ongoing training uses recurring Experience Rolls and can fade. Permanent improvement uses the optional one-time cost (Core pp.72–73). Existing records are preserved: any ongoing training already recorded still needs maintenance until stopped.</p>';
  h+='<h3>Additional books</h3><p class="note">Record which books your group uses. These choices do not add or enable their mechanics yet; Core remains the implemented rules source.</p>';
  h+=CAMPAIGN_BOOKS.map(b=>'<label style="display:block;margin:.5em 0"><input type="checkbox" name="setupBook" value="'+esc(b)+'"'+(enabled.has(b)?' checked':'')+'> '+esc(b)+' <span class="note">— selection only</span></label>').join("");
@@ -1172,7 +1178,7 @@ function campaignDetailHTML(){
   }
   h+='<p class="note" style="margin-top:8px">Created '+new Date(camp.created_at).toLocaleString()+'</p>';
   const campaignRules=normalizedCampaignRules(camp.rules_settings);
-  h+='<p class="note"><b>Characteristic improvement:</b> '+(campaignRules?.characteristicImprovement==="permanent"?'Permanent (optional)':campaignRules?.characteristicImprovement==="training"?'Ongoing training':'Not configured')+'. <b>Additional books:</b> '+(campaignRules?.books?.length?campaignRules.books.map(esc).join(", "):"None recorded")+'.</p>'
+  h+='<p class="note"><b>Characteristic improvement:</b> '+(campaignRules?.characteristicImprovement==="permanent"?'Permanent (optional)':campaignRules?.characteristicImprovement==="training"?'Ongoing training':'Not configured')+'. <b>Skill improvement:</b> '+(campaignRules?.skillImprovement==="d6"?'1d6+1 (optional)':'1d4+1')+'. <b>Additional books:</b> '+(campaignRules?.books?.length?campaignRules.books.map(esc).join(", "):"None recorded")+'.</p>'
     +(isDM?'<button class="chip" onclick="APP.editCampaignRules()">Campaign rules &amp; books</button>':'');
   if(cloudActive()&&isDM&&camp.invite_code){
     h+='<p class="note" style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'

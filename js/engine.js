@@ -778,6 +778,15 @@ function xpBonus(key){return (S.xp&&S.xp.bonus&&S.xp.bonus[key])||0;}
 // award Experience Rolls. A GM award is stored in the banked pool.
 function xpBonusRolls(){return 0;}
 // Experience Modifier is applied when the GM awards rolls (APP.xpAward).
+// Core p.72: the improvement die is 1d4 (+1), or 1d6 (+1) if the campaign's
+// GM chose the optional faster rule. Standalone characters use Core. While a
+// campaign's rules are still loading, returns null so nothing is spent.
+function skillImprovementDie(){
+  if(typeof rulesForOpenCharacter!=="function"||!S.campaignId)return 4;
+  const st=rulesForOpenCharacter();
+  if(st.status!=="ready")return null;
+  return st.rules?.skillImprovement==="d6"?6:4;
+}
 function xpRollsAvailable(){return Math.max(0,S.xp.pool||0);}
 /* ================= MAGIC =================
    Which magic skills the character actually acquired, so the Magic step can

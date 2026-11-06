@@ -26,3 +26,7 @@ Standing rulings and product decisions. Add an entry whenever something is agree
 | Play Mode Advance Time menu: rest one day (Minor Wounds heal Healing Rate), recover one Fatigue level, end the fight, new session (refill Luck); MP stays manual | Decided 2026-11-06 (owner) | Serious/Major recovery stays per location (week/month, Core p.80) |
 | Ranged weapons cannot Parry; Play Mode shows Attack only on ranged weapon cards (shields still parry incoming missiles, Core p.107) | Decided 2026-11-06 (owner) | Combat cases C5-B2-X11 |
 | Play Mode polish is on the back burner until the owner is at a PC; audits resume | Decided 2026-11-06 (owner) | Phone-width check and remaining Play Mode notes wait |
+| Skill improvement 1d6+1 is an optional campaign rule; Core 1d4+1 stays the default | Decided 2026-11-06 (owner) | Core p.72. The GM sets it in Campaign rules. It applies to skills and Passions; standalone characters use 1d4+1. Advancement case X14 |
+| Add the Passion Deepening and Waning helper (Weak 1d10, Moderate 1d10+5, Strong 1d10+10) | Decided 2026-11-06 (owner delegated to Claude) | Core p.82. The GM picks the strength and direction; waning stops at 0. Advancement case X19 |
+| v0 joins as a design-mockup assistant only | Decided 2026-11-06 (owner) | v0 never commits. Claude rebuilds the chosen mockup in the existing code; see `AGENTS.md` |
+
