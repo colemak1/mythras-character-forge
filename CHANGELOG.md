@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Subsystem 8 — Campaign and live integration case inventory (docs-only)
+
+- Added `docs/campaign-cases-batch-1.md`: **183** app-acceptance cases across **10** groups for campaign setup/rules, auth and account isolation, invites, character ownership and assignment, Party Board/GM tools, save/reload/concurrent edits, imports/backups, backend RLS/RPCs, campaign continuity, and end-to-end session workflows.
+- Cases use **App/security contract — not Core** where no rulebook rule applies; Core pp.72–73 are cited only for the two characteristic advancement methods.
+- **Highest priority:** deny unrelated-account access, ensure members' read-only character views and the GM's narrowly scoped inventory/unassign rights, prevent stale autosaves from undoing assignments or losing progress, and keep the GM's campaign accessible through creation/service failures.
+- Source review used current client code and project decisions, **not live server migrations**. No implementation passes, signed-in test results, or server-policy certification are claimed. **Subsystem 8 open; project progress 3/8.**
+- Docs only; no JavaScript, CSS, HTML, tests, Supabase or deployment settings changed. Full local Node suite not run (repository checkout unavailable); CI/Claude must verify.
+
+---
+
 ## Advancement rulings: 20-point trainers and maiming
 
 - A mentor exactly 20 percentage points better than the student now trains on the first row of the Training Improvement table (1d2). The book's text says "at least 20%" but its table starts at 21%; the owner ruled for the text.
