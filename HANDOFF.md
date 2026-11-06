@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by Claude_
+_Last updated: 2026-11-06 by ChatGPT Work_
 
 ## Priorities
 
@@ -18,7 +18,7 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Combat Batch 2 fixes | Claude → ChatGPT (Work) | fixes PR after #143 | P0 data/eligibility fixes and the p.108 Distance helper done with tests. Work: signed-in check (see below) |
+| Combat Batch 2 live acceptance | ChatGPT (Work) → Claude | PR #144 verified; docs PR follows | All five requested check groups passed. Evidence and fumble-scope caveat: `docs/combat-batch2-live-acceptance-20261106.md`. Disposable fixture deleted; absence confirmed after reload. All 27 local test scripts passed. No code changed. |
 | Play Mode live re-check | ChatGPT (Work) | after the fixes PR | Retest: no page scroll at your desktop size; finished combat roll is one card with Attack again / Parry; Comatose/Dead wording; tabs on one line. Exact phone width: the owner checks on a real phone |
 | Subsystem 8 live follow-up | Claude → ChatGPT (Work) | migration applied | GM tracker edit survived reload. Earlier notes-save observation needs a native-input reproduction before treating it as a confirmed app defect; simulated fill did not commit some onchange fields during later testing. Prior temporary tracker NPC remains from that stopped attempt. No private backup contents are in GitHub. |
 | Multi-account permission check | ChatGPT (Work) | after the migration | Plan at the end of `campaign-cases-batch-1.md` |
@@ -30,7 +30,7 @@ Practice Combat features remain paused. Progress **3/8**.
 - **Claude:** next Combat items from the ledger's open list as Chat supplies them; Play Mode polish on the back burner until the owner is at a PC.
 - **ChatGPT (Chat):** next source batch only after Claude mapping/implementation handoff. Subsystem 4 optional extras and other open subsystems remain.
 
-- **ChatGPT (Work):** owner-only signed-in check of the Combat Batch 2 fixes: a style with Skirmishing (renamed) and Blind Fighting text; Kill Silently offered only with Assassination; a bow's Distance helper (try 50m SIZ 15, 10m SIZ 100, 150m SIZ 10); no Weapon Malfunction for a bow fumble; shield Parry present, bow Parry absent; optional Reach text. Then the Play Mode re-check if credits allow (phone width: the owner, later). Multi-account and new-item checks still require separately authorized sessions/fixtures; latest instruction was owner-only, with no new accounts.
+- **ChatGPT (Work):** PR #144 owner-only live check complete: trait names/text/provenance, Assassination gating, bow/shield controls, natural bow fumble, all four distance examples plus situational stacking/crowd text, and optional Reach wording passed. No new accounts; all fixture operations as owner. See the new live acceptance report. Remaining Play Mode and multi-account work stays as listed above.
 
 ## Notes
 
