@@ -723,13 +723,23 @@ function finalPct(key){const em=entryMap();if(!em[key])return 0;
   const raw=rawSkillPct(key,em),language=literacyLanguageKey(key,em);
   return language?Math.min(raw,rawSkillPct(language,em)):raw;
 }
-// Core p.73 training chart, indexed in steps. The text permits a 20-point
-// difference but the first table row starts at 21; leave that edge to the GM.
+// Core p.73 training chart, indexed in steps. The text requires a trainer at
+// least 20% better but the first table row starts at 21; the owner ruled
+// (2026-11-06) that exactly 20 uses the first row (1d2).
 function trainingStep(difference,teachResult){
-  if(!Number.isSafeInteger(difference)||difference<=20)return null;
+  if(!Number.isSafeInteger(difference)||difference<20)return null;
+  if(difference===20)difference=21;
   const shift={trainer:0,failure:0,success:1,critical:2,fumble:-1};
   if(!Object.hasOwn(shift,teachResult))return null;
   return Math.ceil((difference-20)/10)-1+shift[teachResult];
+}
+// Core p.80 Permanent Injury table: a 1d3 result of 1 or 2 removes one or
+// two thirds of the location's Hit Points, 3 leaves a single Hit Point. The
+// owner ruled (2026-11-06) that fractional HP lost rounds up, as usual.
+function maimedMaxHP(max,result){
+  if(!Number.isSafeInteger(max)||max<1||![1,2,3].includes(result))return null;
+  if(result===3)return 1;
+  return Math.max(1,max-Math.ceil(max*result/3));
 }
 function trainingDie(step){
   if(step<0)return {sides:0,bonus:0};

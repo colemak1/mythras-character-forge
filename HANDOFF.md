@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-05 (America/Los_Angeles) by ChatGPT (Work)_
+_Last updated: 2026-11-06 by Claude_
 
 ## Priorities
 
@@ -23,7 +23,7 @@ Practice Combat features remain paused. Progress **3/8**.
 
 ## Waiting on someone
 
-- **Owner:** two Advancement rulings: trainer exactly 20% better (use the 1d2 row?) and maiming fractions (round HP lost up or down?). Optional extras: 1d6+1 improvement option, Passion shift helper.
+- Advancement rulings decided 2026-11-06 (trainer at exactly 20 uses 1d2; maiming HP lost rounds up) and implemented. Optional extras still open: 1d6+1 improvement option, Passion shift helper.
 - **Owner:** confirm D-4 (round up specialist starting spells) and D-5 (casting interruptions left to the GM). Low priority while Magic is paused.
 - **Claude:** review/merge this docs-only combat acceptance report after Tests passes; then continue the Advancement priority. No requested combat check remains blocked.
 

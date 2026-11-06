@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Advancement rulings: 20-point trainers and maiming
+
+- A mentor exactly 20 percentage points better than the student now trains on the first row of the Training Improvement table (1d2). The book's text says "at least 20%" but its table starts at 21%; the owner ruled for the text.
+- Play Mode's permanent-injury box now shows the Core p.80 Permanent Injury results for the selected location. Results 1 and 2 remove one third or two thirds of its HP, with the HP lost rounded up; result 3 leaves 1 HP. Click a result to fill in the new maximum, then confirm. A location never drops below 1 HP.
+- Both rulings are recorded in `docs/decisions.md`.
+
+To test: in Play Mode, select a location, open "Permanent injury: location maximum" and check the three buttons (e.g. a 5 HP arm shows 3, 1 and 1). In the Experience panel, train a skill with a mentor exactly 20 points higher: it should gain 1–2%.
+
+---
+
 ## Combat follow-up live acceptance after PRs #121/#122 (2026-11-05, America/Los_Angeles)
 
 - One signed-in batch passed all six requested checks: initiative/surprise/reset, action groups, Club-linked Special Effects, unfamiliar-weapon penalty/floor, Unarmed combat tools and nonzero armour subtraction.

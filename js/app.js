@@ -914,7 +914,6 @@ window.APP={
    if((S.xp.trainingPending||[]).includes(key))return fail("Improve this skill with an Experience Roll before training it again.");
    const diff=mentor-finalPct(key);
    if(diff<20)return fail("The mentor needs at least 20 percentage points more than the student.");
-   if(diff===20)return fail("At exactly 20 points, the Core text and table do not align; ask your GM to adjudicate the result.");
    const step=trainingStep(diff,teachResult);if(step===null)return fail("Choose the trainer or teacher result.");
    const die=trainingDie(step),gain=Math.min(literacyHeadroom(key),die.sides?d(die.sides)+die.bonus:0);
    S.xp.bonus[key]=(S.xp.bonus[key]||0)+gain;
