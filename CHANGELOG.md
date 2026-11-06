@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Reach summary lists melee weapons only
+
+- The optional Reach rule's "your weapons" list no longer includes ranged weapons. A bow's Force was being shown as if it were Reach (spotted in the Combat Batch 2 live check, PR #145).
+
 ## 2026-11-06 — Combat Batch 2 live acceptance (docs only)
 
 - Verified all five requested PR #144 check groups live: corrected trait text/provenance, Dagger Kill Silently eligibility before/after Assassination, bow/shield controls, a natural bow fumble, Core p.108 distance/size and crowd guidance, and optional p.106 Reach text.

@@ -81,4 +81,9 @@ test('the distance helper is reachable from ranged weapon cards and explains cro
  assert.match(bow,/APP\.pmPopup\('range'\)/);assert.doesNotMatch(h.slice(h.indexOf('Dagger')),/pmPopup\('range'\)/);
  const p=run('pmRangeHelperHTML()');assert.match(p,/bystander/);assert.match(p,/none of your Special Effects/);assert.match(p,/Skirmishing/);
 });
+test('the optional Reach summary lists melee weapons only (a bow has Force, not Reach)',()=>{
+ run('S=freshState();S.chars={STR:13,CON:12,SIZ:13,DEX:14,INT:13,POW:11,CHA:10};S.gearWeapons=["Short bow","Dagger"];normalizeState();');
+ const h=run('specialEffectsPanel()');const summary=h.slice(h.indexOf('Your weapons, shortest to longest reach'));
+ assert.match(summary,/Dagger/);assert.doesNotMatch(summary,/Short bow/);
+});
 console.log(passed+' combat batch 2 tests passed');

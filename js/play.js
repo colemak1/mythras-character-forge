@@ -810,7 +810,7 @@ function specialEffectsPanel(){
   // Optional Reach rule callout, made concrete using this character's own
   // equipped melee/shield weapons where possible instead of just abstract
   // categories.
-  const myReach=(S.gearWeapons||[]).map(nm=>weaponByName(nm)).filter(w=>w&&REACH_ORDER.includes(w.reach))
+  const myReach=(S.gearWeapons||[]).map(nm=>weaponByName(nm)).filter(w=>w&&w.group!=="Ranged"&&REACH_ORDER.includes(w.reach)) // ranged weapons keep Force in this field, not Reach
     .map(w=>w.name+" ("+REACH_NAME[w.reach]+")");
   h+='<details class="pm-fx-item" style="margin-bottom:14px"><summary>Optional Rule: Closing &amp; Opening Range <span class="pm-fx-badge">p.106</span></summary>'
    +'<p>Weapons have a Reach — Touch, Short, Medium, Long, or Very Long, shortest to longest ('+REACH_ORDER.map(r=>REACH_NAME[r]).join(" &lt; ")+') — shown on every melee weapon and shield on your character sheet. Before anyone swings, combatants can jockey for range:</p>'
