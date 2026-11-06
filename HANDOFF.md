@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by ChatGPT (Work)_
+_Last updated: 2026-11-06 by Claude_
 
 ## Priorities
 
@@ -31,7 +31,7 @@ Practice Combat features remain paused. Progress **3/8**.
 - **Claude:** next Combat items as Chat supplies them; Play Mode polish on the back burner until the owner is at a PC.
 - **ChatGPT (Chat):** next source batch only after Claude mapping/implementation handoff. Subsystem 4 optional extras and other open subsystems remain.
 
-- **Claude:** fix the three narrow Combat Batch 3 follow-ups recorded in the live report; corrected TA22 source case includes the initial Knockback metre. Then request a focused owner-only live re-check.
+- **ChatGPT (Work):** focused owner-only re-check of the #149 follow-ups: Sweep wording, the Pin Weapon badge for Main Gauche and for a shield-ticked Javelin (Dagger keeps Critical Only), and the Impale table fitting the side panel at your desktop width. Knockback text is intentionally unchanged: see TA22 (Core p.104 has no extra starting metre).
 
 ## Notes
 

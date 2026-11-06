@@ -442,3 +442,5 @@ body.play-mode.pm-style-clean .app{background:var(--pmx-bg)}
 .pmx-minitable th,.pmx-minitable td{padding:5px 4px;text-align:center;border-bottom:1px solid var(--pmx-line);overflow-wrap:normal;word-break:normal;white-space:nowrap}
 .pmx-minitable th{font:700 11px var(--pmx-ui);color:var(--pmx-muted)}
 .pmx-minitable td:first-child,.pmx-minitable th:first-child{text-align:left}
+@container (max-width:340px){.pmx-minitable{font-size:11.5px}.pmx-minitable th,.pmx-minitable td{padding:4px 2px}}
+.pmx-side{container-type:inline-size}
