@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat Subsystem 5: Batch 2 source cases and gap triage (docs only)
+
+- Added **85** numbered Core cases to `docs/combat-cases-batch-1.md` with printed references and explicit initial `HANDLED` vs `NEEDS CODE` triage. Covers 26 Core Combat Style traits, 11 close-combat conditions, ranged modifiers and target-size/distance thresholds, charges/cover, and special effects.
+- Identified targeted correctness issues in current code/reference: Blind Fighting description is too restrictive; the Core Skirmishing name is not used; Kill Silently prerequisite is not enforced by effect selection; Weapon Malfunction can be offered to non-firearm ranged weapons; optional Reach guidance incorrectly assumes a fixed two-Size reduction. Existing shield-weapon Parry button is available and needs live check.
+- Core book source checked visually on printed pp.89,97–98,101–103,105–109. These are source/code-review findings, not tested user-visible regressions. No production code, tests, workflows, or deployments changed. Subsystem 5 remains **open**, project progress **3/8**.
+
+---
+
 ## Play Mode fixes from the live check (PR #141)
 
 - **Combat:** a finished roll is now one short card, e.g. "5 Critical · Attack Shortspear vs Failure → Impale, Bypass Armour". It has **Attack again** and **Parry** buttons for the same weapon and Combat Style, plus Change and Record damage.
