@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by ChatGPT Work_
+_Last updated: 2026-11-06 by ChatGPT (Chat), Combat Batch 3 docs handoff_
 
 ## Priorities
 
@@ -10,7 +10,7 @@ _Last updated: 2026-11-06 by ChatGPT Work_
 
 1. **Subsystem 8 critical work:** security fix merged (PR #130). Migration `20261106120000_gm_private_state_and_assignment_checks.sql` **ran successfully live** with an owner-private safety copy. Verification: table `campaign_gm_state`, 1 private row, 0 campaigns retaining old session state. Multi-account acceptance remains outstanding and was excluded from the latest owner-only session.
 2. **Play Mode UX: done** (PRs #133–#137, then layout v2 from the owner's sketch: one-screen columns and a D&D Beyond-style side panel, 2026-11-06): layout, physics dice tray, combat flow, skill search and pins, Body tab, tips, Gear and Notes. The theme lives in `play-clean.css` under `data-pm-style="clean"`, so a future player style picker only swaps token sets. Owner-only live pass recorded in `docs/play-mode-live-acceptance-20261105.md`: desktop overflow and incomplete result compaction fail; numerical Core spot-checks pass; terminal Fatigue labels need correction. Exact 390px phone pass remains unverified (browser limitation).
-3. **Now: resume subsystem audits:** **Subsystem 5 Combat Batch 2:** 85 additional source/case-status rows added to `docs/combat-cases-batch-1.md` in docs-only PR (branch `docs/combat-batch2-source-gaps-20261106`). Claude to review triage and fix narrowly scoped text/eligibility gaps first. Remaining 4, 6, 7, 8 not closed.
+3. **Now: resume subsystem audits:** **Subsystem 5 Combat Batch 3:** 92 additional, source-verified, player-facing cases appended to `docs/combat-cases-batch-1.md` in independent **docs-only PR** (branch `docs/combat-batch3-table-gaps-20261106`). Initial app triage: **72 HANDLED / 20 NEEDS CODE**. Batch 2 is implemented (#144), live accepted (#145), and Reach summary follow-up merged (#146). Claude to review, fix narrowly, test and request live acceptance. Creature anatomy remains reserved for Subsystem 7. Subsystem 5 **OPEN**, overall **3/8**.
 
 Practice Combat features remain paused. Progress **3/8**.
 
@@ -18,6 +18,7 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
+| Combat Batch 3 docs-only source inventory | ChatGPT (Chat) → Claude | `docs/combat-batch3-table-gaps-20261106` (PR) | **92** Core cases, pp.61–65 and 96–110; 72 HANDLED / 20 NEEDS CODE. Highest risk: Offensive-weapon Parry, Entrapping/Javelin Pin Weapon exceptions. Claude maps, tests, implements in separate code PR; Work live accepts. |
 | Combat Batch 2 live acceptance | ChatGPT (Work) → Claude | PR #144 verified; docs PR follows | All five requested check groups passed. Evidence and fumble-scope caveat: `docs/combat-batch2-live-acceptance-20261106.md`. Disposable fixture deleted; absence confirmed after reload. All 27 local test scripts passed. No code changed. |
 | Play Mode live re-check | ChatGPT (Work) | after the fixes PR | Retest: no page scroll at your desktop size; finished combat roll is one card with Attack again / Parry; Comatose/Dead wording; tabs on one line. Exact phone width: the owner checks on a real phone |
 | Subsystem 8 live follow-up | Claude → ChatGPT (Work) | migration applied | GM tracker edit survived reload. Earlier notes-save observation needs a native-input reproduction before treating it as a confirmed app defect; simulated fill did not commit some onchange fields during later testing. Prior temporary tracker NPC remains from that stopped attempt. No private backup contents are in GitHub. |
@@ -27,13 +28,14 @@ Practice Combat features remain paused. Progress **3/8**.
 ## Waiting on someone
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **Claude:** next Combat items from the ledger's open list as Chat supplies them; Play Mode polish on the back burner until the owner is at a PC.
+- **Claude:** review and merge the Combat Batch 3 docs-only PR after CI; implement `NEEDS CODE` items with targeted tests in own code PRs. Start with Offensive melee weapon Parry exclusion (p.61), Entrapping non-critical Pin Weapon (p.61) and thrown Javelin shield Pin Weapon exception (p.62), then fold concise guidance for aiming, impale p.98 matrix, Outmanoeuvre, Sweep, mounted/aerial, Knockback and unusual wound timing into appropriate existing panels. Do not make a separate combat simulator.
 - **ChatGPT (Chat):** next source batch only after Claude mapping/implementation handoff. Subsystem 4 optional extras and other open subsystems remain.
 
 - **ChatGPT (Work):** PR #144 owner-only live check complete: trait names/text/provenance, Assassination gating, bow/shield controls, natural bow fumble, all four distance examples plus situational stacking/crowd text, and optional Reach wording passed. No new accounts; all fixture operations as owner. See the new live acceptance report. Remaining Play Mode and multi-account work stays as listed above.
 
 ## Notes
 
+- Combat Batch 3 checked the user's uploaded Mythras 2e Core source directly (text search first, rendered printed pp.61–65 and 96–110 for tables and special cases) and reviewed current source code after #146. **92 new specification rows**, not live implementation evidence; added to the existing ledger without changing previous acceptance. **Creature anatomy excluded**, for Subsystem 7. Total Combat ledger now **368** cases (191 + 85 + 92). Status is initial and may need Claude adjudication. No production code or tests were changed by ChatGPT. CI pending.
 - New Combat batch source checked against user's uploaded Core PDF, rendered printed pp.89,97–98,101–103,105–109. The 85 added rows **do not** claim CI/live passes; current app behavior was assessed from `js/data.js`, `js/play.js`, `js/render.js`, `js/engine.js` and `tests/combat-cases.cjs`. **3/8 retained; Subsystem 5 still open.**
 
 - Combat live evidence (Creation Audit — Human, `71640fe7-…`): see `combat-cases-batch-1.md`. Fixture restored after each batch.
