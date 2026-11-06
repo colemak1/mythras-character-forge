@@ -31,13 +31,14 @@ test('C5-R05/R06 armour penalty is total worn armour ENC / 5 rounded up; 7 locat
  run('armorPackedEncAt=loc=>loc==="Head"?5:0;');assert.equal(run('armourPenaltyToInit()'),1);
 });
 test('C5-R03/R07 initiative roll is 1d10 + current bonus, kept for the fight, and validated on load',()=>{
- run('S=freshState();playInitiativeBonusNow=()=>({base:14,armour:2,fat:0,total:12});var __r=Math.random;Math.random=()=>0.65;APP.playRollInitiative();Math.random=__r;');
+ run('S=freshState();var __ib=playInitiativeBonusNow;playInitiativeBonusNow=()=>({base:14,armour:2,fat:0,total:12});var __r=Math.random;Math.random=()=>0.65;APP.playRollInitiative();Math.random=__r;');
  assert.deepEqual(JSON.parse(run('JSON.stringify(S.play.initiative)')),{roll:7,bonus:12,total:19});
  run('S.play.apUsed=2;APP.playNewRound();');assert.equal(run('S.play.initiative.total'),19,'a new round keeps initiative');
  run('document.getElementById=id=>id==="playInitD10"?{value:"11"}:null;APP.playSetInitiative();');assert.match(run('PM_MSG'),/1 to 10/);
  run('document.getElementById=id=>id==="playInitD10"?{value:"3"}:null;APP.playSetInitiative();');assert.equal(run('S.play.initiative.total'),15);
  run('S.play.initiative={roll:3,bonus:12,total:99};normalizeState();');assert.equal(run('S.play.initiative'),null,'tampered totals are dropped');
  run('APP.playRollInitiative();APP.playClearInitiative();');assert.equal(run('S.play.initiative'),null);
+ run('playInitiativeBonusNow=__ib;');
 });
 test('C5-R13 New Round restores every Action Point',()=>{
  run('S=freshState();playMaxAP=()=>3;APP.playSpendAP(1);APP.playSpendAP(1);');assert.equal(run('S.play.apUsed'),2);
@@ -110,5 +111,45 @@ test('C5-E07 stackable effects can be picked repeatedly; others once; never more
  run(`APP.playChooseEffect(${idx('Maximise Damage')});APP.playChooseEffect(${idx('Maximise Damage')});APP.playChooseEffect(${idx('Bleed')});APP.playChooseEffect(${idx('Bleed')});`);
  assert.deepEqual(JSON.parse(run('JSON.stringify(S.rollLog[0].effectsPicked)')),['Maximise Damage','Maximise Damage','Bleed']);
  run(`APP.playChooseEffect(${idx('Press Advantage')})`);assert.equal(run('S.rollLog[0].effectsPicked.length'),3,'critical vs fumble wins exactly 3');
+});
+test('Weapon-linked rolls filter weapon-specific Special Effects (Core p.100 and weapon tables)',()=>{
+ const ok=(eff,w)=>run(`weaponAllowsEffect(SPECIAL_EFFECTS.find(e=>e[0]==="${eff}"),weaponForRoll(${JSON.stringify(w)}))`);
+ assert.equal(ok('Bleed','Dagger'),true);assert.equal(ok('Impale','Dagger'),true);assert.equal(ok('Bash','Dagger'),false);
+ assert.equal(ok('Bash','Club'),true);assert.equal(ok('Stun Location','Club'),true);assert.equal(ok('Bleed','Club'),false);
+ assert.equal(ok('Sunder','Battleaxe'),true);assert.equal(ok('Sunder','Shortsword'),false);
+ assert.equal(ok('Bash','Heater'),true,'shields Bash');assert.equal(ok('Entangle','Net'),true);
+ assert.equal(ok('Grip','Unarmed'),true);assert.equal(ok('Flurry','Dagger'),false);assert.equal(ok('Take Weapon','Unarmed'),true);
+ assert.equal(ok('Remise','Dagger'),true,'Small weapon');assert.equal(ok('Remise','Broadsword'),false);
+ assert.equal(ok('Marksman','Broadsword'),false);assert.equal(ok('Choose Location','Club'),true,'no weapon type');
+ assert.equal(run('weaponAllowsEffect(SPECIAL_EFFECTS.find(e=>e[0]==="Bleed"),null)'),true,'no weapon recorded: GM decides');
+ run('S=freshState();S.gearWeapons=["Club"];S.rollLog=[{label:"Club",pct:60,roll:20,tier:"Success",combat:true,combatKind:"style",combatRole:"attack",oppTier:"Failure",effectsPicked:[]}];');
+ assert.equal(run('canPickEffectForRoll(SPECIAL_EFFECTS.find(e=>e[0]==="Bleed"),S.rollLog[0])'),true);
+ run('APP.playSetRollWeapon(0,"Club")');assert.equal(run('canPickEffectForRoll(SPECIAL_EFFECTS.find(e=>e[0]==="Bleed"),S.rollLog[0])'),false);
+ assert.equal(run('canPickEffectForRoll(SPECIAL_EFFECTS.find(e=>e[0]==="Stun Location"),S.rollLog[0])'),true);
+ run('APP.playSetRollWeapon(0,"Greatsword")');assert.equal(run('S.rollLog[0].weapon'),'Club','only carried weapons or Unarmed');
+});
+test('rolling with a weapon records it; Unarmed rolls count as combat rolls',()=>{
+ run('S=freshState();S.gearWeapons=["Club"];finalPct=()=>60;gradedPct=(k,b)=>({pct:b,grade:"standard"});var __r=Math.random;Math.random=()=>0.2;');
+ assert(run('!!entryMap()["std:Unarmed"]'),'every character has the Unarmed skill');
+ run('APP.rollWithWeapon("Club","std:Unarmed","")');assert.equal(run('S.rollLog[0].weapon'),'Club');assert.equal(run('S.rollLog[0].combat'),true);
+ run('APP.rollWithWeapon("Unarmed","std:Unarmed","")');assert.equal(run('S.rollLog[0].weapon'),'Unarmed');
+ run('APP.roll("std:Unarmed")');assert.equal(run('S.rollLog[0].combat'),true);run('Math.random=__r;');
+});
+test('C5-ST03..ST08 unfamiliar weapons: grade steps, never below STR+DEX (Core p.88)',()=>{
+ run('S=freshState();effectiveChars=()=>({STR:12,DEX:14,CON:10,SIZ:12,INT:12,POW:10,CHA:10});finalPct=()=>80;ACTIVE_GRADE="standard";gradeForEntry=()=>ACTIVE_GRADE;');
+ const f=fam=>JSON.parse(run(`JSON.stringify(familiarityPct("style:x","${fam}"))`));
+ assert.equal(f('similar').pct,80);assert.equal(f('broadly').pct,53);assert.equal(f('broadly').grade,'hard');
+ assert.equal(f('reasonably').pct,40);assert.equal(f('combined').pct,53);assert.equal(f('substantially').pct,26);
+ run('finalPct=()=>45;');assert.equal(f('reasonably').pct,26,'floor at STR+DEX 26');assert.equal(f('reasonably').floored,true);
+ run('ACTIVE_GRADE="hard";');assert.equal(f('substantially').pct,17,'situational grade still applies to the base');
+ assert.equal(JSON.parse(run('JSON.stringify(familiarityPct(null,"broadly"))')).pct,17,'no styles: base STR+DEX');
+});
+test('C5-M22 surprise: initiative -10, no Attack, cleared by New Round (Core p.105)',()=>{
+ run('S=freshState();effectiveChars=()=>({STR:12,DEX:14,CON:10,SIZ:12,INT:12,POW:10,CHA:10});armourPenaltyToInit=()=>0;fatigueRow=()=>({init:0});');
+ const before=run('playInitiativeBonusNow().total');run('APP.playSetSurprised(true)');
+ assert.equal(run('playInitiativeBonusNow().total'),before-10);
+ run('var __r=Math.random;Math.random=()=>0.45;APP.playRollInitiative();Math.random=__r;');assert.equal(run('S.play.initiative.total'),5+before-10);
+ run('APP.playNewRound()');assert.equal(run('S.play.surprised'),false);assert.equal(run('S.play.initiative.total'),5+before-10,'the rolled initiative keeps its penalty');
+ run('S.play.surprised="yes";normalizeState();');assert.equal(run('S.play.surprised'),false);
 });
 console.log('Combat case tests passed');

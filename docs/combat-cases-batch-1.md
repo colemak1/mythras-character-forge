@@ -260,7 +260,7 @@ How Play Mode combat works today: the player rolls their Combat Style or Evade, 
 | Cases | Status | Notes |
 |---|---|---|
 | ST01, ST02 | **Pass** | Styles list their weapons and traits; Play Mode shows which styles cover each carried weapon. |
-| ST03–ST08 | **GM-assisted** | Familiarity tiers: the player picks the grade; base STR+DEX fallback not offered automatically. |
+| ST03–ST08 | **Pass** (new) | A carried weapon outside your Combat Styles shows a familiarity choice (similar, broadly similar, reasonably different, used with a trained weapon, substantially different). The app applies the grade steps and never goes below STR+DEX (test). |
 | ST09–ST12 | **GM-assisted** | Two-weapon Size rule, unarmed body parts, trait effects, group traits. |
 | R01 | **Pass** | AP formula (test). Fatigue AP penalty also applied. |
 | R02, R04, R07–R12, R14 | **Guidance / GM-assisted** | Cycle and turn order are run at the table. |
@@ -276,9 +276,10 @@ How Play Mode combat works today: the player rolls their Combat Style or Evade, 
 | P18 | **GM-assisted** | Creature location tables (subsystem 7). |
 | P19, P20, E03, E04 | **Guidance** | Order of effects before damage is described in the effect text. |
 | E01, E02, E05–E08 | **Pass** | Effects won, attack/defence eligibility, critical- and fumble-only requirements, stacking, never more than won (tests). |
-| SE01–SE43 | **Pass** for eligibility data; **GM-assisted** for outcomes | All 43 match the p.100 table exactly (test). Weapon-type requirements are shown as badges but not enforced, because a roll isn't tied to a specific weapon. The effects themselves (knockback, bleeding, disarm…) are resolved at the table. Naming: the app says "Weapon Malfunction (Firearms)"; the book says "Weapon Malfunction". |
+| SE01–SE43 | **Pass** for eligibility; **GM-assisted** for outcomes | All 43 match the p.100 table exactly (test). Combat rolls now record the weapon used (weapon-card roll buttons, or a "Weapon used" choice on the roll), and weapon-specific effects are filtered: Bash, Bleed, Entangle, Impale, Stun Location and Sunder by each weapon's listed effects; ranged, unarmed and Small-weapon effects by weapon type (test). With no weapon recorded, all effects stay available. The effects themselves are resolved at the table. Naming: the app says "Weapon Malfunction (Firearms)"; the book says "Weapon Malfunction". |
 | M01 | **Pass** | Fatigue and encumbrance take the harsher grade rather than stacking; other situational grades are picked by the player. |
-| M02–M22, M24–M32 | **GM-assisted** | Situational modifiers, charges, cover, mounted, grapple details, reach rules: the player picks the grade at the table. |
+| M22 | **Pass** (new) | Surprised toggle: initiative −10, Attack disabled, reminder of the other effects, cleared by New Round (test). |
+| M02–M21, M24–M32 | **GM-assisted** | Situational modifiers, charges, cover, mounted, grapple details, reach rules: the player picks the grade at the table. |
 | M23 | **Pass** (new) | Play Mode always shows "Unarmed (human): 1d3 + Damage Modifier, Size S, Reach T". |
 | G01–G16 | **Guidance / GM-assisted** | Ranged weapon cards show Range, Force, Load and Impale Size; reload buttons spend each weapon's listed Load. Distance and ranged modifiers are picked as grades. |
 | W01, W02, W07 | **Pass** | Damage entry subtracts location armour and floors at 0; each Serious or Major hit logs its own Endurance check (test). Damage Modifier, magic and parry are applied before entry (parry calculator). |
@@ -288,10 +289,6 @@ How Play Mode combat works today: the player rolls their Combat Style or Evade, 
 | W20 | **GM-assisted** | Over-100 Endurance in wound tests. |
 | W21 | **GM-assisted** | Rabble and Underlings are NPC rules (subsystem 7). |
 
-### Possible next fixes, best value first
+### Follow-up fixes
 
-1. Tie a combat roll to the weapon used, so weapon-type Special Effects (Bleed, Impale, Bash, Stun Location, Sunder, unarmed and ranged effects) can be filtered automatically.
-2. Offer the base STR+DEX Combat Style when using an unfamiliar weapon (ST03, ST08).
-3. A surprise toggle: −10 initiative, no defence until your turn (M22).
-
-All three are optional. The core numbers players rely on are covered and tested.
+The owner approved all three (2026-11-06) and they're done: weapon-linked Special Effect filtering, unfamiliar-weapon tiers with the STR+DEX floor, and the Surprised toggle.
