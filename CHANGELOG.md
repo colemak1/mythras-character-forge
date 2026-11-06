@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode redesign, batch 1: the new layout
+
+- **Play Mode has a new, cleaner layout.** A slim header, then a vitals bar that's always visible: Health (your worst wound), Action Points, Initiative, Magic Points, Luck and Fatigue.
+- **Tabs:** Skills (the default), Combat, Body, Gear, Magic (only if the character has magic) and Notes. On a phone the tabs sit at the bottom of the screen like an app.
+- **Desktop has three columns:** characteristics on the left, the open tab in the middle, and your rolls on the right, so a result appears beside the thing you rolled.
+- Nothing scrolls sideways any more, on desktop or phone. The roll rules are folded under "How results work".
+- Every rule, calculation and saved field is unchanged. Coming next: a roll panel using the physics dice from Practice Combat (batch 2), then combat flow (batch 3).
+
 ## Security: GM notes hidden from players; campaign assignment checks
 
 - **GM session notes and the Combat Tracker are now GM-only.** They used to be stored on the campaign record, which every player in the campaign can read, so a player could see your notes and NPC stats with their browser's developer tools. They now live in a separate table only the GM can read.

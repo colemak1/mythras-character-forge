@@ -323,7 +323,7 @@ function freshState(){return {
  // start at null, meaning "at max" — they're only written once the player
  // actually spends/takes damage, so a freshly-finished character always
  // shows full without needing an extra initialization step.
- play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null,initiative:null,surprised:false},
+ play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"skills",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null,initiative:null,surprised:false},
  // Experience Rolls (core rulebook pp.71-73, cross-checked against the
  // Mythras Core pp.71–72, checked against the uploaded rulebook — see audit for
  // citations). pool = banked, unspent Experience Rolls. fumbled = skill
@@ -435,7 +435,7 @@ function normalizeState(){
     S.money.eventAdjustment=-S.money.spent;
     S.money.spent=0;
   }
-  S.play=S.play||{hp:{},luck:null,magic:null,apUsed:0,tab:"actions",fatigue:"Fresh",selectedLoc:null};
+  S.play=S.play||{hp:{},luck:null,magic:null,apUsed:0,tab:"skills",fatigue:"Fresh",selectedLoc:null};
   S.play.hp=S.play.hp||{};
   if(!S.play.hpMaxOverride||typeof S.play.hpMaxOverride!=="object"||Array.isArray(S.play.hpMaxOverride))S.play.hpMaxOverride={};
   if(!Array.isArray(S.play.woundEvents))S.play.woundEvents=[];
@@ -451,7 +451,7 @@ function normalizeState(){
   const tc=S.play.theismCasting;
   if(tc && (!Number.isInteger(tc.index)||tc.index<0||!Number.isInteger(tc.completed)||!Number.isInteger(tc.total)||tc.completed<1||tc.total<2||tc.completed>=tc.total||typeof tc.signature!=="string"))S.play.theismCasting=null;
   if(typeof S.play.apUsed!=="number")S.play.apUsed=0;
-  if(!S.play.tab)S.play.tab="actions";
+  if(!S.play.tab)S.play.tab="skills";
   if(!FATIGUE_MAP[S.play.fatigue])S.play.fatigue="Fresh";
   if(!Number.isFinite(S.play.apUsed)||S.play.apUsed<0)S.play.apUsed=0;
   if(!Number.isFinite(S.play.luck)||S.play.luck<0)S.play.luck=null;

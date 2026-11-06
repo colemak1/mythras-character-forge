@@ -1,0 +1,137 @@
+/* Play Mode, "Clean" style (UX batch 1). Loaded after styles.css. All colour
+   and type choices are tokens on body.pm-style-clean, so another style for
+   the planned player style picker only needs its own token block.
+   Layout: header, fixed vitals bar, then characteristics | tabbed panel |
+   rolls; one column with a bottom tab bar on phones. */
+body.play-mode.pm-style-clean{
+  --pmx-bg:#eef0f2; --pmx-surface:#ffffff; --pmx-sunk:#f5f6f8; --pmx-ink:#1d232b; --pmx-muted:#5d6672;
+  --pmx-line:#d9dde3; --pmx-accent:#9c1f1f; --pmx-accent-hover:#7f1818; --pmx-accent-ink:#ffffff;
+  --pmx-ok:#2f6b47; --pmx-warn:#9a6110; --pmx-bad:#a32020; --pmx-focus:#1f5fbf;
+  --pmx-ui:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --pmx-display:"Spectral",Georgia,serif; --pmx-num:"Archivo",system-ui,sans-serif;
+  /* Remap the original Play Mode tokens so every existing panel follows. */
+  --pm-bg:var(--pmx-bg); --pm-panel:var(--pmx-surface); --pm-panel2:var(--pmx-sunk);
+  --pm-line:var(--pmx-line); --pm-line-soft:var(--pmx-line); --pm-text:var(--pmx-ink); --pm-dim:var(--pmx-muted);
+  --pm-accent:var(--pmx-accent); --pm-accent-hi:var(--pmx-accent-hover);
+  --pm-good:var(--pmx-ok); --pm-warn:var(--pmx-warn); --pm-bad:var(--pmx-bad); --pm-minor:var(--pmx-warn);
+  --pm-r-sm:6px; --pm-r-md:10px; --pm-shadow-sm:none; --pm-shadow-md:0 8px 24px rgba(20,28,38,.12);
+  --serif:var(--pmx-ui); --sans:var(--pmx-ui); --mono:var(--pmx-num);
+  background:var(--pmx-bg); color:var(--pmx-ink);
+}
+body.play-mode.pm-style-clean .app{background:var(--pmx-bg)}
+.pmx{max-width:1440px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));font-family:var(--pmx-ui);font-size:15px;line-height:1.45;color:var(--pmx-ink);overflow-wrap:anywhere}
+.pmx *,.pmx *::before,.pmx *::after{box-sizing:border-box}
+
+/* Quiet the old ornaments inside the new frame. */
+.pmx .pm-box{background:var(--pmx-surface);background-image:none;border:1px solid var(--pmx-line);border-radius:10px;padding:16px;margin:0 0 14px;box-shadow:none}
+.pmx .pm-box::before{content:none}
+.pmx .pm-sect-head{position:static;display:block;background:none;color:var(--pmx-muted);padding:0;margin:0 0 10px;font:700 12px/1.2 var(--pmx-ui);letter-spacing:.06em;text-transform:uppercase}
+.pmx .pm-sect-head.bar{background:none;color:var(--pmx-muted);padding:0}
+.pmx .pm-box h3,.pmx h3{font:700 13px/1.2 var(--pmx-ui);letter-spacing:.05em;text-transform:uppercase;color:var(--pmx-muted);margin:0 0 12px;padding:0;border:0}
+.pmx .pm-btn{font:600 13px/1 var(--pmx-ui);letter-spacing:0;text-transform:none;padding:8px 12px;border-radius:6px;border:1px solid var(--pmx-line);background:var(--pmx-surface);color:var(--pmx-ink)}
+.pmx .pm-btn.sm{padding:5px 9px;font-size:12px}
+.pmx .pm-btn:hover:not(:disabled){border-color:var(--pmx-accent);color:var(--pmx-accent)}
+.pmx .pm-btn.roll{background:transparent;border-color:var(--pmx-line);color:var(--pmx-accent);font-weight:700}
+.pmx .pm-btn.roll:hover{background:var(--pmx-accent);border-color:var(--pmx-accent);color:var(--pmx-accent-ink)}
+.pmx .pm-btn.pmx-pri,.pmx .pm-newround{background:var(--pmx-accent);border-color:var(--pmx-accent);color:var(--pmx-accent-ink)}
+.pmx .pm-btn.pmx-pri:hover{background:var(--pmx-accent-hover);color:var(--pmx-accent-ink)}
+.pmx button:focus-visible,.pmx select:focus-visible,.pmx input:focus-visible,.pmx summary:focus-visible{outline:2px solid var(--pmx-focus);outline-offset:2px}
+.pmx .pm-empty{font-style:normal;color:var(--pmx-muted);font-size:13px}
+.pmx .pm-notes{font-size:14px;color:var(--pmx-ink)}
+.pmx select,.pmx input[type=text],.pmx input[type=number]{max-width:100%;font:inherit;font-size:14px;border:1px solid var(--pmx-line);border-radius:6px;padding:5px 8px;background:var(--pmx-surface);color:var(--pmx-ink)}
+.pmx .pm-wpn select{width:100%}
+.pmx .pm-tablewrap{overflow-x:auto}
+
+/* Header */
+.pmx-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+.pmx-id{min-width:0}
+.pmx-back{border:0;background:none;color:var(--pmx-muted);font:600 13px var(--pmx-ui);padding:4px 0;cursor:pointer}
+.pmx-back:hover{color:var(--pmx-accent)}
+.pmx-name{font:700 clamp(1.6rem,3.4vw,2.3rem)/1.1 var(--pmx-display);margin:2px 0 4px;text-wrap:balance}
+.pmx-sub{margin:0;color:var(--pmx-muted);font-size:14px}
+.pmx-headbtns{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Vitals bar */
+.pmx-vitals{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:1.4fr repeat(5,1fr);background:var(--pmx-surface);border:1px solid var(--pmx-line);border-radius:10px;margin-bottom:14px;overflow:hidden}
+.pmx-v{display:flex;flex-direction:column;gap:4px;padding:10px 14px;border:0;border-right:1px solid var(--pmx-line);background:none;text-align:left;font:inherit;color:inherit;min-width:0}
+.pmx-v:last-child{border-right:0}
+.pmx-v .k{font:700 11px/1 var(--pmx-ui);letter-spacing:.07em;text-transform:uppercase;color:var(--pmx-muted)}
+.pmx-v .val{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font:700 18px/1.15 var(--pmx-num);font-variant-numeric:tabular-nums}
+.pmx-v .val small{font-size:12px;font-weight:600;color:var(--pmx-muted)}
+.pmx-v-wound{cursor:pointer}
+.pmx-v-wound .val{font-size:15px}
+.pmx-v-wound.minor .val{color:var(--pmx-warn)}.pmx-v-wound.serious .val,.pmx-v-wound.major .val{color:var(--pmx-bad)}
+.pmx-v.warn .val{color:var(--pmx-warn)}
+.pmx-v .adj{display:inline-flex;gap:3px}
+.pmx-v .adj button,.pmx-mini{border:1px solid var(--pmx-line);background:var(--pmx-sunk);color:var(--pmx-ink);border-radius:5px;font:600 12px/1 var(--pmx-ui);padding:4px 7px;cursor:pointer}
+.pmx-mini:hover,.pmx-v .adj button:hover{border-color:var(--pmx-accent);color:var(--pmx-accent)}
+.pmx-dim{color:var(--pmx-muted);font-weight:600}
+.pmx .pm-pips{display:inline-flex;gap:5px;flex-wrap:wrap}
+.pmx .pm-pip{width:16px;height:16px;border-radius:50%;background:var(--pmx-accent);border:2px solid var(--pmx-accent);padding:0;cursor:pointer}
+.pmx .pm-pip.off{background:transparent;border-color:var(--pmx-line)}
+
+/* Three columns */
+.pmx-grid{display:grid;grid-template-columns:220px minmax(0,1fr) 340px;gap:14px;align-items:start}
+.pmx-left,.pmx-main,.pmx-right{min-width:0}
+.pmx-right{position:sticky;top:84px}
+.pmx-chargrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pmx-chargrid div{display:flex;justify-content:space-between;align-items:baseline;padding:7px 10px;border-radius:6px;background:var(--pmx-sunk)}
+.pmx-chargrid span{font:700 12px var(--pmx-ui);letter-spacing:.05em;color:var(--pmx-muted)}
+.pmx-chargrid b{font:700 18px var(--pmx-num);font-variant-numeric:tabular-nums}
+.pmx-attrs{margin:12px 0 0;display:grid;gap:6px}
+.pmx-attrs div{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.pmx-attrs dt{color:var(--pmx-muted)}.pmx-attrs dd{margin:0;font-weight:700}
+
+/* Tabs */
+.pmx-tabs{display:flex;gap:4px;border-bottom:1px solid var(--pmx-line);margin-bottom:14px;overflow-x:auto}
+.pmx-tab{border:0;background:none;padding:10px 14px;font:600 14px var(--pmx-ui);color:var(--pmx-muted);border-bottom:3px solid transparent;margin-bottom:-1px;cursor:pointer;white-space:nowrap}
+.pmx-tab:hover{color:var(--pmx-ink)}
+.pmx-tab.on{color:var(--pmx-ink);border-bottom-color:var(--pmx-accent)}
+
+/* Skills */
+.pmx .pm-skillgroup h4{font:700 12px/1 var(--pmx-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--pmx-muted);margin:14px 0 6px}
+.pmx .pm-skillrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--pmx-line)}
+.pmx .pm-skillrow .nm{font-weight:600}
+.pmx .pm-skillrow .base{font-size:11px;color:var(--pmx-muted);letter-spacing:.03em}
+.pmx .pm-skillrow .lead{flex:1;border:0}
+.pmx .pm-skillrow .pctval{font:700 17px var(--pmx-num);font-variant-numeric:tabular-nums;min-width:2.5ch;text-align:right;cursor:pointer}
+
+/* The legacy section bar becomes a plain heading; the ghost number goes */
+.pmx .pm-skillsbox>.pm-sect-head{background:none;box-shadow:none;border:0;padding:0;margin:0 0 4px;color:var(--pmx-ink);font:700 13px var(--pmx-ui);letter-spacing:.06em;text-transform:uppercase}
+.pmx .pm-skillsbox>.pm-sect-head .no,.pmx .pm-ghost{display:none}
+.pmx .pm-skillrow.cbt .nm{font:700 15px var(--pmx-ui);text-transform:none;letter-spacing:0}
+.pmx .pm-skillrow.cbt .pctval{font-size:17px}
+.pmx .pm-btn.roll{background:var(--pmx-sunk);border:1px solid var(--pmx-line);color:var(--pmx-ink);border-radius:6px;font:600 13px var(--pmx-ui);padding:5px 12px}
+.pmx .pm-btn.roll:hover{border-color:var(--pmx-accent);color:var(--pmx-accent)}
+
+/* Rolls */
+.pmx-rollhelp{font-size:13px;color:var(--pmx-muted);margin:0 0 8px}
+.pmx-rollhelp summary{cursor:pointer}
+.pmx-rolls .pm-rolllog{max-height:calc(100vh - 220px);overflow-y:auto}
+
+/* Phone and small tablets */
+@media (max-width:1100px){
+  .pmx-grid{grid-template-columns:minmax(0,1fr) 320px}
+  .pmx-left{grid-column:1/-1}
+  .pmx-chargrid{grid-template-columns:repeat(7,1fr)}
+  .pmx-chargrid div{flex-direction:column;align-items:center;gap:2px}
+  .pmx-attrs{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+}
+@media (max-width:760px){
+  .pmx{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+  .pmx-vitals{grid-template-columns:repeat(3,1fr)}
+  .pmx-v{border-bottom:1px solid var(--pmx-line);padding:8px 10px}
+  .pmx-v:nth-child(3n){border-right:0}
+  .pmx-v .val{font-size:16px}
+  .pmx-grid{grid-template-columns:minmax(0,1fr)}
+  .pmx-right{position:static;order:-1}
+  .pmx-rolls .pm-rolllog{max-height:38vh}
+  .pmx-chargrid{grid-template-columns:repeat(7,1fr);gap:4px}
+  .pmx-chargrid div{padding:5px 2px}
+  .pmx-chargrid span{font-size:10px}.pmx-chargrid b{font-size:16px}
+  .pmx-attrs{grid-template-columns:1fr 1fr;column-gap:16px;font-size:13px}
+  .pmx-tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;margin:0;background:var(--pmx-surface);border-top:1px solid var(--pmx-line);border-bottom:0;justify-content:space-around;padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+  .pmx-tab{flex:1;padding:14px 4px;border-bottom:0;border-top:3px solid transparent;font-size:13px}
+  .pmx-tab.on{border-top-color:var(--pmx-accent);border-bottom-color:transparent}
+}
+@media (prefers-reduced-motion:reduce){.pmx *{transition:none!important;animation:none!important}}

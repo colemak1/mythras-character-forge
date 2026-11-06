@@ -1037,79 +1037,21 @@ function gmGiveItemFormHtml(){
    +(GIFT_MSG?'<p role="status">'+esc(GIFT_MSG)+'</p>':'')+'</details>';
 }
 let GIFT_MSG="";
-function renderPlayView(){
-  document.body.classList.remove("menu-mode","sheet-mode");
-  document.body.classList.add("play-mode");
-  document.body.classList.toggle("view-only",VIEW_ONLY);
-  document.title=(S.concept.name?S.concept.name+" — ":"")+"Play Mode";
-  if(!VIEW_ONLY){rememberGifts(S);if(cloudActive())startGiftPoll();}
-  if(!charsReady()){
-    $("#main").innerHTML='<div class="pm-wrap"><p><button class="pm-btn" onclick="APP.backFromPlay()">&#8592; Edit Character</button></p>'
-     +'<p class="pm-empty" style="margin-top:14px">Finish Characteristics first &mdash; Play Mode needs those numbers to work from.</p></div>';
-    return;
-  }
-  const c=effectiveChars();
-  const name=S.concept.name||"Unnamed Character";
-  const careerName=S.customCareer.isCustom?S.customCareer.name:S.career;
-  const initPenalty=armourPenaltyToInit();
-  const tab=S.play.tab||"actions";
-
-  let h='<div class="pm-wrap">';
-
-  // ---- literal masthead, ported from playmode-restyle-D.html: a slim
-  // utility bar for the real nav/action buttons (D has no equivalent —
-  // these are genuinely necessary live controls, so they're kept as a
-  // plain bar above the masthead rather than crammed into it), then the
-  // black barcode-tick top rule, the split solid/outline name, and a
-  // dateline row. D's dateline is a fabricated "No. 042 · Season of Fire ·
-  // Round 3" — there's no live equivalent for an edition number or combat
-  // round, so that's replaced with the character's real culture/career/
-  // archetype line instead of inventing session/round data.
-  const backLabel=(VIEW_ONLY||PLAY_RETURN_VIEW==="board")?"&#8592; Back to Party Board":"&#8592; Edit Character";
-  h+='<div class="pm-utilbar"><button class="pm-btn" onclick="APP.backFromPlay()">'+backLabel+'</button>'
-   +(VIEW_ONLY?"":'<button class="pm-btn" onclick="APP.toSheet(\'play\')" title="View / print the full character sheet">Print Sheet</button>')
-   +(VIEW_ONLY?"":'<button class="pm-btn" onclick="APP.openXP()" title="Experience Rolls — improve skills between sessions">Improve Skills'
-     +(S.xp.pool?' <span class="pm-xpbadge">'+S.xp.pool+'</span>':'')+'</button>')
-   +'</div>';
-  if(VIEW_ONLY){
-    h+='<div class="pm-viewonly-banner">Viewing '+esc(VIEW_ONLY_OWNER_NAME||"a teammate")+'&rsquo;s character &mdash; read-only'
-     +(VIEW_ONLY_IS_DM?', except Inventory (as DM you can edit loot/gear here).':'. Only they can change it.')+'</div>';
-  }
-  const nameParts=name.trim().split(/\s+/);
-  const firstName=nameParts.length>1?nameParts.slice(0,-1).join(" "):nameParts[0];
-  const surname=nameParts.length>1?nameParts[nameParts.length-1]:"";
-  // barcode+brand (left) · campaign name in place of D's fabricated "No.
-  // 042" issue number, falling back to "Unaffiliated" when the character
-  // isn't linked to one (or the lookup hasn't resolved yet -- see
-  // pmCampaignLabel above) · "SEASON OF FIRE · ROUND 3" stays as fixed
-  // flavour copy, same reasoning as before (no live season/round to report).
-  const campLabel=pmCampaignLabel();
-  h+='<div class="pm-mast">';
-  h+='<div class="pm-mast-top"><span><span class="pm-barcode"></span>MYTHRAS CHARACTER FORGE</span>'
-   +'<span><span class="red">'+esc(campLabel||"Unaffiliated")+'</span> &middot; PLAY MODE</span></div>';
-  h+='<h1 class="pm-mast-name">'+esc(firstName)+(surname?' <span class="outline">'+esc(surname)+'</span>':'')+'</h1>';
-  // dateline: left = bold epithet chain (culture/career/archetype) with red
-  // "/" separators, matching D's "Barbarian/Hunter/Wolf-Brother..." line;
-  // right = a real derived STANDING readout instead of D's fixed "WOUNDED —
-  // L.LEG · ACTION PHASE" (ACTION PHASE is dropped — no round/phase state
-  // to report).
-  const epithetParts=[S.culture,careerName,S.archetype!=="ordinary"?ARCHETYPES[S.archetype].label:null].filter(Boolean);
-  h+='<div class="pm-dateline"><span>'+(epithetParts.length?epithetParts.map(e=>esc(e).toUpperCase()).join('<span class="sep">/</span>'):"UNAFFILIATED")+'</span>'
-   +'<span class="right">'+pmStandingText()+'</span></div>';
-  h+='</div>';
-
-  h+=pmTicker();
-
-  // ---- literal 4-column sheet grid from D: 01 rail (characteristics) ·
-  // 02 vitals · 03 skills · 04 combat/actions/log.
-  h+='<div class="pm-columns">';
-
-  h+='<div class="pm-col pm-col-rail">'+pmCharacteristicRail()+'</div>';
-  h+='<div class="pm-col pm-col-vitals">'+pmVitalsCard()+'</div>';
-
-  const styles=stylesList().map(s=>{const base=finalPct(s.key);const g=gradedPct(s.key,base);return {name:s.name,pct:g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%"};});
-
-  // -- col 3: one continuous scrollable skills list, ghost "03" behind the head --
+// ---- Play Mode frame (UX batch 1, owner-approved 2026-11-06) ----
+// Header, a fixed vitals bar, and three columns: characteristics, a tabbed
+// workspace, and the rolls panel. Every panel below reuses the existing
+// builders unchanged; only the arrangement is new. The look is a swappable
+// style (data-pm-style) so a player style picker can be added later.
+const PM_TABS=[["skills","Skills"],["combat","Combat"],["body","Body"],["gear","Gear"],["magic","Magic"],["notes","Notes"]];
+function pmActiveTab(){
+  const legacy={actions:"skills",effects:"combat",inventory:"gear",features:"notes"};
+  let k=legacy[S.play.tab]||S.play.tab;
+  if(!PM_TABS.some(t=>t[0]===k))k="skills";
+  if(k==="magic"&&!allMagic().length)k="skills";
+  return k;
+}
+function pmSkillsPanelHTML(){
+  let h='';
   const es=allEntries();
   const grp=g=>es.filter(e=>e.grp===g).sort((a,b)=>a.label.localeCompare(b.label));
   const skrow=e=>{
@@ -1148,7 +1090,7 @@ function renderPlayView(){
      +(fluency?'<span class="pctval" title="Spoken fluency">'+pctTxt+'</span>':'<span class="pctval" onclick="APP.toggleGradePop(\''+jsq(e.key)+'\',\''+jsq(e.label)+'\',event)" title="Click for Difficulty Grades">'+pctTxt+'</span>'
      +'<button class="pm-btn roll" onclick="APP.roll(\''+jsq(e.key)+'\')">roll</button>')+'</div>';
   };
-  h+='<div class="pm-col pm-col-skills"><div class="pm-box pm-skillsbox" style="height:100%">'
+  h+='<div class="pm-box pm-skillsbox">'
    +'<div class="pm-sect-head" title="Difficulty Grade adjusts rolled skill percentages — the GM calls a harder or easier Grade for the situation, not a fixed penalty per attempt. Very Easy x2 · Easy x1.5 · Standard x1 · Hard x2/3 · Formidable x1/2 · Herculean x1/10 · Automatic/Hopeless skip the roll entirely."><span class="no">03</span> SKILLS'+(ACTIVE_GRADE!=="standard"?' <span class="pm-gradenote">('+GRADE_LABEL[ACTIVE_GRADE]+')</span>':"")+'</div>'
    +'<div class="pm-ghost">03</div>';
   h+='<div class="pm-skillgroup"><h4>Standard</h4>'+grp("Standard").map(skrow).join("")+'</div>';
@@ -1164,18 +1106,13 @@ function renderPlayView(){
    +'<p><b>Task rounds.</b> The GM sets the duration of a round and any deadline. Track +50% for a critical, +25% for a success, 0% for a failure, or −25% for a fumble. An acceptable result takes 100%. Use the Core Item Quality and Enhancements tables for crafting outcomes.</p>'
    +'<p><b>Optional simplified modifiers.</b> The GM can use flat changes of +40, +20, 0, −20, −40 and −80 percentage points from Very Easy through Herculean. In a contest, the GM can round the shared reduction up to the next multiple of ten when the highest modified skill exceeds 100%. Apply either option manually if your table uses it.</p>'
    +'<p>Use the calculator for a single roll with GM-approved percentages. Augmentation rounds to the nearest whole percent, following the 33% example on p.50. For contests, resolve shared over-100 adjustments separately. The calculator does not change your character or roll log.</p></details>';
-  h+='</div></div>';
+  h+='</div>';
 
-  // -- col 4: 04 Combat (weapons + fatigue), tabbed section, press log --
-  h+='<div class="pm-col pm-col-right">';
-  h+=pmCombatSection();
-
-  const tabs=[["actions","Actions"],["effects","Special Effects"]]
-   .concat(allMagic().length?[["magic","Magic"]]:[])
-   .concat([["inventory","Inventory"],["features","Features"],["notes","Notes"]]);
-  h+='<div class="pm-box" id="pm-actions" style="padding:0;overflow:hidden"><div class="pm-tabs" style="padding:0 14px;margin-top:2px">'+tabs.map(([k,l])=>'<button class="pm-tabbtn '+(tab===k?"on":"")+'" onclick="APP.playTab(\''+k+'\')">'+l+'</button>').join("")+'</div>';
-  h+='<div class="pm-tabpanel" style="border:none;border-radius:0">';
-  if(tab==="actions"){
+  return h;
+}
+function pmActionsPanelHTML(){
+  const styles=stylesList().map(s=>{const base=finalPct(s.key);const g=gradedPct(s.key,base);return {name:s.name,pct:g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%"};});
+  let h='<div class="pm-box pmx-actions"><h3>Turn and actions</h3>';
     // Weapon-by-weapon hit/damage now lives permanently in the 04 Combat
     // section (col 4 top), matching D's own division of "the numbers" vs
     // "the actions" into separate blocks. This tab carries the real,
@@ -1247,7 +1184,11 @@ function renderPlayView(){
       h+='<div class="pm-atk-styles" style="margin-top:12px">'+styleEntries.map(s=>{const base=finalPct(s.key);const g=gradedPct(s.key,base);const pct=g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%";
         return '<span class="pm-stylechip">'+esc(s.name)+' <b onclick="APP.toggleGradePop(\''+jsq(s.key)+'\',\''+jsq(s.name)+'\',event)" title="Click for Difficulty Grades">'+pct+'</b> <button class="pm-btn roll" onclick="APP.roll(\''+jsq(s.key)+'\')">roll</button></span>';}).join("")+'</div>';
     }
-  }else if(tab==="inventory"){
+  h+='</div>';
+  return h;
+}
+function pmGearPanelHTML(){
+  let h='<div class="pm-box">';
     h+='<div class="pm-tablewrap"><table class="pm-atktable"><tr><th>Location</th><th>Armour</th><th>AP</th></tr>'
      +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(armorDisplayName(l))+'</td><td>'+armorApAt(l)+'</td></tr>').join("")+'</table></div>';
     h+='<p class="pm-invmeta">Gear ENC '+gearEncTotal()+' / '+(encLimit()??"—")+' unencumbered'+(S.money.dice.length?(' &middot; '+moneyRemaining()+' / '+moneyTotal()+' sp'):"")+'</p>';
@@ -1269,39 +1210,106 @@ function renderPlayView(){
         +'<td><button class="chip" aria-label="remove item" onclick="APP.playInvDel('+i+')">&times;</button></td></tr>').join("")
        +'</table></div><p style="margin-top:8px"><button class="chip" onclick="APP.playInvAdd()">+ add item</button></p>';
     }
-  }else if(tab==="features"){
+  h+='</div>';
+  return h;
+}
+function pmNotesPanelHTML(){
+  let h='<div class="pm-box"><h3>Styles and passions</h3>';
     h+=combatStylesReadOnlyHTML();
     h+=S.passions.length?'<div class="pm-invlist">'+S.passions.map(p=>'<div class="pm-invrow"><span>'+esc(p.name||"(unnamed)")+'</span><span class="pctval">'+passionVal(p)+'%</span></div>').join("")+'</div>':'<p class="pm-empty">No passions recorded.</p>';
-  }else if(tab==="effects"){
-    h+=specialEffectsPanel();
-  }else if(tab==="magic"){
-    h+=magicPanel();
-  }else{
+  h+='</div><div class="pm-box"><h3>Notes</h3>';
     h+=S.concept.notes?('<p class="pm-notes">'+esc(S.concept.notes).replace(/\n/g,"<br>")+'</p>'):'<p class="pm-empty">No background notes yet.</p>';
-  }
-  h+='</div></div>';
-
-  h+='<div class="pm-box pm-rolllog-wrap"><div class="pm-sect-head"><span class="no">05</span> PRESS LOG &mdash; D100</div>'
+  h+='</div>';
+  return h;
+}
+function pmRollsPanelHTML(){
+  let h='';
+  h+='<div class="pm-box pm-rolllog-wrap pmx-rolls"><h3>Rolls</h3>'
    +(PM_MSG?'<p class="warn" style="margin-bottom:7px">'+esc(PM_MSG)+'</p>':'')
-   +'<p class="pm-empty" style="margin-bottom:7px">Critical &le; 1/10 skill (round up) &middot; 01&ndash;05 auto success &middot; 96&ndash;00 auto failure &middot; Fumble 99&ndash;00 (00 only if skill&gt;100). A combat Fumble isn&#39;t just a miss &mdash; it can hand your opponent free Special Effects.</p>'
+   +'<details class="pmx-rollhelp"><summary>How results work</summary><p>Critical &le; 1/10 skill (round up) &middot; 01&ndash;05 auto success &middot; 96&ndash;00 auto failure &middot; Fumble 99&ndash;00 (00 only if skill&gt;100). A combat Fumble isn&#39;t just a miss &mdash; it can hand your opponent free Special Effects.</p></details>'
    +'<div class="pm-rolllog">'
    +(S.rollLog.length?S.rollLog.map((r,i)=>playRollLogRow(r,i)).join(""):'<span class="pm-empty">No rolls yet — click "roll" beside any skill.</span>')
    +'</div></div>';
-  h+='</div>'; // /pm-col-right
-
-  h+='</div>'; // /pm-columns
-
-  // ---- literal colophon footer, ported verbatim from D (no black bar in
-  // the mockup's own CSS — small-caps mono footer text only). Right side
-  // swaps D's fabricated "Specimen Sheet · Rev. D" for the real character
-  // name, since there's no live equivalent for a printer's revision code.
-  h+='<footer class="pm-colophon"><span>Set in Archivo &amp; Space Mono</span><span>Mythras Character Forge &middot; Play Mode &middot; '+esc(name)+'</span></footer>';
-
+  return h;
+}
+function pmCharsCompactHTML(){
+  const c=effectiveChars(),order=["STR","CON","SIZ","DEX","INT","POW","CHA"];
+  const mv=moveRate(),ib=playInitiativeBonusNow();
+  let h='<div class="pm-box pmx-chars"><h3>Characteristics</h3><div class="pmx-chargrid">'
+   +order.map(k=>'<div title="'+k+' ×5 = '+(c[k]*5)+'%"><span>'+k+'</span><b>'+c[k]+'</b></div>').join("")+'</div>';
+  h+='<dl class="pmx-attrs">'
+   +'<div><dt>Damage mod</dt><dd>'+esc(dmCalc(c.STR,c.SIZ))+'</dd></div>'
+   +'<div><dt>Initiative bonus</dt><dd>'+ib.total+'</dd></div>'
+   +'<div><dt>Move</dt><dd>'+mv.m+' m</dd></div>'
+   +'<div><dt>Healing rate</dt><dd>'+healRate(c.CON)+'</dd></div>'
+   +'<div><dt>Experience mod</dt><dd>'+(xpMod(c.CHA)>=0?"+":"")+xpMod(c.CHA)+'</dd></div>'
+   +'</dl></div>';
+  return h;
+}
+function pmVitalsBarHTML(){
+  const v=charVitals(),maxAP=v.maxAP,remainAP=maxAP-Math.min(S.play.apUsed,maxAP);
+  const worstTag={ok:"Unhurt",minor:"Minor wound",serious:"Serious wound",major:"Major wound"}[v.worst];
+  const ib=playInitiativeBonusNow(),ini=S.play.initiative;
+  const cell=(k,val,extra="")=>'<div class="pmx-v'+extra+'"><span class="k">'+k+'</span><span class="val">'+val+'</span></div>';
+  let h='<div class="pmx-vitals" role="group" aria-label="Vitals">';
+  h+='<button type="button" class="pmx-v pmx-v-wound '+v.worst+'" onclick="APP.playTab(\'body\')" title="Open the body view"><span class="k">Health</span><span class="val">'+worstTag
+   +(v.worstLoc&&v.worst!=="ok"?' <small>'+esc(v.worstLoc.loc)+'</small>':'')+'</span></button>';
+  h+=cell("Action points",'<span class="pm-pips">'+Array.from({length:maxAP},(_,i)=>'<button class="pm-pip'+(i<remainAP?"":" off")+'" aria-label="action point '+(i+1)+'" onclick="APP.playApSetPip('+i+')"></button>').join("")+'</span>'
+   +'<button type="button" class="pmx-mini" onclick="APP.playNewRound()" title="New combat round: restore all AP">New round</button>');
+  h+=cell("Initiative",ini?ini.total:('<span class="pmx-dim">+'+ib.total+'</span> <button type="button" class="pmx-mini" onclick="APP.playRollInitiative()">Roll</button>'));
+  h+=cell("Magic",v.curMagic+'<small>/'+v.maxMagic+'</small><span class="adj"><button onclick="APP.playMagicAdj(-1)" aria-label="spend magic point">&minus;</button><button onclick="APP.playMagicAdj(1)" aria-label="restore magic point">+</button></span>');
+  h+=cell("Luck",'<span class="pm-pips">'+Array.from({length:v.maxLuck},(_,i)=>'<button class="pm-pip'+(i<v.curLuck?"":" off")+'" aria-label="luck point '+(i+1)+'" onclick="APP.playLuckSetPip('+i+')"></button>').join("")+'</span>');
+  h+=cell("Fatigue",esc(v.fatigue),v.fatigue!=="Fresh"?" warn":"");
+  h+='</div>';
+  return h;
+}
+function renderPlayView(){
+  document.body.classList.remove("menu-mode","sheet-mode");
+  document.body.classList.add("play-mode","pm-style-clean");
+  document.body.classList.toggle("view-only",VIEW_ONLY);
+  document.title=(S.concept.name?S.concept.name+" — ":"")+"Play Mode";
+  if(!VIEW_ONLY){rememberGifts(S);if(cloudActive())startGiftPoll();}
+  if(!charsReady()){
+    $("#main").innerHTML='<div class="pm-wrap pmx"><p><button class="pm-btn" onclick="APP.backFromPlay()">&#8592; Edit Character</button></p>'
+     +'<p class="pm-empty" style="margin-top:14px">Finish Characteristics first &mdash; Play Mode needs those numbers to work from.</p></div>';
+    return;
+  }
+  const name=S.concept.name||"Unnamed Character";
+  const careerName=S.customCareer.isCustom?S.customCareer.name:S.career;
+  const tab=pmActiveTab();
+  const backLabel=(VIEW_ONLY||PLAY_RETURN_VIEW==="board")?"&#8592; Party Board":"&#8592; Edit character";
+  const sub=[S.culture,careerName,S.archetype!=="ordinary"?ARCHETYPES[S.archetype].label:null,pmCampaignLabel()].filter(Boolean).map(esc).join(" · ");
+  let h='<div class="pm-wrap pmx" data-pm-style="clean">';
+  h+='<header class="pmx-head"><div class="pmx-id"><button class="pmx-back" onclick="APP.backFromPlay()">'+backLabel+'</button>'
+   +'<h1 class="pmx-name">'+esc(name)+'</h1>'+(sub?'<p class="pmx-sub">'+sub+'</p>':'')+'</div>'
+   +'<div class="pmx-headbtns">'
+   +(VIEW_ONLY?"":'<button class="pm-btn" onclick="APP.toSheet(\'play\')">Sheet</button>')
+   +(VIEW_ONLY?"":'<button class="pm-btn pmx-pri" onclick="APP.openXP()">Improve skills'+(S.xp.pool?' <span class="pm-xpbadge">'+S.xp.pool+'</span>':'')+'</button>')
+   +'</div></header>';
+  if(VIEW_ONLY){
+    h+='<div class="pm-viewonly-banner">Viewing '+esc(VIEW_ONLY_OWNER_NAME||"a teammate")+'&rsquo;s character &mdash; read-only'
+     +(VIEW_ONLY_IS_DM?', except Inventory (as DM you can edit loot/gear here).':'. Only they can change it.')+'</div>';
+  }
+  h+=pmVitalsBarHTML();
+  h+='<div class="pmx-grid">';
+  h+='<aside class="pmx-left">'+pmCharsCompactHTML()+'</aside>';
+  h+='<main class="pmx-main"><nav class="pmx-tabs" aria-label="Play Mode sections">'
+   +PM_TABS.filter(([k])=>k!=="magic"||allMagic().length).map(([k,l])=>'<button type="button" class="pmx-tab'+(tab===k?" on":"")+'"'+(tab===k?' aria-current="page"':'')+' onclick="APP.playTab(\''+k+'\')">'+l+'</button>').join("")
+   +'</nav><div class="pmx-panel">';
+  if(tab==="skills")h+=pmSkillsPanelHTML();
+  else if(tab==="combat")h+=pmCombatSection()+pmActionsPanelHTML()+'<div class="pm-box pmx-fx" id="pm-actions"><h3>Special Effects</h3>'+specialEffectsPanel()+'</div>';
+  else if(tab==="body")h+=pmVitalsCard();
+  else if(tab==="gear")h+=pmGearPanelHTML();
+  else if(tab==="magic")h+='<div class="pm-box">'+magicPanel()+'</div>';
+  else h+=pmNotesPanelHTML();
+  h+='</div></main>';
+  h+='<aside class="pmx-right">'+pmRollsPanelHTML()+'</aside>';
+  h+='</div>';
   h+='</div>';
   if(XP_OPEN&&!VIEW_ONLY)h+=xpModalHtml();
   h+=giftPopupHtml();
   $("#main").innerHTML=h;
-  if(S.play.tab==="effects"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
+  if(tab==="combat"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
 }
 // ---- Improve Skills modal (Experience Rolls, core rulebook pp.71-73) ----
 let XP_LEARN_MSG="", XP_TRAIN_MSG="", XP_CHAR_MSG="";
