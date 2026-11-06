@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat follow-up live acceptance after PRs #121/#122 (2026-11-05, America/Los_Angeles)
+
+- One signed-in batch passed all six requested checks: initiative/surprise/reset, action groups, Club-linked Special Effects, unfamiliar-weapon penalty/floor, Unarmed combat tools and nonzero armour subtraction.
+- Club success at 35% blocked Bleed and allowed Stun Location. Dagger Broadly similar rolled at Hard 23% from 35%, and retained the 20% STR+DEX floor when using a 20% style. Chest armour AP 1 reduced 4 damage to 3 HP.
+- Restored temporary weapons/armour, HP, money, AP, initiative and surprise; retained roll evidence. Updated `docs/combat-cases-batch-1.md` and `HANDOFF.md`. All 19 local test files passed. No production code changed; Subsystem 5 stays open, progress 3/8.
+
+---
+
 ## Advancement cases mapped; unarmed damage display fixed
 
 - All 216 Advancement, hazards and recovery cases (ChatGPT, PR #124) now have an app status in `docs/advancement-cases-batch-1.md`. No incorrect calculations were found: Experience Rolls, improvement, characteristic training and permanent improvement, new Professional Skills, ageing, Fatigue and natural healing already match the book. Hazards, disease and traps stay GM-assisted.
