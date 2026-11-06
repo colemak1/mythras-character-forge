@@ -1,5 +1,7 @@
 # Combat closeout — one final owner-only fight, PR #154
 
+> **Follow-up resolved:** [PR #156 focused step-8 re-check](combat-pr156-step8-recheck-20261106.md) passes all four requested checks. Both End fight paths now restore AP, clear own Surprised/initiative and persist after reopening. The step-8 failure below is historical evidence from #154, not current live behaviour.
+
 **Date:** 2026-11-06 (America/Los_Angeles). Followed `combat-closeout-review.md` §3, steps 1–8, on one disposable character in one owner-only session. **Steps 1–7 PASS; step 8 FAIL. Subsystem 5 remains OPEN; progress 3/8.**
 
 ## Deployment and fixture
