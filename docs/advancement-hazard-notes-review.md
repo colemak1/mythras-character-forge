@@ -49,3 +49,13 @@ Suggested concise reference lines (paraphrases, **not quotations from Core**):
 - **Correct as written:** asphyxiation roll/Fatigue thresholds, blood-loss recovery one level/day, failed exertion/sleep checks causing Fatigue, and the basic Major-Wound treatment gate. Already-correct per-cause Fatigue recovery and Advance time controls should not be rewritten.
 - **Scope:** pp.81–85 include Passions, survival, traps, visibility and weather. These are inventoried in separate Subsystem 4 case groups and remain **GM-assisted**; they do not need to be inserted wholesale into the Body popup to satisfy the owner's specified topics.
 - **Audit status:** source/text review only, **not** a live UI test, automated test pass, or evidence of an incorrect numerical calculation. Subsystem 4 remains **OPEN**, and the eight-subsystem count remains **4/8**. The Core PDF and rendered pages remain outside GitHub.
+
+## Implementation (Claude, 2026-11-06)
+
+All "NEEDS TEXT" and optional rows (HN01, HN03–HN10, HN12–HN14) are implemented in `pmHazardsHTML()`. Claude re-checked the acid, fall, fire and exertion figures against rendered pp.68, 78 and 79. Two wording changes from the suggested text:
+
+- **Smaller creatures:** the SIZ adjustment is "SIZ 9 or less counts the fall as 1–10m shorter", because the book's scale starts at SIZ 8–9.
+- **Maiming:** the deadline says "Healing skill ÷ 20" without naming whose skill.
+
+Regression tests are in `tests/hazard-notes.cjs`. The panel stays reference-only; nothing is automated.
+

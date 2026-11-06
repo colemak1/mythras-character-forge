@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Hazards and recovery notes, checked against the rulebook
+
+- The Body → Hazards and recovery panel now covers **acid** (it was missing). It also has compact tables for **falls** and **fire**, plus the exact **exertion** check times and grades.
+- It's clearer about **disease and poison**: the specific listed cure stops new Conditions, not just any treatment. It gives **healing** intervals (day, week or month), the 1d3 strenuous-activity penalty, and when an untreated Major Wound becomes a permanent injury.
+- Everything stays a reference for the GM; nothing is applied automatically. Source check: `docs/advancement-hazard-notes-review.md` (PR #161).
+
 ## New site logo
 
 - The spear-and-ribbon logo now sits beside "New Sit'ota" in the site header (in ivory and red, to show on the dark bar). It's also the browser tab icon and the home-screen icon.
