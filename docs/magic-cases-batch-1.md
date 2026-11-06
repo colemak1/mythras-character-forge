@@ -19,12 +19,12 @@ ChatGPT also wrote 58 cases in PR #111 (`magic-subsystem-cases.md`, "batch 1" se
 | **Not implemented** | The case expects app behaviour that doesn't exist yet. |
 | **Decision** | Needs a ruling from the owner or ChatGPT before code changes. |
 
-Live evidence is still needed for every case marked Pass.
+“Pass” in the case tables describes implementation/automated coverage, not blanket live acceptance. The signed-in session below supplies live evidence for FM-009–011, the 0 MP block and the card display; catalogue acceptance remains open.
 
 ## Summary
 
 - Folk Magic casting costs, the 0 MP block, the single Folk Magic skill, and the 1 Turn / Intensity 1 / Magnitude 1 / range display pass, with tests in `tests/magic-folk-cases.cjs`.
-- **Folk Magic spell catalogue loaded** (D-1): all 70 Core spells with traits, descriptions and pages. Effects remain GM-resolved.
+- **Folk Magic spell catalogue implemented on main** (D-1, PR #116): all 70 Core spells with traits, descriptions and pages. **Live acceptance failed in the session below:** the builder still exposed the previous empty catalogue/manual-entry interface after reload. Effects remain GM-resolved.
 - Magic Points are a manual counter. There are no recovery sources, no committed MP for ongoing magic, and no optional exhaustion rules. The owner decided to keep recovery manual (D-2).
 - No active-spell tracking exists for Folk Magic: concentration, trigger, dismissal and duration (FM-015–017, FM-021, MG-039). The owner decided not to add it (D-3); Mysticism Talents keep their active state.
 
@@ -114,7 +114,7 @@ Live evidence is still needed for every case marked Pass.
 
 ### Individual Folk Magic spells
 
-**Catalogue loaded** (D-1): all 70 spells, with Core traits, descriptions and page numbers, come from `folk-magic-catalogue.json` and appear in the builder and in Play Mode (tests: `tests/magic-folk-catalogue.cjs`). Each spell's **name, traits, description and specialisation pass**. Spell **effects stay GM-assisted**: the app doesn't apply damage steps, durations or resistance automatically (D-3). The general casting cases above still apply to every spell.
+**Catalogue implemented on main** (D-1): all 70 spells, with Core traits, descriptions and page numbers, come from `folk-magic-catalogue.json` (tests: `tests/magic-folk-catalogue.cjs`). Name, traits, description and specialisation have automated coverage; **their live display is not accepted yet**, because this session still received the previous interface. Spell **effects stay GM-assisted**: the app doesn't apply damage steps, durations or resistance automatically (D-3). The general casting cases above still apply to every spell.
 
 | ID | Given | Core says | Expected app behaviour |
 |---|---|---|---|
@@ -212,9 +212,48 @@ Find (X) is in the catalogue with all six printed variants in its description. T
 | D-4 | Rounding for specialist starting spells (FM-002) and recovery ceilings (MG-013). | ChatGPT recommends rounding up (35% → 4 spells) as an interpretation; see `decisions.md`. Awaiting owner confirmation. The app only shows this as GM guidance today. |
 | D-5 | Automate casting interruptions (MG-033, MG-035 to 038)? | ChatGPT recommends leaving it to the GM; see `decisions.md`. Awaiting owner confirmation. |
 
-## Live checks for ChatGPT (Work session)
+## Signed-in live evidence — 2026-11-05 (America/Los_Angeles)
 
-1. Folk Magic: cast until you see a success, a failure and, if possible, a critical. Confirm MP changes by 1, 1 and 0. A fumble's 1d3 is covered by tests.
-2. Set MP to 0 and try to cast: the app should refuse without rolling.
-3. Check that the Folk spell card shows "1 Turn · Intensity 1 · Magnitude 1 · ranged N m", where N is the Folk Magic skill.
-4. The reload re-check from PR #110 (top of `CHANGELOG.md`).
+ChatGPT (Work), one continuous signed-in Chrome session on [the live site](https://colemak1.github.io/mythras-character-forge/). Account UI positively showed **SIGNED IN / Test Player**. Used the existing dedicated **Magic Audit — Paired Skills** fixture, changed only through normal builder and Play Mode controls. Folk Magic was **29%**, POW/max MP **11**; began these casts at **2/11 MP**, devotional pool **5/6**. No random results or account calls were mocked. Reload evidence is in `magic-subsystem-cases.md`.
+
+### Catalogue acceptance: failed / follow-up required
+
+- With Folk Magic acquired, the Magic step showed **Spells known (0)**, an empty list, the **Add a GM-approved spell name** field and the old note that the unverified Imperative catalogue had been removed. There were no 70 Core spell choices. A normal reload and an attempted hard refresh did not expose them.
+- Entering **Beastcall (X)** manually was possible, but the row read **Player-recorded spell; consult the Core Rulebook and GM.** It had no Core traits, **Core p.124** citation or animal-type speciality field. The Play Mode card likewise had no catalogue traits. This manual fallback does **not** pass the catalogue picker/speciality acceptance check.
+- GitHub reports PR #116's Pages run [42132964917](https://github.com/colemak1/mythras-character-forge/actions/runs/42132964917) completed successfully for **d5bc11a9d675d559537120299bdd957926d6de44**. The document's observed asset URLs included `js/data.js?v=41`, `js/render.js?v=72`, `js/cloud.js?v=43` and `js/play.js?v=64`. These are observations, not proof of the asset bodies or a verified deployed SHA.
+- PR #116 changes `js/data.js` and `js/render.js` without changing their `index.html` version parameters. Stale assets are a plausible explanation, **not an established cause**. Claude should check the served bodies and asset invalidation, then repeat the 70-choice, Beastcall traits/page/speciality and Play Mode trait checks. Do not add another automatic publisher.
+
+### Casting and display: passed on the observed live build
+
+Manual **Beastcall (X)** used the single Folk Magic skill, **29%**. The card read **1 MP base · 1 Turn · Intensity 1 · Magnitude 1 · ranged 29 m**. This verifies the requested timing/potency/range display at Standard difficulty; it does not verify actual range enforcement or spell effects.
+
+| Attempt | Live roll/result | MP before → after | Evidence / result |
+|---|---|---|---|
+| 1 | 67 vs 29%, Failure | 2 → 1 | “failed, 1 Magic Point”; FM-011 passed |
+| 2 | 3 vs 29%, Critical | 1 → 1 | “cast, no Magic Points (Critical)”; FM-009 passed |
+| 3 | 56 vs 29%, Failure | 1 → 0 | “failed, 1 Magic Point” |
+| 4 | Refused before roll | 0 → 0 | “Not enough Magic Points to attempt Folk Magic (minimum 1 MP).” No new roll entry; MG-021/0 MP block passed |
+| Setup | Manually pressed magic plus five times | 0 → 5 | Test resource adjustment; not automatic MP recovery |
+| 5 | 90 vs 29%, Failure | 5 → 4 | “failed, 1 Magic Point” |
+| 6 | 42 vs 29%, Failure | 4 → 3 | “failed, 1 Magic Point” |
+| 7 | 21 vs 29%, Success | 3 → 2 | “cast, 1 Magic Point”; FM-010 passed |
+
+No live Folk fumble occurred. Fumble cost remains automated evidence only. Final fixture: **2/11 MP**, devotional pool **5/6**, Exhort **45%**, Devotion (Audit Cult) **29%**, Folk Magic **29%**, manual Beastcall (X), and no pending preparations. Prior non-Folk ability entries were retained. This batch does not close Subsystem 6 or change **3/8** progress.
+
+### Five catalogue/source spot checks: passed for main's data, not live UI
+
+Source: user's uploaded **`pdfcoffee.com_mythras-2e-2-pdf-free.pdf`**, Mythras 2e Core. Parsed PDF text was searched first; its glyph encoding was garbled, so **rendered printed pp.124 and 128** (PDF pages 125 and 129) were inspected visually. Compared names, traits, page references and numeric rules against `docs/folk-magic-catalogue.json` at **d5bc11a**. The generated `FOLK_MAGIC`/JSON sync is also covered by the passing catalogue test. The absent live picker prevented these five from being checked as live catalogue cards.
+
+| Spell | Printed page | Verified numeric detail | Result |
+|---|---|---|---|
+| Bladesharp | 124 | Dagger 1d6+1; great axe **2d8+2**; sequence **1d4>1d6>1d8>1d10>2d6>2d8>2d10** | Match; all three occurrences of digit **8** are present |
+| Breath | 124 | Maximum duration half caster POW in minutes | Match |
+| Pierce | 128 | Ignores the first **two** Armour Points | Match |
+| Sleep | 128 | SIZ ceiling caster POW; duration half POW hours; **1d3 Rounds** before effect; combat casting fails | Match |
+| Speedart | 128 | Effective range **1.5 times** normal weapon distance | Match |
+
+No dropped digits or additional numeric transcription defects were found in these five entries. This is a five-entry spot check, not a complete second audit of all 70 descriptions.
+
+### Validation
+
+All **17** `tests/*.cjs` files ran with the repository-prescribed loop on **d5bc11a** and passed; no `FAIL` markers. This includes `magic-folk-cases.cjs`, `magic-folk-catalogue.cjs` and `unified-routes.cjs`. The tests do not override the failed live catalogue acceptance above. Documentation only changed in this session.
