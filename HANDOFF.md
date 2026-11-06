@@ -9,7 +9,7 @@ _Last updated: 2026-11-06 by Claude_
 **Owner direction, 2026-11-06:** after Subsystem 8's critical work, pause the remaining subsystem audits and overhaul Play Mode's usability. Play Mode should feel like a polished digital character sheet and table companion, closer to D&D Beyond but built on Mythras's mechanics: depth without clutter, short explanations, a clean, intentional design. This is not a restart of Practice Combat.
 
 1. **Subsystem 8 critical work:** security fix merged (PR #130). Remaining: the owner runs migration `20261106120000_gm_private_state_and_assignment_checks.sql`, then ChatGPT (Work) does the multi-account check in `campaign-cases-batch-1.md`.
-2. **Play Mode UX:** proposal approved 2026-11-06 (D&D Beyond-style layout with a style picker later; Skills is the default tab; use the Practice Combat physics dice; short tips). Five batches: 1 layout (done), 2 physics dice tray (done), **3 combat flow (done)**, 4 skills search, pins and Body tab, 5 gear, magic, polish and tips. The theme lives in `play-clean.css` under `data-pm-style="clean"`, so the future style picker only swaps token sets.
+2. **Play Mode UX:** proposal approved 2026-11-06 (D&D Beyond-style layout with a style picker later; Skills is the default tab; use the Practice Combat physics dice; short tips). Five batches: 1 layout (done), 2 physics dice tray (done), 3 combat flow (done), **4 skills search, pins and Body tab (done)**, 5 gear, magic, polish and tips. The theme lives in `play-clean.css` under `data-pm-style="clean"`, so the future style picker only swaps token sets.
 3. **Then resume subsystem audits:** 4 (Advancement optional extras), 5 (Combat ledger gaps), 6 (Magic), 7 (Creatures and GM procedures), 8 (non-critical items and decisions D-S1 to D-S4).
 
 Practice Combat features remain paused. Progress **3/8**.
@@ -18,7 +18,7 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Play Mode redesign | Claude | batches 2–5 | Batches 1–3 merged; batch 4 (skills search, pins, Body tab) next |
+| Play Mode redesign | Claude | batches 2–5 | Batches 1–4 merged; batch 5 (gear, magic, polish, short tips) next |
 | Run Subsystem 8 migration | Owner | `supabase/migrations/20261106120000_…` | Supabase → SQL Editor → paste → Run |
 | Multi-account permission check | ChatGPT (Work) | after the migration | Plan at the end of `campaign-cases-batch-1.md` |
 | New-item pop-up live check (PR #128) | Owner → ChatGPT (Work) | PR #131 attempt | **Blocked, not failed:** needs a disposable player account signed in separately from the GM (e.g. a second browser profile or private window) with a character assigned to a campaign the GM runs. Then: Reveal and plain notices, reload, a third item while the player spends an AP |
