@@ -1145,6 +1145,26 @@ window.APP={
    if(!Number.isInteger(v)||v<1||v>10){PM_MSG="Enter a d10 result from 1 to 10.";render();return;}APP._setInitiative(v);},
  _setInitiative(roll){const bonus=playInitiativeBonusNow().total;S.play.initiative={roll,bonus,total:roll+bonus};PM_MSG=null;render();},
  playClearInitiative(){if(viewOnlyBlock())return;S.play.initiative=null;render();},
+ // Advance Time menu (owner, 2026-11-06). Each option is one explicit step;
+ // nothing happens on a timer. MP recovery stays manual (D-2).
+ advanceTime(kind){if(viewOnlyBlock())return;
+   if(kind==="day"){
+     // Core p.80: natural healing restores the Healing Rate once per interval,
+     // which is a day only for Minor Wounds; Serious takes a week, Major a month after treatment.
+     const healed=[],waiting=[];
+     for(const loc of PLAY_HP_LOCS){const info=naturalRecoveryInfo(loc);if(!info)continue;
+       if(info.interval==="day"&&info.rate>0){const cur=playCurHP(loc),gain=Math.min(playMaxHP(loc)-cur,info.rate);S.play.hp[loc]=cur+gain;healed.push(loc+" +"+gain);}
+       else waiting.push(loc+" ("+(info.cls==="serious"?"Serious: heals per week":"Major: needs treatment, then heals per month")+")");}
+     PM_MSG=(healed.length?"One day of rest: "+healed.join(", ")+" HP.":"One day of rest: no Minor Wounds to heal.")+(waiting.length?" Not healed by a day: "+waiting.join("; ")+". Use the location panel for those.":"");
+   }else if(kind==="fatigue"){
+     const before=S.play.fatigue||"Fresh";APP.playFatigueAdj(-1);
+     PM_MSG=before==="Fresh"?"Already Fresh.":"Fatigue: "+before+" → "+S.play.fatigue+". Recovery time depends on the cause (Core p.71).";
+   }else if(kind==="fight"){
+     S.play.initiative=null;S.play.apUsed=0;S.play.surprised=false;PM_MSG="Fight over: initiative cleared and Action Points restored.";
+   }else if(kind==="session"){
+     S.play.luck=playMaxLuck();PM_MSG="New session: Luck Points refilled to "+playMaxLuck()+".";
+   }else return;
+   PM_POPUP=null;render();},
  playLuckSetPip(i){if(viewOnlyBlock())return;const max=playMaxLuck();const cur=playCurLuck();
    const newCur=i<cur?i:i+1;
    S.play.luck=Math.max(0,Math.min(max,newCur));render();},

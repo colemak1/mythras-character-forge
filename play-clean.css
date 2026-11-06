@@ -419,3 +419,6 @@ body.play-mode.pm-style-clean .app{background:var(--pmx-bg)}
 }
 .pmx-col-right .pmx-tab{padding:10px 9px}
 @container (max-width:280px){.pmx .pmx-bodybox .pm-locrow .pmx-hpbar{display:none}.pmx .pmx-bodybox .pm-locrow{grid-template-columns:8px minmax(0,1fr) auto auto}}
+.pmx-advopt{padding:10px 0;border-bottom:1px solid var(--pmx-line)}
+.pmx-advopt:last-child{border-bottom:0}
+.pmx-advopt p{margin:6px 0 0;font-size:13.5px;color:var(--pmx-muted)}
