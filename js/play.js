@@ -564,6 +564,11 @@ const DIFF_TABLE={
   Fumble:{Critical:-3,Success:-2,Failure:0,Fumble:0}
 };
 function playEffectsWon(mine,theirs){return DIFF_TABLE[mine]?.[theirs] ?? 0;}
+// Core p.105: the first attack on a Surprised target, if successful, gains a
+// bonus Special Effect (e.g. Success vs automatic Failure = 2). Recorded per
+// roll by the player; the GM confirms it really is the first such attack.
+function rollSurpriseBonus(r){return !!(r&&r.targetSurprised&&r.combatRole==="attack"&&(r.tier==="Critical"||r.tier==="Success")&&r.oppTier&&playEffectsWon(r.tier,r.oppTier)>=0);}
+function rollEffectsWon(r){if(!r||!r.oppTier)return 0;return playEffectsWon(r.tier,r.oppTier)+(rollSurpriseBonus(r)?1:0);}
 // Core pp.50–51: compare already-modified skills, then subtract the same
 // excess over 100 from each participant before determining either result.
 function contestedRollResult(skillA,rollA,skillB,rollB){
@@ -674,7 +679,7 @@ let PM_FX_SEARCH="";
 let PM_FX_EDIT=null;   // the roll whose full effect list is reopened after all choices are made
 function selectedEffectRoll(){
   const r=S.rollLog.includes(PM_EFFECT_ROLL_REF)?PM_EFFECT_ROLL_REF:null;
-  return r&&r.combat&&["attack","defence"].includes(r.combatRole)&&r.oppTier&&playEffectsWon(r.tier,r.oppTier)>0?r:null;
+  return r&&r.combat&&["attack","defence"].includes(r.combatRole)&&r.oppTier&&rollEffectsWon(r)>0?r:null;
 }
 function canPickEffectForRoll(effect,r){
   if(!effect||!r||!["attack","defence"].includes(r.combatRole))return false;
@@ -700,7 +705,7 @@ const SPECIAL_EFFECTS=[
 ["Bleed",1,0,"Cutting Weapons","",0,"Attacker opens a major vessel. If the blow penetrates armour and wounds the target, the defender opposes the attack roll with Endurance. On failure, they lose one level of Fatigue at the start of each Combat Round until collapse and possible death. First Aid can stop the bleeding, but strenuous or violent activity reopens the wound. Core p.96 (Blood Loss p.71). Bleeding does NOT automatically subtract 1 location HP each round."],
 ["Blind Opponent",0,1,"","Defender Criticals",0,"On a critical, the defender briefly blinds the attacker (thrown sand, a mirror-flash off a shield, etc). The attacker must win an opposed Evade (or Weapon style if using a shield) vs the defender's original parry roll, or suffer the Blindness penalty for the next 1d3 turns."],
 ["Bypass Armour",1,0,"","Attacker Criticals",1,"On a critical, the attacker finds a gap in the defender's armour. If the defender has both natural and worn armour, the attacker chooses which is bypassed — this can be stacked to bypass both. Magical protection counts as worn armour."],
-["Choose Location",1,0,"","See Description",0,"With hand-to-hand weapons the attacker may freely pick the hit location within reach. With ranged weapons this needs a Critical, unless the target is at Close Range and either stationary or unaware of the attacker."],
+["Choose Location",1,0,"","See Description",0,"With hand-to-hand weapons the attacker may freely pick the hit location within reach. With ranged weapons this needs a Critical, unless the target is at Close Range and either stationary or unaware of the attacker. In close combat it can't pick a location the defender is passively blocking; choose another location in reach instead (p.105)."],
 ["Circumvent Cover",1,0,"Ranged Weapons","",0,"Lets the shooter fire around or through the target's cover — a trick shot such as a ricochet, requiring a Critical for anything beyond a modest reduction in the cover's protection."],
 ["Circumvent Parry",1,0,"","Attacker Criticals",0,"On a critical, the attacker completely bypasses an otherwise-successful parry."],
 ["Close Range",1,1,"","",0,"Automatically changes the engagement range between the two combatants so they end up at the range favoured by the shorter weapon. Under the optional Closing & Opening Range rule (p.106, see the note above), closing inside a longer weapon's Reach (two or more Reach steps longer) also negates that weapon's ability to parry; its Size drops by as many steps as the difference in Reach, and it only inflicts 1d3+1 damage, until the range changes again."],
@@ -769,7 +774,7 @@ function fxItemHTML(effect){
   const [name,off,def,weapon,roll,stack,text]=effect;
   const selected=selectedEffectRoll(), picked=selected?.effectsPicked||[];
   const count=picked.filter(n=>n===name).length;
-  const canChoose=canPickEffectForRoll(effect,selected)&&picked.length<playEffectsWon(selected.tier,selected.oppTier)&&(!count||stack)&&!VIEW_ONLY;
+  const canChoose=canPickEffectForRoll(effect,selected)&&picked.length<rollEffectsWon(selected)&&(!count||stack)&&!VIEW_ONLY;
   const choose=canChoose?'<button type="button" class="pm-btn sm pm-fx-choose" onclick="event.preventDefault();event.stopPropagation();APP.playChooseEffect('+SPECIAL_EFFECTS.indexOf(effect)+')">Choose</button>':"";
   const badges=[off?'<span class="pm-fx-badge off">Offensive</span>':"",def?'<span class="pm-fx-badge def">Defensive</span>':"",
     weapon?'<span class="pm-fx-badge">'+esc(weapon)+'</span>':"",roll?(selected&&pinWeaponWithoutCritical(effect,selected)?'<span class="pm-fx-badge roll" title="Critical Only normally; this weapon\'s exception applies (Core pp.61–62)">No Critical needed</span>':'<span class="pm-fx-badge roll">'+esc(roll)+'</span>'):"",
@@ -800,7 +805,7 @@ function specialEffectsPanel(){
   let h='<p class="pm-notes">Choose an effect below. Open it for its requirements and outcome; your roll result tells you how many you may choose.</p>';
   const r=selectedEffectRoll();
   if(r){
-    const picked=r.effectsPicked||[], limit=playEffectsWon(r.tier,r.oppTier);
+    const picked=r.effectsPicked||[], limit=rollEffectsWon(r);
     h+='<div class="pm-fx-selection"><b>'+esc(r.label)+': '+picked.length+'/'+limit+' chosen</b>'
       +(picked.length?'<div class="pm-fx-picks">'+picked.map((name,i)=>'<button type="button" class="pm-btn sm" title="Remove '+esc(name)+'" onclick="APP.playRemoveEffectChoice('+i+')">'+esc(name)+' &times;</button>').join("")+'</div>':"")
       +'<span>Role: '+(r.combatRole==='attack'?'attacker':'defender')+'. Check weapon and situational requirements with your GM. Selection records the choice; resolve its outcome at the table.</span></div>';
@@ -938,7 +943,7 @@ function playRollLogRow(r,i){
   if(r.combat){
     let sum;
     if(!r.combatRole||!r.oppTier)sum='Needs '+(!r.combatRole?'attack or defence':'the opponent\'s result')+'.';
-    else{const n=playEffectsWon(r.tier,r.oppTier),opp=r.opponentAction==='no-parry'?'no defence':'opponent '+r.oppTier;
+    else{const n=rollEffectsWon(r),opp=r.opponentAction==='no-parry'?'no defence':'opponent '+r.oppTier;
       sum='vs '+opp+' &rarr; '+(n>0?'<b>you win '+n+' Special Effect'+(n>1?"s":"")+'</b>':n<0?'<b>opponent wins '+(-n)+'</b>':'no Special Effects');}
     row+='<div class="pm-fx-resolve">'+sum+' <button class="pm-btn sm" onclick="APP.playJumpToEffects('+i+')">'+(!r.combatRole||!r.oppTier?'Resolve':(r.effectsPicked||[]).length?'Change effects':'Open')+'</button>'
       +(r.combatRole&&r.oppTier?' <button class="pm-btn sm" onclick="APP.playJumpToInjury()">Record injury</button>':'')
@@ -1116,10 +1121,10 @@ function pmActionList(){
       {nm:"Mount",ap:1,kind:"Proactive",note:"Mount or dismount; large mounts may take several turns · p.91"},
       {nm:"Move",ap:1,kind:"Proactive",note:"Only when not engaged; reaching a foe needs no extra AP to engage · pp.91–92"},
       {nm:"Outmanoeuvre",ap:1,kind:"Proactive",note:"Group opposed Evade; foes who fail can't attack you this round · pp.92, 104"},
-      {nm:"Ready Weapon",ap:1,kind:"Proactive",note:"Draw, sheathe or withdraw; a dropped weapon nearby takes two turns · p.92"},
+      {nm:"Ready Weapon",ap:1,kind:"Proactive",note:"Draw, sheathe or withdraw; a dropped weapon nearby takes two turns. A second throwing weapon already held in the off-hand moves to the throwing hand as a Free Action · pp.92, 109"},
       ...reloadActions,
       {nm:"Regain Footing",ap:1,kind:"Proactive",note:"Stand up; if engaged, win an opposed Brawn or Athletics roll first · p.92"},
-      {nm:"Struggle",ap:1,kind:"Proactive",note:"Try to break free of a Grapple, Pin Weapon and similar · p.92"},
+      {nm:"Struggle",ap:1,kind:"Proactive",note:"Break free of a Grapple, Pin Weapon and similar: opposed Brawn or Unarmed against whichever of those the grappler prefers; win and you escape · pp.92, 106"},
       {nm:"Counter Spell",ap:1,kind:"Reactive",note:"Needs one-turn countering magic, or magic already held · p.92"},
       {nm:"Evade",ap:1,kind:"Reactive",note:"Dive clear; leaves you prone unless something prevents it · pp.92, 103"},
       {nm:"Interrupt",ap:1,kind:"Reactive",note:"Delaying characters only: act after a foe declares · p.92"},
@@ -1295,6 +1300,7 @@ function pmCombatRulesRefHTML(){
    +sec("Sweep attacks",'<p>Only weapons or creatures of unusual size (a dragon\'s tail, a giant\'s club) can sweep a closely clumped group. One attack roll applies to everyone in its path; each defender defends and takes effects separately, and all effects happen at once. The GM decides how many are caught (p.105).</p>')
    +sec("Knockback",'<p>If damage before armour and parrying exceeds your SIZ, you are knocked back 1m per 5 points (or part) over, and must make an Easy Acrobatics or Standard Athletics roll to stay standing (p.104).</p>')
    +sec("Pulling a blow",'<p>Declare before attacking. A hit does half damage (p.105).</p>')
+   +sec("Grappling",'<p>Declare a grapple instead of a strike: you need an empty limb that can grip, within Touch. Opposed: your Unarmed against the defender\'s combat skill; win to take hold, and either side may earn Special Effects. A held <b>arm or leg</b> is unusable; a held <b>head or torso</b> makes the victim\'s skill rolls Hard. On later turns you may crush, twist or strangle for damage equal to your <b>Damage Modifier</b> (not a normal 1d3 strike); the victim may oppose with Unarmed or Brawn to reduce or block it. To escape, the victim uses <b>Struggle</b> (1 AP): opposed Brawn or Unarmed against whichever the grappler prefers (p.106).</p>')
    +sec("Climbing and swimming",'<p><b>Climbing:</b> combat skills capped by Athletics; a biped fights with one limb (p.106).<br><b>Swimming:</b> capped by Swim. Underwater only thrusting weapons work, at half damage; bites, strangling and ramming are unaffected. Water Combat lifts the Swim cap (pp.89, 106).</p>')
    +sec("Mounted and aerial combat",'<p><b>Mounted:</b> combat skill capped by Ride unless the style has Mounted Combat. Against a foe on foot below you, the GM may use 1d10+10 for the hit location. Spend 1 AP to defend your mount with your Combat Style or Ride. A faster mount can withdraw freely if it isn\'t attacking (p.104).<br><b>Aerial:</b> close in with opposed Fly (or the mount\'s Ride); winners may attack that pass. Fast passes work like charging through contact (pp.103–104).</p>');
 }
@@ -1312,7 +1318,7 @@ function pmPopupHTML(){
   if(k==="loc"){const loc=S.play.selectedLoc;if(!loc){PM_POPUP=null;return "";}title=loc;body=pmLocDetail();}
   else if(k==="fx"){const e=SPECIAL_EFFECTS[PM_POPUP.i];if(!e){PM_POPUP=null;return "";}
     title=e[0];const r=selectedEffectRoll(),picked=r?.effectsPicked||[];
-    const can=r&&canPickEffectForRoll(e,r)&&picked.length<playEffectsWon(r.tier,r.oppTier)&&(!picked.includes(e[0])||e[5])&&!VIEW_ONLY;
+    const can=r&&canPickEffectForRoll(e,r)&&picked.length<rollEffectsWon(r)&&(!picked.includes(e[0])||e[5])&&!VIEW_ONLY;
     body='<p class="pmx-fxbadges">'+[e[1]?'<span class="pm-fx-badge off">Offensive</span>':"",e[2]?'<span class="pm-fx-badge def">Defensive</span>':"",e[3]?'<span class="pm-fx-badge">'+esc(e[3])+'</span>':"",e[4]?(r&&pinWeaponWithoutCritical(e,r)?'<span class="pm-fx-badge roll">No Critical needed (weapon exception)</span>':'<span class="pm-fx-badge roll">'+esc(e[4])+'</span>'):"",e[5]?'<span class="pm-fx-badge stack">Stacks</span>':""].join(" ")+'</p><p>'+esc(e[6])+'</p>'
      +(can?'<p><button type="button" class="pm-btn pmx-pri" onclick="APP.playChooseEffect('+PM_POPUP.i+');APP.pmPopupClose()">Choose '+esc(e[0])+'</button></p>':'');}
   else if(k==="log"){title="Roll log";body=pmRollLogHTML();}
@@ -1460,7 +1466,7 @@ function pmResolveCardHTML(){
   const ro=VIEW_ONLY?' disabled':'';
   // Finished roll: one summary line with the next actions on it, so the next
   // Attack or a quick Parry is one tap away (owner, 2026-11-06).
-  const n0=r.combatRole&&r.oppTier?playEffectsWon(r.tier,r.oppTier):0;
+  const n0=r.combatRole&&r.oppTier?rollEffectsWon(r):0;
   if(r.combatRole&&r.oppTier&&(n0<=0||(r.effectsPicked||[]).length>=n0)&&PM_FX_EDIT!==r){
     const picked=r.effectsPicked||[];
     const what=r.combatRole==="attack"?"Attack":r.combatKind==="evade"?"Evade":"Parry";
@@ -1498,12 +1504,13 @@ function pmResolveCardHTML(){
      +(r.combatRole==="attack"?' <button class="pmx-mini'+(noParry?' on':'')+'"'+ro+' onclick="APP.playNoParry('+i+')" title="They didn\'t parry or evade: treat as a Failure (Core p.100)">No defence</button>':'')+'</div>';
   }
   if(r.weapon==="Javelin"&&r.combatRole==="attack"&&r.tier!=="Critical")h+='<div class="pmx-step"><label><input type="checkbox"'+ro+(r.vsShield?' checked':'')+' onchange="APP.playSetVsShield('+i+',this.checked)"> The target defended with a shield</label> <span class="pmx-dim">Pin Weapon without a Critical (Core p.62)</span></div>';
+  if(r.combatRole==="attack"&&(r.tier==="Critical"||r.tier==="Success"))h+='<div class="pmx-step"><label><input type="checkbox"'+ro+(r.targetSurprised?' checked':'')+' onchange="APP.playSetTargetSurprised('+i+',this.checked)"> Target was Surprised, and this is the first successful attack on them</label> <span class="pmx-dim">+1 Special Effect (Core p.105)</span></div>';
   if(r.combatRole&&r.oppTier){
-    const n=playEffectsWon(r.tier,r.oppTier);
+    const n=rollEffectsWon(r);
     if(n>0){
       const picked=r.effectsPicked||[];
       const eligible=SPECIAL_EFFECTS.filter(e=>canPickEffectForRoll(e,r));
-      h+='<p class="pmx-outcome good">You win <b>'+n+' Special Effect'+(n>1?"s":"")+'</b>'+pmTip("effects")+': '+picked.length+' of '+n+' chosen.</p>';
+      h+='<p class="pmx-outcome good">You win <b>'+n+' Special Effect'+(n>1?"s":"")+'</b>'+(rollSurpriseBonus(r)?' <span class="pmx-dim">(including 1 for surprise)</span>':'')+pmTip("effects")+': '+picked.length+' of '+n+' chosen.</p>';
       if(picked.length)h+='<div class="pm-fx-picks">'+picked.map((name,k)=>'<button type="button" class="pmx-mini on"'+ro+' title="Remove '+esc(name)+'" onclick="APP.playRemoveEffectChoice('+k+')">'+esc(name)+' &times;</button>').join(" ")+'</div>';
       if(picked.length>=n&&PM_FX_EDIT!==r)h+='<p class="pmx-small">All chosen. <button type="button" class="pmx-link" onclick="PM_FX_EDIT=S.rollLog['+i+'];render()">Change</button></p>';
       else h+='<div class="pmx-fx-eligible">'+eligible.map(fxItemHTML).join("")+'</div>'
@@ -1519,7 +1526,7 @@ function pmResolveCardHTML(){
 function pmWeaponNotes(w){
   const t=weaponTraits(w),out=[];
   const pb=t.find(x=>/^Passive Blocks \d+ locations$/.test(x));
-  if(pb)out.push("Passively blocks "+pb.match(/\d+/)[0]+" adjacent locations (double when crouching)");
+  if(pb)out.push("Passively blocks "+pb.match(/\d+/)[0]+" adjacent locations (double when crouching); Choose Location can't target them");
   if(t.includes("Ranged Parry"))out.push("Can parry missiles");
   if(t.includes("Offensive"))out.push("Can't parry");
   if(t.includes("Entrapping"))out.push("Pin Weapon without a Critical"+(weaponCanParry(w)?"; parries as Defensive":""));
@@ -1529,8 +1536,8 @@ function pmWeaponNotes(w){
   if(t.includes("Stealth"))out.push("Only from ambush");
   if(t.includes("Set"))out.push("Can be set against a charge");
   if(t.includes("Barbed"))out.push("Full damage when pulled free");
-  if(t.includes("Thrown"))out.push("Can also be thrown");
-  if(w.name==="Javelin")out.push("Thrown: Pin Weapon against a shield without a Critical");
+  if(t.includes("Thrown"))out.push("Can also be thrown; a second one held in the off-hand readies as a Free Action");
+  if(w.name==="Javelin")out.push("Thrown: Pin Weapon against a shield without a Critical; a second one held in the off-hand readies as a Free Action");
   if(w.name==="Atlatl")out.push("Launcher: +1 Force step and +0/+25/+75m range to the dart or javelin it throws");
   return out.length?esc(out.join(" · "))+' <span class="pmx-dim">(Core pp.61–65)</span>':"";
 }

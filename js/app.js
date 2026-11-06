@@ -825,6 +825,8 @@ window.APP={
    if(name&&name!=="Unarmed"&&!(S.gearWeapons||[]).includes(name))return;
    r.weapon=name||undefined;r.effectsPicked=[];render();},
  // Core p.62: a thrown javelin's Pin Weapon needs no Critical against a shield.
+ // Core p.105: the first successful attack on a Surprised target earns +1 Special Effect.
+ playSetTargetSurprised(i,on){if(VIEW_ONLY||!S.rollLog[i]?.combat||S.rollLog[i].combatRole!=="attack")return;const r=S.rollLog[i];r.targetSurprised=!!on;r.effectsPicked=[];render();},
  playSetVsShield(i,on){if(VIEW_ONLY||!S.rollLog[i]?.combat)return;const r=S.rollLog[i];r.vsShield=!!on;r.effectsPicked=[];render();},
  playSetSurprised(on){if(viewOnlyBlock())return;S.play.surprised=!!on;render();},
  playSetCombatRole(i,role){if(VIEW_ONLY||!S.rollLog[i]?.combat||!["attack","defence"].includes(role))return;
@@ -837,7 +839,7 @@ window.APP={
  playChooseEffect(i){if(VIEW_ONLY)return;
    const r=selectedEffectRoll(), effect=SPECIAL_EFFECTS[i];if(!canPickEffectForRoll(effect,r))return;
    const picked=r.effectsPicked||[];
-   if(picked.length>=playEffectsWon(r.tier,r.oppTier)||(!effect[5]&&picked.includes(effect[0])))return;
+   if(picked.length>=rollEffectsWon(r)||(!effect[5]&&picked.includes(effect[0])))return;
    r.effectsPicked=[...picked,effect[0]];render();},
  playRemoveEffectChoice(i){if(VIEW_ONLY)return;
    const r=selectedEffectRoll();if(!r||!Number.isInteger(i)||i<0||i>=(r.effectsPicked||[]).length)return;

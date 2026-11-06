@@ -565,6 +565,8 @@ All 20 NEEDS CODE rows are addressed, with regression tests in `tests/combat-bat
 | C5-CL11 | An unengaged character already holds a second throwing weapon in their off-hand and wants to ready it for the next throw. | Core p.109: an already-prepared off-hand thrown weapon may be transferred to the throwing hand as a Free Action; otherwise preparing a new thrown weapon normally requires Ready Weapon. | Add this exception beside Ready Weapon / thrown-weapon notes; allow the player to record a free swap without spending 1 AP. | NEEDS CODE — ordinary Ready Weapon guidance does not mention the prepared off-hand exception. |
 | C5-CL12 | A surprised defender has not yet reached their initiative slot, then acts later during the same round. | Core p.105: cannot defend before their own initiative; thereafter they remain barred from offensive action for that round; the initiative adjustment is −10. | Keep existing Surprised flag and warnings; do not erase surprise solely because they now may defend. Clear as part of starting the next round. | HANDLED — Play Mode warning and no-Attack toggle, while the timing of defence is GM-adjudicated. |
 
+**Implementation (Claude, 2026-11-06):** CL01, CL06–CL08, CL10 and CL11 are implemented with tests in `tests/combat-closeout.cjs`; see `combat-closeout-review.md`.
+
 **Batch 4: 12 cases, 6 HANDLED and 6 NEEDS CODE** (initial code review). These are narrow gaps, not a mandate to create a second combat engine. In particular, **surprise’s first-success extra Special Effect must be testable and selectable** before the subsystem can close. The Knockback rule is already settled: **no extra starting metre** (Core p.104; PRs #150–151).
 
 ---
