@@ -42,6 +42,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 - Highest-value code corrections to evaluate: **Offensive** weapons must not offer Parry; **Entrapping** and thrown **Javelin vs shield** permit Pin Weapon without the usual Critical; add lean situational guidance where missing, especially p.98 Impale matrix and p.104 Outmanoeuvre. The rest are player-reference or GM-led resolutions, not requests for a second combat engine.
 - No production code, tests, CSS/HTML, workflows or deployments were altered. This is specification/code-review work, **not** proof of tests or live behavior; Subsystem 5 stays OPEN and progress 3/8.
 
+## Subsystem 5 Combat closeout chapter map and final fight — docs only
+
+- Source-mapped **81 Combat chapter heading/section groups** plus all **43 named Special Effects** against the existing 368-case ledger, Core printed pp.86–111, in `docs/combat-closeout-review.md`. Added **12 distinct child cases** to `docs/combat-cases-batch-1.md`, now **380 cases**: **6 initially HANDLED and 6 NEEDS CODE**.
+- Primary new implementation blocker: first successful attack against a Surprised target must earn **one additional Special Effect** (Core p.105); the existing UI warns of it but its effect counter uses only the differential table. Remaining code/guidance gaps cover p.106 grapple/Struggle outcomes, passive blocking vs Choose Location (p.105), and the ready offhand thrown-weapon Free Action (p.109).
+- Designed **one owner-only end-to-end Work combat scenario** spanning initiative, melee attack/parry, earned Special Effects, location armour/wound, Advance time and reload, ranged shot and Distance helper, and disposable fixture deletion.
+- **Conditional closeout recommendation:** after Claude fixes/tests any required child cases and that final deployed Work fight passes, S5 may close (3/8 → 4/8). Creature anatomy/Rabble-Underlings remain S7; multi-account access and GM/Party Board belong to S8. Reasserts Knockback no extra metre (p.104).
+- Began S4 reconciliation in `docs/advancement-reconciliation.md` against the existing 216-case ledger. Docs only, no product/test files changed; local Node suite was not run in Chat runtime. CI/Claude to verify.
+
 ## Reach summary lists melee weapons only
 
 - The optional Reach rule's "your weapons" list no longer includes ranged weapons. A bow's Force was being shown as if it were Reach (spotted in the Combat Batch 2 live check, PR #145).
