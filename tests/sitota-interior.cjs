@@ -8,9 +8,10 @@ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const sitota=fs.readFileSync(path.join(root,'js/sitota.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'sitota-interior.css'),'utf8');
 const homeCss=fs.readFileSync(path.join(root,'sitota-home-16x9.css'),'utf8');
-assert(html.includes('sitota-interior.css?v=2'),'Interior theme must be linked');
-assert(html.includes('js/sitota.js?v=5'),'Site script must bust older cached renderer');
-assert(html.indexOf('sitota-interior.css?v=2')>html.indexOf('sitota-home-16x9.css?v=3'),'Interior theme should load after home styles');
+// Cache freshness for every stamped asset is enforced by tests/asset-versions.cjs.
+assert(/sitota-interior\.css\?v=[0-9a-f]{10}/.test(html),'Interior theme must be linked with a version stamp');
+assert(/js\/sitota\.js\?v=[0-9a-f]{10}/.test(html),'Site script must be version-stamped');
+assert(html.indexOf('sitota-interior.css?v=')>html.indexOf('sitota-home-16x9.css?v='),'Interior theme should load after home styles');
 assert.match(sitota,/document\.body\.dataset\.sitotaView\s*=\s*APPVIEW/,'Site view flag missing');
 new vm.Script(sitota,{filename:'js/sitota.js'});
 for (const view of ['account','library','campaigns','campaign','board','wiki','character','world']) {
