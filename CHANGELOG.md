@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-05 — Owner-only Play Mode and Core live acceptance (docs only)
+
+- Recorded desktop layout, side panels, Attack/Parry and effects, skill pin/search, all four Advance time options, and a fresh Character Builder rules spot-check in `docs/play-mode-live-acceptance-20261105.md`, with four screenshots.
+- Found desktop document overflow, a resolved combat card that remains tall, and Comatose/Dead wording that should distinguish terminal states. Derived attributes, all 22 Standard bases, allocation controls, active Fatigue grades and Minor Wound daily healing passed this fixture; all four time actions left MP unchanged.
+- Exact 390px phone testing remains unverified: responsive DevTools was blocked and native window resizing unavailable. Supplemental 340px zoom checks exercised all bottom sections, bottom-anchored details and a clicked tip; they are not a phone-height/touch pass.
+- Used only the owner account. Created and deleted one disposable character, confirming deletion after reload. No code changed; all 26 local test scripts passed on the tested baseline.
+- Updated the handoff to reflect the previously completed live security migration (table present; counts 1/0), without publishing its private backup. Multi-account permission checks remain outstanding.
+
 ## Play Mode: Advance Time, quicker combat, no Sheet button
 
 - **Advance time** (header button) opens a menu with four options:
