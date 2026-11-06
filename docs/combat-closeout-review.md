@@ -30,7 +30,7 @@ Every named section/subsection in Core Combat pp.86–111 is mapped below; indiv
 | 91 | Attack / Brace / Cast Magic | C5-A01–A03, C5-R15 | Covered; magic details elsewhere |
 | 91 | Change Range / Delay / Dither / Hold Magic | C5-A04–A08, C5-B2-X12–X13 | Covered |
 | 91 | Mount / Move / Keeping Track of Action Points | C5-A09–A11, C5-R01, C5-R13 | Covered |
-| 92 | Outmanoeuvre / Ready Weapon / Regain Footing / Struggle | C5-A12–A16, C5-B3-TA04–TA06, C5-CL09 | Struggle opposed-skills child CL09 |
+| 92 | Outmanoeuvre / Ready Weapon / Regain Footing / Struggle | C5-A12–A16, C5-B3-TA04–TA06, C5-CL08 | Struggle opposed-skills child CL08 |
 | 92 | Reactive Actions | C5-A17–A20 | Covered |
 | 92 | Counter Spell / Evade / Interrupt / Parry | C5-A17–A20, C5-M12 | Covered |
 | 92 | Free Actions / Delay and Interrupt | C5-A05–A06, C5-A21–A23, C5-R16 | Covered |
@@ -65,10 +65,10 @@ Every named section/subsection in Core Combat pp.86–111 is mapped below; indiv
 | 104 | Mounted Combat | C5-M15–M16, C5-B3-TA15–TA20 | Covered; GM adjudicates mount |
 | 105 | Passive Blocking | C5-M19–M20, C5-B2-X10, C5-B3-WT08–WT17, C5-CL10 | New Choose Location constraint CL10 |
 | 105 | Pulled Blows | C5-M21, C5-B3-TA24 | Covered |
-| 105 | Surprise | C5-M22, C5-CL01–CL02 | **Gap:** bonus SE not represented in recorded roll; detection child CL02 |
+| 105 | Surprise | C5-M22, C5-CL01–CL02, C5-CL12 | Bonus SE implemented (CL01); detection CL02 and timing CL12 GM-assisted |
 | 105 | Sweep Attacks | C5-B3-TA07 | Covered; unusual size qualifier accepted live #151 |
 | 105 | Unarmed Combat | C5-M23–M24, C5-SE18, C5-SE20, C5-SE40 | Covered; further grapple children CL05–CL09 |
-| 105 | Parrying Weapons Whilst Unarmed | C5-ST10, C5-M23, C5-CL11 | New explicit within-Touch / size child CL11 |
+| 105 | Parrying Weapons Whilst Unarmed | C5-ST10, C5-M23, C5-CL09 | New explicit within-Touch / size child CL09 |
 | 106 | Striking (unarmed) | C5-M23, C5-SE18, C5-SE20, C5-SE40 | Covered |
 | 106 | Grappling | C5-M24, C5-A16, C5-CL05–CL09 | **Gap:** location effect / follow-up damage / Struggle procedure only generic in Play Mode |
 | 106 | Unusual Combat Conditions / Climbing / Swimming | C5-B3-TA25–TA26, C5-B2-T26 | Covered; lean guidance live implementation #148 |
@@ -77,14 +77,14 @@ Every named section/subsection in Core Combat pp.86–111 is mapped below; indiv
 | 107 | Closing Range / Opening Range / Withdrawing | C5-M30–M32, C5-B2-X13, C5-SE25, C5-SE43 | Covered |
 | 107 | Ranged Combat / Force | C5-G01–G02, C5-B3-RG03–RG04 | Covered; shield parry and projectile Force |
 | 107 | Damage Modifier / Range | C5-G03–G04, C5-B3-RG01–RG06 | Covered |
-| 107 | Reload | C5-G14–G15, C5-B3-RG17–RG19 | Covered except prepared offhand throw CL12 on p.109 |
+| 107 | Reload | C5-G14–G15, C5-B3-RG17–RG19 | Covered except prepared offhand throw CL11 on p.109 |
 | 107 | Situational Modifiers / Ranged Combat Considerations | C5-G06–G07, C5-B2-G17–G29 | Covered |
 | 107 | Aiming | C5-G05, C5-B3-RG21 | Covered; #148 help |
 | 108 | Distance Penalties / Ranged Combat Situational Modifiers | C5-B2-G17–G36, C5-G08–G10 | Covered; Distance helper live #145 |
 | 108 | Firing into a Crowd | C5-G11–G12, C5-B2-G39–G41 | Covered; GM selects bystander |
 | 108 | Firing on the Move | C5-G13, C5-B2-G42, C5-B2-T21 | Covered; Skirmishing exception |
 | 108 | Impaling Ranged Attacks | C5-G16, C5-B3-RG04 | Covered; Force vs projectile Impale Size |
-| 109 | Loading Ranged Weapons | C5-G14–G15, C5-B3-RG10–RG20, C5-CL12 | Offhand already-held throw Free Action child CL12 |
+| 109 | Loading Ranged Weapons | C5-G14–G15, C5-B3-RG10–RG20, C5-CL11 | Offhand already-held throw Free Action child CL11 |
 | 109 | Realistic Range Penalties (narrative sidebar) | C5-G06–G10, C5-B2-G29–G36 | Non-mechanical context, no required extra implementation |
 | 109 | Hit Locations / Humanoid Hit Locations | C5-P17–P19, C5-W03 | Covered. Non-humanoid locations reserved for S7 |
 | 109 | Damage and Wound Levels | C5-W01–W08, C5-B3-WN01–WN02 | Covered |
@@ -157,6 +157,21 @@ Initial status on the 12 new rows: **6 NEEDS CODE** (`CL01`, `CL06–CL08`, `CL1
 **P1 lean reference changes:** `CL06–08` explain grapple location, damage and opposed Struggle; `CL10` explains passive-block protection against Choose Location; `CL11` explains an already-held off-hand thrown weapon as a Free Action. Preserve GM control over position/hand occupancy and physical wound consequences. If a narrower implementation already covers a row, Claude should reclassify it as HANDLED with test/code evidence rather than build duplicate UI.
 
 **Test barrier:** add deterministic tests for the surprise +1 SE eligibility and persistence and for any new visible rules text; run the full required tests and deployment CI. Existing coverage from #145/#149/#151 stands; it does not independently certify the newly listed branches.
+
+## Implementation status (Claude, 2026-11-06)
+
+Claude corrected the section map's case numbers to match the ledger: Struggle is CL08, unarmed parry CL09 and the off-hand throw CL11.
+
+All six NEEDS CODE rows are implemented, with regression tests in `tests/combat-closeout.cjs`:
+
+- **CL01 surprise bonus:**
+  - On a successful attack, the combat card offers "Target was Surprised, and this is the first successful attack on them".
+  - When ticked, the attacker earns +1 Special Effect on top of the differential. Core p.105's example, a Success against an automatic Failure, gives 2.
+  - It never applies to a failed attack or a defence, and it is separate from your own Surprised flag. It survives reload, and changing it clears the chosen effects.
+  - The bonus applies only when the differential is not negative. Whether this really is the first attack stays the GM's call.
+- **CL06–CL08 grappling:** a new section in the "Combat situations" panel covers declaring a grapple, the arm or leg vs head or torso effects, follow-up damage equal to the Damage Modifier, and Struggle's opposed Brawn or Unarmed. The Struggle action text also gives the opposed skills.
+- **CL10 passive blocking:** the Choose Location description and shield notes say it can't target a passively blocked location (p.105).
+- **CL11 off-hand throw:** the Ready Weapon action, Thrown weapons and the Javelin note all describe the off-hand Free Action (p.109).
 
 ## 3. ONE final owner-only Work scenario — complete player-sheet fight
 

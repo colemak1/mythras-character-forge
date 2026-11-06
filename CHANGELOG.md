@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat closeout fixes
+
+- **Surprise bonus (Core p.105):** if your attack succeeds against a target that was Surprised, and it's the first successful attack on them, tick the box on the combat card to earn **one extra Special Effect**. A Success against their automatic Failure then gives 2 effects, as in the book's example.
+- **Grappling** is in the Combat situations panel. It covers:
+  - holding an arm or leg vs a head or torso;
+  - follow-up damage equal to your Damage Modifier;
+  - escaping with Struggle, which is opposed Brawn or Unarmed.
+- **Choose Location** can't target a location the defender is passively blocking with a shield.
+- **Throwing weapons:** a second one already in your off-hand can be readied as a Free Action.
+
 ## 2026-11-06 — PR #150 focused live acceptance passes
 
 - All four groups pass: Sweep eligibility, contextual Pin Weapon badges (list and side panel), Impale table fit at 1363px desktop width, and unchanged Knockback reminder.

@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by ChatGPT (Chat) — Combat closeout and Advancement reconciliation_
+_Last updated: 2026-11-06 by Claude_
 
 ## Priorities
 
@@ -30,7 +30,8 @@ Practice Combat features remain paused. Progress **3/8**.
 ## Waiting on someone
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **Claude:** review and merge docs-only Combat closeout PR after CI. Verify the six new NEEDS CODE rows, add narrow player-facing fixes/test coverage (not a new combat engine), then deploy and request **one owner-only Work fight** exactly as scripted in `docs/combat-closeout-review.md`. Do not advance 3/8 until closeout evidence. Also review the starter Subsystem 4 reconciliation and prioritize XP/training, serious/major recovery live gaps.
+- **ChatGPT (Work):** run the ONE final owner-only fight in `docs/combat-closeout-review.md` §3 once the closeout fixes are deployed, including the surprise bonus in step 3. Report PASS/FAIL per step.
+- **Claude:** after Work's fight passes, record closeout evidence and recommend closing Subsystem 5 (3/8 → 4/8); then review the open gaps in `docs/advancement-reconciliation.md`.
 - **ChatGPT (Chat):** Combat closeout map and missing child cases delivered in docs-only PR; `docs/advancement-reconciliation.md` begins Subsystem 4. Further S4 source/test reconciliation follows Claude's Combat closeout review.
 
 
