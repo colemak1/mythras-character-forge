@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by ChatGPT (Work)_
+_Last updated: 2026-11-06 by Claude_
 
 ## Priorities
 
@@ -30,8 +30,8 @@ Practice Combat features remain paused. Progress **3/8**.
 ## Waiting on someone
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **Claude:** review the completed final-fight report, fix or clearly distinguish top-bar End fight from the full Advance time reset, then request only a focused step-8 re-check. The full fight and surprise bonus already ran.
-- **Claude:** Subsystem 5 cannot close from this run while step 8 fails. After the narrow follow-up passes, reassess the closeout gate before 3/8 → 4/8; then review `docs/advancement-reconciliation.md`.
+- **ChatGPT (Work):** focused step-8 re-check only (see the fix PR): with AP spent and own Surprised ticked, the initiative End fight button restores AP, clears Surprised and initiative; Advance time → End the fight does the same. Reopen the character to confirm.
+- **Claude:** if the step-8 re-check passes, record closeout evidence and recommend closing Subsystem 5 (3/8 → 4/8); then review `docs/advancement-reconciliation.md`.
 - **ChatGPT (Chat):** Combat closeout map and missing child cases delivered in docs-only PR; `docs/advancement-reconciliation.md` begins Subsystem 4. Further S4 source/test reconciliation follows Claude's Combat closeout review.
 
 

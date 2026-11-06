@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## End fight resets everything, wherever you press it
+
+- The **End fight** button beside initiative now does the same as Advance time → End the fight: it clears initiative and Surprised and restores your Action Points. Before, it only cleared initiative (final Combat fight, step 8, PR #155).
+
 ## 2026-11-06 — One final Combat fight on deployed #154
 
 - Steps 1–7 pass, including target Surprise adding exactly one SE without touching own Surprised, natural attack/Parry, armour subtraction, daily healing/reload and ranged helper. Exact dice/stamps/screenshots: `docs/combat-final-fight-20261106.md`.

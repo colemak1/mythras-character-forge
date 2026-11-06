@@ -1151,7 +1151,11 @@ window.APP={
  playSetInitiative(){if(viewOnlyBlock())return;const el=document.getElementById("playInitD10");const v=Number(el?.value);
    if(!Number.isInteger(v)||v<1||v>10){PM_MSG="Enter a d10 result from 1 to 10.";render();return;}APP._setInitiative(v);},
  _setInitiative(roll){const bonus=playInitiativeBonusNow().total;S.play.initiative={roll,bonus,total:roll+bonus};PM_MSG=null;render();},
- playClearInitiative(){if(viewOnlyBlock())return;S.play.initiative=null;render();},
+ // End fight: one reset everywhere it appears (initiative, AP, own Surprised).
+ // The initiative "End fight" button and Advance time → End the fight both
+ // use it, so they can't drift apart (final fight step 8, #155).
+ _endFight(){S.play.initiative=null;S.play.apUsed=0;S.play.surprised=false;},
+ playClearInitiative(){if(viewOnlyBlock())return;APP._endFight();PM_MSG="Fight over: initiative cleared and Action Points restored.";render();},
  // Advance Time menu (owner, 2026-11-06). Each option is one explicit step;
  // nothing happens on a timer. MP recovery stays manual (D-2).
  advanceTime(kind){if(viewOnlyBlock())return;
@@ -1167,7 +1171,7 @@ window.APP={
      const before=S.play.fatigue||"Fresh";APP.playFatigueAdj(-1);
      PM_MSG=before==="Fresh"?"Already Fresh.":"Fatigue: "+before+" → "+S.play.fatigue+". Recovery time depends on the cause (Core p.71).";
    }else if(kind==="fight"){
-     S.play.initiative=null;S.play.apUsed=0;S.play.surprised=false;PM_MSG="Fight over: initiative cleared and Action Points restored.";
+     APP._endFight();PM_MSG="Fight over: initiative cleared and Action Points restored.";
    }else if(kind==="session"){
      S.play.luck=playMaxLuck();PM_MSG="New session: Luck Points refilled to "+playMaxLuck()+".";
    }else return;
