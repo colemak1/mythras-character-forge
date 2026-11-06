@@ -650,6 +650,7 @@ function familiarityPct(styleKey,fam){
 }
 let PM_EFFECT_ROLL_REF=null;
 let PM_FX_SEARCH="";
+let PM_FX_EDIT=null;   // the roll whose full effect list is reopened after all choices are made
 function selectedEffectRoll(){
   const r=S.rollLog.includes(PM_EFFECT_ROLL_REF)?PM_EFFECT_ROLL_REF:null;
   return r&&r.combat&&["attack","defence"].includes(r.combatRole)&&r.oppTier&&playEffectsWon(r.tier,r.oppTier)>0?r:null;
@@ -1233,6 +1234,14 @@ function pmRollLogHTML(){
 }
 // One pop-up for descriptions and secondary detail, so reading a rule never
 // pushes the sheet around. Re-rendered with the page, so it stays current.
+function pmAdvanceTimeHTML(){
+  const opt=(k,label,desc)=>'<div class="pmx-advopt"><button type="button" class="pm-btn pmx-pri" onclick="APP.advanceTime(\''+k+'\')">'+label+'</button><p>'+desc+'</p></div>';
+  const minor=PLAY_HP_LOCS.filter(l=>naturalRecoveryInfo(l)?.interval==="day").length;
+  return opt("day","Rest one day","Each Minor Wound heals your Healing Rate ("+(charsReady()?healRate(effectiveChars().CON):0)+" HP). "+(minor?minor+" location"+(minor>1?"s":"")+" will heal.":"No Minor Wounds right now.")+" Serious and Major Wounds heal per week or month (Core p.80).")
+   +opt("fatigue","Recover one Fatigue level","Now: "+esc(S.play.fatigue||"Fresh")+". How long that takes depends on the cause; your GM decides.")
+   +opt("fight","End the fight","Clears initiative and Surprised, and restores all Action Points.")
+   +opt("session","Start a new session","Refills Luck Points ("+playCurLuck()+" of "+playMaxLuck()+" now). Magic Points stay manual.");
+}
 function pmPopupHTML(){
   if(!PM_POPUP)return '<aside class="pmx-side pmx-side-empty" aria-label="Details"><p class="pmx-dim">Details appear here. Choose a Special Effect, a body location, or the roll log.</p></aside>';
   const k=PM_POPUP.k;let title="",body="";
@@ -1248,6 +1257,7 @@ function pmPopupHTML(){
   else if(k==="fatigue"){title="Fatigue";body=pmFatiguePanel();}
   else if(k==="rules"){title="GM skill and task rulings";body=pmSkillRulesHTML();}
   else if(k==="casting"){title="How casting works here";body=pmCastingNotesHTML();}
+  else if(k==="advance"){title="Advance time";body=pmAdvanceTimeHTML();}
   else {PM_POPUP=null;return "";}
   // A side panel, like D&D Beyond's: it takes its own column on desktop, so
   // nothing on the sheet is covered; a sheet from the bottom on phones.
@@ -1289,7 +1299,7 @@ function renderPlayView(){
    +'<h1 class="pmx-name">'+esc(name)+'</h1>'+(sub?'<p class="pmx-sub">'+sub+'</p>':'')+'</div>'
    +'<div class="pmx-headbtns">'
    +'<button class="pm-btn" onclick="APP.pmPopup(\'log\')">Roll log'+(S.rollLog.length?' <span class="pmx-dim">'+S.rollLog.length+'</span>':'')+'</button>'
-   +(VIEW_ONLY?"":'<button class="pm-btn" onclick="APP.toSheet(\'play\')">Sheet</button>')
+   +(VIEW_ONLY?"":'<button class="pm-btn" onclick="APP.pmPopup(\'advance\')">Advance time</button>')
    +(VIEW_ONLY?"":'<button class="pm-btn pmx-pri" onclick="APP.openXP()">Improve skills'+(S.xp.pool?' <span class="pm-xpbadge">'+S.xp.pool+'</span>':'')+'</button>')
    +'</div></header>';
   if(VIEW_ONLY){
@@ -1391,6 +1401,14 @@ function pmResolveCardHTML(){
     h+='<div class="pmx-step"><label>Weapon <select'+ro+' onchange="APP.playSetRollWeapon('+i+',this.value)"><option value="">Not recorded (all effects shown)</option>'
      +opts.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("")+'</select></label></div>';
   }
+  const n0=r.combatRole&&r.oppTier?playEffectsWon(r.tier,r.oppTier):0,done=r.combatRole&&r.oppTier&&(n0<=0||(r.effectsPicked||[]).length>=n0)&&PM_FX_EDIT!==r;
+  if(done){
+    const picked=r.effectsPicked||[];
+    h+='<p class="pmx-outcome '+(n0>0?'good':n0<0?'bad':'')+'">vs '+(r.opponentAction==="no-parry"?'no defence':esc(r.oppTier))+' &rarr; '
+     +(n0>0?'<b>'+esc(picked.join(", "))+'</b>':n0<0?'opponent wins <b>'+(-n0)+' Special Effect'+(-n0>1?"s":"")+'</b>':'no Special Effects')+'</p>'
+     +'<div class="pmx-step"><button type="button" class="pmx-mini" onclick="PM_FX_EDIT=S.rollLog['+i+'];render()">Change</button> <button class="pmx-mini" onclick="APP.playJumpToInjury()">Record damage</button></div>';
+    return h+'</div>';
+  }
   if(r.combatRole){
     const noParry=r.opponentAction==="no-parry";
     h+='<div class="pmx-step"><span>'+(r.combatRole==="attack"?"Their defence:":"Their attack:")+'</span> '
@@ -1404,7 +1422,8 @@ function pmResolveCardHTML(){
       const eligible=SPECIAL_EFFECTS.filter(e=>canPickEffectForRoll(e,r));
       h+='<p class="pmx-outcome good">You win <b>'+n+' Special Effect'+(n>1?"s":"")+'</b>'+pmTip("effects")+': '+picked.length+' of '+n+' chosen.</p>';
       if(picked.length)h+='<div class="pm-fx-picks">'+picked.map((name,k)=>'<button type="button" class="pmx-mini on"'+ro+' title="Remove '+esc(name)+'" onclick="APP.playRemoveEffectChoice('+k+')">'+esc(name)+' &times;</button>').join(" ")+'</div>';
-      h+='<div class="pmx-fx-eligible">'+eligible.map(fxItemHTML).join("")+'</div>'
+      if(picked.length>=n&&PM_FX_EDIT!==r)h+='<p class="pmx-small">All chosen. <button type="button" class="pmx-link" onclick="PM_FX_EDIT=S.rollLog['+i+'];render()">Change</button></p>';
+      else h+='<div class="pmx-fx-eligible">'+eligible.map(fxItemHTML).join("")+'</div>'
        +'<p class="pmx-dim pmx-small">Showing the '+eligible.length+' effects this roll allows'+(r.weapon?' with '+esc(r.weapon):'')+'. Check situational requirements with your GM.</p>';
     }else if(n<0){
       h+='<p class="pmx-outcome bad">Your opponent wins <b>'+(-n)+' Special Effect'+(-n>1?"s":"")+'</b> against you. They choose.</p>';
@@ -1454,7 +1473,9 @@ function pmWeaponCardsHTML(){
 }
 function pmCombatTabHTML(){
   const fxOpen=!!PM_FX_SEARCH;
-  return pmTurnStripHTML()+pmResolveCardHTML()+pmWeaponCardsHTML()+pmActionsPanelHTML()
+  // The roll card folds to a summary once effects are chosen, so the weapons'
+  // Attack/Parry sit right under it for the next roll or a quick parry.
+  return pmResolveCardHTML()+pmWeaponCardsHTML()+pmTurnStripHTML()+pmActionsPanelHTML()
    +'<details class="pm-box pmx-fxref" id="pm-actions"'+(fxOpen?' open':'')+'><summary><h3>Special Effects reference</h3><span class="pmx-dim">all '+SPECIAL_EFFECTS.length+', with rules text</span></summary>'+specialEffectsPanel()+'</details>';
 }
 // ---- Roll tray (Play Mode redesign batch 2) ----

@@ -25,7 +25,7 @@ Practice Combat features remain paused. Progress **3/8**.
 
 ## Waiting on someone
 
-- **Owner:** run the migration; say what the sketch's **Advance Time** button should do; confirm whether ranged weapons should offer Parry (Play Mode hides it; Core p.97 covers parrying ranged attacks with shields, not parrying with a bow); later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
+- **Owner:** run the migration; confirm whether ranged weapons should offer Parry (Play Mode hides it; Core p.97 covers parrying ranged attacks with shields, not parrying with a bow); later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
 - **ChatGPT (Chat):** audits resume. Next case batch: Subsystem 5 (Combat) open gaps in `combat-cases-batch-1.md`, as a docs-only PR. Optional: Subsystem 4 Advancement extras (1d6+1 option, Passion helper) as owner-decision notes.
 - **ChatGPT (Work), when credits return:** one batched session: Play Mode live check, the multi-account check (after the migration), and the new-item pop-up check.
 

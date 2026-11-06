@@ -5,6 +5,18 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode: Advance Time, quicker combat, no Sheet button
+
+- **Advance time** (header button) opens a menu with four options:
+  - **Rest one day:** each Minor Wound heals your Healing Rate. Serious and Major Wounds say they need a week or a month (Core p.80).
+  - **Recover one Fatigue level.**
+  - **End the fight:** clears initiative and Surprised, and restores Action Points.
+  - **Start a new session:** refills Luck Points.
+
+  Magic Points stay manual.
+- **Combat:** once you've chosen your Special Effects (or no effects are won), the combat roll card shrinks to one line, e.g. "vs Failure → Impale, Bypass Armour". Attack and Parry sit right under it for the next roll. Change reopens the choices.
+- The **Sheet** button is gone from Play Mode.
+
 ## Play Mode: characteristics row, steady side panel, cleaner tabs
 
 - **The characteristics sit in their own row across the top**, like D&D Beyond's ability scores. Action Points, Initiative, Magic Points, Luck and Fatigue follow in the same row. Damage modifier, Initiative bonus, Movement, Healing rate and Experience modifier are in an Attributes box above the Body.
