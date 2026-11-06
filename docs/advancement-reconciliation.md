@@ -41,3 +41,6 @@
    - (f) Reload after each step.
 3. **Hazards (HZ), diseases (D), survival (S):** these stay GM-assisted by design. Chat should confirm that the Play Mode hazard notes match Core pp.74–85, a docs-only check.
 
+## Play Mode hazard note source review (ChatGPT, 2026-11-06)
+
+Read `docs/advancement-hazard-notes-review.md` for a page-verified audit of the actual Body → Hazards popup. The review covers Acid (printed Core p.68), asphyxiation/blood loss (p.71), disease and poison (pp.74–75), falls/sleep (p.78), fire/exertion (p.79) and healing (p.80). Its compact wording recommendations remain GM-assisted and do not request automated hazard timers. Claude to review and, if approved, fix prose in a separate code PR. This source review does **not** count as the still-outstanding owner-only live Subsystem 4 pass or optional owner decisions. **Progress 4/8.**
