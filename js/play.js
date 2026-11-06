@@ -1180,24 +1180,10 @@ function pmNotesPanelHTML(){
   return '<div class="pm-box"><h3>Notes</h3>'
    +(S.concept.notes?('<p class="pm-notes">'+esc(S.concept.notes).replace(/\n/g,"<br>")+'</p>'):'<p class="pm-empty">No background notes yet. Add them on the Concept step.</p>')+'</div>';
 }
-function pmCharsCompactHTML(){
-  const c=effectiveChars(),order=["STR","CON","SIZ","DEX","INT","POW","CHA"];
-  const mv=moveRate(),ib=playInitiativeBonusNow();
-  let h='<div class="pm-box pmx-chars"><h3>Characteristics</h3><div class="pmx-chargrid">'
-   +order.map(k=>'<div title="'+k+' ×5 = '+(c[k]*5)+'%"><span>'+k+'</span><b>'+c[k]+'</b></div>').join("")+'</div>';
-  h+='<dl class="pmx-attrs">'
-   +'<div><dt>Damage mod</dt><dd>'+esc(dmCalc(c.STR,c.SIZ))+'</dd></div>'
-   +'<div><dt>Initiative bonus</dt><dd>'+ib.total+'</dd></div>'
-   +'<div><dt>Move</dt><dd>'+mv.m+' m</dd></div>'
-   +'<div><dt>Healing rate</dt><dd>'+healRate(c.CON)+'</dd></div>'
-   +'<div><dt>Experience mod</dt><dd>'+(xpMod(c.CHA)>=0?"+":"")+xpMod(c.CHA)+'</dd></div>'
-   +'</dl></div>';
-  return h;
-}
 function pmTrackersHTML(){
   const v=charVitals(),maxAP=v.maxAP,remainAP=maxAP-Math.min(S.play.apUsed,maxAP);
   const ib=playInitiativeBonusNow(),ini=S.play.initiative;
-  const row=(k,tip,val)=>'<div class="pmx-trk"><span class="k">'+k+pmTip(tip)+'</span><span class="val">'+val+'</span></div>';
+  const row=(k,tip,val)=>'<div class="pmx-cell pmx-trk"><span class="k">'+k+pmTip(tip)+'</span><span class="val">'+val+'</span></div>';
   let h='<div class="pmx-trackers">';
   h+=row("Action Points","ap",'<span class="pm-pips">'+Array.from({length:maxAP},(_,i)=>'<button class="pm-pip'+(i<remainAP?"":" off")+'" aria-label="action point '+(i+1)+'" onclick="APP.playApSetPip('+i+')"></button>').join("")+'</span>'
     +'<button type="button" class="pmx-mini" onclick="APP.playNewRound()" title="New combat round: restore all AP">New round</button>');
@@ -1211,8 +1197,26 @@ function pmTrackersHTML(){
   if(FATIGUE_TABLE.indexOf(r)>0)h+='<p class="pmx-small pmx-warntext">'+esc(v.fatigue)+': skill rolls '+GRADE_LABEL[r.grade]+(r.ap?', Action Points '+r.ap:'')+(r.init?', Initiative '+r.init:'')+'. <button type="button" class="pmx-link" onclick="APP.pmPopup(\'fatigue\')">Details</button></p>';
   return h;
 }
+// D&D Beyond-style top row: the seven characteristics, then the trackers used
+// every round, across the full width above the columns.
+function pmTopRowHTML(){
+  const c=effectiveChars();
+  return '<div class="pmx-top" role="group" aria-label="Characteristics and trackers"><div class="pmx-chars-row">'
+   +["STR","CON","SIZ","DEX","INT","POW","CHA"].map(k=>'<div class="pmx-cell pmx-char" title="'+k+' ×5 = '+(c[k]*5)+'%"><span class="k">'+k+'</span><b>'+c[k]+'</b></div>').join("")
+   +'</div>'+pmTrackersHTML()+'</div>';
+}
+function pmAttrsBoxHTML(){
+  const c=effectiveChars(),mv=moveRate(),ib=playInitiativeBonusNow();
+  return '<div class="pm-box pmx-attrbox"><h3>Attributes</h3><dl class="pmx-attrs">'
+   +'<div><dt>Damage modifier</dt><dd>'+esc(dmCalc(c.STR,c.SIZ))+'</dd></div>'
+   +'<div><dt>Initiative bonus</dt><dd>'+ib.total+'</dd></div>'
+   +'<div><dt>Movement</dt><dd>'+mv.m+' m</dd></div>'
+   +'<div><dt>Healing rate</dt><dd>'+healRate(c.CON)+'</dd></div>'
+   +'<div><dt>Experience modifier</dt><dd>'+(xpMod(c.CHA)>=0?"+":"")+xpMod(c.CHA)+'</dd></div>'
+   +'</dl></div>';
+}
 function pmStatsColumnHTML(){
-  return pmCharsCompactHTML().replace('<h3>Characteristics</h3>','<h3>Characteristics</h3>').replace(/<\/div>$/,pmTrackersHTML()+'</div>')+pmBodyBoxHTML();
+  return pmAttrsBoxHTML()+pmBodyBoxHTML();
 }
 function pmBodyBoxHTML(){
   const v=charVitals();
@@ -1230,7 +1234,7 @@ function pmRollLogHTML(){
 // One pop-up for descriptions and secondary detail, so reading a rule never
 // pushes the sheet around. Re-rendered with the page, so it stays current.
 function pmPopupHTML(){
-  if(!PM_POPUP)return "";
+  if(!PM_POPUP)return '<aside class="pmx-side pmx-side-empty" aria-label="Details"><p class="pmx-dim">Details appear here. Choose a Special Effect, a body location, or the roll log.</p></aside>';
   const k=PM_POPUP.k;let title="",body="";
   if(k==="loc"){const loc=S.play.selectedLoc;if(!loc){PM_POPUP=null;return "";}title=loc;body=pmLocDetail();}
   else if(k==="fx"){const e=SPECIAL_EFFECTS[PM_POPUP.i];if(!e){PM_POPUP=null;return "";}
@@ -1278,7 +1282,7 @@ function renderPlayView(){
   const sub=[species,S.culture,careerName,pmCampaignLabel()].filter(Boolean).map(esc).join(" · ");
   const initials=name.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join("")||"?";
   const scroll=pmSaveScroll();
-  let h='<div class="pm-wrap pmx pmx-dash" data-pm-style="clean" data-view="'+(PM_VIEW==="right"?"right":PM_VIEW)+'"'+(PM_POPUP?' data-side="open"':'')+'>';
+  let h='<div class="pm-wrap pmx pmx-dash" data-pm-style="clean" data-view="'+(PM_VIEW==="right"?"right":PM_VIEW)+'"'+'>';
   h+='<header class="pmx-head">'
    +'<div class="pmx-avatar">'+(S.concept.portrait?'<img src="'+S.concept.portrait+'" alt="">':'<span>'+esc(initials)+'</span>')+'</div>'
    +'<div class="pmx-id"><button class="pmx-back" onclick="APP.backFromPlay()">'+backLabel+'</button>'
@@ -1293,6 +1297,7 @@ function renderPlayView(){
      +(VIEW_ONLY_IS_DM?', except Inventory (as DM you can edit loot/gear here).':'. Only they can change it.')+'</div>';
   }
   if(PM_MSG)h+='<p class="warn pmx-msg" role="status">'+esc(PM_MSG)+'</p>';
+  h+=pmTopRowHTML();
   h+='<div class="pmx-cols">';
   h+='<section class="pmx-col pmx-col-stats" data-scroll="stats" aria-label="Characteristics and body">'+pmStatsColumnHTML()+'</section>';
   h+='<section class="pmx-col pmx-col-skills" data-scroll="skills" aria-label="Skills">'+pmSkillsPanelHTML()+'</section>';

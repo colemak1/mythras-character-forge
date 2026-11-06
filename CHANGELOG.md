@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode: characteristics row, steady side panel, cleaner tabs
+
+- **The characteristics sit in their own row across the top**, like D&D Beyond's ability scores. Action Points, Initiative, Magic Points, Luck and Fatigue follow in the same row. Damage modifier, Initiative bonus, Movement, Healing rate and Experience modifier are in an Attributes box above the Body.
+- **Nothing moves when a side panel opens.** Its space on the right is always kept, with a short hint while empty.
+- **No scrollbars on the tab row** (Combat, Spells, Inventory, Features & traits, Notes).
+
 ## Play Mode layout v2: one screen, columns that scroll, side panel
 
 Built from the owner's sketch and D&D Beyond's sheet.
