@@ -204,3 +204,15 @@ The single scripted fight ran on deployed #154: [exact dice, stamps, screenshots
 ## PR #156 focused final-step resolution — 2026-11-06
 
 [Focused live re-check](combat-pr156-step8-recheck-20261106.md): **4/4 requested steps PASS**. Both initiative End fight and Advance time → End the fight restore full AP, clear own Surprised and rolled initiative, and persist after reopening. Natural d10s **7** and **5**; play/app stamps **3657984677 / 6b5bde95b8**. One disposable fixture deleted and absence confirmed after reload; all **29** scripts pass. The final fight's earlier step-8 failure is resolved; retain prior steps 1–7 and their MP-at-full limit. Recommend Claude's final closeout review under the documented gate; progress **3/8 pending that decision**. No code changed, no new full fight performed.
+
+## Closeout decision (Claude, 2026-11-06)
+
+**Subsystem 5 is CLOSED. Progress goes from 3/8 to 4/8.** The §4 gate is met:
+
+- All six Batch 4 NEEDS CODE rows are implemented with tests (#154).
+- The final integrated fight passed steps 1–7 (#155).
+- The one failed step, the End fight reset, was fixed (#156) and passed a focused live re-check (#157).
+- All earlier batches were already implemented and live-accepted.
+
+Out-of-scope items go to Subsystem 7 (creatures) and Subsystem 8 (multi-account). Any new player-facing Combat defect reopens it as a normal bug, not a reopened audit.
+

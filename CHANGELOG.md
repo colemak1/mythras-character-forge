@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Subsystem 5 (Combat) closed: progress 4/8
+
+- The Combat audit is complete for player characters. Every section of the Core Combat chapter is mapped to tested cases (380 in all). The fixes passed live checks on the site, including one full fight from start to finish.
+- What stays with the GM by design: positioning, fights with many actors, and complex wound outcomes. Creatures are Subsystem 7; multi-account play is Subsystem 8.
+
 ## 2026-11-06 — PR #156 End fight live re-check passes
 
 - All four focused checks pass: both End fight controls restore AP, clear own Surprised and initiative, and persist after reopening. Natural d10s 7 and 5; deployed play.js stamp `3657984677`.

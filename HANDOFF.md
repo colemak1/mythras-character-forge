@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by ChatGPT (Work)_
+_Last updated: 2026-11-06 by Claude_
 
 ## Priorities
 
@@ -10,15 +10,14 @@ _Last updated: 2026-11-06 by ChatGPT (Work)_
 
 1. **Subsystem 8 critical work:** security fix merged (PR #130). Migration `20261106120000_gm_private_state_and_assignment_checks.sql` **ran successfully live** with an owner-private safety copy. Verification: table `campaign_gm_state`, 1 private row, 0 campaigns retaining old session state. Multi-account acceptance remains outstanding and was excluded from the latest owner-only session.
 2. **Play Mode UX: done** (PRs #133–#137, then layout v2 from the owner's sketch: one-screen columns and a D&D Beyond-style side panel, 2026-11-06): layout, physics dice tray, combat flow, skill search and pins, Body tab, tips, Gear and Notes. The theme lives in `play-clean.css` under `data-pm-style="clean"`, so a future player style picker only swaps token sets. Owner-only live pass recorded in `docs/play-mode-live-acceptance-20261105.md`: desktop overflow and incomplete result compaction fail; numerical Core spot-checks pass; terminal Fatigue labels need correction. Exact 390px phone pass remains unverified (browser limitation).
-3. **Subsystem 5 Combat closeout:** #156 focused step-8 live re-check **4/4 PASS**. Both initiative End fight and Advance time → End the fight restore AP, clear own Surprised and initiative, and persist after reopening. Natural d10s 7 and 5; exact stamps/evidence in `docs/combat-pr156-step8-recheck-20261106.md`. Resolves #155's only failed final-fight step; retain steps 1–7 evidence and MP-at-full scope limit. One disposable fixture deleted/reload verified; all 29 scripts pass. **Recommend Claude review evidence and finalize Subsystem 5 closeout (3/8 → 4/8), then continue Advancement reconciliation. Progress remains 3/8 pending that review.**
+3. **Subsystem 5 Combat: CLOSED 2026-11-06** (progress **4/8**). Evidence and decision are in `combat-closeout-review.md`. **Now: Subsystem 4 (Advancement, hazards and recovery)**: Claude adds regression tests for the "Pass (code)" rows, the owner decides the two optional extras, then Work runs one live pass.
 
-Practice Combat features remain paused. Progress **3/8**.
+Practice Combat features remain paused. Progress **4/8**.
 
 ## In progress
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Combat final integrated acceptance | ChatGPT (Work) → Claude | #154 fight + #156 focused reset verified; docs PR follows | Earlier steps 1–7 pass; step 8 now resolved with 4/4 focused checks PASS. Both paths persist after reopen. Disposable deleted/reload checked; 29 scripts pass. Claude: final closeout review. |
 | Advancement reconciliation (start) | ChatGPT (Chat) → Claude | `docs/advancement-reconciliation.md` in same docs-only PR | Existing 216-case inventory summarized against `docs/subsystem-plan.md`. Training/passion/recovery live gaps and two optional choices remain; Subsystem 4 OPEN. |
 | Combat Batch 3 focused acceptance | ChatGPT (Work) → Claude | #150 verified; docs PR follows | All 4 groups PASS. Earlier Knockback failure retracted; no extra starting metre. Screenshot confirms table fit. Throwaway deleted/reload checked; 28 scripts pass. |
 | Combat Batch 2 live acceptance | ChatGPT (Work) → Claude | PR #144 verified; docs PR follows | All five requested check groups passed. Evidence and fumble-scope caveat: `docs/combat-batch2-live-acceptance-20261106.md`. Disposable fixture deleted; absence confirmed after reload. All 27 local test scripts passed. No code changed. |
@@ -30,8 +29,8 @@ Practice Combat features remain paused. Progress **3/8**.
 ## Waiting on someone
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **Claude:** focused step-8 re-check complete and passing. Review/merge `docs/combat-pr156-step8-recheck-20261106.md`, assess the documented closeout gate and record the final Subsystem 5 decision; no further full fight requested.
-- **Claude:** the final failed reset check is resolved. Subject to the existing source/test closeout gate, recommend closing Subsystem 5 (3/8 → 4/8), then review `docs/advancement-reconciliation.md`.
+- **Claude:** Subsystem 4: deterministic tests for the advancement "Pass (code)" rows (X05–X13, C01–C16, T01–T17, H02–H07, F14–F16, AG), then map the remaining gaps.
+- **Owner (Subsystem 4 decisions):** (1) offer 1d6+1 skill improvement as a campaign option (Core X14)? (2) add a small Weak/Moderate/Strong Passion shift helper (X19)? Both optional.
 - **ChatGPT (Chat):** Combat closeout map and missing child cases delivered in docs-only PR; `docs/advancement-reconciliation.md` begins Subsystem 4. Further S4 source/test reconciliation follows Claude's Combat closeout review.
 
 
