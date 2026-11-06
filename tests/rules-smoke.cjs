@@ -448,7 +448,7 @@ test('Update 10: reload actions are weapon-specific rather than first-weapon-der
 });
 test('Update 10: all ranged stat columns display on digital sheet and Play Mode',()=>{
  assert(playSource.includes('<th>Force</th><th>DM</th><th>Load</th><th>Impale</th>'));
- assert(playSource.includes('IMPALE SIZE'));
+ assert(playSource.includes('"Impale size "+w.impaleSize'),'Play Mode weapon cards show the ranged Impale size');
  assert(fs.readFileSync(path.join(root,'js','render.js'),'utf8').includes('w.impaleSize'));
 });
 

@@ -794,11 +794,11 @@ window.APP={
    if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
    if(tier==="Critical")APP.markChecked(key);
    PM_EFFECT_ROLL_REF=null;
-   S.rollLog.unshift({label:e.label+tag,pct,roll:r===100?"00":r,tier,combat:key.startsWith("style:")||key==="std:Evade"||key==="std:Unarmed",combatKind:key==="std:Evade"?"evade":"style",oppTier:null});
+   S.rollLog.unshift({label:e.label+tag,pct,roll:r===100?"00":r,tier,combat:key.startsWith("style:")||key==="std:Evade"||key==="std:Unarmed",combatKind:key==="std:Evade"?"evade":"style",oppTier:null,...(key==="std:Evade"?{combatRole:"defence"}:{})});
    S.rollLog=S.rollLog.slice(0,8);render();},
  // A combat roll made with a specific weapon (Core pp.88, 100): the weapon is
  // recorded so weapon-specific Special Effects can be filtered.
- rollWithWeapon(weapon,key,fam){if(viewOnlyBlock())return;
+ rollWithWeapon(weapon,key,fam,role){if(viewOnlyBlock())return;
    if(weapon!=="Unarmed"&&!weaponByName(weapon))return;
    const em=entryMap(),e=key?em[key]:null;if(key&&!e)return;
    let g,label;
@@ -809,13 +809,16 @@ window.APP={
    PM_MSG=null;const r=d100(),tier=resolveRoll(r,g.pct),tag=g.grade!=="standard"?" ("+GRADE_LABEL[g.grade]+")":"";
    if(key&&!fam){if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);if(tier==="Critical")APP.markChecked(key);}
    PM_EFFECT_ROLL_REF=null;
-   S.rollLog.unshift({label:label+tag,pct:g.pct,roll:r===100?"00":r,tier,combat:true,combatKind:"style",oppTier:null,weapon});
+   const entry={label:label+tag,pct:g.pct,roll:r===100?"00":r,tier,combat:true,combatKind:"style",oppTier:null,weapon};
+   // Attack/Parry buttons on a weapon card record the role up front (Core pp.91–92).
+   if(role==="attack"||role==="defence")entry.combatRole=role;
+   S.rollLog.unshift(entry);
    S.rollLog=S.rollLog.slice(0,8);render();},
- rollUnfamiliarWeapon(weapon){if(viewOnlyBlock())return;
+ rollUnfamiliarWeapon(weapon,role){if(viewOnlyBlock())return;
    const id=String(weapon).replace(/\W+/g,"_"),fam=document.getElementById("fam-"+id)?.value||"substantially";
    const styles=stylesList(),pick=document.getElementById("famstyle-"+id)?.value;
    const key=styles.some(s=>s.key===pick)?pick:(styles[0]?.key||null);
-   APP.rollWithWeapon(weapon,key,fam);},
+   APP.rollWithWeapon(weapon,key,fam,role);},
  playSetRollWeapon(i,name){if(VIEW_ONLY)return;const r=S.rollLog[i];if(!r?.combat||r.combatKind==="evade")return;
    if(name&&name!=="Unarmed"&&!(S.gearWeapons||[]).includes(name))return;
    r.weapon=name||undefined;r.effectsPicked=[];render();},
@@ -1169,9 +1172,10 @@ window.APP={
  playTab(t){S.play.tab=t;render();},
  // Keep the next step of a combat roll visible after the sheet redraws.
  playJumpToEffects(i=null){PM_EFFECT_ROLL_REF=Number.isInteger(i)?S.rollLog[i]||null:null;PM_FX_SEARCH="";S.play.tab="effects";render();requestAnimationFrame(()=>{
-   const panel=$("#pm-actions");if(panel)panel.scrollIntoView({block:"start"});
+   const panel=$("#pm-resolve")||$("#pm-actions");if(panel)panel.scrollIntoView({block:"start"});
  });},
- playJumpToInjury(){requestAnimationFrame(()=>{
+ // The hit location diagram lives on the Body tab.
+ playJumpToInjury(){S.play.tab="body";render();requestAnimationFrame(()=>{
    const panel=$("#pm-vitals");if(panel)panel.scrollIntoView({block:"start"});
  });},
  /* export / import */
