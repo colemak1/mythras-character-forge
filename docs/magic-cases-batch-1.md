@@ -19,12 +19,12 @@ ChatGPT also wrote 58 cases in PR #111 (`magic-subsystem-cases.md`, "batch 1" se
 | **Not implemented** | The case expects app behaviour that doesn't exist yet. |
 | **Decision** | Needs a ruling from the owner or ChatGPT before code changes. |
 
-“Pass” in the case tables describes implementation/automated coverage, not blanket live acceptance. The signed-in session below supplies live evidence for FM-009–011, the 0 MP block and the card display; catalogue acceptance remains open.
+“Pass” in the case tables describes implementation/automated coverage, not blanket live acceptance. The signed-in sessions below supply live evidence for FM-009–011, the 0 MP block and the card display. The post-PR #118 recheck also passes the requested 70-choice catalogue and Beastcall builder/Play Mode acceptance; it does not verify every spell's effects.
 
 ## Summary
 
 - Folk Magic casting costs, the 0 MP block, the single Folk Magic skill, and the 1 Turn / Intensity 1 / Magnitude 1 / range display pass, with tests in `tests/magic-folk-cases.cjs`.
-- **Folk Magic spell catalogue implemented on main** (D-1, PR #116): all 70 Core spells with traits, descriptions and pages. **Live acceptance failed in the session below:** the builder still exposed the previous empty catalogue/manual-entry interface after reload. Effects remain GM-resolved.
+- **Folk Magic spell catalogue accepted live after PR #118** (D-1, implemented in PR #116): all 70 Core choices appeared; selected Beastcall (X) showed its traits, Core p.124 and animal speciality box, and Play Mode showed its traits. The earlier stale-picker failure is retained below as historical evidence. Effects remain GM-resolved.
 - Magic Points are a manual counter. There are no recovery sources, no committed MP for ongoing magic, and no optional exhaustion rules. The owner decided to keep recovery manual (D-2).
 - No active-spell tracking exists for Folk Magic: concentration, trigger, dismissal and duration (FM-015–017, FM-021, MG-039). The owner decided not to add it (D-3); Mysticism Talents keep their active state.
 
@@ -114,7 +114,7 @@ ChatGPT also wrote 58 cases in PR #111 (`magic-subsystem-cases.md`, "batch 1" se
 
 ### Individual Folk Magic spells
 
-**Catalogue implemented on main** (D-1): all 70 spells, with Core traits, descriptions and page numbers, come from `folk-magic-catalogue.json` (tests: `tests/magic-folk-catalogue.cjs`). Name, traits, description and specialisation have automated coverage; **their live display is not accepted yet**, because this session still received the previous interface. Spell **effects stay GM-assisted**: the app doesn't apply damage steps, durations or resistance automatically (D-3). The general casting cases above still apply to every spell.
+**Catalogue implemented on main** (D-1): all 70 spells, with Core traits, descriptions and page numbers, come from `folk-magic-catalogue.json` (tests: `tests/magic-folk-catalogue.cjs`). Name, traits, description and specialisation have automated coverage. The post-PR #118 live recheck accepted the 70-choice list and selected Beastcall's builder details and Play Mode traits; it does not certify all 70 individual cards or effects. Spell **effects stay GM-assisted**: the app doesn't apply damage steps, durations or resistance automatically (D-3). The general casting cases above still apply to every spell.
 
 | ID | Given | Core says | Expected app behaviour |
 |---|---|---|---|
@@ -216,7 +216,7 @@ Find (X) is in the catalogue with all six printed variants in its description. T
 
 ChatGPT (Work), one continuous signed-in Chrome session on [the live site](https://colemak1.github.io/mythras-character-forge/). Account UI positively showed **SIGNED IN / Test Player**. Used the existing dedicated **Magic Audit — Paired Skills** fixture, changed only through normal builder and Play Mode controls. Folk Magic was **29%**, POW/max MP **11**; began these casts at **2/11 MP**, devotional pool **5/6**. No random results or account calls were mocked. Reload evidence is in `magic-subsystem-cases.md`.
 
-### Catalogue acceptance: failed / follow-up required
+### Historical catalogue acceptance failure — superseded by post-PR #118 recheck below
 
 - With Folk Magic acquired, the Magic step showed **Spells known (0)**, an empty list, the **Add a GM-approved spell name** field and the old note that the unverified Imperative catalogue had been removed. There were no 70 Core spell choices. A normal reload and an attempted hard refresh did not expose them.
 - Entering **Beastcall (X)** manually was possible, but the row read **Player-recorded spell; consult the Core Rulebook and GM.** It had no Core traits, **Core p.124** citation or animal-type speciality field. The Play Mode card likewise had no catalogue traits. This manual fallback does **not** pass the catalogue picker/speciality acceptance check.
@@ -257,3 +257,29 @@ No dropped digits or additional numeric transcription defects were found in thes
 ### Validation
 
 All **17** `tests/*.cjs` files ran with the repository-prescribed loop on **d5bc11a** and passed; no `FAIL` markers. This includes `magic-folk-cases.cjs`, `magic-folk-catalogue.cjs` and `unified-routes.cjs`. The tests do not override the failed live catalogue acceptance above. Documentation only changed in this session.
+
+## Catalogue-only live recheck after PR #118 — 2026-11-05 (America/Los_Angeles)
+
+**Result: all requested catalogue acceptance checks passed.** Used the existing signed-in Chrome tab on [the live site](https://colemak1.github.io/mythras-character-forge/) and reloaded once. The UI identified the account as **Test Player**. Fixture: **Magic Audit — Paired Skills**, ID `fe479efb-f2a6-4af0-8abc-9ea9108b5f21`, Folk Magic **29%**. Repository reference for this recheck: merged PR #118, **567592369b5dacdd7f99c2e7d3cd38c83b51ff78**. The observed script URL stamps match that revision's `index.html`; matching stamps alone are not a byte-level verification of all served assets.
+
+| Requested check | Live evidence | Result |
+|---|---|---|
+| Builder lists 70 Core spells | Opened Edit Character → Magic. Counted **70** spell-choice buttons and read the complete list, from **Alarm** through **Witchsight**, with Beastcall (X) and Find (X) present. The explanatory note identified **Mythras Core pp.123–129**. “Spells known (1)” is the character's learned count, not the catalogue size. | Pass |
+| Pick Beastcall (X) | The old manual Beastcall entry initially resolved to the new catalogue details. Toggled Beastcall (X) off and back on using its catalogue button to exercise actual picker selection. The speciality input disappeared when deselected and returned when selected. | Pass |
+| Builder traits | Selected row displayed **Instant**, **Ranged**, **Resist (Willpower)**. | Pass |
+| Core page | The selected spell's description ended with **(Core p.124)**. | Pass |
+| Animal speciality box | The selected spell exposed the editable textbox **speciality: animal type**. Left it blank; animal-value persistence was not requested or tested. | Pass |
+| Play Mode traits | Used Finish Creating → Enter Play Mode. Beastcall (X) displayed **1 MP base · 1 Turn · Intensity 1 · Magnitude 1 · ranged 29 m · Instant, Ranged, Resist (Willpower)**. | Pass |
+
+The old empty picker did **not** recur. For deployment evidence, the script URLs in the loaded document carried these content-hash stamps:
+
+| Script | Observed `?v=` |
+|---|---|
+| `js/data.js` | `cc7d574352` |
+| `js/render.js` | `d67cd54fd5` |
+| `js/cloud.js` | `153f1983e5` |
+| `js/play.js` | `5ffaf0d6f1` |
+
+Only catalogue acceptance was repeated: no casting, costs, reload regression or additional book audit. The original source check remains the user's uploaded Mythras 2e Core PDF cited in the previous section; this recheck concerns live UI delivery. The fixture retains one catalogue-resolved **Beastcall (X)**, blank animal speciality, personal MP **2/11**, devotional pool **5/6**, and no pending preparation. Spell effects remain GM-resolved. Magic is paused after this catalogue check under the current priorities; Subsystem 6 remains open and progress remains **3/8**.
+
+Validation for this docs-only report: all **18** `tests/*.cjs` files passed using the prescribed loop on **5675923**, including the new asset-version check; no `FAIL` markers. `git diff --check` passed. No production or test files were changed.
