@@ -2,30 +2,31 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-05 by ChatGPT (Work; America/Los_Angeles)_
+_Last updated: 2026-11-06 by Claude_
 
 ## Priorities
 
-1. **Subsystem 6 — Magic:** PRs **#114–116 are merged**: 70 Core Folk spells and initial 66 Animism cases. **Live catalogue acceptance is still open:** the signed-in browser continued to show the old empty picker/manual-entry interface after reload despite a successful #116 Pages run. See `docs/magic-cases-batch-1.md`. PR #110 immediate-reload recovery passed for Mysticism, Sorcery and Theism, including decline/no-repeat; see `docs/magic-subsystem-cases.md`. **Subsystem 6 is not closed.**
-2. **Subsystem 4 — Advancement, hazards and recovery:** finish reopened cases.
-3. **Subsystem 5 — Combat:** verify actions, Special Effects, wounds and situations.
+The owner deprioritized Magic on 2026-11-06: player-facing work comes first. Magic still gets done, later.
 
-Practice Combat features remain paused. Subsystem progress remains **3/8**.
+1. **Subsystem 5 — Combat:** verify actions, Special Effects, wounds and situational rules.
+2. **Subsystem 4 — Advancement, hazards and recovery:** finish the reopened cases.
+3. **Subsystem 6 — Magic (paused after the catalogue check):** catalogue live acceptance, then the open items listed in `magic-cases-batch-1.md`, `magic-cases-batch-2-animism.md` and `magic-subsystem-cases.md`.
+
+Practice Combat features remain paused. Progress **3/8**.
 
 ## In progress
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Resolve live Folk catalogue mismatch | Claude | Follow-up to merged #116 | Main has 70 spells and passing tests, but live builder exposed none; manual Beastcall (X) had no traits/page/speciality. Check served asset bodies/invalidation: #116 changes data/render without bumping their index version parameters. Stale assets are a hypothesis, not a confirmed cause. |
-| Map PR #111's AN-B, MY-B, SO-B, TH-B, OR-B cases and Batch 2 Animism (`magic-cases-batch-2-animism.md`) to app status and tests | Claude | next | Not started |
-| Animism remaining children (spirit abilities, example spirits pp.145–153), then Mysticism, Sorcery, Theism children | ChatGPT (Chat) | docs-only PRs | Next |
-| Catalogue acceptance after served-build correction | ChatGPT (Work) | After Claude follow-up | Recheck all 70 choices, Beastcall traits/Core p.124/animal speciality, Play Mode traits and five catalogue cards. Existing live casting costs/card metadata and reload checks passed; no need to repeat those solely for documentation. |
+| Stale live assets (catalogue not showing) | Claude | this PR | Cause: `?v=` cache stamps in `index.html` were hand-numbered and weren't bumped for PRs #110, #112 and #116, so browsers could keep old JS. Now content-hashed by `scripts/stamp-assets.py`, enforced by `tests/asset-versions.cjs` |
+| Folk catalogue live acceptance | ChatGPT (Work) | after this PR deploys | 70 choices in the picker; Beastcall (X) traits, Core p.124, animal speciality; Play Mode traits |
+| Combat case inventory (subsystem 5) | ChatGPT (Chat) | docs-only PR | Next, replacing Animism children |
 
 ## Waiting on someone
 
-- **Owner:** confirm D-4 (round up specialist starting spells: 35% → 4) and D-5 (casting interruptions left to the GM). Both recommended by ChatGPT in `docs/decisions.md`.
-- **Claude:** review/merge this docs-only evidence PR once Tests passes; investigate the served catalogue mismatch in a separate code PR, then hand back for the remaining catalogue acceptance.
-- **ChatGPT (Chat):** continue remaining Animism children, then the other traditions. Five-entry numeric spot check is complete (Bladesharp, Breath, Pierce, Sleep, Speedart); no additional defects found.
+- **Owner:** confirm D-4 (round up specialist starting spells) and D-5 (casting interruptions left to the GM). Low priority now that Magic is paused.
+- **ChatGPT (Chat):** Combat cases (subsystem 5) in the usual table format. Magic children are paused.
+- **ChatGPT (Work):** the catalogue acceptance above.
 
 ## Notes
 

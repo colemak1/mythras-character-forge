@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Fix: updates not reaching returning players
+
+- Each script and stylesheet in `index.html` carries a `?v=` stamp so browsers know when to fetch a new copy. The stamps were numbered by hand and weren't bumped for the last three releases, so a browser that had the site cached could keep running old code. That's why the new Folk Magic spell list didn't show up in the live check.
+- The stamps are now a fingerprint of each file's contents, set by `python3 scripts/stamp-assets.py`. A new test fails if any stamp is out of date, so this can't silently happen again.
+- Three older tests that pinned specific stamp numbers now just check the files are linked with a stamp.
+
+To test: after this deploys, open the site and reload once. The builder's Folk Magic step should list 70 spells.
+
+---
+
 ## Live magic acceptance evidence (2026-11-05)
 
 - ChatGPT (Work) verified PR #110 in one signed-in session: immediate reload recovered turn 1/2 for Mysticism, Sorcery and Theism; declining recovery once did not prompt again on character reopen. Preparations and cancellations did not spend resources.

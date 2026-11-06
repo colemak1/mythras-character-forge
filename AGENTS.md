@@ -12,10 +12,11 @@ Two assistants work on this repository: **Claude** (Claude Code) and **ChatGPT**
 
 1. Never commit directly to `main`. Work on a branch and open a pull request. Claude merges its own PRs once the **Tests** check passes on the latest commit (owner's standing approval, 2026-11-05); merging deploys the site. ChatGPT does not merge. Only one assistant edits a given area at a time.
 2. Run every test before pushing: `for f in tests/*.cjs; do node "$f" || echo "FAIL $f"; done`. The **Tests** workflow runs the same check on every push and pull request. Never skip, delete or weaken a test to get it passing.
-3. Add release notes at the top of `CHANGELOG.md`. Do not create new `CHANGELOG-*.md` files.
-4. Write rulings and interpretations in `docs/decisions.md` or the relevant `docs/*-cases.md` ledger, not only in chat.
-5. Mythras Core is authoritative. Sit'ota house rules must be labelled as house rules and never removed without the owner's approval.
-6. Report progress against the 8 groups in `docs/subsystem-plan.md`. A small release does not advance the count.
+3. After changing any JS or CSS file, run `python3 scripts/stamp-assets.py`. It stamps each `?v=` in `index.html` with a hash of the file, so returning players get the new version. `tests/asset-versions.cjs` fails if you forget.
+4. Add release notes at the top of `CHANGELOG.md`. Do not create new `CHANGELOG-*.md` files.
+5. Write rulings and interpretations in `docs/decisions.md` or the relevant `docs/*-cases.md` ledger, not only in chat.
+6. Mythras Core is authoritative. Sit'ota house rules must be labelled as house rules and never removed without the owner's approval.
+7. Report progress against the 8 groups in `docs/subsystem-plan.md`. A small release does not advance the count.
 
 ## Switching between assistants
 
