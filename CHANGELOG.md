@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Subsystem 4 — source-verified advancement, fatigue, healing and hazards cases
+
+- Added `docs/advancement-cases-batch-1.md`: **216 individual acceptance cases** across ten groups for Core Experience Rolls, skill and Passion improvements, temporary/permanent characteristic boosts, mentor training, ageing, fatigue/exertion, medical and natural healing, maiming, environmental hazards, disease/poison conditions and examples, survival, traps, weather, Luck Points and relevant interactions (printed Core pp.68–85 with cited supporting pages).
+- Checked original PDF and visually verified key ageing, training, disease, Fatigue, falling, fire, maiming and trap tables. Explicitly left the exact +20 training differential and fractional maiming calculations for GM/owner interpretation rather than inventing missing rules.
+- **Documentation only:** implementation/test status, live acceptance and GM-managed scope remain for Claude's mapping. Subsystem 4 is **OPEN**; 3/8 prior closeouts retained. No JS, HTML, CSS, tests or deployment configuration changed; local Node suite not run; CI is the required PR test signal.
+
+---
+
 ## Combat live acceptance after PR #121 (2026-11-05, America/Los_Angeles)
 
 - Signed-in checks passed for initiative arithmetic/manual d10/New Round retention, the three action groups and sampled 1-AP buttons, human unarmed stats, a successful attack against No parry, and selecting Press Advantage.
