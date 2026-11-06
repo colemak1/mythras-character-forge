@@ -2,16 +2,15 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by Claude (merged ChatGPT's PR #129)_
+_Last updated: 2026-11-06 by Claude_
 
 ## Priorities
 
-The owner deprioritized Magic on 2026-11-06: player-facing work comes first.
+**Owner direction, 2026-11-06:** after Subsystem 8's critical work, pause the remaining subsystem audits and overhaul Play Mode's usability. Play Mode should feel like a polished digital character sheet and table companion, closer to D&D Beyond but built on Mythras's mechanics: depth without clutter, short explanations, a clean, intentional design. This is not a restart of Practice Combat.
 
-1. **Subsystem 8 — Campaign and live integration:** 183 app-behaviour cases in `docs/campaign-cases-batch-1.md`. Claude maps them, starting with server-enforced ownership and GM/player permissions, then save/reload, membership and invites, Party Board, imports and backups. **Open.**
-2. **Subsystem 4 — Advancement:** all 216 cases mapped; rulings decided and implemented (PR #127). Optional extras: 1d6+1 improvement option, Passion shift helper. **Open.**
-3. **Subsystem 5 — Combat:** mapped and extended (PRs #121, #122); all requested live checks passed (PRs #123, #126). Broader ledger gaps remain. **Open.**
-4. **Subsystem 6 — Magic (paused).**
+1. **Subsystem 8 critical work:** security fix merged (PR #130). Remaining: the owner runs migration `20261106120000_gm_private_state_and_assignment_checks.sql`, then ChatGPT (Work) does the multi-account check in `campaign-cases-batch-1.md`.
+2. **Play Mode UX:** audit and redesign proposal ready for owner review (`docs/play-mode-ux-proposal.md`; full version with mockups shared with the owner). **No redesign code until the owner approves.** Then implement in five batches, preserving the rules engine, data and working features.
+3. **Then resume subsystem audits:** 4 (Advancement optional extras), 5 (Combat ledger gaps), 6 (Magic), 7 (Creatures and GM procedures), 8 (non-critical items and decisions D-S1 to D-S4).
 
 Practice Combat features remain paused. Progress **3/8**.
 
@@ -19,15 +18,15 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Subsystem 8 mapped; security fix | Claude | this PR | Found GM notes readable by players (S1), unchecked campaign assignment (S2), loose inventory RPC (S3). Fixed in code + migration `20261106120000_…`, verified on Postgres. **Owner must run the SQL** |
-| New-item pop-up live check (PR #128) | ChatGPT (Work) | — | GM gives items with and without Reveal; player sees each once; survives reload; player autosave doesn't erase it |
-| Multi-account permission tests | ChatGPT (Work) | after Claude's mapping | Disposable GM + 2 members + outsider accounts; direct backend requests, not just the UI |
+| Play Mode UX proposal | Owner | `docs/play-mode-ux-proposal.md` | Waiting for the owner's answers to the five questions |
+| Run Subsystem 8 migration | Owner | `supabase/migrations/20261106120000_…` | Supabase → SQL Editor → paste → Run |
+| Multi-account permission check | ChatGPT (Work) | after the migration | Plan at the end of `campaign-cases-batch-1.md` |
+| New-item pop-up live check (PR #128) | ChatGPT (Work) | — | GM gives items with and without Reveal; player sees each once; survives reload |
 
 ## Waiting on someone
 
-- **Owner:** confirm D-4 (round up specialist starting spells) and D-5 (casting interruptions left to the GM). Low priority while Magic is paused.
-- **Owner:** run `supabase/migrations/20261106120000_gm_private_state_and_assignment_checks.sql` in the Supabase SQL Editor. Then decisions D-S1 to D-S4 in `campaign-cases-batch-1.md` (invites, conflicting edits, profiles, GM continuity).
-- **ChatGPT (Work):** after the SQL is run, the multi-account check at the end of `campaign-cases-batch-1.md`.
+- **Owner:** approve or adjust the Play Mode proposal; run the migration; later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
+- **ChatGPT (Chat):** nothing new until the redesign is approved. Optional: review `docs/play-mode-ux-proposal.md` from a new player's point of view and suggest changes in a docs-only PR.
 
 ## Notes
 
