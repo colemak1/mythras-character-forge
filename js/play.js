@@ -907,7 +907,7 @@ function magicPanel(){
     }).join("");
     h+='</div>';
   });
-  h+='<p class="pm-empty" style="margin-top:10px">Sorcery and Mysticism use turn trackers; rolls occur on the final turn. AP and interruption are GM-managed. Mysticism activation and durations are manual; confirm each Talent category with the GM. Casting is blocked if you lack the minimum available points. Folk Magic, Sorcery, Mysticism, and Theism use distinct result-dependent costs (Core pp.122, 156, 165, 181). Animism has separate bound-spirit commands and manual tracking for spirit contact, binding vessel, and spirit-combat MP (Core pp.134–139); summoning, ritual Binding and spirit combat outcomes still require GM resolution. Consult Mythras Core and your GM for other requirements and effects.</p>';
+  h+='<details class="pmx-actinfo" style="margin-top:10px"><summary>How casting works here</summary><p class="pm-empty">Sorcery and Mysticism use turn trackers; rolls occur on the final turn. AP and interruption are GM-managed. Mysticism activation and durations are manual; confirm each Talent category with the GM. Casting is blocked if you lack the minimum available points. Folk Magic, Sorcery, Mysticism, and Theism use distinct result-dependent costs (Core pp.122, 156, 165, 181). Animism has separate bound-spirit commands and manual tracking for spirit contact, binding vessel, and spirit-combat MP (Core pp.134–139); summoning, ritual Binding and spirit combat outcomes still require GM resolution. Consult Mythras Core and your GM for other requirements and effects.</p></details>';
   return h;
 }
 // A roll-log row. Combat Style rolls that beat a Success (i.e. Critical or
@@ -1052,7 +1052,7 @@ function pmSkillsPanelHTML(){
      +'<button class="pm-btn roll" onclick="APP.roll(\''+jsq(e.key)+'\')">roll</button>')+'</div>';
   };
   h+='<div class="pm-box pm-skillsbox">'
-   +'<div class="pm-sect-head" title="Difficulty Grade adjusts rolled skill percentages — the GM calls a harder or easier Grade for the situation, not a fixed penalty per attempt. Very Easy x2 · Easy x1.5 · Standard x1 · Hard x2/3 · Formidable x1/2 · Herculean x1/10 · Automatic/Hopeless skip the roll entirely."><span class="no">03</span> SKILLS'+(ACTIVE_GRADE!=="standard"?' <span class="pm-gradenote">('+GRADE_LABEL[ACTIVE_GRADE]+')</span>':"")+'</div>'
+   +'<div class="pm-sect-head" title="Difficulty Grade adjusts rolled skill percentages — the GM calls a harder or easier Grade for the situation, not a fixed penalty per attempt. Very Easy x2 · Easy x1.5 · Standard x1 · Hard x2/3 · Formidable x1/2 · Herculean x1/10 · Automatic/Hopeless skip the roll entirely."><span class="no">03</span> SKILLS'+pmTip("grade")+(ACTIVE_GRADE!=="standard"?' <span class="pm-gradenote">('+GRADE_LABEL[ACTIVE_GRADE]+')</span>':"")+'</div>'
    +'<div class="pm-ghost">03</div>';
   h+='<input type="search" class="pmx-skillsearch" aria-label="Search skills" placeholder="Search skills&hellip;" value="'+esc(PM_SKILL_SEARCH)+'" oninput="pmSkillFilter(this)">';
   const pinnedEntries=S.play.pinned.map(k=>es.find(e=>e.key===k)).filter(Boolean);
@@ -1140,36 +1140,47 @@ function pmActionsPanelHTML(){
   return h;
 }
 function pmGearPanelHTML(){
-  let h='<div class="pm-box">';
-    h+='<div class="pm-tablewrap"><table class="pm-atktable"><tr><th>Location</th><th>Armour</th><th>AP</th></tr>'
-     +ARMOR_LOCATIONS.map(l=>'<tr><td>'+esc(l)+'</td><td>'+esc(armorDisplayName(l))+'</td><td>'+armorApAt(l)+'</td></tr>').join("")+'</table></div>';
-    h+='<p class="pm-invmeta">Gear ENC '+gearEncTotal()+' / '+(encLimit()??"—")+' unencumbered'+(S.money.dice.length?(' &middot; '+moneyRemaining()+' / '+moneyTotal()+' sp'):"")+'</p>';
+  const enc=gearEncTotal(),lim=encLimit(),over=lim!=null&&enc>lim;
+  let h='<div class="pm-box pmx-gearsum">'
+   +'<div class="pmx-gearstat"><span class="lbl">Encumbrance'+pmTip("enc")+'</span><b'+(over?' class="warn"':'')+'>'+enc+'</b><span class="pmx-dim"> / '+(lim??"—")+(over?' &middot; over your limit':' unencumbered')+'</span>'
+   +(lim?'<span class="pmx-encbar" aria-hidden="true"><i style="width:'+Math.min(100,Math.round(enc/lim*100))+'%"'+(over?' class="over"':'')+'></i></span>':'')+'</div>'
+   +(S.money.dice.length?'<div class="pmx-gearstat"><span class="lbl">Money</span><b>'+moneyRemaining()+'</b><span class="pmx-dim"> / '+moneyTotal()+' sp</span></div>':'')
+   +'</div>';
+  const worn=ARMOR_LOCATIONS.filter(l=>armorApAt(l)>0||armorDisplayName(l)!=="None");
+  h+='<div class="pm-box"><h3>Armour</h3>'
+   +(worn.length?'<div class="pmx-armour">'+ARMOR_LOCATIONS.map(l=>'<div><span>'+esc(l)+'</span><span class="pmx-dim">'+esc(armorDisplayName(l))+'</span><b>'+armorApAt(l)+' AP</b></div>').join("")+'</div>'
+     :'<p class="pm-empty">No armour worn. Add it on the Money &amp; Gear step.</p>')+'</div>';
+  h+='<div class="pm-box"><h3>Inventory</h3>';
     if(inventoryBlock()){
       // Plain party-member view of a teammate's sheet: static list, no controls.
-      if(S.inventory.length)h+='<div class="pm-invlist">'+S.inventory.map(it=>'<div class="pm-invrow"><span>'+esc(it.name)+' &times;'+it.qty+'</span><span class="pm-empty">ENC '+inventoryItemEnc(it)+'</span></div>').join("")+'</div>';
+      h+=S.inventory.length?'<div class="pm-invlist">'+S.inventory.map(it=>'<div class="pm-invrow"><span>'+esc(it.name)+' &times;'+it.qty+'</span><span class="pm-empty">ENC '+inventoryItemEnc(it)+'</span></div>').join("")+'</div>':'<p class="pm-empty">Nothing carried.</p>';
     }else{
       // Editable for the owner always, and for the DM viewing a player's
       // character (VIEW_ONLY_IS_DM) as a narrow loot/gear exception. Deliberately
       // avoids the .pm-sbtn/.pm-pip/.pm-fatsel/.pm-dmgrow input classes that the
       // .view-only CSS rule disables, since this stays live under VIEW_ONLY for a DM.
       h+=gmGiveItemFormHtml();
-      h+='<div class="pm-tablewrap"><table class="pm-atktable"><tr><th>Item</th><th>Qty</th><th>ENC ea</th><th>Worn clothing</th><th>sp ea</th><th></th></tr>'
-       +S.inventory.map((it,i)=>'<tr><td><input type="text" value="'+esc(it.name)+'" style="width:100%" onchange="APP.playInv('+i+',\'name\',this.value)">'+(giftValid(it.gift)?'<span class="pm-fx-badge" title="Given by the GM">'+(it.gift.seen===true?'gift':'new')+'</span>':'')+'</td>'
-        +'<td><input type="number" value="'+it.qty+'" style="width:56px" onchange="APP.playInv('+i+',\'qty\',this.value)"></td>'
-        +'<td><input type="number" min="0" step="0.5" value="'+it.enc+'" style="width:56px" onchange="APP.playInv('+i+',\'enc\',this.value)"></td>'
-        +'<td><input type="checkbox" aria-label="Worn everyday clothing" '+(it.wornClothing===true?'checked':'')+' onchange="APP.playInv('+i+',\'wornClothing\',this.checked)"></td>'
-        +'<td><input type="number" min="0" step="0.01" value="'+(it.cost||0)+'" style="width:64px" onchange="APP.playInv('+i+',\'cost\',this.value)"></td>'
-        +'<td><button class="chip" aria-label="remove item" onclick="APP.playInvDel('+i+')">&times;</button></td></tr>').join("")
-       +'</table></div><p style="margin-top:8px"><button class="chip" onclick="APP.playInvAdd()">+ add item</button></p>';
+      h+='<div class="pmx-inv"><div class="pmx-invhead"><span>Item</span><span>Qty</span><span>ENC each</span><span>sp each</span><span title="Worn everyday clothing doesn\'t count toward ENC">Worn</span><span></span></div>'
+       +S.inventory.map((it,i)=>'<div class="pmx-invrow">'
+        +'<span class="nm"><input type="text" aria-label="Item name" value="'+esc(it.name)+'" onchange="APP.playInv('+i+',\'name\',this.value)">'+(giftValid(it.gift)?'<span class="pm-fx-badge" title="Given by the GM">'+(it.gift.seen===true?'gift':'new')+'</span>':'')+'</span>'
+        +'<span><small class="pmx-invlbl">Qty</small><input type="number" aria-label="Quantity" value="'+it.qty+'" onchange="APP.playInv('+i+',\'qty\',this.value)"></span>'
+        +'<span><small class="pmx-invlbl">ENC each</small><input type="number" aria-label="ENC each" min="0" step="0.5" value="'+it.enc+'" onchange="APP.playInv('+i+',\'enc\',this.value)"></span>'
+        +'<span><small class="pmx-invlbl">sp each</small><input type="number" aria-label="Silver each" min="0" step="0.01" value="'+(it.cost||0)+'" onchange="APP.playInv('+i+',\'cost\',this.value)"></span>'
+        +'<span><small class="pmx-invlbl">Worn</small><input type="checkbox" aria-label="Worn everyday clothing" '+(it.wornClothing===true?'checked':'')+' onchange="APP.playInv('+i+',\'wornClothing\',this.checked)"></span>'
+        +'<span><button class="pmx-mini" aria-label="Remove '+esc(it.name)+'" onclick="APP.playInvDel('+i+')">&times;</button></span></div>').join("")
+       +(S.inventory.length?'':'<p class="pm-empty">Nothing carried yet.</p>')
+       +'</div><p style="margin-top:10px"><button class="pmx-mini" onclick="APP.playInvAdd()">+ Add item</button></p>';
     }
   h+='</div>';
   return h;
 }
 function pmNotesPanelHTML(){
-  let h='<div class="pm-box"><h3>Styles and passions</h3>';
-    h+=combatStylesReadOnlyHTML();
-    h+=S.passions.length?'<div class="pm-invlist">'+S.passions.map(p=>'<div class="pm-invrow"><span>'+esc(p.name||"(unnamed)")+'</span><span class="pctval">'+passionVal(p)+'%</span></div>').join("")+'</div>':'<p class="pm-empty">No passions recorded.</p>';
-  h+='</div><div class="pm-box"><h3>Notes</h3>';
+  let h='<div class="pm-box"><h3>Passions</h3>';
+    h+=S.passions.length?'<div class="pm-invlist">'+S.passions.map((p,i)=>{const v=passionVal(p),num=typeof v==="number";
+      return '<div class="pm-invrow pmx-passion"><span>'+esc(p.name||"(unnamed)")+'</span><span class="pctval">'+v+(num?'%':'')+'</span>'
+      +(num?'<button class="pm-btn roll"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollPassion('+i+')">roll</button>':'')+'</div>';}).join("")+'</div>':'<p class="pm-empty">No passions recorded.</p>';
+  h+='</div><div class="pm-box"><h3>Combat Styles</h3>'+combatStylesReadOnlyHTML()+'</div>';
+  h+='<div class="pm-box"><h3>Notes</h3>';
     h+=S.concept.notes?('<p class="pm-notes">'+esc(S.concept.notes).replace(/\n/g,"<br>")+'</p>'):'<p class="pm-empty">No background notes yet.</p>';
   h+='</div>';
   return h;
@@ -1203,16 +1214,16 @@ function pmVitalsBarHTML(){
   const v=charVitals(),maxAP=v.maxAP,remainAP=maxAP-Math.min(S.play.apUsed,maxAP);
   const worstTag={ok:"Unhurt",minor:"Minor wound",serious:"Serious wound",major:"Major wound"}[v.worst];
   const ib=playInitiativeBonusNow(),ini=S.play.initiative;
-  const cell=(k,val,extra="")=>'<div class="pmx-v'+extra+'"><span class="k">'+k+'</span><span class="val">'+val+'</span></div>';
+  const cell=(k,val,extra="",tip="")=>'<div class="pmx-v'+extra+'"><span class="k">'+k+(tip?pmTip(tip):"")+'</span><span class="val">'+val+'</span></div>';
   let h='<div class="pmx-vitals" role="group" aria-label="Vitals">';
-  h+='<button type="button" class="pmx-v pmx-v-wound '+v.worst+'" onclick="APP.playTab(\'body\')" title="Open the body view"><span class="k">Health</span><span class="val">'+worstTag
+  h+='<button type="button" class="pmx-v pmx-v-wound '+v.worst+'" onclick="APP.playTab(\'body\')" title="Open the body view"><span class="k">Health'+pmTip("health")+'</span><span class="val">'+worstTag
    +(v.worstLoc&&v.worst!=="ok"?' <small>'+esc(v.worstLoc.loc)+'</small>':'')+'</span></button>';
   h+=cell("Action points",'<span class="pm-pips">'+Array.from({length:maxAP},(_,i)=>'<button class="pm-pip'+(i<remainAP?"":" off")+'" aria-label="action point '+(i+1)+'" onclick="APP.playApSetPip('+i+')"></button>').join("")+'</span>'
-   +'<button type="button" class="pmx-mini" onclick="APP.playNewRound()" title="New combat round: restore all AP">New round</button>');
-  h+=cell("Initiative",ini?ini.total:('<span class="pmx-dim">+'+ib.total+'</span> <button type="button" class="pmx-mini" onclick="APP.playRollInitiative()">Roll</button>'));
-  h+=cell("Magic",v.curMagic+'<small>/'+v.maxMagic+'</small><span class="adj"><button onclick="APP.playMagicAdj(-1)" aria-label="spend magic point">&minus;</button><button onclick="APP.playMagicAdj(1)" aria-label="restore magic point">+</button></span>');
-  h+=cell("Luck",'<span class="pm-pips">'+Array.from({length:v.maxLuck},(_,i)=>'<button class="pm-pip'+(i<v.curLuck?"":" off")+'" aria-label="luck point '+(i+1)+'" onclick="APP.playLuckSetPip('+i+')"></button>').join("")+'</span>');
-  h+=cell("Fatigue",esc(v.fatigue),v.fatigue!=="Fresh"?" warn":"");
+   +'<button type="button" class="pmx-mini" onclick="APP.playNewRound()" title="New combat round: restore all AP">New round</button>',"","ap");
+  h+=cell("Initiative",ini?ini.total:('<span class="pmx-dim">+'+ib.total+'</span> <button type="button" class="pmx-mini" onclick="APP.playRollInitiative()">Roll</button>'),"","initiative");
+  h+=cell("Magic",v.curMagic+'<small>/'+v.maxMagic+'</small><span class="adj"><button onclick="APP.playMagicAdj(-1)" aria-label="spend magic point">&minus;</button><button onclick="APP.playMagicAdj(1)" aria-label="restore magic point">+</button></span>',"","magic");
+  h+=cell("Luck",'<span class="pm-pips">'+Array.from({length:v.maxLuck},(_,i)=>'<button class="pm-pip'+(i<v.curLuck?"":" off")+'" aria-label="luck point '+(i+1)+'" onclick="APP.playLuckSetPip('+i+')"></button>').join("")+'</span>',"","luck");
+  h+=cell("Fatigue",esc(v.fatigue),v.fatigue!=="Fresh"?" warn":"","fatigue");
   h+='</div>';
   return h;
 }
@@ -1266,6 +1277,25 @@ function renderPlayView(){
   if(tab==="skills"&&PM_SKILL_SEARCH){const search=document.querySelector(".pmx-skillsearch");if(search)pmSkillFilter(search);}
   pmDiceSync();
 }
+// ---- Short tips (Play Mode redesign batch 5) ----
+// A "?" beside a term opens one or two plain sentences. Pure CSS: it opens on
+// hover or keyboard/tap focus, so it works on phones without extra script.
+const PM_TIPS={
+  health:"Each hit location has its own Hit Points. Below its maximum is a Minor Wound, 0 or less is a Serious Wound, and minus its maximum or worse is a Major Wound.",
+  ap:"Action Points are how many things you can do in a combat round: attacks, parries, evades and other actions usually cost 1 each. They all come back at the start of a new round.",
+  initiative:"Roll 1d10 plus your Initiative Bonus once at the start of a fight. Highest acts first, and the order stays for the whole fight (Core p.90).",
+  magic:"Magic Points pay for spells. They come back as your GM decides.",
+  luck:"One Luck Point per action: reroll any roll that affects you (or make a foe reroll against you), gain one extra Action Point when you have none left, or downgrade a Major Wound to Serious. They refill at the start of each session.",
+  fatigue:"Each level of Fatigue makes skill rolls harder and can cut Movement, Initiative and Action Points. How you recover depends on the cause: see the Body tab.",
+  grade:"Your GM may call a roll easier or harder. The Grade multiplies your skill for that roll: Easy ×1.5, Hard ×2/3, Formidable ×1/2 (Core p.38).",
+  effects:"When you beat your opponent's roll, you win Special Effects: extra results such as disarming, tripping or bleeding them. The better you beat them, the more you get (Core p.100).",
+  surprised:"Caught off guard: −10 initiative, no defending until your turn comes up, and no attacking this round (Core p.105).",
+  enc:"ENC is how heavy your gear is. Carrying more than your limit makes physical skills harder."
+};
+function pmTip(id){
+  const t=PM_TIPS[id];if(!t)return "";
+  return '<span class="pmx-tip" tabindex="0" role="button" aria-label="What is this?" onclick="event.stopPropagation()">?<span class="pmx-tip-body" role="tooltip">'+esc(t)+'</span></span>';
+}
 // ---- Combat tab (Play Mode redesign batch 3) ----
 // One place for a fight: the turn strip, the latest combat roll with the
 // opponent's result and the Special Effects it allows, each weapon with
@@ -1282,7 +1312,7 @@ function pmTurnStripHTML(){
       +' <label class="pmx-dim">or your d10 <input id="playInitD10" type="number" min="1" max="10" inputmode="numeric"></label> <button class="pmx-mini" onclick="APP.playSetInitiative()">Set</button>')
    +'</div>'
    +'<div class="pmx-turn-item"><span class="lbl">Action Points</span><b>'+remain+'</b> <span class="pmx-dim">/ '+max+'</span> <button class="pmx-mini" onclick="APP.playNewRound()" title="Reset Action Points for a new Combat Round">New round</button></div>'
-   +'<label class="pmx-turn-item pmx-surprised"><input type="checkbox" '+(S.play.surprised?'checked':'')+' onchange="APP.playSetSurprised(this.checked)"> Surprised</label>'
+   +'<label class="pmx-turn-item pmx-surprised"><input type="checkbox" '+(S.play.surprised?'checked':'')+' onchange="APP.playSetSurprised(this.checked)"> Surprised</label>'+pmTip("surprised")
    +'</div>';
   if(S.play.surprised)h+='<p class="warn pmx-warn" role="status">Surprised (Core p.105): initiative −10; you can\'t defend until your initiative comes up; the first successful attack against you gains one extra Special Effect; no offensive actions for the rest of this round. New round clears it.</p>';
   return h;
@@ -1325,7 +1355,7 @@ function pmResolveCardHTML(){
     if(n>0){
       const picked=r.effectsPicked||[];
       const eligible=SPECIAL_EFFECTS.filter(e=>canPickEffectForRoll(e,r));
-      h+='<p class="pmx-outcome good">You win <b>'+n+' Special Effect'+(n>1?"s":"")+'</b>: '+picked.length+' of '+n+' chosen.</p>';
+      h+='<p class="pmx-outcome good">You win <b>'+n+' Special Effect'+(n>1?"s":"")+'</b>'+pmTip("effects")+': '+picked.length+' of '+n+' chosen.</p>';
       if(picked.length)h+='<div class="pm-fx-picks">'+picked.map((name,k)=>'<button type="button" class="pmx-mini on"'+ro+' title="Remove '+esc(name)+'" onclick="APP.playRemoveEffectChoice('+k+')">'+esc(name)+' &times;</button>').join(" ")+'</div>';
       h+='<div class="pmx-fx-eligible">'+eligible.map(fxItemHTML).join("")+'</div>'
        +'<p class="pmx-dim pmx-small">Showing the '+eligible.length+' effects this roll allows'+(r.weapon?' with '+esc(r.weapon):'')+'. Check situational requirements with your GM.</p>';

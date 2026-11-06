@@ -972,6 +972,13 @@ window.APP={
    S.xp.pool=Math.max(0,S.xp.pool-1);
    S.xp.history.unshift({type:"roll",key,label:e.label,roll:r===100?"00":r,int:effectiveChars().INT,total,target,success,gain,fumbleApplied,newPct:finalPct(key)});
    S.xp.history=S.xp.history.slice(0,25);render();},
+ // A Passion is rolled like a skill against its percentage (Core p.81-82);
+ // any augmentation or Grade is the GM's call and applied at the table.
+ rollPassion(i){if(viewOnlyBlock()||!Number.isInteger(i))return;const p=S.passions[i];if(!p)return;
+   const pct=passionVal(p);if(typeof pct!=="number"||!Number.isFinite(pct)){PM_MSG="Set this Passion's percentage first.";render();return;}
+   PM_MSG=null;PM_EFFECT_ROLL_REF=null;const r=d100();
+   S.rollLog.unshift({label:(p.name||"Passion")+" (Passion)",pct,roll:r===100?"00":r,tier:resolveRoll(r,pct),combat:false,oppTier:null});
+   S.rollLog=S.rollLog.slice(0,8);render();},
  // Core p.72: Passions improve using the same experience roll as skills.
  xpSpendPassion(i){if(VIEW_ONLY||xpRollsAvailable()<=0||!Number.isInteger(i))return;
    const p=S.passions[i];if(!p)return;

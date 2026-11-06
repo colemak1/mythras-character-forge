@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode redesign, batch 5: tips, Gear, Notes and Magic
+
+- **Short tips:** a small **?** beside Health, Action Points, Initiative, Magic, Luck, Fatigue, Surprised, Special Effects, Difficulty Grades and Encumbrance explains the term in a sentence or two. Hover on desktop, tap on a phone. The Luck tip follows Core: reroll, one extra Action Point when you're out, or downgrade a Major Wound to Serious.
+- **Gear tab:** an encumbrance bar against your limit (and money left, if you rolled starting money). Armour shows one line when none is worn. The inventory has clear columns, and labelled fields on a phone.
+- **Notes tab:** Passions come first, and each one can now be **rolled** like a skill. Combat Styles and background notes follow, without the old styling.
+- **Magic tab:** the long casting notes are folded under "How casting works here".
+- This completes the five-batch Play Mode redesign. Rules, calculations and saved data are unchanged, apart from the new pinned-skills list.
+
 ## Play Mode redesign, batch 4: skill search, pins and the Body tab
 
 - **Search skills:** type in the box at the top of the Skills tab to narrow the list by name or characteristic (e.g. "pow").
