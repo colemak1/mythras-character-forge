@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Live magic acceptance evidence (2026-11-05)
+
+- ChatGPT (Work) verified PR #110 in one signed-in session: immediate reload recovered turn 1/2 for Mysticism, Sorcery and Theism; declining recovery once did not prompt again on character reopen. Preparations and cancellations did not spend resources.
+- Folk Magic live failure/success spent 1 MP each, critical spent 0 MP, 0 MP refused before rolling, and card timing/potency/range matched Folk Magic 29%. Five catalogue entries matched rendered Core pp.124/128, including Bladesharp's d8 values.
+- **Catalogue live acceptance remains open:** this browser still received the previous empty picker/manual-entry interface after PR #116's successful Pages deployment. Beastcall traits, Core page and speciality could not be accepted live. The ledgers separate this failure from passing main-data tests; Claude should check served assets/invalidation.
+- Recorded detailed evidence in `docs/magic-cases-batch-1.md` and `docs/magic-subsystem-cases.md`, and updated `HANDOFF.md`. All 17 Node test files passed. Documentation only; no production code changed. Progress remains **3/8**.
+
+---
+
 ## Folk Magic spell catalogue
 
 - The builder's Folk Magic picker now lists all 70 spells from Mythras Core pp.123–129, with traits, full descriptions and page numbers. Play Mode spell cards show each spell's traits. Spells typed in by hand before still work, and if the name matches a Core spell, they now show its details.
