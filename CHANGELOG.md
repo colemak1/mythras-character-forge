@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-06 — Combat Batch 3 independent live acceptance
+
+- PR #148: five of six requested groups pass in the owner session. Whip Parry restrictions, Entrapping/Javelin Pin Weapon exceptions, weapon notes and wound wording pass; all 25 Impale matrix cells match Core p.98.
+- Combat situations needs Knockback's initial metre and Sweep's unusual-size qualification. Corrected the earlier TA22 source specification and clarified TA07. Pin Weapon's static Critical Only badge also needs qualification for working weapon exceptions.
+- Evidence: `docs/combat-batch3-live-acceptance-20261106.md` and screenshot. Disposable character deleted; absence verified after reload. All 28 local test scripts pass. Docs only; progress remains 3/8, Subsystem 5 OPEN.
+
 ## Combat rules fixes (Combat Batch 3)
 
 - **Offensive weapons can't parry** (Core p.61). The Whip shows Attack only, everywhere.
