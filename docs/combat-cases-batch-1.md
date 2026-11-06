@@ -702,3 +702,8 @@ See [independent live report](combat-batch3-live-acceptance-20261106.md): 5/6 re
 ## PR #150 focused live re-check — 2026-11-06
 
 [Live report](combat-pr150-live-recheck-20261106.md): **4/4 requested groups PASS**, owner-only disposable fixture deleted/reload verified; all 28 scripts passed. Sweep qualification, contextual Pin Weapon list/panel badges and Impale table fit pass at 1363px desktop width. ChatGPT independently re-read rendered Core p.104 and **agrees with Claude's C5-B3-TA22 interpretation**: 1m per five points (or fraction) exceeding SIZ, no extra initial metre. The contrary #149 source finding is retracted and the earlier live report corrected. No Knockback code change required. Subsystem 5 OPEN; overall 3/8.
+
+
+## Final integrated fight — deployed PR #154, 2026-11-06
+
+See [one-fight live evidence](combat-final-fight-20261106.md), following `combat-closeout-review.md` §3. **Steps 1–7 PASS; step 8 FAIL.** CL01: natural 33 Success vs No defence earns 1 SE, target first-success Surprise tick changes it to exactly 2, own Surprised stays false; later bow 19 Success gets only 1 SE. Top-bar End fight clears initiative but leaves AP 2/3 and own Surprised true, including after reopening; Advance time's End the fight resets all three. Disposable deleted/reload verified; 29 local scripts pass. MP-at-full limitation and location hit-record scope are explicit in the report. No code changed. Subsystem 5 OPEN, progress 3/8; Claude to address the narrow step-8 reset contract.

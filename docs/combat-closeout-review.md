@@ -195,3 +195,7 @@ No separate multi-account security check (Subsystem 8) and no creature-specific 
 ## 5. Next handoff
 
 **Claude:** review these source/case statuses against current code, implement and test narrowly, then request one batched owner-only Work scenario using the script above. **ChatGPT Work:** provide the resulting deployment-evidenced pass/fail report. **ChatGPT Chat:** continue Subsystem 4 reconciliation in `docs/advancement-reconciliation.md`.
+
+## Final Work scenario result — 2026-11-06
+
+The single scripted fight ran on deployed #154: [exact dice, stamps, screenshots and step results](combat-final-fight-20261106.md). **Steps 1–7 PASS; step 8 FAIL** on top-bar End fight (initiative cleared, AP/Surprised not reset); Advance time's End the fight resets correctly. The new target-surprise box passes exactly +1 SE and does not alter own Surprised or carry into the later hit. Disposable character deleted and absence confirmed after reload. All 29 local scripts pass. MP was full, so no deficit-regeneration claim is made. Keep Subsystem 5 OPEN, overall 3/8, pending the narrow step-8 follow-up; do not repeat the entire fight without a new reason.

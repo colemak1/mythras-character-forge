@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by Claude_
+_Last updated: 2026-11-06 by ChatGPT (Work)_
 
 ## Priorities
 
@@ -10,7 +10,7 @@ _Last updated: 2026-11-06 by Claude_
 
 1. **Subsystem 8 critical work:** security fix merged (PR #130). Migration `20261106120000_gm_private_state_and_assignment_checks.sql` **ran successfully live** with an owner-private safety copy. Verification: table `campaign_gm_state`, 1 private row, 0 campaigns retaining old session state. Multi-account acceptance remains outstanding and was excluded from the latest owner-only session.
 2. **Play Mode UX: done** (PRs #133–#137, then layout v2 from the owner's sketch: one-screen columns and a D&D Beyond-style side panel, 2026-11-06): layout, physics dice tray, combat flow, skill search and pins, Body tab, tips, Gear and Notes. The theme lives in `play-clean.css` under `data-pm-style="clean"`, so a future player style picker only swaps token sets. Owner-only live pass recorded in `docs/play-mode-live-acceptance-20261105.md`: desktop overflow and incomplete result compaction fail; numerical Core spot-checks pass; terminal Fatigue labels need correction. Exact 390px phone pass remains unverified (browser limitation).
-3. **Subsystem 5 Combat closeout:** The full chapter map (printed Core pp.86–111) is in `docs/combat-closeout-review.md`, added via **docs-only PR** on `docs/combat-s5-closeout-reconciliation-20261106`. It maps **81 section groups and 43 named Special Effects**, adds **12 source child cases** to `docs/combat-cases-batch-1.md` (**380 total; 6 HANDLED / 6 NEEDS CODE**) and defines exactly **one owner-only end-to-end Work fight**. Batch 3 is implemented (#148/#150) and live-accepted (#149/#151); Knockback has **no extra starting metre**. Claude to fix new narrow gaps/test; Work to run one scenario. **Subsystem 5 OPEN; progress 3/8.**
+3. **Subsystem 5 Combat closeout:** #154 deployed and the ONE final owner-only fight completed. **Steps 1–7 PASS; step 8 FAIL**: top-bar End fight clears initiative but leaves AP spent and own Surprised true; Advance time → End the fight correctly resets all three. Surprise target box passes exactly +1 SE (natural 33 Success vs No defence: 1→2), own flag unchanged, later bow 19 gets only 1 SE. See `docs/combat-final-fight-20261106.md` for exact dice, stamps, evidence and scope limits (MP was full). Throwaway deleted/reload verified; 29 local scripts pass. Claude to resolve the narrow End fight inconsistency. **Subsystem 5 OPEN; progress 3/8.**
 
 Practice Combat features remain paused. Progress **3/8**.
 
@@ -18,7 +18,7 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Combat source closeout and final test design | ChatGPT (Chat) → Claude → ChatGPT (Work) | `docs/combat-s5-closeout-reconciliation-20261106` docs-only PR | **81 section groups + 43 named SE mapped**, 12 new cases, 380 Combat total; 6 initial NEEDS CODE (surprise +1 SE, grapple guidance, passive block, offhand throw); final Work fight script in `docs/combat-closeout-review.md`. Subsystem 5 OPEN. |
+| Combat final integrated acceptance | ChatGPT (Work) → Claude | #154 tested; docs PR follows | One fight completed, steps 1–7 PASS; step 8 FAIL for top-bar End fight AP/Surprised reset. Full report + screenshots in `docs/combat-final-fight-20261106.md`. Disposable deleted and reload checked. |
 | Advancement reconciliation (start) | ChatGPT (Chat) → Claude | `docs/advancement-reconciliation.md` in same docs-only PR | Existing 216-case inventory summarized against `docs/subsystem-plan.md`. Training/passion/recovery live gaps and two optional choices remain; Subsystem 4 OPEN. |
 | Combat Batch 3 focused acceptance | ChatGPT (Work) → Claude | #150 verified; docs PR follows | All 4 groups PASS. Earlier Knockback failure retracted; no extra starting metre. Screenshot confirms table fit. Throwaway deleted/reload checked; 28 scripts pass. |
 | Combat Batch 2 live acceptance | ChatGPT (Work) → Claude | PR #144 verified; docs PR follows | All five requested check groups passed. Evidence and fumble-scope caveat: `docs/combat-batch2-live-acceptance-20261106.md`. Disposable fixture deleted; absence confirmed after reload. All 27 local test scripts passed. No code changed. |
@@ -30,8 +30,8 @@ Practice Combat features remain paused. Progress **3/8**.
 ## Waiting on someone
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **ChatGPT (Work):** run the ONE final owner-only fight in `docs/combat-closeout-review.md` §3 once the closeout fixes are deployed, including the surprise bonus in step 3. Report PASS/FAIL per step.
-- **Claude:** after Work's fight passes, record closeout evidence and recommend closing Subsystem 5 (3/8 → 4/8); then review the open gaps in `docs/advancement-reconciliation.md`.
+- **Claude:** review the completed final-fight report, fix or clearly distinguish top-bar End fight from the full Advance time reset, then request only a focused step-8 re-check. The full fight and surprise bonus already ran.
+- **Claude:** Subsystem 5 cannot close from this run while step 8 fails. After the narrow follow-up passes, reassess the closeout gate before 3/8 → 4/8; then review `docs/advancement-reconciliation.md`.
 - **ChatGPT (Chat):** Combat closeout map and missing child cases delivered in docs-only PR; `docs/advancement-reconciliation.md` begins Subsystem 4. Further S4 source/test reconciliation follows Claude's Combat closeout review.
 
 
