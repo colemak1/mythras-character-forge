@@ -495,9 +495,10 @@ function pmCharacteristicRail(){
 // Core pp.58, 90: Initiative Bonus (average of INT and DEX, rounded up) minus
 // the armour penalty (total worn armour ENC / 5, rounded up), plus the
 // current Fatigue modifier. The fight's initiative is 1d10 + this value.
+// Core p.105: a surprised character's initiative is 10 lower.
 function playInitiativeBonusNow(){
-  const c=effectiveChars(),armour=armourPenaltyToInit(),fat=fatigueRow().init||0;
-  return {base:initBonus(c.INT,c.DEX),armour,fat,total:initBonus(c.INT,c.DEX)-armour+fat};
+  const c=effectiveChars(),armour=armourPenaltyToInit(),fat=fatigueRow().init||0,surprise=S.play.surprised?-10:0;
+  return {base:initBonus(c.INT,c.DEX),armour,fat,surprise,total:initBonus(c.INT,c.DEX)-armour+fat+surprise};
 }
 function pmTicker(){
   const c=effectiveChars(),initPenalty=armourPenaltyToInit();
@@ -547,15 +548,22 @@ function pmCombatSection(){
         :"SIZE "+esc(w.size||"—")+" &middot; REACH "+esc(w.reach||"—"))
        +" &middot; AP/HP "+esc(w.apHp||"—")
        +(w.effects&&w.effects!=="—"?" &middot; "+esc(w.effects).toUpperCase():"");
-      const inStyle=stylesFor(n);
+      const inStyle=stylesFor(n),covering=stylesList().filter(s=>styleDef(s.key).weapons.includes(n));
+      const rollUI=covering.length
+        ?'<div class="meta">'+covering.map(s=>'<button class="pm-btn sm roll" onclick="APP.rollWithWeapon(\''+jsq(n)+'\',\''+jsq(s.key)+'\',\'\')">Roll '+esc(s.name)+'</button>').join(" ")+'</div>'
+        :'<div class="meta">Not in your Combat Styles (Core p.88): '
+          +'<select id="fam-'+esc(n.replace(/\W+/g,"_"))+'">'+WEAPON_FAMILIARITY.filter(f=>stylesList().length||f[0]==="substantially").map(f=>'<option value="'+f[0]+'">'+esc(f[1])+'</option>').join("")+'</select> '
+          +(stylesList().length>1?'<select id="famstyle-'+esc(n.replace(/\W+/g,"_"))+'">'+stylesList().map(s=>'<option value="'+esc(s.key)+'">'+esc(s.name)+'</option>').join("")+'</select> ':'')
+          +'<button class="pm-btn sm roll" onclick="APP.rollUnfamiliarWeapon(\''+jsq(n)+'\')">Roll</button></div>';
       return '<div class="pm-wpn"><div class="top"><span class="nm">'+esc(w.name)+'</span><span class="dmg">'+esc(w.dmg)+'</span></div>'
        +'<div class="meta">'+meta+'</div>'
-       +(inStyle.length?'<div class="meta">'+esc(inStyle.join(", "))+'</div>':'')+'</div>';
+       +(inStyle.length?'<div class="meta">'+esc(inStyle.join(", "))+'</div>':'')+rollUI+'</div>';
     }).join("");
   }else h+='<p class="pm-empty">No weapons carried — add some on the Money &amp; Gear step.</p>';
   // Core pp.105–106: every human can fight unarmed with the Unarmed skill.
   h+='<div class="pm-wpn"><div class="top"><span class="nm">Unarmed (human)</span><span class="dmg">1d3 + '+esc(dmCalc(effectiveChars().STR,effectiveChars().SIZ))+'</span></div>'
-   +'<div class="meta">SIZE S &middot; REACH T &middot; UNARMED SKILL &middot; CORE PP.105&ndash;106</div></div>';
+   +'<div class="meta">SIZE S &middot; REACH T &middot; UNARMED SKILL &middot; CORE PP.105&ndash;106</div>'
+   +'<div class="meta"><button class="pm-btn sm roll" onclick="APP.rollWithWeapon(\'Unarmed\',\'std:Unarmed\',\'\')">Roll Unarmed</button></div></div>';
   h+=pmFatiguePanel();
   h+='<details class="pm-notes"><summary>Hazards and recovery (Core pp.71, 74–80)</summary>'
    +'<p><b>Asphyxiation:</b> Prepared breath-holding lasts Endurance skill in seconds. Without preparation, use half that time when passive or one fifth during strenuous activity. When time runs out, check Endurance. A critical adds no Fatigue, a success adds one level, a failure adds 1d2 levels, and a fumble adds 1d3. Track subsequent rounds at the table.</p>'
@@ -651,6 +659,44 @@ function pmCalculateModifiedSkill(form){
     +(augmented?" Critical and fumble thresholds use "+primary+"%.":"");
 }
 
+// The weapon a combat roll was made with. Unarmed is the default style every
+// human has (Core p.105): Size S, Reach T, 1d3 + Damage Modifier.
+const UNARMED_WEAPON={name:"Unarmed",group:"Unarmed",size:"S",reach:"T",dmg:"1d3",effects:""};
+function weaponForRoll(name){return name==="Unarmed"?UNARMED_WEAPON:(name?weaponByName(name)||null:null);}
+// Core p.100 lists a weapon type for some Special Effects. The weapon tables
+// name the weapon-specific effects each weapon can use (Bash, Bleed,
+// Entangle, Impale, Stun Location, Sunder), so those are checked against the
+// weapon's own list; the rest by weapon group or Size. With no weapon
+// recorded on the roll, every effect stays available for the GM to judge.
+const WEAPON_LISTED_EFFECTS=new Set("Bash,Bleed,Entangle,Impale,Stun Location,Sunder".split(","));
+function weaponAllowsEffect(effect,w){
+  const req=effect&&effect[3];
+  if(!req||!w)return true;
+  if(WEAPON_LISTED_EFFECTS.has(effect[0]))return String(w.effects||"").split(/,\s*/).includes(effect[0]);
+  if(req==="Ranged Weapons")return w.group==="Ranged";
+  if(req==="Unarmed")return w.group==="Unarmed";
+  if(/Small/.test(req))return w.size==="S";
+  return true;
+}
+// Core p.88: using a weapon outside your Combat Style. The penalty can never
+// take the skill below the base Combat Style (STR+DEX).
+const WEAPON_FAMILIARITY=[
+  ["similar","Similar weapon: no penalty",0],
+  ["broadly","Broadly similar: 1 grade harder",1],
+  ["reasonably","Reasonably different: 2 grades harder",2],
+  ["combined","Unfamiliar weapon used with a trained one: 1 grade harder",1],
+  ["substantially","Substantially different: base STR+DEX",null]
+];
+function familiarityPct(styleKey,fam){
+  const row=WEAPON_FAMILIARITY.find(f=>f[0]===fam);if(!row)return null;
+  const c=effectiveChars(),sit=styleKey?gradeForEntry(styleKey):ACTIVE_GRADE,sitMult=GRADE_MULT[sit];
+  if(sitMult==null)return {pct:null,grade:sit};
+  const floor=Math.max(0,Math.round((c.STR+c.DEX)*sitMult));
+  if(row[2]===null||!styleKey)return {pct:floor,grade:sit,floored:true};
+  const g=shiftGradeHarder(sit,row[2]),m=GRADE_MULT[g];
+  const pct=m==null?0:Math.max(0,Math.round(finalPct(styleKey)*m));
+  return pct<floor?{pct:floor,grade:g,floored:true}:{pct,grade:g,floored:false};
+}
 let PM_EFFECT_ROLL_REF=null;
 let PM_FX_SEARCH="";
 function selectedEffectRoll(){
@@ -661,6 +707,7 @@ function canPickEffectForRoll(effect,r){
   if(!effect||!r||!["attack","defence"].includes(r.combatRole))return false;
   if(r.combatRole==="attack"&&!effect[1]||r.combatRole==="defence"&&!effect[2])return false;
   if(r.combatKind==="evade"&&["Enhance Parry","Blind Opponent"].includes(effect[0]))return false;
+  if(r.weapon&&!weaponAllowsEffect(effect,weaponForRoll(r.weapon)))return false;
   const requirement=effect[4]||"";
   if(requirement==="Attacker Criticals"&&(r.combatRole!=="attack"||r.tier!=="Critical"))return false;
   if(requirement==="Defender Criticals"&&(r.combatRole!=="defence"||r.tier!=="Critical"))return false;
@@ -911,6 +958,11 @@ function playRollLogRow(r,i){
     row+='<div class="pm-fx-resolve"><label>Your role <select onchange="APP.playSetCombatRole('+i+',this.value)"><option value="">Choose attack or defence</option>'
       +(r.combatKind==="evade"?'':'<option value="attack" '+(r.combatRole==="attack"?'selected':'')+'>Attack</option>')
       +'<option value="defence" '+(r.combatRole==="defence"?'selected':'')+'>Defence</option></select></label> Changing role clears chosen effects.</div>';
+    if(r.combatKind!=="evade"){
+      const opts=["Unarmed",...(S.gearWeapons||[])];
+      row+='<div class="pm-fx-resolve"><label>Weapon used <select onchange="APP.playSetRollWeapon('+i+',this.value)"><option value="">Not recorded (all effects shown)</option>'
+        +opts.map(n=>'<option value="'+esc(n)+'" '+(r.weapon===n?'selected':'')+'>'+esc(n)+'</option>').join("")+'</select></label> Filters weapon-specific Special Effects.</div>';
+    }
     if(!r.oppTier){
       row+='<div class="pm-fx-resolve">Opponent rolled: '+["Critical","Success","Failure","Fumble"].map(t=>
         '<button class="pm-btn sm" onclick="APP.playSetOpponentTier('+i+',\''+t+'\')">'+t+'</button>').join("")
@@ -1117,12 +1169,14 @@ function renderPlayView(){
      +'<label class="pm-empty"> or enter your d10 <input id="playInitD10" type="number" min="1" max="10" style="width:3.5em"></label>'
      +'<button class="pm-btn sm" onclick="APP.playSetInitiative()">Set</button>'
      +(initRec?' <button class="pm-btn sm" onclick="APP.playClearInitiative()" title="Initiative lasts the whole fight unless something forces a reroll (p.90)">End fight</button>':'')+'</div>';
+    h+='<div class="pm-actbar"><label class="pm-empty"><input type="checkbox" '+(S.play.surprised?'checked':'')+' onchange="APP.playSetSurprised(this.checked)"> Surprised</label></div>';
+    if(S.play.surprised)h+='<p class="warn" role="status">Surprised (Core p.105): initiative −10; you can\'t defend until your initiative comes up; the first successful attack against you gains one extra Special Effect; no offensive actions for the rest of this round. New Round clears it.</p>';
     h+='<div class="pm-actbar"><span class="apread">Action Points <b>'+remainAPnow+'</b> / '+maxAPnow+' remaining</span>'
      +'<button class="pm-newround" onclick="APP.playNewRound()" title="Reset Action Points to max for a new Combat Round">New Round</button></div>';
     for(const kind of ["Proactive","Reactive"]){
       h+='<p class="pm-notes" style="margin:8px 0 4px">'+kind+(kind==="Proactive"?' — one per cycle, on your turn':' — one per incoming threat, any time you have AP')+'</p>';
       h+='<div class="pm-actlist">'+ACTIONS.filter(a=>a.kind===kind).map(a=>{
-        const canAfford=a.ap<=remainAPnow;
+        const canAfford=a.ap<=remainAPnow&&!(S.play.surprised&&a.nm==="Attack");
         return '<button class="pm-act" onclick="APP.playSpendAP('+a.ap+')" title="'+esc(a.note)+'"'+(canAfford?"":" disabled")+'>'
          +'<span class="nm">'+esc(a.nm)+'<span class="note">'+esc(a.note)+'</span></span>'
          +'<span class="cost">'+a.ap+' AP</span></button>';

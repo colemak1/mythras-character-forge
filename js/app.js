@@ -794,8 +794,32 @@ window.APP={
    if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
    if(tier==="Critical")APP.markChecked(key);
    PM_EFFECT_ROLL_REF=null;
-   S.rollLog.unshift({label:e.label+tag,pct,roll:r===100?"00":r,tier,combat:key.startsWith("style:")||key==="std:Evade",combatKind:key==="std:Evade"?"evade":"style",oppTier:null});
+   S.rollLog.unshift({label:e.label+tag,pct,roll:r===100?"00":r,tier,combat:key.startsWith("style:")||key==="std:Evade"||key==="std:Unarmed",combatKind:key==="std:Evade"?"evade":"style",oppTier:null});
    S.rollLog=S.rollLog.slice(0,8);render();},
+ // A combat roll made with a specific weapon (Core pp.88, 100): the weapon is
+ // recorded so weapon-specific Special Effects can be filtered.
+ rollWithWeapon(weapon,key,fam){if(viewOnlyBlock())return;
+   if(weapon!=="Unarmed"&&!weaponByName(weapon))return;
+   const em=entryMap(),e=key?em[key]:null;if(key&&!e)return;
+   let g,label;
+   if(fam){g=familiarityPct(key||null,fam);if(!g)return;
+     label=weapon+" — "+(fam==="substantially"||!e?"base Combat Style (STR+DEX)":e.label+" ("+WEAPON_FAMILIARITY.find(f=>f[0]===fam)[1].split(":")[0]+")");}
+   else{g=gradedPct(key,finalPct(key));label=weapon+" — "+e.label;}
+   if(g.pct===null){PM_MSG=g.grade==="automatic"?"Automatic — no roll needed, it just succeeds.":"Hopeless — no attempt can be made at this Grade.";render();return;}
+   PM_MSG=null;const r=d100(),tier=resolveRoll(r,g.pct),tag=g.grade!=="standard"?" ("+GRADE_LABEL[g.grade]+")":"";
+   if(key&&!fam){if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);if(tier==="Critical")APP.markChecked(key);}
+   PM_EFFECT_ROLL_REF=null;
+   S.rollLog.unshift({label:label+tag,pct:g.pct,roll:r===100?"00":r,tier,combat:true,combatKind:"style",oppTier:null,weapon});
+   S.rollLog=S.rollLog.slice(0,8);render();},
+ rollUnfamiliarWeapon(weapon){if(viewOnlyBlock())return;
+   const id=String(weapon).replace(/\W+/g,"_"),fam=document.getElementById("fam-"+id)?.value||"substantially";
+   const styles=stylesList(),pick=document.getElementById("famstyle-"+id)?.value;
+   const key=styles.some(s=>s.key===pick)?pick:(styles[0]?.key||null);
+   APP.rollWithWeapon(weapon,key,fam);},
+ playSetRollWeapon(i,name){if(VIEW_ONLY)return;const r=S.rollLog[i];if(!r?.combat||r.combatKind==="evade")return;
+   if(name&&name!=="Unarmed"&&!(S.gearWeapons||[]).includes(name))return;
+   r.weapon=name||undefined;r.effectsPicked=[];render();},
+ playSetSurprised(on){if(viewOnlyBlock())return;S.play.surprised=!!on;render();},
  playSetCombatRole(i,role){if(VIEW_ONLY||!S.rollLog[i]?.combat||!["attack","defence"].includes(role))return;
    const r=S.rollLog[i];if(r.combatKind==="evade"&&role!=="defence")return;
    if(r.combatRole!==role){r.combatRole=role;r.effectsPicked=[];if(r.opponentAction==="no-parry"){r.oppTier=null;r.opponentAction=null;}}render();},
@@ -1104,7 +1128,7 @@ window.APP={
  // "New Round" — Action Points refresh to max at the start of every
  // Combat Round in Mythras; this is that reset, since nothing else in
  // Play Mode currently tracks round boundaries.
- playNewRound(){if(viewOnlyBlock())return;S.play.apUsed=0;render();},
+ playNewRound(){if(viewOnlyBlock())return;S.play.apUsed=0;S.play.surprised=false;render();},
  // Core p.90: initiative is 1d10 + Initiative Bonus, rolled once at the start
  // of a fight and kept until an event forces a reroll.
  playRollInitiative(){if(viewOnlyBlock())return;APP._setInitiative(d(10));},

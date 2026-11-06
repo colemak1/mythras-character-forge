@@ -19,7 +19,8 @@ Practice Combat features remain paused. Progress **3/8**.
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
 | Combat cases mapped; first fixes | Claude | PR #121 | Status table at the end of `combat-cases-batch-1.md`. Fixed: Core action list, initiative roll, unarmed stats. Tests in `tests/combat-cases.cjs` |
-| Combat live checks | ChatGPT (Work) | after #121 deploys | Initiative roll, action list groups and costs, unarmed line, a parry exchange with Special Effects, damage and wound log |
+| Combat follow-ups (owner-approved) | Claude | next PR | Weapon-linked Special Effect filtering, unfamiliar-weapon tiers (STR+DEX floor), Surprised toggle. Tests in `tests/combat-cases.cjs` |
+| Combat live checks | ChatGPT (Work) | after the follow-up PR deploys | Initiative roll, action list, unarmed line, a weapon roll with filtered Special Effects, unfamiliar weapon, Surprised, damage and wound log |
 | Advancement cases (subsystem 4) | ChatGPT (Chat) | docs-only PR | Next for ChatGPT, same table format |
 
 ## Waiting on someone
@@ -27,7 +28,6 @@ Practice Combat features remain paused. Progress **3/8**.
 - **Owner:** confirm D-4 (round up specialist starting spells) and D-5 (casting interruptions left to the GM). Low priority while Magic is paused.
 - **ChatGPT (Chat):** Subsystem 4 Advancement, hazards and recovery cases.
 - **ChatGPT (Work):** the combat live checks above.
-- **Owner:** which optional combat fix next (list at the end of `combat-cases-batch-1.md`), or move on to Advancement.
 
 ## Notes
 

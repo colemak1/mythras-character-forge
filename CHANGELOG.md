@@ -5,6 +5,17 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat: weapon-specific Special Effects, unfamiliar weapons, surprise
+
+- **Roll with a weapon.** Each carried weapon in Play Mode has a roll button for the Combat Style that covers it, and Unarmed has its own. The roll remembers the weapon, and the Special Effects list then hides effects that weapon can't use. A club can Bash and Stun Location but not Bleed; only ranged weapons get Marksman; only Small weapons get Remise. You can also set "Weapon used" on any combat roll. With no weapon set, every effect stays available.
+- **Unfamiliar weapons (Core p.88).** A weapon outside your Combat Styles offers the book's choices: similar (no penalty), broadly similar (1 grade harder), reasonably different (2 grades), used with a trained weapon (1 grade), substantially different (base STR+DEX). The penalty never takes you below STR+DEX.
+- **Surprised (Core p.105).** A toggle on the Actions tab: initiative −10, Attack disabled, and a reminder that you can't defend until your initiative and the first hit on you gains an extra Special Effect. New Round clears it.
+- Unarmed rolls now count as combat rolls, so they get the attack/defence and Special Effects tools.
+
+To test: in Play Mode, roll a carried club, mark it as an attack, click "No parry", and open Special Effects: Bleed should not be choosable but Stun Location should. Tick "Surprised" and roll initiative: it should be 10 lower.
+
+---
+
 ## Combat: Core action list, initiative roll, unarmed stats, and case mapping
 
 - **Action list** in Play Mode now follows Core pp.91–93: proactive actions (Attack, Brace, Cast Magic, Change Range, Dither, Hold Magic, Mount, Move, Outmanoeuvre, Ready Weapon, reloads, Regain Footing, Struggle), reactive actions (Counter Spell, Evade, Interrupt, Parry) and Free Actions at 0 AP (Delay, Assess Situation, Drop Weapon, Signal, Speak, Use Luck Point, Ward Location). Non-Core labels like "Change Combat Stance" and "Shove / Grapple" are gone. Each action shows its conditions.
