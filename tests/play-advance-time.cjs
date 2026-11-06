@@ -54,7 +54,23 @@ test('the roll card sits directly above the weapons',()=>{
 });
 test('once all effects are chosen the list folds away, and Change reopens it',()=>{
  setup();run('S.rollLog=[{label:"Dagger",pct:60,roll:20,tier:"Success",combat:true,combatKind:"style",combatRole:"attack",oppTier:"Failure",weapon:"Dagger",effectsPicked:["Bleed"]}];PM_EFFECT_ROLL_REF=S.rollLog[0];PM_FX_EDIT=null;');
- let h=run('pmResolveCardHTML()');assert.match(h,/<b>Bleed<\/b>/);assert.doesNotMatch(h,/pmx-fx-eligible/);assert.doesNotMatch(h,/Their defence:/,'the finished card is a one-line summary');
+ let h=run('pmResolveCardHTML()');assert.match(h,/<b class="good">Bleed<\/b>/);assert.doesNotMatch(h,/pmx-fx-eligible/);assert.doesNotMatch(h,/Their defence:/,'the finished card is a one-line summary');
  run('PM_FX_EDIT=S.rollLog[0]');h=run('pmResolveCardHTML()');assert.match(h,/pmx-fx-eligible/);
+});
+test('a finished weapon roll offers Attack again and Parry with the same weapon and style',()=>{
+ setup();run('S.rollLog=[];var __r=Math.random;Math.random=()=>0.1;APP.rollWithWeapon("Unarmed","std:Unarmed","","attack");APP.playSetOpponentTier(0,"Failure");Math.random=__r;');
+ const r=JSON.parse(run('JSON.stringify(S.rollLog[0])'));assert.equal(r.styleKey,'std:Unarmed');
+ run('S.rollLog[0].effectsPicked=Array(playEffectsWon(S.rollLog[0].tier,"Failure")).fill("Trip Opponent");PM_FX_EDIT=null;');
+ const h=run('pmResolveCardHTML()');
+ assert.match(h,/APP\.rollWithWeapon\('Unarmed','std:Unarmed','','attack'\)">Attack again/);
+ assert.match(h,/APP\.rollWithWeapon\('Unarmed','std:Unarmed','','defence'\)">Parry/);
+ assert.doesNotMatch(h,/Their defence:/);
+});
+test('Comatose and Dead block every roll with their own wording (Core p.79)',()=>{
+ setup();run('S.rollLog=[];S.play.fatigue="Comatose";APP.roll("std:Athletics");APP.playRollInitiative();');
+ assert.equal(run('S.rollLog.length'),0);assert.equal(run('S.play.initiative'),null);assert.match(run('PM_MSG'),/no activities are possible/);
+ assert.match(run('pmTrackersHTML()'),/Comatose: no activities are possible/);
+ run('S.play.fatigue="Dead";APP.rollWithWeapon("Unarmed","std:Unarmed","","attack")');assert.equal(run('S.rollLog.length'),0);assert.match(run('PM_MSG'),/^Dead/);
+ run('S.play.fatigue="Semi-Conscious";PM_MSG=null;');assert.equal(run('fatigueNoActivity()'),null,'Semi-Conscious stays a Hopeless grade');
 });
 console.log(passed+' advance time and combat order tests passed');

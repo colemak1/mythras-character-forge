@@ -422,3 +422,14 @@ body.play-mode.pm-style-clean .app{background:var(--pmx-bg)}
 .pmx-advopt{padding:10px 0;border-bottom:1px solid var(--pmx-line)}
 .pmx-advopt:last-child{border-bottom:0}
 .pmx-advopt p{margin:6px 0 0;font-size:13.5px;color:var(--pmx-muted)}
+/* Finished combat roll: one summary line plus next actions */
+.pmx-resolve-done{padding:12px 14px}
+.pmx-doneline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.pmx-doneline .pmx-resolve-d{font-size:22px}
+.pmx-donetext{font-size:14.5px;min-width:0}
+.pmx-donetext .good{color:#1f6b3a}.pmx-donetext .bad{color:var(--pmx-accent)}
+.pmx-doneacts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pmx-doneacts .pmx-act{padding:6px 14px;min-height:34px}
+.pmx-noact{flex-basis:100%;margin:0;font-weight:600}
+/* Tabs: tighter so all five fit on one line at common desktop widths */
+.pmx-col-right .pmx-tab{padding:9px 7px;font-size:13.5px}

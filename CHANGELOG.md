@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode fixes from the live check (PR #141)
+
+- **Combat:** a finished roll is now one short card, e.g. "5 Critical · Attack Shortspear vs Failure → Impale, Bypass Armour". It has **Attack again** and **Parry** buttons for the same weapon and Combat Style, plus Change and Record damage.
+- **The page no longer scrolls on any desktop size.** Leftover height is trimmed automatically; checked at 1363×936 and 1440×900.
+- **Comatose and Dead** now say "no activities are possible" and "Dead" (Core p.79) instead of showing Hopeless rolls. All rolls and initiative are refused, and skills show "—". Semi-Conscious stays a Hopeless grade.
+- All five right-hand tabs fit on one line at common desktop widths.
+
 ## 2026-11-05 — Owner-only Play Mode and Core live acceptance (docs only)
 
 - Recorded desktop layout, side panels, Attack/Parry and effects, skill pin/search, all four Advance time options, and a fresh Character Builder rules spot-check in `docs/play-mode-live-acceptance-20261105.md`, with four screenshots.
