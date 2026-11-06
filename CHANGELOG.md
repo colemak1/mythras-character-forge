@@ -5,6 +5,25 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Security: GM notes hidden from players; campaign assignment checks
+
+- **GM session notes and the Combat Tracker are now GM-only.** They used to be stored on the campaign record, which every player in the campaign can read, so a player could see your notes and NPC stats with their browser's developer tools. They now live in a separate table only the GM can read.
+- **Needs the owner to run the database change once:** open Supabase → SQL Editor, paste `supabase/migrations/20261106120000_gm_private_state_and_assignment_checks.sql`, and run it. It copies existing notes and tracker data across. Until then, the app keeps working the old way.
+- The same change stops a player moving their character into a campaign they don't belong to, and makes the GM inventory function accept only an item list.
+- All 183 campaign and account cases (ChatGPT, PR #129) are mapped in `docs/campaign-cases-batch-1.md`, with four decisions for the owner and a multi-account test plan.
+
+---
+
+## Subsystem 8 — Campaign and live integration case inventory (docs-only)
+
+- Added `docs/campaign-cases-batch-1.md`: **183** app-acceptance cases across **10** groups for campaign setup/rules, auth and account isolation, invites, character ownership and assignment, Party Board/GM tools, save/reload/concurrent edits, imports/backups, backend RLS/RPCs, campaign continuity, and end-to-end session workflows.
+- Cases use **App/security contract — not Core** where no rulebook rule applies; Core pp.72–73 are cited only for the two characteristic advancement methods.
+- **Highest priority:** deny unrelated-account access, ensure members' read-only character views and the GM's narrowly scoped inventory/unassign rights, prevent stale autosaves from undoing assignments or losing progress, and keep the GM's campaign accessible through creation/service failures.
+- Source review used current client code and project decisions, **not live server migrations**. No implementation passes, signed-in test results, or server-policy certification are claimed. **Subsystem 8 open; project progress 3/8.**
+- Docs only; no JavaScript, CSS, HTML, tests, Supabase or deployment settings changed. Full local Node suite not run (repository checkout unavailable); CI/Claude must verify.
+
+---
+
 ## New item pop-ups for players
 
 - **GM:** open a player's sheet from the Party Board, go to Inventory, and use **Give an item** (name, quantity, ENC, cost, an optional note). Tick **Reveal** for the full-screen reveal; leave it unticked for a small notice.
