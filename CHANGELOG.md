@@ -5,6 +5,18 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat: Core action list, initiative roll, unarmed stats, and case mapping
+
+- **Action list** in Play Mode now follows Core pp.91–93: proactive actions (Attack, Brace, Cast Magic, Change Range, Dither, Hold Magic, Mount, Move, Outmanoeuvre, Ready Weapon, reloads, Regain Footing, Struggle), reactive actions (Counter Spell, Evade, Interrupt, Parry) and Free Actions at 0 AP (Delay, Assess Situation, Drop Weapon, Signal, Speak, Use Luck Point, Ward Location). Non-Core labels like "Change Combat Stance" and "Shove / Grapple" are gone. Each action shows its conditions.
+- **Initiative roll:** roll 1d10 + your current Initiative Bonus (armour and Fatigue included), or type in your own d10. It stays for the whole fight; New Round doesn't clear it.
+- **Unarmed attacks** are always listed: 1d3 + Damage Modifier, Size S, Reach T (Core pp.105–106).
+- All 191 Combat cases from ChatGPT are mapped to app status in `docs/combat-cases-batch-1.md`. Claude checked the Differential table (p.51), armour initiative penalty (pp.58, 90), Combat Actions (pp.91–93) and all 43 Special Effects (p.100) against the book: the app matches.
+- New `tests/combat-cases.cjs` covers AP, initiative, the action list, Differential results, no-parry, the parry Size matrix, hit locations, wound levels, armour on applied damage, and all 43 Special Effects' eligibility.
+
+To test: open Play Mode, Actions tab. Click "Roll initiative" and check the total is your d10 plus the Initiative shown in the top bar. Check that the action list has Proactive, Reactive and Free groups, and that "Unarmed (human)" appears under weapons.
+
+---
+
 ## Subsystem 5 — Combat Core case inventory (documentation only)
 
 - ChatGPT added `docs/combat-cases-batch-1.md`: 191 individual **Given → Core p.N → expected app behaviour** cases for action economy, AP and initiative, Combat Styles, attacks/parries, all 43 Special Effects, melee/ranged situational rules, damage, armour and wounds (Core Combat pp.86–111, plus supporting pp.8 and 51).
