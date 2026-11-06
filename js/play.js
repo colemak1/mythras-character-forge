@@ -561,7 +561,7 @@ function pmCombatSection(){
     }).join("");
   }else h+='<p class="pm-empty">No weapons carried — add some on the Money &amp; Gear step.</p>';
   // Core pp.105–106: every human can fight unarmed with the Unarmed skill.
-  h+='<div class="pm-wpn"><div class="top"><span class="nm">Unarmed (human)</span><span class="dmg">1d3 + '+esc(dmCalc(effectiveChars().STR,effectiveChars().SIZ))+'</span></div>'
+  h+='<div class="pm-wpn"><div class="top"><span class="nm">Unarmed (human)</span><span class="dmg">'+esc(unarmedDamageText())+'</span></div>'
    +'<div class="meta">SIZE S &middot; REACH T &middot; UNARMED SKILL &middot; CORE PP.105&ndash;106</div>'
    +'<div class="meta"><button class="pm-btn sm roll" onclick="APP.rollWithWeapon(\'Unarmed\',\'std:Unarmed\',\'\')">Roll Unarmed</button></div></div>';
   h+=pmFatiguePanel();
@@ -661,6 +661,9 @@ function pmCalculateModifiedSkill(form){
 
 // The weapon a combat roll was made with. Unarmed is the default style every
 // human has (Core p.105): Size S, Reach T, 1d3 + Damage Modifier.
+// Core p.105: 1d3 plus the Damage Modifier, which already carries its sign
+// ("+1d2", "-1d4"); a +0 modifier adds nothing.
+function unarmedDamageText(){const dm=String(dmCalc(effectiveChars().STR,effectiveChars().SIZ)).trim();return /^[+-]?0$/.test(dm)?"1d3":"1d3"+(/^[+-]/.test(dm)?dm:"+"+dm);}
 const UNARMED_WEAPON={name:"Unarmed",group:"Unarmed",size:"S",reach:"T",dmg:"1d3",effects:""};
 function weaponForRoll(name){return name==="Unarmed"?UNARMED_WEAPON:(name?weaponByName(name)||null:null);}
 // Core p.100 lists a weapon type for some Special Effects. The weapon tables

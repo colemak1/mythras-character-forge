@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Advancement cases mapped; unarmed damage display fixed
+
+- All 216 Advancement, hazards and recovery cases (ChatGPT, PR #124) now have an app status in `docs/advancement-cases-batch-1.md`. No incorrect calculations were found: Experience Rolls, improvement, characteristic training and permanent improvement, new Professional Skills, ageing, Fatigue and natural healing already match the book. Hazards, disease and traps stay GM-assisted.
+- Two rulings are needed from the owner: trainer exactly 20% better, and how to round a third or two thirds of a maimed location's HP.
+- Fixed the doubled plus sign on the Unarmed damage line found in the live check (PR #123): it now reads "1d3+1d2", "1d3-1d4", or just "1d3".
+
+---
+
 ## Subsystem 4 — source-verified advancement, fatigue, healing and hazards cases
 
 - Added `docs/advancement-cases-batch-1.md`: **216 individual acceptance cases** across ten groups for Core Experience Rolls, skill and Passion improvements, temporary/permanent characteristic boosts, mentor training, ageing, fatigue/exertion, medical and natural healing, maiming, environmental hazards, disease/poison conditions and examples, survival, traps, weather, Luck Points and relevant interactions (printed Core pp.68–85 with cited supporting pages).

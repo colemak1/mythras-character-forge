@@ -280,3 +280,54 @@
 4. **Multi-stage wounds:** First Aid (p.41), professional Healing (pp.46–47), natural healing (p.80) and long-term maiming (p.80) are different processes. Treatment status must not itself imply full HP recovery. Preserve per-location/per-incident state; prevent repeated awards after reload.
 5. **Do not overbuild:** This batch is a source inventory. Environmental timelines, contagion, weather simulation, whole-world traps and supernatural cures can remain explicitly GM-assisted in a lean player sheet if the owner agrees. Record condition, affected locations, relevant rolls/intervals and source text correctly. Do not touch paused Magic, optional Companion rules, or the separate Practice Combat feature.
 6. **Source-to-app mapping:** Claude should map each ID to `Pass / Guidance / GM-assisted / Not implemented / Decision`, add deterministic tests for implemented calculations, and prioritize player-facing XP spending, training, ageing, Fatigue penalties and wound recovery. The prior 3/8 count stays unchanged until the complete Subsystem 4 scope, tests and applicable signed-in workflows are verified.
+
+## App status (Claude, 2026-11-06)
+
+Mapped against the code after PR #124. Claude re-checked Core pp.73 (training table, trainers, teachers, permanent improvement example) and 80 (healing rates, permanent injury table) in the uploaded PDF. Status key as in `combat-cases-batch-1.md`: **Pass** = implemented and covered by tests; **Pass (code)** = implemented and checked in code, no dedicated test yet; **Guidance** = rule text shown at the table; **GM-assisted** = resolved at the table; **Decision** = needs a ruling.
+
+**Headline: no incorrect calculations were found.** The player-facing rules in this batch (Experience Rolls, skill and Passion improvement, characteristic training and permanent improvement, new Professional Skills, ageing, Fatigue, natural healing) are already implemented and match the book. What remains is two rulings and a few optional extras.
+
+| Cases | Status | Notes |
+|---|---|---|
+| X01, X02, X15, X17, X20 | **GM-assisted** | Awards, fairness, "plausibly practised" and Passion reversal are GM calls. Awards are entered in the Experience panel. |
+| X03, X04 | **Pass** | Experience Modifier from CHA (`xpMod`, rules-smoke tests); applying it is an explicit per-award choice, matching "only when plausible". |
+| X05, X06, X10, X11 | **Pass (code)** | Rolls bank in the pool; one roll per improvement attempt; each attempt uses the current skill; no 100% cap. |
+| X07–X09 | **Pass (code)** | d100 + INT compared with the skill; meeting it gives 1d4+1, falling short still gives +1. Not a skill-check critical or fumble. |
+| X12, X13 | **Pass (code)** | Fumbled skills are recorded once (no stacking) for a free +1% at the next improvement. |
+| X14 | **Not implemented** (optional) | Campaign option for 1d6+1 instead of 1d4+1. |
+| X16, X18 | **Pass (code)** | Passions improve like skills; new Passions can be added. |
+| X19 | **GM-assisted** (optional helper possible) | Weak/Moderate/Strong Passion shifts (1d10, 1d10+5, 1d10+10). |
+| C01–C08, C13 | **Pass (code)** | Training adds a tenth of the species maximum (rounded up), capped at the maximum; SIZ excluded; each future award needs one roll to maintain; stopped training atrophies one step per award. |
+| C09–C12 | **Pass (code)** | Optional permanent method chosen in campaign settings; cost 1 + current − species minimum (p.73 example: DEX 12 → 10 rolls); full cost required. |
+| C14–C16 | **Pass (code)** | Learning a new Professional Skill needs a confirmed source, a month and 3 rolls. |
+| T01–T10, T15–T17 | **Pass (code)** | Training table steps 1d2…1d6+4, +1 per further 10 points (`trainingStep`, `trainingDie`); one skill at a time and the Experience-Roll-before-retraining limit are shown as guidance. |
+| T02 | **Decision** | The text says a trainer needs "at least 20%" more, but the table starts at 21–30%. The app currently refuses to calculate at exactly 20 and leaves it to the GM. Recommended ruling: treat exactly 20 as the 21–30% row (1d2). |
+| T11–T14 | **Pass (code)** | Teach result shifts the step: critical +2, success +1, failure 0, fumble −1 (possibly no gain). |
+| T18–T20 | **Guidance / GM-assisted** | Class size, tuition cost and discounts. |
+| AG01–AG17 | **Pass (code)** | Human ageing bands 40/50/60/70/80/90 with Easy → Hopeless grades; Endurance and Willpower separately; d6 characteristic table; 1d3 loss; terminal at 0; record and undo; Senior and Old creation categories prompt a review. Nonhuman bands are GM-assisted (AG16). |
+| F01–F06, F21, F22 | **Guidance** | Effort periods, sleep deprivation and encumbrance-as-exertion are in the Hazards and Fatigue notes; checks are made at the table. |
+| F07–F13 | **Pass** | Fatigue table: grade, movement, initiative and AP penalties applied in Play Mode (existing tests; matches p.79). |
+| F14–F16 | **Pass (code)** | Recovery period divided by Healing Rate is shown per level. |
+| F17–F20 | **Guidance** | Single Fatigue track; asphyxiation and blood-loss recovery text. |
+| H01 | **Pass** | Healing Rate from CON (rules-smoke tests). |
+| H02–H07, H29 | **Pass (code)** | Natural recovery per location at Healing Rate per day, week or month by wound level; Major Wounds need confirmed treatment first; never above the location maximum; a reduction can be entered for strenuous activity. |
+| H08 | **GM-assisted** | Maiming deadline (Healing skill ÷ 20 days). |
+| H09–H23 | **Guidance / GM-assisted** | First Aid, professional Healing and surgery outcomes are recorded through the wound log and HP controls. |
+| H24–H27 | **Pass (partial) + Decision** | A permanently reduced location maximum can be entered and sets the new wound thresholds. The app doesn't calculate the 1d3 result itself because the book doesn't say how to round a third of an odd HP value. |
+| H28 | **GM-assisted** | Missing-limb hit-location rolls. |
+| H30 | **Pass** | Wounds, treatment flags and HP persist through save and reload (existing tests and live evidence). |
+| HZ01–HZ27 | **Guidance / GM-assisted** | Acid, falls, asphyxiation, blood loss and fire: rule summaries in Play Mode's Hazards notes; damage entered with the HP controls. No hazard simulator, per the owner's lean-scope direction. |
+| D01–D32 | **GM-assisted** | Disease, poison, conditions and sample afflictions are resolved at the table. |
+| S01–S23 | **GM-assisted** | Survival, weather, visibility and traps. |
+| L01–L06 | **Pass (code) / GM-assisted** | Luck Points are tracked in Play Mode; what they're spent on is the table's call. |
+| L07–L09 | **GM-assisted / Pass** | Object damage is GM-assisted; encumbrance thresholds are Pass (subsystem 3). |
+
+### Rulings needed (owner)
+
+1. **Trainer exactly 20% better (T02):** use the 1d2 row, or require 21+?
+2. **Maiming fractions (H24, H25):** when a third or two thirds of a location's HP isn't a whole number, round the HP **lost** up (harsher) or down (kinder)? Once decided, the app can calculate the new maximum from the 1d3 result.
+
+### Optional extras
+
+- Campaign option for 1d6+1 skill improvement (X14).
+- Passion shift helper: pick Weak, Moderate or Strong and roll (X19).

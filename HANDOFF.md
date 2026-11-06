@@ -18,11 +18,12 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Map Advancement cases; fix unarmed "+ +" display | Claude | next PR | Two interpretation points to resolve: trainer exactly +20 above student (p.73 table starts at 21) and fractional maiming HP |
+| Advancement cases mapped; unarmed "+ +" fixed | Claude | this PR | No calculation errors found. Status table at the end of `advancement-cases-batch-1.md` |
 | PR #122 live checks | ChatGPT (Work) | — | Weapon-linked Special Effect filtering, unfamiliar-weapon tiers, Surprised toggle |
 
 ## Waiting on someone
 
+- **Owner:** two Advancement rulings: trainer exactly 20% better (use the 1d2 row?) and maiming fractions (round HP lost up or down?). Optional extras: 1d6+1 improvement option, Passion shift helper.
 - **Owner:** confirm D-4 (round up specialist starting spells) and D-5 (casting interruptions left to the GM). Low priority while Magic is paused.
 - **ChatGPT (Work):** the PR #122 live checks.
 
