@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by Claude_
+_Last updated: 2026-11-06 by ChatGPT (Chat) — Combat closeout and Advancement reconciliation_
 
 ## Priorities
 
@@ -10,7 +10,7 @@ _Last updated: 2026-11-06 by Claude_
 
 1. **Subsystem 8 critical work:** security fix merged (PR #130). Migration `20261106120000_gm_private_state_and_assignment_checks.sql` **ran successfully live** with an owner-private safety copy. Verification: table `campaign_gm_state`, 1 private row, 0 campaigns retaining old session state. Multi-account acceptance remains outstanding and was excluded from the latest owner-only session.
 2. **Play Mode UX: done** (PRs #133–#137, then layout v2 from the owner's sketch: one-screen columns and a D&D Beyond-style side panel, 2026-11-06): layout, physics dice tray, combat flow, skill search and pins, Body tab, tips, Gear and Notes. The theme lives in `play-clean.css` under `data-pm-style="clean"`, so a future player style picker only swaps token sets. Owner-only live pass recorded in `docs/play-mode-live-acceptance-20261105.md`: desktop overflow and incomplete result compaction fail; numerical Core spot-checks pass; terminal Fatigue labels need correction. Exact 390px phone pass remains unverified (browser limitation).
-3. **Subsystem 5 Combat Batch 3:** #150 focused live re-check **4/4 groups PASS**: Sweep qualification, Main Gauche/Javelin/Dagger Pin Weapon badges in list and side panel, Impale table fit at 1363px desktop width, and unchanged Knockback text. **ChatGPT retracts its earlier extra-metre Knockback finding** after rereading rendered Core p.104; agrees with Claude's TA22 interpretation. See `docs/combat-pr150-live-recheck-20261106.md`; prior report corrected. All 28 local scripts pass; throwaway deleted and absence verified after reload. No code changed. Subsystem 5 **OPEN**, overall **3/8**.
+3. **Subsystem 5 Combat closeout:** The full chapter map (printed Core pp.86–111) is in `docs/combat-closeout-review.md`, added via **docs-only PR** on `docs/combat-s5-closeout-reconciliation-20261106`. It maps **81 section groups and 43 named Special Effects**, adds **12 source child cases** to `docs/combat-cases-batch-1.md` (**380 total; 6 HANDLED / 6 NEEDS CODE**) and defines exactly **one owner-only end-to-end Work fight**. Batch 3 is implemented (#148/#150) and live-accepted (#149/#151); Knockback has **no extra starting metre**. Claude to fix new narrow gaps/test; Work to run one scenario. **Subsystem 5 OPEN; progress 3/8.**
 
 Practice Combat features remain paused. Progress **3/8**.
 
@@ -18,6 +18,8 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
+| Combat source closeout and final test design | ChatGPT (Chat) → Claude → ChatGPT (Work) | `docs/combat-s5-closeout-reconciliation-20261106` docs-only PR | **81 section groups + 43 named SE mapped**, 12 new cases, 380 Combat total; 6 initial NEEDS CODE (surprise +1 SE, grapple guidance, passive block, offhand throw); final Work fight script in `docs/combat-closeout-review.md`. Subsystem 5 OPEN. |
+| Advancement reconciliation (start) | ChatGPT (Chat) → Claude | `docs/advancement-reconciliation.md` in same docs-only PR | Existing 216-case inventory summarized against `docs/subsystem-plan.md`. Training/passion/recovery live gaps and two optional choices remain; Subsystem 4 OPEN. |
 | Combat Batch 3 focused acceptance | ChatGPT (Work) → Claude | #150 verified; docs PR follows | All 4 groups PASS. Earlier Knockback failure retracted; no extra starting metre. Screenshot confirms table fit. Throwaway deleted/reload checked; 28 scripts pass. |
 | Combat Batch 2 live acceptance | ChatGPT (Work) → Claude | PR #144 verified; docs PR follows | All five requested check groups passed. Evidence and fumble-scope caveat: `docs/combat-batch2-live-acceptance-20261106.md`. Disposable fixture deleted; absence confirmed after reload. All 27 local test scripts passed. No code changed. |
 | Play Mode live re-check | ChatGPT (Work) | after the fixes PR | Retest: no page scroll at your desktop size; finished combat roll is one card with Attack again / Parry; Comatose/Dead wording; tabs on one line. Exact phone width: the owner checks on a real phone |
@@ -28,12 +30,13 @@ Practice Combat features remain paused. Progress **3/8**.
 ## Waiting on someone
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **Claude:** waiting on Chat's Subsystem 5 closeout review; then implements any gaps it finds. Play Mode polish on the back burner until the owner is at a PC.
-- **ChatGPT (Chat):** Subsystem 5 closeout review (map every Core Combat chapter section to ledger rows, list anything uncovered, propose one final Work scenario, recommend close or not), then start Subsystem 4 (Advancement, hazards and recovery) reconciliation.
+- **Claude:** review and merge docs-only Combat closeout PR after CI. Verify the six new NEEDS CODE rows, add narrow player-facing fixes/test coverage (not a new combat engine), then deploy and request **one owner-only Work fight** exactly as scripted in `docs/combat-closeout-review.md`. Do not advance 3/8 until closeout evidence. Also review the starter Subsystem 4 reconciliation and prioritize XP/training, serious/major recovery live gaps.
+- **ChatGPT (Chat):** Combat closeout map and missing child cases delivered in docs-only PR; `docs/advancement-reconciliation.md` begins Subsystem 4. Further S4 source/test reconciliation follows Claude's Combat closeout review.
 
 
 ## Notes
 
+- Combat closeout mapping verified against privately uploaded Core printed pp.86–111 (parsed text first; difficult tables/pages visually inspected). Added 12 C5-CL case rows, **6 HANDLED / 6 NEEDS CODE**, and one final owner-only Work fight scenario. Source/JS review is not a deployed PASS. User settled Knockback with **no extra initial metre**. Creature anatomy/Rabble-Underlings remain S7; multi-account/GM/Party Board remain S8. Reconciliation started in `docs/advancement-reconciliation.md`. **3/8 unchanged.**
 - Combat Batch 3 checked the user's uploaded Mythras 2e Core source directly (text search first, rendered printed pp.61–65 and 96–110 for tables and special cases) and reviewed current source code after #146. **92 new specification rows**, not live implementation evidence; added to the existing ledger without changing previous acceptance. **Creature anatomy excluded**, for Subsystem 7. Total Combat ledger now **368** cases (191 + 85 + 92). Status is initial and may need Claude adjudication. No production code or tests were changed by ChatGPT. CI pending.
 - New Combat batch source checked against user's uploaded Core PDF, rendered printed pp.89,97–98,101–103,105–109. The 85 added rows **do not** claim CI/live passes; current app behavior was assessed from `js/data.js`, `js/play.js`, `js/render.js`, `js/engine.js` and `tests/combat-cases.cjs`. **3/8 retained; Subsystem 5 still open.**
 
