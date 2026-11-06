@@ -772,7 +772,7 @@ function fxItemHTML(effect){
   const canChoose=canPickEffectForRoll(effect,selected)&&picked.length<playEffectsWon(selected.tier,selected.oppTier)&&(!count||stack)&&!VIEW_ONLY;
   const choose=canChoose?'<button type="button" class="pm-btn sm pm-fx-choose" onclick="event.preventDefault();event.stopPropagation();APP.playChooseEffect('+SPECIAL_EFFECTS.indexOf(effect)+')">Choose</button>':"";
   const badges=[off?'<span class="pm-fx-badge off">Offensive</span>':"",def?'<span class="pm-fx-badge def">Defensive</span>':"",
-    weapon?'<span class="pm-fx-badge">'+esc(weapon)+'</span>':"",roll?'<span class="pm-fx-badge roll">'+esc(roll)+'</span>':"",
+    weapon?'<span class="pm-fx-badge">'+esc(weapon)+'</span>':"",roll?(selected&&pinWeaponWithoutCritical(effect,selected)?'<span class="pm-fx-badge roll" title="Critical Only normally; this weapon\'s exception applies (Core pp.61–62)">No Critical needed</span>':'<span class="pm-fx-badge roll">'+esc(roll)+'</span>'):"",
     stack?'<span class="pm-fx-badge stack">Stacks</span>':""].join("");
   return '<div class="pm-fx-item pmx-fxrow" data-search="'+esc((name+" "+text).toLowerCase())+'"><button type="button" class="pmx-link pmx-fxname" onclick="APP.pmPopup(\'fx\','+SPECIAL_EFFECTS.indexOf(effect)+')" title="What it does">'+esc(name)+'</button> '+badges+choose+'</div>';
 }
@@ -1292,7 +1292,7 @@ function pmCombatRulesRefHTML(){
      +'<p><b>Pulling free:</b> a Ready Weapon action; Brawn (opposed if the victim resists). Success does half weapon damage, no Damage Modifier, ignoring armour; Barbed weapons do full damage. While impaled, the attacker can\'t parry with that weapon (pp.97–98).</p>')
    +sec("Aiming",'<p>A whole Combat Round of aiming reduces one situational penalty by one grade. More rounds give no extra benefit (p.107).</p>')
    +sec("Outmanoeuvre (several foes)",'<p>One group test: your Evade against each foe trying to surround you; each participant spends an AP. Each foe who fails to beat you can\'t attack you again this round. Beat them all and you may withdraw or choose one to stay engaged with. Being outnumbered gives no skill penalty in itself (p.104).</p>')
-   +sec("Sweep attacks",'<p>One attack roll against a group; each defender defends and takes effects separately, and all effects happen at once (p.105).</p>')
+   +sec("Sweep attacks",'<p>Only weapons or creatures of unusual size (a dragon\'s tail, a giant\'s club) can sweep a closely clumped group. One attack roll applies to everyone in its path; each defender defends and takes effects separately, and all effects happen at once. The GM decides how many are caught (p.105).</p>')
    +sec("Knockback",'<p>If damage before armour and parrying exceeds your SIZ, you are knocked back 1m per 5 points (or part) over, and must make an Easy Acrobatics or Standard Athletics roll to stay standing (p.104).</p>')
    +sec("Pulling a blow",'<p>Declare before attacking. A hit does half damage (p.105).</p>')
    +sec("Climbing and swimming",'<p><b>Climbing:</b> combat skills capped by Athletics; a biped fights with one limb (p.106).<br><b>Swimming:</b> capped by Swim. Underwater only thrusting weapons work, at half damage; bites, strangling and ramming are unaffected. Water Combat lifts the Swim cap (pp.89, 106).</p>')
@@ -1313,7 +1313,7 @@ function pmPopupHTML(){
   else if(k==="fx"){const e=SPECIAL_EFFECTS[PM_POPUP.i];if(!e){PM_POPUP=null;return "";}
     title=e[0];const r=selectedEffectRoll(),picked=r?.effectsPicked||[];
     const can=r&&canPickEffectForRoll(e,r)&&picked.length<playEffectsWon(r.tier,r.oppTier)&&(!picked.includes(e[0])||e[5])&&!VIEW_ONLY;
-    body='<p class="pmx-fxbadges">'+[e[1]?'<span class="pm-fx-badge off">Offensive</span>':"",e[2]?'<span class="pm-fx-badge def">Defensive</span>':"",e[3]?'<span class="pm-fx-badge">'+esc(e[3])+'</span>':"",e[4]?'<span class="pm-fx-badge roll">'+esc(e[4])+'</span>':"",e[5]?'<span class="pm-fx-badge stack">Stacks</span>':""].join(" ")+'</p><p>'+esc(e[6])+'</p>'
+    body='<p class="pmx-fxbadges">'+[e[1]?'<span class="pm-fx-badge off">Offensive</span>':"",e[2]?'<span class="pm-fx-badge def">Defensive</span>':"",e[3]?'<span class="pm-fx-badge">'+esc(e[3])+'</span>':"",e[4]?(r&&pinWeaponWithoutCritical(e,r)?'<span class="pm-fx-badge roll">No Critical needed (weapon exception)</span>':'<span class="pm-fx-badge roll">'+esc(e[4])+'</span>'):"",e[5]?'<span class="pm-fx-badge stack">Stacks</span>':""].join(" ")+'</p><p>'+esc(e[6])+'</p>'
      +(can?'<p><button type="button" class="pm-btn pmx-pri" onclick="APP.playChooseEffect('+PM_POPUP.i+');APP.pmPopupClose()">Choose '+esc(e[0])+'</button></p>':'');}
   else if(k==="log"){title="Roll log";body=pmRollLogHTML();}
   else if(k==="actions"){title="Combat actions";body=pmActionsInfoHTML();}

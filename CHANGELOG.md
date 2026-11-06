@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat follow-ups from the Batch 3 live check (PR #149)
+
+- **Sweep attacks** now say they only apply to weapons or creatures of unusual size (Core p.105).
+- **Pin Weapon** shows "No Critical needed" instead of "Critical Only" when your weapon's exception applies (Entrapping weapons, or a thrown javelin against a shield).
+- The Impale table fits narrower side panels without scrolling sideways.
+- **Knockback unchanged:** a re-check of Core p.104 confirms it's 1m per 5 points (or part) over SIZ, with no extra starting metre. The case ledger is corrected.
+
 ## 2026-11-06 — Combat Batch 3 independent live acceptance
 
 - PR #148: five of six requested groups pass in the owner session. Whip Parry restrictions, Entrapping/Javelin Pin Weapon exceptions, weapon notes and wound wording pass; all 25 Impale matrix cells match Core p.98.

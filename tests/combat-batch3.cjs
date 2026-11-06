@@ -77,4 +77,18 @@ test('C5-B3-WN06/WN07 wound wording: torso revival vs combat, limb deadline only
  assert.match(run('playWoundActionText("Left Arm","major")'),/If the limb is severed, punctured or ripped off/);
  assert.doesNotMatch(run('playWoundEffectText("Left Arm","major")'),/^Major Wound: immediately incapacitated, can't keep fighting\. Limb is severed/);
 });
+test('#149 follow-up: Sweep is limited to unusual-size weapons or creatures (Core p.105)',()=>{
+ assert.match(run('pmCombatRulesRefHTML()'),/Only weapons or creatures of unusual size/);
+});
+test('#149 review: Knockback distance is 1m per 5 points (or part) over SIZ, no extra starting metre (Core p.104)',()=>{
+ const h=run('pmCombatRulesRefHTML()');assert.match(h,/knocked back 1m per 5 points \(or part\) over/);assert.doesNotMatch(h,/one further metre|plus 1m/);
+});
+test('#149 follow-up: a working Pin Weapon exception replaces the Critical Only badge',()=>{
+ setup(["Main Gauche","Dagger"]);
+ run(`S.rollLog=[${roll({weapon:"Main Gauche"})}];PM_EFFECT_ROLL_REF=S.rollLog[0];`);
+ let row=run(`fxItemHTML(${pin})`);assert.match(row,/No Critical needed/);assert.doesNotMatch(row,/>Critical Only</);
+ run(`APP.pmPopup("fx",SPECIAL_EFFECTS.findIndex(e=>e[0]==="Pin Weapon"))`);assert.match(run('pmPopupHTML()'),/No Critical needed \(weapon exception\)/);run('APP.pmPopupClose()');
+ run(`S.rollLog=[${roll({weapon:"Dagger",tier:"Critical"})}];PM_EFFECT_ROLL_REF=S.rollLog[0];`);
+ row=run(`fxItemHTML(${pin})`);assert.match(row,/>Critical Only</,'other weapons keep the normal badge');
+});
 console.log(passed+' combat batch 3 tests passed');
