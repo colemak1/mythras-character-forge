@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by Claude_
+_Last updated: 2026-11-06 by ChatGPT (Chat), Subsystem 4 hazard-notes audit_
 
 ## Priorities
 
@@ -18,6 +18,7 @@ Practice Combat features remain paused. Progress **4/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
+| Play Mode hazard/recovery wording audit | ChatGPT (Chat) → Claude | `docs/subsystem4-hazard-note-source-review-20261106` docs-only PR | Audited printed Core pp.68,71,74–85. `docs/advancement-hazard-notes-review.md` identifies incorrect/ambiguous or absent popup phrasing with compact suggested copy. **All treatment/damage decisions remain GM-assisted; no production code or tests edited.** |
 | Advancement reconciliation (start) | ChatGPT (Chat) → Claude | `docs/advancement-reconciliation.md` in same docs-only PR | Existing 216-case inventory summarized against `docs/subsystem-plan.md`. Training/passion/recovery live gaps and two optional choices remain; Subsystem 4 OPEN. |
 | Combat Batch 3 focused acceptance | ChatGPT (Work) → Claude | #150 verified; docs PR follows | All 4 groups PASS. Earlier Knockback failure retracted; no extra starting metre. Screenshot confirms table fit. Throwaway deleted/reload checked; 28 scripts pass. |
 | Combat Batch 2 live acceptance | ChatGPT (Work) → Claude | PR #144 verified; docs PR follows | All five requested check groups passed. Evidence and fumble-scope caveat: `docs/combat-batch2-live-acceptance-20261106.md`. Disposable fixture deleted; absence confirmed after reload. All 27 local test scripts passed. No code changed. |
@@ -31,12 +32,14 @@ Practice Combat features remain paused. Progress **4/8**.
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
 - **ChatGPT (Work):** Subsystem 4 owner-only live pass, steps (a)–(g) in `docs/advancement-reconciliation.md` (Claude review and update).
 - **v0 (design):** briefed by the owner; mockups only. Claude rebuilds the chosen design (see `AGENTS.md`).
-- **ChatGPT (Chat):** docs-only check that the Play Mode hazard notes match Core pp.74–85 (HZ, D and S rows stay GM-assisted).
+- **ChatGPT (Chat):** hazard-note source audit done: `docs/advancement-hazard-notes-review.md` (docs-only PR). Found **acid entirely missing** (Core p.68), and incomplete/imprecise p.74 disease treatment, p.78 falls, p.79 fire/effort and p.80 healing caveats. Numerical recovery systems not changed. **Subsystem 4 OPEN, 4/8.**
+- **Claude:** make the wording-only hazard-note fixes from `docs/advancement-hazard-notes-review.md` in a code PR.
 - **ChatGPT (Chat):** Combat closeout map and missing child cases delivered in docs-only PR; `docs/advancement-reconciliation.md` begins Subsystem 4. Further S4 source/test reconciliation follows Claude's Combat closeout review.
 
 
 ## Notes
 
+- S4 hazard popup source review uses privately supplied Core, printed **p.68 for Acid**, **p.71** for suffocation/blood loss, **pp.74–75** for disease/poison, **p.78** for falls/sleep, **p.79** for fire/exertion, **p.80** for healing. The current `pmHazardsHTML()` text is mostly accurate but lacks crucial table/exception reminders. Review: `docs/advancement-hazard-notes-review.md`. Claude may make **wording-only code corrections in a separate PR**. Core hazard automation remains GM-assisted and Subsystem 4 remains open, progress 4/8.
 - Combat closeout mapping verified against privately uploaded Core printed pp.86–111 (parsed text first; difficult tables/pages visually inspected). Added 12 C5-CL case rows, **6 HANDLED / 6 NEEDS CODE**, and one final owner-only Work fight scenario. Source/JS review is not a deployed PASS. User settled Knockback with **no extra initial metre**. Creature anatomy/Rabble-Underlings remain S7; multi-account/GM/Party Board remain S8. Reconciliation started in `docs/advancement-reconciliation.md`. **3/8 unchanged.**
 - Combat Batch 3 checked the user's uploaded Mythras 2e Core source directly (text search first, rendered printed pp.61–65 and 96–110 for tables and special cases) and reviewed current source code after #146. **92 new specification rows**, not live implementation evidence; added to the existing ledger without changing previous acceptance. **Creature anatomy excluded**, for Subsystem 7. Total Combat ledger now **368** cases (191 + 85 + 92). Status is initial and may need Claude adjudication. No production code or tests were changed by ChatGPT. CI pending.
 - New Combat batch source checked against user's uploaded Core PDF, rendered printed pp.89,97–98,101–103,105–109. The 85 added rows **do not** claim CI/live passes; current app behavior was assessed from `js/data.js`, `js/play.js`, `js/render.js`, `js/engine.js` and `tests/combat-cases.cjs`. **3/8 retained; Subsystem 5 still open.**

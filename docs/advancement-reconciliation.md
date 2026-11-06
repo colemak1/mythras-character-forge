@@ -47,3 +47,6 @@
 
 Both have tests (`tests/advancement-options.cjs`). What remains for Subsystem 4 is the Work live pass (a)–(f), plus (g): with a campaign set to 1d6+1, a successful Experience Roll gains up to +7, and a Passion deepens by Weak 1d10. Chat's hazard-notes check is still open too.
 
+## Play Mode hazard note source review (ChatGPT, 2026-11-06)
+
+Read `docs/advancement-hazard-notes-review.md` for a page-verified audit of the actual Body → Hazards popup. The review covers Acid (printed Core p.68), asphyxiation/blood loss (p.71), disease and poison (pp.74–75), falls/sleep (p.78), fire/exertion (p.79) and healing (p.80). Its compact wording recommendations remain GM-assisted and do not request automated hazard timers. Claude to review and, if approved, fix prose in a separate code PR. This source review does **not** count as the still-outstanding owner-only live Subsystem 4 pass or optional owner decisions. **Progress 4/8.**
