@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Folk Magic catalogue accepted live after PR #118 (2026-11-05, America/Los_Angeles)
+
+- Signed-in catalogue-only recheck passed: the builder lists all 70 Core choices. Selecting Beastcall (X) shows Instant, Ranged, Resist (Willpower), Core p.124 and the animal-type speciality box; Play Mode shows its traits.
+- Observed content-hash stamps match PR #118's merged revision. The earlier empty-picker failure is retained as history in `docs/magic-cases-batch-1.md`; `HANDOFF.md` now closes this specific live check.
+- No casts, cost checks or reload regressions repeated; no production code changed. Magic remains paused, Subsystem 6 remains open and progress remains 3/8.
+
+---
+
 ## Fix: updates not reaching returning players
 
 - Each script and stylesheet in `index.html` carries a `?v=` stamp so browsers know when to fetch a new copy. The stamps were numbered by hand and weren't bumped for the last three releases, so a browser that had the site cached could keep running old code. That's why the new Folk Magic spell list didn't show up in the live check.
