@@ -2,7 +2,7 @@
 
 - **Primary source:** user's uploaded **Mythras 2e Core Rulebook** (`pdfcoffee.com_mythras-2e-2-pdf-free(20261021-212124).pdf`), printed **Combat pp.86–111**; supporting **Action Points p.8**, **Differential Roll p.51**, armour p.58 and ranged weapon stats p.65 where explicitly cited.
 - **Verification:** parsed the Core PDF directly, preserved its two-column reading order, and visually checked its tables on pp.89, 94–95, 100, 108–110. Page references refer to **printed book pages**, not the file's viewer page numbers.
-- **State:** **source-verified acceptance specifications only**. No claim that app code/tests or a deployed signed-in workflow passes. This is the first substantial Combat source inventory; **Subsystem 5 remains OPEN** under `docs/subsystem-plan.md` (project progress **3/8**).
+- **State:** source-verified acceptance specifications, followed by Claude's implementation mapping and a signed-in live acceptance batch for PR #121 below. A mapped or sampled pass does not certify all 191 cases. **Subsystem 5 remains OPEN** under `docs/subsystem-plan.md` (project progress **3/8**).
 - **Owners:** ChatGPT (Chat) writes source cases; **Claude** owns all production code and automated tests. Preserve the owner's decisions: **optional Range/Reach rules enabled**, player-prompted dice rolls, and a **lean player-facing sheet**. Where the Core calls for GM judgement, the app may supply clear guidance and allow manual application rather than building a full automated combat simulator. Do not expand the practice gauntlet in this batch.
 - **Interpretation hygiene:** No homebrew rule may overwrite the Core silently. Mark chosen house rules and optional variants explicitly. Do not infer a universal half-damage rounding rule from this batch; confirm if a fractional intermediate result appears. When implementing, map these IDs to `Pass / Guidance / GM-assisted / Not implemented / Decision` in a separate status ledger and test meaningful cases.
 
@@ -292,3 +292,46 @@ How Play Mode combat works today: the player rolls their Combat Style or Evade, 
 ### Follow-up fixes
 
 The owner approved all three (2026-11-06) and they're done: weapon-linked Special Effect filtering, unfamiliar-weapon tiers with the STR+DEX floor, and the Surprised toggle.
+
+## Signed-in live acceptance after PR #121 — 2026-11-05 (America/Los_Angeles)
+
+ChatGPT (Work), one continuous signed-in Chrome session on [the live site](https://colemak1.github.io/mythras-character-forge/). The account control identified **Account — Test Player**. Reloaded the live page before testing. Repository reference: merged PR #121, **8b256e6bb52601c02c9dde75fbc70cd2cace3a5c**. Observed script stamps matched that revision's `index.html`: `data.js?v=cc7d574352`, `engine.js?v=3d6508e87c`, `play.js?v=1687fd4464`, `app.js?v=8d0bc6eb38`. These establish matching document references, not a byte-level audit of all served assets.
+
+Fixture: **Creation Audit — Human**, ID `71640fe7-6a99-4cbf-b0e4-a5045b70aab9`. Initial top bar: Initiative **9**, Damage Modifier **+0**, **2 Action Points**; Actions showed **2/2 remaining**, initiative not rolled. Audit Hunter **35%**, Warden Spear **20%**. All locations initially at full HP, no armour; Chest **7/7**. Existing resolved wound history was retained. Verification Player was inspected first but had no armour or Combat Style; the actual checks below used Creation Audit. All changes used normal UI controls; no dice, storage or account calls were mocked.
+
+### Requested checks and observed results
+
+| Check / relevant cases | Live evidence | Result |
+|---|---|---|
+| Rolled initiative — C5-R03 | Clicked **Roll initiative**. Display: **Initiative 17 (d10 8 + 9)**, matching top-bar Initiative **9**. | Pass |
+| Manual d10 — C5-R03 | Entered **6**, clicked **Set**. Display: **Initiative 15 (d10 6 + 9)**. | Pass |
+| New Round retains initiative — C5-R07/R13 | After spending both AP, clicked **New Round**. AP restored **0/2 → 2/2**, while initiative stayed **15 (d10 6 + 9)**. | Pass |
+| Action groups and names — sampled C5-A01–A23/R15–R16 | **Proactive — one per cycle, on your turn**, **Reactive — one per incoming threat, any time you have AP**, and **Free — no AP** all appeared. The names and notes are listed below. | Pass for requested display; not a live check of every action's prerequisites |
+| Action-button AP spending — C5-R13, sampled action cases | **Brace** reduced **2/2 → 1/2**; **Parry** reduced **1/2 → 0/2**. Brace was disabled at zero AP. **New Round** restored **2/2**. **Attack** also spent **1 AP** per click during the exchanges below. | Pass for sampled proactive/reactive buttons; all 16 displayed a 1 AP cost |
+| Human unarmed line — C5-M23 | COMBAT showed **Unarmed (human)**, **1d3 + +0**, **SIZE S · REACH T · UNARMED SKILL · CORE PP.105–106**. The numeric damage and Size/Reach match the requested line with DM **+0**. | Pass for stats; minor cosmetic double-plus issue below |
+| No-parry exchange and Special Effect — C5-P09/E01–E02 | Audit Hunter roll **21 vs 35% = Success**; selected role **Attack**, then **No parry**. Display: **vs no parry (Failure) → you win 1 Special Effect**. Chose **Press Advantage**; log changed to **Chosen: Press Advantage**, with **Change Special Effects** control. | Pass for this ordinary-success/no-parry branch and saved selection |
+| Location armour deduction — C5-W01, W04/W08 | Temporarily selected **Padded/Quilted chest armour (AP 2)** in Money & Gear. In Play Mode, selected Chest **7/7**, entered **5** in the damage-before-armour field and clicked **Apply Damage**. Display: **Last hit: 5 dealt − AP 2 → 3 HP taken**; Chest became **4/7**, **Minor Wound**, with no mechanical penalty guidance. | Pass for nonzero armour deduction and Minor Wound display |
+
+### Action list observed
+
+- **Proactive, each labelled 1 AP:** Attack, Brace, Cast Magic, Change Range, Dither, Hold Magic, Mount, Move, Outmanoeuvre, Ready Weapon, Regain Footing, Struggle. Cast Magic explicitly said **1 AP per casting turn**.
+- **Reactive, each labelled 1 AP:** Counter Spell, Evade, Interrupt, Parry.
+- **Free — no AP** reference entries: Delay, Assess Situation, Drop Weapon, Signal, Speak, Use Luck Point, Ward Location. Delay's displayed note explained that the AP is paid by the later reaction or lost if unused by the next turn. These were text guidance, not spend-AP buttons. This records the app's grouping; no new ruling about Delay's classification is introduced here.
+
+### Attack sequence and damage scope
+
+At Standard difficulty, actual Audit Hunter rolls were **98 Failure**, **36 Failure**, then **21 Success**. Each attempt was declared Attack and given **No parry**. The two failures correctly reported **no Special Effects either way**. Clicked Attack to spend AP before each roll, using New Round when the pool was exhausted. Rolls were not forced or reclassified to obtain a success.
+
+For the successful roll, the selector allowed one effect and recorded **Press Advantage**. Selection is recorded guidance; this did not test automated enforcement of Press Advantage on an opponent. No weapon was carried or linked to the roll, so weapon-specific filtering was not certified.
+
+The subsequent damage check was a **manual test hit on the fixture's own chest**, not an automatically transferred outcome from its outgoing attack. The input was **5 damage after parry/other reductions and before armour**, not a newly rolled weapon-damage result. This verifies the requested location armour subtraction. No new Serious/Major wound incident or opposed Endurance outcome was exercised; the prior resolved head-wound history is not new evidence from this batch.
+
+### Cosmetic follow-up, cleanup and limits
+
+- **Unarmed damage formatting:** the line renders **1d3 + +0** because the formatted Damage Modifier already includes its sign. Verification Player also displayed **1d3 + +1d2** when inspected. Claude can remove the redundant separator in a code follow-up; numeric values were correct. No production fix was made in this docs PR.
+- Restored Chest to **7/7** with the normal **full** control; set chest armour back to **None (AP 0)** through Money & Gear. Confirmed starting/remaining silver **90 sp**, gear/inventory cost **0**, Chest **7/7 AP0**, and top-level healthy state. Other locations and the old wound history were preserved.
+- Used **New Round** to restore **2/2 AP**, then **End fight** to return initiative to **not rolled**. The three new attack log entries and **Chosen: Press Advantage** remain as evidence. No Magic Points, characteristics or skills were edited.
+- All **19** `tests/*.cjs` files passed using the prescribed repository loop on **8b256e6**, including `combat-cases.cjs` and asset-version checks; no `FAIL` markers. `git diff --check` passed. These automated checks are separate from the live samples above.
+- This batch verifies only the requested PR #121 workflow. Full action-condition enforcement, all Special Effect branches, nonzero parry reductions, Serious/Major thresholds and wound persistence remain outside this live batch. No new sourcebook audit was undertaken; the source references at the top of this inventory remain authoritative. **Subsystem 5 stays open; progress remains 3/8.**
+
+The later combat follow-up code on main at **8e0959d** arrived while this report was being prepared. Its weapon-linked filtering, unfamiliar-weapon tiers and Surprised toggle were **not** part of this live session. The newer implementation mapping above is preserved separately from the PR #121 evidence.

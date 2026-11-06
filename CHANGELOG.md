@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat live acceptance after PR #121 (2026-11-05, America/Los_Angeles)
+
+- Signed-in checks passed for initiative arithmetic/manual d10/New Round retention, the three action groups and sampled 1-AP buttons, human unarmed stats, a successful attack against No parry, and selecting Press Advantage.
+- Temporary chest armour AP 2 reduced 5 entered damage to 3 HP (Chest 7→4/7, Minor Wound). Restored the audit fixture's HP, armour, silver, AP and initiative; retained test roll evidence.
+- Documented a cosmetic unarmed damage double plus (`1d3 + +0`), with correct numeric values. No production code changed. Full evidence and limits are in `docs/combat-cases-batch-1.md`; `HANDOFF.md` updated. All 19 Node test files passed. Subsystem 5 remains open; progress 3/8.
+
+
+---
+
 ## Combat: weapon-specific Special Effects, unfamiliar weapons, surprise
 
 - **Roll with a weapon.** Each carried weapon in Play Mode has a roll button for the Combat Style that covers it, and Unarmed has its own. The roll remembers the weapon, and the Special Effects list then hides effects that weapon can't use. A club can Bash and Stun Location but not Bleed; only ranged weapons get Marksman; only Small weapons get Remise. You can also set "Weapon used" on any combat roll. With no weapon set, every effect stays available.
