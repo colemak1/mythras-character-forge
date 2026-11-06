@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode redesign, batch 2: physics dice
+
+- **Every roll now shows the physics dice from Practice Combat.** A tray in the corner (above the tab bar on a phone) tumbles the two d10s, then shows the number and result: Critical, Success, Failure or Fumble. It closes after a few seconds, or with its ×.
+- The roll is decided and logged before the dice move, so the animation never changes a result. Reloading the page doesn't replay old rolls.
+- Players can turn the animation off with **Animated dice** in the Rolls panel. It's also off for anyone whose device asks for reduced motion. Without the animation, the tray shows the number straight away.
+
 ## Play Mode redesign, batch 1: the new layout
 
 - **Play Mode has a new, cleaner layout.** A slim header, then a vitals bar that's always visible: Health (your worst wound), Action Points, Initiative, Magic Points, Luck and Fatigue.
