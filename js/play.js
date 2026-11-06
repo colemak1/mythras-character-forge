@@ -620,9 +620,19 @@ function weaponForRoll(name){return name==="Unarmed"?UNARMED_WEAPON:(name?weapon
 // weapon's own list; the rest by weapon group or Size. With no weapon
 // recorded on the roll, every effect stays available for the GM to judge.
 const WEAPON_LISTED_EFFECTS=new Set("Bash,Bleed,Entangle,Impale,Stun Location,Sunder".split(","));
+// The Combat Style a roll used, if known: weapon rolls record it; a Combat
+// Style roll from the Skills list records its key too. Older log entries
+// without one fall back to any of the character's styles.
+function rollHasTrait(r,trait){
+  const keys=r&&r.styleKey?[r.styleKey]:stylesList().map(s=>s.key);
+  return keys.some(k=>(styleDef(k).traits||[]).includes(trait));
+}
+// Core p.101: Weapon Malfunction is a firearms effect only.
+function isFirearm(w){return !!w&&(w.firearm===true||/\b(arquebus|musket|pistol|rifle|carbine|blunderbuss|handgonne|firearm|gun)\b/i.test(w.name||""));}
 function weaponAllowsEffect(effect,w){
   const req=effect&&effect[3];
   if(!req||!w)return true;
+  if(effect[0]==="Weapon Malfunction (Firearms)")return isFirearm(w);
   if(WEAPON_LISTED_EFFECTS.has(effect[0]))return String(w.effects||"").split(/,\s*/).includes(effect[0]);
   if(req==="Ranged Weapons")return w.group==="Ranged";
   if(req==="Unarmed")return w.group==="Unarmed";
@@ -660,6 +670,9 @@ function canPickEffectForRoll(effect,r){
   if(r.combatRole==="attack"&&!effect[1]||r.combatRole==="defence"&&!effect[2])return false;
   if(r.combatKind==="evade"&&["Enhance Parry","Blind Opponent"].includes(effect[0]))return false;
   if(r.weapon&&!weaponAllowsEffect(effect,weaponForRoll(r.weapon)))return false;
+  // Core pp.89, 97: Kill Silently needs a Combat Style with Assassination (the
+  // GM confirms the first-attack-on-a-surprised-victim condition).
+  if(effect[0]==="Kill Silently"&&!rollHasTrait(r,"Assassination"))return false;
   const requirement=effect[4]||"";
   if(requirement==="Attacker Criticals"&&(r.combatRole!=="attack"||r.tier!=="Critical"))return false;
   if(requirement==="Defender Criticals"&&(r.combatRole!=="defence"||r.tier!=="Critical"))return false;
@@ -679,7 +692,7 @@ const SPECIAL_EFFECTS=[
 ["Choose Location",1,0,"","See Description",0,"With hand-to-hand weapons the attacker may freely pick the hit location within reach. With ranged weapons this needs a Critical, unless the target is at Close Range and either stationary or unaware of the attacker."],
 ["Circumvent Cover",1,0,"Ranged Weapons","",0,"Lets the shooter fire around or through the target's cover — a trick shot such as a ricochet, requiring a Critical for anything beyond a modest reduction in the cover's protection."],
 ["Circumvent Parry",1,0,"","Attacker Criticals",0,"On a critical, the attacker completely bypasses an otherwise-successful parry."],
-["Close Range",1,1,"","",0,"Automatically changes the engagement range between the two combatants so they end up at the range favoured by the shorter weapon. Under the optional Closing & Opening Range rule (p.106, see the note above), closing inside a longer weapon's Reach also negates that weapon's ability to parry and drops its effective blocking Size by two categories until the range changes again."],
+["Close Range",1,1,"","",0,"Automatically changes the engagement range between the two combatants so they end up at the range favoured by the shorter weapon. Under the optional Closing & Opening Range rule (p.106, see the note above), closing inside a longer weapon's Reach (two or more Reach steps longer) also negates that weapon's ability to parry; its Size drops by as many steps as the difference in Reach, and it only inflicts 1d3+1 damage, until the range changes again."],
 ["Compel Surrender",1,1,"","",0,"Forces the chance of surrender from a helpless or disadvantaged opponent (disarmed, prone and unable to regain footing, seriously — or worse — wounded, and so on). No damage is inflicted: the target is threatened rather than struck. If the target can understand the demand, it makes an opposed Willpower roll vs the original attack/parry roll or capitulates. GMs may wish to reserve this for NPCs only."],
 ["Damage Weapon",1,1,"","",0,"Permits the character to damage the opponent's weapon as part of an attack or parry, applying the damage roll to the targeted weapon rather than its wielder. The weapon uses its own Armour Points to resist; reduced to zero Hit Points, it breaks."],
 ["Disarm Opponent",1,1,"","",0,"Knocks, yanks, or twists the opponent's weapon out of their hand. The opponent must make an opposed roll of their Combat Style against the character's original roll; if they lose, the weapon is flung a distance equal to the disarmer's Damage Modifier in metres (or drops at their feet with no Damage Modifier). Relative weapon size shifts the roll's difficulty grade. Only works on creatures up to twice the attacker's STR."],
@@ -801,7 +814,7 @@ function specialEffectsPanel(){
     .map(w=>w.name+" ("+REACH_NAME[w.reach]+")");
   h+='<details class="pm-fx-item" style="margin-bottom:14px"><summary>Optional Rule: Closing &amp; Opening Range <span class="pm-fx-badge">p.106</span></summary>'
    +'<p>Weapons have a Reach — Touch, Short, Medium, Long, or Very Long, shortest to longest ('+REACH_ORDER.map(r=>REACH_NAME[r]).join(" &lt; ")+') — shown on every melee weapon and shield on your character sheet. Before anyone swings, combatants can jockey for range:</p>'
-   +'<p><b>Closing in</b> (the <i>Close Range</i> Special Effect, or simple GM-adjudicated positioning): moving inside a longer weapon’s Reach means that weapon can no longer parry, and its effective blocking Size drops by <b>two categories</b> for as long as the fight stays that close — a spear or halberd becomes clumsy up close against a dagger or shortsword.</p>'
+   +'<p><b>Closing in</b> (the <i>Close Range</i> Special Effect, or simple GM-adjudicated positioning): moving inside a longer weapon’s Reach means that weapon can no longer parry. It can still strike with the haft, but its Size drops by <b>as many steps as the difference between the two weapons’ Reach</b>, and it only inflicts <b>1d3+1</b> damage, for as long as the fight stays that close. These rules apply only when the Reach difference is two or more steps: a dagger (Short) against a falchion (Medium) suffers nothing, against a great axe (Long) it does (Core p.106).</p>'
    +'<p><b>Holding them off</b> (the <i>Open Range</i> Special Effect): keeping the fight at your weapon’s longer Reach means the shorter weapon can only attack <i>your weapon itself</i> — trying to knock it aside, sunder it, grab it — not you, until they manage to close the distance.</p>'
    +(myReach.length?'<p class="pm-notes">Your weapons, shortest to longest reach: '+myReach.sort((a,b)=>REACH_ORDER.indexOf((weaponByName(a.split(" (")[0])||{}).reach)-REACH_ORDER.indexOf((weaponByName(b.split(" (")[0])||{}).reach)).join(", ")+'.</p>':'')
    +'</details>';
@@ -1235,6 +1248,27 @@ function pmRollLogHTML(){
 }
 // One pop-up for descriptions and secondary detail, so reading a rule never
 // pushes the sheet around. Re-rendered with the page, so it stays current.
+// Core p.108 Distance Penalties as a small calculator. Updates in place on
+// input (no re-render), so typing keeps focus.
+function pmRangeHelperHTML(){
+  return '<p class="pmx-small">Distance is separate from the weapon\'s Range. These steps stack on top of the most severe situational modifier (Core p.108).</p>'
+   +'<div class="pmx-rangeform"><label>Distance (m)<input type="number" min="1" step="1" inputmode="numeric" id="pmRangeDist" oninput="pmRangeUpdate()"></label>'
+   +'<label>Target SIZ<input type="number" min="1" max="300" step="1" inputmode="numeric" id="pmRangeSiz" oninput="pmRangeUpdate()" placeholder="human ≈ 11–20"></label></div>'
+   +'<label class="pmx-small">Situational grade <select id="pmRangeSit" onchange="pmRangeUpdate()">'+["standard","hard","formidable","herculean"].map(g=>'<option value="'+g+'">'+GRADE_LABEL[g]+'</option>').join("")+'</select></label>'
+   +'<p class="pmx-rangeout" id="pmRangeOut" role="status">Enter a distance and the target\'s SIZ.</p>'
+   +'<details class="pmx-actinfo"><summary>Firing into a crowd</summary><p>At the edge of a crowd or melee the attack is at least Hard; into or across it, usually Formidable. If you miss <b>only because of that crowd penalty</b> (you would have hit without it), a bystander in the line of fire is struck instead; the GM picks one at random if several. The bystander may Evade or Parry if aware, and none of your Special Effects apply to them (Core p.108).</p></details>'
+   +'<details class="pmx-actinfo"><summary>Firing on the move</summary><p>Ranged attacks normally can\'t be made moving faster than a walk. A Combat Style with Skirmishing can fire while running (not sprinting), capped at your Athletics skill. Mounted or in a vehicle, the attack is capped by the controller\'s Ride or Drive skill (Core p.108).</p></details>';
+}
+function pmRangeUpdate(){
+  const out=document.getElementById("pmRangeOut");if(!out)return;
+  const res=rangeSizeSteps(document.getElementById("pmRangeDist")?.value,document.getElementById("pmRangeSiz")?.value);
+  if(!res){out.textContent="Enter a distance of 1m or more and a target SIZ from 1 to 300. Bigger targets are the GM's call.";return;}
+  const n=res.steps,sit=document.getElementById("pmRangeSit")?.value||"standard";
+  const fin=n>0?shiftGradeHarder(sit,n):n<0?shiftGradeEasier(sit,-n):sit;
+  out.innerHTML=(n===0?"No effect":(Math.abs(n)+" step"+(Math.abs(n)>1?"s ":" ")+(n>0?"harder":"easier")))
+    +" &rarr; <b>"+esc(GRADE_LABEL[fin])+"</b> with a "+esc(GRADE_LABEL[sit])+" situation."
+    +(res.extrapolated?" Beyond 140m: continued from the table's progression; confirm with your GM.":"");
+}
 function pmAdvanceTimeHTML(){
   const opt=(k,label,desc)=>'<div class="pmx-advopt"><button type="button" class="pm-btn pmx-pri" onclick="APP.advanceTime(\''+k+'\')">'+label+'</button><p>'+desc+'</p></div>';
   const minor=PLAY_HP_LOCS.filter(l=>naturalRecoveryInfo(l)?.interval==="day").length;
@@ -1259,6 +1293,7 @@ function pmPopupHTML(){
   else if(k==="rules"){title="GM skill and task rulings";body=pmSkillRulesHTML();}
   else if(k==="casting"){title="How casting works here";body=pmCastingNotesHTML();}
   else if(k==="advance"){title="Advance time";body=pmAdvanceTimeHTML();}
+  else if(k==="range"){title="Distance and target size";body=pmRangeHelperHTML();}
   else {PM_POPUP=null;return "";}
   // A side panel, like D&D Beyond's: it takes its own column on desktop, so
   // nothing on the sheet is covered; a sheet from the bottom on phones.
@@ -1465,7 +1500,7 @@ function pmWeaponCardsHTML(){
     const w=weaponByName(n);if(!w)continue;
     const ranged=w.group==="Ranged",covering=styles.filter(s=>styleDef(s.key).weapons.includes(n));
     h+='<div class="pmx-wpn"><div class="pmx-wpn-head"><span class="nm">'+esc(w.name)+'</span><span class="dmg">'+esc(w.dmg)+'</span></div>'
-     +'<div class="pmx-wpn-meta">'+meta(w)+'</div>';
+     +'<div class="pmx-wpn-meta">'+meta(w)+(ranged?' · <button type="button" class="pmx-link" onclick="APP.pmPopup(\'range\')">Distance helper</button>':'')+'</div>';
     if(covering.length){
       h+=covering.map(s=>'<div class="pmx-wpn-roll"><span class="sty">'+esc(s.name)+' <b>'+pmPctText(s.key)+'</b></span>'+btns(n,s.key,"",!ranged)+'</div>').join("");
     }else{

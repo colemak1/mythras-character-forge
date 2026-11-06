@@ -360,6 +360,21 @@ The original ledger uses four columns. This batch adds a fifth **Initial app sta
 | C5-B2-X20 | A character uses Overpenetration against two aligned opponents. | Core p.98: first takes normal shot, second takes half damage and none of the attacker's Special Effects. | Record the second hit without transferring Special Effects, with GM adjudication of geometry. | HANDLED — effect reference/GM-assisted. |
 
 
+### Implementation status (Claude, 2026-11-06)
+
+Fixed with regression tests in `tests/combat-batch2.cjs`:
+
+- **T04** Blind Fighting now ignores poor-light and blindness penalties (was "one grade").
+- **T21 / G42** the trait is named **Skirmishing** with the Athletics cap. Saved styles using "Skirmisher" are migrated on load.
+- **T27** Mounted Skirmisher is labelled "Supplement (not in Core p.89)". Exactly 26 traits remain labelled Mythras Core.
+- **T01** Kill Silently needs a Combat Style with Assassination; the GM still confirms the first attack on a surprised victim. Rolls now record their Combat Style.
+- **X15** Weapon Malfunction is offered only for firearms.
+- **X12** the optional Reach text now says Size drops by the Reach difference, the longer weapon does 1d3+1 with its haft, and the rule applies only at two or more Reach steps (p.106).
+- **G29–G36** a Distance helper on ranged weapon cards applies the full p.108 table (every printed cell is tested) on top of the chosen situational grade. Beyond 140m it continues the table's progression and is flagged for the GM.
+- **G40–G41** crowd-fire guidance sits in the same helper.
+
+**X11:** decided by the owner. Ranged weapons have no Parry; shields keep theirs.
+
 ### Prioritized follow-up for Claude
 
 1. **P0 rule/data correctness:** Fix **Blind Fighting** (T04), rename/migrate Core **Skirmishing** (T21/G42), prevent **Kill Silently** without Assassination and a confirmed surprised first attack (T01), fix reach-gap Size guidance (X12), and restrict **Weapon Malfunction** to firearms (X15). Review the non-Core `Mounted Skirmisher` source attribution (T27). Keep saved style trait names working through non-destructive aliases/migration.

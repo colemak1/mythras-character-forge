@@ -119,6 +119,20 @@ function fatigueRow(){return FATIGUE_MAP[(S.play&&S.play.fatigue)||"Fresh"]||FAT
 // Core p.79: Comatose means no activities are possible, and Dead is its own
 // state, not just a Hopeless Grade like Semi-Conscious.
 function fatigueNoActivity(){const n=fatigueRow().name;return n==="Comatose"?"Comatose: no activities are possible (Core p.79).":n==="Dead"?"Dead: the character can take no actions.":null;}
+// Core p.108: grade steps for distance and target SIZ (independent of the
+// weapon's own Range). Returns {steps, extrapolated} or null for input the
+// table doesn't cover (distance under 1m, SIZ under 1 or over 300). Beyond
+// 140m the book says "follow table progression"; we continue each column at
+// one step per 40m, as the printed rows do, and flag it for the GM.
+function rangeSizeSteps(distance,siz){
+  const d=Number(distance),z=Number(siz);
+  if(!Number.isFinite(d)||!Number.isFinite(z)||d<1||z<1||z>300)return null;
+  const col=RANGE_SIZ_BANDS.findIndex(([lo,hi])=>z>=lo&&z<=hi);
+  const row=Math.ceil(d/20)-1;
+  if(row<RANGE_DISTANCE_TABLE.length)return {steps:RANGE_DISTANCE_TABLE[row][col],extrapolated:false};
+  const last=RANGE_DISTANCE_TABLE.length-1,extra=row-last;
+  return {steps:RANGE_DISTANCE_TABLE[last-(extra%2)][col]+Math.ceil(extra/2),extrapolated:true};
+}
 function fatigueGradeFloor(){const r=fatigueRow();return r&&r.grade?r.grade:null;}
 function gradeForEntry(key){
   let g=ACTIVE_GRADE;
@@ -463,6 +477,9 @@ function normalizeState(){
     if(!Number.isFinite(hp))delete S.play.hp[loc];
   }
   if(S.play.selectedLoc===undefined)S.play.selectedLoc=null;
+  // Renamed Core traits (e.g. Skirmisher -> Skirmishing, Core p.89).
+  if(S.styleDefs&&typeof S.styleDefs==="object")for(const d of Object.values(S.styleDefs)){
+    if(d&&Array.isArray(d.traits))d.traits=[...new Set(d.traits.map(t=>TRAIT_RENAMES[t]||t))];}
   // Pinned skills (Play Mode): keys only, unique, capped so a bad save can't bloat the sheet.
   S.play.pinned=Array.isArray(S.play.pinned)?[...new Set(S.play.pinned.filter(k=>typeof k==="string"&&k.length<200))].slice(0,30):[];
   S.play.surprised=S.play.surprised===true;

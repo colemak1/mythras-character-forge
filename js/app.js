@@ -795,7 +795,7 @@ window.APP={
    if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
    if(tier==="Critical")APP.markChecked(key);
    PM_EFFECT_ROLL_REF=null;
-   S.rollLog.unshift({label:e.label+tag,pct,roll:r===100?"00":r,tier,combat:key.startsWith("style:")||key==="std:Evade"||key==="std:Unarmed",combatKind:key==="std:Evade"?"evade":"style",oppTier:null,...(key==="std:Evade"?{combatRole:"defence"}:{})});
+   S.rollLog.unshift({label:e.label+tag,pct,roll:r===100?"00":r,tier,combat:key.startsWith("style:")||key==="std:Evade"||key==="std:Unarmed",combatKind:key==="std:Evade"?"evade":"style",oppTier:null,...(key==="std:Evade"?{combatRole:"defence"}:{}),...(key.startsWith("style:")?{styleKey:key}:{})});
    S.rollLog=S.rollLog.slice(0,8);render();},
  // A combat roll made with a specific weapon (Core pp.88, 100): the weapon is
  // recorded so weapon-specific Special Effects can be filtered.

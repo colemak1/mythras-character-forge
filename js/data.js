@@ -379,7 +379,7 @@ const COMBAT_TRAITS=[
  {name:"Beast-back Lancer",category:"Individual",source:"Mythras",desc:"Performing a mounted charge with this combat style does not incur the one step difficulty penalty to hit."},
  {name:"Berserker",category:"Individual",source:"Hyborean",desc:"The style emphasises entering into a violent frenzy where personal safety and pain are disregarded. At the beginning of a fight, or upon taking an injury, a berserker may attempt to roll his POW x5 to enter a frenzy. When in a frenzy: Damage modifier is increased by one step. Parrying or Evading attacks are one step more difficult. Endurance rolls for resisting the effects of injury are one step easier. Effects of Fatigue are ignored. After the fight any deferred Fatigue levels plus one additional level are applied."},
  {name:"Bison Tribe Combat Style",category:"Individual",source:"AiG",desc:"Performing a mounted charge with this combat style does not incur the one step difficulty penalty to hit. Allows rider to ignore the skill cap placed upon combat rolls by the Ride skill. Permits clubs and axes to roll the weapon's damage twice and pick the best result, but only when using the Damage Weapon special effect against shields."},
- {name:"Blind Fighting",category:"Individual",source:"Mythras",desc:"Allows user to reduce any penalties imposed due to poor lighting or temporary blinding to be reduced by one difficulty grade."},
+ {name:"Blind Fighting",category:"Individual",source:"Mythras",desc:"Allows user to ignore any penalties imposed due to poor lighting or temporary blinding (Core p.89)."},
  {name:"Blind Fighting (Weird of Hali)",category:"Individual",source:"Weird of Hali",desc:"Allows user to ignore any penalties imposed due to poor lighting or temporary blinding."},
  {name:"Block and Catch",category:"Unarmed",source:"raleel campaign",desc:"Allows for the use of the Grip special effect as a defensive special effect."},
  {name:"Body Slam",category:"Unarmed",source:"Mythic Constantinople",desc:"After taking a turn of movement, you can engage an opponent with a crashing blow with your arm or shoulder. Make an opposed Athletics roll versus the defender's Brawn or Evade. If you win, then the defender is automatically knocked down with you astride them. He suffers his own Damage Modifier (if any) in damage to a random location from the fall. If your Athletics fails, the defender has weathered or sidestepped the impact. If you win one or more levels of success you may select suitable Special Effects as per normal combat (Bash and Flurry are both popular)."},
@@ -430,7 +430,7 @@ const COMBAT_TRAITS=[
  {name:"Marksmanship",category:"Individual",source:"Hyborean",desc:"This style focuses on accurate ranged fire and striking small targets. When rolling a random Hit Location, the location struck may be shifted to an adjoining Hit location. Ranged Weapons only."},
  {name:"Morokanth Fu",category:"Unarmed",source:"AiG",desc:"On a successful unarmed attack may immediately apply a defensive special effect in addition to any offensive special effect. Defensive is ALWAYS applied if the morokanth does not use a made weapon. (GB pg 31, BaB pg 52)"},
  {name:"Mounted Combat",category:"Individual",source:"Mythras",desc:"Style allows rider to ignore the skill cap placed upon combat rolls by the Ride skill."},
- {name:"Mounted Skirmisher",category:"Individual",source:"Mythras",desc:"The style permits launching ranged attacks whilst moving fast (but not whilst galloping)."},
+ {name:"Mounted Skirmisher",category:"Individual",source:"Supplement (not in Core p.89)",desc:"The style permits launching ranged attacks whilst moving fast (but not whilst galloping)."},
  {name:"On the Fly",category:"Ranged",source:"Shores Of Korantia",desc:"Reduce ranged attack penalties for a fast moving target by one grade."},
  {name:"Pavisier",category:"Individual",source:"Hyborean",desc:"This combat style includes training in carrying a pavise that can be deployed for protection. When carrying a pavise on the back it is considered to be 'worn' (one-half ENC). Wearing a pavise on the back allows for passive blocking for attacks coming from the rear."},
  {name:"Pelorian Cavalry",category:"Individual",source:"AiG",desc:"Performing a mounted charge with this combat style does not incur the one step difficulty penalty to hit. Allows rider to ignore the skill cap placed upon combat rolls by the Ride skill. Permits launching ranged attacks whilst moving fast (but not whilst galloping)."},
@@ -454,7 +454,7 @@ const COMBAT_TRAITS=[
  {name:"Shield Wall",category:"Formation (3+ same trait)",source:"Mythras",desc:"Allows a group of three or more shield users to overlap their protection, adding one to the number of locations which can be protected with passive blocking, and resisting Knockback, Leaping attacks and Bash as if using the Brace action. All of the characters need to have this."},
  {name:"Showmanship",category:"Individual",source:"Hyborean",desc:"This style emphasises exaggerated moves and flourishes intended to impress an audience or taunt an opponent. Using this style in combat allows a combatant to spend an available Special Effect to 'put on a show' for all onlookers as a demonstration of prowess, humour or disdain. Roll an appropriate skill (Combat Style, Perform, Dance, other) to determine the effect. If used to impress an audience, a successful roll may sway the audience to the fighter's favour. If used to enrage or intimidate an opponent, the opponent may resist with a Willpower roll, with a failure leading to a penalty to actions at the GM's discretion."},
  {name:"Siege Warfare",category:"Siege weapons",source:"Mythras",desc:"The style permits its user to ignore the skill cap placed upon combat rolls by the Athletics skill when making assaults whilst scaling walls or crawling through tunnels."},
- {name:"Skirmisher",category:"Individual",source:"Mythras",desc:"The style permits launching ranged attacks whilst at a run (but not whilst sprinting)."},
+ {name:"Skirmishing",category:"Individual",source:"Mythras",desc:"The style permits launching ranged attacks whilst at a run (but not whilst sprinting). The attack cannot exceed the user's Athletics skill (Core pp.89, 108)."},
  {name:"Solid Stance",category:"Individual",source:"Mythic Rome",desc:"Resist Knockback, Leaping Attacks and Bash as if using the brace action."},
  {name:"Spear Phalanx",category:"Formation (3+ same trait)",source:"rangerdan's combat style traits",desc:"Permits a group of three or more warriors to draw into close formation, placing more open or disordered opponents at a disadvantage (provided the 'unit' cannot be outflanked) and thus reducing each foe's Action Points by one if they engage. Allows a group of three or more shield users to overlap their protection, adding one to the number of locations which can be protected with passive blocking, and resisting Knockback, Leaping attacks and Bash as if using the Brace action. All of the characters need to have this. Any enemies engaged with the first rank of spear phalangites at range S or shorter can be engaged by the second rank of phalangites with their spears."},
  {name:"Street Fighter",category:"Individual",source:"Sofia of the Ironlands",desc:"When opponent tries to change range to get out of your closed range, they may do so at a Hard Difficulty Modifier."},
@@ -932,3 +932,19 @@ const FATIGUE_RECOVERY_MINUTES={"Fresh":0,"Winded":15,"Tired":180,"Wearied":360,
  "Exhausted":720,"Debilitated":1080,"Incapacitated":1440,"Semi-Conscious":2160,
  "Comatose":2880,"Dead":null};
 
+
+// Trait names that changed to match the Core p.89 table; saved styles are
+// migrated on load (normalizeState), so nothing a player picked is lost.
+const TRAIT_RENAMES={"Skirmisher":"Skirmishing"};
+// Core p.108 Distance Penalties: rows are 20m bands (1-20m ... 121-140m),
+// columns are target SIZ bands. Positive = steps harder, negative = easier.
+const RANGE_SIZ_BANDS=[[0,10,"10 or less"],[11,20,"11-20"],[21,40,"21-40"],[41,80,"41-80"],[81,150,"81-150"],[151,300,"151-300"]];
+const RANGE_DISTANCE_TABLE=[
+ [ 1, 0,-1,-1,-2,-2],
+ [ 1, 1, 0,-1,-1,-2],
+ [ 2, 1, 1, 0,-1,-1],
+ [ 2, 2, 1, 1, 0,-1],
+ [ 3, 2, 2, 1, 1, 0],
+ [ 3, 3, 2, 2, 1, 1],
+ [ 4, 3, 3, 2, 2, 1]
+];
