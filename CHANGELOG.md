@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-06 — One final Combat fight on deployed #154
+
+- Steps 1–7 pass, including target Surprise adding exactly one SE without touching own Surprised, natural attack/Parry, armour subtraction, daily healing/reload and ranged helper. Exact dice/stamps/screenshots: `docs/combat-final-fight-20261106.md`.
+- Step 8 fails: top-bar End fight clears initiative only; AP and own Surprised remain. Advance time → End the fight performs the complete reset. MP remained full throughout, so deficit recovery was not tested.
+- Owner-only disposable character deleted and absent after reload; all 29 local test scripts pass. Docs only. Subsystem 5 stays OPEN; overall 3/8.
+
 ## Combat closeout fixes
 
 - **Surprise bonus (Core p.105):** if your attack succeeds against a target that was Surprised, and it's the first successful attack on them, tick the box on the combat card to earn **one extra Special Effect**. A Success against their automatic Failure then gives 2 effects, as in the book's example.
