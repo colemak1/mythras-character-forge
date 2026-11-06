@@ -613,7 +613,7 @@ async function loadCampaignViewUnified(id){
       cloudFetchCharacters({campaignId:id}),
       cloudFetchCharacters({mine:true})
     ]);
-    CAMPAIGN_VIEW={campaign:campRes.data||null,members,chars,unassigned:mine.filter(c=>!c.campaign_id)};
+    CAMPAIGN_VIEW={campaign:await withGmSessionState(campRes.data||null),members,chars,unassigned:mine.filter(c=>!c.campaign_id)};
   }else{
     const campaign=normalizeLocalCampaign(getCampaignLocal(id));
     // Always an object, even when campaign itself is null (id not found) --
@@ -644,15 +644,41 @@ async function noteCampaignUnified(id,notes){
   if(cloudActive())return cloudUpdateCampaign(id,{notes});
   const camp=getCampaignLocal(id);if(!camp)return;camp.notes=notes;upsertCampaignLocal(camp);
 }
+// GM session state (Combat Tracker, private session notes) lives in the
+// GM-only campaign_gm_state table (migration 20261106120000). Until that
+// migration is applied, fall back to the old campaigns.session_state column.
+let GM_STATE_TABLE_MISSING=false;
+function isMissingTableError(e){return !!e&&(e.code==="PGRST205"||e.code==="42P01"||/campaign_gm_state/.test(String(e.message||""))&&/does not exist|schema cache|not find/i.test(String(e.message||"")));}
+async function fetchGmSessionState(campaignId){
+  if(GM_STATE_TABLE_MISSING)return undefined;
+  const {data,error}=await sb.from("campaign_gm_state").select("session_state").eq("campaign_id",campaignId).maybeSingle();
+  if(error){if(isMissingTableError(error)){GM_STATE_TABLE_MISSING=true;return undefined;}throw error;}
+  return data?data.session_state:null;
+}
+// Only the campaign's GM ever asks for its session state.
+async function withGmSessionState(camp){
+  if(!camp||!AUTH_USER||camp.dm_id!==AUTH_USER.id)return camp;
+  const st=await fetchGmSessionState(camp.id);
+  if(st!==undefined&&(st!==null||!camp.session_state))camp.session_state=st;
+  return camp;
+}
 async function sessionStateCampaignUnified(id,sessionState){
-  if(cloudActive())return cloudUpdateCampaign(id,{session_state:sessionState});
+  if(cloudActive()){
+    if(!GM_STATE_TABLE_MISSING){
+      const {error}=await sb.from("campaign_gm_state").upsert({campaign_id:id,session_state:sessionState,updated_at:new Date().toISOString()},{onConflict:"campaign_id"});
+      if(!error)return;
+      if(!isMissingTableError(error))throw error;
+      GM_STATE_TABLE_MISSING=true;
+    }
+    return cloudUpdateCampaign(id,{session_state:sessionState});
+  }
   const camp=getCampaignLocal(id);if(!camp)return;camp.sessionState=sessionState;upsertCampaignLocal(camp);
 }
 // Single-row refetch used by the board's realtime handler below to pick up
 // GM-tool edits (initiative/NPCs/notes) made from another tab/device,
 // mirroring loadBoardUnified's character refetch.
 async function loadCampaignRowUnified(id){
-  if(cloudActive()){const {data,error}=await sb.from("campaigns").select("*").eq("id",id).maybeSingle();if(error)throw error;return data||null;}
+  if(cloudActive()){const {data,error}=await sb.from("campaigns").select("*").eq("id",id).maybeSingle();if(error)throw error;return withGmSessionState(data||null);}
   return normalizeLocalCampaign(getCampaignLocal(id));
 }
 // Settings live on a separate campaign column; session tracker writes never overwrite it.
@@ -1233,6 +1259,9 @@ function boardSubscribe(campaignId){
     // `campaigns` to be added to the realtime publication (see the comment
     // by emptySessionState() near the top of this file).
     .on("postgres_changes",{event:"*",schema:"public",table:"campaigns",filter:"id=eq."+campaignId},
+        ()=>boardRefetch(campaignId))
+    // GM-only session state (RLS means only the GM receives these events).
+    .on("postgres_changes",{event:"*",schema:"public",table:"campaign_gm_state",filter:"campaign_id=eq."+campaignId},
         ()=>boardRefetch(campaignId))
     .subscribe(status=>{BOARD_LIVE=(status==="SUBSCRIBED");if(APPVIEW==="board")render();});
 }

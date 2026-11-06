@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Security: GM notes hidden from players; campaign assignment checks
+
+- **GM session notes and the Combat Tracker are now GM-only.** They used to be stored on the campaign record, which every player in the campaign can read, so a player could see your notes and NPC stats with their browser's developer tools. They now live in a separate table only the GM can read.
+- **Needs the owner to run the database change once:** open Supabase → SQL Editor, paste `supabase/migrations/20261106120000_gm_private_state_and_assignment_checks.sql`, and run it. It copies existing notes and tracker data across. Until then, the app keeps working the old way.
+- The same change stops a player moving their character into a campaign they don't belong to, and makes the GM inventory function accept only an item list.
+- All 183 campaign and account cases (ChatGPT, PR #129) are mapped in `docs/campaign-cases-batch-1.md`, with four decisions for the owner and a multi-account test plan.
+
+---
+
 ## Subsystem 8 — Campaign and live integration case inventory (docs-only)
 
 - Added `docs/campaign-cases-batch-1.md`: **183** app-acceptance cases across **10** groups for campaign setup/rules, auth and account isolation, invites, character ownership and assignment, Party Board/GM tools, save/reload/concurrent edits, imports/backups, backend RLS/RPCs, campaign continuity, and end-to-end session workflows.

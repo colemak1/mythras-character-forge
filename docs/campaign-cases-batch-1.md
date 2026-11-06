@@ -261,3 +261,77 @@
 **Decisions to surface rather than quietly implement:** (1) whether in-campaign members may read invite codes and pass them along; (2) whether member removal, invite rotation and GM transfer are MVP requirements; (3) multi-tab/device edit conflict strategy (reject stale writes vs explicit merge/recovery); (4) whether campaign-wide export/restore is needed for session-night disaster recovery; (5) extent of GM's player-character edit privileges beyond the already approved **inventory-only** exception. **Default until owner decides:** retain existing restrictive permissions, no privilege expansion, no invented data-sharing or auto-merge.
 
 **Highest-risk handoff to Claude:** `js/cloud.js` authentication, Supabase RLS/RPCs, `cloudUpsertCharacter` exclusion of ownership/assignment from routine saves, `scheduleCloudPush`/`flushCloudSaves`/draft recovery, Party Board realtime and DM inventory push; `js/router.js` cold boot/deep links; `js/app.js` character assignment/import/GM controls. Confirm deployed migrations and actual policies separately; comments in JS are design intent, not proof of database enforcement. Prioritize deny-by-default RLS and lost-save races before any new campaign features.
+## App status (Claude, 2026-11-06)
+
+Mapped against the code and against the security rules in `supabase/migrations/`. **Limit:** the repo only holds two migrations, and the base tables, the helper functions `is_campaign_member` / `is_campaign_dm`, the `characters_before_update` trigger and the "row-level security is on" switches live only in the production database. Everything marked **Pass (policy)** is proven by the SQL in the repo; it still needs one live multi-account check, because Claude can't reach the production database. Status key as in the other case files, plus **Live** = needs the multi-account check below.
+
+### Security review findings
+
+| # | Finding | Cases | Severity | State |
+|---|---|---|---|---|
+| S1 | **GM session notes and Combat Tracker NPCs were readable by every campaign member.** They lived in `campaigns.session_state`, and `campaigns_select_member` lets members read the whole campaign row. Every player's browser downloaded them whenever they opened the campaign. | SEC12, BRD17, E2E07 | High (spoilers, "secrets" box) | **Fixed in code + migration** `20261106120000_…`: new GM-only `campaign_gm_state` table, existing data copied, old column cleared and blocked. Takes effect once the owner runs the SQL. |
+| S2 | A player could move their own character into **any** campaign by a direct request (no membership check on `campaign_id`). The character then shows on that campaign's Party Board. | OWN03, SEC22 | Medium | **Fixed in migration:** a trigger refuses a new or changed `campaign_id` unless the owner is a member or GM. Unchanged assignments aren't re-checked. |
+| S3 | The GM inventory RPC accepted any JSON, not just a list. | BRD07, SEC08 | Low | **Fixed in migration.** |
+| S4 | A GM's inventory edits (other than "Give an item") can still be overwritten by the player's open sheet saving its whole state. | BRD06, SAVE19 | Medium | Gifts fixed in PR #128. Plain edits: **Not implemented**; needs a decision on the conflict policy (D-S2 below). |
+| S5 | Two tabs or devices editing the same character: last save wins, with no warning. | SAVE09, E2E10 | Medium | **Decision** (D-S2). |
+| S6 | Any signed-in user can read every profile's display name. | SEC17 | Low | **Decision** (D-S3). Only display names are stored. |
+| S7 | Members can read the campaign's invite code. | INV12, SEC18 | Low | **Decision** (D-S1). Members could share the link anyway. |
+
+Verified by running the new migration on Postgres 16 (PGlite) with stand-ins for Supabase's `auth.uid()` and helper functions: it runs and re-runs cleanly, copies the existing session state, blocks writes to the old column, refuses an assignment to a campaign the owner isn't in, still allows a former member's saves, refuses a non-list or non-GM inventory call, and only the campaign's own GM can read its GM row.
+
+### Status by case
+
+| Cases | Status | Notes |
+|---|---|---|
+| CFG01–CFG04, CFG06–CFG12, CFG14, CFG16 | **Pass (code)** | Campaign create, rename, notes, rules settings with validation, books list, player read-only view; failures are shown inline. Rules tests in `campaign-setup.cjs`. |
+| CFG05, CFG13 | **Pass (policy) + Live** | `campaigns_update_dm`: only the GM can update the campaign row. |
+| CFG15, SAVE20 | **Pass (code)** | Rules and session state are separate writes; after S1 they're in separate tables. |
+| AUTH01–AUTH04, AUTH09–AUTH12, AUTH16 | **Pass (code)** | Signed-out deep links go to Account; another owner's character opens read-only in Play; autosave is per account (`unified-routes.cjs`). |
+| AUTH11, SEC01–SEC03 | **Pass (policy) + Live** | All policies are `to authenticated`; outsiders get no campaign or character rows. |
+| AUTH05, AUTH17, SAVE12, SAVE21 | **Pass (code)** | Pending or failed saves block sign-out with a warning; failures show "Cloud save failed" with Retry and export. |
+| AUTH06–AUTH08, AUTH13–AUTH15 | **Pass (code) / Live** | Recovery link, profile name, stale links, account switch mid-request (owner checks before applying responses), Supabase unavailable. |
+| INV01–INV11 | **Pass (code) + Live** | Join RPC trims and upper-cases codes, ignores repeat joins, survives sign-in and email confirmation via a stashed code. |
+| INV13–INV15, SEC14, SEC15 | **Pass (policy) + Live** | `join_campaign` requires sign-in and always inserts `role='player'`; the only insert policy is a GM adding themselves as GM; there is no update policy on memberships. |
+| INV16, LIFE08, LIFE11, LIFE13 | **Decision** | Invite rotation, member removal UI, GM transfer, disaster recovery (D-S1, D-S4). |
+| OWN01, OWN02, OWN07, OWN12, OWN13, OWN18, OWN20 | **Pass (code)** | |
+| OWN03 | **Fixed (S2)** + Live | |
+| OWN04–OWN06, OWN08–OWN11 | **Pass (policy) + Live** | Owner-only writes; `dm_unassign_character` checks the caller is that campaign's GM; campaign_id is never written by background saves. |
+| OWN14–OWN16, OWN19, SAVE15, SAVE27 | **Pass (code)** | Per-character save queue; responses can't assign an ID to the wrong character; owner_id never sent on update, and `with check (owner_id = auth.uid())` blocks it server-side. |
+| OWN17, SEC04, SEC07 | **Pass (policy) + Live** | Only `characters_all_owner` allows writes. |
+| BRD01–BRD05, BRD09–BRD15, BRD18–BRD20, BRD22 | **Pass (code)** | Board, read-only teammate view, realtime with polling fallback and stale-card handling. |
+| BRD06, BRD08 | **Pass (code)**, see S4 | GM inventory push is debounced and scoped. |
+| BRD07, SEC08, SEC09 | **Pass (policy) + fixed (S3)** + Live | |
+| BRD16, BRD17, SEC12 | **Fixed (S1)** + Live | |
+| BRD21, SEC16 | **Pass (policy) + Live** | Custom content: GM-only insert, update and delete; members read. |
+| SAVE01–SAVE06 | **Pass** | Reload fix, recovery prompt and decline (PR #110; live evidence in `magic-subsystem-cases.md`). |
+| SAVE07, SAVE08, SAVE14, SAVE16, SAVE17, SAVE18 | **Pass** | Save queue, old acknowledgement can't clear newer draft, flush before reopening (`unified-routes.cjs`). |
+| SAVE09 | **Decision** (S5) | |
+| SAVE10, SAVE11, SAVE13, SAVE22–SAVE26, SAVE28 | **Pass (code)** | Offline retry on reconnect, storage errors surfaced, load failures don't delete data, legacy fields normalised. |
+| SAVE19 | See S4 | |
+| IMP01, IMP03–IMP18 | **Pass (code)** | Import refuses non-objects, library backups in the single importer, oversize files; strips IDs and owner/campaign fields; text is escaped on render (`unified-routes.cjs`). |
+| IMP02 | **Pass (policy) + Live** | Export reads only rows RLS returns. |
+| SEC05, SEC06, SEC10, SEC11, SEC13 | **Pass (policy) + Live** | |
+| SEC17, SEC18 | **Decision** (S6, S7) | |
+| SEC19, SEC20 | **Pass (policy) + Live** | GM status comes from `campaigns.dm_id`, not the membership row, so a missing GM membership row doesn't lock the GM out. |
+| SEC21 | **Pass (design)** | Both migrations run in one transaction. |
+| SEC22 | **Live** | The core multi-account test. |
+| LIFE01–LIFE07, LIFE09, LIFE10, LIFE12 | **Pass (code) + Live** | Deleting a campaign is GM-only; characters are unassigned, not deleted (`on delete set null`, to confirm live). |
+| E2E01–E2E11 | **Live** | ChatGPT (Work) journeys with disposable accounts. |
+
+### Decisions for the owner
+
+- **D-S1 Invites:** keep invite codes visible to members, and add a "new code" button for the GM?
+- **D-S2 Conflicting edits:** when the GM edits a player's inventory, or one character is open in two tabs, should the later save win (today), or should the app warn and reload?
+- **D-S3 Profiles:** fine for any signed-in user to see display names?
+- **D-S4 GM continuity:** add member removal, GM transfer, and a "download the whole campaign" backup?
+
+### Live multi-account check (ChatGPT Work), after the owner runs the migration
+
+Use disposable accounts: **A** (GM of campaign Red), **B** and **C** (Red players), **D** (outsider, GM of Blue). For each, make direct requests with that user's own token, as well as using the UI:
+1. As C and D, read Red's `campaign_gm_state` row → nothing. As A → the row.
+2. As B, read `campaigns` for Red → `session_state` is null.
+3. As B, set your character's `campaign_id` to Blue → refused. To Red → allowed.
+4. As C and D, call `dm_update_character_inventory` and `dm_unassign_character` on B's character → refused. As A → allowed; with a non-list inventory → refused.
+5. As C and D, update or delete B's character → no rows changed.
+6. As D, read Red's campaign, members and characters → nothing.
+7. As A, edit Combat Tracker and session notes, reload → still there; open from a second tab → live update.

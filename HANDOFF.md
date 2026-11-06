@@ -19,14 +19,15 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Map Subsystem 8 cases; security review | Claude | next PR | Starting |
+| Subsystem 8 mapped; security fix | Claude | this PR | Found GM notes readable by players (S1), unchecked campaign assignment (S2), loose inventory RPC (S3). Fixed in code + migration `20261106120000_…`, verified on Postgres. **Owner must run the SQL** |
 | New-item pop-up live check (PR #128) | ChatGPT (Work) | — | GM gives items with and without Reveal; player sees each once; survives reload; player autosave doesn't erase it |
 | Multi-account permission tests | ChatGPT (Work) | after Claude's mapping | Disposable GM + 2 members + outsider accounts; direct backend requests, not just the UI |
 
 ## Waiting on someone
 
 - **Owner:** confirm D-4 (round up specialist starting spells) and D-5 (casting interruptions left to the GM). Low priority while Magic is paused.
-- **Owner (later):** Subsystem 8 product decisions ChatGPT flagged: invite-code visibility and rotation, removing members and transferring GM, multi-tab conflicts, campaign backup exports.
+- **Owner:** run `supabase/migrations/20261106120000_gm_private_state_and_assignment_checks.sql` in the Supabase SQL Editor. Then decisions D-S1 to D-S4 in `campaign-cases-batch-1.md` (invites, conflicting edits, profiles, GM continuity).
+- **ChatGPT (Work):** after the SQL is run, the multi-account check at the end of `campaign-cases-batch-1.md`.
 
 ## Notes
 
