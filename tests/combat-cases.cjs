@@ -152,4 +152,8 @@ test('C5-M22 surprise: initiative -10, no Attack, cleared by New Round (Core p.1
  run('APP.playNewRound()');assert.equal(run('S.play.surprised'),false);assert.equal(run('S.play.initiative.total'),5+before-10,'the rolled initiative keeps its penalty');
  run('S.play.surprised="yes";normalizeState();');assert.equal(run('S.play.surprised'),false);
 });
+test('unarmed damage shows the Damage Modifier with a single sign (PR #123 live finding)',()=>{
+ run('effectiveChars=()=>({STR:10,SIZ:10,DEX:10,INT:10,CON:10,POW:10,CHA:10});');
+ for(const [dm,want] of [['+0','1d3'],['+1d2','1d3+1d2'],['-1d4','1d3-1d4'],['+1d6+1d4','1d3+1d6+1d4']]){run(`dmCalc=()=>${JSON.stringify(dm)};`);assert.equal(run('unarmedDamageText()'),want,dm);}
+});
 console.log('Combat case tests passed');
