@@ -21,7 +21,7 @@ Practice Combat features remain paused. Progress **3/8**.
 | Play Mode UX proposal | Owner | `docs/play-mode-ux-proposal.md` | Waiting for the owner's answers to the five questions |
 | Run Subsystem 8 migration | Owner | `supabase/migrations/20261106120000_…` | Supabase → SQL Editor → paste → Run |
 | Multi-account permission check | ChatGPT (Work) | after the migration | Plan at the end of `campaign-cases-batch-1.md` |
-| New-item pop-up live check (PR #128) | ChatGPT (Work) | — | GM gives items with and without Reveal; player sees each once; survives reload |
+| New-item pop-up live check (PR #128) | Owner → ChatGPT (Work) | PR #131 attempt | **Blocked, not failed:** needs a disposable player account signed in separately from the GM (e.g. a second browser profile or private window) with a character assigned to a campaign the GM runs. Then: Reveal and plain notices, reload, a third item while the player spends an AP |
 
 ## Waiting on someone
 
