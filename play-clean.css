@@ -308,7 +308,6 @@ body.play-mode.pm-style-clean .app{background:var(--pmx-bg)}
 .pmx-passions .pctval{color:var(--pm-accent)}
 /* Side panel (D&D Beyond style): a fourth column while open */
 .pmx-side{min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--pmx-surface);border:1px solid var(--pmx-line);border-top:4px solid var(--pmx-accent);border-radius:10px}
-.pmx-dash[data-side="open"] .pmx-cols{grid-template-columns:minmax(250px,20%) minmax(0,1fr) minmax(0,1.1fr) minmax(300px,24%)}
 .pmx-pophead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--pmx-line)}
 .pmx-pophead h2{margin:0;font:700 18px var(--pmx-ui)}
 .pmx-popx{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--pmx-muted);padding:2px 6px}
@@ -385,4 +384,38 @@ body.play-mode.pm-style-clean .app{background:var(--pmx-bg)}
 @container (max-width:290px){
   .pmx-attrs{grid-template-columns:1fr}
 }
-.pmx-dash[data-side="open"] .pmx-cols{grid-template-columns:minmax(240px,19%) minmax(0,1fr) minmax(0,1.1fr) minmax(300px,23%)}
+
+/* ===== Layout v3 (owner feedback, 2026-11-06) ===== */
+/* Side panel space is always reserved on desktop, so opening one moves nothing. */
+.pmx-cols{grid-template-columns:minmax(230px,18%) minmax(0,1fr) minmax(0,1.1fr) minmax(280px,22%)}
+.pmx-side-empty{display:flex;align-items:flex-start;padding:16px;border-top-width:1px;border-style:dashed;background:transparent}
+.pmx-side-empty p{margin:0;font-size:13.5px}
+/* No scrollbars on the tab row: tabs wrap if they ever run out of room. */
+.pmx-tabs,.pmx-col-right .pmx-tabs{overflow:visible;flex-wrap:wrap;row-gap:0}
+.pmx-tab{margin-bottom:-1px}
+/* Top row: characteristics, then the trackers, like D&D Beyond's ability row */
+.pmx-top{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 12px;align-items:stretch}
+.pmx-chars-row,.pmx-top .pmx-trackers{display:flex;gap:8px;flex-wrap:wrap;margin:0;padding:0;border:0}
+.pmx-cell{background:var(--pmx-surface);border:1px solid var(--pmx-line);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:64px}
+.pmx-char{align-items:center;min-width:64px}
+.pmx-char .k,.pmx-cell .k{font:700 11px var(--pmx-ui);letter-spacing:.07em;text-transform:uppercase;color:var(--pmx-muted);white-space:nowrap}
+.pmx-char b{font:700 24px/1 var(--pmx-num);font-variant-numeric:tabular-nums}
+.pmx-top .pmx-trk{min-height:64px;justify-content:center}
+.pmx-top .pmx-trk .val{justify-content:flex-start}
+.pmx-top .pmx-trackers{flex:1}
+.pmx-top .pmx-trk{flex:1 1 auto}
+.pmx-top .pmx-trk .tip-body{left:0}
+.pmx-top .pmx-tip-body{left:0;transform:none}
+.pmx-attrbox .pmx-attrs{grid-template-columns:1fr;margin-top:0}
+@media (max-width:1100px){
+  .pmx-cols{display:block}
+  .pmx-side-empty{display:none}
+  .pmx-chars-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;width:100%}
+  .pmx-char{min-width:0;padding:6px 2px;min-height:0}
+  .pmx-char b{font-size:18px}
+  .pmx-top .pmx-trackers{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+  .pmx-top .pmx-trk{min-height:0;padding:8px 10px}
+  .pmx-dash[data-view="skills"] .pmx-top .pmx-trackers{display:none}
+}
+.pmx-col-right .pmx-tab{padding:10px 9px}
+@container (max-width:280px){.pmx .pmx-bodybox .pm-locrow .pmx-hpbar{display:none}.pmx .pmx-bodybox .pm-locrow{grid-template-columns:8px minmax(0,1fr) auto auto}}

@@ -74,7 +74,8 @@ test('an effect name opens its description in a pop-up, with Choose when allowed
  const i=run('SPECIAL_EFFECTS.findIndex(e=>e[0]==="Bleed")');
  run(`APP.pmPopup("fx",${i})`);const h=run('pmPopupHTML()');
  assert.match(h,/role="dialog"/);assert.match(h,/major vessel/);assert.match(h,new RegExp('APP\\.playChooseEffect\\('+i+'\\)'));
- run('APP.pmPopupClose()');assert.equal(run('pmPopupHTML()'),'');
+ run('APP.pmPopupClose()');const closed=run('pmPopupHTML()');
+ assert.doesNotMatch(closed,/role="dialog"/);assert.match(closed,/pmx-side-empty/,'the side panel keeps its place when empty, so nothing shifts');
 });
 test('a location opens its damage controls in a pop-up',()=>{
  setup();run('APP.pmOpenLoc("Chest")');assert.equal(run('S.play.selectedLoc'),'Chest');
