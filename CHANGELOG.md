@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-06 — Combat Batch 2 live acceptance (docs only)
+
+- Verified all five requested PR #144 check groups live: corrected trait text/provenance, Dagger Kill Silently eligibility before/after Assassination, bow/shield controls, a natural bow fumble, Core p.108 distance/size and crowd guidance, and optional p.106 Reach text.
+- Results and observation limits are in `docs/combat-batch2-live-acceptance-20261106.md`, with a Distance helper screenshot. All requested checks passed; the fumble UI defers opponent choices, so the report distinguishes live absence from the separately passing firearm-filter test.
+- Used a disposable character as the owner, deleted it, and confirmed absence after reload. No accounts created and no code changed. All 27 local test scripts passed. Progress remains 3/8.
+
 ## Combat rules fixes (Combat Batch 2)
 
 - **Blind Fighting** now ignores penalties for poor light or temporary blindness, as Core p.89 says (it used to reduce them by one grade only).
