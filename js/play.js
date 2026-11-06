@@ -153,12 +153,12 @@ function playWoundEffectText(loc,cls){
     return "Serious Wound: permanently scarred; can't attack or start casting for 1d3 turns (can still parry/evade). "
       +(isLimb
         ? "Endurance test vs the attacker's roll or the limb goes useless until healed above 0 (leg: drop prone; arm: drop whatever it's holding)."
-        : "Endurance test vs the attacker's roll or you're knocked out for minutes equal to the damage just taken.")
+        : "Endurance test vs the attacker's roll or you're knocked out for minutes equal to the damage just taken. First Aid or Healing can wake you, but you can't rejoin the fight until the location is healed (Core p.110).")
       +" Until healed back to Minor, all tasks using this location suffer a one-grade penalty at the GM's discretion.";
   }
   return "Major Wound: immediately incapacitated, can't keep fighting. "
     +(isLimb
-      ? "Limb is severed/shattered/ripped off — you drop prone; Endurance test vs the attack roll or you black out from the agony; untreated within 5× Healing Rate minutes, you die of blood loss."
+      ? "You drop prone; Endurance test vs the attack roll or you black out from the agony. If the limb is severed, punctured or ripped off, it must be treated within 5× Healing Rate minutes or you die of blood loss (Core p.110)."
       : "Endurance test vs the attack roll or it's instant, gruesome death; even if you pass, untreated within 2× Healing Rate rounds you still die of blood loss.")
     +" Natural healing requires successful treatment with the Healing skill; consult the GM for lasting injuries (Core p.80).";
 }
@@ -169,9 +169,9 @@ function playWoundActionText(loc,cls){
   const limb=PLAY_LIMB_LOCS.includes(loc);
   if(cls==="serious")return limb
     ? "GM check: Opposed Endurance versus the attack roll. On failure the limb becomes useless; for a leg fall prone, for an arm drop held items."
-    : "GM check: Opposed Endurance versus the attack roll. On failure lose consciousness for minutes equal to the damage from this attack.";
+    : "GM check: Opposed Endurance versus the attack roll. On failure lose consciousness for minutes equal to the damage from this attack; no rejoining the fight until the location heals, even if revived.";
   if(cls==="major")return limb
-    ? "URGENT: Opposed Endurance; on failure unconscious. Treat within 5 × Healing Rate minutes or death from blood loss and shock may result."
+    ? "URGENT: Opposed Endurance; on failure unconscious. If the limb is severed, punctured or ripped off, treat within 5 × Healing Rate minutes or death from blood loss may result."
     : "URGENT: Opposed Endurance; on failure death. If successful, treat within 2 × Healing Rate combat rounds or death may result.";
   return "";
 }
@@ -627,6 +627,17 @@ function rollHasTrait(r,trait){
   const keys=r&&r.styleKey?[r.styleKey]:stylesList().map(s=>s.key);
   return keys.some(k=>(styleDef(k).traits||[]).includes(trait));
 }
+// Core p.61: an Entrapping weapon may Pin Weapon without a Critical; p.62
+// footnote: a thrown javelin may Pin Weapon against a shield without one.
+function weaponTraits(w){return String(w&&w.traits||"").split(/,\s*/).filter(Boolean);}
+function pinWeaponWithoutCritical(effect,r){
+  if(!effect||effect[0]!=="Pin Weapon"||!r||!r.weapon)return false;
+  const w=weaponByName(r.weapon);if(!w)return false;
+  if(weaponTraits(w).includes("Entrapping"))return true;
+  return w.name==="Javelin"&&w.group==="Ranged"&&r.combatRole==="attack"&&r.vsShield===true;
+}
+// Core p.61: Offensive weapons cannot be used to parry.
+function weaponCanParry(w){return !!w&&w.group!=="Ranged"&&!weaponTraits(w).includes("Offensive");}
 // Core p.101: Weapon Malfunction is a firearms effect only.
 function isFirearm(w){return !!w&&(w.firearm===true||/\b(arquebus|musket|pistol|rifle|carbine|blunderbuss|handgonne|firearm|gun)\b/i.test(w.name||""));}
 function weaponAllowsEffect(effect,w){
@@ -676,7 +687,7 @@ function canPickEffectForRoll(effect,r){
   const requirement=effect[4]||"";
   if(requirement==="Attacker Criticals"&&(r.combatRole!=="attack"||r.tier!=="Critical"))return false;
   if(requirement==="Defender Criticals"&&(r.combatRole!=="defence"||r.tier!=="Critical"))return false;
-  if(requirement==="Critical Only"&&r.tier!=="Critical")return false;
+  if(requirement==="Critical Only"&&r.tier!=="Critical"&&!pinWeaponWithoutCritical(effect,r))return false;
   if(requirement==="Opponent Fumbles"&&r.oppTier!=="Fumble")return false;
   if(requirement==="Attacker Fumbles"&&(r.combatRole==="attack"?r.tier:r.oppTier)!=="Fumble")return false;
   return true;
@@ -1142,7 +1153,7 @@ function pmActionsPanelHTML(){
         return '<button class="pmx-chip" onclick="APP.playSpendAP('+a.ap+')" title="'+esc(a.note)+'"'+(canAfford?"":" disabled")+'>'+esc(a.nm)+' <span>'+a.ap+' AP</span></button>';
       }).join("")+'</div></div>';
     }
-    h+='<p class="pmx-small"><button type="button" class="pmx-link" onclick="APP.pmPopup(\'actions\')">What each action does</button></p>';
+    h+='<p class="pmx-small"><button type="button" class="pmx-link" onclick="APP.pmPopup(\'actions\')">What each action does</button> · <button type="button" class="pmx-link" onclick="APP.pmPopup(\'rulesref\')">Combat situations</button> <span class="pmx-dim">impale, aiming, outmanoeuvre, knockback, mounted…</span></p>';
   h+='</div>';
   return h;
 }
@@ -1269,6 +1280,24 @@ function pmRangeUpdate(){
     +" &rarr; <b>"+esc(GRADE_LABEL[fin])+"</b> with a "+esc(GRADE_LABEL[sit])+" situation."
     +(res.extrapolated?" Beyond 140m: continued from the table's progression; confirm with your GM.":"");
 }
+// Core p.98 Impale Effects: grade imposed on the victim's skill rolls while
+// the weapon stays embedded, by victim SIZ (rows) and weapon Size (columns).
+const IMPALE_EFFECTS=[["1–10",["Formidable","Herculean","Incapacitated","Incapacitated","Incapacitated"]],["11–20",["Hard","Formidable","Herculean","Incapacitated","Incapacitated"]],["21–30",["No effect","Hard","Formidable","Herculean","Incapacitated"]],["31–40",["No effect","No effect","Hard","Formidable","Herculean"]],["41–50",["No effect","No effect","No effect","Hard","Formidable"]]];
+function pmCombatRulesRefHTML(){
+  const sec=(t,b)=>'<details class="pmx-actinfo"><summary>'+t+'</summary>'+b+'</details>';
+  return '<p class="pmx-small">Short reminders for situations the GM resolves at the table. Page numbers are Mythras Core.</p>'
+   +sec("Impale: effects and pulling free",'<p>While the weapon stays in, the victim\'s skill rolls get harder by weapon Size vs their SIZ (p.98). Above SIZ 50, follow the table\'s progression.</p><table class="pmx-minitable"><tr><th>Victim SIZ</th><th title="Small">S</th><th title="Medium">M</th><th title="Large">L</th><th title="Huge">H</th><th title="Enormous">E</th></tr>'
+     +IMPALE_EFFECTS.map(([z,row])=>'<tr><td><b>'+z+'</b></td>'+row.map(c=>'<td title="'+c+'">'+({"No effect":"—","Hard":"Hard","Formidable":"Form.","Herculean":"Herc.","Incapacitated":"Incap."}[c])+'</td>').join("")+'</tr>').join("")+'</table>'
+     +'<p class="pmx-small">Weapon Size: S Small, M Medium, L Large, H Huge, E Enormous. Form. Formidable, Herc. Herculean, Incap. Incapacitated, — no effect.</p>'
+     +'<p><b>Pulling free:</b> a Ready Weapon action; Brawn (opposed if the victim resists). Success does half weapon damage, no Damage Modifier, ignoring armour; Barbed weapons do full damage. While impaled, the attacker can\'t parry with that weapon (pp.97–98).</p>')
+   +sec("Aiming",'<p>A whole Combat Round of aiming reduces one situational penalty by one grade. More rounds give no extra benefit (p.107).</p>')
+   +sec("Outmanoeuvre (several foes)",'<p>One group test: your Evade against each foe trying to surround you; each participant spends an AP. Each foe who fails to beat you can\'t attack you again this round. Beat them all and you may withdraw or choose one to stay engaged with. Being outnumbered gives no skill penalty in itself (p.104).</p>')
+   +sec("Sweep attacks",'<p>One attack roll against a group; each defender defends and takes effects separately, and all effects happen at once (p.105).</p>')
+   +sec("Knockback",'<p>If damage before armour and parrying exceeds your SIZ, you are knocked back 1m per 5 points (or part) over, and must make an Easy Acrobatics or Standard Athletics roll to stay standing (p.104).</p>')
+   +sec("Pulling a blow",'<p>Declare before attacking. A hit does half damage (p.105).</p>')
+   +sec("Climbing and swimming",'<p><b>Climbing:</b> combat skills capped by Athletics; a biped fights with one limb (p.106).<br><b>Swimming:</b> capped by Swim. Underwater only thrusting weapons work, at half damage; bites, strangling and ramming are unaffected. Water Combat lifts the Swim cap (pp.89, 106).</p>')
+   +sec("Mounted and aerial combat",'<p><b>Mounted:</b> combat skill capped by Ride unless the style has Mounted Combat. Against a foe on foot below you, the GM may use 1d10+10 for the hit location. Spend 1 AP to defend your mount with your Combat Style or Ride. A faster mount can withdraw freely if it isn\'t attacking (p.104).<br><b>Aerial:</b> close in with opposed Fly (or the mount\'s Ride); winners may attack that pass. Fast passes work like charging through contact (pp.103–104).</p>');
+}
 function pmAdvanceTimeHTML(){
   const opt=(k,label,desc)=>'<div class="pmx-advopt"><button type="button" class="pm-btn pmx-pri" onclick="APP.advanceTime(\''+k+'\')">'+label+'</button><p>'+desc+'</p></div>';
   const minor=PLAY_HP_LOCS.filter(l=>naturalRecoveryInfo(l)?.interval==="day").length;
@@ -1293,6 +1322,7 @@ function pmPopupHTML(){
   else if(k==="rules"){title="GM skill and task rulings";body=pmSkillRulesHTML();}
   else if(k==="casting"){title="How casting works here";body=pmCastingNotesHTML();}
   else if(k==="advance"){title="Advance time";body=pmAdvanceTimeHTML();}
+  else if(k==="rulesref"){title="Combat situations";body=pmCombatRulesRefHTML();}
   else if(k==="range"){title="Distance and target size";body=pmRangeHelperHTML();}
   else {PM_POPUP=null;return "";}
   // A side panel, like D&D Beyond's: it takes its own column on desktop, so
@@ -1442,7 +1472,7 @@ function pmResolveCardHTML(){
      +'<span class="pmx-donetext">'+what+' '+esc(r.weapon||r.label)+' vs '+(r.opponentAction==="no-parry"?'no defence':esc(r.oppTier))+' &rarr; '
      +(n0>0?'<b class="good">'+esc(picked.join(", "))+'</b>':n0<0?'opponent wins <b class="bad">'+(-n0)+' Special Effect'+(-n0>1?"s":"")+'</b>':'no effects')+'</span></div>'
      +'<div class="pmx-doneacts">'
-     +(canRepeat?again("attack","Attack again")+(w&&w.group==="Ranged"?'':again("defence","Parry")):'')
+     +(canRepeat?again("attack","Attack again")+(w&&!weaponCanParry(w)?'':again("defence","Parry")):'')
      +(r.combatKind==="evade"?'<button type="button" class="pmx-act"'+ro+' onclick="APP.roll(\'std:Evade\')">Evade again</button>':'')
      +'<button type="button" class="pmx-mini" onclick="PM_FX_EDIT=S.rollLog['+i+'];render()">Change</button>'
      +'<button type="button" class="pmx-mini" onclick="APP.playJumpToInjury()">Record damage</button></div></div>';
@@ -1467,6 +1497,7 @@ function pmResolveCardHTML(){
      +["Critical","Success","Failure","Fumble"].map(t=>'<button class="pmx-mini'+(r.oppTier===t&&!noParry?' on':'')+'"'+ro+' onclick="APP.playSetOpponentTier('+i+',\''+t+'\')">'+t+'</button>').join(" ")
      +(r.combatRole==="attack"?' <button class="pmx-mini'+(noParry?' on':'')+'"'+ro+' onclick="APP.playNoParry('+i+')" title="They didn\'t parry or evade: treat as a Failure (Core p.100)">No defence</button>':'')+'</div>';
   }
+  if(r.weapon==="Javelin"&&r.combatRole==="attack"&&r.tier!=="Critical")h+='<div class="pmx-step"><label><input type="checkbox"'+ro+(r.vsShield?' checked':'')+' onchange="APP.playSetVsShield('+i+',this.checked)"> The target defended with a shield</label> <span class="pmx-dim">Pin Weapon without a Critical (Core p.62)</span></div>';
   if(r.combatRole&&r.oppTier){
     const n=playEffectsWon(r.tier,r.oppTier);
     if(n>0){
@@ -1484,6 +1515,25 @@ function pmResolveCardHTML(){
   }
   return h+'</div>';
 }
+// Short, rule-bearing notes for a weapon's traits (Core pp.61–65).
+function pmWeaponNotes(w){
+  const t=weaponTraits(w),out=[];
+  const pb=t.find(x=>/^Passive Blocks \d+ locations$/.test(x));
+  if(pb)out.push("Passively blocks "+pb.match(/\d+/)[0]+" adjacent locations (double when crouching)");
+  if(t.includes("Ranged Parry"))out.push("Can parry missiles");
+  if(t.includes("Offensive"))out.push("Can't parry");
+  if(t.includes("Entrapping"))out.push("Pin Weapon without a Critical"+(weaponCanParry(w)?"; parries as Defensive":""));
+  if(t.includes("Defensive"))out.push("Parrying: attacker counts one Size smaller");
+  if(t.includes("Flexible"))out.push("A shield parrying it counts one Size smaller");
+  if(t.includes("Mount"))out.push("Only from the back of a moving mount");
+  if(t.includes("Stealth"))out.push("Only from ambush");
+  if(t.includes("Set"))out.push("Can be set against a charge");
+  if(t.includes("Barbed"))out.push("Full damage when pulled free");
+  if(t.includes("Thrown"))out.push("Can also be thrown");
+  if(w.name==="Javelin")out.push("Thrown: Pin Weapon against a shield without a Critical");
+  if(w.name==="Atlatl")out.push("Launcher: +1 Force step and +0/+25/+75m range to the dart or javelin it throws");
+  return out.length?esc(out.join(" · "))+' <span class="pmx-dim">(Core pp.61–65)</span>':"";
+}
 function pmWeaponCardsHTML(){
   const styles=stylesList();
   const btns=(weapon,key,fam,canParry)=>{
@@ -1498,18 +1548,19 @@ function pmWeaponCardsHTML(){
   let h='<div class="pm-box pmx-weapons"><h3>Weapons</h3>';
   for(const n of S.gearWeapons||[]){
     const w=weaponByName(n);if(!w)continue;
-    const ranged=w.group==="Ranged",covering=styles.filter(s=>styleDef(s.key).weapons.includes(n));
+    const ranged=w.group==="Ranged",canParry=weaponCanParry(w),covering=styles.filter(s=>styleDef(s.key).weapons.includes(n));
     h+='<div class="pmx-wpn"><div class="pmx-wpn-head"><span class="nm">'+esc(w.name)+'</span><span class="dmg">'+esc(w.dmg)+'</span></div>'
      +'<div class="pmx-wpn-meta">'+meta(w)+(ranged?' · <button type="button" class="pmx-link" onclick="APP.pmPopup(\'range\')">Distance helper</button>':'')+'</div>';
+    const notes=pmWeaponNotes(w);if(notes)h+='<div class="pmx-wpn-note">'+notes+'</div>';
     if(covering.length){
-      h+=covering.map(s=>'<div class="pmx-wpn-roll"><span class="sty">'+esc(s.name)+' <b>'+pmPctText(s.key)+'</b></span>'+btns(n,s.key,"",!ranged)+'</div>').join("");
+      h+=covering.map(s=>'<div class="pmx-wpn-roll"><span class="sty">'+esc(s.name)+' <b>'+pmPctText(s.key)+'</b></span>'+btns(n,s.key,"",canParry)+'</div>').join("");
     }else{
       const id=esc(n.replace(/\W+/g,"_"));
       h+='<div class="pmx-wpn-roll unfam"><span class="sty">Not in your Combat Styles (Core p.88)</span>'
        +'<select id="fam-'+id+'">'+WEAPON_FAMILIARITY.filter(f=>styles.length||f[0]==="substantially").map(f=>'<option value="'+f[0]+'">'+esc(f[1])+'</option>').join("")+'</select>'
        +(styles.length>1?'<select id="famstyle-'+id+'">'+styles.map(s=>'<option value="'+esc(s.key)+'">'+esc(s.name)+'</option>').join("")+'</select>':'')
        +'<button class="pmx-act atk"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollUnfamiliarWeapon(\''+jsq(n)+'\',\'attack\')">Attack</button>'
-       +(ranged?'':'<button class="pmx-act"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollUnfamiliarWeapon(\''+jsq(n)+'\',\'defence\')">Parry</button>')+'</div>';
+       +(canParry?'<button class="pmx-act"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollUnfamiliarWeapon(\''+jsq(n)+'\',\'defence\')">Parry</button>':'')+'</div>';
     }
     h+='</div>';
   }

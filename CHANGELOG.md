@@ -5,6 +5,17 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat rules fixes (Combat Batch 3)
+
+- **Offensive weapons can't parry** (Core p.61). The Whip shows Attack only, everywhere.
+- **Entrapping weapons** (Main Gauche, Net, Whip) can Pin Weapon without a Critical (p.61).
+- **A thrown Javelin** can Pin Weapon without a Critical against a shield (p.62). Tick "The target defended with a shield" on the combat card.
+- **Weapon cards explain their traits:** how many locations a shield passively blocks, "only from the back of a moving mount" (Lance), "only from ambush" (Garrotte), missile parry, Set, Barbed, Thrown and the Atlatl as a launcher.
+- **Combat situations:** a new reference in the side panel. It has the Impale Effects table and how to pull a weapon free, plus aiming, Outmanoeuvre, Sweep attacks, Knockback, pulling a blow, climbing and swimming, mounted combat and aerial combat.
+- **Clearer wound text:**
+  - After a torso Serious Wound, you can be revived, but you can't rejoin the fight until the location heals.
+  - The 5× Healing Rate death deadline for a Major limb wound applies only when the limb is severed, punctured or ripped off.
+
 ## Combat Batch 3 — remaining player-facing Combat source cases (docs only)
 
 - Added **92** `C5-B3-*` Core acceptance rows to `docs/combat-cases-batch-1.md`, with explicit initial **72 HANDLED / 20 NEEDS CODE** status. Focus: weapon traits/shields, individual ammunition/Force/Load profiles, multiple opponents, cover, Sweep, mounted/aerial action, impaling exceptions, rare wounds and reload persistence.

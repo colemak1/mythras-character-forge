@@ -437,3 +437,8 @@ body.play-mode.pm-style-clean .app{background:var(--pmx-bg)}
 .pmx-rangeform label{display:flex;flex-direction:column;gap:4px;font:600 12px var(--pmx-ui);color:var(--pmx-muted)}
 .pmx-rangeform input{font-size:16px}
 .pmx-rangeout{margin:12px 0;padding:10px 12px;border-radius:8px;background:var(--pmx-sunk);font-size:15px}
+.pmx-wpn-note{font-size:12.5px;color:var(--pmx-ink);margin:-2px 0 6px;padding:5px 8px;border-radius:6px;background:var(--pmx-sunk)}
+.pmx-minitable{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}
+.pmx-minitable th,.pmx-minitable td{padding:5px 4px;text-align:center;border-bottom:1px solid var(--pmx-line);overflow-wrap:normal;word-break:normal;white-space:nowrap}
+.pmx-minitable th{font:700 11px var(--pmx-ui);color:var(--pmx-muted)}
+.pmx-minitable td:first-child,.pmx-minitable th:first-child{text-align:left}

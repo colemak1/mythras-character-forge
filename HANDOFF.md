@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by ChatGPT (Chat), Combat Batch 3 docs handoff_
+_Last updated: 2026-11-06 by Claude_
 
 ## Priorities
 
@@ -18,7 +18,7 @@ Practice Combat features remain paused. Progress **3/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| Combat Batch 3 docs-only source inventory | ChatGPT (Chat) → Claude | `docs/combat-batch3-table-gaps-20261106` (PR) | **92** Core cases, pp.61–65 and 96–110; 72 HANDLED / 20 NEEDS CODE. Highest risk: Offensive-weapon Parry, Entrapping/Javelin Pin Weapon exceptions. Claude maps, tests, implements in separate code PR; Work live accepts. |
+| Combat Batch 3 fixes | Claude → ChatGPT (Work) | code PR after #147 | All 20 NEEDS CODE rows done with tests (`tests/combat-batch3.cjs`). Work: live check (see below) |
 | Combat Batch 2 live acceptance | ChatGPT (Work) → Claude | PR #144 verified; docs PR follows | All five requested check groups passed. Evidence and fumble-scope caveat: `docs/combat-batch2-live-acceptance-20261106.md`. Disposable fixture deleted; absence confirmed after reload. All 27 local test scripts passed. No code changed. |
 | Play Mode live re-check | ChatGPT (Work) | after the fixes PR | Retest: no page scroll at your desktop size; finished combat roll is one card with Attack again / Parry; Comatose/Dead wording; tabs on one line. Exact phone width: the owner checks on a real phone |
 | Subsystem 8 live follow-up | Claude → ChatGPT (Work) | migration applied | GM tracker edit survived reload. Earlier notes-save observation needs a native-input reproduction before treating it as a confirmed app defect; simulated fill did not commit some onchange fields during later testing. Prior temporary tracker NPC remains from that stopped attempt. No private backup contents are in GitHub. |
@@ -28,10 +28,10 @@ Practice Combat features remain paused. Progress **3/8**.
 ## Waiting on someone
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **Claude:** review and merge the Combat Batch 3 docs-only PR after CI; implement `NEEDS CODE` items with targeted tests in own code PRs. Start with Offensive melee weapon Parry exclusion (p.61), Entrapping non-critical Pin Weapon (p.61) and thrown Javelin shield Pin Weapon exception (p.62), then fold concise guidance for aiming, impale p.98 matrix, Outmanoeuvre, Sweep, mounted/aerial, Knockback and unusual wound timing into appropriate existing panels. Do not make a separate combat simulator.
+- **Claude:** next Combat items as Chat supplies them; Play Mode polish on the back burner until the owner is at a PC.
 - **ChatGPT (Chat):** next source batch only after Claude mapping/implementation handoff. Subsystem 4 optional extras and other open subsystems remain.
 
-- **ChatGPT (Work):** PR #144 owner-only live check complete: trait names/text/provenance, Assassination gating, bow/shield controls, natural bow fumble, all four distance examples plus situational stacking/crowd text, and optional Reach wording passed. No new accounts; all fixture operations as owner. See the new live acceptance report. Remaining Play Mode and multi-account work stays as listed above.
+- **ChatGPT (Work):** owner-only live check of Combat Batch 3: Whip has no Parry (card, unfamiliar controls, finished-roll quick Parry); Main Gauche or Net Pin Weapon on a plain Success; Javelin Pin Weapon only after ticking the shield box; trait notes on Lance, Garrotte, Buckler, Atlatl; the Combat situations panel (Impale table vs Core p.98); wound wording on a Serious chest and a Major arm.
 
 ## Notes
 

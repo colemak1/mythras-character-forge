@@ -511,6 +511,26 @@ Fixed with regression tests in `tests/combat-batch2.cjs`:
 | C5-B3-WN11 | The GM permits a critically injured PC to attempt a Heroic Last Action. | Core p.110: expend one Luck Point, use only functioning limbs, make one last action, then fall unconscious. | Offer guidance and manual Luck expenditure without turning this into an automatic extra combat turn. | HANDLED — Luck and wound tools; GM explicitly approves. |
 | C5-B3-WN12 | A player with a wound reopens Play Mode after immediate reload. | Core p.110: location HP and wound consequences persist until actual recovery/therapy; reopening is not a healing event. | Retain location HP and the logged Serious/Major incidents; do not clear injury when the combat UI resets or account reloads. | HANDLED — saved player state and existing wound-history guidance; live multi-device verification remains open. |
 
+### Implementation status (Claude, 2026-11-06)
+
+All 20 NEEDS CODE rows are addressed, with regression tests in `tests/combat-batch3.cjs`. The Batch 2 tests stay green.
+
+- **WT07:** Offensive weapons such as the Whip have no Parry on the weapon card, in the unfamiliar-weapon controls, or on the finished roll's quick Parry.
+- **WT04:** Entrapping weapons such as the Main Gauche, Net and Whip may Pin Weapon without a Critical.
+- **WT18:** a thrown Javelin may Pin Weapon without a Critical once "The target defended with a shield" is ticked on the combat card. Nothing else gets the exception.
+- **WT06, WT11, WT13, RG07:** weapon cards now carry trait notes: Mount only, ambush only, passive-block location count (doubled when crouching), missile parry, Defensive, Flexible, Set, Barbed, Thrown, the Javelin exception, and Atlatl as a launcher. Mount and Stealth are notes, not hard blocks, because the GM confirms the situation.
+- **RG21, TA04, TA07, TA12, TA15, TA21, TA24, TA25, TA26, SE02, SE07:** a new "Combat situations" side panel, linked from the Combat actions, covers:
+  - the p.98 Impale Effects table, plus how pulling a weapon free works;
+  - aiming;
+  - Outmanoeuvre;
+  - Sweep attacks;
+  - Knockback;
+  - pulling a blow;
+  - climbing and swimming;
+  - mounted combat, including the 1d10+10 hit-location option;
+  - aerial combat.
+- **WN06, WN07:** a torso Serious Wound now says the victim can't rejoin the fight until the location heals, even if revived. The 5× Healing Rate limb deadline now applies only to a severed, punctured or ripped-off limb.
+
 ### Code-review priorities (Claude)
 
 1. **P0 eligibility:** `C5-B3-WT07` Offensive weapon must not Parry; `C5-B3-WT04` Entrapping must waive Pin Weapon’s critical prerequisite; `C5-B3-WT18` thrown javelin against a shield must have the printed p.62 exception. Verify prior #144 Assassination/firearm/supplemental-trait tests stay green.

@@ -824,6 +824,8 @@ window.APP={
  playSetRollWeapon(i,name){if(VIEW_ONLY)return;const r=S.rollLog[i];if(!r?.combat||r.combatKind==="evade")return;
    if(name&&name!=="Unarmed"&&!(S.gearWeapons||[]).includes(name))return;
    r.weapon=name||undefined;r.effectsPicked=[];render();},
+ // Core p.62: a thrown javelin's Pin Weapon needs no Critical against a shield.
+ playSetVsShield(i,on){if(VIEW_ONLY||!S.rollLog[i]?.combat)return;const r=S.rollLog[i];r.vsShield=!!on;r.effectsPicked=[];render();},
  playSetSurprised(on){if(viewOnlyBlock())return;S.play.surprised=!!on;render();},
  playSetCombatRole(i,role){if(VIEW_ONLY||!S.rollLog[i]?.combat||!["attack","defence"].includes(role))return;
    const r=S.rollLog[i];if(r.combatKind==="evade"&&role!=="defence")return;
