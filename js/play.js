@@ -280,7 +280,7 @@ function pmBodySvg(){
     const cls=playHPState(loc).cls;
     const sel=S.play.selectedLoc===loc;
     const armLoc=loc;
-    return '<g class="bz'+(cls!=="ok"?" "+cls:"")+(sel?" sel":"")+'" onclick="APP.playSelectLoc(\''+loc+'\')" role="button" tabindex="0" aria-label="'+loc+'">'
+    return '<g class="bz'+(cls!=="ok"?" "+cls:"")+(sel?" sel":"")+'" onclick="APP.pmOpenLoc(\''+loc+'\')" role="button" tabindex="0" aria-label="'+loc+'">'
      +'<'+tag+' class="shape" '+attrs+' style="fill:'+fill+';stroke:'+stroke+'"/>'
      +'<'+tag+' class="hatch" '+attrs+' fill="url(#pmhatch)" stroke="none"/>'
      +'<title>'+loc+' — '+playCurHP(loc)+'/'+playMaxHP(loc)+' HP · AP '+armorApAt(armLoc)+'</title></g>';
@@ -327,7 +327,7 @@ function pmLocRow(loc){
   const cur=playCurHP(loc),max=playMaxHP(loc),st=playHPState(loc).cls;
   const armLoc=loc,ap=armorApAt(armLoc);
   const sel=S.play.selectedLoc===loc;
-  return '<div class="pm-locrow st-'+st+(sel?' sel':'')+'" onclick="APP.playSelectLoc(\''+loc+'\')" role="button" tabindex="0">'
+  return '<div class="pm-locrow st-'+st+(sel?' sel':'')+'" onclick="APP.pmOpenLoc(\''+loc+'\')" role="button" tabindex="0">'
    +'<span class="dot" style="background:'+pmZoneFill(loc)+'"></span>'
    +'<span class="nm">'+pmShortName(loc)+'</span>'
    +'<span class="ap" title="AP '+ap+' — '+esc(armorDisplayName(armLoc))+'">'+PM_SHIELD_SVG+ap+'</span>'
@@ -442,31 +442,6 @@ function pmWoundOverview(){
        :e.outcome==="failure"?(limb?(playCurHP(e.loc)>0?"Location now has positive HP; GM resolves limb status.":"Limb unusable until positive HP."):"Unconsciousness duration: "+e.damage+" minutes; GM tracks elapsed time."):"Check interruption and outcome.";
       return '<div><button type="button" class="pm-btn sm" onclick="APP.playSelectLoc(\''+jsq(e.loc)+'\')">'+esc(e.loc)+'</button> <b>'+esc(major?"Major":"Serious")+'</b> · '+esc(outcome)+'<br><span>'+esc(reminder)+'</span></div>';
     }).join("")+'</div>';
-}
-function pmVitalsCard(){
-  const worstRank={ok:0,minor:1,serious:2,major:3};
-  const worst=PLAY_HP_LOCS.reduce((w,l)=>{const st=playHPState(l).cls;return worstRank[st]>worstRank[w]?st:w;},"ok");
-  const worstLoc=PLAY_HP_LOCS.find(l=>playHPState(l).cls===worst);
-  const worstTag={ok:"OK",minor:"Minor Wound",serious:"Serious Wound",major:"Major Wound"}[worst];
-  // Literal .sect-head/.ghost/.stamp from playmode-restyle-D.html — the
-  // mockup's condition indicator is ONLY this rotated stamp pinned over the
-  // plate (no small header badge), so it always renders, colour-coded by
-  // wound tier (ok gets a muted ink/green treatment rather than red, since
-  // red should read as "something's wrong" the way it does everywhere else
-  // on this sheet).
-  let h='<div class="pm-box" id="pm-vitals" style="height:100%">'
-   +'<div class="pm-sect-head"><span class="no">02</span> VITALS</div>'
-   +'<div class="pm-ghost">02</div>'
-   +'<div class="pm-stamp '+worst+'" title="'+esc(playWoundEffectText(worstLoc,worst))+'">'+worstTag+'</div>';
-  // No pooled "Total HP" bar here on purpose -- Mythras tracks Hit Points
-  // per location (core p.25), not as a single pool, so a summed total would
-  // be a non-standard number nobody at the table actually uses. The
-  // per-location list right below is the real, book-accurate readout.
-  h+='<div class="pm-vit-body">'+pmBodySvg()+'<div class="pm-loclist">'+PLAY_HP_LOCS.map(pmLocRow).join("")+'</div></div>';
-  h+='<div class="pm-legend"><span>Healthy</span><div class="pm-legendgrad"></div><span>Major Wound</span></div>';
-  h+=pmWoundOverview()+pmLocDetail();
-  h+='</div>';
-  return h;
 }
 // ---- Characteristic rail (col 1) — literal port of .rail/.rail-head/.chx
 // from playmode-restyle-D.html: STR..CHA stacked vertically down the left
@@ -774,7 +749,7 @@ function fxItemHTML(effect){
   const badges=[off?'<span class="pm-fx-badge off">Offensive</span>':"",def?'<span class="pm-fx-badge def">Defensive</span>':"",
     weapon?'<span class="pm-fx-badge">'+esc(weapon)+'</span>':"",roll?'<span class="pm-fx-badge roll">'+esc(roll)+'</span>':"",
     stack?'<span class="pm-fx-badge stack">Stacks</span>':""].join("");
-  return '<details class="pm-fx-item" data-search="'+esc((name+" "+text).toLowerCase())+'"><summary>'+esc(name)+' '+badges+choose+'</summary><p>'+esc(text)+'</p></details>';
+  return '<div class="pm-fx-item pmx-fxrow" data-search="'+esc((name+" "+text).toLowerCase())+'"><button type="button" class="pmx-link pmx-fxname" onclick="APP.pmPopup(\'fx\','+SPECIAL_EFFECTS.indexOf(effect)+')" title="What it does">'+esc(name)+'</button> '+badges+choose+'</div>';
 }
 // One tactical-intent group (see FX_GROUPS) as a collapsible <details> --
 // open by default (matches what the list always looked like before), but
@@ -859,6 +834,9 @@ function pmFxFilter(input){
 // tradition, each castable — which rolls the tradition's actual casting skill
 // through the same graded pipeline as any other roll and deducts the cost
 // from the right pool.
+function pmCastingNotesHTML(){
+  return '<p class="pm-empty">Sorcery and Mysticism use turn trackers; rolls occur on the final turn. AP and interruption are GM-managed. Mysticism activation and durations are manual; confirm each Talent category with the GM. Casting is blocked if you lack the minimum available points. Folk Magic, Sorcery, Mysticism, and Theism use distinct result-dependent costs (Core pp.122, 156, 165, 181). Animism has separate bound-spirit commands and manual tracking for spirit contact, binding vessel, and spirit-combat MP (Core pp.134–139); summoning, ritual Binding and spirit combat outcomes still require GM resolution. Consult Mythras Core and your GM for other requirements and effects.</p>';
+}
 function magicPanel(){
   const all=allMagic();
   const prep=(S.play.mysticismCasting?'<p class="pm-empty">Talent preparation: '+S.play.mysticismCasting.completed+' / '+S.play.mysticismCasting.total+' turns. <button class="pm-btn sm" onclick="APP.mysticismCancel()">Cancel preparation</button> Resolve interruption and other actions with your GM.</p>':'')
@@ -907,7 +885,7 @@ function magicPanel(){
     }).join("");
     h+='</div>';
   });
-  h+='<details class="pmx-actinfo" style="margin-top:10px"><summary>How casting works here</summary><p class="pm-empty">Sorcery and Mysticism use turn trackers; rolls occur on the final turn. AP and interruption are GM-managed. Mysticism activation and durations are manual; confirm each Talent category with the GM. Casting is blocked if you lack the minimum available points. Folk Magic, Sorcery, Mysticism, and Theism use distinct result-dependent costs (Core pp.122, 156, 165, 181). Animism has separate bound-spirit commands and manual tracking for spirit contact, binding vessel, and spirit-combat MP (Core pp.134–139); summoning, ritual Binding and spirit combat outcomes still require GM resolution. Consult Mythras Core and your GM for other requirements and effects.</p></details>';
+  h+='<p class="pmx-small"><button type="button" class="pmx-link" onclick="APP.pmPopup(\'casting\')">How casting works here</button></p>';
   return h;
 }
 // A roll-log row. Combat Style rolls that beat a Success (i.e. Critical or
@@ -1001,12 +979,17 @@ let GIFT_MSG="";
 // workspace, and the rolls panel. Every panel below reuses the existing
 // builders unchanged; only the arrangement is new. The look is a swappable
 // style (data-pm-style) so a player style picker can be added later.
-const PM_TABS=[["skills","Skills"],["combat","Combat"],["body","Body"],["gear","Gear"],["magic","Magic"],["notes","Notes"]];
+// Desktop: three columns that each scroll inside the window (owner's sketch,
+// 2026-11-06): stats and body | skills | tabbed panel. Phones show one of
+// them at a time, picked from the bottom bar.
+const PM_TABS=[["combat","Combat"],["magic","Spells"],["gear","Inventory"],["features","Features & traits"],["notes","Notes"]];
+const PM_PHONE_TABS=[["stats","Stats"],["skills","Skills"],["combat","Combat"],["magic","Spells"],["gear","Items"],["features","Traits"],["notes","Notes"]];
+let PM_VIEW="skills";   // phone only: stats | skills | right
+let PM_POPUP=null;      // {k, i} for the description pop-up
 function pmActiveTab(){
-  const legacy={actions:"skills",effects:"combat",inventory:"gear",features:"notes"};
+  const legacy={actions:"combat",effects:"combat",inventory:"gear",skills:"combat",body:"combat",stats:"combat"};
   let k=legacy[S.play.tab]||S.play.tab;
-  if(!PM_TABS.some(t=>t[0]===k))k="skills";
-  if(k==="magic"&&!allMagic().length)k="skills";
+  if(!PM_TABS.some(t=>t[0]===k))k="combat";
   return k;
 }
 function pmSkillsPanelHTML(){
@@ -1062,15 +1045,8 @@ function pmSkillsPanelHTML(){
   h+='<div class="pm-skillgroup"><h4>Professional</h4>'+(grp("Professional").length?grp("Professional").map(skrow).join(""):'<p class="pm-empty">None.</p>')+'</div>';
   if(grp("Magic").length)h+='<div class="pm-skillgroup"><h4>Magic</h4>'+grp("Magic").map(skrow).join("")+'</div>';
   if(grp("Combat Style").length)h+='<div class="pm-skillgroup"><h4>Combat Styles</h4>'+grp("Combat Style").map(skrow).join("")+'</div>';
-  h+='<details class="pm-fx-item"><summary>GM skill and task rulings <span class="pm-fx-badge">Core pp.38, 50–52, 65–67</span></summary>'
-   +'<p><b>Retry.</b> If the GM allows one more attempt after failure, make it one grade harder. A second failure ends attempts for the foreseeable future.</p>'
-   +'<p><b>Augment or cap.</b> For a GM-approved augmentation, use one assisting skill and add 20% of its value to the primary skill. Judge criticals and fumbles using the unaugmented primary skill. A cap limits the primary skill to the secondary skill when the secondary skill is lower.</p>'
-   +'<form onsubmit="event.preventDefault();pmCalculateModifiedSkill(this)"><label>Method <select name="method"><option value="augment">Augment</option><option value="cap">Cap</option></select></label> <label>Primary % <input name="primary" type="number" min="0" step="1" required></label> <label>Secondary % <input name="secondary" type="number" min="0" step="1" required></label> <label>d100 (100 for 00) <input name="roll" type="number" min="1" max="100" step="1" required></label> <button type="submit" class="pm-btn sm">Check result</button><p role="status" data-modified-skill-result></p></form>'
-   +'<p><b>Spoken fluency (Core pp.42, 47).</b> Use Native Tongue or Language to judge fluency or cap a verbal skill. When judging a related dialect, treat fluency at least one grade harder as appropriate to the divergence.</p>'
-   +'<p><b>Group rolls.</b> For a team roll, use the highest skill if one success helps everyone, or the lowest if one failure costs everyone. For a sorting roll, compare one shared roll to each person’s skill. For proportional success, use the skill percentage as the share of the group that succeeds.</p>'
-   +'<p><b>Task rounds.</b> The GM sets the duration of a round and any deadline. Track +50% for a critical, +25% for a success, 0% for a failure, or −25% for a fumble. An acceptable result takes 100%. Use the Core Item Quality and Enhancements tables for crafting outcomes.</p>'
-   +'<p><b>Optional simplified modifiers.</b> The GM can use flat changes of +40, +20, 0, −20, −40 and −80 percentage points from Very Easy through Herculean. In a contest, the GM can round the shared reduction up to the next multiple of ten when the highest modified skill exceeds 100%. Apply either option manually if your table uses it.</p>'
-   +'<p>Use the calculator for a single roll with GM-approved percentages. Augmentation rounds to the nearest whole percent, following the 33% example on p.50. For contests, resolve shared over-100 adjustments separately. The calculator does not change your character or roll log.</p></details>';
+  h+=pmPassionsHTML();
+  h+='<p class="pmx-small"><button type="button" class="pmx-link" onclick="APP.pmPopup(\'rules\')">GM skill and task rulings</button> <span class="pmx-dim">Core pp.38, 50–52, 65–67</span></p>';
   h+='</div>';
 
   return h;
@@ -1087,12 +1063,18 @@ function pmSkillFilter(input){
     g.style.display=any?"":"none";
   });
 }
-function pmActionsPanelHTML(){
-  let h='<div class="pm-box pmx-actions"><h3>Actions <span class="pmx-dim">tap to spend AP</span></h3>';
-    // AP costs verified against Core pp.91–93, 106, 109.
-    const maxAPnow=playMaxAP(),usedAPnow=Math.min(S.play.apUsed,maxAPnow),remainAPnow=maxAPnow-usedAPnow;
-    // Reload is weapon-specific; using the first equipped ranged weapon silently
-    // charged the wrong AP whenever a character carried two different launchers.
+function pmSkillRulesHTML(){
+  return ''
+   +'<p><b>Retry.</b> If the GM allows one more attempt after failure, make it one grade harder. A second failure ends attempts for the foreseeable future.</p>'
+   +'<p><b>Augment or cap.</b> For a GM-approved augmentation, use one assisting skill and add 20% of its value to the primary skill. Judge criticals and fumbles using the unaugmented primary skill. A cap limits the primary skill to the secondary skill when the secondary skill is lower.</p>'
+   +'<form onsubmit="event.preventDefault();pmCalculateModifiedSkill(this)"><label>Method <select name="method"><option value="augment">Augment</option><option value="cap">Cap</option></select></label> <label>Primary % <input name="primary" type="number" min="0" step="1" required></label> <label>Secondary % <input name="secondary" type="number" min="0" step="1" required></label> <label>d100 (100 for 00) <input name="roll" type="number" min="1" max="100" step="1" required></label> <button type="submit" class="pm-btn sm">Check result</button><p role="status" data-modified-skill-result></p></form>'
+   +'<p><b>Spoken fluency (Core pp.42, 47).</b> Use Native Tongue or Language to judge fluency or cap a verbal skill. When judging a related dialect, treat fluency at least one grade harder as appropriate to the divergence.</p>'
+   +'<p><b>Group rolls.</b> For a team roll, use the highest skill if one success helps everyone, or the lowest if one failure costs everyone. For a sorting roll, compare one shared roll to each person’s skill. For proportional success, use the skill percentage as the share of the group that succeeds.</p>'
+   +'<p><b>Task rounds.</b> The GM sets the duration of a round and any deadline. Track +50% for a critical, +25% for a success, 0% for a failure, or −25% for a fumble. An acceptable result takes 100%. Use the Core Item Quality and Enhancements tables for crafting outcomes.</p>'
+   +'<p><b>Optional simplified modifiers.</b> The GM can use flat changes of +40, +20, 0, −20, −40 and −80 percentage points from Very Easy through Herculean. In a contest, the GM can round the shared reduction up to the next multiple of ten when the highest modified skill exceeds 100%. Apply either option manually if your table uses it.</p>'
+   +'<p>Use the calculator for a single roll with GM-approved percentages. Augmentation rounds to the nearest whole percent, following the 33% example on p.50. For contests, resolve shared over-100 adjustments separately. The calculator does not change your character or roll log.</p>';
+}
+function pmActionList(){
     const reloadActions=(S.gearWeapons||[]).map(n=>weaponByName(n))
       .filter(w=>w&&w.group==="Ranged"&&Number.isInteger(w.load)&&w.load>0)
       .map(w=>({nm:"Reload: "+w.name,ap:w.load,note:"Proactive · Core p.109; "+w.name+" reload takes "+w.load+" AP total"}));
@@ -1124,6 +1106,20 @@ function pmActionsPanelHTML(){
       ["Drop Weapon","p.93"],["Signal","If not engaged · p.93"],["Speak","Short phrases only · p.93"],
       ["Use Luck Point","p.93"],["Ward Location","Set before the attack roll; the ward lasts until that weapon attacks or parries · pp.93, 105"]
     ];
+    return {ACTIONS,FREE_ACTIONS};
+}
+function pmActionsInfoHTML(){
+  const {ACTIONS,FREE_ACTIONS}=pmActionList();
+  return '<dl class="pmx-deflist">'+ACTIONS.map(a=>'<div><dt>'+esc(a.nm)+' <span class="pmx-dim">'+a.kind+', '+a.ap+' AP</span></dt><dd>'+esc(a.note)+'</dd></div>').join("")
+   +FREE_ACTIONS.map(([n,t])=>'<div><dt>'+esc(n)+' <span class="pmx-dim">Free</span></dt><dd>'+esc(t)+'</dd></div>').join("")+'</dl>';
+}
+function pmActionsPanelHTML(){
+  let h='<div class="pm-box pmx-actions"><h3>Actions <span class="pmx-dim">tap to spend AP</span></h3>';
+    // AP costs verified against Core pp.91–93, 106, 109.
+    const maxAPnow=playMaxAP(),usedAPnow=Math.min(S.play.apUsed,maxAPnow),remainAPnow=maxAPnow-usedAPnow;
+    // Reload is weapon-specific; using the first equipped ranged weapon silently
+    // charged the wrong AP whenever a character carried two different launchers.
+    const {ACTIONS}=pmActionList();
     // Chips spend AP; what each action does is one tap away, not on screen.
     for(const kind of ["Proactive","Reactive"]){
       h+='<div class="pmx-actgroup"><span class="lbl">'+kind+(kind==="Proactive"?' <span class="pmx-dim">on your turn</span>':' <span class="pmx-dim">against each incoming threat</span>')+'</span><div class="pmx-chips">'
@@ -1132,10 +1128,7 @@ function pmActionsPanelHTML(){
         return '<button class="pmx-chip" onclick="APP.playSpendAP('+a.ap+')" title="'+esc(a.note)+'"'+(canAfford?"":" disabled")+'>'+esc(a.nm)+' <span>'+a.ap+' AP</span></button>';
       }).join("")+'</div></div>';
     }
-    h+='<details class="pmx-actinfo"><summary>What each action does</summary><dl>'
-     +ACTIONS.map(a=>'<div><dt>'+esc(a.nm)+' <span class="pmx-dim">'+a.kind+', '+a.ap+' AP</span></dt><dd>'+esc(a.note)+'</dd></div>').join("")
-     +FREE_ACTIONS.map(([n,t])=>'<div><dt>'+esc(n)+' <span class="pmx-dim">Free</span></dt><dd>'+esc(t)+'</dd></div>').join("")
-     +'</dl></details>';
+    h+='<p class="pmx-small"><button type="button" class="pmx-link" onclick="APP.pmPopup(\'actions\')">What each action does</button></p>';
   h+='</div>';
   return h;
 }
@@ -1174,27 +1167,18 @@ function pmGearPanelHTML(){
   h+='</div>';
   return h;
 }
-function pmNotesPanelHTML(){
-  let h='<div class="pm-box"><h3>Passions</h3>';
-    h+=S.passions.length?'<div class="pm-invlist">'+S.passions.map((p,i)=>{const v=passionVal(p),num=typeof v==="number";
-      return '<div class="pm-invrow pmx-passion"><span>'+esc(p.name||"(unnamed)")+'</span><span class="pctval">'+v+(num?'%':'')+'</span>'
-      +(num?'<button class="pm-btn roll"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollPassion('+i+')">roll</button>':'')+'</div>';}).join("")+'</div>':'<p class="pm-empty">No passions recorded.</p>';
-  h+='</div><div class="pm-box"><h3>Combat Styles</h3>'+combatStylesReadOnlyHTML()+'</div>';
-  h+='<div class="pm-box"><h3>Notes</h3>';
-    h+=S.concept.notes?('<p class="pm-notes">'+esc(S.concept.notes).replace(/\n/g,"<br>")+'</p>'):'<p class="pm-empty">No background notes yet.</p>';
-  h+='</div>';
-  return h;
+function pmPassionsHTML(){
+  if(!S.passions.length)return "";
+  return '<div class="pm-skillgroup pmx-passions"><h4>Passions</h4>'+S.passions.map((p,i)=>{const v=passionVal(p),num=typeof v==="number";
+    return '<div class="pm-skillrow pmx-passion" data-search="'+esc(String(p.name||"passion").toLowerCase())+' passion"><span class="nm">'+esc(p.name||"(unnamed)")+'</span><span class="lead"></span><span class="pctval">'+v+'</span>'
+     +(num?'<button class="pm-btn roll"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollPassion('+i+')">roll</button>':'')+'</div>';}).join("")+'</div>';
 }
-function pmRollsPanelHTML(){
-  let h='';
-  h+='<div class="pm-box pm-rolllog-wrap pmx-rolls"><h3>Rolls</h3>'
-   +(PM_MSG?'<p class="warn" style="margin-bottom:7px">'+esc(PM_MSG)+'</p>':'')
-   +'<label class="pmx-dicepref"><input type="checkbox" '+(pmDiceAnimated()?'checked':'')+' onchange="pmToggleDice3d(this.checked)"> Animated dice</label>'
-   +'<details class="pmx-rollhelp"><summary>How results work</summary><p>Critical &le; 1/10 skill (round up) &middot; 01&ndash;05 auto success &middot; 96&ndash;00 auto failure &middot; Fumble 99&ndash;00 (00 only if skill&gt;100). A combat Fumble isn&#39;t just a miss &mdash; it can hand your opponent free Special Effects.</p></details>'
-   +'<div class="pm-rolllog">'
-   +(S.rollLog.length?S.rollLog.map((r,i)=>playRollLogRow(r,i)).join(""):'<span class="pm-empty">No rolls yet — click "roll" beside any skill.</span>')
-   +'</div></div>';
-  return h;
+function pmFeaturesPanelHTML(){
+  return '<div class="pm-box"><h3>Combat Styles and traits</h3>'+combatStylesReadOnlyHTML()+'</div>';
+}
+function pmNotesPanelHTML(){
+  return '<div class="pm-box"><h3>Notes</h3>'
+   +(S.concept.notes?('<p class="pm-notes">'+esc(S.concept.notes).replace(/\n/g,"<br>")+'</p>'):'<p class="pm-empty">No background notes yet. Add them on the Concept step.</p>')+'</div>';
 }
 function pmCharsCompactHTML(){
   const c=effectiveChars(),order=["STR","CON","SIZ","DEX","INT","POW","CHA"];
@@ -1210,26 +1194,74 @@ function pmCharsCompactHTML(){
    +'</dl></div>';
   return h;
 }
-function pmVitalsBarHTML(){
+function pmTrackersHTML(){
   const v=charVitals(),maxAP=v.maxAP,remainAP=maxAP-Math.min(S.play.apUsed,maxAP);
-  const worstTag={ok:"Unhurt",minor:"Minor wound",serious:"Serious wound",major:"Major wound"}[v.worst];
   const ib=playInitiativeBonusNow(),ini=S.play.initiative;
-  const cell=(k,val,extra="",tip="")=>'<div class="pmx-v'+extra+'"><span class="k">'+k+(tip?pmTip(tip):"")+'</span><span class="val">'+val+'</span></div>';
-  let h='<div class="pmx-vitals" role="group" aria-label="Vitals">';
-  h+='<button type="button" class="pmx-v pmx-v-wound '+v.worst+'" onclick="APP.playTab(\'body\')" title="Open the body view"><span class="k">Health'+pmTip("health")+'</span><span class="val">'+worstTag
-   +(v.worstLoc&&v.worst!=="ok"?' <small>'+esc(v.worstLoc.loc)+'</small>':'')+'</span></button>';
-  h+=cell("Action points",'<span class="pm-pips">'+Array.from({length:maxAP},(_,i)=>'<button class="pm-pip'+(i<remainAP?"":" off")+'" aria-label="action point '+(i+1)+'" onclick="APP.playApSetPip('+i+')"></button>').join("")+'</span>'
-   +'<button type="button" class="pmx-mini" onclick="APP.playNewRound()" title="New combat round: restore all AP">New round</button>',"","ap");
-  h+=cell("Initiative",ini?ini.total:('<span class="pmx-dim">+'+ib.total+'</span> <button type="button" class="pmx-mini" onclick="APP.playRollInitiative()">Roll</button>'),"","initiative");
-  h+=cell("Magic",v.curMagic+'<small>/'+v.maxMagic+'</small><span class="adj"><button onclick="APP.playMagicAdj(-1)" aria-label="spend magic point">&minus;</button><button onclick="APP.playMagicAdj(1)" aria-label="restore magic point">+</button></span>',"","magic");
-  h+=cell("Luck",'<span class="pm-pips">'+Array.from({length:v.maxLuck},(_,i)=>'<button class="pm-pip'+(i<v.curLuck?"":" off")+'" aria-label="luck point '+(i+1)+'" onclick="APP.playLuckSetPip('+i+')"></button>').join("")+'</span>',"","luck");
-  h+=cell("Fatigue",esc(v.fatigue),v.fatigue!=="Fresh"?" warn":"","fatigue");
+  const row=(k,tip,val)=>'<div class="pmx-trk"><span class="k">'+k+pmTip(tip)+'</span><span class="val">'+val+'</span></div>';
+  let h='<div class="pmx-trackers">';
+  h+=row("Action Points","ap",'<span class="pm-pips">'+Array.from({length:maxAP},(_,i)=>'<button class="pm-pip'+(i<remainAP?"":" off")+'" aria-label="action point '+(i+1)+'" onclick="APP.playApSetPip('+i+')"></button>').join("")+'</span>'
+    +'<button type="button" class="pmx-mini" onclick="APP.playNewRound()" title="New combat round: restore all AP">New round</button>');
+  h+=row("Initiative","initiative",ini?'<b>'+ini.total+'</b> <span class="pmx-dim">d10 '+ini.roll+' + '+ini.bonus+'</span> <button type="button" class="pmx-mini" onclick="APP.playClearInitiative()">End fight</button>'
+    :'<span class="pmx-dim">+'+ib.total+'</span> <button type="button" class="pmx-mini" onclick="APP.playRollInitiative()">Roll</button>');
+  h+=row("Magic Points","magic",'<b>'+v.curMagic+'</b><span class="pmx-dim">/'+v.maxMagic+'</span><span class="adj"><button class="pmx-mini" onclick="APP.playMagicAdj(-1)" aria-label="spend magic point">&minus;</button><button class="pmx-mini" onclick="APP.playMagicAdj(1)" aria-label="restore magic point">+</button></span>');
+  h+=row("Luck","luck",'<span class="pm-pips">'+Array.from({length:v.maxLuck},(_,i)=>'<button class="pm-pip'+(i<v.curLuck?"":" off")+'" aria-label="luck point '+(i+1)+'" onclick="APP.playLuckSetPip('+i+')"></button>').join("")+'</span>');
+  h+=row("Fatigue","fatigue",'<select class="pm-fatsel" aria-label="Fatigue level" onchange="APP.playSetFatigue(this.value)">'+FATIGUE_LEVELS.map(f=>'<option '+(v.fatigue===f?"selected":"")+'>'+f+'</option>').join("")+'</select>');
   h+='</div>';
+  const r=fatigueRow();
+  if(FATIGUE_TABLE.indexOf(r)>0)h+='<p class="pmx-small pmx-warntext">'+esc(v.fatigue)+': skill rolls '+GRADE_LABEL[r.grade]+(r.ap?', Action Points '+r.ap:'')+(r.init?', Initiative '+r.init:'')+'. <button type="button" class="pmx-link" onclick="APP.pmPopup(\'fatigue\')">Details</button></p>';
   return h;
 }
+function pmStatsColumnHTML(){
+  return pmCharsCompactHTML().replace('<h3>Characteristics</h3>','<h3>Characteristics</h3>').replace(/<\/div>$/,pmTrackersHTML()+'</div>')+pmBodyBoxHTML();
+}
+function pmBodyBoxHTML(){
+  const v=charVitals();
+  const worstTag={ok:"Unhurt",minor:"Minor Wound",serious:"Serious Wound",major:"Major Wound"}[v.worst];
+  return '<div class="pm-box pmx-bodybox" id="pm-vitals"><h3>Body'+pmTip("health")+' <span class="pmx-health '+v.worst+'">'+worstTag+(v.worstLoc&&v.worst!=="ok"?' · '+esc(v.worstLoc.loc):'')+'</span></h3>'
+   +'<div class="pm-vit-body">'+pmBodySvg()+'<div class="pm-loclist">'+PLAY_HP_LOCS.map(pmLocRow).join("")+'</div></div>'
+   +pmWoundOverview()
+   +'<p class="pmx-small"><button type="button" class="pmx-link" onclick="APP.pmPopup(\'hazards\')">Hazards and recovery</button> <span class="pmx-dim">Core pp.71, 74–80</span></p></div>';
+}
+function pmRollLogHTML(){
+  return '<div class="pm-rolllog">'+(S.rollLog.length?S.rollLog.map((r,i)=>playRollLogRow(r,i)).join(""):'<span class="pm-empty">No rolls yet — click "roll" beside any skill.</span>')+'</div>'
+   +'<details class="pmx-rollhelp"><summary>How results work</summary><p>Critical &le; 1/10 skill (round up) &middot; 01&ndash;05 auto success &middot; 96&ndash;00 auto failure &middot; Fumble 99&ndash;00 (00 only if skill&gt;100). A combat Fumble isn&#39;t just a miss &mdash; it can hand your opponent free Special Effects.</p></details>'
+   +'<label class="pmx-dicepref"><input type="checkbox" '+(pmDiceAnimated()?'checked':'')+' onchange="pmToggleDice3d(this.checked)"> Animated dice</label>';
+}
+// One pop-up for descriptions and secondary detail, so reading a rule never
+// pushes the sheet around. Re-rendered with the page, so it stays current.
+function pmPopupHTML(){
+  if(!PM_POPUP)return "";
+  const k=PM_POPUP.k;let title="",body="";
+  if(k==="loc"){const loc=S.play.selectedLoc;if(!loc){PM_POPUP=null;return "";}title=loc;body=pmLocDetail();}
+  else if(k==="fx"){const e=SPECIAL_EFFECTS[PM_POPUP.i];if(!e){PM_POPUP=null;return "";}
+    title=e[0];const r=selectedEffectRoll(),picked=r?.effectsPicked||[];
+    const can=r&&canPickEffectForRoll(e,r)&&picked.length<playEffectsWon(r.tier,r.oppTier)&&(!picked.includes(e[0])||e[5])&&!VIEW_ONLY;
+    body='<p class="pmx-fxbadges">'+[e[1]?'<span class="pm-fx-badge off">Offensive</span>':"",e[2]?'<span class="pm-fx-badge def">Defensive</span>':"",e[3]?'<span class="pm-fx-badge">'+esc(e[3])+'</span>':"",e[4]?'<span class="pm-fx-badge roll">'+esc(e[4])+'</span>':"",e[5]?'<span class="pm-fx-badge stack">Stacks</span>':""].join(" ")+'</p><p>'+esc(e[6])+'</p>'
+     +(can?'<p><button type="button" class="pm-btn pmx-pri" onclick="APP.playChooseEffect('+PM_POPUP.i+');APP.pmPopupClose()">Choose '+esc(e[0])+'</button></p>':'');}
+  else if(k==="log"){title="Roll log";body=pmRollLogHTML();}
+  else if(k==="actions"){title="Combat actions";body=pmActionsInfoHTML();}
+  else if(k==="hazards"){title="Hazards and recovery";body=pmHazardsHTML();}
+  else if(k==="fatigue"){title="Fatigue";body=pmFatiguePanel();}
+  else if(k==="rules"){title="GM skill and task rulings";body=pmSkillRulesHTML();}
+  else if(k==="casting"){title="How casting works here";body=pmCastingNotesHTML();}
+  else {PM_POPUP=null;return "";}
+  // A side panel, like D&D Beyond's: it takes its own column on desktop, so
+  // nothing on the sheet is covered; a sheet from the bottom on phones.
+  return '<aside class="pmx-side" role="dialog" aria-label="'+esc(title)+'">'
+   +'<div class="pmx-pophead"><h2>'+esc(title)+'</h2><button type="button" class="pmx-popx" aria-label="Close" onclick="APP.pmPopupClose()">&times;</button></div>'
+   +'<div class="pmx-popbody" data-scroll="side-'+esc(k)+'">'+body+'</div></aside>';
+}
+// Keep each column's scroll position across re-renders (every click redraws).
+function pmSaveScroll(){const m={};document.querySelectorAll("[data-scroll]").forEach(el=>{m[el.dataset.scroll]=el.scrollTop;});return m;}
+function pmRestoreScroll(m){document.querySelectorAll("[data-scroll]").forEach(el=>{if(m[el.dataset.scroll]!=null)el.scrollTop=m[el.dataset.scroll];});}
+function pmFitDash(){
+  const d=document.querySelector(".pmx-dash");if(!d||!d.getBoundingClientRect)return;
+  d.style.setProperty("--pm-top",Math.max(0,Math.round(d.getBoundingClientRect().top+(window.scrollY||0)))+"px");
+}
+let PM_RESIZE_BOUND=false;
 function renderPlayView(){
   document.body.classList.remove("menu-mode","sheet-mode");
-  document.body.classList.add("play-mode","pm-style-clean");
+  document.body.classList.add("play-mode","pm-style-clean","pm-fit");
   document.body.classList.toggle("view-only",VIEW_ONLY);
   document.title=(S.concept.name?S.concept.name+" — ":"")+"Play Mode";
   if(!VIEW_ONLY){rememberGifts(S);if(cloudActive())startGiftPoll();}
@@ -1242,11 +1274,17 @@ function renderPlayView(){
   const careerName=S.customCareer.isCustom?S.customCareer.name:S.career;
   const tab=pmActiveTab();
   const backLabel=(VIEW_ONLY||PLAY_RETURN_VIEW==="board")?"&#8592; Party Board":"&#8592; Edit character";
-  const sub=[S.culture,careerName,S.archetype!=="ordinary"?ARCHETYPES[S.archetype].label:null,pmCampaignLabel()].filter(Boolean).map(esc).join(" · ");
-  let h='<div class="pm-wrap pmx" data-pm-style="clean">';
-  h+='<header class="pmx-head"><div class="pmx-id"><button class="pmx-back" onclick="APP.backFromPlay()">'+backLabel+'</button>'
+  const species=S.archetype!=="ordinary"?ARCHETYPES[S.archetype].label:null;
+  const sub=[species,S.culture,careerName,pmCampaignLabel()].filter(Boolean).map(esc).join(" · ");
+  const initials=name.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join("")||"?";
+  const scroll=pmSaveScroll();
+  let h='<div class="pm-wrap pmx pmx-dash" data-pm-style="clean" data-view="'+(PM_VIEW==="right"?"right":PM_VIEW)+'"'+(PM_POPUP?' data-side="open"':'')+'>';
+  h+='<header class="pmx-head">'
+   +'<div class="pmx-avatar">'+(S.concept.portrait?'<img src="'+S.concept.portrait+'" alt="">':'<span>'+esc(initials)+'</span>')+'</div>'
+   +'<div class="pmx-id"><button class="pmx-back" onclick="APP.backFromPlay()">'+backLabel+'</button>'
    +'<h1 class="pmx-name">'+esc(name)+'</h1>'+(sub?'<p class="pmx-sub">'+sub+'</p>':'')+'</div>'
    +'<div class="pmx-headbtns">'
+   +'<button class="pm-btn" onclick="APP.pmPopup(\'log\')">Roll log'+(S.rollLog.length?' <span class="pmx-dim">'+S.rollLog.length+'</span>':'')+'</button>'
    +(VIEW_ONLY?"":'<button class="pm-btn" onclick="APP.toSheet(\'play\')">Sheet</button>')
    +(VIEW_ONLY?"":'<button class="pm-btn pmx-pri" onclick="APP.openXP()">Improve skills'+(S.xp.pool?' <span class="pm-xpbadge">'+S.xp.pool+'</span>':'')+'</button>')
    +'</div></header>';
@@ -1254,27 +1292,32 @@ function renderPlayView(){
     h+='<div class="pm-viewonly-banner">Viewing '+esc(VIEW_ONLY_OWNER_NAME||"a teammate")+'&rsquo;s character &mdash; read-only'
      +(VIEW_ONLY_IS_DM?', except Inventory (as DM you can edit loot/gear here).':'. Only they can change it.')+'</div>';
   }
-  h+=pmVitalsBarHTML();
-  h+='<div class="pmx-grid">';
-  h+='<aside class="pmx-left">'+pmCharsCompactHTML()+'</aside>';
-  h+='<main class="pmx-main"><nav class="pmx-tabs" aria-label="Play Mode sections">'
-   +PM_TABS.filter(([k])=>k!=="magic"||allMagic().length).map(([k,l])=>'<button type="button" class="pmx-tab'+(tab===k?" on":"")+'"'+(tab===k?' aria-current="page"':'')+' onclick="APP.playTab(\''+k+'\')">'+l+'</button>').join("")
-   +'</nav><div class="pmx-panel">';
-  if(tab==="skills")h+=pmSkillsPanelHTML();
-  else if(tab==="combat")h+=pmCombatTabHTML();
-  else if(tab==="body")h+=pmVitalsCard()+'<div class="pm-box pmx-fatigue">'+pmFatiguePanel()+pmHazardsHTML()+'</div>';
+  if(PM_MSG)h+='<p class="warn pmx-msg" role="status">'+esc(PM_MSG)+'</p>';
+  h+='<div class="pmx-cols">';
+  h+='<section class="pmx-col pmx-col-stats" data-scroll="stats" aria-label="Characteristics and body">'+pmStatsColumnHTML()+'</section>';
+  h+='<section class="pmx-col pmx-col-skills" data-scroll="skills" aria-label="Skills">'+pmSkillsPanelHTML()+'</section>';
+  h+='<section class="pmx-col pmx-col-right" aria-label="'+esc(PM_TABS.find(t=>t[0]===tab)[1])+'"><nav class="pmx-tabs" aria-label="Sections">'
+   +PM_TABS.map(([k,l])=>'<button type="button" class="pmx-tab'+(tab===k?" on":"")+'"'+(tab===k?' aria-current="page"':'')+' onclick="APP.playTab(\''+k+'\')">'+l+'</button>').join("")
+   +'</nav><div class="pmx-scroll" data-scroll="right-'+tab+'">';
+  if(tab==="combat")h+=pmCombatTabHTML();
   else if(tab==="gear")h+=pmGearPanelHTML();
   else if(tab==="magic")h+='<div class="pm-box">'+magicPanel()+'</div>';
+  else if(tab==="features")h+=pmFeaturesPanelHTML();
   else h+=pmNotesPanelHTML();
-  h+='</div></main>';
-  h+='<aside class="pmx-right">'+pmRollsPanelHTML()+'</aside>';
-  h+='</div>';
+  h+='</div></section>'+pmPopupHTML()+'</div>';
+  const phoneOn=k=>PM_VIEW==="right"?k===tab:k===PM_VIEW;
+  h+='<nav class="pmx-phonebar" aria-label="Play Mode sections">'+PM_PHONE_TABS.map(([k,l])=>'<button type="button" class="pmx-tab'+(phoneOn(k)?" on":"")+'" onclick="APP.playTab(\''+k+'\')">'+l+'</button>').join("")+'</nav>';
   h+='</div>';
   if(XP_OPEN&&!VIEW_ONLY)h+=xpModalHtml();
   h+=giftPopupHtml();
   $("#main").innerHTML=h;
+  pmRestoreScroll(scroll);
+  pmFitDash();
+  if(!PM_RESIZE_BOUND&&typeof window.addEventListener==="function"){PM_RESIZE_BOUND=true;
+    window.addEventListener("resize",pmFitDash);
+    document.addEventListener("keydown",e=>{if(e.key==="Escape"&&PM_POPUP&&APPVIEW==="play")APP.pmPopupClose();});}
   if(tab==="combat"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
-  if(tab==="skills"&&PM_SKILL_SEARCH){const search=document.querySelector(".pmx-skillsearch");if(search)pmSkillFilter(search);}
+  if(PM_SKILL_SEARCH){const search=document.querySelector(".pmx-skillsearch");if(search)pmSkillFilter(search);}
   pmDiceSync();
 }
 // ---- Short tips (Play Mode redesign batch 5) ----
@@ -1311,7 +1354,6 @@ function pmTurnStripHTML(){
      :'<button class="pmx-mini" onclick="APP.playRollInitiative()" title="Roll 1d10 + Initiative Bonus '+ib.total+' (Core p.90)">Roll d10 + '+ib.total+'</button>'
       +' <label class="pmx-dim">or your d10 <input id="playInitD10" type="number" min="1" max="10" inputmode="numeric"></label> <button class="pmx-mini" onclick="APP.playSetInitiative()">Set</button>')
    +'</div>'
-   +'<div class="pmx-turn-item"><span class="lbl">Action Points</span><b>'+remain+'</b> <span class="pmx-dim">/ '+max+'</span> <button class="pmx-mini" onclick="APP.playNewRound()" title="Reset Action Points for a new Combat Round">New round</button></div>'
    +'<label class="pmx-turn-item pmx-surprised"><input type="checkbox" '+(S.play.surprised?'checked':'')+' onchange="APP.playSetSurprised(this.checked)"> Surprised</label>'+pmTip("surprised")
    +'</div>';
   if(S.play.surprised)h+='<p class="warn pmx-warn" role="status">Surprised (Core p.105): initiative −10; you can\'t defend until your initiative comes up; the first successful attack against you gains one extra Special Effect; no offensive actions for the rest of this round. New round clears it.</p>';
@@ -1445,6 +1487,7 @@ function pmDiceShow(r){
   const value=r.roll==="00"?100:Number(r.roll);
   tray.className="pmx-dicetray show rolling";
   tray.innerHTML='<button class="pmx-dicetray-x" aria-label="Close" onclick="pmDiceHide()">&times;</button>'
+   +'<button class="pmx-dicetray-log" onclick="pmDiceHide();APP.pmPopup(\'log\')">Log</button>'
    +'<div class="pmx-dicetray-label">'+esc(r.label)+' <span>'+r.pct+'%</span></div>'
    +'<canvas aria-hidden="true"></canvas>'
    +'<div class="pmx-dicetray-out"><b>'+(r.roll==="00"?"00":String(r.roll).padStart(2,"0"))+'</b><span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span></div>';

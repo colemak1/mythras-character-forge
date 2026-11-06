@@ -23,6 +23,8 @@ function renderInner(){
   // (e.g. a dropdown onchange that fires without a bubbling document click).
   if($("#gradePop"))APP._closeGradePop();
   if(APPVIEW!=="play"&&typeof pmDiceHide==="function")pmDiceHide();
+  // Only Play Mode fits the window (see play-clean.css); every other view scrolls.
+  document.body.classList.remove("pm-fit");
   // Party Board runs a realtime subscription + a couple of timers for as
   // long as it's on screen — tear all of that down the instant navigation
   // moves anywhere else, so a stale subscription never keeps polling/pushing

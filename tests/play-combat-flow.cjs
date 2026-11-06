@@ -49,7 +49,7 @@ test('the combat card asks for the opponent result, then lists only eligible eff
  assert.match(h,/You win <b>2 Special Effects<\/b>/);
  const eligible=run('SPECIAL_EFFECTS.filter(e=>canPickEffectForRoll(e,S.rollLog[0])).map(e=>e[0])');
  assert(eligible.includes('Bleed'),'a dagger can Bleed');assert(!eligible.includes('Arise'),'defensive-only effects are not offered');assert(!eligible.includes('Bash'));
- const listed=[...h.matchAll(/<summary>([^<]+?) <span class="pm-fx-badge/g)].map(m=>m[1]);
+ const listed=[...h.matchAll(/class="pmx-link pmx-fxname"[^>]*>([^<]+)<\/button>/g)].map(m=>m[1]);
  assert.deepEqual(listed.sort(),[...eligible].sort(),'the card lists exactly the eligible effects');
  run('APP.playChooseEffect(SPECIAL_EFFECTS.findIndex(e=>e[0]==="Bleed"))');
  assert.deepEqual(JSON.parse(run('JSON.stringify(S.rollLog[0].effectsPicked)')),['Bleed']);
@@ -65,8 +65,21 @@ test('a Combat Style roll from the Skills tab is resolved on the card',()=>{
  assert.match(run('pmResolveCardHTML()'),/Was this an attack or a defence\?/);
  run('APP.playJumpToEffects(0)');assert.equal(run('pmActiveTab()'),'combat');
 });
-test('Record damage switches to the Body tab',()=>{
- setup();run('S.play.tab="combat";APP.playJumpToInjury()');assert.equal(run('pmActiveTab()'),'body');
+test('Record damage shows the Body area (the stats column on a phone)',()=>{
+ setup();run('S.play.tab="combat";PM_VIEW="right";APP.playJumpToInjury()');assert.equal(run('PM_VIEW'),'stats');
+ assert.equal(run('pmActiveTab()'),'combat','the right-hand panel keeps its tab');
+});
+test('an effect name opens its description in a pop-up, with Choose when allowed',()=>{
+ setup();run('S.rollLog=[{label:"Dagger",pct:60,roll:4,tier:"Critical",combat:true,combatKind:"style",combatRole:"attack",oppTier:"Failure",weapon:"Dagger"}];PM_EFFECT_ROLL_REF=S.rollLog[0];');
+ const i=run('SPECIAL_EFFECTS.findIndex(e=>e[0]==="Bleed")');
+ run(`APP.pmPopup("fx",${i})`);const h=run('pmPopupHTML()');
+ assert.match(h,/role="dialog"/);assert.match(h,/major vessel/);assert.match(h,new RegExp('APP\\.playChooseEffect\\('+i+'\\)'));
+ run('APP.pmPopupClose()');assert.equal(run('pmPopupHTML()'),'');
+});
+test('a location opens its damage controls in a pop-up',()=>{
+ setup();run('APP.pmOpenLoc("Chest")');assert.equal(run('S.play.selectedLoc'),'Chest');
+ assert.match(run('pmPopupHTML()'),/Apply Damage/);
+ run('APP.pmOpenLoc("Tail")');assert.equal(run('S.play.selectedLoc'),'Chest','unknown locations are ignored');
 });
 test('a teammate viewing the sheet sees the card but cannot act',()=>{
  setup();run('S.rollLog=[{label:"Dagger",pct:60,roll:20,tier:"Success",combat:true,combatKind:"style",combatRole:"attack",oppTier:null}];VIEW_ONLY=true;');

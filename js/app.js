@@ -1176,15 +1176,20 @@ window.APP={
  playInv(i,f,v){if(inventoryBlock())return;this.inv(i,f,v);},
  // Switching tabs (Actions/Special Effects/Inventory/Features/Notes) is
  // read-only navigation, always allowed even in a VIEW_ONLY session.
- playTab(t){S.play.tab=t;render();},
+ // Phones show one area at a time: stats, skills, or the tabbed panel.
+ playTab(t){if(t==="skills"||t==="stats"||t==="body"){PM_VIEW=t==="skills"?"skills":"stats";}else{S.play.tab=t;PM_VIEW="right";}render();},
+ // Descriptions and secondary detail open in one pop-up (see pmPopupHTML).
+ pmPopup(k,i){PM_POPUP={k:String(k),i:Number.isInteger(i)?i:null};render();},
+ pmPopupClose(){PM_POPUP=null;render();},
+ pmOpenLoc(loc){if(!PLAY_HP_LOCS.includes(loc))return;S.play.selectedLoc=loc;PM_DMG_NOTE=null;PM_POPUP={k:"loc"};render();},
  playTogglePin(key){if(viewOnlyBlock())return;if(typeof key!=="string"||!entryMap()[key])return;
    const p=S.play.pinned||(S.play.pinned=[]),i=p.indexOf(key);if(i>=0)p.splice(i,1);else if(p.length<30)p.push(key);render();},
  // Keep the next step of a combat roll visible after the sheet redraws.
- playJumpToEffects(i=null){PM_EFFECT_ROLL_REF=Number.isInteger(i)?S.rollLog[i]||null:null;PM_FX_SEARCH="";S.play.tab="effects";render();requestAnimationFrame(()=>{
+ playJumpToEffects(i=null){PM_EFFECT_ROLL_REF=Number.isInteger(i)?S.rollLog[i]||null:null;PM_FX_SEARCH="";S.play.tab="combat";PM_VIEW="right";if(PM_POPUP&&PM_POPUP.k==="log")PM_POPUP=null;render();requestAnimationFrame(()=>{
    const panel=$("#pm-resolve")||$("#pm-actions");if(panel)panel.scrollIntoView({block:"start"});
  });},
  // The hit location diagram lives on the Body tab.
- playJumpToInjury(){S.play.tab="body";render();requestAnimationFrame(()=>{
+ playJumpToInjury(){PM_VIEW="stats";if(PM_POPUP&&PM_POPUP.k==="log")PM_POPUP=null;render();requestAnimationFrame(()=>{
    const panel=$("#pm-vitals");if(panel)panel.scrollIntoView({block:"start"});
  });},
  /* export / import */

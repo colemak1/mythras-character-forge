@@ -70,18 +70,6 @@ body.play-mode.pm-style-clean .app{background:var(--pmx-bg)}
 .pmx .pm-pip{width:16px;height:16px;border-radius:50%;background:var(--pmx-accent);border:2px solid var(--pmx-accent);padding:0;cursor:pointer}
 .pmx .pm-pip.off{background:transparent;border-color:var(--pmx-line)}
 
-/* Three columns */
-.pmx-grid{display:grid;grid-template-columns:220px minmax(0,1fr) 340px;gap:14px;align-items:start}
-.pmx-left,.pmx-main,.pmx-right{min-width:0}
-.pmx-right{position:sticky;top:84px}
-.pmx-chargrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.pmx-chargrid div{display:flex;justify-content:space-between;align-items:baseline;padding:7px 10px;border-radius:6px;background:var(--pmx-sunk)}
-.pmx-chargrid span{font:700 12px var(--pmx-ui);letter-spacing:.05em;color:var(--pmx-muted)}
-.pmx-chargrid b{font:700 18px var(--pmx-num);font-variant-numeric:tabular-nums}
-.pmx-attrs{margin:12px 0 0;display:grid;gap:6px}
-.pmx-attrs div{display:flex;justify-content:space-between;gap:8px;font-size:14px}
-.pmx-attrs dt{color:var(--pmx-muted)}.pmx-attrs dd{margin:0;font-weight:700}
-
 /* Tabs */
 .pmx-tabs{display:flex;gap:4px;border-bottom:1px solid var(--pmx-line);margin-bottom:14px;overflow-x:auto}
 .pmx-tab{border:0;background:none;padding:10px 14px;font:600 14px var(--pmx-ui);color:var(--pmx-muted);border-bottom:3px solid transparent;margin-bottom:-1px;cursor:pointer;white-space:nowrap}
@@ -109,31 +97,6 @@ body.play-mode.pm-style-clean .app{background:var(--pmx-bg)}
 .pmx-rollhelp summary{cursor:pointer}
 .pmx-rolls .pm-rolllog{max-height:calc(100vh - 220px);overflow-y:auto}
 
-/* Phone and small tablets */
-@media (max-width:1100px){
-  .pmx-grid{grid-template-columns:minmax(0,1fr) 320px}
-  .pmx-left{grid-column:1/-1}
-  .pmx-chargrid{grid-template-columns:repeat(7,1fr)}
-  .pmx-chargrid div{flex-direction:column;align-items:center;gap:2px}
-  .pmx-attrs{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-}
-@media (max-width:760px){
-  .pmx{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
-  .pmx-vitals{grid-template-columns:repeat(3,1fr)}
-  .pmx-v{border-bottom:1px solid var(--pmx-line);padding:8px 10px}
-  .pmx-v:nth-child(3n){border-right:0}
-  .pmx-v .val{font-size:16px}
-  .pmx-grid{grid-template-columns:minmax(0,1fr)}
-  .pmx-right{position:static}
-  .pmx-rolls .pm-rolllog{max-height:38vh}
-  .pmx-chargrid{grid-template-columns:repeat(7,1fr);gap:4px}
-  .pmx-chargrid div{padding:5px 2px}
-  .pmx-chargrid span{font-size:10px}.pmx-chargrid b{font-size:16px}
-  .pmx-attrs{grid-template-columns:1fr 1fr;column-gap:16px;font-size:13px}
-  .pmx-tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;margin:0;background:var(--pmx-surface);border-top:1px solid var(--pmx-line);border-bottom:0;justify-content:space-around;padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
-  .pmx-tab{flex:1;padding:14px 4px;border-bottom:0;border-top:3px solid transparent;font-size:13px}
-  .pmx-tab.on{border-top-color:var(--pmx-accent);border-bottom-color:transparent}
-}
 @media (prefers-reduced-motion:reduce){.pmx *{transition:none!important;animation:none!important}}
 
 /* Roll tray: physics dice for each new roll (batch 2) */
@@ -296,3 +259,130 @@ body.play-mode.pm-style-clean .app{background:var(--pmx-bg)}
   .pmx-vitals .pmx-v:nth-child(3n+1) .pmx-tip-body{left:0;right:auto;transform:none}
   .pmx-vitals .pmx-v:nth-child(3n) .pmx-tip-body{left:auto;right:0;transform:none}
 }
+
+/* ===== Layout v2 (owner's sketch, 2026-11-06) =====
+   Desktop: the page fits the window; stats+body | skills | tabbed panel,
+   each scrolling inside. Phones: one area at a time from the bottom bar. */
+.pmx-dash{max-width:1600px;padding-bottom:16px}
+.pmx-head{align-items:center;flex-wrap:nowrap;gap:14px}
+.pmx-avatar{flex:0 0 auto;width:56px;height:56px;border-radius:12px;overflow:hidden;background:var(--pmx-sunk);border:1px solid var(--pmx-line);display:flex;align-items:center;justify-content:center}
+.pmx-avatar img{width:100%;height:100%;object-fit:cover}
+.pmx-avatar span{font:700 20px var(--pmx-display);color:var(--pmx-muted)}
+.pmx-id{flex:1}
+.pmx-name{font-size:clamp(1.4rem,2.6vw,2rem)}
+.pmx-msg{margin:0 0 10px}
+.pmx-cols{display:grid;grid-template-columns:minmax(270px,23%) minmax(0,1fr) minmax(0,1.2fr);gap:14px;align-items:stretch}
+.pmx-col{min-width:0;min-height:0}
+.pmx-col>.pm-box:last-child{margin-bottom:0}
+.pmx-col-right{display:flex;flex-direction:column;min-height:0}
+.pmx-col-right .pmx-tabs{flex:0 0 auto;margin-bottom:10px}
+.pmx-scroll{flex:1;min-height:0}
+.pmx-phonebar{display:none}
+.pmx .pmx-skillsbox,.pmx .pm-skillsbox{margin-bottom:0}
+/* Trackers inside the Characteristics box */
+.pmx-trackers{margin-top:12px;border-top:1px solid var(--pmx-line);padding-top:8px;display:grid;gap:2px}
+.pmx-trk{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px}
+.pmx-trk .k{font:700 11px var(--pmx-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--pmx-muted);white-space:nowrap}
+.pmx-trk .val{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pmx-trk .val b{font:700 17px var(--pmx-num)}
+.pmx-trk .adj{display:inline-flex;gap:3px;margin-left:4px}
+.pmx-trk .pm-fatsel{padding:4px 6px;min-width:0}
+.pmx-warntext{color:var(--pmx-warn)}
+.pmx-health{float:right;text-transform:none;letter-spacing:0;font-weight:700}
+.pmx-health.minor{color:var(--pmx-warn)}.pmx-health.serious,.pmx-health.major{color:var(--pmx-bad)}.pmx-health.ok{color:var(--pmx-ok)}
+/* Body box in the narrow column: figure above a compact list */
+.pmx .pmx-bodybox .pm-vit-body{grid-template-columns:1fr;gap:10px}
+.pmx .pmx-bodybox .pm-figwrap svg{max-height:230px}
+.pmx .pmx-bodybox .pm-locrow{grid-template-columns:8px minmax(0,1fr) auto minmax(40px,.8fr) auto;gap:8px;padding:6px 8px}
+.pmx .pmx-bodybox .pm-locrow .nm{font-size:14px}
+.pmx .pmx-bodybox .pmx-locst{display:none}
+.pmx .pmx-bodybox .pm-locrow .hp{font-size:15px}
+/* Links that open pop-ups */
+.pmx-link{border:0;background:none;padding:0;font:inherit;font-weight:600;color:var(--pmx-accent);cursor:pointer;text-align:left}
+.pmx-link:hover{text-decoration:underline}
+.pmx-fxrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--pmx-line);border-radius:8px;background:var(--pmx-sunk);margin-bottom:4px}
+.pmx-fxrow .pmx-fxname{color:var(--pmx-ink);margin-right:4px}
+.pmx-fxrow .pm-fx-choose{margin-left:auto}
+.pmx-deflist{margin:0;display:grid;gap:8px}.pmx-deflist dt{font-weight:700}.pmx-deflist dd{margin:2px 0 0;color:var(--pmx-muted);font-size:14px}
+/* Passions at the foot of the skills list */
+.pmx-passions .pctval{color:var(--pm-accent)}
+/* Side panel (D&D Beyond style): a fourth column while open */
+.pmx-side{min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--pmx-surface);border:1px solid var(--pmx-line);border-top:4px solid var(--pmx-accent);border-radius:10px}
+.pmx-dash[data-side="open"] .pmx-cols{grid-template-columns:minmax(250px,20%) minmax(0,1fr) minmax(0,1.1fr) minmax(300px,24%)}
+.pmx-pophead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--pmx-line)}
+.pmx-pophead h2{margin:0;font:700 18px var(--pmx-ui)}
+.pmx-popx{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--pmx-muted);padding:2px 6px}
+.pmx-popbody{padding:14px 16px 18px;overflow-y:auto;flex:1;min-height:0}
+.pmx-popbody .pm-locdetail{border:0;margin:0;padding:0}
+.pmx-fxbadges{display:flex;flex-wrap:wrap;gap:4px}
+.pmx-dicetray-log{position:absolute;top:8px;right:36px;border:0;background:none;font:600 12px var(--pmx-ui,system-ui);color:var(--pmx-accent,#9c1f1f);cursor:pointer}
+.pmx-dicetray-label{padding-right:72px}
+
+@media (min-width:1101px){
+  .pmx-dash{height:calc(100dvh - var(--pm-top,100px));display:flex;flex-direction:column;overflow:hidden}
+  .pmx-head,.pm-viewonly-banner,.pmx-msg{flex:0 0 auto}
+  .pmx-cols{flex:1;min-height:0}
+  .pmx-col-stats,.pmx-col-skills,.pmx-scroll{overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:2px}
+  .pmx-col-skills .pm-skillsbox{min-height:100%}
+}
+@media (max-width:1100px){
+  .pmx-dash{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+  .pmx-head{flex-wrap:wrap}
+  .pmx-cols{display:block}
+  .pmx-dash[data-view="stats"] .pmx-col:not(.pmx-col-stats),
+  .pmx-dash[data-view="skills"] .pmx-col:not(.pmx-col-skills),
+  .pmx-dash[data-view="right"] .pmx-col:not(.pmx-col-right){display:none}
+  .pmx-col-right .pmx-tabs{display:none}
+  .pmx-phonebar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--pmx-surface);border-top:1px solid var(--pmx-line);padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+  .pmx-phonebar .pmx-tab{flex:1;min-width:0;padding:14px 2px;border-bottom:0;border-top:3px solid transparent;font-size:12.5px;margin:0}
+  .pmx-phonebar .pmx-tab.on{border-top-color:var(--pmx-accent);border-bottom-color:transparent}
+  .pmx-chargrid{grid-template-columns:repeat(7,1fr);gap:4px}
+  .pmx-chargrid div{flex-direction:column;align-items:center;gap:2px;padding:5px 2px}
+  .pmx-attrs{grid-template-columns:1fr 1fr;column-gap:16px}
+  .pmx .pmx-bodybox .pm-vit-body{grid-template-columns:minmax(0,40%) 1fr}
+  .pmx-headbtns{width:100%}
+  .pmx-side{position:fixed;left:0;right:0;bottom:calc(52px + env(safe-area-inset-bottom,0px));z-index:40;max-height:70vh;border-radius:14px 14px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+}
+@media (max-width:560px){
+  .pmx .pmx-bodybox .pm-vit-body{grid-template-columns:1fr}
+  .pmx-chargrid span{font-size:10px}.pmx-chargrid b{font-size:16px}
+}
+.pmx-col .pmx-tip-body{left:-6px;transform:none;max-width:240px}
+/* Restored after the layout v2 change: characteristic grid and derived values. */
+.pmx-chargrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pmx-chargrid div{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px;border-radius:6px;background:var(--pmx-sunk)}
+.pmx-chargrid span{font:700 11px var(--pmx-ui);letter-spacing:.05em;color:var(--pmx-muted)}
+.pmx-chargrid b{font:700 18px var(--pmx-num);font-variant-numeric:tabular-nums}
+.pmx-attrs{margin:12px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}
+.pmx-attrs div{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}
+.pmx-attrs dt{color:var(--pmx-muted)}.pmx-attrs dd{margin:0;font-weight:700}
+@media (min-width:1101px){
+  body.pm-fit .app,body.pm-fit #main{min-height:0}
+  body.pm-fit{overflow:hidden}
+}
+@media (max-width:1100px){.pmx-chargrid{grid-template-columns:repeat(7,1fr);gap:4px}}
+.pmx-attrs dt,.pmx-attrs dd{white-space:nowrap;overflow-wrap:normal}
+.pmx-attrs dt{overflow:hidden;text-overflow:ellipsis}
+/* Older damage controls, restyled for the pop-up */
+.pmx .pm-locdetail .dt{display:flex;justify-content:space-between;font:700 15px var(--pmx-ui)}
+.pmx .pm-locdetail .dt b{font:inherit;text-transform:none;letter-spacing:0}
+.pmx .pm-locdetail .hpline{font:700 22px var(--pmx-num);margin:8px 0 4px}
+.pmx .pm-sbtn{font:600 13px var(--pmx-ui);letter-spacing:0;text-transform:none;padding:6px 10px;border-radius:6px;border:1px solid var(--pmx-line);background:var(--pmx-surface);color:var(--pmx-ink);cursor:pointer}
+.pmx .pm-sbtn.dmg{color:var(--pmx-accent)}
+.pmx .pm-sbtn.primary{background:var(--pmx-accent);border-color:var(--pmx-accent);color:#fff;padding:9px 16px}
+.pmx .pm-dmgrow{display:flex;gap:8px;margin:6px 0}
+.pmx .pm-dmgrow input{flex:1;min-width:0;font:15px var(--pmx-ui);padding:8px 10px;border:1px solid var(--pmx-line);border-radius:6px;background:var(--pmx-surface)}
+.pmx .pm-dmgseclbl{font:600 12px var(--pmx-ui);letter-spacing:0;text-transform:none;color:var(--pmx-muted)}
+.pmx .pm-dmgsec{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+.pmx .pm-woundtag{font:700 11px var(--pmx-ui);letter-spacing:.04em}
+.pmx .pm-fx-item>summary{font:600 14px var(--pmx-ui)}
+/* Columns adapt to their own width (they narrow while the side panel is open). */
+.pmx-col-stats,.pmx-col-skills,.pmx-col-right{container-type:inline-size}
+@container (max-width:420px){
+  .pmx .pm-skillrow .base{display:none}
+  .pmx-turn{gap:8px 14px}
+}
+@container (max-width:290px){
+  .pmx-attrs{grid-template-columns:1fr}
+}
+.pmx-dash[data-side="open"] .pmx-cols{grid-template-columns:minmax(240px,19%) minmax(0,1fr) minmax(0,1.1fr) minmax(300px,23%)}
