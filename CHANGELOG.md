@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Subsystem 4 hazard notes source audit (docs only)
+
+- Checked `Body → Hazards and recovery` (`pmHazardsHTML()`) against the owner's privately uploaded Core: Acid **p.68** (not pp.71/74–85), asphyxiation and blood loss p.71, disease/poison pp.74–75, falls and sleep p.78, fire/physical effort p.79, and healing p.80. Reviewed rendered tables, not garbled PDF text alone.
+- New `docs/advancement-hazard-notes-review.md` distinguishes **correct**, **missing**, and **imprecise** instructions with short suggested wording. Missing include acid entirely, fall/fire intensity thresholds, physical effort intervals and healing restrictions; p.74's generic successful-treatment wording needs a cure-specific qualifier. Cause-specific Fatigue recovery already works separately and must be preserved.
+- All medical/hazard/disease mechanics remain **GM-assisted**. This PR does not modify application code, calculations, tests, Core sourcebook or release assets. No live check or Node suite run. Subsystem 4 remains **OPEN**, progress **4/8**.
+
 ## Advancement: regression tests
 
 - New automated tests cover Experience Rolls, fumble bonuses, skill training and teachers, learning new skills, Passion improvement, characteristic training and permanent improvement, natural healing intervals and Fatigue recovery times. No calculation errors were found. What's left for Subsystem 4 is two optional owner decisions and one live check.
