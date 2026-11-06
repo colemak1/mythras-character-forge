@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Subsystem 5 — Combat Core case inventory (documentation only)
+
+- ChatGPT added `docs/combat-cases-batch-1.md`: 191 individual **Given → Core p.N → expected app behaviour** cases for action economy, AP and initiative, Combat Styles, attacks/parries, all 43 Special Effects, melee/ranged situational rules, damage, armour and wounds (Core Combat pp.86–111, plus supporting pp.8 and 51).
+- Cases identify GM-assisted rules and the enabled optional Reach/Range rule. This is a source-verification batch only: the implementation status, automated tests and signed-in acceptance remain for Claude/ChatGPT Work. **Subsystem 5 remains open; overall progress 3/8.**
+- No production source, tests, site assets or deployment configuration changed. Local Node suite not run (clone unavailable); PR CI is required before merge.
+
+---
+
 ## Folk Magic catalogue accepted live after PR #118 (2026-11-05, America/Los_Angeles)
 
 - Signed-in catalogue-only recheck passed: the builder lists all 70 Core choices. Selecting Beastcall (X) shows Instant, Ranged, Resist (Willpower), Core p.124 and the animal-type speciality box; Play Mode shows its traits.
