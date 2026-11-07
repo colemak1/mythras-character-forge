@@ -57,3 +57,14 @@ Read `docs/advancement-hazard-notes-review.md` for a page-verified audit of the 
 Requested Claude-review steps **(a)–(f) all PASS**: [full live report and screenshot](advancement-live-acceptance-20261106.md). One disposable character; no accounts created or campaign rules changed. Immediate reloads use the offered same-owner recovery draft; final account reopen confirms correct skills, pool and wounds. Natural Experience Rolls **76** and **54**; pool ends **2**, Athletics **54%**, newly learned Acrobatics **28%**. Serious Chest −2→0 over one week; Major Arm −5 unchanged without treatment, −3 after confirmed monthly treatment. Disposable deleted and absence checked after reload; all **32** local scripts pass.
 
 The later-added campaign-option **(g)** was outside the owner's requested (a)–(f) pass and remains unverified. Retain Subsystem 4 OPEN and overall **4/8** pending Claude's remaining-gate review; this is not a new full source audit or automatic closeout.
+
+## Claude closeout gate review (2026-11-07)
+
+Merged #164: steps (a)–(f) pass, with reload and account reopen. Chat's hazard-notes audit (#161) is implemented and tested (#163, `tests/hazard-notes.cjs`). Both optional owner decisions are done (X14, X19). The remaining Subsystem 4 gaps all need a live check, so **one last focused owner-only Work pass** closes it:
+
+- **(g) Campaign options:** a disposable campaign set to 1d6+1 skill improvement (Campaign rules), with a disposable character assigned. A successful Experience Roll gains 2–7; the result text says 1d6+1. Then use the Passion helper: Weak deepen is 1d10; wane stops at 0. Reload; values persist. Set the campaign back or delete it.
+- **(h) Permanent injury:** record a maiming on a location; its maximum HP is lowered and survives reload.
+- **(i) Luck refill:** spend a Luck Point, then Advance Time → New session; the pool refills to its maximum.
+- Glance at Body → Hazards and recovery: acid, fall and fire tables are present (Core pp.68, 78, 79).
+
+If (g)–(i) pass, Claude closes Subsystem 4 (**4/8 → 5/8**). Everything else in the table above is GM-assisted by design or already has passing evidence.
