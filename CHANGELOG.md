@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-06 — Final Subsystem 4 gates on the new desktop Play Mode
+
+- Owner-only (g)–(i), hazard tables, Settings colour switch, skill description and Dagger→Impale→Roll damage all PASS. Natural ER17+INT16 gained+3; maiming2HP and Luck refill persisted. Three live screenshots: `docs/advancement-stone-live-20261106.md`.
+- Both fixtures deleted and absence checked after reload. Older #172 campaign also absent. Original Verdigris restored. No code changes; all33 scripts pass.
+- UI observations for Claude: Finish picker omits new campaign despite working rule; Notes wraps at1363px; dice tray retains attack result after damage. Progress4/8 pending Claude closeout.
+
 ## 2026-11-06 — Subsystem 4 final focused live gates pass
 
 - Owner-only (g)–(i): campaign 1d6+1 ER gained +6, Weak Passion helper/floor 0/reload, maiming maximum 2 HP persisted, and new-session Luck refilled. Acid/fall/fire tables present.
