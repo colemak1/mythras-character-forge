@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-06 — Item catalogue and Core trait source check
+
+- Compared uploaded Core rendered pp.58,62,89 (and Skirmishing p.108) with #176/#177 data: all 5 ammunition quantities/prices, all 8 armour per-location AP/ENC/prices and all 26 offered traits PASS. No required rules correction.
+- `docs/item-search-core-cases.md` records every checked row, valid description clarifications, optional Lead sling bullets label, and the book's Mail ENC inconsistency (5 per location versus 30 per suit).
+- Docs only; 34 local test scripts pass. No live UI acceptance claimed; progress stays 5/8.
+
 ## Add armour and ammunition by search, too
 
 - **Add an item** in Play Mode's Inventory now also finds armour (one location or a full suit, carried at full ENC until worn from the Money & Gear step) and ammunition bundles (Core p.62; ENC is the GM's call), alongside weapons and gear.
