@@ -9,6 +9,12 @@
 // effects, resist, rolling or recap (Core phases map to the mockup's views).
 function pitsPhase(){
   if(!S||S.phase==='setup')return 'setup';
+  // While a recorded exchange is being replayed, follow the beat on screen
+  // rather than the already-resolved live state (PUI-F02).
+  if(typeof V!=='undefined'&&V.busy){
+    const actor=V.roll?.actor;
+    return actor&&S.fighters?.[actor]?.kind==='human'?'rolling':actor?'opponent':'resolving';
+  }
   if(S.phase==='intro')return 'intro';
   if(S.phase==='between'||S.phase==='over')return 'recap';
   const human=id=>S.fighters?.[id]?.kind==='human';
@@ -63,7 +69,7 @@ function pitsSnapshot(){
     fighters:{a:pitsFighterSnapshot(S.fighters.a),b:pitsFighterSnapshot(S.fighters.b)}};
 }
 // Short words for the strip pill, per phase.
-const PITS_PHASE_PILL={action:'Your turn',opponent:'Opponent',reaction:'Defend',effects:'Special Effects',resist:'Resist',rolling:'Roll',recap:'Bout over',intro:'Next opponent',setup:'Setup'};
+const PITS_PHASE_PILL={resolving:'Resolving',action:'Your turn',opponent:'Opponent',reaction:'Defend',effects:'Special Effects',resist:'Resist',rolling:'Roll',recap:'Bout over',intro:'Next opponent',setup:'Setup'};
 
 // Percentile band for a skill: contiguous zones of critical / success /
 // failure / fumble, found by grading every face 1–100 with the engine's own
@@ -107,8 +113,20 @@ function pitsOddsFor(act,val){
   return null;
 }
 // Readout under the dice: the latest d100 skill roll with its verdict.
+// The skill roll the screen has reached: during a replay, the latest roll
+// beat already settled on screen; otherwise the latest roll (PUI-F02).
+function pitsShownSkillRoll(){
+  if(typeof V==='undefined')return null;
+  if(!V.busy||!Array.isArray(V.events))return V.lastSkillRoll||null;
+  let r=V.skillBefore||null;
+  for(let i=0;i<V.events.length&&i<=V.step;i++){
+    const roll=V.events[i]?.roll;if(!roll?.skill)continue;
+    if(i<V.step||(V.roll&&V.roll.settled))r=roll.skill;
+  }
+  return r;
+}
 function pitsReadoutHtml(){
-  const r=typeof V!=='undefined'?V.lastSkillRoll:null;
+  const r=pitsShownSkillRoll();
   if(!r)return `<section class="pits-readout" aria-label="Last roll"><div class="pits-ro-top"><span class="label">Last roll</span><span class="pits-ro-text">No roll yet this bout</span></div>${pitsBandHtml(50,null).replace('pits-band-wrap','pits-band-wrap is-empty')}<div class="pits-ro-scale"><span>01</span><span>50</span><span>00</span></div></section>`;
   const kind=['fumble','failure','success','critical'][r.grade]||'failure';
   return `<section class="pits-readout" aria-label="Last roll"><div class="pits-ro-top"><span class="label">Last roll · ${esc(r.name)}</span><span class="pits-ro-text">${esc(r.what)}: <b>${String(r.roll).padStart(2,'0')}</b> against ${r.pct}% — <span class="o-${kind}">${PITS_ZONE_WORD[kind]}</span></span></div>${pitsBandHtml(r.pct,r.roll)}<div class="pits-ro-scale"><span>01</span><span>50</span><span>00</span></div></section>`;

@@ -379,3 +379,21 @@ body.pits-stone #root .result-figure svg .serious,body.pits-stone #root .result-
 body.pits-stone #root .result-figure svg .major,body.pits-stone #root .result-figure svg .major *{fill:color-mix(in srgb,var(--p-major) 72%,var(--p-surface-2))}
 body.pits-stone #root .result-figure svg .minor,body.pits-stone #root .result-figure svg .minor *{fill:color-mix(in srgb,var(--p-minor) 34%,var(--p-surface-2))}
 body.pits-stone #root .result-figure svg .struck,body.pits-stone #root .result-figure svg .struck *{fill:color-mix(in srgb,var(--st-fumble) 60%,var(--p-surface-2))!important;stroke:var(--st-fumble)}
+
+/* ---------- Setup screen: readable in every scheme (PUI-F01) ---------- */
+body.pits-stone #root .setup,body.pits-stone #root .setup p,body.pits-stone #root .setup small,body.pits-stone #root .setup span,
+body.pits-stone #root .setup label,body.pits-stone #root .setup td,body.pits-stone #root .setup th,body.pits-stone #root .setup summary,
+body.pits-stone #root .setup .intro,body.pits-stone #root .setup .modehint,body.pits-stone #root .setup .formhint{color:var(--p-dim)}
+body.pits-stone #root .setup h2,body.pits-stone #root .setup h3,body.pits-stone #root .setup strong,body.pits-stone #root .setup b,
+body.pits-stone #root .setup .statbox>strong,body.pits-stone #root .setup td:nth-child(2),body.pits-stone #root .setup summary{color:var(--p-text)}
+body.pits-stone #root .setup .mode .n,body.pits-stone #root .setup .eyebrow{color:var(--p-brass)}
+body.pits-stone #root .setup .mode small{color:var(--p-dim)}
+body.pits-stone #root .setup .mode strong{color:var(--p-text)}
+body.pits-stone #root .setup .statbox,body.pits-stone #root .setup .formcard{background:var(--p-surface-2)}
+body.pits-stone #root .setup .lbtab{background:transparent;color:var(--p-dim);border:1px solid var(--p-line-strong);border-radius:1px}
+body.pits-stone #root .setup .lbtab.on{background:var(--p-brass);border-color:var(--p-brass);color:var(--p-on-accent)}
+body.pits-stone #root .setup th{border-color:var(--p-line-strong)}
+body.pits-stone #root .setup td{border-color:var(--p-line)}
+body.pits-stone #root .setup input,body.pits-stone #root .setup select{background:var(--p-surface);color:var(--p-text);border:1px solid var(--p-line-strong)}
+body.pits-stone .mast p,body.pits-stone #root .mast p{color:var(--p-dim)}
+body.pits-stone #root .notechip{background:var(--p-surface);color:var(--p-dim);border:1px solid var(--p-line)}

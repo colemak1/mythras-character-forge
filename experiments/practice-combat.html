@@ -316,7 +316,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .recovery-options{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 0 16px;border-bottom:1px solid #9d876145;margin-bottom:10px}.recovery-options button{padding:9px 13px;border:1px solid #af9972;border-radius:2px;background:transparent;color:inherit;cursor:pointer;font:600 12px system-ui}.recovery-options button:disabled{opacity:.45;cursor:not-allowed}.recovery-options small{font:11px/1.5 system-ui;color:#b6a48c;max-width:330px}
 
 </style>
-<link rel="stylesheet" href="pits-stone.css?v=e8897af5e1">
+<link rel="stylesheet" href="pits-stone.css?v=1660eea8a0">
 <link rel="stylesheet" href="practice-combat-ux.css?v=bda12b759c">
 </head>
 <body>
@@ -325,8 +325,8 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 <script src="../js/data.js?v=ea343c2e36"></script>
 <script src="practice-character.js?v=19ba1929b4"></script>
 <script src="practice-guidance.js?v=3bb978cd88"></script>
-<script src="pits-view.js?v=e7a97bccb2"></script>
-<script src="pits-game.js?v=e255c0e542"></script>
+<script src="pits-view.js?v=766aacde41"></script>
+<script src="pits-game.js?v=1d86e29baf"></script>
 <script>
 'use strict';
 const HIT_LOCS=['Head','Chest','Abdomen','Right Arm','Left Arm','Right Leg','Left Leg'];
@@ -710,6 +710,10 @@ function requestSkill(actor,percent,label,callback){
   const result=rollSkill(effective,values[0]);result.effectiveTarget=effective;
   // Presentation only: remember the roll for the readout under the dice.
   V.lastSkillRoll={actor,name:f?.name||'',what:String(label).split(' · ')[0],pct:effective,roll:result.roll,grade:result.grade};
+  // PUI-F02: the readout follows the replay, so attach the result to the
+  // roll beat it belongs to (the presentation shows it when it gets there).
+  const beat=V.capturing&&V.queue[V.queue.length-1];
+  if(beat&&beat.roll&&beat.roll.actor===actor)beat.roll.skill=V.lastSkillRoll;
   if(typeof pitsGameOnRoll==='function')pitsGameOnRoll(actor,label,effective,result);
   callback(result);
  });
@@ -1237,6 +1241,7 @@ function playCaptured(fn,reset=false){
   V.events=[];
   const before=S.fighters?clone(S.fighters):null;
   V.queue=[];
+  V.skillBefore=V.lastSkillRoll||null;   // readout before this replay (PUI-F02)
   V.capturing=true;
   try{fn();}finally{V.capturing=false;}
   const events=V.queue;
