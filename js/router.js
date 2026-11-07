@@ -123,7 +123,13 @@ function redirectHome(msg){
 async function applyRoute(route,opts){
   opts=opts||{};
   if(!route){redirectHome("That link doesn't match anything in the app.");return;}
-  if(!AUTH_USER&&!MOCK_AUTH&&!["menu","account","wiki","world","join"].includes(route.view)){
+  // Signed out: Characters and Campaign show a sign-in gate on their own
+  // page; The Pits lobby handles signed-out itself (it can still fight
+  // without a character). Everything else that needs an account goes there.
+  if(!AUTH_USER&&!MOCK_AUTH&&["library","campaigns"].includes(route.view)){
+    APPVIEW=route.view;render();if(!opts.cold)setTimeout(focusPageTitle,0);return;
+  }
+  if(!AUTH_USER&&!MOCK_AUTH&&!["menu","account","wiki","world","join","pits"].includes(route.view)){
     APPVIEW="account";AUTH_MSG={text:"Sign in to create and manage your characters and campaigns."};render();return;
   }
   switch(route.view){
@@ -134,7 +140,8 @@ async function applyRoute(route,opts){
     case "account": APPVIEW="account";render();break;
     case "library": APPVIEW="library";LIB_CACHE=null;render();loadLibraryUnified();break;
     case "campaigns": APPVIEW="campaigns";CAMP_CACHE=null;render();loadCampaignsUnified();break;
-    case "pits": APP.toPits();break;
+    // practice.js loads after boot() starts; wait for it on a cold load.
+    case "pits": if(typeof APP.toPits==="function")APP.toPits();else setTimeout(()=>APP.toPits&&APP.toPits(),0);break;
     case "campaign-setup": {
       CAMPAIGN_SETUP_DRAFT=null;CAMPAIGN_SETUP_EDIT=!!route.campaignId;CAMP_MSG=null;
       if(route.campaignId){
@@ -241,9 +248,11 @@ async function applyRoute(route,opts){
     case "wiki": APPVIEW="wiki";WIKI_CHAPTER=route.chapterId||null;render();break;
   }
 }
-window.addEventListener("hashchange",()=>{
+window.addEventListener("hashchange",async()=>{
   if(location.hash===("#"+currentRoute()))return; // echo of our own syncRouteFromState -- not a real navigation
-  applyRoute(parseRoute(location.hash),{cold:false});
+  await applyRoute(parseRoute(location.hash),{cold:false});
+  // Keyboard and screen-reader users land on the new page's title.
+  if(typeof focusPageTitle==="function"&&["menu","library","campaigns","pits","wiki","world","account"].includes(APPVIEW))focusPageTitle();
 });
 // Boot sequence, replacing the old unconditional `initAuth();render();`.
 // CLOUD_ENABLED sessions restore asynchronously (Supabase reads its saved

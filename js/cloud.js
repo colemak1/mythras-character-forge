@@ -961,6 +961,7 @@ let CAMP_MSG=null;
 // "Reset email sent" and "Password updated" that used to be a bare alert()).
 let AUTH_MSG=null;
 let ACCOUNT_BACKUPS=null;
+let ACCOUNT_TAB='in'; // Account page tab: 'in' (Sign in) or 'up' (Create account)
 let ACCOUNT_BACKUP_MSG="";
 let XP_OPEN=false; // Improve Skills modal visibility — ephemeral UI state, not saved character data
 let SHEET_RETURN_VIEW="play"; // where APP.backFromSheet() sends you back to — set by whoever opened the sheet view
@@ -991,9 +992,7 @@ function menuTile(title,desc,onclick,disabled,primary){
 // itself and the code paths that check it elsewhere are untouched, this only
 // drops the panel that used to set it.
 function accountHTML(){
-  let h='<div class="mmenu"><div class="mmenu-topbar"><span class="mmenu-brandmark">Mythras</span><span class="mmenu-branddiv">&middot;</span><span class="mmenu-brandsub">Character Forge</span>'
-   +'<button class="mmenu-acctbtn" onclick="APP.toMenu()">&#8592; Main Menu</button></div>';
-  h+='<div class="mmenu-pagehead"><h1>Account</h1><p>Sign in to sync Campaigns between people and devices.</p></div>';
+  let h='<div class="mmenu st-page">'+stPageHead({eyebrow:'Your table',title:'Account',sub:AUTH_USER&&AUTH_PROFILE?(cloudActive()?'Signed in and synced.':'Signed in.'):'Sign in to keep your characters and campaigns in sync across devices.'});
   if(GUEST_TEST_ENABLED&&!AUTH_USER){
     h+='<div class="mmenu-panel" style="margin-bottom:16px"><div class="mmenu-panel-eyebrow">Try without an account</div>'
      +'<p class="note">Guest mode works without Supabase. Characters and campaigns are saved only in this browser on this device, not synced or backed up. Export your character before clearing website data or changing devices.</p>'
@@ -1009,26 +1008,39 @@ function accountHTML(){
      +'<span>You clicked a password-reset link. Set a new password below to finish.</span></div>'
      +'<div class="mmenu-joinrow"><input type="password" id="authNewPw" placeholder="New password (8+ characters)"><button class="chip" onclick="APP.setNewPassword()">Save</button></div>';
   }else if(AUTH_USER&&AUTH_PROFILE){
-    h+='<div class="mmenu-panel-eyebrow">Signed in</div><div class="mmenu-authhead"><b>'+esc(AUTH_PROFILE.display_name)+'</b><span>'+esc(AUTH_USER.email)+'</span></div>'
-     +'<button class="mmenu-cta-ghost" onclick="APP.signOut()">Sign out</button>';
+    // Profile card (owner menu redesign): avatar, name, email, sync status.
+    const nm=AUTH_PROFILE.display_name||'';
+    h+='<div class="st-profile"><div class="st-avatar" aria-hidden="true">'+esc(stInitials(nm))+'</div><div><b>'+esc(nm)+'</b><span>'+esc(AUTH_USER.email)+'</span>'
+     +'<small class="st-sync">'+(cloudActive()?'Synced to your account':'Saved in this browser')+'</small></div></div>'
+     +'<label class="st-label" for="authName">Display name</label><div class="st-row"><input type="text" id="authName" class="st-input" value="'+esc(nm)+'" autocomplete="nickname">'
+     +'<button type="button" class="st-btn st-btn-primary" onclick="APP.setDisplayName()">Save</button></div>'
+     +'<button type="button" class="st-btn" onclick="APP.signOut()">Sign out</button>';
   }else if(AUTH_USER&&!AUTH_PROFILE){
     h+='<div class="mmenu-panel-eyebrow">One more thing</div><div class="mmenu-authhead"><b>Choose a display name</b>'
      +'<span>Signed in as '+esc(AUTH_USER.email)+'. What should other players see you as?</span></div>'
      +'<div class="mmenu-joinrow"><input type="text" id="authName" placeholder="Display name"><button class="chip" onclick="APP.setDisplayName()">Save</button></div>';
   }else{
-    h+='<div class="mmenu-panel-eyebrow">Sign in</div><div class="mmenu-authhead"><b>Email &amp; password</b>'
-     +'<span>Needed for Campaigns and the Party Board to sync between people and devices.</span></div>'
-     +'<div class="mmenu-joinrow" style="flex-direction:column;align-items:stretch;gap:8px">'
-     +'<input type="email" id="authEmail" placeholder="you@example.com">'
-     +'<input type="password" id="authPw" placeholder="Password">'
-     +'<div style="display:flex;gap:8px"><button class="chip" onclick="APP.signIn()">Sign in</button>'
-     +'<button class="chip" onclick="APP.signUp()">Create account</button></div>'
-     +'<button class="mmenu-cta-ghost sm" style="align-self:flex-start" onclick="APP.forgotPassword()">Forgot password?</button>'
-     +'</div>'
-     +(AUTH_PENDING==="signup"?'<p class="okmsg" style="margin-top:8px">Check your email to confirm your account, then sign in.</p>':"");
+    // Sign in / Create account tabs (owner menu redesign, 2026-11-07).
+    const up=ACCOUNT_TAB==='up';
+    h+='<div class="st-tabs" role="tablist" aria-label="Account"><button type="button" role="tab" id="stTabIn" aria-selected="'+!up+'" aria-controls="stAuthPane" onclick="ACCOUNT_TAB=\'in\';render()">Sign in</button>'
+     +'<button type="button" role="tab" id="stTabUp" aria-selected="'+up+'" aria-controls="stAuthPane" onclick="ACCOUNT_TAB=\'up\';render()">Create account</button></div>'
+     +'<form class="st-auth" id="stAuthPane" role="tabpanel" aria-labelledby="'+(up?'stTabUp':'stTabIn')+'" onsubmit="event.preventDefault();'+(up?'APP.signUp()':'APP.signIn()')+'">'
+     +(AUTH_MSG?'<p class="st-banner'+(AUTH_MSG.level==='okmsg'?' st-banner-ok':'')+'" role="'+(AUTH_MSG.level==='okmsg'?'status':'alert')+'">'+esc(AUTH_MSG.text)+'</p>':'')
+     +(AUTH_PENDING==="signup"?'<p class="st-banner st-banner-ok" role="status">Check your email to confirm your account, then sign in.</p>':'')
+     +'<label class="st-label" for="authEmail">Email</label><input type="email" id="authEmail" class="st-input" autocomplete="email" placeholder="you@example.com">'
+     +'<label class="st-label" for="authPw">Password</label><div class="st-row"><input type="password" id="authPw" class="st-input" autocomplete="'+(up?'new-password':'current-password')+'"'+(up?' placeholder="8 or more characters"':'')+'>'
+     +'<button type="button" class="st-btn" aria-pressed="false" onclick="const f=document.getElementById(\'authPw\');const show=f.type===\'password\';f.type=show?\'text\':\'password\';this.setAttribute(\'aria-pressed\',show);this.textContent=show?\'Hide\':\'Show\'">Show</button></div>'
+     +'<button type="submit" class="st-btn st-btn-primary st-btn-wide">'+(up?'Create account':'Sign in')+'</button>'
+     +(up?'':'<button type="button" class="st-link" onclick="APP.forgotPassword()">Forgot password?</button>')
+     +'</form>';
   }
-  if(AUTH_MSG)h+='<p class="'+(AUTH_MSG.level||"warn")+'" style="margin-top:8px">'+esc(AUTH_MSG.text)+'</p>';
+  const authShown=CLOUD_ENABLED&&!AUTH_RECOVERY&&!AUTH_USER;
+  if(AUTH_MSG&&!authShown)h+='<p class="st-banner'+(AUTH_MSG.level==='okmsg'?' st-banner-ok':'')+'" role="'+(AUTH_MSG.level==='okmsg'?'status':'alert')+'">'+esc(AUTH_MSG.text)+'</p>';
   h+='</div>';
+  h+='<aside class="st-why"><h2>'+(AUTH_USER?'Your account':'Why sign in?')+'</h2><ul>'
+   +'<li><b>Characters on every device</b><span>Autosaved to your account as you build.</span></li>'
+   +'<li><b>Campaigns and the Party Board</b><span>Your GM sees every linked character.</span></li>'
+   +'<li><b>The Pits</b><span>Bring your own characters into the arena.</span></li></ul></aside>';
   h+='</div>';
   if(AUTH_USER||MOCK_AUTH){
     const owner=AUTH_USER?AUTH_USER.id:"local", cache=ACCOUNT_BACKUPS&&ACCOUNT_BACKUPS.owner===owner?ACCOUNT_BACKUPS.rows:null;
@@ -1072,18 +1084,26 @@ function renderMenuView(){
 }
 /* ---- campaign list ---- */
 function campaignsHTML(){
+  if(!stSignedIn())return '<div class="menuwrap st-page">'+stPageHead({title:'Campaign',sub:'Your table: the GM, the party and what happens next.'})+stGateHTML('campaigns')+'</div>';
   if(CAMP_LOAD_ERROR)return '<div class="menuwrap"><div class="menuhead"><h1>Campaigns</h1></div><p class="warn" role="alert">'+esc(CAMP_LOAD_ERROR)+'</p><button class="chip" onclick="loadCampaignsUnified()">Retry loading campaigns</button></div>';
   if(CAMP_CACHE===null)return '<div class="menuwrap"><p class="note" style="text-align:center">Loading campaigns&hellip;</p></div>';
   const camps=CAMP_CACHE.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  let h='<div class="menuwrap"><div class="menuhead"><h1>Campaigns</h1><p>'+(cloudActive()?"Synced to your account — DMs see every linked character.":"Local to this browser only.")+'</p></div>';
-  h+='<p style="text-align:center;margin-bottom:20px"><button class="nav" onclick="APP.toMenu()">&#8592; Main Menu</button> <button class="nav primary" onclick="APP.newCampaign()">+ New Campaign</button></p>';
-  if(CAMP_MSG)h+='<p class="warn" style="text-align:center;margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
-  if(!camps.length){h+='<p class="note" style="text-align:center">No campaigns yet — start one above, or join one with an invite code from the Main Menu.</p>';}
-  h+='<div class="menutiles">'+camps.map(c=>{
-    const mineAsDm=!cloudActive()||c.dm_id===(AUTH_USER&&AUTH_USER.id);
-    return '<button class="menutile" onclick="APP.openCampaign(\''+c.id+'\')"><span class="mt-title">'+esc(c.name||"Untitled Campaign")+'</span>'
-      +'<span class="mt-desc">'+(mineAsDm?"You&rsquo;re the DM":"You&rsquo;re a player")+' &middot; created '+new Date(c.created_at).toLocaleDateString()+'</span></button>';
-  }).join("")+'</div></div>';
+  let h='<div class="menuwrap st-page">'+stPageHead({title:'Campaign',sub:cloudActive()?"Synced to your account. GMs see every linked character.":"Local to this browser only.",
+    action:'<button type="button" class="st-btn st-btn-primary" onclick="APP.newCampaign()"><span aria-hidden="true">+</span> New campaign</button>'});
+  if(CAMP_MSG)h+='<p class="warn" style="margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
+  // One card per campaign, with "Join with a code" beside them (desktop) or
+  // below (phone). Owner menu redesign, 2026-11-07.
+  const cards=camps.map(c=>{
+    const gm=!cloudActive()||c.dm_id===(AUTH_USER&&AUTH_USER.id),id=jsq(c.id);
+    return '<article class="st-camp"><div class="st-camp-head"><h3>'+esc(c.name||"Untitled Campaign")+'</h3><span class="st-role'+(gm?' st-role-gm':'')+'">'+(gm?'GM':'Player')+'</span></div>'
+      +'<p class="st-camp-meta">'+(gm?'You run this table':'You play at this table')+' · started '+esc(new Date(c.created_at).toLocaleDateString())+'</p>'
+      +'<div class="st-camp-actions"><button type="button" class="st-btn st-btn-primary st-btn-sm" onclick="APP.openCampaign(\''+id+'\')">Open</button>'
+      +'<button type="button" class="st-btn st-btn-sm" onclick="APP.toBoard(\''+id+'\')">Party board</button></div></article>';
+  }).join('');
+  const join='<aside class="st-join" aria-labelledby="stJoinTitle"><h2 id="stJoinTitle">Join with a code</h2><p>Your GM can send you an invite code or link.</p>'
+    +'<form onsubmit="event.preventDefault();const v=this.code.value.trim();if(v)APP.joinCampaign(v);"><label class="st-sr" for="stJoinCode">Invite code</label>'
+    +'<input id="stJoinCode" name="code" class="st-input" autocomplete="off" autocapitalize="characters" placeholder="Invite code"><button type="submit" class="st-btn">Join</button></form></aside>';
+  h+='<div class="st-two"><div class="st-camps">'+(cards||'<div class="st-empty">No campaigns yet. Start one with New campaign, or join one with the code your GM sends you.</div>')+'</div>'+join+'</div></div>';
   return h;
 }
 function renderCampaignsView(){
@@ -1095,37 +1115,39 @@ function renderCampaignsView(){
 }
 /* ---- my characters ---- */
 function libraryHTML(){
-  let h='<div class="mmenu"><div class="mmenu-topbar"><span class="mmenu-brandmark">Mythras</span><span class="mmenu-branddiv">&middot;</span><span class="mmenu-brandsub">Character Forge</span>'
-   +'<button class="mmenu-acctbtn" onclick="APP.toMenu()">&#8592; Main Menu</button></div>';
-  h+='<div class="mmenu-pagehead"><h1>My Characters</h1><p>'+(cloudActive()?"Every character saved to your account.":"Every character autosaved in this browser.")+'</p></div>';
+  if(!stSignedIn())return '<div class="mmenu st-page">'+stPageHead({title:'Characters',sub:'Build a character, play them at the table, or take them into The Pits.'})+stGateHTML('library')+'</div>';
+  const count=Array.isArray(LIB_CACHE)?LIB_CACHE.length:null;
+  let h='<div class="mmenu st-page">'+stPageHead({title:'Characters',
+    sub:count==null?(cloudActive()?"Every character saved to your account.":"Every character autosaved in this browser."):count+' saved '+(cloudActive()?'to your account.':'in this browser.'),
+    action:'<button type="button" class="st-btn st-btn-primary" onclick="APP.fromMenuNew()"><span aria-hidden="true">+</span> New character</button>'});
   if(CAMP_MSG)h+='<p class="warn" style="margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
   if(LIB_LOAD_ERROR){h+='<p class="warn" role="alert">'+esc(LIB_LOAD_ERROR)+'</p><button class="chip" onclick="loadLibraryUnified()">Retry loading characters</button></div>';return h;}
   if(LIB_CACHE===null){h+='<p class="note">Loading&hellip;</p></div>';return h;}
   if(!LIB_CACHE.length){
-    h+='<div class="mmenu-panel"><p class="note">No characters saved yet — start one from the Main Menu and it&rsquo;ll show up here automatically as you build it.</p>'
-     +'<button class="mmenu-cta-primary" style="margin-top:14px" onclick="APP.fromMenuNew()">Create New Character &rarr;</button></div></div>';
+    h+='<p class="st-empty-lede">No characters yet. Start one and it&rsquo;ll appear here automatically as you build it.</p><div class="st-chars">'+stNewCard()+'</div></div>';
     return h;
   }
-  const list=LIB_CACHE.slice().sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
-  h+='<div class="mmenu-charlist">'+list.map(c=>{
-    const initials=((c.name||"?").match(/\b[A-Za-z]/g)||["?"]).slice(0,2).join("").toUpperCase();
-    const tierLabel=c.tier&&c.tier!=="ordinary"&&ARCHETYPES[c.tier]?ARCHETYPES[c.tier].label:null;
-    const meta=[c.culture,c.career,tierLabel].filter(Boolean).join(" &middot; ")||"Concept only, so far";
-    return '<div class="mmenu-charcard"><div class="mmenu-preview-head">'
-     +'<div class="mmenu-preview-portrait">'+(c.state?.concept?.portrait&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]{1,200000}$/.test(c.state.concept.portrait)?'<img src="'+c.state.concept.portrait+'" alt="">':esc(initials))+'</div><div>'
-     +'<div class="mmenu-preview-name">'+esc(c.name||"Unnamed Character")+'</div>'
-     +'<div class="mmenu-preview-meta">'+meta+'</div></div></div>'
-     +'<div class="mmenu-charcard-ts">Saved '+new Date(c.updated_at).toLocaleString()+'</div>'
-     +'<div class="mmenu-charcard-actions">'
-     +'<button class="mmenu-cta-secondary" onclick="APP.openCharToPlay(\''+c.id+'\')">Play &rarr;</button>'
-     +'<button class="mmenu-cta-ghost sm" onclick="APP.openCharToEdit(\''+c.id+'\')">Edit</button>'
-     +'<button class="mmenu-cta-ghost sm" onclick="APP.openCharToSheet(\''+c.id+'\')">Print</button>'
-     +'<button class="mmenu-charcard-del" onclick="APP.deleteLibChar(\''+c.id+'\',\''+jsq(c.name||"this character")+'\')" title="Delete">&times;</button>'
-     +'</div></div>';
-  }).join("")+'</div>';
+  h+='<div class="st-tb"><div class="st-field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>'
+   +'<label class="st-sr" for="stCharQ">Search characters</label><input id="stCharQ" class="st-input" type="search" placeholder="Search by name, culture or career" value="'+esc(LIB_QUERY)+'" oninput="stLibSearch(this.value)"></div>'
+   +'<label class="st-sr" for="stCharSort">Sort characters</label><select id="stCharSort" class="st-select" onchange="stLibSort(this.value)">'
+   +'<option value="recent"'+(LIB_SORT==='recent'?' selected':'')+'>Recently saved</option><option value="name"'+(LIB_SORT==='name'?' selected':'')+'>Name A to Z</option></select></div>';
+  h+='<div class="st-chars" id="stCharList">'+libraryCardsHTML()+'</div>';
   h+='</div>';
   return h;
 }
+// Characters page search and sort (owner menu redesign): filter in place so
+// the search box keeps focus while typing.
+let LIB_QUERY='',LIB_SORT='recent';
+function libraryCardsHTML(){
+  const q=LIB_QUERY.trim().toLowerCase();
+  let list=(LIB_CACHE||[]).filter(c=>!stHiddenByUndo(c))
+    .filter(c=>!q||[c.name,c.culture,c.career].filter(Boolean).join(' ').toLowerCase().includes(q));
+  list=list.slice().sort(LIB_SORT==='name'?(a,b)=>String(a.name||'').localeCompare(String(b.name||'')):(a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
+  if(!list.length)return '<div class="st-empty">No characters match “'+esc(LIB_QUERY)+'”.</div>';
+  return list.map(stCharCard).join('')+stNewCard();
+}
+function stLibSearch(v){LIB_QUERY=String(v||'');const el=document.getElementById('stCharList');if(el)el.innerHTML=libraryCardsHTML();}
+function stLibSort(v){LIB_SORT=v==='name'?'name':'recent';const el=document.getElementById('stCharList');if(el)el.innerHTML=libraryCardsHTML();}
 function renderLibraryView(){
   document.body.classList.remove("play-mode");
   document.body.classList.remove("sheet-mode");

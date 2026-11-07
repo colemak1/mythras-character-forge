@@ -36,10 +36,11 @@ await test('signed out: the page offers sign-in and a fight without a character'
 });
 await test('signed in: pick a character and enter; the chosen one is sent to the arena',async()=>{
  run('AUTH_USER={id:"user"};LIB_CACHE=[{id:"c1",name:"Kaelen"},{id:"c2",name:"Mira"}];PITS_PICK="";renderPitsView()');
- assert.match(main.innerHTML,/<option value="c1" selected>Kaelen<\/option><option value="c2">Mira<\/option>/);
+ // Owner menu redesign: native radio cards replace the <select>.
+ assert.match(main.innerHTML,/name="pitsPick" value="c1" checked/);assert.match(main.innerHTML,/name="pitsPick" value="c2" onchange/);
  run('var __opened=null;APP.openCharToPractice=id=>{__opened=id;};APP.pitsPick("c2");APP.enterPits()');
  assert.equal(run('__opened'),'c2');
- run('LIB_CACHE=[];renderPitsView()');assert.match(main.innerHTML,/no saved characters yet/);
+ run('LIB_CACHE=[];renderPitsView()');assert.match(main.innerHTML,/no saved characters yet/);assert.match(main.innerHTML,/Fight without a character/);
 });
 await test('the arena is named The Pits and links back to it',()=>{
  const page=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8');

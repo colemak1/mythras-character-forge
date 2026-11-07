@@ -11,6 +11,45 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 - Two UI failures documented: dim Basalt setup text and phase/roll/recap advancing ahead of playback. Exact 1280/390 and audible sound remain unverified due to browser limitations.
 - Evidence: `docs/pits-ui-live-acceptance-20261107.md` and eight screenshots. Docs only; main Combat stays closed, progress 5/8.
 
+## Rules, World Guide and Account
+
+From the owner's menu redesign handoff (Part A, items 8–10):
+- **Rules** is now a table of contents: chapters grouped under Making a character, Playing the game, Magic and Running the game, each with a dotted line to its Core page number. There's live search and buttons to show one group. The repeated "CORE" badge is gone; the page says once that page numbers refer to the Mythras Core Rulebook.
+- **World Guide:** the chapter list stays in view beside the parchment on desktop. On phones, chapters become a row of buttons you can swipe. The "Back to the table" link is gone; Home is in the navigation.
+- **Account, signed out:** Sign in and Create account tabs, errors shown in a clear banner at the top of the form, a Show/Hide button for the password, "Forgot password?" as a link, and a short "Why sign in?" list.
+- **Account, signed in:** a profile card (initials, name, email, sync status), your display name (now editable), and Sign out.
+
+## The Pits lobby
+
+From the owner's menu redesign handoff (Part A, item 7):
+- Pick your fighter from a list of cards instead of a drop-down. Each card shows the portrait or initials, the best Combat Style % and Action Points.
+- On desktop, a summary panel stays beside the list: the fighter's culture, career, Combat Style, AP and campaign, the **Enter the Pits** button, and "Wounds here never touch your saved character". On phones it sits below the list.
+- When this device has arena runs on record, a strip shows your best run, best hardcore run, and how many fighters are on the board.
+- "Fight without a character" is always there, signed in or out.
+
+## Characters and Campaign pages
+
+From the owner's menu redesign handoff (Part A, items 5 and 6):
+- **Characters:** a card grid (1 column on phones, 2 on tablets, 3 on desktop), with the same cards as Home: real Combat Style %, Action Points and campaign, a Play button, and a ⋯ menu with Edit, Print sheet and Delete. There's a search box (name, culture or career) and a sort (Recently saved, Name A to Z).
+- **Delete now offers Undo:** the card disappears with an Undo button for six seconds, and the character is only deleted when that runs out. The old × button and the "are you sure?" box are gone.
+- **Campaign:** one card per campaign with your role (GM or Player), when it started, and Open / Party board. **Join with a code** is on this page: beside the list on desktop, below it on phones.
+
+## Home: Continue card, character cards and table tiles
+
+From the owner's menu redesign handoff (Part A, item 4):
+- **Continue:** the hero has a Continue card for your most recently saved character. It shows their best Combat Style, and Explore Sit’ota sits beside it as a quieter link. Signed out, it's a "Sign in to continue" button.
+- **Your characters** shows up to three cards plus a dashed New character card. Each card shows the portrait or initials, culture and career, the best Combat Style %, Action Points, the campaign when linked, when it was saved, a Play button, and a ⋯ menu (Edit, Print sheet, Delete with Undo). Signed out: "Your table is waiting".
+- **At the table:** four tiles for Campaign, The Pits, Rules and World Guide. The Pits tile shows your best local run when you have one. Create campaign and Join a campaign sit just below.
+- The ORC licence attribution is now visible at the bottom of Home.
+
+## Menus: shared page header, phone tab bar and sign-in gates
+
+From the owner's home and menu redesign handoff (Part A, items 1–3):
+- Characters, Campaign, The Pits, Rules and Account open with the same header: a small label, the page title, a one-line description and the page's main button (New character, New campaign). The "Main Menu" buttons are gone; Home is in the navigation.
+- **Phones (under 900px):** a tab bar along the bottom (Home, Characters, Campaign, The Pits, More). More opens a sheet with Rules, World Guide and Account. The top bar shrinks to the logo and a round account button.
+- **Signed out:** Characters and Campaign now show a "Sign in to see your characters / campaigns" card on their own page, instead of jumping to Account. The Pits shows the same card and still lets you fight without a character.
+- After you change page, keyboard focus moves to the page title.
+
 ## The Pits: game feel (v0 design, steps 3 and 5)
 
 - **Bout bar:** Glory, a Momentum meter (Steady, Warming, Hot, Surging) and Pit Marks sit above the arena. They're **for fun and never change a roll**, and the bar says so.

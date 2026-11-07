@@ -27,8 +27,15 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   await run('applyRoute(parseRoute("#/world/unknown"))');assert.equal(run('currentRoute()'),'/world/welcome');
  });
  await test('signed-out private deep links gate to Account without exposing autosave names',async()=>{
-  for(const hash of ['#/my-characters','#/my-campaigns','#/character/new','#/character/id/play','#/campaign/id/board']){
+  for(const hash of ['#/character/new','#/character/id/play','#/campaign/id/board']){
    await run('applyRoute(parseRoute('+JSON.stringify(hash)+'))');assert.equal(run('APPVIEW'),'account');
+  }
+  // Characters and Campaign gate on their own page (owner handoff 2026-11-07)
+  // and must not load or show anything private while signed out.
+  run('getAutosaveInfo=()=>({name:"Private draft"});');
+  for(const [hash,html] of [['#/my-characters','libraryHTML()'],['#/my-campaigns','campaignsHTML()']]){
+   await run('applyRoute(parseRoute('+JSON.stringify(hash)+'))');assert.match(run(html),/class="st-gate"/);
+   assert(!run(html).includes('Private draft'));
   }
   run('getAutosaveInfo=()=>({name:"Private draft"});');assert(!run('menuHTML()').includes('Private draft'));
   run('siteStartCharacter({});');assert.equal(run('APPVIEW'),'account');
