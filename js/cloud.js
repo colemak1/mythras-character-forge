@@ -1076,13 +1076,20 @@ function campaignsHTML(){
   const camps=CAMP_CACHE.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   let h='<div class="menuwrap st-page">'+stPageHead({title:'Campaign',sub:cloudActive()?"Synced to your account. GMs see every linked character.":"Local to this browser only.",
     action:'<button type="button" class="st-btn st-btn-primary" onclick="APP.newCampaign()"><span aria-hidden="true">+</span> New campaign</button>'});
-  if(CAMP_MSG)h+='<p class="warn" style="text-align:center;margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
-  if(!camps.length){h+='<p class="note" style="text-align:center">No campaigns yet. Start one with New campaign, or join one with the invite link your GM sends you.</p>';}
-  h+='<div class="menutiles">'+camps.map(c=>{
-    const mineAsDm=!cloudActive()||c.dm_id===(AUTH_USER&&AUTH_USER.id);
-    return '<button class="menutile" onclick="APP.openCampaign(\''+c.id+'\')"><span class="mt-title">'+esc(c.name||"Untitled Campaign")+'</span>'
-      +'<span class="mt-desc">'+(mineAsDm?"You&rsquo;re the DM":"You&rsquo;re a player")+' &middot; created '+new Date(c.created_at).toLocaleDateString()+'</span></button>';
-  }).join("")+'</div></div>';
+  if(CAMP_MSG)h+='<p class="warn" style="margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
+  // One card per campaign, with "Join with a code" beside them (desktop) or
+  // below (phone). Owner menu redesign, 2026-11-07.
+  const cards=camps.map(c=>{
+    const gm=!cloudActive()||c.dm_id===(AUTH_USER&&AUTH_USER.id),id=jsq(c.id);
+    return '<article class="st-camp"><div class="st-camp-head"><h3>'+esc(c.name||"Untitled Campaign")+'</h3><span class="st-role'+(gm?' st-role-gm':'')+'">'+(gm?'GM':'Player')+'</span></div>'
+      +'<p class="st-camp-meta">'+(gm?'You run this table':'You play at this table')+' · started '+esc(new Date(c.created_at).toLocaleDateString())+'</p>'
+      +'<div class="st-camp-actions"><button type="button" class="st-btn st-btn-primary st-btn-sm" onclick="APP.openCampaign(\''+id+'\')">Open</button>'
+      +'<button type="button" class="st-btn st-btn-sm" onclick="APP.toBoard(\''+id+'\')">Party board</button></div></article>';
+  }).join('');
+  const join='<aside class="st-join" aria-labelledby="stJoinTitle"><h2 id="stJoinTitle">Join with a code</h2><p>Your GM can send you an invite code or link.</p>'
+    +'<form onsubmit="event.preventDefault();const v=this.code.value.trim();if(v)APP.joinCampaign(v);"><label class="st-sr" for="stJoinCode">Invite code</label>'
+    +'<input id="stJoinCode" name="code" class="st-input" autocomplete="off" autocapitalize="characters" placeholder="Invite code"><button type="submit" class="st-btn">Join</button></form></aside>';
+  h+='<div class="st-two"><div class="st-camps">'+(cards||'<div class="st-empty">No campaigns yet. Start one with New campaign, or join one with the code your GM sends you.</div>')+'</div>'+join+'</div></div>';
   return h;
 }
 function renderCampaignsView(){
@@ -1103,30 +1110,30 @@ function libraryHTML(){
   if(LIB_LOAD_ERROR){h+='<p class="warn" role="alert">'+esc(LIB_LOAD_ERROR)+'</p><button class="chip" onclick="loadLibraryUnified()">Retry loading characters</button></div>';return h;}
   if(LIB_CACHE===null){h+='<p class="note">Loading&hellip;</p></div>';return h;}
   if(!LIB_CACHE.length){
-    h+='<div class="mmenu-panel"><p class="note">No characters saved yet. Start one with New character and it&rsquo;ll show up here automatically as you build it.</p>'
-     +'<button class="mmenu-cta-primary" style="margin-top:14px" onclick="APP.fromMenuNew()">Create New Character &rarr;</button></div></div>';
+    h+='<p class="st-empty-lede">No characters yet. Start one and it&rsquo;ll appear here automatically as you build it.</p><div class="st-chars">'+stNewCard()+'</div></div>';
     return h;
   }
-  const list=LIB_CACHE.slice().sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
-  h+='<div class="mmenu-charlist">'+list.map(c=>{
-    const initials=((c.name||"?").match(/\b[A-Za-z]/g)||["?"]).slice(0,2).join("").toUpperCase();
-    const tierLabel=c.tier&&c.tier!=="ordinary"&&ARCHETYPES[c.tier]?ARCHETYPES[c.tier].label:null;
-    const meta=[c.culture,c.career,tierLabel].filter(Boolean).join(" &middot; ")||"Concept only, so far";
-    return '<div class="mmenu-charcard"><div class="mmenu-preview-head">'
-     +'<div class="mmenu-preview-portrait">'+(c.state?.concept?.portrait&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]{1,200000}$/.test(c.state.concept.portrait)?'<img src="'+c.state.concept.portrait+'" alt="">':esc(initials))+'</div><div>'
-     +'<div class="mmenu-preview-name">'+esc(c.name||"Unnamed Character")+'</div>'
-     +'<div class="mmenu-preview-meta">'+meta+'</div></div></div>'
-     +'<div class="mmenu-charcard-ts">Saved '+new Date(c.updated_at).toLocaleString()+'</div>'
-     +'<div class="mmenu-charcard-actions">'
-     +'<button class="mmenu-cta-secondary" onclick="APP.openCharToPlay(\''+c.id+'\')">Play &rarr;</button>'
-     +'<button class="mmenu-cta-ghost sm" onclick="APP.openCharToEdit(\''+c.id+'\')">Edit</button>'
-     +'<button class="mmenu-cta-ghost sm" onclick="APP.openCharToSheet(\''+c.id+'\')">Print</button>'
-     +'<button class="mmenu-charcard-del" onclick="APP.deleteLibChar(\''+c.id+'\',\''+jsq(c.name||"this character")+'\')" title="Delete">&times;</button>'
-     +'</div></div>';
-  }).join("")+'</div>';
+  h+='<div class="st-tb"><div class="st-field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>'
+   +'<label class="st-sr" for="stCharQ">Search characters</label><input id="stCharQ" class="st-input" type="search" placeholder="Search by name, culture or career" value="'+esc(LIB_QUERY)+'" oninput="stLibSearch(this.value)"></div>'
+   +'<label class="st-sr" for="stCharSort">Sort characters</label><select id="stCharSort" class="st-select" onchange="stLibSort(this.value)">'
+   +'<option value="recent"'+(LIB_SORT==='recent'?' selected':'')+'>Recently saved</option><option value="name"'+(LIB_SORT==='name'?' selected':'')+'>Name A to Z</option></select></div>';
+  h+='<div class="st-chars" id="stCharList">'+libraryCardsHTML()+'</div>';
   h+='</div>';
   return h;
 }
+// Characters page search and sort (owner menu redesign): filter in place so
+// the search box keeps focus while typing.
+let LIB_QUERY='',LIB_SORT='recent';
+function libraryCardsHTML(){
+  const q=LIB_QUERY.trim().toLowerCase();
+  let list=(LIB_CACHE||[]).filter(c=>!stHiddenByUndo(c))
+    .filter(c=>!q||[c.name,c.culture,c.career].filter(Boolean).join(' ').toLowerCase().includes(q));
+  list=list.slice().sort(LIB_SORT==='name'?(a,b)=>String(a.name||'').localeCompare(String(b.name||'')):(a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
+  if(!list.length)return '<div class="st-empty">No characters match “'+esc(LIB_QUERY)+'”.</div>';
+  return list.map(stCharCard).join('')+stNewCard();
+}
+function stLibSearch(v){LIB_QUERY=String(v||'');const el=document.getElementById('stCharList');if(el)el.innerHTML=libraryCardsHTML();}
+function stLibSort(v){LIB_SORT=v==='name'?'name':'recent';const el=document.getElementById('stCharList');if(el)el.innerHTML=libraryCardsHTML();}
 function renderLibraryView(){
   document.body.classList.remove("play-mode");
   document.body.classList.remove("sheet-mode");
