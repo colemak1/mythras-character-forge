@@ -518,15 +518,6 @@ const CORE_TOOLS=[
  ["Waterskin or canteen",1,0.5],["Wax block",1,0.2]
 ];
 
-// Core p.59 (clothing and food, three qualities) and p.60 (livestock).
-// Prices are taken as silver, like the rest of the chapter; clothing and
-// other small things carry no ENC (p.56). [name, cheap/poor, reasonable, superior]
-const CORE_CLOTHING=[["Boots",25,50,100],["Cap or hat",3,6,18],["Gloves, socks or underwear",5,10,20],["General coat or cloak",20,45,90],
- ["Vest or tabard",10,20,50],["Tunic or dress",15,30,75],["Sandals",4,8,20],["Shoes",20,45,90],["Trousers, skirt or kilt",12,25,60],
- ["Shirt, smock or shift",8,16,35],["Winter coat or cloak",30,75,150]];
-const CORE_FOOD=[["Meal at a tavern or inn",1,3,8],["Ale or beer for an evening",1,1.5,3],["Wine or spirits for an evening",2,4,6],["Trail rations (7 days)",7,9,12]];
-const CORE_LIVESTOCK=[["Bull",500,1000,3000],["Calf",30,60,180],["Camel",1100,2200,6000],["Cow",100,200,600],["Fowl",1,2,4],["Goat",25,50,100],
- ["Horse (cavalry, war-trained)",3000,6000,10000],["Horse (heavy draught)",1400,2800,8000],["Horse (riding)",1200,2500,7000],["Ox",150,300,800],["Pig",25,50,150],["Sheep",25,50,150]];
 // Core p.62 ammunition bundles [name, sp]; ENC is the GM's call.
 const CORE_AMMO=[["Arrows (12)",4],["Crossbow quarrels (12)",3],["Sling bullets (20)",1],["Blowgun darts (6)",2],["Thrown darts (12)",2]];
 // Core p.64 siege weapons and vehicles (also shown in the Money & Gear reference).

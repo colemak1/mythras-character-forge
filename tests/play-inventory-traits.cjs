@@ -63,25 +63,13 @@ test('Combat Style Traits: only the 26 Core traits are offered; saved supplement
  assert.doesNotMatch(h,new RegExp('cstyle-traitbody"><b>'+supp.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'<'),'not in the picker list');
  run('APP.toggleStyleTrait("style:cult",'+JSON.stringify(supp)+')');assert.deepEqual([...run('styleDef("style:cult").traits')],['Daredevil'],'removal still works');
 });
-test('the search covers every Core price table: armour, clothing, food, livestock, ammunition, vehicles, siege',()=>{
+test('the search covers Core weapons, armour, gear and ammunition only (owner, 2026-11-07)',()=>{
  setup();const cat=JSON.parse(run('JSON.stringify(pmItemCatalog())'));
- const kinds=new Set(cat.map(x=>x.kind));for(const k of ['weapon','armour','gear','clothing','food','livestock','ammo','vehicle','siege'])assert(kinds.has(k),k);
+ assert.deepEqual([...new Set(cat.map(x=>x.kind))].sort(),['ammo','armour','gear','weapon']);
+ for(const n of ['Boots','Horse (riding)','Two-wheeled cart','Trebuchet','Trail rations (7 days)'])assert(!cat.some(x=>x.name===n),n+' is not offered');
  const suit=cat.find(x=>x.name==='Mail (mail hauberk, laminar) armour, full suit');assert.equal(suit.enc,30);assert.equal(suit.cost,6300,'Core p.58 printed suit values');
  const piece=cat.find(x=>x.name==='Mail (mail hauberk, laminar) armour, one location');assert.equal(piece.enc,5);assert.equal(piece.cost,900);
- assert.deepEqual(cat.find(x=>x.name==='Boots').tiers,[['cheap',25],['reasonable',50],['superior',100]]);
- assert.equal(cat.find(x=>x.name==='Boots').enc,0,'clothing has no ENC (Core p.56)');
- assert.deepEqual(cat.find(x=>x.name==='Horse (riding)').tiers,[['poor',1200],['reasonable',2500],['superior',7000]]);
- assert.equal(cat.find(x=>x.name==='Arrows (12)').cost,4);assert.equal(cat.find(x=>x.name==='Two-wheeled cart').cost,60);assert.equal(cat.find(x=>x.name==='Trebuchet').cost,5000);
- assert.equal(run('CORE_CLOTHING.length'),11);assert.equal(run('CORE_LIVESTOCK.length'),12);assert.equal(run('CORE_FOOD.length'),4);
-});
-test('quality items: pick cheap, reasonable or superior; the label and price follow the choice',()=>{
- setup();const money=run('moneyRemaining()');
- run('PM_ITEM_PAY=true;APP.playAddCatalogItem("clothing","Boots",1)');
- assert.deepEqual(JSON.parse(run('JSON.stringify(S.inventory[0])')),{name:'Boots (reasonable)',qty:1,enc:0,cost:50});
- assert.equal(run('moneyRemaining()'),money-50);
- run('APP.playAddCatalogItem("clothing","Boots")');run('APP.playAddCatalogItem("clothing","Boots",7)');assert.equal(run('S.inventory.length'),1,'a quality item needs a valid quality');
- run('PM_ITEM_PAY=false;APP.playAddCatalogItem("livestock","Horse (riding)",0)');assert.equal(run('S.inventory[1].name'),'Horse (riding) (poor)');assert.equal(run('S.inventory[1].cost'),0);
- const h=run('pmGearPanelHTML()');assert.match(h,/APP\.playAddCatalogItem\('clothing','Boots',2\)" aria-label="Add Boots \(superior\)">Superior 100 sp/);
+ assert.equal(cat.find(x=>x.name==='Arrows (12)').cost,4);
 });
 test('picked-up armour is carried at full ENC and does not change worn armour',()=>{
  setup();const enc=run('gearEncTotal()'),ap=run('armorApAt("Chest")');
