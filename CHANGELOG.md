@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Practice Combat: every Core melee weapon, shared rules
+
+- Practice Combat now uses the same weapon table as the rest of the site: **35 Core melee weapons and 8 shields** instead of 5 and 3. Bring any character with a melee weapon and use it. Damage, size, reach, Special Effects and durability all come from the source-checked table.
+- Ranged, mounted-only (Lance) and ambush-only (Garrotte) weapons are listed as not simulated yet, with the reason.
+- Rule fixes: Initiative Bonus now rounds up, as in the main app (it showed halves like 13.5). Weapons that can't parry (the whip) no longer offer a weapon parry.
+- New tests check the arena's Action Points, hit points, Damage Modifier and Initiative against the main app at every value.
+
 ## Item search: source check passed
 
 - ChatGPT checked the item search and Core trait data against Core pp.58, 62 and 89 (#179): every ammunition price, armour value and Core trait matches. Sling bullets are now listed as "Lead sling bullets", as in the book. Mail keeps the book's own figures (5 ENC per location, 30 for a suit).

@@ -46,6 +46,7 @@ function arena(payload,forge=true){
   document:{querySelector:s=>s==='#root'?output:s==='#homeLink'?{addEventListener(){}}:null,querySelectorAll:()=>[],getElementById:()=>null},
   window:{matchMedia:()=>({matches:false}),requestAnimationFrame(){}}};
  vm.createContext(sandbox);
+ vm.runInContext(fs.readFileSync(path.join(root,'js/data.js'),'utf8'),sandbox); // the arena loads ../js/data.js first
  vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-character.js'),'utf8'),sandbox);
  vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-guidance.js'),'utf8'),sandbox);
  const source=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];

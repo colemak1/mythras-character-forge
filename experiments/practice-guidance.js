@@ -49,7 +49,7 @@ function unavailableReaction(f,tool){
  if(f.ap<=0)return 'No Action Points remaining.';
  if(cannotRespond(f))return f.stunnedLocations?.Head?'Your head is stunned; you cannot react.':`Fatigue (${FATIGUE_NAMES[f.fatigue]}) prevents a reaction.`;
  if(tool==='shield'){
-  if(WEAPONS[f.weapon].twoHanded)return 'Both hands are committed to your weapon.';
+  if(ARENA_WEAPONS[f.weapon].twoHanded)return 'Both hands are committed to your weapon.';
   if(f.pinnedGear==='shield')return 'Your shield is pinned.';
   if(f.disabled.includes('Left Arm')||f.stunnedLocations?.['Left Arm'])return 'Your shield arm cannot be used.';
  }else{
@@ -64,8 +64,8 @@ function unavailableReaction(f,tool){
 }
 function parryChoiceHelp(f,attacker,tool){
  const blocked=unavailableReaction(f,tool);if(blocked)return blocked;
- const size=tool==='shield'?SHIELDS[f.shield].size:WEAPONS[f.weapon].size;
- const attackingSize=isCrampedAtReach(attacker.id)?Math.max(1,WEAPONS[attacker.weapon].size-engagementInfo().gap):WEAPONS[attacker.weapon].size;
+ const size=tool==='shield'?SHIELDS[f.shield].size:ARENA_WEAPONS[f.weapon].size;
+ const attackingSize=isCrampedAtReach(attacker.id)?Math.max(1,ARENA_WEAPONS[attacker.weapon].size-engagementInfo().gap):ARENA_WEAPONS[attacker.weapon].size;
  const diff=attackingSize-size;
  const protection=diff<=0?'all':diff===1?'half':'no';
  const missed=S.pending?.attackRoll?.grade<2;

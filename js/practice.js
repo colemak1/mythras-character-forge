@@ -11,9 +11,11 @@ function practiceSnapshot(entry){
     const chars=effectiveChars();
     if(!CHARS.every(k=>Number.isFinite(chars[k])&&chars[k]>0))throw Error("Finish this character's characteristics before practicing.");
     if(chars.STR+chars.SIZ>130)throw Error("This character's Damage Modifier is outside the arena's current supported range.");
-    const weapons={Broadsword:"sword",Shortspear:"spear",Mace:"mace",Dagger:"dagger",Greatsword:"greatsword"};
-    const shields={Buckler:"buckler",Heater:"heater",Hoplite:"hoplite"};
-    const owned=S.gearWeapons||[];
+    // Every Core melee weapon and shield the arena supports (shared table).
+    const owned=typeof pmCarriedWeapons==="function"?pmCarriedWeapons():(S.gearWeapons||[]);
+    const usable=n=>{const w=WEAPON_MAP[n];return !!w&&!practiceUnsupportedReason(w);};
+    const weapons=Object.fromEntries(owned.filter(n=>usable(n)&&WEAPON_MAP[n].group!=="Shield").map(n=>[n,practiceWeaponKey(n)]));
+    const shields=Object.fromEntries(owned.filter(n=>usable(n)&&WEAPON_MAP[n].group==="Shield").map(n=>[n,practiceWeaponKey(n)]));
     const styles=stylesList().map(style=>{
       const def=S.styleDefs[style.key]||{weapons:[],traits:[]};
       const trained=Array.isArray(def.weapons)?def.weapons:[];
