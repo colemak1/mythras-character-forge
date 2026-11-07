@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Characters and Campaign pages
+
+From the owner's menu redesign handoff (Part A, items 5 and 6):
+- **Characters:** a card grid (1 column on phones, 2 on tablets, 3 on desktop), with the same cards as Home: real Combat Style %, Action Points and campaign, a Play button, and a ⋯ menu with Edit, Print sheet and Delete. There's a search box (name, culture or career) and a sort (Recently saved, Name A to Z).
+- **Delete now offers Undo:** the card disappears with an Undo button for six seconds, and the character is only deleted when that runs out. The old × button and the "are you sure?" box are gone.
+- **Campaign:** one card per campaign with your role (GM or Player), when it started, and Open / Party board. **Join with a code** is on this page: beside the list on desktop, below it on phones.
+
 ## Home: Continue card, character cards and table tiles
 
 From the owner's menu redesign handoff (Part A, item 4):

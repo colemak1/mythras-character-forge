@@ -168,3 +168,34 @@ body .st-gate h2{text-transform:none;letter-spacing:0;font:500 30px/1.1 "Cormora
 .sitota-public .st-dest h3,.sitota-public .st-cc h3,.sitota-public .st-waiting h3{text-transform:none;letter-spacing:0;font-family:"Cormorant Garamond",Georgia,serif;font-weight:400;color:#f1e9dc}
 .sitota-public .st-dest h3{font-size:26px}.sitota-public .st-cc h3{font-size:25px;font-weight:500}
 .st-cc-when{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---- Characters toolbar, Campaign cards and Join (Part A3) ---- */
+.st-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.st-tb{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.st-field{position:relative;flex:1 1 220px}
+.st-field svg{position:absolute;left:14px;top:50%;width:18px;height:18px;transform:translateY(-50%);fill:none;stroke:#7d776c;stroke-width:1.8;pointer-events:none}
+.st-page .st-input,.st-page .st-select{width:100%;min-height:48px;padding:0 14px;background:#0f1216;border:1px solid #39404a;border-radius:3px;color:#f1e9dc;font:400 16px "DM Sans",system-ui,sans-serif;box-shadow:none}
+.st-page .st-field .st-input{padding-left:44px}
+.st-page .st-input::placeholder{color:#7d776c}
+.st-page .st-input:focus,.st-page .st-select:focus{border-color:#e0b27a;outline:none;box-shadow:0 0 0 3px #e0b27a33}
+.st-page .st-select{width:auto;flex:0 0 auto;appearance:none;padding-right:34px;
+  background-image:linear-gradient(45deg,transparent 50%,#aaa395 50%),linear-gradient(135deg,#aaa395 50%,transparent 50%);
+  background-position:calc(100% - 18px) 21px,calc(100% - 13px) 21px;background-size:5px 5px;background-repeat:no-repeat}
+.st-empty{grid-column:1/-1;padding:28px;border:1px dashed #39404a;border-radius:4px;text-align:center;font:400 15px "DM Sans",system-ui,sans-serif;color:#aaa395}
+.st-empty-lede{margin:0 0 16px;font:400 15px "DM Sans",system-ui,sans-serif;color:#aaa395}
+.st-two{display:grid;gap:20px}
+@media(min-width:1000px){.st-two{grid-template-columns:minmax(0,1fr) 320px;align-items:start}}
+.st-camps{display:grid;gap:12px}
+.st-camp{padding:18px;background:#14181d;border:1px solid #2a3039;border-radius:4px;text-align:left}
+.st-camp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.st-page .st-camp h3{margin:0;font:500 26px/1.1 "Cormorant Garamond",Georgia,serif;color:#f1e9dc;text-transform:none;letter-spacing:0}
+.st-role{flex:none;padding:2px 10px;border:1px solid #39404a;border-radius:99px;font:600 11px/1.6 "DM Sans",system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#aaa395}
+.st-role-gm{border-color:rgba(224,178,122,.5);color:#e0b27a}
+.st-camp-meta{margin:6px 0 14px;font:400 14px "DM Sans",system-ui,sans-serif;color:#aaa395}
+.st-camp-actions{display:flex;gap:8px;flex-wrap:wrap}
+.st-join{padding:18px;background:#14181d;border:1px solid #2a3039;border-radius:4px;text-align:left}
+@media(min-width:1000px){.st-join{position:sticky;top:90px}}
+.st-page .st-join h2{margin:0 0 4px;font:500 24px/1.1 "Cormorant Garamond",Georgia,serif;color:#f1e9dc;text-transform:none;letter-spacing:0}
+.st-join p{margin:0 0 14px;font:400 14px "DM Sans",system-ui,sans-serif;color:#aaa395}
+.st-join form{display:flex;gap:8px}
+.st-join .st-input{flex:1;min-width:0;text-transform:uppercase}
