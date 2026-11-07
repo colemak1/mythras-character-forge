@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits UI live acceptance — 2026-11-07
+
+- Owner-only deployed pass after #193–#195: guest and saved-character victories, odds/action hints, Mark toast, hit feedback, recap and Basalt inheritance observed at 1363×936.
+- Two UI failures documented: dim Basalt setup text and phase/roll/recap advancing ahead of playback. Exact 1280/390 and audible sound remain unverified due to browser limitations.
+- Evidence: `docs/pits-ui-live-acceptance-20261107.md` and eight screenshots. Docs only; main Combat stays closed, progress 5/8.
+
 ## The Pits: game feel (v0 design, steps 3 and 5)
 
 - **Bout bar:** Glory, a Momentum meter (Steady, Warming, Hot, Surging) and Pit Marks sit above the arena. They're **for fun and never change a roll**, and the bar says so.
