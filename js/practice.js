@@ -41,10 +41,40 @@ APP.openCharToPractice=async function(id){
   try{
     if(!owner)throw Error("Sign in to practice with a saved character.");
     const entry=await openCharUnified(id);
-    if(!entry||entry.ownerId!==owner||owner!==(AUTH_USER?.id||(MOCK_AUTH?"local":null)))throw Error("That character is not available for practice. Reload My Characters and try again.");
+    if(!entry||entry.ownerId!==owner||owner!==(AUTH_USER?.id||(MOCK_AUTH?"local":null)))throw Error("That character is not available. Reload the page and try again.");
     const snapshot=practiceSnapshot(entry);
     sessionStorage.setItem("sitota-practice-character-v1",JSON.stringify(snapshot));
     location.assign("experiments/practice-combat.html?forge=1");
-  }catch(e){CAMP_MSG=e.message||"Could not open practice combat.";render();}
+  }catch(e){PITS_MSG=e.message||"Could not open The Pits.";render();}
   finally{practiceOpening=false;}
 };
+
+// ---- The Pits (owner, 2026-11-07): Practice Combat as its own top-bar tab ----
+// Pick one of your characters here, instead of a button on every character card.
+let PITS_MSG="",PITS_PICK="";
+APP.toPits=function(){APPVIEW="pits";PITS_MSG="";if(AUTH_USER||MOCK_AUTH){LIB_CACHE=null;render();loadLibraryUnified();}else render();window.scrollTo(0,0);};
+APP.pitsPick=function(id){PITS_PICK=String(id||"");};
+APP.enterPits=function(){
+  const id=PITS_PICK||(LIB_CACHE&&LIB_CACHE[0]&&LIB_CACHE[0].id);
+  if(!id){PITS_MSG="Choose a character first.";render();return;}
+  APP.openCharToPractice(id);
+};
+function renderPitsView(){
+  document.body.classList.remove("play-mode","sheet-mode");document.body.classList.add("menu-mode");
+  document.title="The Pits — New Sit’ota";
+  const signedIn=!!(AUTH_USER||MOCK_AUTH),chars=Array.isArray(LIB_CACHE)?LIB_CACHE:null;
+  let h='<div class="menuwrap pits-page"><h1 class="pits-title">The Pits</h1>'
+   +'<p class="pits-lede">Fight your character against escalating opponents to learn Mythras combat before the campaign. Wounds here never touch your saved character.</p>';
+  if(PITS_MSG)h+='<p class="warn" role="alert">'+esc(PITS_MSG)+'</p>';
+  if(!signedIn)h+='<div class="card"><h3>Bring a character</h3><p class="note">Sign in to fight with one of your own characters.</p><p><button class="mmenu-cta-primary" onclick="APP.toAccount()">Sign in</button></p></div>';
+  else if(chars===null)h+='<div class="card"><p class="note">Loading your characters&hellip;</p></div>';
+  else if(!chars.length)h+='<div class="card"><h3>Bring a character</h3><p class="note">You have no saved characters yet.</p><p><button class="mmenu-cta-primary" onclick="APP.fromMenuNew()">Create a character</button></p></div>';
+  else{
+    if(!chars.some(c=>c.id===PITS_PICK))PITS_PICK=chars[0].id;
+    h+='<div class="card"><h3>Bring a character</h3><label class="pits-pick">Character <select onchange="APP.pitsPick(this.value)" aria-label="Character">'
+     +chars.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===PITS_PICK?' selected':'')+'>'+esc(c.name||"Unnamed Character")+'</option>').join("")+'</select></label>'
+     +'<p><button class="mmenu-cta-primary" onclick="APP.enterPits()">Enter the Pits &rarr;</button></p></div>';
+  }
+  h+='<div class="card"><h3>Or just fight</h3><p class="note">Try it with a ready-made fighter, no character needed.</p><p><a class="mmenu-cta-secondary" href="experiments/practice-combat.html">Fight without a character</a></p></div></div>';
+  $("#main").innerHTML=h;
+}

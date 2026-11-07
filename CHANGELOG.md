@@ -5,9 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
-## Practice Combat: every Core melee weapon, shared rules
+## The Pits (was Practice Combat): its own tab, every Core melee weapon, shared rules
 
-- Practice Combat now uses the same weapon table as the rest of the site: **35 Core melee weapons and 8 shields** instead of 5 and 3. Bring any character with a melee weapon and use it. Damage, size, reach, Special Effects and durability all come from the source-checked table.
+- **The Pits** is a new tab in the top bar (and in Play Mode's ☰ menu). Pick one of your characters there and enter, or fight without one. The Practice Combat button on each character card is gone.
+- The Pits now uses the same weapon table as the rest of the site: **35 Core melee weapons and 8 shields** instead of 5 and 3. Bring any character with a melee weapon and use it. Damage, size, reach, Special Effects and durability all come from the source-checked table.
 - Ranged, mounted-only (Lance) and ambush-only (Garrotte) weapons are listed as not simulated yet, with the reason.
 - Rule fixes: Initiative Bonus now rounds up, as in the main app (it showed halves like 13.5). Weapons that can't parry (the whip) no longer offer a weapon parry.
 - New tests check the arena's Action Points, hit points, Damage Modifier and Initiative against the main app at every value.

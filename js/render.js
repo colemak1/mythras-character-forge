@@ -35,6 +35,7 @@ function renderInner(){
   if(APPVIEW==="library"){renderLibraryView();return;}
   if(APPVIEW==="account"){renderAccountView();return;}
   if(APPVIEW==="campaigns"){renderCampaignsView();return;}
+  if(APPVIEW==="pits"){renderPitsView();return;}
   if(APPVIEW==="campaign-setup"){renderCampaignSetupView();return;}
   if(APPVIEW==="campaign"){renderCampaignView();return;}
   if(APPVIEW==="board"){renderBoardView();return;}
