@@ -93,4 +93,67 @@ test('at a longer Reach the shorter weapon may still attack the opposing weapon 
  assert.equal(run('guardWeapon(S.fighters.b).hp'),hpBefore);assert.equal(run('S.fighters.b.hp.Chest'),100,'no body damage');
  run('canAttackBody=__cab');
 });
+// Batch 2: Entangle, Entrapping, Disarm and Trip eligibility (PIT-SE01, SE02, SE07, SE08).
+const effectsFor=(extra)=>JSON.parse(run(`(()=>{S.pending=Object.assign({kind:'effect',atk:'a',def:'b',owner:'a',other:'b',attackRoll:{grade:2,roll:20,label:'Success',effectiveTarget:60},defenseRoll:{grade:1,roll:80,label:'Failure'},reaction:'parry',parryTool:'weapon',chosen:[],effectsLeft:1},${JSON.stringify(extra||{})});return JSON.stringify(availableEffects(S.pending).map(e=>e[0]));})()`));
+test('an Entrapping weapon can Pin Weapon without a Critical; others still need one (Core pp.61, 98)',()=>{
+ setup('main-gauche');assert(effectsFor().includes('pinWeapon'),'Main Gauche: ordinary success');
+ setup('whip');assert(effectsFor().includes('pinWeapon'),'Whip: ordinary success');
+ setup('sword');assert(!effectsFor().includes('pinWeapon'),'Broadsword needs a Critical');
+ assert(effectsFor({attackRoll:{grade:3,roll:3,label:'Critical',effectiveTarget:60}}).includes('pinWeapon'),'with a Critical');
+});
+test('Disarm Opponent is only offered against a foe with up to twice the attacker STR (Core p.97)',()=>{
+ setup('sword');run('S.fighters.a.str=8;S.fighters.b.str=17');assert(!effectsFor().includes('disarm'),'17 > 2×8');
+ run('S.fighters.b.str=16');assert(effectsFor().includes('disarm'),'16 = 2×8');
+});
+test('Trip Opponent can be resisted with Acrobatics as well as Brawn or Evade (Core pp.100–101)',()=>{
+ setup('sword');run('S.fighters.b.acrobatics=72;S.fighters.b.brawn=40;S.fighters.b.evade=50');
+ effectsFor();run(`applyEffect('trip')`);
+ assert.equal(run('S.pending.kind'),'tripResistChoice');
+ assert.match(output.innerHTML,/data-act="tripResist" data-val="acrobatics"><strong>Acrobatics · 72%/);
+ run(`(()=>{const p=S.pending;p.kind='effect';p.resistTrip('acrobatics');})()`);
+ assert.match(answer(50),/Trip · .* Acrobatics/);   // both succeed: the higher roll (50 > 20) wins
+ assert.equal(run('S.fighters.b.prone'),false);assert(logs().some(l=>/^Trip Opponent :: .*Acrobatics 50\/72%.*remains standing/.test(l)),logs().join('\n'));
+ run('S.fighters.b.acrobatics=0');assert.deepEqual(JSON.parse(run('JSON.stringify(tripResistOptions(S.fighters.b))')),['brawn','evade'],'untrained: not offered');
+});
+test('Entangle is offered to entangling weapons only, and holds the struck location (Core p.97)',()=>{
+ setup('sword');assert(!effectsFor().includes('entangle'));
+ setup('chain');assert(effectsFor().includes('entangle'));
+ // Weapon arm: the victim cannot use what it holds.
+ hit({entangle:true,chosenLoc:'Right Arm'});answer(1,1);
+ assert.deepEqual(JSON.parse(run('JSON.stringify(S.fighters.b.entangled)')),{loc:'Right Arm',by:'a'});
+ assert.equal(run('canUseWeapon(S.fighters.b)'),false);assert.equal(run('canMakeAttack(S.fighters.b)'),false);
+ assert(logs().some(l=>/^Entangle :: .*Chain wraps .*Right Arm/.test(l)),logs().join('\n'));
+ // Leg: no moving, so no range change or Withdraw.
+ setup('chain');hit({entangle:true,chosenLoc:'Left Leg'});answer(1,1);
+ assert.equal(run('entangledLegs(S.fighters.b)'),true);assert.equal(run('canUseWeapon(S.fighters.b)'),true);
+ assert(!effectsFor({owner:'b',other:'a'}).includes('withdraw'),'a snared leg cannot withdraw');
+ // Head, chest or abdomen: every skill roll one grade harder.
+ setup('chain');hit({entangle:true,chosenLoc:'Chest'});answer(1,1);
+ assert.equal(run('effectiveSkill(S.fighters.b,60)'),40);assert.equal(run('effectiveSkill(S.fighters.a,60)'),60);
+ // Separation ends the hold.
+ run('S.disengaged=true');assert.equal(run('entangledLoc(S.fighters.b)'),null);
+});
+test('Entangle: the holder can trip for 1 AP; the victim breaks free with Brawn (Core p.97)',()=>{
+ setup('chain');hit({entangle:true,chosenLoc:'Left Leg'});answer(1,1);
+ run(`S.pending=null;R=null;S.order=['a','b'];S.turnIndex=0;S.fighters.a.ap=3;S.fighters.b.ap=3;S.fighters.b.brawn=40;S.fighters.b.evade=30;S.fighters.a.style=60;S.logs=[]`);
+ run(`beginEntangleTrip('a')`);assert.equal(run('S.fighters.a.ap'),2,'1 AP');
+ assert.match(answer(20),/Entangle trip · .* Combat Style/);   // success
+ assert.equal(run('S.pending.kind'),'tripResistChoice');
+ run(`(()=>{const p=S.pending;p.kind='effect';p.resistTrip('brawn');})()`);answer(90);
+ assert.equal(run('S.fighters.b.prone'),true);assert(logs().some(l=>/^Entangle · Trip :: .*falls prone/.test(l)),logs().join('\n'));
+ // Victim's turn: opposed Brawn to yank free.
+ run(`R=null;S.pending=null;S.phase='fight';S.order=['b','a'];S.turnIndex=0;S.fighters.b.ap=3;S.logs=[]`);
+ run(`beginFreeEntangle('b')`);answer(10);answer(70);
+ assert.equal(run('S.fighters.b.entangled'),null);assert(logs().some(l=>/^Entangle · Break free :: .*Left Leg is free/.test(l)),logs().join('\n'));
+});
+test('Entangle ends on Slip Free, on Damage Weapon or Disarm against the holder, or when the holder attacks',()=>{
+ const tangled=()=>{setup('chain');run(`S.fighters.b.entangled={loc:'Left Leg',by:'a'};S.logs=[]`);};
+ tangled();assert(effectsFor({owner:'b',other:'a',defenseRoll:{grade:3,roll:2,label:'Critical'}}).includes('slip'),'critical defence offers Slip Free');
+ run(`applyEffect('slip')`);assert.equal(run('S.fighters.b.entangled'),null);
+ tangled();effectsFor({owner:'b',other:'a',defenseRoll:{grade:2,roll:5,label:'Success'},attackRoll:{grade:1,roll:80,label:'Failure'}});
+ run(`applyEffect('damageWeapon')`);assert.equal(run('S.fighters.b.entangled'),null,'Damage Weapon frees');
+ tangled();run(`S.pending=null;R=null;S.order=['a','b'];S.turnIndex=0;S.fighters.a.ap=3;beginAttack('a')`);
+ assert.equal(run('S.fighters.b.entangled'),null,'attacking with the chain lets go');
+ assert(logs().some(l=>/^Entangle ends :: .*pulls the Chain free/.test(l)),logs().join('\n'));
+});
 console.log(passed+' practice procedure tests passed');

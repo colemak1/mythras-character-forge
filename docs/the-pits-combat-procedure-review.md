@@ -108,3 +108,24 @@ Fixed with deterministic tests in `tests/practice-procedure.cjs` (8 tests; both 
 Not changed, pending decisions: **PIT-P01** parry rounding (owner ruling needed) and **PIT-R06** whether the optional Reach rule should be switchable. Next batch: PIT-SE01/SE02 (Entangle, Entrapping Pin Weapon) and the other P1 eligibility cases.
 
 **PIT-P01 decided (owner, 2026-11-07):** the blocked half rounds up, consistent with the project's rounding elsewhere. `parryAbsorption()` now uses `Math.ceil`, and Play Mode's `parryDamage()` does the same (it used to leave a half point to the GM). Tests: `tests/practice-rules.cjs`, `tests/core-batch-1.cjs`.
+
+## Claude implementation, batch 2 (2026-11-07)
+
+Six more deterministic tests in `tests/practice-procedure.cjs` (14 in total), plus a 400-bout computer-vs-computer run with entangling weapons that finished without errors.
+
+| Case | Change |
+|---|---|
+| PIT-SE02 | Pin Weapon is offered on any won Special Effect when the fighter's weapon has the Entrapping trait (Main Gauche, Whip, Net); other weapons still need a Critical. |
+| PIT-SE07 | Disarm Opponent is only offered against a foe whose STR is at most twice the attacker's. |
+| PIT-SE08 | Trip Opponent offers Acrobatics beside Brawn and Evade when the victim has the skill. Forge characters bring their Acrobatics; generated opponents have none, so the computer picks the best of what it has. |
+| PIT-SE01 | Entangle is offered to entangling weapons (Chain, Ball & chain, Net, Whip, Halberd/Poleaxe). The struck location is held: an arm cannot use what it holds (weapon, or a shield on the left arm); a leg cannot move (no range change, Close/Open Range or Withdraw); head, chest or abdomen make every skill roll one grade harder. The holder may spend 1 AP on a Trip attempt. The victim frees itself with 1 AP and opposed Brawn, or by winning Slip Free, Damage Weapon or Disarm Opponent. The hold ends when the fighters separate or the entangling weapon is lost or broken. |
+
+Interpretations in this batch, for ChatGPT to confirm or correct against Core p.97 (recorded in `docs/decisions.md`):
+
+1. **"Automatic Trip Opponent attempt":** read as "needs no Special Effect", not "always succeeds". The holder rolls Combat Style and the victim resists with Brawn, Evade or Acrobatics, as for Trip Opponent.
+2. **Breaking free:** the victim's Brawn is opposed by the holder's Brawn, as the arena already does for Pin Weapon.
+3. **Defensive Entangle:** a defender who parries with an entangling weapon and wins the effect wraps the attacker's weapon arm (Core gives no struck location for a parry).
+4. **Holder attacks:** attacking with the entangling weapon lets go of the hold first (arena convention; Core is silent).
+5. **Damage Weapon / Disarm as escape:** choosing either against the holder frees the victim, whatever the effect's own roll gives.
+
+Still open: PIT-SE03 (Unarmed, Grip, Flurry), PIT-SE04 (Kill Silently, ambush scope), PIT-SE14 (Prepare Counter eligibility), PIT-P02 (tied Initiative), PIT-P07 (shield attacks and shield Bash), PIT-R06 (optional Reach toggle).
