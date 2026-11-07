@@ -5,6 +5,17 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: game feel (v0 design, steps 3 and 5)
+
+- **Bout bar:** Glory, a Momentum meter (Steady, Warming, Hot, Surging) and Pit Marks sit above the arena. They're **for fun and never change a roll**, and the bar says so.
+- **Pit Marks:** First Blood, Near Thing, Dead Eye, Hold the Line, Stayed Standing, On a Roll and Serious Business. A toast appears when you earn one.
+- **Recap:** Marks (or the end of a bout) opens a recap with hits, damage dealt and taken, your best streak, the moment of the bout and your Marks.
+- **Hit feel:** the struck fighter shakes, the location flashes, and the damage floats up. All of it is off when your device asks for reduced motion.
+- **Sound and haptics:** off by default, with a toggle in the bout bar.
+- **Chronicle:** each line shows its round and cycle (R2 · C1), and new lines get a brief highlight.
+- The end-of-bout window and the next-opponent panel now use the Stone look.
+- No rules changed. A test plays whole bouts with a fixed seed with and without this layer and checks they come out identical.
+
 ## The Pits: prompt follows the fight (v0 design, step 2)
 
 - The pill at the top of the middle column now names the moment: Your turn, Defend, Special Effects, Resist, Roll or Opponent.

@@ -282,3 +282,100 @@ body.pits-stone #root .pits-mk[data-edge="l"] b{left:0;transform:none}body.pits-
 body.pits-stone #root .pits-ro-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--p-dim)}
 body.pits-stone #root .pits-odds{display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:54px;padding:9px 12px;background:var(--p-surface-2);border:1px solid var(--p-line);margin-top:4px}
 @media(prefers-reduced-motion:reduce){body.pits-stone #root .pits-mk{transition:none}}
+
+/* Chronicle: round stamp and new-line highlight */
+body.pits-stone #root .chronicle-entry summary{display:flex;align-items:center;gap:12px}
+body.pits-stone #root .chronicle-when{flex:0 0 64px;font:600 11px var(--p-body);letter-spacing:.08em;color:var(--p-dim)}
+body.pits-stone #root .chronicle-main{flex:1;min-width:0}
+body.pits-stone #root .chronicle-entry.fresh{animation:pitsFresh 1.2s ease-out}
+@keyframes pitsFresh{from{background:color-mix(in srgb,var(--p-accent) 18%,transparent)}}
+@media(prefers-reduced-motion:reduce){body.pits-stone #root .chronicle-entry.fresh{animation:none}}
+
+/* ---------- Game layer (presentation only: not rules) ---------- */
+body.pits-stone #root .pits-bout{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:8px 26px;padding:6px 16px;margin-bottom:14px;
+  background-color:var(--p-surface);background-image:var(--st-noise);border:1px solid var(--p-line-strong);border-radius:3px;box-shadow:inset 0 1px 0 var(--st-hi),0 4px 10px var(--st-shadow)}
+body.pits-stone #root .pits-b-item{display:flex;flex-direction:column;gap:3px;min-width:0;text-align:left}
+body.pits-stone #root .pits-b-item b{font:600 20px/1 var(--p-display);color:var(--p-brass)}
+body.pits-stone #root .pits-b-btn{background:transparent;border:0;padding:4px 6px;margin:0 -6px;min-height:44px;justify-content:center;border-radius:2px;color:var(--p-text);cursor:pointer}
+body.pits-stone #root .pits-b-btn b{color:var(--p-text)}
+body.pits-stone #root .pits-b-btn:hover{background:color-mix(in srgb,var(--p-text) 6%,transparent)}
+body.pits-stone #root .pits-mom{display:flex;align-items:center;gap:10px;min-height:20px}
+body.pits-stone #root .pits-mom-pips{display:flex;gap:6px}
+body.pits-stone #root .pits-mom-pips i{width:11px;height:11px;transform:rotate(45deg);border:2px solid var(--p-line-strong)}
+body.pits-stone #root .pits-mom-pips i.on{background:var(--p-brass);border-color:var(--p-brass)}
+body.pits-stone #root .pits-mom-txt{font:600 13px var(--p-body);color:var(--p-dim)}
+body.pits-stone #root .pits-b-note{font-size:12px;color:var(--p-dim);font-style:italic}
+body.pits-stone #root .pits-b-ctl{margin-left:auto;display:flex;gap:6px}
+body.pits-stone #root .pits-tgl{min-height:44px;min-width:44px;padding:0 12px;background:var(--p-surface-2);border:1px solid var(--p-line-strong);border-radius:1px;font:600 12.5px var(--p-body);color:var(--p-dim);cursor:pointer}
+body.pits-stone #root .pits-tgl[aria-pressed="true"]{color:var(--p-accent);border-color:var(--p-accent);background:color-mix(in srgb,var(--p-accent) 12%,var(--p-surface-2))}
+body.pits-stone #root .pits-toast{position:absolute;right:14px;top:100%;margin-top:6px;z-index:6;display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--p-head-bg);color:var(--p-head-text);border:1px solid var(--p-brass);border-radius:2px;box-shadow:0 6px 16px var(--st-shadow);pointer-events:none;animation:pitsToast .35s ease-out}
+body.pits-stone #root .pits-toast svg{color:var(--p-brass);flex:none}
+body.pits-stone #root .pits-toast b{display:block;font:600 12.5px var(--p-display);letter-spacing:.07em;text-transform:uppercase}
+body.pits-stone #root .pits-toast span{font-size:12.5px;color:color-mix(in srgb,var(--p-head-text) 72%,transparent)}
+@keyframes pitsToast{from{opacity:0;transform:translateY(-20%)}}
+body.pits-stone #root .pits-recap{padding:16px 18px;display:flex;flex-direction:column;gap:12px;background-color:var(--p-surface);background-image:var(--st-noise);border:1px solid var(--p-line-strong);border-radius:3px;box-shadow:inset 0 1px 0 var(--st-hi),0 4px 10px var(--st-shadow)}
+body.pits-stone #root .pits-recap h3{font:600 22px/1.2 var(--p-display);letter-spacing:.03em;margin:0;color:var(--p-text)}
+body.pits-stone #root .pits-rc-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+body.pits-stone #root .pits-rc-stats>div{background:var(--p-surface-2);border:1px solid var(--p-line);padding:9px 12px}
+body.pits-stone #root .pits-rc-stats b{display:block;margin-top:3px;font:600 24px/1.1 var(--p-display);color:var(--p-text)}
+body.pits-stone #root .pits-moment{padding:10px 12px;border-left:3px solid var(--p-brass);background:var(--p-surface-2)}
+body.pits-stone #root .pits-moment p{margin:4px 0 0;font-size:14.5px;color:var(--p-text)}
+body.pits-stone #root .pits-marks{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+body.pits-stone #root .pits-mark{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--p-surface-2);border:1px dashed var(--p-line-strong);opacity:.75}
+body.pits-stone #root .pits-mark svg{flex:none;margin-top:1px;color:var(--p-line-strong)}
+body.pits-stone #root .pits-mark b{display:block;font:600 13.5px var(--p-display);letter-spacing:.03em;color:var(--p-text)}
+body.pits-stone #root .pits-mark span{display:block;margin-top:1px;font-size:12.5px;line-height:1.35;color:var(--p-dim)}
+body.pits-stone #root .pits-mark.own{opacity:1;border:1px solid var(--p-brass);background:color-mix(in srgb,var(--p-brass) 10%,var(--p-surface-2))}
+body.pits-stone #root .pits-mark.own svg{color:var(--p-brass)}
+body.pits-stone #root .pits-mark.fresh{animation:pitsFresh 1.8s ease-out}
+body.pits-stone #root .pits-rc-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:13.5px;color:var(--p-dim)}
+body.pits-stone #root .pits-rc-foot b{color:var(--p-text)}
+/* Hit feel */
+body.pits-stone #root .fighter.pits-shake{animation:pitsShake .36s linear}
+@keyframes pitsShake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+body.pits-stone #root .loc.pits-flash{animation:pitsLflash 1.1s ease-out}
+@keyframes pitsLflash{0%{background:color-mix(in srgb,var(--st-fumble) 28%,var(--p-surface-2))}}
+body.pits-stone #root .pits-dmg{position:absolute;left:50%;top:38%;z-index:3;font:700 30px var(--p-display);color:var(--st-fumble);text-shadow:0 1px 0 var(--st-hi);pointer-events:none;white-space:nowrap;animation:pitsRise 1.2s ease-out forwards}
+body.pits-stone #root .pits-dmg.miss{color:var(--p-dim);font-size:16px}
+@keyframes pitsRise{0%{opacity:0;transform:translate(-50%,10px) scale(.8)}20%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-44px)}}
+@media(max-width:700px){
+  body.pits-stone #root .pits-bout{gap:8px 14px;padding:4px 12px}
+  body.pits-stone #root .pits-b-item b{font-size:17px}
+  body.pits-stone #root .pits-mom-txt,body.pits-stone #root .pits-b-note{display:none}
+  body.pits-stone #root .pits-rc-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  body.pits-stone #root .pits-marks{grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce){
+  body.pits-stone #root .fighter.pits-shake,body.pits-stone #root .loc.pits-flash,body.pits-stone #root .pits-toast,body.pits-stone #root .pits-mark.fresh{animation:none}
+  body.pits-stone #root .pits-dmg{animation:none;opacity:1;transform:translate(-50%,0)}
+}
+
+/* ---------- End of bout: result dialog and next-opponent panel ---------- */
+body.pits-stone #root .result-backdrop{background:color-mix(in srgb,var(--p-head-bg) 70%,transparent)}
+body.pits-stone #root .result-modal{background-color:var(--p-surface);background-image:var(--st-noise);color:var(--p-text);border:1px solid var(--p-line-strong);border-top:3px solid var(--p-brass);border-radius:3px;box-shadow:0 18px 50px var(--st-shadow)}
+body.pits-stone #root .result-modal.lost{border-top-color:var(--p-major)}
+body.pits-stone #root .result-eyebrow{font:500 11px/1.2 var(--p-display);letter-spacing:.22em;text-transform:uppercase;color:var(--p-accent)}
+body.pits-stone #root .result-modal h2,body.pits-stone #root .result-modal h3{font-family:var(--p-display);letter-spacing:.06em;color:var(--p-text)}
+body.pits-stone #root .result-modal.won h2{color:var(--p-brass)}
+body.pits-stone #root .result-winner,body.pits-stone #root .result-why,body.pits-stone #root .result-meta,body.pits-stone #root .result-modal p,body.pits-stone #root .result-modal small{color:var(--p-dim);font-family:var(--p-body)}
+body.pits-stone #root .result-rule{border-color:var(--p-line);background:var(--p-line)}
+body.pits-stone #root .result-figure{background:var(--p-surface-2);border:1px solid var(--p-line)}
+body.pits-stone #root .result-streak,body.pits-stone #root .result-streak *{color:var(--p-dim)}
+body.pits-stone #root .result-streak b,body.pits-stone #root .result-streak strong{color:var(--p-brass);font-family:var(--p-display)}
+body.pits-stone #root .result-primary{background:var(--p-accent);color:var(--p-on-accent);border:1px solid var(--p-accent);border-radius:1px;font:700 13px var(--p-body);letter-spacing:.06em;text-transform:uppercase;min-height:44px}
+body.pits-stone #root .result-secondary,body.pits-stone #root .result-close{background:transparent;color:var(--p-text);border:1px solid var(--p-line-strong);border-radius:1px;font:600 13px var(--p-body);min-height:44px}
+body.pits-stone #root .result-close{border:0;min-height:0}
+body.pits-stone #root .result-modal *{border-color:var(--p-line)}
+body.pits-stone #root .endpanel{background-color:var(--p-surface);background-image:var(--st-noise);color:var(--p-text);border:1px solid var(--p-line-strong);border-top:3px solid var(--p-brass);border-radius:3px;box-shadow:inset 0 1px 0 var(--st-hi),0 4px 10px var(--st-shadow)}
+body.pits-stone #root .endpanel *{color:var(--p-dim)}
+body.pits-stone #root .endpanel h2,body.pits-stone #root .endpanel h3{color:var(--p-text);font-family:var(--p-display);letter-spacing:.04em}
+body.pits-stone #root .endpanel .eyebrow,body.pits-stone #root .endpanel .label{color:var(--p-brass)}
+body.pits-stone #root .endbuttons button{background:var(--p-accent);color:var(--p-on-accent);border:1px solid var(--p-accent);border-radius:1px;min-height:44px}
+body.pits-stone #root .endbuttons button+button{background:transparent;color:var(--p-text);border-color:var(--p-line-strong)}
+body.pits-stone #root .result-finish,body.pits-stone #root .result-finish *{color:var(--p-dim)}
+body.pits-stone #root .result-finish h2,body.pits-stone #root .result-finish h3,body.pits-stone #root .result-finish h4,body.pits-stone #root .result-finish strong,body.pits-stone #root .result-finish b{color:var(--p-text)!important;font-family:var(--p-display)}
+body.pits-stone #root .result-figure svg .zone,body.pits-stone #root .result-figure svg g,body.pits-stone #root .result-figure svg path{fill:color-mix(in srgb,var(--p-ok) 14%,var(--p-surface-2));stroke:var(--p-dim)}
+body.pits-stone #root .result-figure svg .serious,body.pits-stone #root .result-figure svg .serious *{fill:color-mix(in srgb,var(--p-serious) 54%,var(--p-surface-2))}
+body.pits-stone #root .result-figure svg .major,body.pits-stone #root .result-figure svg .major *{fill:color-mix(in srgb,var(--p-major) 72%,var(--p-surface-2))}
+body.pits-stone #root .result-figure svg .minor,body.pits-stone #root .result-figure svg .minor *{fill:color-mix(in srgb,var(--p-minor) 34%,var(--p-surface-2))}
+body.pits-stone #root .result-figure svg .struck,body.pits-stone #root .result-figure svg .struck *{fill:color-mix(in srgb,var(--st-fumble) 60%,var(--p-surface-2))!important;stroke:var(--st-fumble)}
