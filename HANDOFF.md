@@ -3,9 +3,9 @@
 Read `AGENTS.md`, then this, at the start of every session; update it before ending one. Keep it short: replace finished items, don't append history (history goes in `CHANGELOG.md`).
 
 **Owner kickoff line for a new Claude session** (paste as the first message):
-> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/happy-brahmagupta-votbg4.
+> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/deployment-issues-delays-tvolc7.
 
-_Last updated: 2026-11-07 by Claude (ranged combat in The Pits; all melee weapons for saved characters)_
+_Last updated: 2026-11-07 by Claude (credit-saving rules; handoff trimmed)_
 
 ## Where things stand
 
@@ -15,15 +15,14 @@ _Last updated: 2026-11-07 by Claude (ranged combat in The Pits; all melee weapon
 - **The Pits** (`experiments/practice-combat.html`, route `#/the-pits`):
   - Rules from ChatGPT's reviews implemented through #191: parry rounding (blocked half rounds up), Knockback, Impale, Barbed, Reach, Entangle (original-roll Trip), Entrapping, Disarm STR limit, Acrobatics vs Trip, concurrent tied Initiative, shield strikes and shield Bash. Ledger: `docs/the-pits-combat-procedure-review.md`.
   - v0 fight screen done (#193–#195, fixes #202): Stone look, view adapter `experiments/pits-view.js`, game layer `experiments/pits-game.js` (Glory, Momentum, Marks: presentation only, never rules).
-  - **Weapons: 54 Core weapons and shields playable** (35 melee, 8 shields, 11 missile), plus thrown Dagger/Hatchet/Shortspear/Trident (PIT-R01–R17, `experiments/pits-ranged.js`). Saved characters can use every weapon their style trains, carried or not (#205). Unsupported with a reason: Lance (mounted), Garrotte (ambush), Atlatl, Blowgun, Bolas, thrown Net.
+  - **Weapons: 43 of 64 Core weapons playable** (all melee and shields). Missing: 19 ranged/thrown, Lance (mounted), Garrotte (ambush).
 
 ## Next
 
-- **ChatGPT (Chat):** check three ranged calls in `docs/decisions.md` (rows dated 2026-11-07 marked "needs ChatGPT check"): the derived p.108 distance × SIZ cells (SIZ 10 or less beyond 20m), the 5/10/20m line for Throw Weapons throws, and leaving Press Advantage/Trip/Disarm out at range. Short answers in chat are enough; a docs PR only if cells need correcting.
-- **Claude:** next, Unarmed in The Pits (44 cases already in the ledger, PIT-SE03); split `experiments/practice-combat.html`'s very long lines when next touching it. Lance and Garrotte only if the owner approves a mounted or ambush scenario (cases PIT-L01/L02, PIT-G01/G02 are ready).
+- **ChatGPT (Chat):** Ranged Core code cases `PIT-R01–R17` and deferred Lance/Garrotte minima documented in `docs/the-pits-ranged-cases.md` (docs-only PR). **Claude next:** implement ranged in one code PR; leave Lance and Garrotte unsupported until mounted/ambush scenarios are approved.
+- **Claude:** then implement ranged combat (one PR), Lance and Garrotte if in scope. Also queued: Unarmed in The Pits (44 cases already in the ledger, PIT-SE03); split `experiments/practice-combat.html`'s very long lines when next touching it.
 - **ChatGPT (Work), one batched live check when the owner has credits** (only what Claude can't test headless):
   - Signed in: Play Mode item search (add a sword free, it attacks; paid rope −10 silver; mail location +5 ENC; reload keeps all); builder offers only the 26 Core traits. Use a disposable character and delete it afterwards.
-  - The Pits with a saved character: a style training a weapon the character doesn't carry offers it; a bow at 20m: Shoot, Load (Long bow 2 turns), Aim, Move walk/run; a javelin fouls a shield.
   - The Pits after #202: Basalt setup readable; pill / Last roll / end recap follow the dice; a settled Opponent pill; audible sound if possible.
   - Menus signed in and out on a real phone if possible: tab bar, More sheet, gates, Undo delete (disposable character), Join with a code.
   - Earlier blocked items: multi-account permission check (plan at the end of `campaign-cases-batch-1.md`); new-item pop-up (needs a second player account).

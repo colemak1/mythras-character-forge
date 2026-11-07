@@ -12,7 +12,7 @@ const arena={console,URLSearchParams,setTimeout,clearTimeout,setInterval,clearIn
 vm.createContext(arena);
 const page=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8');
 assert.match(page,/<script src="\.\.\/js\/data\.js\?v=[0-9a-f]+"><\/script>\s*<script src="practice-character\.js/,'the arena loads the shared data before its own scripts');
-for(const f of ['js/data.js','experiments/practice-character.js','experiments/practice-guidance.js','experiments/pits-view.js','experiments/pits-ranged.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),arena);
+for(const f of ['js/data.js','experiments/practice-character.js','experiments/practice-guidance.js','experiments/pits-view.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),arena);
 vm.runInContext(page.match(/<script>([\s\S]*?)<\/script>/)[1],arena);
 const A=s=>vm.runInContext(s,arena);
 // Main app engine for the formulas.
@@ -21,7 +21,7 @@ for(const f of ['js/data.js','js/engine.js'])vm.runInContext(fs.readFileSync(pat
 const E=s=>vm.runInContext(s,app);
 
 test('every Core melee weapon and shield the arena supports matches the shared table',()=>{
- const rows=JSON.parse(A(`JSON.stringify(WEAPONS.filter(w=>w.group!=='Ranged'&&!practiceUnsupportedReason(w)).map(w=>({w,k:practiceWeaponKey(w.name)})))`));
+ const rows=JSON.parse(A(`JSON.stringify(WEAPONS.filter(w=>!practiceUnsupportedReason(w)).map(w=>({w,k:practiceWeaponKey(w.name)})))`));
  assert(rows.length>=40);
  const size={S:1,M:2,L:3,H:4,E:5},reach={T:0,S:1,M:2,L:3,VL:4},fx={Bleed:'bleed',Impale:'impale',Bash:'bash','Stun Location':'stun',Sunder:'sunder',Entangle:'entangle'};
  for(const {w,k} of rows){
@@ -40,10 +40,8 @@ test('the original five arena keys still point at the same Core weapons',()=>{
  for(const [k,n] of [['sword','Broadsword'],['spear','Shortspear'],['mace','Mace'],['dagger','Dagger'],['greatsword','Greatsword']])assert.equal(A(`ARENA_WEAPONS.${k}.name`),n);
  for(const [k,n] of [['buckler','Buckler'],['heater','Heater'],['hoplite','Hoplite']])assert.equal(A(`SHIELDS.${k}.name`),n);
 });
-test('unsimulated ranged lines, mounted-only and ambush-only weapons are reported as unsupported, with a reason',()=>{
- assert.equal(A(`practiceUnsupportedReason(WEAPON_MAP['Long bow'])`),'');
- assert.equal(A(`practiceUnsupportedReason(WEAPON_MAP['Blowgun'])`),'no damage of its own (it delivers poison)');
- assert.equal(A(`practiceUnsupportedReason(WEAPON_MAP['Net (thrown)'])`),'thrown Entangle is not simulated yet');
+test('ranged, mounted-only and ambush-only weapons are reported as unsupported, with a reason',()=>{
+ assert.equal(A(`practiceUnsupportedReason(WEAPON_MAP['Long bow'])`),'ranged weapons are not simulated yet');
  assert.equal(A(`practiceUnsupportedReason(WEAPON_MAP['Lance'])`),'only usable from a moving mount');
  assert.equal(A(`practiceUnsupportedReason(WEAPON_MAP['Garrotte'])`),'only usable from ambush');
  assert.equal(A(`'lance' in ARENA_WEAPONS`),false);

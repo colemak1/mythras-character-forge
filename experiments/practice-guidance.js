@@ -77,10 +77,8 @@ function reactionChoicesHtml(p){
  const button=(value,name,description,disabled=false)=>`<button class="choice" data-act="react" data-val="${value}" ${disabled?'disabled':''}><strong>${name}</strong><small>${esc(description)}</small></button>`;
  const missed=p.attackRoll?.grade<2;
  return `<div class="turnline"><h3>Choose your defense</h3><span>${f.ap} AP available</span></div><div class="choicegrid reaction-choices">`+
-  // PIT-R07: only a shield with Ranged Parry stops a missile.
-  (p.ranged?button('parry','Parry (Weapon) · 1 AP','A weapon cannot parry a missile.',true)
-   :button('parry','Parry (Weapon) · 1 AP',parryChoiceHelp(f,attacker,'weapon'),f.ap<=0||!canParryAtReach(f.id)))+
-  (f.shield!=='none'?button('shield','Parry (Shield) · 1 AP',p.ranged&&canShieldParry(f)?`Ranged Parry: Force ${p.ranged.force} against shield Size ${SHIELDS[f.shield].size} decides what it stops.`:parryChoiceHelp(f,attacker,'shield'),f.ap<=0||(p.ranged?!arenaShieldStopsMissiles(f):!canShieldParry(f))):'')+
+  button('parry','Parry (Weapon) · 1 AP',parryChoiceHelp(f,attacker,'weapon'),f.ap<=0||!canParryAtReach(f.id))+
+  (f.shield!=='none'?button('shield','Parry (Shield) · 1 AP',parryChoiceHelp(f,attacker,'shield'),f.ap<=0||!canShieldParry(f)):'')+
   button('evade','Evade · 1 AP',f.ap<=0||cannotRespond(f)?unavailableReaction(f,'evade'):`${effectiveSkill(f,evadeTarget(f))}% Evade target. ${missed?'Try for defensive Special Effects; you still finish prone.':'Try to avoid the attack; you finish prone.'}`,f.ap<=0||cannotRespond(f))+
   button('none','Do Not Defend · 0 AP',missed?'Keep your AP; pass up the chance to earn defensive Special Effects.':'Keep your AP; a successful attack can damage you and earn Special Effects.')+'</div>';
 }
