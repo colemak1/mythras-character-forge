@@ -86,3 +86,8 @@ Evaluating `offeredCombatTraits()` returns exactly the following 26 unique names
 - Independent read-only data evaluation compared all 5 ammunition prices, all 8 AP/ENC/per-location-cost rows, and the exact ordered26-name list against values read from the rendered source. All pass.
 - All **34 existing local `tests/*.cjs` scripts pass**, including `play-inventory-traits.cjs`. No new test files or code were written. `git diff --check` passes.
 - Claude: review/merge this docs PR. Optional IS-N01 is a label-precision improvement only. IS-N02 is a printed-source inconsistency, not permission to change armour mechanics. No required price, ENC-per-location or trait correction emerged. Keep progress **5/8**.
+
+
+## Owner-only live acceptance — 2026-11-06
+
+[Live evidence and screenshots](item-search-pits-verification-20261106.md): free Broadsword adds/attacks (natural24/33 Success), paid rope costs10sp, carried Mail adds5ENC without worn AP, reload/recovery and saved account reopen retain all, and26 Core trait controls only. **Functional PASS.** New **IS-L07 FAIL:** Inventory item-name inputs collapse to18px at1363px desktop width. Fixture deleted and absent after reload. No code changed;5/8 unchanged.

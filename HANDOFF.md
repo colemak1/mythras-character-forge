@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-07 by Claude_
+_Last updated: 2026-11-06 by ChatGPT (Work)_
 
 ## Priorities
 
@@ -20,6 +20,7 @@ _Last updated: 2026-11-07 by Claude_
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
+| Item search live + Pits batch-one verification | ChatGPT (Work) → Claude | docs/item-pits-verification | Item functional checks PASS; fixture deleted/reload verified. **IS-L07 FAIL:** item names18px wide. Existing37 scripts pass; independent Pits7/8 pass, **PIT-R02a FAIL:** successful parry ignored on weapon-target attack (also live reproduced). `docs/item-search-pits-verification-20261106.md`.5/8 retained. |
 | The Pits combat procedure source audit | ChatGPT (Chat) → Claude | `docs/the-pits-combat-procedure-source-review` (docs-only PR) | **51 Core-linked cases; 21 NEEDS CODE + 1 NEEDS COPY, 21 PASS checks, 2 decisions and scope notes.** Printed pp.86–111, with source screenshots for p.95 rounding ambiguity. Claude owns code/tests; no work on main Combat scope. **5/8**. |
 | Item search / Core traits source review | ChatGPT → Claude | `docs/item-traits-source-review` docs-only PR | **PASS:** 5 ammo bundles (p.62), 8 armour per-location AP/ENC/cost rows (p.58), all 26 offered trait names/descriptions (p.89; Skirmishing cap p.108). `docs/item-search-core-cases.md`. Optional Lead sling label; printed Mail5-per-location/30-suit inconsistency documented. 34 scripts pass; no code changes;5/8 retained. |
 | New desktop live acceptance | ChatGPT (Work) → Claude | #174 merged | All checks PASS. Its three UI observations are fixed in the follow-up PR: campaign picker refresh, tabs on one line, damage dice in the tray. |
@@ -34,16 +35,10 @@ _Last updated: 2026-11-07 by Claude_
 
 ## Waiting on someone
 
-- **Claude:** The Pits fixes, batch 1 done (W02/W03, W09/SE17, SE10–SE12, R02). Next: batch 2, PIT-SE01/SE02 (Entangle, Entrapping Pin Weapon) and the other P1 eligibility cases.
+- **Claude (when credits return):** review new verification docs; fix IS-L07 inventory name sizing and PIT-R02a weapon-target parry/copy first. Batch-one controlled checks otherwise pass. Then continue batch2 (Entangle/Entrapping Pin Weapon and other P1 eligibility).
 - **Owner:** decide **PIT-P01**, The Pits' parry rounding: Core p.95 says a weapon one Size smaller blocks half, but not how to round odd damage. Today 5 damage blocks 2 and 3 gets through. Round the blocked half up (defender-friendly: blocks 3) or down (as now)?
 
-- **ChatGPT (Work):** (source review #179 passed) owner-only live check on a disposable character:
-  - Inventory → Add an item: search "sword" and add it (free), then confirm it appears on the Combat tab and attacks;
-  - tick Paid for it and add rope: silver goes down by 10;
-  - add a mail location: ENC up 5, worn AP unchanged;
-  - reload and confirm all of it is kept;
-  - builder Combat Style: only 26 Core traits offered.
-  Delete the fixture afterwards.
+- **Done (Work):** owner-only item search acceptance, all functional checks PASS,26 Core traits confirmed, fixture deleted/reload checked. Layout failure and Pits partial failure documented with evidence in `docs/item-search-pits-verification-20261106.md`.
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
 - **Cleanup resolved (Work):** #172 Disposable S4 Final Campaign absent from owner list; new Stone character and campaign both deleted and absent after reload.

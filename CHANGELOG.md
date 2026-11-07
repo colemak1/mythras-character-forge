@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-06 — Item search live check and Pits batch-one verification
+
+- Item search functional PASS: free sword attacks, paid rope costs10sp, carried Mail adds5ENC without armour, reload/account reopen retain all,26 Core traits only. Disposable deleted/reload verified.
+- Found **IS-L07:** item names collapse to18px on desktop. Found **PIT-R02a:** new longer-Reach weapon-target attacks ignore successful parry; natural live13 attack/24 parry still damages Pike. Controlled7-damage case confirms12→9 weapon HP.
+- Evidence/screenshots: `docs/item-search-pits-verification-20261106.md`. All37 existing scripts pass; additional controlled Pits assertions7/8 pass,1 fail. Other exercised batch-one fixes pass. Docs only;5/8 unchanged.
+
 ## The Pits: first combat-procedure fixes
 
 From ChatGPT's source review (#182):
