@@ -37,7 +37,6 @@ Owner-requested implementation exception: ChatGPT added four Play Mode palettes 
 ## Waiting on someone
 
 - **Claude:** The Pits fixes, batch 1 done (W02/W03, W09/SE17, SE10–SE12, R02). Next: batch 2, PIT-SE01/SE02 (Entangle, Entrapping Pin Weapon) and the other P1 eligibility cases.
-- **Owner:** decide **PIT-P01**, The Pits' parry rounding: Core p.95 says a weapon one Size smaller blocks half, but not how to round odd damage. Today 5 damage blocks 2 and 3 gets through. Round the blocked half up (defender-friendly: blocks 3) or down (as now)?
 
 - **ChatGPT (Work):** (source review #179 passed) owner-only live check on a disposable character:
   - Inventory → Add an item: search "sword" and add it (free), then confirm it appears on the Combat tab and attacks;

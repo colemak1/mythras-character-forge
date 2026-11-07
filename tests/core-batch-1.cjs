@@ -606,7 +606,8 @@ test('Core pp.94–95: parry calculation needs explicit result and compares all 
   const got=run(`parryDamage(8,"${sizes[a]}","${sizes[d]}","success").remaining`);
   assert.equal(got,a<=d?0:a===d+1?4:8);
  }
- assert.equal(run('parryDamage(7,"Huge","Large","success").remaining'),3.5);
+ assert.equal(run('parryDamage(7,"Huge","Large","success").remaining'),3,'odd damage: the blocked half rounds up (owner ruling PIT-P01)');
+ assert.equal(run('parryDamage(7,"Huge","Large","success").blocked'),4);
  assert.equal(run('parryDamage(7,"Huge","Huge","failed").remaining'),7);
  for(const result of ["none","failed"])assert.equal(run(`parryDamage(7,"","","${result}").remaining`),7);
  assert.equal(run('parryDamage(7,"","","success")'),null);

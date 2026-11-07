@@ -106,3 +106,5 @@ Fixed with deterministic tests in `tests/practice-procedure.cjs` (8 tests; both 
 | PIT-R02 | When a longer Reach keeps a fighter off the opponent's body, Attack is still available and strikes the opposing weapon (its AP protects it; HP loss can break it). The Choose Location effect is not offered for such an attack. |
 
 Not changed, pending decisions: **PIT-P01** parry rounding (owner ruling needed) and **PIT-R06** whether the optional Reach rule should be switchable. Next batch: PIT-SE01/SE02 (Entangle, Entrapping Pin Weapon) and the other P1 eligibility cases.
+
+**PIT-P01 decided (owner, 2026-11-07):** the blocked half rounds up, consistent with the project's rounding elsewhere. `parryAbsorption()` now uses `Math.ceil`, and Play Mode's `parryDamage()` does the same (it used to leave a half point to the GM). Tests: `tests/practice-rules.cjs`, `tests/core-batch-1.cjs`.

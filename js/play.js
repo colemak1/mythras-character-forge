@@ -306,14 +306,16 @@ function parryDamage(damage,attackSize,defenceSize,result){
   if(result!=="success")return {remaining:damage,blocked:0};
   if(!PARRY_SIZES.includes(attackSize)||!PARRY_SIZES.includes(defenceSize))return null;
   const delta=PARRY_SIZES.indexOf(attackSize)-PARRY_SIZES.indexOf(defenceSize);
-  const remaining=delta<=0?0:delta===1?damage/2:damage;
-  return {remaining,blocked:damage-remaining};
+  // One Size smaller blocks half (Core p.95). Odd damage: the blocked half
+  // rounds up, the project's usual rounding (owner, 2026-11-07, PIT-P01).
+  const blocked=delta<=0?damage:delta===1?Math.ceil(damage/2):0;
+  return {remaining:damage-blocked,blocked};
 }
 function pmParryCalculate(form){
   const raw=form.elements.damage.value.trim(),out=form.querySelector('[data-parry-result]');
   const result=/^\d+$/.test(raw)?parryDamage(Number(raw),form.elements.attackSize.value,form.elements.defenceSize.value,form.elements.result.value):null;
   if(!result){out.textContent="Enter a non-negative whole damage amount and choose a defence result. For a successful parry, choose both weapon sizes.";return;}
-  out.textContent="Parry blocks "+result.blocked+"; "+result.remaining+" damage remains before armour."+(Number.isInteger(result.remaining)?"":" A half point remains: use the GM’s rounding decision before entering damage.");
+  out.textContent="Parry blocks "+result.blocked+"; "+result.remaining+" damage remains before armour."+(result.blocked===result.remaining+1?" (Half of odd damage: the blocked half rounds up.)":"");
 }
 function pmLocDetail(){
   const loc=S.play.selectedLoc;
