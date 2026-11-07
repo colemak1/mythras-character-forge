@@ -199,3 +199,22 @@ Tests: `tests/practice-initiative.cjs` (7), plus a 3,000-bout computer-vs-comput
 
 **Arena conventions (not Core rules):** the two tied turns are still shown one after the other, and the declaring order alternates each cycle (A first in odd cycles, B first in even cycles). Neither order gives a mechanical advantage, because the first turn cannot cancel the second.
 
+## Claude implementation, PIT-P07 shield attacks (2026-11-07)
+
+Tests: `tests/practice-shield.cjs` (12), plus a 3,000-bout computer-vs-computer run with random shields (870 shield strikes) that ended every bout cleanly.
+
+| Case | Result |
+|---|---|
+| P07-01–08 | Shield attack profiles come from the shared `WEAPONS` table (group Shield): damage, Size, Short Reach and effects for all eight shields. `SHIELDS` stays the defensive data. |
+| P07-09, P07-12 | **Shield Strike · 1 AP** is a separate action using Combat Style (with the shield arm's own wound penalty). It does not change the equipped weapon, and the shield can still parry later for AP. |
+| P07-10, P07-11 | Damage is the shield's dice plus Damage Modifier, rolled once; parry absorption uses the shield's Size. |
+| P07-13 | Effects follow the item that struck: Bash for every shield, Stun Location for seven, Impale for the Target only; nothing inherited from the weapon in the other hand. |
+| P07-14–18 | Bash moves 1m per two complete points of damage before parry and armour for a shield, three for a bludgeon (whole points, no extra metre), even when parry and armour stop all HP loss. Eligibility up to twice the attacker's SIZ; Brace doubles SIZ. Bash and ordinary Knockback never both apply. |
+| P07-19 | A Bash into the barrier tests Hard Athletics or Acrobatics; the arena uses whichever the fighter has higher. |
+| P07-20 | No shield strike with no shield, a disabled, stunned or entangled shield arm, a pinned shield, a two-handed weapon, or the weapon moved to the shield hand. The weapon attack stays available. |
+
+**Arena conventions (not Core rules):**
+- With the optional Reach rule on, a shield strike reaches the body only if the current fighting distance (set by the two weapons in use and the engagement range) is less than two Reach steps beyond Short.
+- A Target shield that Impales and is left in the wound is lost for the rest of the bout; the weapon is unaffected.
+- Computer opponents strike with the shield when their weapon can't be used.
+

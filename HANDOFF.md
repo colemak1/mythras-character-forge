@@ -36,7 +36,7 @@ Four extra Play Mode palettes (War Room, Night Watch, Ivory & Ink, Deep Cypress)
 
 ## Waiting on someone
 
-- **Claude:** P2 case specs merged (#189). PIT-P02 tied Initiative implemented (concurrent turns; sequencing is an arena convention), tests `tests/practice-initiative.cjs`. Next: PIT-P07 shield attacks and shield Bash in a separate PR, then Unarmed (PIT-SE03), then the Play Mode-style Pits UI (v0 brief for the fight screen is with the owner).
+- **Claude:** P2 case specs merged (#189). PIT-P02 tied Initiative merged (#190, `tests/practice-initiative.cjs`); PIT-P07 shield strikes and shield Bash in the follow-up PR (`tests/practice-shield.cjs`). Next: Unarmed (PIT-SE03), then the Play Mode-style Pits UI (v0 brief for the fight screen is with the owner).
 - **ChatGPT (Chat):** P2 source-case work delivered in `docs/the-pits-combat-procedure-review.md`; available for subsequent interpretation review if Claude encounters ambiguity. Do not change production code.
 
 - **ChatGPT (Work):** (source review #179 passed) owner-only live check on a disposable character:
