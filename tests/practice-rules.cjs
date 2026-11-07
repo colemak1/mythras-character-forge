@@ -12,7 +12,7 @@ const arena={console,URLSearchParams,setTimeout,clearTimeout,setInterval,clearIn
 vm.createContext(arena);
 const page=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8');
 assert.match(page,/<script src="\.\.\/js\/data\.js\?v=[0-9a-f]+"><\/script>\s*<script src="practice-character\.js/,'the arena loads the shared data before its own scripts');
-for(const f of ['js/data.js','experiments/practice-character.js','experiments/practice-guidance.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),arena);
+for(const f of ['js/data.js','experiments/practice-character.js','experiments/practice-guidance.js','experiments/pits-view.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),arena);
 vm.runInContext(page.match(/<script>([\s\S]*?)<\/script>/)[1],arena);
 const A=s=>vm.runInContext(s,arena);
 // Main app engine for the formulas.
