@@ -1190,9 +1190,10 @@ function pmGearPanelHTML(){
       // avoids the .pm-sbtn/.pm-pip/.pm-fatsel/.pm-dmgrow input classes that the
       // .view-only CSS rule disables, since this stays live under VIEW_ONLY for a DM.
       h+=gmGiveItemFormHtml();
+      h+=pmItemSearchHTML();
       h+='<div class="pmx-inv"><div class="pmx-invhead"><span>Item</span><span>Qty</span><span>ENC each</span><span>sp each</span><span title="Worn everyday clothing doesn\'t count toward ENC">Worn</span><span></span></div>'
        +S.inventory.map((it,i)=>'<div class="pmx-invrow">'
-        +'<span class="nm"><input type="text" aria-label="Item name" value="'+esc(it.name)+'" onchange="APP.playInv('+i+',\'name\',this.value)">'+(giftValid(it.gift)?'<span class="pm-fx-badge" title="Given by the GM">'+(it.gift.seen===true?'gift':'new')+'</span>':'')+'</span>'
+        +'<span class="nm"><input type="text" aria-label="Item name" value="'+esc(it.name)+'" onchange="APP.playInv('+i+',\'name\',this.value)">'+(it.weapon===true?'<span class="pm-fx-badge" title="Also on the Combat tab">Weapon</span>':'')+(giftValid(it.gift)?'<span class="pm-fx-badge" title="Given by the GM">'+(it.gift.seen===true?'gift':'new')+'</span>':'')+'</span>'
         +'<span><small class="pmx-invlbl">Qty</small><input type="number" aria-label="Quantity" value="'+it.qty+'" onchange="APP.playInv('+i+',\'qty\',this.value)"></span>'
         +'<span><small class="pmx-invlbl">ENC each</small><input type="number" aria-label="ENC each" min="0" step="0.5" value="'+it.enc+'" onchange="APP.playInv('+i+',\'enc\',this.value)"></span>'
         +'<span><small class="pmx-invlbl">sp each</small><input type="number" aria-label="Silver each" min="0" step="0.01" value="'+(it.cost||0)+'" onchange="APP.playInv('+i+',\'cost\',this.value)"></span>'
@@ -1203,6 +1204,37 @@ function pmGearPanelHTML(){
     }
   h+='</div>';
   return h;
+}
+// ---- Add items from the Core catalogue (owner, 2026-11-07) ----
+// Search weapons and gear, like D&D Beyond: a sword picked up off the ground
+// goes into the inventory (and onto the Combat tab). Found items are free;
+// "Paid for it" uses the listed price, which comes off remaining silver.
+let PM_ITEM_SEARCH="",PM_ITEM_PAY=false;
+function pmItemCatalog(){
+  return allWeapons().filter(w=>w.name&&w.dmg!=="—").map(w=>({kind:"weapon",name:w.name,enc:Number(w.enc)||0,cost:Number(w.cost)||0,
+      meta:"Weapon · "+w.group+(w.dmg?" · "+w.dmg:"")}))
+    .concat(CORE_TOOLS.map(([name,enc,cost])=>({kind:"gear",name,enc,cost,meta:"Gear"})));
+}
+function pmItemSearchHTML(){
+  const rows=pmItemCatalog().map(it=>'<div class="pmx-itemrow" data-search="'+esc((it.name+" "+it.meta).toLowerCase())+'" hidden>'
+   +'<span class="pmx-itemnm"><b>'+esc(it.name)+'</b><span>'+esc(it.meta)+' · ENC '+it.enc+' · '+it.cost+' sp</span></span>'
+   +'<button type="button" class="pmx-mini" onclick="APP.playAddCatalogItem(\''+it.kind+'\',\''+jsq(it.name)+'\')" aria-label="Add '+esc(it.name)+'">Add</button></div>').join("");
+  return '<div class="pmx-itemsearch"><label class="pmx-itemsearch-lbl" for="pmItemSearch">Add an item</label>'
+   +'<input type="search" id="pmItemSearch" class="pmx-skillsearch" placeholder="Search weapons and gear, e.g. sword, rope&hellip;" value="'+esc(PM_ITEM_SEARCH)+'" oninput="pmItemFilter(this)">'
+   +'<label class="pmx-opt"><input type="checkbox" '+(PM_ITEM_PAY?'checked':'')+' onchange="PM_ITEM_PAY=this.checked"> Paid for it <span class="pmx-dim">(otherwise found: free, no silver spent)</span></label>'
+   +'<div class="pmx-itemresults">'+rows+'<p class="pmx-dim pmx-small pmx-itemnone" hidden>No Core item matches. Use + Add item below for anything else.</p></div></div>';
+}
+function pmItemFilter(input){
+  const q=input.value.trim().toLowerCase();PM_ITEM_SEARCH=input.value;
+  const box=input.closest(".pmx-itemsearch")||document;let shown=0;
+  box.querySelectorAll(".pmx-itemrow").forEach(row=>{const m=q.length>=2&&(row.dataset.search||"").includes(q)&&shown<12;row.hidden=!m;if(m)shown++;});
+  const none=box.querySelector(".pmx-itemnone");if(none)none.hidden=!(q.length>=2&&shown===0);
+}
+// Weapons the character can fight with: the builder's list plus weapons
+// picked up into the inventory.
+function pmCarriedWeapons(){
+  const extra=(S.inventory||[]).filter(it=>it&&it.weapon===true&&weaponByName(it.name)).map(it=>it.name);
+  return [...new Set([...(S.gearWeapons||[]),...extra])];
 }
 function pmPassionsHTML(){
   if(!S.passions.length)return "";
@@ -1430,7 +1462,8 @@ function renderPlayView(){
     window.addEventListener("resize",()=>{pmFitDash();pmDicePlace();});
     document.addEventListener("keydown",e=>{if(e.key!=="Escape"||APPVIEW!=="play")return;if(PM_MODAL)APP.pmModalClose();else if(PM_POPUP)APP.pmPopupClose();});}
   if(tab==="combat"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
-  if(PM_SKILL_SEARCH){const search=document.querySelector(".pmx-skillsearch");if(search)pmSkillFilter(search);}
+  if(PM_SKILL_SEARCH){const search=document.querySelector(".pm-skillsbox .pmx-skillsearch");if(search)pmSkillFilter(search);}
+  if(PM_ITEM_SEARCH){const search=document.getElementById("pmItemSearch");if(search)pmItemFilter(search);}
   pmDiceSync();
 }
 // ---- Short tips (Play Mode redesign batch 5) ----
@@ -1519,7 +1552,7 @@ function pmResolveCardHTML(){
      +'<button class="pmx-act"'+ro+' onclick="APP.playSetCombatRole('+i+',\'defence\')">Defence</button></div>';
   }
   if(r.combatKind!=="evade"&&!r.weapon){
-    const opts=["Unarmed",...(S.gearWeapons||[])];
+    const opts=["Unarmed",...pmCarriedWeapons()];
     h+='<div class="pmx-step"><label>Weapon <select'+ro+' onchange="APP.playSetRollWeapon('+i+',this.value)"><option value="">Not recorded (all effects shown)</option>'
      +opts.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("")+'</select></label></div>';
   }
@@ -1688,7 +1721,7 @@ function pmWeaponCardsHTML(){
       :["Size "+(w.size||"—"),"Reach "+(REACH_NAME[w.reach]||w.reach||"—")])
      .concat(["AP/HP "+(w.apHp||"—")]).concat(w.effects&&w.effects!=="—"?[w.effects]:[]).map(esc).join(" · ");
   let h='<div class="pm-box pmx-weapons"><h3>Weapons</h3>';
-  for(const n of S.gearWeapons||[]){
+  for(const n of pmCarriedWeapons()){
     const w=weaponByName(n);if(!w)continue;
     const ranged=w.group==="Ranged",canParry=weaponCanParry(w),covering=styles.filter(s=>styleDef(s.key).weapons.includes(n));
     h+='<div class="pmx-wpn"><div class="pmx-wpn-head"><span class="nm">'+esc(w.name)+'</span><span class="dmg">'+esc(w.dmg)+'</span></div>'
@@ -1713,7 +1746,7 @@ function pmWeaponCardsHTML(){
   // Evade is the defence that doesn't use a weapon (Core p.103).
   h+='<div class="pmx-wpn pmx-evade"><div class="pmx-wpn-roll"><span class="sty">Evade <b>'+pmPctText("std:Evade")+'</b> <span class="pmx-dim">dive clear; usually leaves you prone</span></span>'
    +'<button class="pmx-act"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.roll(\'std:Evade\')">Evade</button></div></div>';
-  if(!(S.gearWeapons||[]).length)h+='<p class="pm-empty">No weapons carried. Add some on the Money &amp; Gear step.</p>';
+  if(!pmCarriedWeapons().length)h+='<p class="pm-empty">No weapons carried. Add one from Inventory (search, e.g. "sword") or the Money &amp; Gear step.</p>';
   return h+'</div>';
 }
 function pmCombatTabHTML(){

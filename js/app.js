@@ -754,7 +754,10 @@ window.APP={
  },
  /* combat style composition — any number of weapons/traits, Character Builder only */
  toggleStyleWeapon(key,name){toggleInList(styleDef(key).weapons,name);render();},
- toggleStyleTrait(key,name){toggleInList(styleDef(key).traits,name);render();},
+ toggleStyleTrait(key,name){const list=styleDef(key).traits;
+   // Removing always works; adding only offers Core traits (owner, 2026-11-07).
+   if(!list.includes(name)&&!offeredCombatTraits().some(t=>t.name===name))return;
+   toggleInList(list,name);render();},
  // Trait search re-renders on every keystroke (needed for live filtering,
  // not just on blur like every other field in this app) which would
  // normally cost the input its focus and cursor position the instant the
@@ -1215,6 +1218,14 @@ window.APP={
    S.inventory.push({name,qty,enc,cost,gift:{id:genId(),reveal,note,at:new Date().toISOString()}});
    GIFT_MSG="Given: "+name+(reveal?" (full reveal)":"")+". The player sees it next time their sheet saves or loads.";render();},
  giftSeen(id){if(VIEW_ONLY)return;const it=(S.inventory||[]).find(x=>giftValid(x.gift)&&x.gift.id===id);if(!it)return;it.gift.seen=true;render();},
+ playAddCatalogItem(kind,name){if(inventoryBlock())return;
+   const it=pmItemCatalog().find(x=>x.kind===kind&&x.name===name);if(!it)return;
+   const cost=PM_ITEM_PAY?it.cost:0;
+   const same=S.inventory.find(x=>x.name===it.name&&Number(x.cost||0)===cost&&!!x.weapon===(kind==="weapon")&&!giftValid(x.gift));
+   if(same)same.qty=(Number(same.qty)||0)+1;
+   else S.inventory.push({name:it.name,qty:1,enc:it.enc,cost,...(kind==="weapon"?{weapon:true}:{})});
+   PM_MSG="Added "+it.name+(kind==="weapon"?" (also on the Combat tab)":"")+(cost?", paid "+cost+" sp.":", found (free).");
+   render();},
  playInvAdd(){if(inventoryBlock())return;S.inventory.push({name:"",qty:1,enc:0,cost:0});render();},
  playInvDel(i){if(inventoryBlock())return;S.inventory.splice(i,1);render();},
  playInv(i,f,v){if(inventoryBlock())return;this.inv(i,f,v);},

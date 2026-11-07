@@ -476,6 +476,10 @@ const COMBAT_TRAITS=[
  {name:"Windage",category:"Ranged",source:"Shores Of Korantia",desc:"Reduce the difficulty imposed by wind strength by one grade."}
 ];
 const COMBAT_TRAIT_CATEGORIES=[...new Set(COMBAT_TRAITS.map(t=>t.category))];
+// Only the 26 Core traits (p.89) are offered for now (owner, 2026-11-07).
+// Supplement traits stay in COMBAT_TRAITS so saved characters keep theirs;
+// they can be offered again per supplement book later.
+function offeredCombatTraits(){return COMBAT_TRAITS.filter(t=>t.source==="Mythras");}
 
 // Armour Table (p.58), Base Construction rows — AP/ENC per location, and the
 // pre-computed full 7-location Suit ENC/Cost/Armour Penalty for reference.

@@ -550,15 +550,17 @@ function combatStyleBuilderHTML(s){
    +allWeapons().map(w=>'<button class="chip '+(d.weapons.includes(w.name)?"on":"")+'" onclick="APP.toggleStyleWeapon(\''+jsq(s.key)+'\',\''+jsq(w.name)+'\')" title="'
      +esc(w.group+" · "+w.dmg+" · Size "+w.size+" · Reach "+w.reach+(w.traits?" · "+w.traits:""))+'">'+esc(w.name)+(w.custom?' <i class="hbmark" title="Homebrew">&#9733;</i>':"")+'</button>').join("")+'</div></div>';
   h+='<div class="field"><label>Combat Style Traits ('+d.traits.length+' selected)</label>';
-  if(d.traits.length)h+='<div class="cstyle-selectedbar">'+d.traits.map(tn=>'<button class="chip on sm" onclick="APP.toggleStyleTrait(\''+jsq(s.key)+'\',\''+jsq(tn)+'\')" title="Click to remove">'+esc(tn)+' &times;</button>').join("")+'</div>';
-  h+='<input type="text" class="cstyle-search" id="'+domId+'" placeholder="Search '+COMBAT_TRAITS.length+' Combat Style Traits by name or effect&hellip;" value="'+esc(ui.search)+'" oninput="APP.cstyleSearch(\''+jsq(s.key)+'\',this.value)">';
+  const offered=offeredCombatTraits(),core=new Set(offered.map(t=>t.name));
+  if(d.traits.length)h+='<div class="cstyle-selectedbar">'+d.traits.map(tn=>'<button class="chip on sm" onclick="APP.toggleStyleTrait(\''+jsq(s.key)+'\',\''+jsq(tn)+'\')" title="Click to remove">'+esc(tn)+(core.has(tn)?'':' <i class="note">(supplement)</i>')+' &times;</button>').join("")+'</div>';
+  h+='<input type="text" class="cstyle-search" id="'+domId+'" placeholder="Search the '+offered.length+' Core Combat Style Traits by name or effect&hellip;" value="'+esc(ui.search)+'" oninput="APP.cstyleSearch(\''+jsq(s.key)+'\',this.value)">';
+  h+='<p class="note">Core traits only (Core p.89). Traits from supplements will come back as options per book.</p>';
   const q=ui.search.trim().toLowerCase();
   if(q){
-    const matches=COMBAT_TRAITS.filter(t=>t.name.toLowerCase().includes(q)||t.desc.toLowerCase().includes(q));
+    const matches=offered.filter(t=>t.name.toLowerCase().includes(q)||t.desc.toLowerCase().includes(q));
     h+='<div class="cstyle-searchresults">'+(matches.length?matches.map(t=>cstyleTraitRow(s.key,t,d.traits.includes(t.name))).join(""):'<p class="note" style="padding:8px">No traits match &ldquo;'+esc(ui.search)+'&rdquo;.</p>')+'</div>';
   }else{
-    h+=COMBAT_TRAIT_CATEGORIES.map(cat=>{
-      const items=COMBAT_TRAITS.filter(t=>t.category===cat);
+    h+=[...new Set(offered.map(t=>t.category))].map(cat=>{
+      const items=offered.filter(t=>t.category===cat);
       const selCount=items.filter(t=>d.traits.includes(t.name)).length;
       return '<details class="cstyle-traitgroup" '+(ui.openCats[cat]?"open":"")+' ontoggle="APP.cstyleToggleCat(\''+jsq(s.key)+'\',\''+jsq(cat)+'\',this.open)">'
        +'<summary><span>'+esc(cat)+'</span><span class="cstyle-catcount">'+items.length+(selCount?' &middot; '+selCount+' selected':'')+'</span></summary>'

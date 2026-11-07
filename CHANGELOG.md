@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Add items to your inventory by searching; Core-only Combat Style traits
+
+- **Play Mode → Inventory → Add an item:** type part of a name (e.g. "sword", "rope") to search all Core weapons and gear, then tap **Add**.
+  - Items are found (free) by default; tick **Paid for it** to take the listed price from your silver.
+  - Weapons you add also appear on the Combat tab, ready to attack and parry with. ENC is counted once.
+  - Anything not in the list can still be added by hand with **+ Add item**.
+- **Combat Style traits:** only the 26 Core traits (p.89) are offered for now. Traits from supplements will return as per-book options. Characters that already have a supplement trait keep it, marked "(supplement)", and can remove it.
+
 ## Fixes from the live check (#174)
 
 - **Assign to campaign** now lists a campaign you've just created. The builder was showing an out-of-date list.
