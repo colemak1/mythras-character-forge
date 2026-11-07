@@ -48,12 +48,36 @@ test('Maximise Damage sets one weapon die to its maximum per pick; the Damage Mo
  const d=JSON.parse(run('JSON.stringify(pmRollDamageFor(S.rollLog[0],seq(0)))'));
  assert.equal(d.weaponRoll,7,'1d6+1 maximised');assert.equal(d.maxed,1);assert.equal(d.dmRoll,1,'DM rolled normally');
 });
-test('Impale shows a second weapon roll; Choose Location is noted',()=>{
- setup();attack("Battleaxe","Critical",["Impale","Choose Location"]);
- const d=JSON.parse(run('JSON.stringify(pmRollDamageFor(S.rollLog[0],seq(.5,0,.5,.5)))'));
- assert.equal(d.impaleRoll,2);assert.equal(d.chooseLocation,true);
+test('R7 Impale: weapon dice rolled twice, the better one preselected, one Damage Modifier added (Core pp.97, 110)',()=>{
+ setup();attack("Battleaxe","Critical",["Impale","Bleed"]);
+ // rng order: weapon dice, second weapon dice, Damage Modifier, d20.
+ let d=JSON.parse(run('JSON.stringify(pmRollDamageFor(S.rollLog[0],seq(0,.99,.5,.5)))'));
+ assert.equal(d.weaponRoll,2);assert.equal(d.impaleRoll,7);assert.equal(d.dmRoll,2);
+ assert.equal(d.impaleUse,'second');assert.equal(d.total,9,'second roll 7 + DM 2, not the first roll 2 + 2');
+ d=JSON.parse(run('JSON.stringify(pmRollDamageFor(S.rollLog[0],seq(.99,0,.5,.5)))'));
+ assert.equal(d.impaleUse,'first');assert.equal(d.total,9,'first roll 7 + DM 2');
+ run('S.rollLog[0].damage=pmRollDamageFor(S.rollLog[0],seq(0,.99,.5,.5));APP.playImpaleChoice(0,"first")');
+ assert.equal(run('S.rollLog[0].damage.total'),4,'the attacker can pick the other roll: 2 + DM 2');
+ run('APP.playImpaleChoice(0,"bogus")');assert.equal(run('S.rollLog[0].damage.impaleUse'),'first');
+ const h=run('pmResolveCardHTML()');assert.match(h,/Impale: 1d6\+1 rolled twice/);assert.match(h,/Pick the weapon roll now \(Core p\.97\)/);
+ assert.doesNotMatch(h,/if it gets through armour/);
+});
+test('R4 with Impale: a negative Damage Modifier still floors the total at 0',()=>{
+ setup();run('S.chars={STR:5,CON:12,SIZ:5,DEX:14,INT:13,POW:11,CHA:10}');assert.equal(run('dmCalc(5,5)'),'-1d6');
+ attack("Battleaxe","Critical",["Impale"]);
+ const d=JSON.parse(run('JSON.stringify(pmRollDamageFor(S.rollLog[0],seq(0,0,.99,.5)))'));
+ assert.equal(d.dmRoll,-6);assert.equal(d.total,0);
+});
+test('R8 Choose Location: no d20; the chosen location is the one shown (Core pp.95–96)',()=>{
+ setup();attack("Battleaxe","Critical",["Choose Location","Bleed"]);
  run('S.rollLog[0].damage=pmRollDamageFor(S.rollLog[0],seq(.5))');
- const h=run('pmResolveCardHTML()');assert.match(h,/before parry and armour/);assert.match(h,/Impale second roll/);assert.match(h,/Choose Location/);
+ assert.equal(run('S.rollLog[0].damage.d20'),null);assert.equal(run('S.rollLog[0].damage.loc'),null);
+ let h=run('pmResolveCardHTML()');assert.match(h,/Choose Location: <select/);assert.doesNotMatch(h,/d20 \d+ &rarr;/);
+ run('APP.playSetDamageLoc(0,"Head")');assert.equal(run('S.rollLog[0].damage.loc'),'Head');
+ h=run('pmResolveCardHTML()');assert.match(h,/<option selected>Head<\/option>/);assert.match(run('pmCombatStepsHTML(S.rollLog[0])'),/dmg · Head/);
+ run('APP.playSetDamageLoc(0,"Tail")');assert.equal(run('S.rollLog[0].damage.loc'),null,'only real locations');
+ attack("Battleaxe","Success",["Bleed"]);run('S.rollLog[0].damage=pmRollDamageFor(S.rollLog[0],seq(.5))');
+ assert.equal(run('S.rollLog[0].damage.d20'),11,'without Choose Location the d20 table still applies');
 });
 test('ranged weapons add the Damage Modifier only when the table says so',()=>{
  setup();attack("Short bow","Success");
@@ -67,11 +91,16 @@ test('no damage roll for a failed attack, a parry, or a roll without a weapon',(
  attack("Battleaxe","Success");run('S.rollLog[0].combatRole="defence"');assert.equal(run('pmRollDamageFor(S.rollLog[0])'),null);
  attack("Battleaxe","Success");run('delete S.rollLog[0].weapon');assert.equal(run('pmRollDamageFor(S.rollLog[0])'),null);
 });
-test('Unarmed counts as a natural weapon: Maximise Damage does not apply',()=>{
+test('R6 Maximise Damage works with natural weapons and stacks (Core p.98)',()=>{
  setup();attack("Unarmed","Critical",["Maximise Damage"]);
- assert.equal(run('pmRollDamageFor(S.rollLog[0],seq(0)).maxed'),0);
+ const d=JSON.parse(run('JSON.stringify(pmRollDamageFor(S.rollLog[0],seq(0)))'));
+ assert.equal(d.maxed,1);assert.equal(d.weaponRoll,3,'Unarmed 1d3 maximised');assert.equal(d.dmRoll,1,'DM still rolled');
+ run('S.gearWeapons.push("Great club")');attack("Great club","Critical",["Maximise Damage","Maximise Damage"]);
+ const g=JSON.parse(run('JSON.stringify(pmRollDamageFor(S.rollLog[0],seq(0)))'));
+ assert.equal(g.maxed,2);assert.equal(g.weaponRoll,12,'both 2d6 dice maximised');
+ assert.match(run('SPECIAL_EFFECTS.find(e=>e[0]==="Maximise Damage")[6]'),/also works with natural weapons/);
 });
-test('Roll damage stores the result on the roll, never changes HP, and is cleared if the result changes',()=>{
+test('R9/R1: Roll damage stores the result on the roll, never changes HP, and is cleared if the result changes',()=>{
  setup();attack("Battleaxe","Success",["Bleed"]);
  const hp=run('JSON.stringify(S.play.hp||{})');
  assert.match(run('pmResolveCardHTML()'),/APP\.playRollDamage\(0\)">Roll damage · 1d6\+1/);
@@ -109,7 +138,7 @@ test('colour schemes: Verdigris by default, chosen per device, unknown values ig
  run('pmSetColorway("basalt")');assert.equal(store.get('pm-colorway'),'basalt');assert.equal(run('pmColorway()'),'basalt');
  run('pmSetColorway("neon")');assert.equal(store.get('pm-colorway'),'basalt');
  store.set('pm-colorway','bogus');assert.equal(run('pmColorway()'),'verdigris');
- const h=run('PM_POPUP={k:"style"};pmPopupHTML()');assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,5);
+ const h=run('pmStyleHTML()');assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,5);
 });
 test('phone sections: Sheet, Body, Skills, Combat, More (Home is in the ☰ menu)',()=>{
  assert.doesNotMatch(fs.readFileSync(path.join(root,'js','play.js'),'utf8'),/pmx-hometab/,'no Home tab in the phone bar (owner, 2026-11-07)');
@@ -144,6 +173,7 @@ test('Special Effects are a tick list: tap to choose, tap again to remove',()=>{
  h=run('pmResolveCardHTML()');assert.match(h,/class="pmx-se on" data-fx="Bleed"/);
  run('pmFxToggle('+bleed+')');assert.deepEqual(JSON.parse(run('JSON.stringify(S.rollLog[0].effectsPicked)')),[]);
  assert.match(run('pmFxSummary("First sentence. Second sentence.")'),/^First sentence\.$/);
+ assert.match(run('pmFxSummary("Swap a die for its full value (e.g. 1d6 becomes a 6). More.")'),/e\.g\. 1d6 becomes a 6\)\.$/,'no cut at e.g.');
 });
 test('the opponent result can be changed, which clears effects and damage',()=>{
  setup();run('S.rollLog=[{label:"Battleaxe",pct:60,roll:4,tier:"Critical",combat:true,combatKind:"style",combatRole:"attack",oppTier:"Failure",opponentAction:"rolled",weapon:"Battleaxe",effectsPicked:["Bleed"],damage:{total:5,loc:"Chest"}}];');
@@ -179,9 +209,12 @@ test('under the name: race, culture and career, never the campaign',()=>{
  assert.equal(run('pmCharSubtitle()'),'Human · Ridge-clan · Warrior');
  assert.doesNotMatch(fs.readFileSync(path.join(root,'js','play.js'),'utf8'),/pmCampaignLabel/);
 });
-test('Settings in the ☰ menu holds the colour scheme and the dice option',()=>{
- setup();assert.match(run('pmSiteMenuHTML()'),/APP\.pmPopup\('settings'\)">Settings/);
- const h=run('PM_POPUP={k:"settings"};pmPopupHTML()');
- assert.match(h,/aria-label="Settings"/);assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,5);assert.match(h,/pmToggleDice3d/);
+test('Settings in the ☰ menu opens a centred window with the colour scheme and the dice option',()=>{
+ setup();assert.match(run('pmSiteMenuHTML()'),/APP\.pmModal\('settings'\)">Settings/);
+ assert.equal(run('pmModalHTML()'),'','closed by default');
+ run('APP.pmModal("settings")');assert.equal(run('PM_POPUP'),null,'not the side panel');
+ const h=run('pmModalHTML()');
+ assert.match(h,/class="pmx-modal" role="dialog" aria-modal="true" aria-label="Settings"/);assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,5);assert.match(h,/pmToggleDice3d/);
+ run('APP.pmModalClose()');assert.equal(run('pmModalHTML()'),'');run('APP.pmModal("bogus")');assert.equal(run('PM_MODAL'),null);
 });
 console.log(passed+' play stone design tests passed');

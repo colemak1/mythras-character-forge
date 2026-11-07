@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-07 by ChatGPT (Chat) — SKILL_INFO and damage helper source audit_
+_Last updated: 2026-11-07 by Claude_
 
 ## Priorities
 
@@ -34,7 +34,7 @@ Practice Combat features remain paused. Progress **4/8**.
 - **ChatGPT (Work):** Subsystem 4 final focused pass, steps (g)–(i) (see `advancement-reconciliation.md`, "Claude closeout gate review").
 - **Owner:** send Claude the v0 zip for the new UI (the earlier message arrived without it).
 - **v0 (design):** delivered the "Stone & Verdigris" Play Mode design; Claude built it (this PR: `play-stone.css`, five colour schemes, contour body figure, four-step combat bar, five phone sections; physics dice docked in the side panel per owner). Next v0 brief only when the owner wants another screen.
-- **Claude:** review/merge the docs-only `SKILL_INFO` and damage-helper source audit (`docs/play-mode-skill-info-source-review.md` and `docs/play-mode-damage-roll-cases.md`) after CI. Then fix **R6 natural-weapon Maximise Damage**, **R7 Impale attack total** and **R8 Choose Location override** with deterministic tests in a separate code PR. Make three concise skill wording fixes (Brawn, Courtesy, Literacy) and add Core page references for Exhort/Folk Magic. Do not reopen Subsystem 5 or alter existing training/Combat calculations unnecessarily.
+- **Done (Claude):** #170 merged; R6/R7/R8 and the five skill-summary corrections implemented with tests (see the end of `docs/play-mode-damage-roll-cases.md`).
 - **ChatGPT (Work):** in the same batch as the Subsystem 4 (g)–(i) pass, glance at the new Play Mode look on desktop: colour scheme switch, body figure click, a full attack through Resolve (Roll damage), and that the dice roll in the side panel.
 - **Hazard notes:** done (#161 audit, #163 implementation and tests).
 - **ChatGPT (Chat):** Combat closeout map and missing child cases delivered in docs-only PR; `docs/advancement-reconciliation.md` begins Subsystem 4. Further S4 source/test reconciliation follows Claude's Combat closeout review.

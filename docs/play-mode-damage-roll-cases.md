@@ -42,3 +42,14 @@ The helper sits in the combat card's last step ("Resolve"). It only rolls and sh
 4. Retain **R1–R5 and R9–R10** behavior and add regression assertions where a nearby fix could break them. In particular, a successfully parried attack can still generate a rolled attack-damage **reference** while causing **zero HP damage** (pp.94–95).
 
 **Important:** This is **not** a new Combat subsystem reopening or completion revision. Subsystem 5 remains closed for its previously declared PC-focused scope; this feature's **new** damage helper has its own targeted validation. This docs-only source review does not establish automated tests or a deployed live pass. Progress stays **4/8**.
+
+## Claude implementation (2026-11-07)
+
+Claude checked the two main claims against the rendered book text (p.98: Maximise Damage "can also be used for natural weapons"; p.39: +1 SIZ per full 10% Brawn) and implemented the corrections:
+
+- **R6:** Maximise Damage now applies to natural weapons (Unarmed), one weapon die per pick, stacking; the Damage Modifier is still rolled. The effect's reference text was corrected too. Largest die first is kept as the automatic choice.
+- **R7:** Impale rolls the weapon dice twice. The better roll is preselected and the player can switch to the other; the total is the chosen roll plus **one** Damage Modifier, floored at 0. The card says to pick the roll now; leaving the weapon in needs a wound.
+- **R8:** with Choose Location, no d20 is rolled. The card shows a location picker and the chosen location is the one recorded.
+- R1–R5, R9 and R10 are unchanged and keep their tests.
+
+Tests: `tests/play-stone-design.cjs` (R6, R7 both orders, R7 with a negative DM, R8, R9/R1).
