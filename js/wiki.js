@@ -68,6 +68,39 @@ function wikiResultRowHTML(e){
 }
 
 /* ---- chapter grid ---- */
+// Rules as a table of contents (owner menu redesign, 2026-11-07): grouped
+// chapters, dotted leader to the Core page number, live search and group
+// chips. Page numbers refer to the Mythras Core Rulebook (said once, in the
+// page header), so no per-row "core" badge. No rules text is shown.
+const WIKI_TOC_GROUPS=[
+  ['make','Making a character',['characters-core','culture-community-core','careers-core','skills-core','equipment-core']],
+  ['play','Playing the game',['system-core','combat-core']],
+  ['magic','Magic',['magic-core','folk-core','animism-core','mysticism-core','sorcery-core','theism-core','cults-core']],
+  ['gm','Running the game',['creatures-core','gm-core']]
+];
+let WIKI_TOC_Q='',WIKI_TOC_GROUP='all';
+function wikiTocControlsHTML(){
+  const chip=(k,l)=>'<button type="button" class="st-chipbtn" aria-pressed="'+(WIKI_TOC_GROUP===k)+'" onclick="wikiTocGroup(\''+k+'\')">'+esc(l)+'</button>';
+  return '<div class="st-tb"><div class="st-field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>'
+    +'<label class="st-sr" for="wikiTocQ">Search chapters</label><input id="wikiTocQ" class="st-input" type="search" placeholder="Search chapters, e.g. &ldquo;Combat&rdquo;" value="'+esc(WIKI_TOC_Q)+'" oninput="wikiTocSearch(this.value)"></div></div>'
+    +'<div class="st-chiprow" role="group" aria-label="Chapter groups">'+chip('all','All')+WIKI_TOC_GROUPS.map(g=>chip(g[0],g[1])).join('')+'</div>';
+}
+function wikiTocHTML(){
+  const q=WIKI_TOC_Q.trim().toLowerCase(),all=wikiAllChapters(),used=new Set();
+  const groups=WIKI_TOC_GROUPS.map(([k,label,ids])=>{ids.forEach(i=>used.add(i));return [k,label,ids.map(i=>all.find(e=>e.id===i)).filter(Boolean)];});
+  const rest=all.filter(e=>!used.has(e.id));if(rest.length)groups.push(['notes','Table notes',rest]);
+  const match=e=>!q||(e.title+' '+((e.node&&e.node.topics)||[]).join(' ')).toLowerCase().includes(q);
+  const html=groups.filter(g=>WIKI_TOC_GROUP==='all'||g[0]===WIKI_TOC_GROUP).map(([k,label,rows])=>{
+    rows=rows.filter(match);if(!rows.length)return '';
+    return '<section class="st-toc-group"><h2>'+esc(label)+'</h2><ol>'+rows.map(e=>{
+      const page=String((e.node&&e.node.page)||'').replace(/^Core\s*/i,'');
+      return '<li><button type="button" onclick="APP.wikiOpen(\''+e.id+'\')"><span class="st-toc-title">'+esc(e.title)+'</span><span class="st-toc-dots" aria-hidden="true"></span><span class="st-toc-page">'+esc(page)+'</span></button></li>';
+    }).join('')+'</ol></section>';
+  }).join('');
+  return html?'<div class="st-toc">'+html+'</div>':'<div class="st-empty">No chapters match “'+esc(WIKI_TOC_Q)+'”.</div>';
+}
+function wikiTocSearch(v){WIKI_TOC_Q=String(v||'');const el=document.getElementById('wikiToc');if(el)el.innerHTML=wikiTocHTML();}
+function wikiTocGroup(k){WIKI_TOC_GROUP=k;render();}
 function wikiChapterCardHTML(entry){
   if(entry.source==="core"){
     return '<button class="menutile" onclick="APP.wikiOpen(\''+entry.id+'\')"><span class="mt-title">'+esc(entry.title)+' <span class="wiki-corebadge">core</span></span>'
@@ -126,18 +159,20 @@ function wikiCoreStubHTML(stub){
 }
 
 function wikiHTML(){
-  let h='<div class="menuwrap wiki-wrap st-page">'+stPageHead({eyebrow:'Reference',title:'Rules',
-    sub:'A searchable index of the Core chapters. Page numbers refer to the Mythras Core Rulebook.',
+  let h='<div class="menuwrap wiki-wrap st-page">'+stPageHead({eyebrow:'Core rulebook',title:'Rules',
+    sub:'Find a chapter, then look the rule up in your own rulebook. Page numbers refer to the Mythras Core Rulebook.',
     action:WIKI_CHAPTER?'<button type="button" class="st-btn" onclick="APP.wikiBack()">&#8592; All chapters</button>':''});
-  h+='<input type="text" class="wiki-search" id="wikiSearchBox" placeholder="Search the rules&hellip;" oninput="wikiSearch(this.value)">';
-  h+='<div id="wikiSearchResults" class="wiki-results" style="display:none"></div>';
+  if(WIKI_CHAPTER){
+    h+='<input type="text" class="wiki-search" id="wikiSearchBox" placeholder="Search the rules&hellip;" oninput="wikiSearch(this.value)">';
+    h+='<div id="wikiSearchResults" class="wiki-results" style="display:none"></div>';
+  }
   h+='<div id="wikiBrowseArea">';
   if(WIKI_CHAPTER){
     const ch=wikiFindChapter(WIKI_CHAPTER);
     if(ch)h+=wikiChapterDetailHTML(ch);
     else{const stub=wikiFindCoreStub(WIKI_CHAPTER);h+=stub?wikiCoreStubHTML(stub):'<p class="note">Not found.</p>';}
   }else{
-    h+='<div class="menutiles">'+wikiAllChapters().map(wikiChapterCardHTML).join("")+'</div>';
+    h+=wikiTocControlsHTML()+'<div id="wikiToc">'+wikiTocHTML()+'</div>';
   }
   h+='</div>';
   h+='<p class="note rulesrc" style="margin-top:20px">'+esc(WIKI_ORC_NOTICE)+'</p>';

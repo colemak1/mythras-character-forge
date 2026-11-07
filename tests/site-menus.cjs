@@ -72,5 +72,27 @@ await test('phone tab bar and More sheet exist with the five tabs',()=>{
  for(const t of ['menu','library','campaigns','pits','more'])assert.match(html,new RegExp('data-tab="'+t+'"'));
  assert.match(html,/id="stMoreSheet" hidden/);
 });
+await test('Rules is a grouped table of contents with Core page numbers, search and group chips',()=>{
+ run('WIKI_CHAPTER=null;WIKI_TOC_Q="";WIKI_TOC_GROUP="all";');
+ let h=run('wikiHTML()');
+ for(const g of ['Making a character','Playing the game','Magic','Running the game'])assert(h.includes(g),g);
+ assert.match(h,/Games Mastery<\/span><span class="st-toc-dots" aria-hidden="true"><\/span><span class="st-toc-page">p\. 278/);
+ assert.doesNotMatch(h,/wiki-corebadge/,'no repeated CORE badge');assert.match(h,/Page numbers refer to the Mythras Core Rulebook/);
+ run('WIKI_TOC_Q="combat";');h=run('wikiTocHTML()');assert.match(h,/>Combat</);assert.doesNotMatch(h,/>Careers</);
+ run('WIKI_TOC_Q="";WIKI_TOC_GROUP="magic";');h=run('wikiTocHTML()');assert.match(h,/Sorcery/);assert.doesNotMatch(h,/>Combat</);
+ run('WIKI_TOC_GROUP="all";');
+});
+await test('Account: Sign in / Create account tabs, an alert banner, show/hide and a profile card',()=>{
+ run('AUTH_USER=null;AUTH_PROFILE=null;MOCK_AUTH=null;AUTH_RECOVERY=false;ACCOUNT_TAB="in";AUTH_MSG={text:"Wrong password."};');
+ if(run('CLOUD_ENABLED')){
+  let h=run('accountHTML()');
+  assert.match(h,/role="tablist"/);assert.match(h,/aria-selected="true"[^>]*>Sign in</);assert.match(h,/role="alert">Wrong password\./);
+  assert.match(h,/>Show</);assert.match(h,/APP\.forgotPassword\(\)/);assert.match(h,/Why sign in\?/);
+  run('ACCOUNT_TAB="up";AUTH_MSG=null;');h=run('accountHTML()');assert.match(h,/onsubmit="event\.preventDefault\(\);APP\.signUp\(\)"/);
+  run('AUTH_USER={id:"u",email:"a@b.c"};AUTH_PROFILE={display_name:"Luke"};');h=run('accountHTML()');
+  assert.match(h,/class="st-profile"/);assert.match(h,/id="authName" class="st-input" value="Luke"/);assert.match(h,/APP\.signOut\(\)/);
+ }
+ run('AUTH_USER=null;AUTH_PROFILE=null;ACCOUNT_TAB="in";AUTH_MSG=null;');
+});
 console.log(passed+' site menu tests passed');
 })().catch(e=>{console.error(e);process.exit(1);});
