@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: Entangle, Entrapping and other Special Effect rules
+
+From ChatGPT's source review (#182), second batch:
+- **Entangle** works. Whips, chains, nets, the ball & chain and the halberd can wrap the location they hit. A held arm can't use its weapon or shield, a held leg can't move, and a held head or body makes every roll one grade harder. The holder can spend 1 AP to try to trip; the victim spends 1 AP on Brawn to break free, or uses Slip Free, Damage Weapon or Disarm.
+- **Entrapping weapons** (Main Gauche, Whip, Net) can Pin Weapon without a Critical.
+- **Disarm** is only offered against foes with up to twice your STR.
+- **Trip** can be resisted with Acrobatics, if the character has it.
+
 ## Parry rounding: the blocked half rounds up
 
 - When a weapon one Size smaller parries, it blocks half the damage. With odd damage the blocked half now rounds **up**, matching how the rest of the site rounds: 5 damage blocks 3 and 2 gets through. This applies to The Pits and Play Mode's parry calculator, which used to leave the half point to the GM.

@@ -25,7 +25,7 @@ function practiceSnapshot(entry){
     });
     const vitals=charVitals(S);
     return {version:1,name:S.concept.name||entry.name||"Unnamed character",player:AUTH_PROFILE?.display_name||S.concept.player||"Player",
-      chars,styles,skills:Object.fromEntries(["Evade","Brawn","Endurance","Athletics","First Aid","Willpower"].map(n=>[n,finalPct("std:"+n)])),
+      chars,styles,skills:{...Object.fromEntries(["Evade","Brawn","Endurance","Athletics","First Aid","Willpower"].map(n=>[n,finalPct("std:"+n)])),Acrobatics:finalPct(profKey("Acrobatics"))},
       apMax:vitals.baseAP,init:initBonus(chars.INT,chars.DEX),armourInitPenalty:armourPenaltyToInit(),
       hp:Object.fromEntries(vitals.locs.map(l=>[l.loc,l.max])),
       armour:Object.fromEntries(vitals.locs.map(l=>[l.loc,armorApAt(l.loc)])),
