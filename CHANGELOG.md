@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Rules, World Guide and Account
+
+From the owner's menu redesign handoff (Part A, items 8–10):
+- **Rules** is now a table of contents: chapters grouped under Making a character, Playing the game, Magic and Running the game, each with a dotted line to its Core page number. There's live search and buttons to show one group. The repeated "CORE" badge is gone; the page says once that page numbers refer to the Mythras Core Rulebook.
+- **World Guide:** the chapter list stays in view beside the parchment on desktop. On phones, chapters become a row of buttons you can swipe. The "Back to the table" link is gone; Home is in the navigation.
+- **Account, signed out:** Sign in and Create account tabs, errors shown in a clear banner at the top of the form, a Show/Hide button for the password, "Forgot password?" as a link, and a short "Why sign in?" list.
+- **Account, signed in:** a profile card (initials, name, email, sync status), your display name (now editable), and Sign out.
+
 ## The Pits lobby
 
 From the owner's menu redesign handoff (Part A, item 7):

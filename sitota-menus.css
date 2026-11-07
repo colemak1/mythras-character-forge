@@ -231,3 +231,64 @@ body .st-gate h2{text-transform:none;letter-spacing:0;font:500 30px/1.1 "Cormora
 .st-sum-row b{color:#f1e9dc;font-weight:500}
 .st-sum-note{margin:12px 0 0;font:400 13px "DM Sans",system-ui,sans-serif;color:#aaa395}
 @media(max-width:620px){.st-record{grid-template-columns:1fr}.st-record>div+div{border-left:0;border-top:1px solid #2a3039}}
+
+/* ---- Rules table of contents (Part A5) ---- */
+.st-chiprow{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}
+.st-chipbtn{min-height:44px;padding:0 16px;border:1px solid #39404a;border-radius:99px;background:transparent;color:#cfc8b9;font:500 14px "DM Sans",system-ui,sans-serif;cursor:pointer}
+.st-chipbtn:hover{border-color:#e0b27a}
+.st-chipbtn[aria-pressed="true"]{background:#e0b27a;border-color:#e0b27a;color:#1c150b}
+.st-chipbtn:focus-visible{outline:2px solid #e0b27a;outline-offset:2px}
+.st-toc{display:grid;gap:8px 48px}
+@media(min-width:900px){.st-toc{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.st-toc-group{break-inside:avoid;margin-bottom:18px;text-align:left}
+.st-page .st-toc-group h2{margin:0 0 6px;padding-bottom:10px;border-bottom:1px solid #2a3039;font:400 26px/1.1 "Cormorant Garamond",Georgia,serif;color:#e0b27a;text-transform:none;letter-spacing:0}
+.st-toc-group ol{list-style:none;margin:0;padding:0}
+.st-toc-group li{border-bottom:1px solid #2a3039}
+.st-toc-group button{display:flex;align-items:baseline;gap:10px;width:100%;min-height:48px;padding:10px 4px;background:none;border:0;color:#f1e9dc;text-align:left;cursor:pointer}
+.st-toc-group button:hover .st-toc-title{color:#e0b27a}
+.st-toc-group button:focus-visible{outline:2px solid #e0b27a;outline-offset:2px}
+.st-toc-title{font:400 21px/1.2 "Cormorant Garamond",Georgia,serif}
+.st-toc-dots{flex:1;border-bottom:1px dotted #4a4f57;transform:translateY(-4px)}
+.st-toc-page{font:400 13px "DM Sans",system-ui,sans-serif;color:#aaa395;white-space:nowrap}
+
+/* ---- World Guide: sticky chapter list (desktop), chips (phone) (Part A5) ---- */
+@media(min-width:900px){.sitota-public .st-guide aside{position:sticky;top:90px;align-self:start}}
+@media(max-width:899px){
+  .sitota-public .st-guide aside .st-chapters{display:flex;grid-template-columns:none;gap:8px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+  .sitota-public .st-guide aside .st-chapters::-webkit-scrollbar{display:none}
+  .sitota-public .st-guide aside .st-chapters a{flex:none;display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid #39404a;border-radius:99px;white-space:nowrap;text-decoration:none}
+  .sitota-public .st-guide aside .st-chapters a[aria-current="page"]{border-color:#e0b27a;color:#e0b27a}
+}
+
+/* ---- Account: tabs, banner, show/hide, profile card, Why sign in (Part A5) ---- */
+.st-page .mmenu-authgrid{display:grid;gap:24px;align-items:start}
+@media(min-width:900px){.st-page .mmenu-authgrid{grid-template-columns:minmax(0,520px) minmax(0,1fr)}}
+.st-page .mmenu-authpanel{padding:22px;background:#14181d;border:1px solid #2a3039;border-radius:4px;text-align:left}
+.st-tabs{display:flex;border-bottom:1px solid #2a3039;margin:-4px 0 18px}
+.st-tabs button{flex:1;min-height:48px;background:none;border:0;border-bottom:2px solid transparent;color:#aaa395;font:500 15px "DM Sans",system-ui,sans-serif;cursor:pointer}
+.st-tabs button[aria-selected="true"]{color:#e0b27a;border-bottom-color:#e0b27a}
+.st-tabs button:focus-visible{outline:2px solid #e0b27a;outline-offset:-2px}
+.st-auth{display:flex;flex-direction:column;gap:6px}
+.st-label{display:block;margin:8px 0 2px;font:500 14px "DM Sans",system-ui,sans-serif;color:#cfc8b9}
+.st-row{display:flex;gap:8px;align-items:stretch}
+.st-row .st-input{flex:1;min-width:0}
+.st-btn-wide{width:100%;margin-top:14px;min-height:48px}
+.st-link{align-self:flex-start;min-height:44px;padding:0;background:none;border:0;color:#e0b27a;font:500 14px "DM Sans",system-ui,sans-serif;text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.st-link:focus-visible{outline:2px solid #e0b27a;outline-offset:2px}
+.st-banner{margin:0 0 8px;padding:10px 14px;border:1px solid rgba(229,138,122,.6);border-left-width:4px;border-radius:3px;background:rgba(229,138,122,.08);color:#f1d6cf;font:500 14px/1.45 "DM Sans",system-ui,sans-serif}
+.st-banner-ok{border-color:rgba(109,191,174,.6);background:rgba(109,191,174,.08);color:#cfeee7}
+.st-profile{display:flex;align-items:center;gap:16px;padding-bottom:18px;margin-bottom:8px;border-bottom:1px solid #2a3039}
+.st-avatar{flex:none;width:60px;height:60px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(155deg,#5a4a33,#231c12);border:1px solid rgba(224,178,122,.5);font:500 24px "Cormorant Garamond",Georgia,serif;color:#f6ede2}
+.st-profile b{display:block;font:500 28px/1.1 "Cormorant Garamond",Georgia,serif;color:#f1e9dc}
+.st-profile span{display:block;font:400 14px "DM Sans",system-ui,sans-serif;color:#aaa395}
+.st-sync{display:flex;align-items:center;gap:7px;margin-top:4px;font:500 13px "DM Sans",system-ui,sans-serif;color:#6dbfae}
+.st-sync::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.st-page .mmenu-authpanel>.st-btn{margin-top:14px}
+.st-why{text-align:left}
+.st-page .st-why h2{margin:0 0 6px;font:400 30px/1.1 "Cormorant Garamond",Georgia,serif;color:#f1e9dc;text-transform:none;letter-spacing:0}
+.st-why ul{list-style:none;margin:0;padding:0}
+.st-why li{padding:14px 0;border-top:1px solid #2a3039}
+.st-why b{display:block;font:500 21px/1.2 "Cormorant Garamond",Georgia,serif;color:#f1e9dc}
+.st-why span{display:block;margin-top:3px;font:400 14px "DM Sans",system-ui,sans-serif;color:#aaa395}
+@media(min-width:900px){body .st-page .mmenu-authgrid{display:grid;grid-template-columns:minmax(0,520px) minmax(0,1fr);gap:40px;align-items:start;max-width:none}}
+body .st-page .mmenu-authgrid .mmenu-authpanel{max-width:none;width:auto;margin:0}

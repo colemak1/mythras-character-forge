@@ -961,6 +961,7 @@ let CAMP_MSG=null;
 // "Reset email sent" and "Password updated" that used to be a bare alert()).
 let AUTH_MSG=null;
 let ACCOUNT_BACKUPS=null;
+let ACCOUNT_TAB='in'; // Account page tab: 'in' (Sign in) or 'up' (Create account)
 let ACCOUNT_BACKUP_MSG="";
 let XP_OPEN=false; // Improve Skills modal visibility — ephemeral UI state, not saved character data
 let SHEET_RETURN_VIEW="play"; // where APP.backFromSheet() sends you back to — set by whoever opened the sheet view
@@ -991,7 +992,7 @@ function menuTile(title,desc,onclick,disabled,primary){
 // itself and the code paths that check it elsewhere are untouched, this only
 // drops the panel that used to set it.
 function accountHTML(){
-  let h='<div class="mmenu st-page">'+stPageHead({eyebrow:'Your table',title:'Account',sub:'Sign in to keep your characters and campaigns in sync across devices.'});
+  let h='<div class="mmenu st-page">'+stPageHead({eyebrow:'Your table',title:'Account',sub:AUTH_USER&&AUTH_PROFILE?(cloudActive()?'Signed in and synced.':'Signed in.'):'Sign in to keep your characters and campaigns in sync across devices.'});
   if(GUEST_TEST_ENABLED&&!AUTH_USER){
     h+='<div class="mmenu-panel" style="margin-bottom:16px"><div class="mmenu-panel-eyebrow">Try without an account</div>'
      +'<p class="note">Guest mode works without Supabase. Characters and campaigns are saved only in this browser on this device, not synced or backed up. Export your character before clearing website data or changing devices.</p>'
@@ -1007,26 +1008,39 @@ function accountHTML(){
      +'<span>You clicked a password-reset link. Set a new password below to finish.</span></div>'
      +'<div class="mmenu-joinrow"><input type="password" id="authNewPw" placeholder="New password (8+ characters)"><button class="chip" onclick="APP.setNewPassword()">Save</button></div>';
   }else if(AUTH_USER&&AUTH_PROFILE){
-    h+='<div class="mmenu-panel-eyebrow">Signed in</div><div class="mmenu-authhead"><b>'+esc(AUTH_PROFILE.display_name)+'</b><span>'+esc(AUTH_USER.email)+'</span></div>'
-     +'<button class="mmenu-cta-ghost" onclick="APP.signOut()">Sign out</button>';
+    // Profile card (owner menu redesign): avatar, name, email, sync status.
+    const nm=AUTH_PROFILE.display_name||'';
+    h+='<div class="st-profile"><div class="st-avatar" aria-hidden="true">'+esc(stInitials(nm))+'</div><div><b>'+esc(nm)+'</b><span>'+esc(AUTH_USER.email)+'</span>'
+     +'<small class="st-sync">'+(cloudActive()?'Synced to your account':'Saved in this browser')+'</small></div></div>'
+     +'<label class="st-label" for="authName">Display name</label><div class="st-row"><input type="text" id="authName" class="st-input" value="'+esc(nm)+'" autocomplete="nickname">'
+     +'<button type="button" class="st-btn st-btn-primary" onclick="APP.setDisplayName()">Save</button></div>'
+     +'<button type="button" class="st-btn" onclick="APP.signOut()">Sign out</button>';
   }else if(AUTH_USER&&!AUTH_PROFILE){
     h+='<div class="mmenu-panel-eyebrow">One more thing</div><div class="mmenu-authhead"><b>Choose a display name</b>'
      +'<span>Signed in as '+esc(AUTH_USER.email)+'. What should other players see you as?</span></div>'
      +'<div class="mmenu-joinrow"><input type="text" id="authName" placeholder="Display name"><button class="chip" onclick="APP.setDisplayName()">Save</button></div>';
   }else{
-    h+='<div class="mmenu-panel-eyebrow">Sign in</div><div class="mmenu-authhead"><b>Email &amp; password</b>'
-     +'<span>Needed for Campaigns and the Party Board to sync between people and devices.</span></div>'
-     +'<div class="mmenu-joinrow" style="flex-direction:column;align-items:stretch;gap:8px">'
-     +'<input type="email" id="authEmail" placeholder="you@example.com">'
-     +'<input type="password" id="authPw" placeholder="Password">'
-     +'<div style="display:flex;gap:8px"><button class="chip" onclick="APP.signIn()">Sign in</button>'
-     +'<button class="chip" onclick="APP.signUp()">Create account</button></div>'
-     +'<button class="mmenu-cta-ghost sm" style="align-self:flex-start" onclick="APP.forgotPassword()">Forgot password?</button>'
-     +'</div>'
-     +(AUTH_PENDING==="signup"?'<p class="okmsg" style="margin-top:8px">Check your email to confirm your account, then sign in.</p>':"");
+    // Sign in / Create account tabs (owner menu redesign, 2026-11-07).
+    const up=ACCOUNT_TAB==='up';
+    h+='<div class="st-tabs" role="tablist" aria-label="Account"><button type="button" role="tab" id="stTabIn" aria-selected="'+!up+'" aria-controls="stAuthPane" onclick="ACCOUNT_TAB=\'in\';render()">Sign in</button>'
+     +'<button type="button" role="tab" id="stTabUp" aria-selected="'+up+'" aria-controls="stAuthPane" onclick="ACCOUNT_TAB=\'up\';render()">Create account</button></div>'
+     +'<form class="st-auth" id="stAuthPane" role="tabpanel" aria-labelledby="'+(up?'stTabUp':'stTabIn')+'" onsubmit="event.preventDefault();'+(up?'APP.signUp()':'APP.signIn()')+'">'
+     +(AUTH_MSG?'<p class="st-banner'+(AUTH_MSG.level==='okmsg'?' st-banner-ok':'')+'" role="'+(AUTH_MSG.level==='okmsg'?'status':'alert')+'">'+esc(AUTH_MSG.text)+'</p>':'')
+     +(AUTH_PENDING==="signup"?'<p class="st-banner st-banner-ok" role="status">Check your email to confirm your account, then sign in.</p>':'')
+     +'<label class="st-label" for="authEmail">Email</label><input type="email" id="authEmail" class="st-input" autocomplete="email" placeholder="you@example.com">'
+     +'<label class="st-label" for="authPw">Password</label><div class="st-row"><input type="password" id="authPw" class="st-input" autocomplete="'+(up?'new-password':'current-password')+'"'+(up?' placeholder="8 or more characters"':'')+'>'
+     +'<button type="button" class="st-btn" aria-pressed="false" onclick="const f=document.getElementById(\'authPw\');const show=f.type===\'password\';f.type=show?\'text\':\'password\';this.setAttribute(\'aria-pressed\',show);this.textContent=show?\'Hide\':\'Show\'">Show</button></div>'
+     +'<button type="submit" class="st-btn st-btn-primary st-btn-wide">'+(up?'Create account':'Sign in')+'</button>'
+     +(up?'':'<button type="button" class="st-link" onclick="APP.forgotPassword()">Forgot password?</button>')
+     +'</form>';
   }
-  if(AUTH_MSG)h+='<p class="'+(AUTH_MSG.level||"warn")+'" style="margin-top:8px">'+esc(AUTH_MSG.text)+'</p>';
+  const authShown=CLOUD_ENABLED&&!AUTH_RECOVERY&&!AUTH_USER;
+  if(AUTH_MSG&&!authShown)h+='<p class="st-banner'+(AUTH_MSG.level==='okmsg'?' st-banner-ok':'')+'" role="'+(AUTH_MSG.level==='okmsg'?'status':'alert')+'">'+esc(AUTH_MSG.text)+'</p>';
   h+='</div>';
+  h+='<aside class="st-why"><h2>'+(AUTH_USER?'Your account':'Why sign in?')+'</h2><ul>'
+   +'<li><b>Characters on every device</b><span>Autosaved to your account as you build.</span></li>'
+   +'<li><b>Campaigns and the Party Board</b><span>Your GM sees every linked character.</span></li>'
+   +'<li><b>The Pits</b><span>Bring your own characters into the arena.</span></li></ul></aside>';
   h+='</div>';
   if(AUTH_USER||MOCK_AUTH){
     const owner=AUTH_USER?AUTH_USER.id:"local", cache=ACCOUNT_BACKUPS&&ACCOUNT_BACKUPS.owner===owner?ACCOUNT_BACKUPS.rows:null;
