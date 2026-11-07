@@ -217,4 +217,21 @@ test('Settings in the ☰ menu opens a centred window with the colour scheme and
  assert.match(h,/class="pmx-modal" role="dialog" aria-modal="true" aria-label="Settings"/);assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,5);assert.match(h,/pmToggleDice3d/);
  run('APP.pmModalClose()');assert.equal(run('pmModalHTML()'),'');run('APP.pmModal("bogus")');assert.equal(run('PM_MODAL'),null);
 });
+test('Roll damage sends its dice to the tray: weapon dice, Damage Modifier dice, then the d20 (live check #174)',()=>{
+ setup();attack("Battleaxe","Success",["Bleed"]);
+ const d=JSON.parse(run('JSON.stringify(pmRollDamageFor(S.rollLog[0],seq(.5)))'));
+ assert.deepEqual(d.dice,[{sides:6,value:4},{sides:2,value:2},{sides:20,value:11}]);
+ attack("Battleaxe","Critical",["Choose Location","Maximise Damage"]);
+ const c=JSON.parse(run('JSON.stringify(pmRollDamageFor(S.rollLog[0],seq(.5)))'));
+ assert.deepEqual(c.dice,[{sides:6,value:6},{sides:2,value:2}],'maximised die shows its full value; no d20 with Choose Location');
+ run('var __dmgShown=[];pmDiceShowDamage=r=>__dmgShown.push(r.damage.total);PM_DICE_S=S;');
+ attack("Battleaxe","Success",["Bleed"]);run('pmDiceSync();APP.playRollDamage(0);pmDiceSync()');
+ assert.equal(run('__dmgShown.length'),1,'shown once');assert.equal(run('__dmgShown[0]'),run('S.rollLog[0].damage.total'));
+ run('pmDiceSync()');assert.equal(run('__dmgShown.length'),1,'not replayed on the next render');
+});
+test('the Features & traits tab has a short "Traits" label for narrow columns',()=>{
+ const src=fs.readFileSync(path.join(root,'js','play.js'),'utf8');
+ assert.match(src,/<span class="pmx-tab-full">'\+l\+'<\/span><span class="pmx-tab-short" aria-hidden="true">Traits<\/span>/);
+ assert.match(fs.readFileSync(path.join(root,'play-stone.css'),'utf8'),/@container \(max-width:440px\)\{[^}]*\{[^}]*\}\s*\.pmx-tab-full\{display:none\}\.pmx-tab-short\{display:inline\}/);
+});
 console.log(passed+' play stone design tests passed');

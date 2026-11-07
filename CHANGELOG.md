@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Fixes from the live check (#174)
+
+- **Assign to campaign** now lists a campaign you've just created. The builder was showing an out-of-date list.
+- **Play Mode tabs** stay on one line at smaller desktop sizes: "Features & traits" shortens to "Traits" when space is tight. Between 1100 and 1300px wide, the side columns give way so the tabs column keeps at least 300px.
+- **Roll damage** now rolls its dice in the tray (weapon dice, Damage Modifier and the d20), instead of leaving the attack roll showing.
+
 ## 2026-11-06 — Final Subsystem 4 gates on the new desktop Play Mode
 
 - Owner-only (g)–(i), hazard tables, Settings colour switch, skill description and Dagger→Impale→Roll damage all PASS. Natural ER17+INT16 gained+3; maiming2HP and Luck refill persisted. Three live screenshots: `docs/advancement-stone-live-20261106.md`.
