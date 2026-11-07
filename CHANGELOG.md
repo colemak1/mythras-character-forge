@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: Stone look (v0 design, step 1)
+
+- The Pits now looks like Play Mode: the same stone panels, Cinzel headings and colour scheme (it follows the scheme picked in Play Mode's Settings).
+- The layout follows the chosen v0 mockup: your fighter on the left, the opponent on the right, and the round, whose turn it is and the engagement range across the top of the middle column. The prompt and dice sit below that, with the combat chronicle full width underneath. On phones, the prompt comes first, then both fighters, then the chronicle.
+- Fighter panels show weapon Size and Reach, Action Point pips, condition chips and wound tags (Minor, Serious, Major) on each hit location. Actions show their AP cost as a tag.
+- No rules changed. The rules footer now describes concurrent tied Initiative and shield strikes correctly.
+
 ## The Pits PIT-SE03 Unarmed rules source cases and shield conventions — docs only
 
 - Added **44** Core-cited, deterministic `PIT-SE03-*` cases to `docs/the-pits-combat-procedure-review.md`: **8** Unarmed attack, **6** Unarmed parry, **7** Grip, **5** distinct full-Grapple, **5** Flurry, **6** Take Weapon, **5** effect-eligibility, **2** two-fighter scope cases.
