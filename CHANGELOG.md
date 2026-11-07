@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-06 — Subsystem 4 final focused live gates pass
+
+- Owner-only (g)–(i): campaign 1d6+1 ER gained +6, Weak Passion helper/floor 0/reload, maiming maximum 2 HP persisted, and new-session Luck refilled. Acid/fall/fire tables present.
+- Evidence: `docs/advancement-final-live-20261106.md`. Formula appears in instructions, not repeated on the result history. Character deletion/reload verified. Campaign delete confirmed, but environment reset prevented final absence verification and removed the captured screenshot.
+- Docs only; 33 current local test scripts pass. Claude to review closeout; progress remains 4/8. This pass predates the Stone layout and does not verify that later UI.
+
 ## Play Mode: damage roll rule fixes, corrected skill summaries, centred Settings
 
 - **Damage roll, checked against the rulebook by ChatGPT (#170):**

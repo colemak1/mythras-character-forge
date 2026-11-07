@@ -336,3 +336,8 @@ Mapped against the code after PR #124. Claude re-checked Core pp.73 (training ta
 ## Subsystem 4 live acceptance — 2026-11-06
 
 See [owner-only live report](advancement-live-acceptance-20261106.md): requested reconciliation steps **(a)–(f) all PASS**, including characteristic maintenance/atrophy across awards, fumble +1 before ER, mentor +25/re-training gate and unlock, new Professional Skill for 3 rolls, Serious weekly and Major treated monthly recovery, and reload after each. Latest state also retained on saved account reopen; one disposable deleted and absence verified after reload. All 32 local scripts passed; no code changed. This evidence covers the exercised branches, not all 216 cases; added campaign-option (g) remains untested. Subsystem 4 OPEN, overall 4/8.
+
+
+## Final focused owner-only live evidence — 2026-11-06
+
+Steps **(g)–(i) PASS** and hazard tables present: [detailed observations and limitations](advancement-final-live-20261106.md). Optional campaign 1d6+1: natural ER 66 + INT16 versus Willpower24 gained +6→30; formula visible in instructions. Weak Passion deepen +1; wane reached 0 and stayed 0. Reload retained values. Maiming maximum Right Arm4→2 survived reload and saved account reopen. Luck1/2→2/2 via Start a new session, retained on reopen. Character deleted/reload verified; campaign delete accepted, but final saved absence unverified after environment reset. Screenshot removed by workspace maintenance. 33 current local scripts pass; no code changed. These are pre-Stone deployment observations (`play.js?v=74f8277601`, `app.js?v=56de852493`), not acceptance of the later UI. Claude to decide closeout; **4/8 pending that decision**.
