@@ -12,13 +12,28 @@ Three assistants work on this project: **Claude** (Claude Code), **ChatGPT** and
 
 ## Rules
 
-1. Never commit directly to `main`. Work on a branch and open a pull request. Claude merges its own PRs once the **Tests** check passes on the latest commit (owner's standing approval, 2026-11-05); merging deploys the site. ChatGPT does not merge. Only one assistant edits a given area at a time.
+1. Never commit directly to `main`. Work on a branch and open a pull request. Claude merges its own PRs once the **Tests** check passes on the latest commit (owner's standing approval, 2026-11-05), or turns on GitHub auto-merge so the PR merges itself when Tests passes. Merging deploys the site. ChatGPT does not merge. Only one assistant edits a given area at a time.
 2. Run every test before pushing: `for f in tests/*.cjs; do node "$f" || echo "FAIL $f"; done`. The **Tests** workflow runs the same check on every push and pull request. Never skip, delete or weaken a test to get it passing.
 3. After changing any JS or CSS file, run `python3 scripts/stamp-assets.py`. It stamps each `?v=` in `index.html` with a hash of the file, so returning players get the new version. `tests/asset-versions.cjs` fails if you forget.
-4. Add release notes at the top of `CHANGELOG.md`. Do not create new `CHANGELOG-*.md` files.
+4. Claude adds release notes at the top of `CHANGELOG.md` for code changes. Docs-only PRs (ChatGPT) do not edit `CHANGELOG.md`. Do not create new `CHANGELOG-*.md` files.
 5. Write rulings and interpretations in `docs/decisions.md` or the relevant `docs/*-cases.md` ledger, not only in chat.
 6. Mythras Core is authoritative. Sit'ota house rules must be labelled as house rules and never removed without the owner's approval.
 7. Report progress against the 8 groups in `docs/subsystem-plan.md`. A small release does not advance the count.
+
+## Saving credits (owner, 2026-11-07)
+
+Credits run out mid-task and block the project. Both assistants follow these:
+
+1. **Fresh Claude sessions.** Start a new Claude session for each batch of work instead of one long conversation; the files carry the state. The owner opens it with the kickoff line at the top of `HANDOFF.md`.
+2. **Fewer, bigger PRs.** One PR per finished piece of work, not one per step. Claude turns on auto-merge (repository setting "Allow auto-merge") so PRs merge when Tests passes, without a wake-up per event.
+3. **Few screenshots.** Claude screenshots only what it needs to check, cropped where possible, and sends the owner the final ones.
+4. **Cheap files.** Prefer normal line lengths in code; very long single lines (as in `experiments/practice-combat.html`) make every read expensive. Split them when touching that code.
+5. **ChatGPT (Work) only for what Claude can't test.** Claude checks layouts at 390px and 1280px, light and dark, with a headless browser. Work is for signed-in tests against the real site and data, real phones and audio. If its browser blocks a check, it records "blocked" and moves on without retrying.
+6. **Docs PRs stay out of shared files.** ChatGPT's docs-only PRs do not touch `CHANGELOG.md`, and change at most their own line in `HANDOFF.md`. This avoids merge conflicts Claude has to resolve.
+7. **Short rule specs.** ChatGPT (Chat) runs without credits, so spec-first stays. Specs list only the cases that need code, each with its Core page; skip "already correct" rows (one summary line is enough). Claude reads every line, and long specs cost Claude's credits.
+8. **One review pass.** For a small rule fix, Claude may build it straight from the rulebook and ChatGPT (Chat) reviews the PR once. Big systems (for example ranged combat) keep spec first.
+9. **Owner messages.** If a session seems stuck, a short "continue" is cheaper than re-pasting an earlier message.
+10. **Short handoffs.** The paste-ready message says what changed and what to do next. It points to `AGENTS.md` rather than restating it.
 
 ## Switching between assistants
 
@@ -30,7 +45,7 @@ The owner does not alternate messages between assistants. Each assistant works t
      - **ChatGPT (Chat)**, the regular chat: rulebook work, case specs, rulings, reviewing docs. No credits needed. It can write files and open PRs through its GitHub connector, but can't run the tests. For large output (case tables, data), it opens a docs-only PR; Claude reviews and merges it. For short answers, it replies in chat and the owner pastes them to Claude.
      - **ChatGPT (Work)**, the agent session with a browser: only for signed-in testing on the live site. It uses Work credits, so batch live checks together.
      - Prefer Chat whenever a browser isn't needed.
-  2. A short message in a block the owner can paste as-is. It must say what changed (PR number or files), what to do next, and to read `HANDOFF.md` first.
+  2. A short message in a block the owner can paste as-is. It must say what changed (PR number or files), what to do next, and to read `AGENTS.md` and `HANDOFF.md` first.
 - **If the owner needs to act first** (merge a PR, sign in, run a deploy), say so before the paste-ready message.
 - **If neither assistant can proceed** (waiting on a decision), say **Next: owner** and ask the question.
 - Don't hand off just to report progress. Report it and keep working.
