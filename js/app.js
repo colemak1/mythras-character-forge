@@ -1427,9 +1427,11 @@ window.APP={
      S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;
      S._pendingClaim=(entry.ownerId==="local");
      APPVIEW="character";render();window.scrollTo(0,0);});},
- deleteLibChar(id,name){
-   if(!confirm('Delete "'+name+'"? This can\'t be undone — Export JSON first if you want a copy.'))return;
-   deleteCharUnified(id).then(()=>{LIB_CACHE=null;render();loadLibraryUnified();})
+ // opts.confirmed: the Characters page's Undo toast already gave the player a
+ // way back, so no second confirm() (owner menu redesign, 2026-11-07).
+ deleteLibChar(id,name,opts){
+   if(!(opts&&opts.confirmed)&&!confirm('Delete "'+name+'"? This can\'t be undone — Export JSON first if you want a copy.'))return;
+   deleteCharUnified(id).then(()=>{LIB_CACHE=null;if(APPVIEW==='menu'&&typeof loadHomeCharacters==='function')loadHomeCharacters();render();loadLibraryUnified();})
      .catch(e=>{CAMP_MSG="Could not delete character: "+e.message;render();});},
  /* account */
  toAccount(){APPVIEW="account";AUTH_MSG=null;render();window.scrollTo(0,0);},

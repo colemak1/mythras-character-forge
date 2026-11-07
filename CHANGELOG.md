@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Home: Continue card, character cards and table tiles
+
+From the owner's menu redesign handoff (Part A, item 4):
+- **Continue:** the hero has a Continue card for your most recently saved character. It shows their best Combat Style, and Explore Sit’ota sits beside it as a quieter link. Signed out, it's a "Sign in to continue" button.
+- **Your characters** shows up to three cards plus a dashed New character card. Each card shows the portrait or initials, culture and career, the best Combat Style %, Action Points, the campaign when linked, when it was saved, a Play button, and a ⋯ menu (Edit, Print sheet, Delete with Undo). Signed out: "Your table is waiting".
+- **At the table:** four tiles for Campaign, The Pits, Rules and World Guide. The Pits tile shows your best local run when you have one. Create campaign and Join a campaign sit just below.
+- The ORC licence attribution is now visible at the bottom of Home.
+
 ## Menus: shared page header, phone tab bar and sign-in gates
 
 From the owner's home and menu redesign handoff (Part A, items 1–3):
