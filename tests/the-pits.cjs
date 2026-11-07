@@ -56,5 +56,13 @@ await test('any Core melee weapon a character carries goes to the arena, not jus
  assert.deepEqual(JSON.parse(run('JSON.stringify(pr.styles[0].shields)')),[{name:'Kite',key:'kite'}]);
  assert.deepEqual(JSON.parse(run('JSON.stringify(pr.unsupportedGear)')),['Long bow','Lance']);
 });
+await test('a weapon the style trains can be practised even when the character does not carry it',()=>{
+ run(`var c=freshState();c.concept.name='Unarmed kit';c.chars={STR:13,CON:12,SIZ:14,DEX:15,INT:14,POW:11,CHA:10};c.cultStyleOn=true;c.cultStyleName='Spear and shield';
+  c.styleDefs['style:cult']={weapons:['Longspear','Viking','Shortsword'],traits:[]};c.gearWeapons=['Shortsword'];
+  var pc=practiceSnapshot({id:'y',ownerId:'user',state:c});`);
+ assert.deepEqual(JSON.parse(run('JSON.stringify(pc.styles[0].weapons)')),[{name:'Shortsword',key:'shortsword'},{name:'Longspear',key:'longspear'}],'carried first');
+ assert.deepEqual(JSON.parse(run('JSON.stringify(pc.styles[0].shields)')),[{name:'Viking',key:'viking'}]);
+ assert.deepEqual(JSON.parse(run('JSON.stringify(pc.unsupportedGear)')),[]);
+});
 console.log(passed+' The Pits tests passed');
 })().catch(e=>{console.error(e);process.exit(1);});
