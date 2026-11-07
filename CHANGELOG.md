@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-06 — Subsystem 4 live steps (a)–(f) pass
+
+- Owner-only disposable pass verifies characteristic maintenance/atrophy, free fumble +1 before an Experience Roll, mentor training lock/unlock, learning for 3 rolls, Serious weekly and Major treated monthly recovery, and reload after each stage.
+- Final saved account reopen retains Athletics 54%, Acrobatics 28%, pool 2, Chest 0/7 and Right Arm −3/4. Fixture deleted and absence confirmed after reload. Evidence/screenshot: `docs/advancement-live-acceptance-20261106.md`.
+- All 32 local test scripts pass. Docs only; Subsystem 4 stays OPEN, progress 4/8. Added campaign-option step (g) was outside this requested pass and remains untested.
+
 ## Hazards and recovery notes, checked against the rulebook
 
 - The Body → Hazards and recovery panel now covers **acid** (it was missing). It also has compact tables for **falls** and **fire**, plus the exact **exertion** check times and grades.
