@@ -87,3 +87,8 @@ Together with (a)–(f) in #164, every live gate in the closeout review is met. 
 1. **Campaign cleanup:** the disposable campaign's deletion was submitted but not re-checked after a browser reset. This is test-data cleanup, not Subsystem 4 behaviour; the owner checks the campaign list and deletes **Disposable S4 Final Campaign** if it is still there. Campaign deletion itself belongs to Subsystem 8.
 2. **Pre-Stone UI:** the passes ran before the Stone layout. That layout changed presentation only: the advancement code paths (Improve Skills, Advance time, location maximum, Luck) are unchanged and their tests still pass. The Stone walkthrough stays a separate pending live check.
 3. **Formula placement:** "1d6+1" appears in the Improve Skills instructions, not on each history line. That is acceptable as is.
+
+
+## New Stone deployment focused pass — 2026-11-06
+
+**(g)–(i) PASS again**, with hazard tables and requested new desktop controls: [full report and three screenshots](advancement-stone-live-20261106.md). Natural ER17+INT16 versus24 gained+3→Willpower27; Weak Passion+1 then floor0; reload/history retained. Maiming Arm4→2 persisted; Luck1/2→2/2 via new session and saved account reopen. Settings colour switch, Athletics description and natural Dagger16 Success→Impale→Roll damage4/RightLeg all worked. No Critical occurred; equal Impale totals/DM0 limit this arithmetic spot-check. Both fixtures deleted/reload verified; previous #172 campaign absent too. All33 local scripts pass. play.js56772afe28/app.js9772b7a37c. UI observations and scope limits in report. Claude closed S4 in #173 during this follow-up; retain CLOSED and5/8. This adds newer presentation evidence and resolves the cleanup limitation.
