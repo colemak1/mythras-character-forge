@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-07 by Claude_
+_Last updated: 2026-11-07 by ChatGPT (Chat) — The Pits P2 Initiative/Shield source cases_
 
 ## Priorities
 
@@ -14,7 +14,7 @@ _Last updated: 2026-11-07 by Claude_
 
 **Practice Combat is active again (owner, 2026-11-07):** rules first, then every weapon (done: shared table), then a Play Mode-style UI, then the fun polish. Progress **5/8**.
 
-**Current Pits rule-check handoff:** `docs/the-pits-combat-procedure-review.md` contains 51 source-linked acceptance cases. This is not a live/CI certification. Main Play Mode Combat remains closed, The Pits has a separate implementation backlog; 5/8 retained.
+**Current Pits rule-check handoff:** `docs/the-pits-combat-procedure-review.md` contains the original **51** source-linked cases plus **28 detailed P2 child cases** (PIT-P02: eight tied Initiative; PIT-P07: twenty shield attacks/Bash). These are source specs, not implemented or live-accepted. Main Play Mode Combat **CLOSED**; Pits procedure remains active separately; progress **5/8**.
 
 ## In progress
 
@@ -22,7 +22,7 @@ Four extra Play Mode palettes (War Room, Night Watch, Ivory & Ink, Deep Cypress)
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| The Pits combat procedure source audit | ChatGPT (Chat) → Claude | `docs/the-pits-combat-procedure-source-review` (docs-only PR) | **51 Core-linked cases; 21 NEEDS CODE + 1 NEEDS COPY, 21 PASS checks, 2 decisions and scope notes.** Printed pp.86–111, with source screenshots for p.95 rounding ambiguity. Claude owns code/tests; no work on main Combat scope. **5/8**. |
+| The Pits P2 source test specifications | ChatGPT (Chat) → Claude | `docs/pits-p2-initiative-shield-core-cases-20261107` docs-only PR | **28** child cases in `docs/the-pits-combat-procedure-review.md`: **8** P02 tied Initiative (Core p.90), **20** P07 shield attack and Bash (pp.63,91,95–96; p.104 cross-check). Claude owns code/tests. **5/8; S5 CLOSED**. |
 | Item search / Core traits source review | ChatGPT → Claude | `docs/item-traits-source-review` docs-only PR | **PASS:** 5 ammo bundles (p.62), 8 armour per-location AP/ENC/cost rows (p.58), all 26 offered trait names/descriptions (p.89; Skirmishing cap p.108). `docs/item-search-core-cases.md`. Optional Lead sling label; printed Mail5-per-location/30-suit inconsistency documented. 34 scripts pass; no code changes;5/8 retained. |
 | New desktop live acceptance | ChatGPT (Work) → Claude | #174 merged | All checks PASS. Its three UI observations are fixed in the follow-up PR: campaign picker refresh, tabs on one line, damage dice in the tray. |
 | Skill summary + damage helper Core audit | ChatGPT (Chat) → Claude | `docs/play-skill-info-damage-core-review` (docs-only PR) | All **58** `SKILL_INFO` entries and all **10** damage cases source checked. Corrections: 3 substantive skill summaries, 2 magic citations; **R6, R7, R8** code/copy fixes. No tests or app code changed. Keep progress **4/8**. |
@@ -36,8 +36,8 @@ Four extra Play Mode palettes (War Room, Night Watch, Ivory & Ink, Deep Cypress)
 
 ## Waiting on someone
 
-- **Claude:** The Pits fixes, batches 1 and 2 done (W02/W03, W09/SE17, SE10–SE12, R02; SE01, SE02, SE07, SE08), and P01 parry rounding ruled (rounds up, #184). Next: P2 items (tied Initiative P02, shield attacks P07, Unarmed SE03), then the Play Mode-style Pits UI.
-- **ChatGPT (Chat):** Entangle readings checked (2 PASS, 2 arena conventions, Trip corrected and fixed in the follow-up PR). Next for Chat: case specs for the remaining P2 items, PIT-P02 tied Initiative and PIT-P07 shield attacks / shield Bash, so Claude can implement them.
+- **Claude:** review/merge the P2 docs-only case-spec PR once Tests passes; implement **8 tied Initiative** and **20 shield-attack** child cases in focused code PRs with deterministic tests, using the shared weapon table. The Entangle original-roll ruling is fixed in merged #188. Then Unarmed PIT-SE03 and Play Mode-style Pits UI by owner priority.
+- **ChatGPT (Chat):** P2 source-case work delivered in `docs/the-pits-combat-procedure-review.md`; available for subsequent interpretation review if Claude encounters ambiguity. Do not change production code.
 
 - **ChatGPT (Work):** (source review #179 passed) owner-only live check on a disposable character:
   - Inventory → Add an item: search "sword" and add it (free), then confirm it appears on the Combat tab and attacks;
@@ -57,6 +57,8 @@ Four extra Play Mode palettes (War Room, Night Watch, Ivory & Ink, Deep Cypress)
 
 
 ## Notes
+
+- **Pits P2 source cases, 2026-11-07:** owner-uploaded Core printed **p.90**: equal final Initiative totals act concurrently, original d10 remains through later rounds absent forced re-roll; **p.63**: all eight shields have damage/Size/Short Reach and their own Special Effects; **p.96**: shield Bash uses one metre per two **whole** points of raw damage, regular bludgeoning Bash per three (pp.91,95,104,106 are related). Added **28** detailed deterministic case specifications to the existing Pits ledger. Simultaneous-declaration UI strategy must be labelled an arena convention, not a hidden Core tie-break. No tests or live checks run in Chat, and no production files touched. Main S5 CLOSED, overall **5/8**.
 
 - **Pits source-review (2026-11-07):** privately uploaded Mythras Core printed pp.86–111 inspected (rendered tables p.95 and wound p.110), comparing `experiments/practice-combat.html` SHA `73cc27a0556fb9e048ab8dc29dab78a469b5cbf8` and main `docs/combat-cases-batch-1.md`. Reviewed 51 cases, 21 NEEDS CODE plus 1 NEEDS COPY candidate; 29 of 43 SE names are selectable. `parryAbsorption` currently floors amount **blocked** at half on odd damage: p.95 table says Half but gives no explicit integer rounding, so record a decision. No production changes or automated/live tests run. **5/8 remains**.
 
