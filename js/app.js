@@ -833,17 +833,17 @@ window.APP={
    const r=S.rollLog[i];if(r.combatKind==="evade"&&role!=="defence")return;
    if(r.combatRole!==role){r.combatRole=role;r.effectsPicked=[];if(r.opponentAction==="no-parry"){r.oppTier=null;r.opponentAction=null;}}render();},
  playNoParry(i){if(VIEW_ONLY||!S.rollLog[i]?.combat||S.rollLog[i].combatRole!=="attack")return;
-   const r=S.rollLog[i];r.oppTier="Failure";r.opponentAction="no-parry";r.effectsPicked=[];render();},
+   const r=S.rollLog[i];r.oppTier="Failure";r.opponentAction="no-parry";r.effectsPicked=[];delete r.damage;render();},
  playSetOpponentTier(i,tier){if(VIEW_ONLY||!S.rollLog[i]||!["Critical","Success","Failure","Fumble"].includes(tier))return;
-   S.rollLog[i].oppTier=tier;S.rollLog[i].opponentAction="rolled";S.rollLog[i].effectsPicked=[];render();},
+   S.rollLog[i].oppTier=tier;S.rollLog[i].opponentAction="rolled";S.rollLog[i].effectsPicked=[];delete S.rollLog[i].damage;render();},
  playChooseEffect(i){if(VIEW_ONLY)return;
    const r=selectedEffectRoll(), effect=SPECIAL_EFFECTS[i];if(!canPickEffectForRoll(effect,r))return;
    const picked=r.effectsPicked||[];
    if(picked.length>=rollEffectsWon(r)||(!effect[5]&&picked.includes(effect[0])))return;
-   r.effectsPicked=[...picked,effect[0]];render();},
+   r.effectsPicked=[...picked,effect[0]];delete r.damage;render();},
  playRemoveEffectChoice(i){if(VIEW_ONLY)return;
    const r=selectedEffectRoll();if(!r||!Number.isInteger(i)||i<0||i>=(r.effectsPicked||[]).length)return;
-   r.effectsPicked.splice(i,1);render();},
+   r.effectsPicked.splice(i,1);delete r.damage;render();},
  /* ---- Experience Rolls / Improve Skills (core rulebook pp.71-73) ---- */
  openXP(){XP_LEARN_MSG="";XP_TRAIN_MSG="";XP_CHAR_MSG="";XP_OPEN=true;
    const current=S,id=S.campaignId;
@@ -1220,7 +1220,7 @@ window.APP={
  // Switching tabs (Actions/Special Effects/Inventory/Features/Notes) is
  // read-only navigation, always allowed even in a VIEW_ONLY session.
  // Phones show one area at a time: stats, skills, or the tabbed panel.
- playTab(t){if(t==="skills"||t==="stats"||t==="body"){PM_VIEW=t==="skills"?"skills":"stats";}else{S.play.tab=t;PM_VIEW="right";}render();},
+ playTab(t){if(t==="skills"||t==="stats"||t==="body"){PM_VIEW=t;}else if(t==="more"){if(pmActiveTab()==="combat")S.play.tab="magic";PM_VIEW="right";}else{S.play.tab=t;PM_VIEW="right";}render();},
  // Descriptions and secondary detail open in one pop-up (see pmPopupHTML).
  pmPopup(k,i){PM_POPUP={k:String(k),i:Number.isInteger(i)?i:null};render();},
  pmPopupClose(){PM_POPUP=null;render();},
@@ -1232,7 +1232,8 @@ window.APP={
    const panel=$("#pm-resolve")||$("#pm-actions");if(panel)panel.scrollIntoView({block:"start"});
  });},
  // The hit location diagram lives on the Body tab.
- playJumpToInjury(){PM_VIEW="stats";if(PM_POPUP&&PM_POPUP.k==="log")PM_POPUP=null;render();requestAnimationFrame(()=>{
+ playRollDamage(i){if(VIEW_ONLY)return;const r=S.rollLog[i];const d=pmRollDamageFor(r);if(!d)return;r.damage=d;render();},
+ playJumpToInjury(){PM_VIEW="body";if(PM_POPUP&&PM_POPUP.k==="log")PM_POPUP=null;render();requestAnimationFrame(()=>{
    const panel=$("#pm-vitals");if(panel)panel.scrollIntoView({block:"start"});
  });},
  /* export / import */

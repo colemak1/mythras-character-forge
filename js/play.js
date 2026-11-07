@@ -251,89 +251,47 @@ function pmZoneFill(loc,state){const l=charVitals(state).locs.find(x=>x.loc===lo
 function pmZoneStroke(loc,state){const l=charVitals(state).locs.find(x=>x.loc===loc);return pmHpStroke(l.cur,l.max,l.cls);}
 function pmShortName(l){return l.replace("Right ","R. ").replace("Left ","L. ");}
 const PM_SHIELD_SVG='<svg viewBox="0 0 10 12" fill="currentColor" width="9" height="11" style="vertical-align:-1px;margin-right:2px"><path d="M5 0 L10 1.8 V6 Q10 10 5 12 Q0 10 0 6 V1.8 Z"/></svg>';
-// 7-zone humanoid figure — geometry ported from the approved mockup
-// (playmode-redesign-mockup.html) verbatim; fill/stroke/major-pulse computed
-// live from real Play Mode state instead of the mockup's static sample data.
-const PM_ZONE_SHAPES={
-  "Head":["path",'d="M100,34 a20,23 0 1 0 40,0 a20,23 0 1 0 -40,0 Z"'],
-  "Chest":["path",'d="M86,62 L154,62 Q160,62 160,70 L152,146 Q151.5,151 146,151 L94,151 Q88.5,151 88,146 L80,70 Q80,62 86,62 Z"'],
-  "Abdomen":["path",'d="M95,155 L145,155 Q149,155 149,159 L153,196 Q154,205 145,205 L95,205 Q86,205 87,196 L91,159 Q91,155 95,155 Z"'],
-  "Right Arm":["rect",'x="-9" y="0" width="18" height="138" rx="9" transform="translate(70,68) rotate(9)"'],
-  "Left Arm":["rect",'x="-9" y="0" width="18" height="138" rx="9" transform="translate(170,68) rotate(-9)"'],
-  "Right Leg":["rect",'x="-12" y="0" width="24" height="148" rx="11" transform="translate(104,208) rotate(3)"'],
-  "Left Leg":["rect",'x="-12" y="0" width="24" height="148" rx="11" transform="translate(136,208) rotate(-3)"']
+// Contour figure from the approved v0 design (Stone & Verdigris, 2026-11-07):
+// seven clickable zones drawn as half-outlines and mirrored into symmetric
+// shapes. No numbers on the figure: HP, armour and the d20 range live in the
+// list beside it. Fill = wound colour mixed into the card (CSS).
+const PM_FIG_HALF={
+ head:'M60 3.5 C53 3.5 47.5 9.5 47.5 18 C47.5 25.5 51 34 60 34.5',
+ chest:'M60 33 L54.5 33 L54.5 41 C49 43 42 44 36.5 46.5 L37 69 C38.5 76 39 80 39.5 82 Q48 84.5 60 85',
+ abd:'M60 85 Q48 84.5 39.5 82 C41 90 42 96 41 104 C40 109 38.5 113 38.5 117 C46 121 54 124 60 128'
 };
-// Leader-line anchors (in the inner 240x360 body coordinate space) for the
-// patent-drawing plate treatment — literal port of D's leadered labels:
-// HEAD/R.ARM/ABDOMEN/R.LEG run to the left edge, CHEST/L.ARM/L.LEG to the
-// right, exactly matching the mockup's own left/right split of the same 7
-// zones. Eyeballed against each zone's own shape in PM_ZONE_SHAPES.
-// (No hand-drawn annotation ellipse anymore — dropped per user feedback;
-// the leader-line highlight + hatching on the zone itself is enough to flag
-// a wound without an extra circled-scribble layer on top.)
-const PM_LEADER_LEFT=[["Head",100,34],["Right Arm",63,120],["Abdomen",90,175],["Right Leg",90,260]];
-const PM_LEADER_RIGHT=[["Chest",155,90],["Left Arm",185,120],["Left Leg",152,260]];
+const PM_FIG_RLEG='M38.5 117 C46 121 54 124 60 128 L59 150 C58.5 165 57.5 176 56.5 188 C55.8 198 55 208 54.5 218 L54.5 224 C56 225.5 58 228 57.5 231 L43 231 C42 228 44 226 46.5 224 L47 218 C47.5 208 44.5 198 43 188 C41.5 178 40.5 170 41 162 C41.5 148 37 132 38.5 117 Z';
+const PM_FIG_RARM='M36.5 46.5 C33 45.5 28 46.5 25.5 51 C22 57 20 68 18.5 80 C17.5 90 14.5 100 12.5 109 C11.5 113 10.5 117 11.5 121 C12.5 125 17.5 125.5 19.5 122 C21 118 22.5 113 24 108 C26 100 30 90 31 80 C31.5 76 34 72 37 69 Z';
+function pmPathParse(d){const t=d.match(/[MLCQZ]|-?\d*\.?\d+/g).filter(x=>x!=="Z"),out=[];let i=0,c;while(i<t.length){if(/[MLCQ]/.test(t[i]))c=t[i++];const n={M:1,L:1,C:3,Q:2}[c],pts=[];for(let k=0;k<n;k++)pts.push([+t[i++],+t[i++]]);out.push([c,pts]);}return out;}
+function pmPathStr(g){return g.map(([c,p])=>c+p.map(q=>q.join(" ")).join(",")).join(" ");}
+function pmPathMirror(g){return g.map(([c,p])=>[c,p.map(([x,y])=>[120-x,y])]);}
+function pmPathReverse(g){const e=g.map(s=>s[1][s[1].length-1]),o=[["M",[e[e.length-1]]]];for(let i=g.length-1;i>=1;i--)o.push([g[i][0],[...g[i][1].slice(0,-1).reverse(),e[i-1]]]);return o;}
+function pmSymPath(half){const L=pmPathParse(half);return pmPathStr(L)+" "+pmPathStr(pmPathReverse(pmPathMirror(L)).slice(1))+" Z";}
+function pmMirPath(d){return pmPathStr(pmPathMirror(pmPathParse(d)))+" Z";}
+const PM_FIG_ZONES={"Head":pmSymPath(PM_FIG_HALF.head),"Chest":pmSymPath(PM_FIG_HALF.chest),"Abdomen":pmSymPath(PM_FIG_HALF.abd),
+ "Right Leg":PM_FIG_RLEG,"Left Leg":pmMirPath(PM_FIG_RLEG),"Right Arm":PM_FIG_RARM,"Left Arm":pmMirPath(PM_FIG_RARM)};
+const PM_WOUND_WORD={ok:"OK",minor:"Minor",serious:"Serious",major:"Major"};
 function pmBodySvg(){
-  const zonesHtml=PLAY_HP_LOCS.map(loc=>{
-    const [tag,attrs]=PM_ZONE_SHAPES[loc];
-    const fill=pmZoneFill(loc),stroke=pmZoneStroke(loc);
-    const cls=playHPState(loc).cls;
-    const sel=S.play.selectedLoc===loc;
-    const armLoc=loc;
-    return '<g class="bz'+(cls!=="ok"?" "+cls:"")+(sel?" sel":"")+'" onclick="APP.pmOpenLoc(\''+loc+'\')" role="button" tabindex="0" aria-label="'+loc+'">'
-     +'<'+tag+' class="shape" '+attrs+' style="fill:'+fill+';stroke:'+stroke+'"/>'
-     +'<'+tag+' class="hatch" '+attrs+' fill="url(#pmhatch)" stroke="none"/>'
-     +'<title>'+loc+' — '+playCurHP(loc)+'/'+playMaxHP(loc)+' HP · AP '+armorApAt(armLoc)+'</title></g>';
+  const sel=S.play.selectedLoc;
+  const order=["Chest","Abdomen","Right Leg","Left Leg","Right Arm","Left Arm","Head"];
+  const zones=(sel&&order.includes(sel)?[...order.filter(k=>k!==sel),sel]:order).map(loc=>{
+    const cls=playHPState(loc).cls,ap=armorApAt(loc);
+    const label=loc+", "+playCurHP(loc)+" of "+playMaxHP(loc)+" hit points, armour "+ap+", "+PM_WOUND_WORD[cls];
+    return '<g class="pmx-zone '+cls+(sel===loc?" sel":"")+'" onclick="APP.pmOpenLoc(\''+loc+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();APP.pmOpenLoc(\''+loc+'\')}" role="button" tabindex="0" aria-label="'+label+'"><path d="'+PM_FIG_ZONES[loc]+'"/></g>';
   }).join("");
-  // Highlight whichever location is worst off, same rule pmVitalsCard()/
-  // pmStandingText() use — only ever one leader-line highlighted on the
-  // plate at a time, matching the mockup. Covers Minor as well as Serious/
-  // Major now, so a location that's merely taken damage still gets its own
-  // (distinctly styled) leader-line callout instead of looking untouched.
-  const worstRank={ok:0,minor:1,serious:2,major:3};
-  const worstLoc=PLAY_HP_LOCS.reduce((w,l)=>worstRank[playHPState(l).cls]>worstRank[playHPState(w).cls]?l:w,PLAY_HP_LOCS[0]);
-  const worstCls=playHPState(worstLoc).cls;
-  // Leader lines + dot markers + name/HP labels on both edges — the
-  // "patent drawing" device the mockup uses instead of a plain side list.
-  const OX=70,OY=10; // offset of the nested body svg within the outer plate
-  const leader=(loc,ix,iy,side)=>{
-    const ax=ix+OX,ay=iy+OY;
-    const edgeX=side==="left"?14:366,bendX=side==="left"?80:300;
-    const wound=loc===worstLoc&&worstCls!=="ok";
-    const minor=wound&&worstCls==="minor";
-    const cur=playCurHP(loc),max=playMaxHP(loc);
-    const armLoc=loc,ap=armorApAt(armLoc);
-    const tierSuffix=worstCls==="major"?"MAJOR":worstCls==="serious"?"SERIOUS":"MINOR";
-    const nm=pmShortName(loc).toUpperCase()+(wound?" — "+tierSuffix:"");
-    const anchor=side==="left"?"start":"end";
-    const cls=(wound?" wound":"")+(minor?" minor":"");
-    return '<path class="pm-leader'+cls+'" d="M'+ax+' '+ay+' L'+bendX+' '+ay+' L'+edgeX+' '+ay+'"/>'
-     +'<circle class="pm-leader-dot'+cls+'" cx="'+ax+'" cy="'+ay+'" r="2.5"/>'
-     +'<text class="pm-leader-lbl'+cls+'" x="'+edgeX+'" y="'+(ay-6)+'" text-anchor="'+anchor+'">'
-       +'<tspan class="pm-leader-nm">'+esc(nm)+'</tspan></text>'
-     +'<text class="pm-leader-lbl'+cls+'" x="'+edgeX+'" y="'+(ay+11)+'" text-anchor="'+anchor+'">'
-       +'<tspan class="pm-leader-hp">'+cur+'/'+max+' <tspan>AP'+ap+'</tspan></tspan></text>';
-  };
-  const leaders=PM_LEADER_LEFT.map(([loc,x,y])=>leader(loc,x,y,"left")).join("")
-   +PM_LEADER_RIGHT.map(([loc,x,y])=>leader(loc,x,y,"right")).join("");
-  return '<div class="pm-figwrap"><svg viewBox="0 0 380 400" aria-label="Hit location diagram">'
-   +'<defs><pattern id="pmhatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">'
-   +'<rect width="7" height="7" fill="rgba(224,52,15,.12)"/><line x1="0" y1="0" x2="0" y2="7" stroke="#e0340f" stroke-width="2.2"/></pattern></defs>'
-   +'<svg x="'+OX+'" y="'+OY+'" width="240" height="360" viewBox="0 0 240 360">'+zonesHtml+'</svg>'
-   +leaders+'</svg>'
-   +'<div class="pm-figcap">FIG.1 &mdash; HIT LOCATIONS D20</div></div>';
+  const dec='<g class="pmx-figdec"><path d="M56.5 40 Q48 40.5 41 45"/><path d="'+pmMirPath("M56.5 40 Q48 40.5 41 45")+'"/><path d="M43.5 167 Q49 170 55 167"/><path d="'+pmMirPath("M43.5 167 Q49 170 55 167")+'"/></g>';
+  return '<div class="pm-figwrap pmx-figwrap"><svg class="pmx-fig" viewBox="0 0 120 232" role="group" aria-label="Hit locations">'+zones+dec+'</svg></div>';
 }
 function pmLocRow(loc){
   const cur=playCurHP(loc),max=playMaxHP(loc),st=playHPState(loc).cls;
-  const armLoc=loc,ap=armorApAt(armLoc);
+  const ap=armorApAt(loc);
   const sel=S.play.selectedLoc===loc;
-  return '<div class="pm-locrow st-'+st+(sel?' sel':'')+'" onclick="APP.pmOpenLoc(\''+loc+'\')" role="button" tabindex="0">'
-   +'<span class="dot" style="background:'+pmZoneFill(loc)+'"></span>'
-   +'<span class="nm">'+pmShortName(loc)+'</span>'
-   +'<span class="ap" title="AP '+ap+' — '+esc(armorDisplayName(armLoc))+'">'+PM_SHIELD_SVG+ap+'</span>'
-   +'<span class="pmx-hpbar" aria-hidden="true"><i style="width:'+(max>0?Math.max(0,Math.min(100,Math.round(cur/max*100))):0)+'%"></i></span>'
-   +'<span class="hp">'+cur+'<span>/'+max+'</span></span>'
-   +'<span class="pmx-locst">'+esc(playHPState(loc).tag)+'</span></div>';
+  return '<div class="pm-locrow st-'+st+(sel?' sel':'')+'" onclick="APP.pmOpenLoc(\''+loc+'\')" onkeydown="if(event.key===\'Enter\'){APP.pmOpenLoc(\''+loc+'\')}" role="button" tabindex="0" aria-label="'+loc+', '+cur+' of '+max+' hit points, armour '+ap+', '+PM_WOUND_WORD[st]+'">'
+   +'<span class="nm">'+pmShortName(loc)+' <small>'+hitD20For(loc)+'</small></span>'
+   +'<span class="pmx-wd '+st+'">'+PM_WOUND_WORD[st]+'</span>'
+   +'<span class="pmx-hpline"><span class="pmx-hpbar" aria-hidden="true"><i style="width:'+(max>0?Math.max(0,Math.min(100,Math.round(cur/max*100))):0)+'%"></i></span>'
+   +'<span class="hp">'+cur+'<span>/'+max+'</span></span></span>'
+   +'<span class="ap" title="AP '+ap+' — '+esc(armorDisplayName(loc))+'">'+PM_SHIELD_SVG+ap+'</span></div>';
 }
 // Redesigned damage entry (was a flat row of −1/−3/amount-input/−dmg/+heal/
 // full buttons, all doing raw HP arithmetic with no armour involved at all
@@ -1017,8 +975,27 @@ let GIFT_MSG="";
 // 2026-11-06): stats and body | skills | tabbed panel. Phones show one of
 // them at a time, picked from the bottom bar.
 const PM_TABS=[["combat","Combat"],["magic","Spells"],["gear","Inventory"],["features","Features & traits"],["notes","Notes"]];
-const PM_PHONE_TABS=[["stats","Stats"],["skills","Skills"],["combat","Combat"],["magic","Spells"],["gear","Items"],["features","Traits"],["notes","Notes"]];
-let PM_VIEW="skills";   // phone only: stats | skills | right
+// Phones: five sections from the bottom bar (v0 design, 2026-11-07).
+// "More" opens the right-hand tabs other than Combat.
+const PM_PHONE_TABS=[["stats","Sheet"],["body","Body"],["skills","Skills"],["combat","Combat"],["more","More"]];
+let PM_VIEW="skills";   // phone only: stats | body | skills | right
+const PM_PHONE_ICONS=Object.fromEntries(Object.entries({
+  stats:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h5"/>',
+  body:'<circle cx="12" cy="5" r="2.5"/><path d="M7 21l2-9-3-3M17 21l-2-9 3-3M9 12h6"/>',
+  skills:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+  combat:'<path d="M5 19L19 5M14 5h5v5M5 5l14 14"/>',
+  more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'
+}).map(([k,d])=>[k,'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>']));
+// Colour schemes for the Stone style (v0 design). Per device, like the
+// animated-dice preference: it is a display choice, not character data.
+const PM_COLORWAYS=[["verdigris","Verdigris","Cool grey stone, verdigris green and bronze."],["ember","Basalt & Ember","Warm grey stone, forge orange and brass."],["indigo","Sandstone & Indigo","Warm sandstone, deep indigo and copper."],["moss","Moss & Gold","Lichen stone, moss green and old gold."],["basalt","Basalt (dark)","Dark basalt for dim tables."]];
+function pmColorway(){let v=null;try{v=localStorage.getItem("pm-colorway");}catch(e){}return PM_COLORWAYS.some(c=>c[0]===v)?v:"verdigris";}
+function pmSetColorway(k){if(!PM_COLORWAYS.some(c=>c[0]===k))return;try{localStorage.setItem("pm-colorway",k);}catch(e){}render();}
+function pmStyleHTML(){
+  const cur=pmColorway();
+  return '<p class="pmx-small" style="margin-top:0">Changes the colours of Play Mode on this device only.</p><div class="pmx-cwlist">'
+   +PM_COLORWAYS.map(([k,n,d])=>'<button type="button" class="pmx-cw'+(k===cur?" on":"")+'" aria-pressed="'+(k===cur)+'" onclick="pmSetColorway(\''+k+'\')"><span class="pmx-cwsw pm-cw-'+k+'" aria-hidden="true"><i></i><i></i><i></i></span><span><b>'+esc(n)+'</b><span>'+esc(d)+'</span></span></button>').join("")+'</div>';
+}
 let PM_POPUP=null;      // {k, i} for the description pop-up
 function pmActiveTab(){
   const legacy={actions:"combat",effects:"combat",inventory:"gear",skills:"combat",body:"combat",stats:"combat"};
@@ -1062,11 +1039,11 @@ function pmSkillsPanelHTML(){
     const pin='<button class="pmx-pin'+(pinned?" on":"")+'" aria-pressed="'+pinned+'" title="'+(pinned?"Unpin":"Pin to the top")+'" onclick="APP.playTogglePin(\''+jsq(e.key)+'\')">'+(pinned?"&#9733;":"&#9734;")+'</button>';
     return '<div class="pm-skillrow'+(cbt?" cbt":"")+'" data-search="'+esc((e.label+" "+(e.formula||"")).toLowerCase())+'">'
      +pin+(fluency?"":ckflag+fumbleflag)
-     +'<span class="nm">'+esc(e.label)+'</span>'
-     +(baseFmt?'<span class="base">'+esc(baseFmt)+'</span>':'')
+     +'<span class="pmx-skn"><span class="nm">'+esc(e.label)+'</span>'
+     +(baseFmt?'<span class="base">'+esc(baseFmt)+'</span>':'')+'</span>'
      +'<span class="lead"></span>'
      +(fluency?'<span class="pctval" title="Spoken fluency">'+pctTxt+'</span>':'<span class="pctval" onclick="APP.toggleGradePop(\''+jsq(e.key)+'\',\''+jsq(e.label)+'\',event)" title="Click for Difficulty Grades">'+pctTxt+'</span>'
-     +'<button class="pm-btn roll" onclick="APP.roll(\''+jsq(e.key)+'\')">roll</button>')+'</div>';
+     +'<button class="pm-btn roll" onclick="APP.roll(\''+jsq(e.key)+'\')" aria-label="Roll '+esc(e.label)+'">Roll</button>')+'</div>';
   };
   h+='<div class="pm-box pm-skillsbox">'
    +'<div class="pm-sect-head" title="Difficulty Grade adjusts rolled skill percentages — the GM calls a harder or easier Grade for the situation, not a fixed penalty per attempt. Very Easy x2 · Easy x1.5 · Standard x1 · Hard x2/3 · Formidable x1/2 · Herculean x1/10 · Automatic/Hopeless skip the roll entirely."><span class="no">03</span> SKILLS'+pmTip("grade")+(ACTIVE_GRADE!=="standard"?' <span class="pm-gradenote">('+GRADE_LABEL[ACTIVE_GRADE]+')</span>':"")+'</div>'
@@ -1204,8 +1181,8 @@ function pmGearPanelHTML(){
 function pmPassionsHTML(){
   if(!S.passions.length)return "";
   return '<div class="pm-skillgroup pmx-passions"><h4>Passions</h4>'+S.passions.map((p,i)=>{const v=passionVal(p),num=typeof v==="number";
-    return '<div class="pm-skillrow pmx-passion" data-search="'+esc(String(p.name||"passion").toLowerCase())+' passion"><span class="nm">'+esc(p.name||"(unnamed)")+'</span><span class="lead"></span><span class="pctval">'+v+'</span>'
-     +(num?'<button class="pm-btn roll"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollPassion('+i+')">roll</button>':'')+'</div>';}).join("")+'</div>';
+    return '<div class="pm-skillrow pmx-passion" data-search="'+esc(String(p.name||"passion").toLowerCase())+' passion"><span class="pmx-skn"><span class="nm">'+esc(p.name||"(unnamed)")+'</span><span class="base">Passion</span></span><span class="lead"></span><span class="pctval">'+v+'</span>'
+     +(num?'<button class="pm-btn roll"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollPassion('+i+')" aria-label="Test '+esc(p.name||"passion")+'">Test</button>':'')+'</div>';}).join("")+'</div>';
 }
 function pmFeaturesPanelHTML(){
   return '<div class="pm-box"><h3>Combat Styles and traits</h3>'+combatStylesReadOnlyHTML()+'</div>';
@@ -1237,7 +1214,7 @@ function pmTrackersHTML(){
 function pmTopRowHTML(){
   const c=effectiveChars();
   return '<div class="pmx-top" role="group" aria-label="Characteristics and trackers"><div class="pmx-chars-row">'
-   +["STR","CON","SIZ","DEX","INT","POW","CHA"].map(k=>'<div class="pmx-cell pmx-char" title="'+k+' ×5 = '+(c[k]*5)+'%"><span class="k">'+k+'</span><b>'+c[k]+'</b></div>').join("")
+   +["STR","CON","SIZ","DEX","INT","POW","CHA"].map(k=>'<div class="pmx-cell pmx-char" title="'+k+' ×5 = '+(c[k]*5)+'%"><span class="k">'+k+'</span><b>'+c[k]+'</b><span class="p">'+(c[k]*5)+'%</span></div>').join("")
    +'</div>'+pmTrackersHTML()+'</div>';
 }
 function pmAttrsBoxHTML(){
@@ -1316,8 +1293,20 @@ function pmAdvanceTimeHTML(){
    +opt("fight","End the fight","Clears initiative and Surprised, and restores all Action Points.")
    +opt("session","Start a new session","Refills Luck Points ("+playCurLuck()+" of "+playMaxLuck()+" now). Magic Points stay manual.");
 }
+// Top of the side panel (v0 design): the latest d100 roll on a faceted die,
+// then Details / Roll log tabs. The physics dice tray still animates rolls.
+function pmSideTrayHTML(){
+  const r=S.rollLog[0];
+  if(!r||r.roll==null||r.roll==="")return '<div class="pmx-tray"><div class="pmx-die empty" aria-hidden="true">d100</div><div class="pmx-tray-i"><b>Dice tray</b><span>Roll a skill or attack to see it here.</span></div></div>';
+  return '<div class="pmx-tray" aria-live="polite"><div class="pmx-die">'+esc(r.roll===100||r.roll==="00"?"00":String(r.roll).padStart(2,"0"))+'</div>'
+   +'<div class="pmx-tray-i"><b>'+esc(r.label||"Roll")+'</b><span>d100 vs '+esc(String(r.pct??"—"))+'%</span>'+(r.tier?'<span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span>':'')+'</div></div>';
+}
+function pmSideTabsHTML(onLog){
+  return '<div class="pmx-ptabs" role="tablist"><button type="button" role="tab" class="pmx-ptab" aria-selected="'+(!onLog)+'" onclick="'+(onLog?'APP.pmPopupClose()':'')+'">Details</button>'
+   +'<button type="button" role="tab" class="pmx-ptab" aria-selected="'+onLog+'" onclick="APP.pmPopup(\'log\')">Roll log'+(S.rollLog.length?' · '+S.rollLog.length:'')+'</button></div>';
+}
 function pmPopupHTML(){
-  if(!PM_POPUP)return '<aside class="pmx-side pmx-side-empty" aria-label="Details"><p class="pmx-dim">Details appear here. Choose a Special Effect, a body location, or the roll log.</p></aside>';
+  if(!PM_POPUP)return '<aside class="pmx-side pmx-side-empty" aria-label="Details">'+pmSideTrayHTML()+pmSideTabsHTML(false)+'<p class="pmx-dim pmx-side-hint">Details appear here. Choose a skill rule, a Special Effect, a body location or the roll log.</p></aside>';
   const k=PM_POPUP.k;let title="",body="";
   if(k==="loc"){const loc=S.play.selectedLoc;if(!loc){PM_POPUP=null;return "";}title=loc;body=pmLocDetail();}
   else if(k==="fx"){const e=SPECIAL_EFFECTS[PM_POPUP.i];if(!e){PM_POPUP=null;return "";}
@@ -1334,10 +1323,12 @@ function pmPopupHTML(){
   else if(k==="advance"){title="Advance time";body=pmAdvanceTimeHTML();}
   else if(k==="rulesref"){title="Combat situations";body=pmCombatRulesRefHTML();}
   else if(k==="range"){title="Distance and target size";body=pmRangeHelperHTML();}
+  else if(k==="style"){title="Colour scheme";body=pmStyleHTML();}
   else {PM_POPUP=null;return "";}
   // A side panel, like D&D Beyond's: it takes its own column on desktop, so
   // nothing on the sheet is covered; a sheet from the bottom on phones.
   return '<aside class="pmx-side" role="dialog" aria-label="'+esc(title)+'">'
+   +pmSideTrayHTML()+pmSideTabsHTML(k==="log")
    +'<div class="pmx-pophead"><h2>'+esc(title)+'</h2><button type="button" class="pmx-popx" aria-label="Close" onclick="APP.pmPopupClose()">&times;</button></div>'
    +'<div class="pmx-popbody" data-scroll="side-'+esc(k)+'">'+body+'</div></aside>';
 }
@@ -1356,7 +1347,8 @@ function pmFitDash(){
 let PM_RESIZE_BOUND=false;
 function renderPlayView(){
   document.body.classList.remove("menu-mode","sheet-mode");
-  document.body.classList.add("play-mode","pm-style-clean","pm-fit");
+  document.body.classList.add("play-mode","pm-style-clean","pm-style-stone","pm-fit");
+  const cw=pmColorway();PM_COLORWAYS.forEach(c=>document.body.classList.toggle("pm-cw-"+c[0],c[0]===cw));
   document.body.classList.toggle("view-only",VIEW_ONLY);
   document.title=(S.concept.name?S.concept.name+" — ":"")+"Play Mode";
   if(!VIEW_ONLY){rememberGifts(S);if(cloudActive())startGiftPoll();}
@@ -1373,15 +1365,16 @@ function renderPlayView(){
   const sub=[species,S.culture,careerName,pmCampaignLabel()].filter(Boolean).map(esc).join(" · ");
   const initials=name.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join("")||"?";
   const scroll=pmSaveScroll();
-  let h='<div class="pm-wrap pmx pmx-dash" data-pm-style="clean" data-view="'+(PM_VIEW==="right"?"right":PM_VIEW)+'"'+'>';
+  let h='<div class="pm-wrap pmx pmx-dash" data-pm-style="stone" data-view="'+(PM_VIEW==="right"?"right":PM_VIEW)+'" data-tab="'+tab+'">';
   h+='<header class="pmx-head">'
    +'<div class="pmx-avatar">'+(S.concept.portrait?'<img src="'+S.concept.portrait+'" alt="">':'<span>'+esc(initials)+'</span>')+'</div>'
    +'<div class="pmx-id"><button class="pmx-back" onclick="APP.backFromPlay()">'+backLabel+'</button>'
    +'<h1 class="pmx-name">'+esc(name)+'</h1>'+(sub?'<p class="pmx-sub">'+sub+'</p>':'')+'</div>'
    +'<div class="pmx-headbtns">'
-   +'<button class="pm-btn" onclick="APP.pmPopup(\'log\')">Roll log'+(S.rollLog.length?' <span class="pmx-dim">'+S.rollLog.length+'</span>':'')+'</button>'
-   +(VIEW_ONLY?"":'<button class="pm-btn" onclick="APP.pmPopup(\'advance\')">Advance time</button>')
-   +(VIEW_ONLY?"":'<button class="pm-btn pmx-pri" onclick="APP.openXP()">Improve skills'+(S.xp.pool?' <span class="pm-xpbadge">'+S.xp.pool+'</span>':'')+'</button>')
+   +'<button class="pm-btn" onclick="APP.pmPopup(\'log\')" aria-label="Roll log"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/></svg><span class="lbl">Roll log'+(S.rollLog.length?' <span class="pmx-dim">'+S.rollLog.length+'</span>':'')+'</span></button>'
+   +(VIEW_ONLY?"":'<button class="pm-btn" onclick="APP.pmPopup(\'advance\')" aria-label="Advance time"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span class="lbl">Advance time</span></button>')
+   +'<button class="pm-btn pmx-stylebtn" onclick="APP.pmPopup(\'style\')" aria-label="Colour scheme" title="Colour scheme"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.8 1.6-1.6 0-1.3-1.2-1.6-1.2-2.8 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7.2" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg></button>'
+   +(VIEW_ONLY?"":'<button class="pm-btn pmx-pri" onclick="APP.openXP()" aria-label="Improve skills"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span class="lbl">Improve skills</span>'+(S.xp.pool?' <span class="pm-xpbadge">'+S.xp.pool+'</span>':'')+'</button>')
    +'</div></header>';
   if(VIEW_ONLY){
     h+='<div class="pm-viewonly-banner">Viewing '+esc(VIEW_ONLY_OWNER_NAME||"a teammate")+'&rsquo;s character &mdash; read-only'
@@ -1401,8 +1394,8 @@ function renderPlayView(){
   else if(tab==="features")h+=pmFeaturesPanelHTML();
   else h+=pmNotesPanelHTML();
   h+='</div></section>'+pmPopupHTML()+'</div>';
-  const phoneOn=k=>PM_VIEW==="right"?k===tab:k===PM_VIEW;
-  h+='<nav class="pmx-phonebar" aria-label="Play Mode sections">'+PM_PHONE_TABS.map(([k,l])=>'<button type="button" class="pmx-tab'+(phoneOn(k)?" on":"")+'" onclick="APP.playTab(\''+k+'\')">'+l+'</button>').join("")+'</nav>';
+  const phoneOn=k=>PM_VIEW==="right"?(k==="combat"?tab==="combat":k==="more"&&tab!=="combat"):k===PM_VIEW;
+  h+='<nav class="pmx-phonebar" aria-label="Play Mode sections">'+PM_PHONE_TABS.map(([k,l])=>'<button type="button" class="pmx-tab'+(phoneOn(k)?" on":"")+'"'+(phoneOn(k)?' aria-current="page"':'')+' onclick="APP.playTab(\''+k+'\')">'+(PM_PHONE_ICONS[k]||"")+l+'</button>').join("")+'</nav>';
   h+='</div>';
   if(XP_OPEN&&!VIEW_ONLY)h+=xpModalHtml();
   h+=giftPopupHtml();
@@ -1464,7 +1457,7 @@ function pmResolveIndex(){
 }
 function pmResolveCardHTML(){
   const i=pmResolveIndex();
-  if(i<0)return '<div class="pm-box pmx-resolve" id="pm-resolve"><h3>Combat roll</h3><p class="pm-empty">Press <b>Attack</b> or <b>Parry</b> on a weapon below. The result appears here, with the Special Effects it lets you choose.</p></div>';
+  if(i<0)return '<div class="pm-box pmx-resolve" id="pm-resolve"><h3>Combat roll <span class="pmx-dim">Ready</span></h3>'+pmCombatStepsHTML(null)+'<p class="pm-empty">Press <b>Attack</b> or <b>Parry</b> on a weapon below. Each attack or parry spends 1 Action Point. The result appears here, with the Special Effects it lets you choose.</p></div>';
   const r=S.rollLog[i];
   if(!PM_EFFECT_ROLL_REF||!S.rollLog.includes(PM_EFFECT_ROLL_REF))PM_EFFECT_ROLL_REF=r;
   const ro=VIEW_ONLY?' disabled':'';
@@ -1477,17 +1470,19 @@ function pmResolveCardHTML(){
     const w=r.weapon&&r.weapon!=="Unarmed"?weaponByName(r.weapon):null;
     const canRepeat=r.combatKind!=="evade"&&r.weapon&&(r.styleKey||r.fam);
     const again=(role,label)=>'<button type="button" class="pmx-act'+(role==="attack"?' atk':'')+'"'+ro+' onclick="APP.rollWithWeapon(\''+jsq(r.weapon)+'\',\''+jsq(r.styleKey||'')+'\',\''+jsq(r.fam||'')+'\',\''+role+'\')">'+label+'</button>';
-    return '<div class="pm-box pmx-resolve pmx-resolve-done" id="pm-resolve">'
+    const dmgBtn=pmCanRollDamage(r)&&!r.damage?'<button type="button" class="pmx-act atk"'+ro+' onclick="APP.playRollDamage('+i+')">Roll damage · '+esc(pmDamageWeapon(r).dmg)+'</button>':'';
+    return '<div class="pm-box pmx-resolve pmx-resolve-done" id="pm-resolve"><h3>Combat roll <span class="pmx-dim">'+what+' · '+esc(r.weapon||r.label)+'</span></h3>'+pmCombatStepsHTML(r)
      +'<div class="pmx-doneline"><b class="pmx-resolve-d">'+(r.roll===100?"00":esc(String(r.roll)))+'</b><span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span>'
      +'<span class="pmx-donetext">'+what+' '+esc(r.weapon||r.label)+' vs '+(r.opponentAction==="no-parry"?'no defence':esc(r.oppTier))+' &rarr; '
      +(n0>0?'<b class="good">'+esc(picked.join(", "))+'</b>':n0<0?'opponent wins <b class="bad">'+(-n0)+' Special Effect'+(-n0>1?"s":"")+'</b>':'no effects')+'</span></div>'
-     +'<div class="pmx-doneacts">'
+     +pmDamageLineHTML(r)
+     +'<div class="pmx-doneacts">'+dmgBtn
      +(canRepeat?again("attack","Attack again")+(w&&!weaponCanParry(w)?'':again("defence","Parry")):'')
      +(r.combatKind==="evade"?'<button type="button" class="pmx-act"'+ro+' onclick="APP.roll(\'std:Evade\')">Evade again</button>':'')
      +'<button type="button" class="pmx-mini" onclick="PM_FX_EDIT=S.rollLog['+i+'];render()">Change</button>'
      +'<button type="button" class="pmx-mini" onclick="APP.playJumpToInjury()">Record damage</button></div></div>';
   }
-  let h='<div class="pm-box pmx-resolve" id="pm-resolve"><h3>Combat roll'+(i>0?' <span class="pmx-dim">(earlier roll)</span>':'')+'</h3>'
+  let h='<div class="pm-box pmx-resolve" id="pm-resolve"><h3>Combat roll'+(i>0?' <span class="pmx-dim">(earlier roll)</span>':'')+'</h3>'+pmCombatStepsHTML(r)
    +'<div class="pmx-resolve-top"><b class="pmx-resolve-d">'+(r.roll===100?"00":esc(String(r.roll)))+'</b>'
    +'<span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span>'
    +'<span class="pmx-resolve-lbl">'+(r.combatRole==="attack"?"Attack":r.combatRole==="defence"?(r.combatKind==="evade"?"Evade":"Parry"):"")+' '+esc(r.label)+' <span class="pmx-dim">'+r.pct+'%</span></span></div>';
@@ -1526,6 +1521,75 @@ function pmResolveCardHTML(){
   }
   return h+'</div>';
 }
+// ---- Damage and hit location (v0 design's "Resolve" step) ----
+// Rolls weapon damage + Damage Modifier and a d20 hit location for a
+// successful attack. GM-assisted: the result is before any parry and armour
+// (Core pp.94–95), and it is not applied to anyone's HP.
+function pmDiceTerms(str){
+  const t=String(str||"").replace(/\s+/g,"");
+  if(!t||!/^[+-]?(\d+d\d+|\d+)([+-](\d+d\d+|\d+))*$/.test(t))return null;
+  const out={dice:[],mod:0};
+  t.replace(/([+-]?)(\d+)(?:d(\d+))?/g,(m,sg,a,b)=>{const sign=sg==="-"?-1:1;
+    if(b)for(let k=0;k<+a;k++)out.dice.push({sides:+b,sign});else out.mod+=sign*(+a);return m;});
+  return out;
+}
+function pmRollTerms(t,rng,maxCount){
+  rng=rng||Math.random;let left=maxCount||0;
+  // Maximise Damage swaps the largest weapon dice first (one per stack).
+  const order=t.dice.map((d,i)=>i).sort((a,b)=>t.dice[b].sides-t.dice[a].sides);
+  const maxed=new Set(order.filter(i=>t.dice[i].sign>0).slice(0,left));
+  const faces=t.dice.map((d,i)=>maxed.has(i)?d.sides:1+Math.floor(rng()*d.sides));
+  return {faces,maxed:maxed.size,total:faces.reduce((a,f,i)=>a+f*t.dice[i].sign,0)+t.mod};
+}
+function pmDamageWeapon(r){
+  if(!r||!r.weapon)return null;
+  return r.weapon==="Unarmed"?Object.assign({},UNARMED_WEAPON,{natural:true}):weaponByName(r.weapon)||null;
+}
+function pmCanRollDamage(r){
+  const w=pmDamageWeapon(r);
+  return !!(r&&r.combatRole==="attack"&&(r.tier==="Critical"||r.tier==="Success")&&w&&pmDiceTerms(w.dmg));
+}
+function pmRollDamageFor(r,rng){
+  rng=rng||Math.random;
+  if(!pmCanRollDamage(r))return null;
+  const w=pmDamageWeapon(r),picks=r.effectsPicked||[];
+  const useDM=w.group!=="Ranged"||w.dmgMod==="Y";
+  const dmTxt=useDM?String(dmCalc(effectiveChars().STR,effectiveChars().SIZ)).trim():"";
+  const dmTerms=useDM?pmDiceTerms(dmTxt):{dice:[],mod:0};
+  const maxCount=w.natural?0:picks.filter(x=>x==="Maximise Damage").length;
+  const wpn=pmRollTerms(pmDiceTerms(w.dmg),rng,maxCount);
+  const impale=picks.includes("Impale")?pmRollTerms(pmDiceTerms(w.dmg),rng,maxCount).total:null;
+  const dm=dmTerms?pmRollTerms(dmTerms,rng,0).total:null;
+  const d20=1+Math.floor(rng()*20);
+  const loc=(HIT_D20.find(([range])=>{const [a,b]=range.split("-").map(Number);return d20>=a&&d20<=(b||a);})||[])[1]||"";
+  return {weaponDice:w.dmg,weaponRoll:wpn.total,maxed:wpn.maxed,impaleRoll:impale,dmText:useDM?dmTxt:"none",dmRoll:dm,
+    total:Math.max(0,wpn.total+(dm||0)),d20,loc,chooseLocation:picks.includes("Choose Location")};
+}
+function pmDamageLineHTML(r){
+  const d=r.damage;if(!d)return "";
+  return '<div class="pmx-dmg"><b class="pmx-dmg-n">'+d.total+'</b><div><b>damage</b> <span class="pmx-dim">before parry and armour</span>'
+   +'<div class="pmx-small" style="margin:2px 0 0">'+esc(d.weaponDice)+' = '+d.weaponRoll+(d.maxed?' (maximised ×'+d.maxed+')':'')
+   +(d.dmRoll==null?(d.dmText==="none"?' · no Damage Modifier':' · add your Damage Modifier'):' · DM '+esc(d.dmText)+' = '+d.dmRoll)
+   +' · d20 '+d.d20+' &rarr; <b>'+esc(d.loc)+'</b>'+(d.chooseLocation?' (or choose, Choose Location)':'')
+   +(d.impaleRoll!=null?' · Impale second roll '+d.impaleRoll+': use the better weapon roll if it gets through armour':'')+'</div>'
+   +'<div class="pmx-small" style="margin:2px 0 0">A successful parry blocks by weapon size (Core pp.94–95); armour then reduces what is left.</div></div></div>';
+}
+// Four-step bar above the combat card: Attack → Opponent → Effects → Resolve.
+function pmCombatStepsHTML(r){
+  const steps=[["Attack","pick a weapon"],["Opponent",""],["Effects",""],["Resolve",""]];
+  let cur=0;const txt=["","","",""],done=[false,false,false,false];
+  if(r){
+    const what=r.combatRole==="attack"?"Attack":r.combatKind==="evade"?"Evade":r.combatRole==="defence"?"Parry":"Roll";
+    steps[0][0]=what;done[0]=true;txt[0]=(r.roll===100||r.roll==="00"?"00":String(r.roll).padStart(2,"0"))+' · '+r.tier;cur=1;
+    if(r.oppTier){done[1]=true;txt[1]=r.opponentAction==="no-parry"?"No defence":r.oppTier;cur=2;
+      const n=rollEffectsWon(r),picked=r.effectsPicked||[];
+      if(n<=0||picked.length>=n){done[2]=true;txt[2]=n>0?picked.join(", "):n<0?"opponent +"+(-n):"none";cur=3;
+        if(r.damage){done[3]=true;txt[3]=r.damage.total+' dmg · '+r.damage.loc;cur=4;}
+        else if(!pmCanRollDamage(r)){done[3]=true;txt[3]="done";cur=4;}}
+      else txt[2]=picked.length+' of '+n;}
+  }
+  return '<ol class="pmx-steps" aria-label="Combat roll steps">'+steps.map(([n,hint],i)=>'<li class="'+(done[i]?"done":i===cur?"cur":"")+'"'+(i===cur?' aria-current="step"':'')+'><b>'+n+'</b><span>'+esc(txt[i]||(i===cur?hint:"")||"·")+'</span></li>').join("")+'</ol>';
+}
 // Short, rule-bearing notes for a weapon's traits (Core pp.61–65).
 function pmWeaponNotes(w){
   const t=weaponTraits(w),out=[];
@@ -1548,9 +1612,10 @@ function pmWeaponNotes(w){
 function pmWeaponCardsHTML(){
   const styles=stylesList();
   const btns=(weapon,key,fam,canParry)=>{
-    const a='<button class="pmx-act atk"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollWithWeapon(\''+jsq(weapon)+'\',\''+jsq(key)+'\',\''+fam+'\',\'attack\')">Attack</button>';
-    const p=canParry?'<button class="pmx-act"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollWithWeapon(\''+jsq(weapon)+'\',\''+jsq(key)+'\',\''+fam+'\',\'defence\')">Parry</button>':'';
-    return a+p;
+    const pct=key?'<b>'+pmPctText(key)+'</b>':'';
+    const a='<button class="pmx-act atk"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollWithWeapon(\''+jsq(weapon)+'\',\''+jsq(key)+'\',\''+fam+'\',\'attack\')"><span>Attack</span>'+pct+'</button>';
+    const p=canParry?'<button class="pmx-act"'+(VIEW_ONLY?' disabled':'')+' onclick="APP.rollWithWeapon(\''+jsq(weapon)+'\',\''+jsq(key)+'\',\''+fam+'\',\'defence\')"><span>Parry</span>'+pct+'</button>':'';
+    return '<span class="pmx-wpn-btns">'+a+p+'</span>';
   };
   const meta=w=>(w.group==="Ranged"
       ?["Range "+(w.range||"—"),"Force "+(w.reach||"—"),"DM "+(w.dmgMod||"—"),"Load "+(w.load??"—")+(typeof w.load==="number"?" AP":"")].concat(w.impaleSize?["Impale size "+w.impaleSize]:[])
