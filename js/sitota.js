@@ -38,41 +38,51 @@ async function loadHomeCharacters(){
 }
 function homeCharactersHTML(){
  const owner=homeCharacterOwner();
- let h='<section class="st-characters" aria-labelledby="homeCharactersTitle"><div class="st-frame"><div class="st-characters-head"><h2 id="homeCharactersTitle">Your characters</h2><a href="#/my-characters">View all characters <span aria-hidden="true">→</span></a></div>';
- if(!owner)h+='<p class="st-character-message"><a href="#/account">Sign in</a> to see your characters here.</p>';
- else if(HOME_CHARACTERS_OWNER!==owner||HOME_CHARACTERS===null&&!HOME_CHARACTERS_ERROR)h+='<p class="st-character-message" role="status">Loading your characters…</p>';
- else if(HOME_CHARACTERS_ERROR)h+='<p class="st-character-message" role="alert">'+esc(HOME_CHARACTERS_ERROR)+' <button type="button" onclick="loadHomeCharacters();render()">Retry</button></p>';
- const rows=owner&&HOME_CHARACTERS_OWNER===owner&&!HOME_CHARACTERS_ERROR?HOME_CHARACTERS||[]:[];
- h+='<div class="st-character-grid">'+rows.map(c=>{
-  const name=c.name||'Unnamed Character';
-  const portrait=c.state?.concept?.portrait;
-  const safePortrait=typeof portrait==='string'&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]{1,200000}$/.test(portrait);
-  const initials=((name.match(/\b[A-Za-z]/g)||['?']).slice(0,2).join('')).toUpperCase();
-  const meta=[c.culture,c.career].filter(Boolean).map(esc).join(' · ')||'Character in progress';
-  return '<a class="st-character-card" href="#/character/'+esc(encodeURIComponent(c.id))+'/play" aria-label="Open '+esc(name)+'"><div class="st-character-portrait">'+(safePortrait?'<img src="'+portrait+'" alt="" loading="lazy">':'<span class="st-character-initials" aria-hidden="true">'+esc(initials)+'</span>')+'</div><div class="st-character-caption"><h3>'+esc(name)+'</h3><p>'+meta+'</p><span class="st-character-open">Open character <span aria-hidden="true">→</span></span></div></a>';
- }).join('');
- if(owner&&HOME_CHARACTERS_OWNER===owner&&HOME_CHARACTERS?.length===0&&!HOME_CHARACTERS_ERROR)h+='<p class="st-character-empty">Your next story starts here.<span>Create your first character to keep their sheet close at hand.</span></p>';
- return h+'<a class="st-character-card st-character-create" href="#/character/new" onclick="return siteStartCharacter(event)"><span class="st-create-mark" aria-hidden="true">+</span><span>Create character</span></a></div></div></section>';
+ let h='<section class="st-sec" aria-labelledby="homeCharactersTitle"><div class="st-frame"><div class="st-sec-h"><h2 id="homeCharactersTitle">Your characters</h2>'+(owner?'<a href="#/my-characters">View all</a>':'')+'</div>';
+ if(!owner)return h+'<div class="st-waiting"><div><h3>Your table is waiting</h3><p>Sign in to see your characters here, or to start a new one.</p></div><div class="st-gate-actions"><button type="button" class="st-btn st-btn-primary" onclick="APP.toAccount()">Sign in</button></div></div></div></section>';
+ if(HOME_CHARACTERS_OWNER!==owner||HOME_CHARACTERS===null&&!HOME_CHARACTERS_ERROR)h+='<p class="st-character-message" role="status">Loading your characters…</p>';
+ else if(HOME_CHARACTERS_ERROR)h+='<p class="st-character-message" role="alert">'+esc(HOME_CHARACTERS_ERROR)+' <button type="button" class="st-btn st-btn-sm" onclick="loadHomeCharacters();render()">Retry</button></p>';
+ const rows=(HOME_CHARACTERS_OWNER===owner&&!HOME_CHARACTERS_ERROR?HOME_CHARACTERS||[]:[]).filter(c=>!stHiddenByUndo(c)).slice(0,3);
+ return h+'<div class="st-chars st-chars-home">'+rows.map(stCharCard).join('')+stNewCard()+'</div></div></section>';
 }
 
+// Hero "Continue": the most recently saved character (primary), or the
+// in-progress draft when there are no saved ones yet; signed out, Sign in.
+function homeContinueHTML(){
+ if(!homeCharacterOwner())return '<button type="button" class="st-btn st-btn-primary st-btn-tall" onclick="APP.toAccount()">Sign in to continue</button>';
+ const c=(HOME_CHARACTERS||[]).find(x=>!stHiddenByUndo(x));
+ if(c){
+  const st=stCharStats(c);
+  return '<a class="st-resume" href="#/character/'+esc(encodeURIComponent(c.id))+'/play" aria-label="Continue '+esc(c.name||'Unnamed Character')+'">'+stPortrait(c,'st-mono st-mono-sm')
+   +'<span class="st-resume-txt"><b>Continue</b><span>'+esc(c.name||'Unnamed Character')+'</span><small>Saved '+esc(stWhen(c.updated_at))+(st.style?' · '+esc(st.style.name)+' '+st.style.pct+'%':'')+'</small></span>'
+   +'<span class="st-go" aria-hidden="true">→</span></a>';
+ }
+ const auto=getAutosaveInfo();
+ return auto?'<button type="button" class="st-resume" onclick="APP.fromMenuContinue()"><span class="st-resume-txt"><b>Continue</b><span>'+esc(auto.name)+'</span><small>Character in progress</small></span><span class="st-go" aria-hidden="true">→</span></button>':'';
+}
 
-/* This view follows the owner-approved 16:9 reference. Other app views unchanged. */
+/* This view follows the owner-approved 16:9 reference, polished per the
+   2026-11-07 menu redesign handoff. Other app views unchanged. */
 function sitotaHomeHTML(){
- const auto=(AUTH_USER||MOCK_AUTH)?getAutosaveInfo():null;
+ const pits=stPitsLiveLine();
+ const tile=(href,icon,title,text,live,cls)=>'<a class="st-dest'+(cls?' '+cls:'')+'" href="'+href+'"><span class="st-dest-arrow" aria-hidden="true">→</span>'+icon+'<h3>'+title+'</h3><p>'+text+'</p>'+(live?'<span class="st-live">'+live+'</span>':'')+'</a>';
+ const svg=d=>'<svg class="st-dest-icon" viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>';
  return '<div class="sitota-public st-home st-home-16x9">'
  +'<section class="st-hero"><div class="st-hero-art" aria-hidden="true"></div><div class="st-frame st-hero-layout"><div class="st-hero-copy">'
  +'<div class="st-eyebrow">Valeshar Campaign</div><h1>New Sit’ota</h1><p class="st-lede">The world guide, characters, and everything<br class="st-desktop-break"> we need for the campaign.</p>'
- +'<div class="st-links"><a class="st-world-link" href="#/world/welcome">Explore Sit’ota <span class="st-arrow" aria-hidden="true">→</span></a></div>'
+ +'<div class="st-ctas">'+homeContinueHTML()+'<a class="st-world-link" href="#/world/welcome">Explore Sit’ota <span class="st-arrow" aria-hidden="true">→</span></a></div>'
  +'</div></div><span class="st-hero-credit">Art: Richard Wright · © Wizards of the Coast</span></section>'
  +(MENU_MSG?'<p class="st-frame st-message" role="status">'+esc(MENU_MSG)+'</p>':'')
  +(LOCAL_SAVE_ERROR?'<p class="st-frame st-message" role="alert">'+esc(LOCAL_SAVE_ERROR)+'</p>':'')
- +(auto?'<div class="st-frame"><button class="st-continue" type="button" onclick="APP.fromMenuContinue()">Continue '+esc(auto.name)+' →</button></div>':'')
  +homeCharactersHTML()
- +'<section class="st-home-tools" aria-label="Campaign tools"><div class="st-frame st-home-tools-inner">'
- +'<div class="st-home-tool"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="24" cy="11" r="6"/><path d="M12 39v-5c0-8 5-12 12-12s12 4 12 12v5H12ZM9 18a5 5 0 1 1 0-10m0 15c-6 1-8 5-8 11v5h8m30-21a5 5 0 1 0 0-10m0 15c6 1 8 5 8 11v5h-8"/></svg><div><h2>Campaign</h2><p>Party board, sessions, and shared notes.</p><a href="#/my-campaigns">Open campaign →</a><div class="st-tool-secondary"><button type="button" onclick="APP.newCampaign()">Create campaign</button><button type="button" onclick="APP.homeJoinCampaign()">Join campaign</button></div></div></div>'
- +'<div class="st-home-tool"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M24 10C17 6 10 6 4 9v28c7-3 13-2 20 2 7-4 13-5 20-2V9c-6-3-13-3-20 1Zm0 0v29"/></svg><div><h2>Rules reference</h2><p>Search the Mythras rules.</p><a href="#/wiki">Browse rules →</a></div></div>'
- +'<div class="st-home-tool"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10 18 5l13 5 13-5v32l-13 5-13-5-14 5V10Zm14-5v32m13-27v32"/></svg><div><h2>World guide</h2><p>People, places, and history of Sit’ota.</p><a href="#/world/welcome">Explore the world →</a></div></div>'
- +'</div></section></div>';
+ +'<section class="st-sec" aria-labelledby="homeTableTitle"><div class="st-frame"><div class="st-sec-h"><h2 id="homeTableTitle">At the table</h2></div><div class="st-dests">'
+ +tile('#/my-campaigns',svg('<path d="M6 21V3M6 4h11l-2 4 2 4H6"/>'),'Campaign','Party board, sessions and shared notes.','')
+ +tile('#/the-pits',svg('<path d="M4 4l10 10M14 14l-2 2 4 4 2-2zM20 4L10 14M10 14l2 2-4 4-2-2z"/>'),'The Pits','Practise Mythras combat. Wounds never touch your character.',pits,'st-dest-pits')
+ +tile('#/wiki',svg('<path d="M12 6C9 4 6 4 3 5v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1Zm0 0v14"/>'),'Rules','Search the Mythras rules by chapter.','')
+ +tile('#/world/welcome',svg('<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14"/>'),'World Guide','People, places and history of Sit’ota.','')
+ +'</div>'+(homeCharacterOwner()?'<div class="st-table-actions"><span>Starting a table?</span><button type="button" class="st-btn st-btn-sm" onclick="APP.newCampaign()">Create campaign</button><button type="button" class="st-btn st-btn-sm" onclick="APP.homeJoinCampaign()">Join a campaign</button></div>':'')+'</div></section>'
+ +'<div class="st-frame st-orc"><p>Rules text is drawn from Mythras Imperative and Classic Fantasy Imperative by The Design Mechanism, used under the ORC licence. Mythras and Classic Fantasy are Reserved Material.</p></div>'
+ +'</div>';
 }
 
 function worldChapterNavHTML(){
@@ -181,3 +191,98 @@ if(typeof document!=='undefined'&&document.addEventListener)document.addEventLis
  const s=document.getElementById('stMoreSheet');
  if(e.key==='Escape'&&s&&!s.hidden){stCloseMore();document.getElementById('stMoreBtn')?.focus();}
 });
+
+/* ---- Character cards (Home and Characters; owner menu redesign) ---- */
+const ST_CARD_STATS={};
+// Real numbers for a saved character: its best Combat Style, AP and campaign.
+// Computed against a temporary copy of the character, never the open draft.
+function stCharStats(c){
+ const key=c.id+'|'+c.updated_at;if(ST_CARD_STATS[key])return ST_CARD_STATS[key];
+ const out={style:null,ap:null};
+ if(c.state&&typeof freshState==='function'){
+  const original=S;
+  try{
+   S=Object.assign(freshState(),JSON.parse(JSON.stringify(c.state)));normalizeState();
+   const best=stylesList().map(s=>({name:s.name,pct:finalPct(s.key)})).sort((a,b)=>b.pct-a.pct)[0];
+   if(best&&best.pct>0)out.style=best;
+   const v=charVitals(S);if(v&&Number.isFinite(v.baseAP))out.ap=v.baseAP;
+  }catch(e){}finally{S=original;}
+ }
+ const camp=c.campaign_id&&Array.isArray(CAMP_CACHE)?CAMP_CACHE.find(x=>x.id===c.campaign_id):null;
+ out.campaign=camp?camp.name:null;
+ return ST_CARD_STATS[key]=out;
+}
+function stWhen(iso){
+ const t=new Date(iso).getTime();if(!Number.isFinite(t))return '';
+ const days=Math.floor((Date.now()-t)/86400000);
+ return days<=0?'today':days===1?'yesterday':days<7?days+' days ago':days<14?'last week':new Date(iso).toLocaleDateString();
+}
+function stInitials(name){return ((String(name||'?').match(/\b[A-Za-z]/g)||['?']).slice(0,2).join('')).toUpperCase();}
+function stHue(id){let h=0;for(const ch of String(id))h=(h*31+ch.charCodeAt(0))>>>0;return h%4;}
+function stPortrait(c,cls){
+ const p=c.state?.concept?.portrait;
+ const safe=typeof p==='string'&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]{1,200000}$/.test(p);
+ return '<div class="'+cls+' st-h'+stHue(c.id)+'" aria-hidden="true">'+(safe?'<img src="'+p+'" alt="">':esc(stInitials(c.name)))+'</div>';
+}
+function stCharCard(c){
+ const name=c.name||'Unnamed Character',id=jsq(c.id),st=stCharStats(c);
+ const tier=c.tier&&c.tier!=='ordinary'&&typeof ARCHETYPES!=='undefined'&&ARCHETYPES[c.tier]?ARCHETYPES[c.tier].label:null;
+ const meta=[c.culture,c.career,tier].filter(Boolean).map(esc).join(' · ')||'Character in progress';
+ const chips=(st.style?'<span class="st-chip st-chip-g">'+esc(st.style.name)+' '+st.style.pct+'%</span>':'')
+  +(st.ap!=null?'<span class="st-chip">'+st.ap+' AP</span>':'')
+  +(st.campaign?'<span class="st-chip st-chip-t">'+esc(st.campaign)+'</span>':'');
+ return '<article class="st-cc" data-char-id="'+esc(c.id)+'"><div class="st-cc-top">'+stPortrait(c,'st-mono')
+  +'<div class="st-cc-text"><h3>'+esc(name)+'</h3><div class="st-cc-meta">'+meta+'</div>'+(chips?'<div class="st-cc-stats">'+chips+'</div>':'')+'</div></div>'
+  +'<div class="st-cc-foot"><span class="st-cc-when">Saved '+esc(stWhen(c.updated_at))+'</span>'
+  +'<button type="button" class="st-btn st-btn-primary st-btn-sm" onclick="APP.openCharToPlay(\''+id+'\')" aria-label="Play '+esc(name)+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>Play</button>'
+  +'<button type="button" class="st-menu-b" aria-haspopup="menu" aria-expanded="false" aria-controls="stPop-'+esc(c.id)+'" aria-label="More actions for '+esc(name)+'" onclick="stTogglePop(this)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button></div>'
+  +'<div class="st-pop" role="menu" id="stPop-'+esc(c.id)+'" hidden>'
+  +'<button type="button" role="menuitem" onclick="APP.openCharToEdit(\''+id+'\')">Edit character</button>'
+  +'<button type="button" role="menuitem" onclick="APP.openCharToSheet(\''+id+'\')">Print sheet</button>'
+  +'<button type="button" role="menuitem" class="st-pop-del" onclick="stDeleteWithUndo(\''+id+'\',\''+jsq(name)+'\')">Delete</button></div></article>';
+}
+function stCloseMenus(except){
+ document.querySelectorAll('.st-pop:not([hidden])').forEach(p=>{if(p!==except){p.hidden=true;document.querySelector('[aria-controls="'+p.id+'"]')?.setAttribute('aria-expanded','false');}});
+}
+function stTogglePop(btn){
+ const pop=document.getElementById(btn.getAttribute('aria-controls'));if(!pop)return;
+ stCloseMenus(pop);const open=pop.hidden;pop.hidden=!open;btn.setAttribute('aria-expanded',String(open));
+ if(open)pop.querySelector('button')?.focus();
+}
+if(typeof document!=='undefined'&&document.addEventListener){
+ document.addEventListener('click',e=>{if(!e.target.closest?.('.st-pop,.st-menu-b'))stCloseMenus();});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.querySelector('.st-pop:not([hidden])')){stCloseMenus();}});
+}
+// Delete with Undo: the card hides at once; the real delete runs only after
+// the toast expires, so Undo needs no server round trip.
+let ST_PENDING_DELETE=null;
+function stDeleteWithUndo(id,name){
+ stCloseMenus();
+ if(ST_PENDING_DELETE)stFinishDelete();
+ const timer=setTimeout(stFinishDelete,6000);
+ ST_PENDING_DELETE={id,name,timer};
+ stShowUndo(name);render();
+}
+function stFinishDelete(){
+ const p=ST_PENDING_DELETE;if(!p)return;ST_PENDING_DELETE=null;clearTimeout(p.timer);
+ stHideUndo();
+ if(typeof APP.deleteLibChar==='function')APP.deleteLibChar(p.id,p.name,{confirmed:true});
+}
+function stUndoDelete(){
+ const p=ST_PENDING_DELETE;if(!p)return;ST_PENDING_DELETE=null;clearTimeout(p.timer);stHideUndo();render();
+}
+function stShowUndo(name){
+ let t=document.getElementById('stToast');
+ if(!t){t=document.createElement('div');t.id='stToast';t.className='st-toast';t.setAttribute('role','status');t.setAttribute('aria-live','polite');document.body.append(t);}
+ t.innerHTML='<span>Deleted '+esc(name)+'.</span><button type="button" class="st-btn st-btn-sm" onclick="stUndoDelete()">Undo</button>';t.hidden=false;
+}
+function stHideUndo(){const t=document.getElementById('stToast');if(t)t.hidden=true;}
+function stHiddenByUndo(c){return !!(ST_PENDING_DELETE&&String(ST_PENDING_DELETE.id)===String(c.id));}
+function stNewCard(){return '<a class="st-new-card" href="#/character/new" onclick="return siteStartCharacter(event)"><span class="st-plus" aria-hidden="true">+</span>New character</a>';}
+// The Pits tile: best local run, only when one exists.
+function stPitsLiveLine(){
+ try{const rows=JSON.parse(localStorage.getItem('sitota-practice-score-v1')||'[]');
+  const best=(Array.isArray(rows)?rows:[]).filter(r=>r&&r.wins>0).sort((a,b)=>b.wins-a.wins)[0];
+  return best?'Best run: '+best.wins+' win'+(best.wins===1?'':'s')+(best.charname?' · '+esc(best.charname):''):'';
+ }catch(e){return '';}
+}
