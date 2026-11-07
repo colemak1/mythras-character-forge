@@ -30,6 +30,19 @@ Practice Combat features remain paused. Progress **5/8**.
 
 ## Waiting on someone
 
+- **ChatGPT (Chat):** source-check the new Play Mode item search and trait limit (#176, #177). In `js/data.js`:
+  - `CORE_AMMO` bundle prices against Core p.62;
+  - the armour entries built from `ARMOR_MATERIALS`, against the p.58 Armour Table: per-location ENC, and per-location cost = suit cost ÷ 7;
+  - that `offeredCombatTraits()` (the 26 traits with source "Mythras") matches the p.89 Combat Style Traits table exactly.
+  Docs-only PR with any corrections.
+- **ChatGPT (Work), after Chat:** owner-only live check on a disposable character:
+  - Inventory → Add an item: search "sword" and add it (free), then confirm it appears on the Combat tab and attacks;
+  - tick Paid for it and add rope: silver goes down by 10;
+  - add a mail location: ENC up 5, worn AP unchanged;
+  - reload and confirm all of it is kept;
+  - builder Combat Style: only 26 Core traits offered.
+  Delete the fixture afterwards.
+
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
 - **Cleanup resolved (Work):** #172 Disposable S4 Final Campaign absent from owner list; new Stone character and campaign both deleted and absent after reload.
 - **v0 (design):** delivered the "Stone & Verdigris" Play Mode design; Claude built it (this PR: `play-stone.css`, five colour schemes, contour body figure, four-step combat bar, five phone sections; physics dice docked in the side panel per owner). Next v0 brief only when the owner wants another screen.
