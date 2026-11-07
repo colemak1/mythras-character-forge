@@ -365,17 +365,11 @@ const WEAPON_MAP=Object.fromEntries(WEAPONS.map(w=>[w.name,w]));
 // Short keys from the original five-weapon arena are kept for saved setups.
 const PRACTICE_LEGACY_KEYS={Broadsword:"sword",Shortspear:"spear",Mace:"mace",Dagger:"dagger",Greatsword:"greatsword",Buckler:"buckler",Heater:"heater",Hoplite:"hoplite"};
 function practiceWeaponKey(name){return PRACTICE_LEGACY_KEYS[name]||String(name).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
-// Why a weapon cannot be used in the practice arena (The Pits), or "" if it can.
-// Core p.65 ranged lines The Pits leaves out, with the reason shown to players.
-const PRACTICE_RANGED_SKIP={"Atlatl":"a spear-thrower that improves another weapon","Blowgun":"no damage of its own (it delivers poison)","Bolas":"thrown Entangle is not simulated yet","Net (thrown)":"thrown Entangle is not simulated yet"};
+// Why a weapon cannot be used in the melee practice arena, or "" if it can.
 function practiceUnsupportedReason(w){
   if(!w)return "not a Core weapon";
   const traits=String(w.traits||"");
-  if(w.group==="Ranged"){
-    // Core p.65 lines The Pits does not simulate (PIT-R01-R17 cover the rest).
-    if(PRACTICE_RANGED_SKIP[w.name])return PRACTICE_RANGED_SKIP[w.name];
-    if(/\(thrown\)$/.test(w.name))return "the throwing line of a melee weapon";
-  }
+  if(w.group==="Ranged")return "The Pits is melee only";
   if(/\bMount\b/.test(traits))return "only usable from a moving mount";
   if(/\bStealth\b/.test(traits))return "only usable from ambush";
   if(!/^\d+d\d+(\+\d+)?$/.test(String(w.dmg||"")))return "damage not supported";

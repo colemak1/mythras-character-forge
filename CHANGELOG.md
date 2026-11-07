@@ -5,17 +5,9 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
-## The Pits: ranged and thrown weapons (PIT-R01–R17)
+## The Pits stays melee only
 
-From ChatGPT's case spec (`docs/the-pits-ranged-cases.md`, #204). Rules live in the new `experiments/pits-ranged.js`; 23 new tests in `tests/pits-ranged.cjs`.
-- **11 missile weapons playable:** Short, Long and Recurve bow, Light and Heavy crossbow, Sling, Staff sling, Javelin, Dart, Discus, Stone. Dagger, Hatchet, Shortspear and Trident can also be thrown with their own Core throwing line. A style with Throw Weapons can throw other one-handed weapons at half damage. Atlatl, Blowgun, Bolas and thrown Net, Lance and Garrotte stay unsupported, with a reason.
-- **Distance:** new setup options for the starting distance (engaged, 12, 20 or 40m) and arena conditions (wind, mist, fog). Each shot uses the weapon's Close/Effective/Long ranges, and Long range halves damage and lowers Force a step. The distance × target SIZ grade and the single worst situational grade stack. Damage Modifier applies only where the weapon says so.
-- **Actions:** Shoot or Throw, Load (each Load turn costs 1 AP) or Ready Weapon, and Aim, which is ready after a whole Combat Round. Move now walks, runs or sprints by Movement rate instead of closing any gap in one action; melee needs you to be in reach. Ammunition is tracked.
-- **Defence:** no weapon parry against missiles. Shields parry by Force against Size. Evade avoids a missile but leaves you prone.
-- **Thrown weapons leave your hand.** A miss lands at the target's feet; an Impale stays in the foe until pulled out. Anyone at the wound can pull a missile out (Brawn, half its damage, full if Barbed).
-- **Ranged Special Effects:** Drop Foe, Marksman, Pin Down and Rapid Reload work. A javelin can foul a shield. Choose Location needs a critical, unless the target is at Close range and stationary. Effects that need contact are not offered at a distance.
-- **Firing on the move:** no shots above a walk. Skirmishing allows running, capped at Athletics.
-- Fix: the defence menu offered an enabled weapon Parry against a missile.
+- The owner decided ranged combat is not an option in The Pits, so the ranged and thrown weapons from #206 are removed (reverted). Missile weapons on a character are listed as "The Pits is melee only". The melee fixes from #205 stay.
 
 ## The Pits: every melee weapon and shield works with saved characters
 
