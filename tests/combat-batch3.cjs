@@ -69,7 +69,7 @@ test('C5-B3-SE02 the Impale Effects table matches Core p.98',()=>{
 test('the combat situations reference covers the Batch 3 guidance rows',()=>{
  const h=run('pmCombatRulesRefHTML()');
  for(const re of [/half weapon damage, no Damage Modifier, ignoring armour/,/whole Combat Round of aiming/,/each participant spends an AP/,/each defender defends/,/1m per 5 points/,/Easy Acrobatics or Standard Athletics/,/Declare before attacking/,/capped by Athletics/,/thrusting weapons work, at half damage/,/1d10\+10/,/opposed Fly/])assert.match(h,re);
- assert.match(run('pmActionsPanelHTML()'),/APP\.pmPopup\('rulesref'\)/);
+ assert.match(run('pmRulesRefHTML()'),/APP\.pmPopup\('rulesref'\)/,'reachable from Rules reference in the ☰ menu (owner, 2026-11-07)');
 });
 test('C5-B3-WN06/WN07 wound wording: torso revival vs combat, limb deadline only when severed',()=>{
  assert.match(run('playWoundEffectText("Chest","serious")'),/can't rejoin the fight until the location is healed/);

@@ -33,7 +33,7 @@ Practice Combat features remain paused. Progress **4/8**.
 - **ChatGPT (Work):** Subsystem 4 final focused pass, steps (g)–(i) (see `advancement-reconciliation.md`, "Claude closeout gate review").
 - **Owner:** send Claude the v0 zip for the new UI (the earlier message arrived without it).
 - **v0 (design):** delivered the "Stone & Verdigris" Play Mode design; Claude built it (this PR: `play-stone.css`, five colour schemes, contour body figure, four-step combat bar, five phone sections; physics dice docked in the side panel per owner). Next v0 brief only when the owner wants another screen.
-- **ChatGPT (Chat):** verify the new damage roll helper, cases R1–R10 in `docs/play-mode-damage-roll-cases.md`, with page references. Docs-only PR.
+- **ChatGPT (Chat):** check the Play Mode skill summaries (`SKILL_INFO` in `js/data.js`, Core pp.38–50) for accuracy; reply with corrections. Also verify the new damage roll helper, cases R1–R10 in `docs/play-mode-damage-roll-cases.md`, with page references. Docs-only PR.
 - **ChatGPT (Work):** in the same batch as the Subsystem 4 (g)–(i) pass, glance at the new Play Mode look on desktop: colour scheme switch, body figure click, a full attack through Resolve (Roll damage), and that the dice roll in the side panel.
 - **Hazard notes:** done (#161 audit, #163 implementation and tests).
 - **ChatGPT (Chat):** Combat closeout map and missing child cases delivered in docs-only PR; `docs/advancement-reconciliation.md` begins Subsystem 4. Further S4 source/test reconciliation follows Claude's Combat closeout review.

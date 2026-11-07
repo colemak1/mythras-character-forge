@@ -1223,6 +1223,7 @@ window.APP={
  // Phones show one area at a time: stats, skills, or the tabbed panel.
  playTab(t){if(t==="skills"||t==="stats"||t==="body"){PM_VIEW=t;}else if(t==="more"){if(pmActiveTab()==="combat")S.play.tab="magic";PM_VIEW="right";}else{S.play.tab=t;PM_VIEW="right";}render();},
  // Descriptions and secondary detail open in one pop-up (see pmPopupHTML).
+ pmSkillInfo(key){if(!allEntries().some(e=>e.key===key))return;PM_POPUP={k:"skill",key:String(key)};render();},
  pmPopup(k,i){PM_POPUP={k:String(k),i:Number.isInteger(i)?i:null};render();},
  pmPopupClose(){PM_POPUP=null;render();},
  pmOpenLoc(loc){if(!PLAY_HP_LOCS.includes(loc))return;S.play.selectedLoc=loc;PM_DMG_NOTE=null;PM_POPUP={k:"loc"};render();},

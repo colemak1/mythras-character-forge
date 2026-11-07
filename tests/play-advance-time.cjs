@@ -50,7 +50,9 @@ test('the menu offers all four options',()=>{
 test('the roll card sits directly above the weapons',()=>{
  setup();const h=run('pmCombatTabHTML()');
  assert(h.indexOf('pmx-resolve')<h.indexOf('pmx-weapons'),'card, then weapons');
- assert(h.indexOf('pmx-weapons')<h.indexOf('pmx-turn'),'weapons before the turn strip');
+ assert.equal(h.indexOf('pmx-turn'),-1,'initiative is in the top row, not the combat tab (owner, 2026-11-07)');
+ assert.match(run('pmTrackersHTML()'),/APP\.pmPopup\('initiative'\)/,'own d10, Surprised and End fight from the top row');
+ const ini=run('pmInitiativeHTML()');assert.match(ini,/id="playInitD10"/);assert.match(ini,/APP\.playSetSurprised/);
 });
 test('once all effects are chosen the list folds away, and Change reopens it',()=>{
  setup();run('S.rollLog=[{label:"Dagger",pct:60,roll:20,tier:"Success",combat:true,combatKind:"style",combatRole:"attack",oppTier:"Failure",weapon:"Dagger",effectsPicked:["Bleed"]}];PM_EFFECT_ROLL_REF=S.rollLog[0];PM_FX_EDIT=null;');

@@ -111,8 +111,8 @@ test('colour schemes: Verdigris by default, chosen per device, unknown values ig
  store.set('pm-colorway','bogus');assert.equal(run('pmColorway()'),'verdigris');
  const h=run('PM_POPUP={k:"style"};pmPopupHTML()');assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,5);
 });
-test('phone sections: Sheet, Body, Skills, Combat, More, and a Home link',()=>{
- assert.match(fs.readFileSync(path.join(root,'js','play.js'),'utf8'),/<a class="pmx-tab pmx-hometab" href="#\/">/,'phone bar ends with a Home link');
+test('phone sections: Sheet, Body, Skills, Combat, More (Home is in the ☰ menu)',()=>{
+ assert.doesNotMatch(fs.readFileSync(path.join(root,'js','play.js'),'utf8'),/pmx-hometab/,'no Home tab in the phone bar (owner, 2026-11-07)');
  setup();assert.deepEqual(JSON.parse(run('JSON.stringify(PM_PHONE_TABS.map(t=>t[1]))')),['Sheet','Body','Skills','Combat','More']);
  run('APP.playTab("body")');assert.equal(run('PM_VIEW'),'body');
  run('APP.playTab("combat")');assert.equal(run('PM_VIEW'),'right');assert.equal(run('pmActiveTab()'),'combat');
@@ -149,5 +149,26 @@ test('the opponent result can be changed, which clears effects and damage',()=>{
  setup();run('S.rollLog=[{label:"Battleaxe",pct:60,roll:4,tier:"Critical",combat:true,combatKind:"style",combatRole:"attack",oppTier:"Failure",opponentAction:"rolled",weapon:"Battleaxe",effectsPicked:["Bleed"],damage:{total:5,loc:"Chest"}}];');
  run('APP.playClearOpponent(0)');assert.equal(run('S.rollLog[0].oppTier'),null);assert.equal(run('S.rollLog[0].effectsPicked.length'),0);assert.equal(run('S.rollLog[0].damage'),undefined);
  assert.match(run('pmResolveCardHTML()'),/Their defence: what did the opponent roll\?/);
+});
+test('clicking a skill shows its description, formula, value and a Roll button in the side panel',()=>{
+ setup();assert.match(run('pmSkillsPanelHTML()'),/class="nm pmx-sknm" onclick="APP\.pmSkillInfo\('std:Athletics'\)"/);
+ run('APP.pmSkillInfo("std:Athletics")');const h=run('pmPopupHTML()');
+ assert.match(h,/aria-label="Athletics"/);assert.match(h,/Climbing, jumping, running/);assert.match(h,/Core p\.38/);assert.match(h,/STR\+DEX/);assert.match(h,/APP\.roll\('std:Athletics'\)/);
+ run('APP.pmSkillInfo("std:Nonsense")');assert.equal(run('PM_POPUP.key'),'std:Athletics','unknown keys are ignored');
+ assert.equal(run('skillInfo("Lore (History)").name'),'Lore','specialised skills use their base description');
+ const missing=run('[...STD.map(s=>s[0]),...Object.keys(PROF)].filter(n=>!SKILL_INFO[n])');assert.deepEqual([...missing],[],'every skill has a description');
+});
+test('reference pages sit together under Rules reference in the ☰ menu',()=>{
+ setup();assert.match(run('pmSiteMenuHTML()'),/APP\.pmPopup\('ref'\)">Rules reference/);
+ const h=run('pmRulesRefHTML()');for(const k of ['rules','actions','rulesref','fxref','hazards','casting'])assert.match(h,new RegExp("APP\\.pmPopup\\('"+k+"'\\)"));
+ assert.match(run('PM_POPUP={k:"fxref"};pmPopupHTML()'),/id="pm-actions"/);
+ const sheet=run('pmSkillsPanelHTML()+pmBodyBoxHTML()+pmCombatTabHTML()');assert.doesNotMatch(sheet,/pmPopup\('(rules|hazards|rulesref|actions)'\)/,'no reference links on the sheet itself');
+});
+test('the wound watch moved from the left column into the location panel',()=>{
+ setup();run('S.play.woundEvents=[{loc:"Head",severity:"serious",damage:4,outcome:"failure",resolved:false}];S.play.selectedLoc="Head";PM_POPUP={k:"loc"};');
+ assert.doesNotMatch(run('pmBodyBoxHTML()'),/Wound watch/);assert.match(run('pmPopupHTML()'),/Wound watch/);
+});
+test('phones cannot zoom the page',()=>{
+ assert.match(fs.readFileSync(path.join(root,'index.html'),'utf8'),/name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/);
 });
 console.log(passed+' play stone design tests passed');

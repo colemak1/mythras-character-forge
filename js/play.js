@@ -877,7 +877,6 @@ function magicPanel(){
     }).join("");
     h+='</div>';
   });
-  h+='<p class="pmx-small"><button type="button" class="pmx-link" onclick="APP.pmPopup(\'casting\')">How casting works here</button></p>';
   return h;
 }
 // A roll-log row. Combat Style rolls that beat a Success (i.e. Critical or
@@ -998,7 +997,34 @@ function pmSetColorway(k){if(!PM_COLORWAYS.some(c=>c[0]===k))return;try{localSto
 const PM_SITE_LINKS=[["#/","Home"],["#/my-characters","Characters"],["#/my-campaigns","Campaign"],["#/wiki","Rules"],["#/world/welcome","World Guide"],["#/account","Account"]];
 function pmSiteMenuHTML(){
   return '<details class="pmx-sitemenu"><summary aria-label="Site menu" title="Site menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>'
-   +'<nav class="pmx-sitemenu-list" aria-label="Site navigation">'+PM_SITE_LINKS.map(([href,l])=>'<a href="'+href+'">'+l+'</a>').join("")+'</nav></details>';
+   +'<nav class="pmx-sitemenu-list" aria-label="Site navigation">'+PM_SITE_LINKS.map(([href,l])=>'<a href="'+href+'">'+l+'</a>').join("")+'<button type="button" onclick="this.closest(\'details\').open=false;APP.pmPopup(\'ref\')">Rules reference</button></nav></details>';
+}
+// Skill description in the side panel (owner, 2026-11-07): our short summary
+// of the Core text, the formula and current value, and a Roll button.
+function pmSkillInfoHTML(e){
+  const info=skillInfo(e.label),style=e.grp==="Combat Style";
+  const text=info?info.text:style?"Your training with the weapons this style covers, used to attack and parry with them. Each Combat Style is its own skill.":"";
+  const page=info&&info.page?'Core p.'+info.page:style?'Core, Combat chapter':'';
+  return '<p class="pmx-skinfo-top"><span class="pmx-skinfo-pct">'+pmPctText(e.key)+'</span><span class="pmx-dim">'+esc(e.grp||"")+(e.formula?' · '+esc(String(e.formula).replace(/x(\d)/i,"×$1").toUpperCase()):'')+'</span></p>'
+   +(text?'<p>'+esc(text)+'</p>':'<p class="pmx-dim">No description yet.</p>')
+   +(page?'<p class="pmx-small pmx-dim">'+page+'</p>':'')
+   +(VIEW_ONLY||fatigueNoActivity()?'':'<div class="pmx-btnrow"><button type="button" class="pmx-act atk" onclick="APP.roll(\''+jsq(e.key)+'\')">Roll '+esc(e.label)+'</button></div>');
+}
+// Rules reference (owner, 2026-11-07): the GM quick-reference pages, kept
+// together behind the ☰ menu instead of links all over the sheet.
+const PM_REF_TOPICS=[["rules","Skill and task rulings","Core pp.38, 50–52, 65–67"],["actions","What each combat action does","Core pp.91–93"],["rulesref","Combat situations","Combat chapter"],["fxref","Special Effects","all, with rules text"],["hazards","Hazards and recovery","Core pp.68–80"],["casting","How casting works here","Magic"]];
+function pmRulesRefHTML(){
+  return '<p class="pmx-small" style="margin-top:0">Quick rules lookups for the table.</p><div class="pmx-reflist">'
+   +PM_REF_TOPICS.map(([k,t,d])=>'<button type="button" class="pmx-refitem" onclick="APP.pmPopup(\''+k+'\')"><b>'+esc(t)+'</b><span>'+esc(d)+'</span></button>').join("")+'</div>';
+}
+// Initiative details from the top row: your own d10, Surprised, End fight.
+function pmInitiativeHTML(){
+  const ib=playInitiativeBonusNow(),rec=S.play.initiative,ro=VIEW_ONLY?' disabled':'';
+  return '<p>'+(rec?'Current: <b>'+rec.total+'</b> <span class="pmx-dim">(d10 '+rec.roll+' + '+rec.bonus+')</span>':'Initiative bonus <b>+'+ib.total+'</b>. Roll 1d10 and add it (Core p.90). It lasts the whole fight.')+'</p>'
+   +'<div class="pmx-btnrow"><button type="button" class="pmx-act atk"'+ro+' onclick="APP.playRollInitiative()">Roll d10 + '+ib.total+'</button></div>'
+   +'<div class="pmx-step"><label>Or your own d10 <input id="playInitD10" type="number" min="1" max="10" inputmode="numeric"></label> <button type="button" class="pmx-mini"'+ro+' onclick="APP.playSetInitiative()">Set</button></div>'
+   +'<label class="pmx-opt"><input type="checkbox"'+ro+(S.play.surprised?' checked':'')+' onchange="APP.playSetSurprised(this.checked)"> Surprised <span class="pmx-dim">initiative −10, can\'t defend until your turn (Core p.105)</span></label>'
+   +(rec?'<div class="pmx-btnrow"><button type="button" class="pmx-act"'+ro+' onclick="APP.playClearInitiative()">End fight</button></div><p class="pmx-small pmx-dim">Ending the fight clears initiative and Surprised and restores Action Points.</p>':'');
 }
 function pmStyleHTML(){
   const cur=pmColorway();
@@ -1048,7 +1074,7 @@ function pmSkillsPanelHTML(){
     const pin='<button class="pmx-pin'+(pinned?" on":"")+'" aria-pressed="'+pinned+'" title="'+(pinned?"Unpin":"Pin to the top")+'" onclick="APP.playTogglePin(\''+jsq(e.key)+'\')">'+(pinned?"&#9733;":"&#9734;")+'</button>';
     return '<div class="pm-skillrow'+(cbt?" cbt":"")+'" data-search="'+esc((e.label+" "+(e.formula||"")).toLowerCase())+'">'
      +pin+(fluency?"":ckflag+fumbleflag)
-     +'<span class="pmx-skn"><span class="nm">'+esc(e.label)+'</span>'
+     +'<span class="pmx-skn"><button type="button" class="nm pmx-sknm" onclick="APP.pmSkillInfo(\''+jsq(e.key)+'\')" title="What this skill covers">'+esc(e.label)+'</button>'
      +(baseFmt?'<span class="base">'+esc(baseFmt)+'</span>':'')+'</span>'
      +'<span class="lead"></span>'
      +(fluency?'<span class="pctval" title="Spoken fluency">'+pctTxt+'</span>':'<span class="pctval" onclick="APP.toggleGradePop(\''+jsq(e.key)+'\',\''+jsq(e.label)+'\',event)" title="Click for Difficulty Grades">'+pctTxt+'</span>'
@@ -1066,7 +1092,6 @@ function pmSkillsPanelHTML(){
   if(grp("Magic").length)h+='<div class="pm-skillgroup"><h4>Magic</h4>'+grp("Magic").map(skrow).join("")+'</div>';
   if(grp("Combat Style").length)h+='<div class="pm-skillgroup"><h4>Combat Styles</h4>'+grp("Combat Style").map(skrow).join("")+'</div>';
   h+=pmPassionsHTML();
-  h+='<p class="pmx-small"><button type="button" class="pmx-link" onclick="APP.pmPopup(\'rules\')">GM skill and task rulings</button> <span class="pmx-dim">Core pp.38, 50–52, 65–67</span></p>';
   h+='</div>';
 
   return h;
@@ -1148,7 +1173,7 @@ function pmActionsPanelHTML(){
         return '<button class="pmx-chip" onclick="APP.playSpendAP('+a.ap+')" title="'+esc(a.note)+'"'+(canAfford?"":" disabled")+'>'+esc(a.nm)+' <span>'+a.ap+' AP</span></button>';
       }).join("")+'</div></div>';
     }
-    h+='<p class="pmx-small"><button type="button" class="pmx-link" onclick="APP.pmPopup(\'actions\')">What each action does</button> · <button type="button" class="pmx-link" onclick="APP.pmPopup(\'rulesref\')">Combat situations</button> <span class="pmx-dim">impale, aiming, outmanoeuvre, knockback, mounted…</span></p>';
+    // What each action does and Combat situations: Rules reference (☰ menu).
   h+='</div>';
   return h;
 }
@@ -1207,8 +1232,9 @@ function pmTrackersHTML(){
   let h='<div class="pmx-trackers">';
   h+=row("Action Points","ap",'<span class="pm-pips">'+Array.from({length:maxAP},(_,i)=>'<button class="pm-pip'+(i<remainAP?"":" off")+'" aria-label="action point '+(i+1)+'" onclick="APP.playApSetPip('+i+')"></button>').join("")+'</span>'
     +'<button type="button" class="pmx-mini" onclick="APP.playNewRound()" title="New combat round: restore all AP">New round</button>');
-  h+=row("Initiative","initiative",fatigueNoActivity()?'<span class="pmx-dim">—</span>':ini?'<b>'+ini.total+'</b> <span class="pmx-dim">d10 '+ini.roll+' + '+ini.bonus+'</span> <button type="button" class="pmx-mini" onclick="APP.playClearInitiative()" title="Ends the fight: clears initiative and Surprised, restores Action Points">End fight</button>'
-    :'<span class="pmx-dim">+'+ib.total+'</span> <button type="button" class="pmx-mini" onclick="APP.playRollInitiative()">Roll</button>');
+  h+=row("Initiative","initiative",(fatigueNoActivity()?'<span class="pmx-dim">—</span>':ini?'<b>'+ini.total+'</b> <span class="pmx-dim">d10 '+ini.roll+' + '+ini.bonus+'</span> <button type="button" class="pmx-mini" onclick="APP.playClearInitiative()" title="Ends the fight: clears initiative and Surprised, restores Action Points">End fight</button>'
+    :'<span class="pmx-dim">+'+ib.total+'</span> <button type="button" class="pmx-mini" onclick="APP.playRollInitiative()">Roll</button>')
+    +(fatigueNoActivity()?'':(S.play.surprised?' <span class="pmx-wd serious">Surprised</span>':'')+' <button type="button" class="pmx-mini" onclick="APP.pmPopup(\'initiative\')" aria-label="Initiative options: your own d10, Surprised, End fight" title="Your own d10, Surprised, End fight">&hellip;</button>'));
   h+=row("Magic Points","magic",'<b>'+v.curMagic+'</b><span class="pmx-dim">/'+v.maxMagic+'</span><span class="adj"><button class="pmx-mini" onclick="APP.playMagicAdj(-1)" aria-label="spend magic point">&minus;</button><button class="pmx-mini" onclick="APP.playMagicAdj(1)" aria-label="restore magic point">+</button></span>');
   h+=row("Luck","luck",'<span class="pm-pips">'+Array.from({length:v.maxLuck},(_,i)=>'<button class="pm-pip'+(i<v.curLuck?"":" off")+'" aria-label="luck point '+(i+1)+'" onclick="APP.playLuckSetPip('+i+')"></button>').join("")+'</span>');
   h+=row("Fatigue","fatigue",'<select class="pm-fatsel" aria-label="Fatigue level" onchange="APP.playSetFatigue(this.value)">'+FATIGUE_LEVELS.map(f=>'<option '+(v.fatigue===f?"selected":"")+'>'+f+'</option>').join("")+'</select>');
@@ -1244,8 +1270,7 @@ function pmBodyBoxHTML(){
   const worstTag={ok:"Unhurt",minor:"Minor Wound",serious:"Serious Wound",major:"Major Wound"}[v.worst];
   return '<div class="pm-box pmx-bodybox" id="pm-vitals"><h3>Body'+pmTip("health")+' <span class="pmx-health '+v.worst+'">'+worstTag+(v.worstLoc&&v.worst!=="ok"?' · '+esc(v.worstLoc.loc):'')+'</span></h3>'
    +'<div class="pm-vit-body">'+pmBodySvg()+'<div class="pm-loclist">'+PLAY_HP_LOCS.map(pmLocRow).join("")+'</div></div>'
-   +pmWoundOverview()
-   +'<p class="pmx-small"><button type="button" class="pmx-link" onclick="APP.pmPopup(\'hazards\')">Hazards and recovery</button> <span class="pmx-dim">Core pp.71, 74–80</span></p></div>';
+   +'</div>';
 }
 function pmRollLogHTML(){
   return '<div class="pm-rolllog">'+(S.rollLog.length?S.rollLog.map((r,i)=>playRollLogRow(r,i)).join(""):'<span class="pm-empty">No rolls yet — click "roll" beside any skill.</span>')+'</div>'
@@ -1313,7 +1338,7 @@ function pmSideTabsHTML(onLog){
 function pmPopupHTML(){
   if(!PM_POPUP)return '<aside class="pmx-side pmx-side-empty" aria-label="Details">'+pmSideTrayHTML()+pmSideTabsHTML(false)+'<p class="pmx-dim pmx-side-hint">Details appear here. Choose a skill rule, a Special Effect, a body location or the roll log.</p></aside>';
   const k=PM_POPUP.k;let title="",body="";
-  if(k==="loc"){const loc=S.play.selectedLoc;if(!loc){PM_POPUP=null;return "";}title=loc;body=pmLocDetail();}
+  if(k==="loc"){const loc=S.play.selectedLoc;if(!loc){PM_POPUP=null;return "";}title=loc;body=pmLocDetail()+pmWoundOverview();}
   else if(k==="fx"){const e=SPECIAL_EFFECTS[PM_POPUP.i];if(!e){PM_POPUP=null;return "";}
     title=e[0];const r=selectedEffectRoll(),picked=r?.effectsPicked||[];
     const can=r&&canPickEffectForRoll(e,r)&&picked.length<rollEffectsWon(r)&&(!picked.includes(e[0])||e[5])&&!VIEW_ONLY;
@@ -1329,6 +1354,10 @@ function pmPopupHTML(){
   else if(k==="rulesref"){title="Combat situations";body=pmCombatRulesRefHTML();}
   else if(k==="range"){title="Distance and target size";body=pmRangeHelperHTML();}
   else if(k==="style"){title="Colour scheme";body=pmStyleHTML();}
+  else if(k==="fxref"){title="Special Effects";body='<div id="pm-actions">'+specialEffectsPanel()+'</div>';}
+  else if(k==="ref"){title="Rules reference";body=pmRulesRefHTML();}
+  else if(k==="initiative"){title="Initiative";body=pmInitiativeHTML();}
+  else if(k==="skill"){const e=allEntries().find(x=>x.key===PM_POPUP.key);if(!e){PM_POPUP=null;return "";}title=e.label;body=pmSkillInfoHTML(e);}
   else {PM_POPUP=null;return "";}
   // A side panel, like D&D Beyond's: it takes its own column on desktop, so
   // nothing on the sheet is covered; a sheet from the bottom on phones.
@@ -1400,7 +1429,7 @@ function renderPlayView(){
   else h+=pmNotesPanelHTML();
   h+='</div></section>'+pmPopupHTML()+'</div>';
   const phoneOn=k=>PM_VIEW==="right"?(k==="combat"?tab==="combat":k==="more"&&tab!=="combat"):k===PM_VIEW;
-  h+='<nav class="pmx-phonebar" aria-label="Play Mode sections">'+PM_PHONE_TABS.map(([k,l])=>'<button type="button" class="pmx-tab'+(phoneOn(k)?" on":"")+'"'+(phoneOn(k)?' aria-current="page"':'')+' onclick="APP.playTab(\''+k+'\')">'+(PM_PHONE_ICONS[k]||"")+l+'</button>').join("")+'<a class="pmx-tab pmx-hometab" href="#/">'+PM_PHONE_ICONS.home+'Home</a></nav>';
+  h+='<nav class="pmx-phonebar" aria-label="Play Mode sections">'+PM_PHONE_TABS.map(([k,l])=>'<button type="button" class="pmx-tab'+(phoneOn(k)?" on":"")+'"'+(phoneOn(k)?' aria-current="page"':'')+' onclick="APP.playTab(\''+k+'\')">'+(PM_PHONE_ICONS[k]||"")+l+'</button>').join("")+'</nav>';
   h+='</div>';
   if(XP_OPEN&&!VIEW_ONLY)h+=xpModalHtml();
   h+=giftPopupHtml();
@@ -1673,11 +1702,10 @@ function pmWeaponCardsHTML(){
   return h+'</div>';
 }
 function pmCombatTabHTML(){
-  const fxOpen=!!PM_FX_SEARCH;
-  // The roll card folds to a summary once effects are chosen, so the weapons'
-  // Attack/Parry sit right under it for the next roll or a quick parry.
-  return pmResolveCardHTML()+pmWeaponCardsHTML()+pmTurnStripHTML()+pmActionsPanelHTML()
-   +'<details class="pm-box pmx-fxref" id="pm-actions"'+(fxOpen?' open':'')+'><summary><h3>Special Effects reference</h3><span class="pmx-dim">all '+SPECIAL_EFFECTS.length+', with rules text</span></summary>'+specialEffectsPanel()+'</details>';
+  // Initiative lives in the top row (owner, 2026-11-07); the Special Effects
+  // reference moved to Rules reference in the ☰ menu.
+  const warn=S.play.surprised?'<p class="warn pmx-warn" role="status">Surprised (Core p.105): initiative −10; you can\'t defend until your initiative comes up; the first successful attack against you gains one extra Special Effect; no offensive actions for the rest of this round. New round clears it.</p>':'';
+  return warn+pmResolveCardHTML()+pmWeaponCardsHTML()+pmActionsPanelHTML();
 }
 // ---- Roll tray (Play Mode redesign batch 2) ----
 // Each new d100 roll is shown in a small tray using the physics dice from
