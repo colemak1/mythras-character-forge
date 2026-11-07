@@ -50,6 +50,7 @@ function arena(payload,forge=true){
  vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-character.js'),'utf8'),sandbox);
  vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-guidance.js'),'utf8'),sandbox);
  vm.runInContext(fs.readFileSync(path.join(root,'experiments/pits-view.js'),'utf8'),sandbox);
+ vm.runInContext(fs.readFileSync(path.join(root,'experiments/pits-ranged.js'),'utf8'),sandbox);
  const source=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
  vm.runInContext(source,sandbox);
  return {run:s=>vm.runInContext(s,sandbox),html:()=>output.innerHTML};
@@ -106,7 +107,7 @@ function arena(payload,forge=true){
  // weapons and three shields, so most saved characters could not load.
  run(`var every=freshState();every.concept.name='Weapons master';every.chars={STR:13,CON:12,SIZ:14,DEX:15,INT:14,POW:11,CHA:10};
   every.cultStyleOn=true;every.cultStyleName='Everything';
-  var everyMelee=WEAPONS.filter(w=>!practiceUnsupportedReason(w)).map(w=>w.name);
+  var everyMelee=WEAPONS.filter(w=>w.group!=='Ranged'&&!practiceUnsupportedReason(w)).map(w=>w.name);
   every.styleDefs['style:cult']={weapons:everyMelee,traits:[]};every.gearWeapons=everyMelee.slice();
   var everyProfile=JSON.stringify(practiceSnapshot({id:'every',ownerId:'user',state:every}));`);
  check('Every supported Core melee weapon and shield on a saved character loads and fights in the arena',()=>{

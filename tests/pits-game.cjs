@@ -11,7 +11,7 @@ function arena(withGame,seed){
   window:{matchMedia:()=>({matches:false}),requestAnimationFrame(){}}};
  vm.createContext(ctx);
  vm.runInContext('Math.random=__rnd',Object.assign(ctx,{__rnd:rnd}));
- const files=['js/data.js','experiments/practice-character.js','experiments/practice-guidance.js','experiments/pits-view.js',...(withGame?['experiments/pits-game.js']:[])];
+ const files=['js/data.js','experiments/practice-character.js','experiments/practice-guidance.js','experiments/pits-view.js','experiments/pits-ranged.js',...(withGame?['experiments/pits-game.js']:[])];
  for(const f of files)vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx);
  vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1],ctx);
  return {run:x=>vm.runInContext(x,ctx),q};
