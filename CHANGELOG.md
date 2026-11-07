@@ -14,6 +14,12 @@ From the live acceptance in #196:
   - the pill follows whose dice are on screen;
   - the recap appears after the Victory or Defeat window, not during the final damage roll.
 
+## The Pits UI live acceptance — 2026-11-07
+
+- Owner-only deployed pass after #193–#195: guest and saved-character victories, odds/action hints, Mark toast, hit feedback, recap and Basalt inheritance observed at 1363×936.
+- Two UI failures documented: dim Basalt setup text and phase/roll/recap advancing ahead of playback. Exact 1280/390 and audible sound remain unverified due to browser limitations.
+- Evidence: `docs/pits-ui-live-acceptance-20261107.md` and eight screenshots. Docs only; main Combat stays closed, progress 5/8.
+
 ## Rules, World Guide and Account
 
 From the owner's menu redesign handoff (Part A, items 8–10):
