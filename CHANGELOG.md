@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: fixes from ChatGPT's live check
+
+From the live acceptance in #196:
+- **PUI-F01:** the setup screen (Choose your challenge, mode descriptions, practice fighter, leaderboard) is now readable in dark schemes like Basalt.
+- **PUI-F02:** the phase pill, the Last roll bar and the end-of-bout recap now follow the exchange being shown, not the result that's already been worked out:
+  - the Last roll bar shows a roll only once its dice have landed on screen;
+  - the pill follows whose dice are on screen;
+  - the recap appears after the Victory or Defeat window, not during the final damage roll.
+
 ## Rules, World Guide and Account
 
 From the owner's menu redesign handoff (Part A, items 8–10):

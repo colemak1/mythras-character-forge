@@ -70,4 +70,18 @@ test('the readout shows the latest skill roll; odds come from the option the pla
  assert.equal(run(`pitsOddsFor('attack')`),run('combatTarget(S.fighters.a)'));
  run(`S.pending={kind:'reaction',atk:'b',def:'a'}`);assert.equal(run(`pitsOddsFor('react','evade')`),run('evadeTarget(S.fighters.a)'));
 });
+test('during a replay the pill and Last roll follow the beat on screen, not the live state (PUI-F02)',()=>{
+ setup();
+ run(`V.skillBefore={actor:'a',name:'A',what:'Attack',pct:60,roll:40,grade:2};
+  V.lastSkillRoll={actor:'b',name:'B',what:'Attack',pct:45,roll:92,grade:1};
+  V.busy=true;V.step=0;V.roll={actor:'a',settled:false};
+  V.events=[{roll:{actor:'a',skill:{actor:'a',name:'A',what:'Initiative',pct:0,roll:4,grade:2}}},{roll:{actor:'b',skill:V.lastSkillRoll}}];`);
+ assert.equal(run('pitsShownSkillRoll().roll'),40,'still the roll from before this replay');
+ assert.equal(run('pitsPhase()'),'rolling','the human is rolling on screen');
+ run(`V.roll.settled=true`);assert.equal(run('pitsShownSkillRoll().roll'),4,'the settled beat on screen');
+ run(`V.step=1;V.roll={actor:'b',settled:false}`);
+ assert.equal(run('pitsShownSkillRoll().roll'),4,'later foe roll not revealed yet');assert.equal(run('pitsPhase()'),'opponent');
+ run(`V.roll.settled=true`);assert.equal(run('pitsShownSkillRoll().roll'),92);
+ run(`V.busy=false;V.roll=null`);assert.equal(run('pitsShownSkillRoll().roll'),92);
+});
 console.log(passed+' pits view tests passed');

@@ -102,7 +102,10 @@ function pitsBoutBarHtml(){
 }
 function pitsRecapHtml(){
   const g=pitsGameState();if(!g)return '';
-  const over=S.phase==='between'||S.phase==='over';
+  // The end-of-bout recap waits for the replay to finish and for the
+  // Victory/Defeat window to be closed (PUI-F02).
+  const replaying=typeof V!=='undefined'&&V.busy;
+  const over=(S.phase==='between'||S.phase==='over')&&!replaying&&!S.showEndModal;
   if(!over&&!g.recapOpen)return '';
   const st=g.stats;
   const marks=PITS_MARKS.map(([id,n,d])=>`<li class="pits-mark${g.owned.has(id)?' own':''}${g.fresh.has(id)?' fresh':''}">${PITS_STAR}<div><b>${n}</b><span>${g.owned.has(id)?d:'Locked · '+d}</span></div></li>`).join('');

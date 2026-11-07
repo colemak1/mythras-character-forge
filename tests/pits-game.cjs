@@ -51,4 +51,10 @@ test('the bout bar and recap label the layer as not rules',()=>{
  a.run('pitsGameState().recapOpen=true');assert.match(a.run('pitsRecapHtml()'),/for fun, not a rule/);
  assert.match(a.run('pitsRecapHtml()'),/data-pits="back"/);
 });
+test('the end recap waits for the replay and the Victory window (PUI-F02)',()=>{
+ const a=arena(true,9);a.run(`startRun();R=null;V.busy=false;PG=null;pitsGameState();S.phase='between';S.showEndModal=true;`);
+ assert.equal(a.run('pitsRecapHtml()'),'','hidden while the Victory window is up');
+ a.run(`S.showEndModal=false;V.busy=true`);assert.equal(a.run('pitsRecapHtml()'),'','hidden while the replay runs');
+ a.run(`V.busy=false`);assert.match(a.run('pitsRecapHtml()'),/Pit Marks and streaks/);
+});
 console.log(passed+' pits game tests passed');
