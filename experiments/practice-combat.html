@@ -1921,7 +1921,7 @@ if(p?.kind==='location'){
 }
 let id=S.order[S.turnIndex],f=S.fighters[id];if(!f)return '<p class="desc">Waiting for combat to begin.</p>';
 if(S.disengaged)return `<div class="turnline"><h3>${esc(f.name)} · Separated</h3><span>${S.gapMetres||0}m gap</span></div><div class="choicegrid"><button class="choice gold" data-act="reengage" ${f.prone?'disabled':''}><strong>Move to Engage${S.gapMetres>3?' · 1 AP':''}</strong></button>${f.prone&&canRegainFooting(f)?'<button class="choice" data-act="stand"><strong>Regain Footing · 1 AP</strong></button>':''}<button class="choice" data-act="dither"><strong>Wait · 1 AP</strong></button></div>`;
-return `<div class="turnline"><h3>Choose an action</h3><span>${f.ap} AP remaining</span></div><div class="choicegrid"><button class="choice gold" data-act="attack" ${f.ap<1||!canMakeAttack(f)?'disabled':''}><strong>Attack · 1 AP</strong><small>${attackRestrictionTurns(f)>0||cannotAttackDueToStun(f)?'Stunned / pressured: cannot attack this turn':!canUseWeapon(f)?'Weapon arm disabled: swap weapon hand or concede':isCrampedAtReach(id)?'Awkward strike with the haft · 1d3+1':mustTargetWeapon(id)?'Body out of reach: strike their weapon instead, or close range':'Roll Combat Style, allow a reaction, resolve damage'}</small></button>${canWithdrawImpale(f)?`<button class="choice" data-act="withdrawImpale"><strong>Withdraw Embedded Weapon · 1 AP</strong><small>Ready Weapon + Brawn; withdrawal inflicts additional damage</small></button>`:''}${f.pinnedGear?`<button class="choice" data-act="freePin"><strong>Free Pinned ${f.pinnedGear==='shield'?'Shield':'Weapon'} · 1 AP</strong></button>`:''}${entangledLoc(f)?`<button class="choice" data-act="freeEntangle" ${f.ap<1?'disabled':''}><strong>Break Free · 1 AP</strong><small>Entangled ${f.entangled.loc}: opposed Brawn (Core p.97)</small></button>`:''}${entangling(f)&&!entangling(f).prone?`<button class="choice" data-act="entangleTrip" ${f.ap<1?'disabled':''}><strong>Trip Entangled Foe · 1 AP</strong><small>Your Combat Style against their Brawn, Evade or Acrobatics</small></button>`:''}${f.disarmed?`<button class="choice" data-act="recoverWeapon" ${f.ap<1?'disabled':''}><strong>${f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?'Ready Weapon':'Pick Up Weapon'} · 1 AP</strong></button>`:''}<button class="choice" data-act="changeRange" ${f.ap<1||!proposedRange(id)?'disabled':''}><strong>${proposedRange(id)==='short'?'Close Inside · 1 AP':'Change Range · 1 AP'}</strong><small>${proposedRange(id)==='short'?'Close to shorter reach':proposedRange(id)==='long'?'Open to longer reach':'No contested reach difference'}</small></button>${f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!ARENA_WEAPONS[f.weapon].twoHanded?`<button class="choice" data-act="swapHand"><strong>Switch Weapon Hand · 1 AP</strong><small>Ready your weapon in the usable hand</small></button>`:''}${f.shield!=='none'?`<button class="choice" data-act="ward" title="Free action before an incoming attack"><strong>${f.warded?.length?'Change Shield Ward':'Ward Shield'} · 0 AP</strong></button>`:''}<button class="choice" data-act="brace" ${f.ap<1||f.braced?'disabled':''}><strong>Brace · 1 AP</strong><small>Brace against force; doubles SIZ versus Bash (Core p.91)</small></button><button class="choice" data-act="delay"><strong>${proposedRange(id)==='short'?'Hold for a Reaction':'Delay · hold 1 AP'}</strong><small>Hold 1 AP for a reaction until your next turn</small></button><button class="choice" data-act="dither" ${f.ap<1?'disabled':''}><strong>Dither · 1 AP</strong><small>Use your action without attacking</small></button><button class="choice" data-act="stand" ${f.ap<1||!canRegainFooting(f)?'disabled':''}><strong>Regain Footing · 1 AP</strong><small>Opposed Brawn test if engaged (Core p.92)</small></button><button class="choice" data-act="yield"><strong>Concede Bout · 0 AP</strong><small>End this training fight without a death</small></button><button class="choice" data-act="help"><strong>Combat reference</strong><small>Show the rules this prototype implements</small></button></div>`}
+return `<div class="turnline"><h3>Choose an action</h3><span>${f.ap} AP remaining</span></div><div class="choicegrid"><button class="choice gold" data-act="attack" ${f.ap<1||!canMakeAttack(f)?'disabled':''}><strong>Attack · 1 AP</strong><small>${attackRestrictionTurns(f)>0||cannotAttackDueToStun(f)?'Stunned / pressured: cannot attack this turn':!canUseWeapon(f)?'Weapon arm disabled: swap weapon hand or concede':isCrampedAtReach(id)?'Awkward strike with the haft · 1d3+1':mustTargetWeapon(id)?'Body out of reach: strike their weapon instead, or close range':'Roll Combat Style, allow a reaction, resolve damage'}</small></button>${canWithdrawImpale(f)?`<button class="choice" data-act="withdrawImpale"><strong>Withdraw Embedded Weapon · 1 AP</strong><small>Ready Weapon + Brawn; withdrawal inflicts additional damage</small></button>`:''}${f.pinnedGear?`<button class="choice" data-act="freePin"><strong>Free Pinned ${f.pinnedGear==='shield'?'Shield':'Weapon'} · 1 AP</strong></button>`:''}${entangledLoc(f)?`<button class="choice" data-act="freeEntangle" ${f.ap<1?'disabled':''}><strong>Break Free · 1 AP</strong><small>Entangled ${f.entangled.loc}: opposed Brawn (Core p.97)</small></button>`:''}${entangling(f)&&!entangling(f).prone?`<button class="choice" data-act="entangleTrip" ${f.ap<1?'disabled':''}><strong>Trip Entangled Foe · 1 AP</strong><small>Your Entangle roll against their Brawn, Evade or Acrobatics</small></button>`:''}${f.disarmed?`<button class="choice" data-act="recoverWeapon" ${f.ap<1?'disabled':''}><strong>${f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?'Ready Weapon':'Pick Up Weapon'} · 1 AP</strong></button>`:''}<button class="choice" data-act="changeRange" ${f.ap<1||!proposedRange(id)?'disabled':''}><strong>${proposedRange(id)==='short'?'Close Inside · 1 AP':'Change Range · 1 AP'}</strong><small>${proposedRange(id)==='short'?'Close to shorter reach':proposedRange(id)==='long'?'Open to longer reach':'No contested reach difference'}</small></button>${f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!ARENA_WEAPONS[f.weapon].twoHanded?`<button class="choice" data-act="swapHand"><strong>Switch Weapon Hand · 1 AP</strong><small>Ready your weapon in the usable hand</small></button>`:''}${f.shield!=='none'?`<button class="choice" data-act="ward" title="Free action before an incoming attack"><strong>${f.warded?.length?'Change Shield Ward':'Ward Shield'} · 0 AP</strong></button>`:''}<button class="choice" data-act="brace" ${f.ap<1||f.braced?'disabled':''}><strong>Brace · 1 AP</strong><small>Brace against force; doubles SIZ versus Bash (Core p.91)</small></button><button class="choice" data-act="delay"><strong>${proposedRange(id)==='short'?'Hold for a Reaction':'Delay · hold 1 AP'}</strong><small>Hold 1 AP for a reaction until your next turn</small></button><button class="choice" data-act="dither" ${f.ap<1?'disabled':''}><strong>Dither · 1 AP</strong><small>Use your action without attacking</small></button><button class="choice" data-act="stand" ${f.ap<1||!canRegainFooting(f)?'disabled':''}><strong>Regain Footing · 1 AP</strong><small>Opposed Brawn test if engaged (Core p.92)</small></button><button class="choice" data-act="yield"><strong>Concede Bout · 0 AP</strong><small>End this training fight without a death</small></button><button class="choice" data-act="help"><strong>Combat reference</strong><small>Show the rules this prototype implements</small></button></div>`}
 function log(title,body,kind='system',detail='',meta=null){
  const entry={id:nextLogId++,title,body,kind,detail,meta,view:S.fighters?clone(S.fighters):null};
  S.logs.push(entry);
@@ -1971,8 +1971,11 @@ function entangledArm(f,arm){return entangledLoc(f)===arm;}
 function entangledLegs(f){return !!entangledLoc(f)?.endsWith('Leg');}
 function entangledTorso(f){return ['Head','Chest','Abdomen'].includes(entangledLoc(f));}
 function entangling(f){const o=f&&S.fighters?.[f.id==='a'?'b':'a'];return o&&o.entangled?.by===f.id&&entangledLoc(o)?o:null;}
-function entangleLocation(holder,victim,loc){
- victim.entangled={loc,by:holder.id};
+// origin is the holder's successful roll that won Entangle; the later Trip
+// attempt is opposed against it (Core pp.97, 101).
+function entangleLocation(holder,victim,loc,origin){
+ const o=origin||{grade:2,roll:0,label:'Success'};
+ victim.entangled={loc,by:holder.id,origin:{grade:o.grade,roll:o.roll,label:o.label,effectiveTarget:o.effectiveTarget}};
  const what=loc.endsWith('Arm')?'cannot use what that arm holds':loc.endsWith('Leg')?'cannot move':'makes every skill roll one grade harder';
  log('Entangle',`${holder.name}'s ${ARENA_WEAPONS[holder.weapon].name} wraps ${victim.name}'s ${loc}: ${victim.name} ${what} until free.`,'hit','Core p.97: Brawn to yank free, or Damage Weapon, Disarm Opponent or Slip Free.',{actor:holder.id,target:victim.id,location:loc});
 }
@@ -1982,29 +1985,28 @@ const TRIP_SKILL_NAMES={brawn:'Brawn',evade:'Evade',acrobatics:'Acrobatics'};
 function tripResistOptions(f){return ['brawn','evade',...(f.acrobatics>0?['acrobatics']:[])];}
 function tripResistPct(f,skill){return skill==='evade'?f.evade:skill==='acrobatics'?f.acrobatics:f.brawn;}
 function bestTripSkill(f){return tripResistOptions(f).reduce((best,k)=>tripResistPct(f,k)>tripResistPct(f,best)?k:best);}
-// Core p.97: on a later turn the holder may spend 1 AP on a Trip attempt. The
-// arena reads "automatic" as needing no Special Effect: the victim still
-// resists against the holder's Combat Style roll (docs/decisions.md).
+// Core p.97: on a following turn the holder may spend 1 AP on a Trip attempt
+// without another Special Effect. The victim resists with Brawn, Evade or
+// Acrobatics against the original roll that won Entangle (Core p.101); no new
+// roll is made for the holder (ChatGPT source check of PR #187).
 function beginEntangleTrip(id){
  if(S.phase!=='fight'||S.pending||R)return;
  const f=S.fighters[id],victim=entangling(f);
  if(!f||f.ap<1||!victim||victim.prone)return;
  f.ap--;
- const pct=combatTarget(f);
- requestSkill(f.id,pct,`Entangle trip · ${f.name} Combat Style`,origin=>{
-  const resist=skill=>{
-   S.pending=null;
-   const k=TRIP_SKILL_NAMES[skill]?skill:'brawn',base=tripResistPct(victim,k);
-   requestSkill(victim.id,base,`Trip · ${victim.name} ${TRIP_SKILL_NAMES[k]}`,res=>{
-    const stands=opposedBetter(res,origin);
-    if(!stands)victim.prone=true;
-    log('Entangle · Trip',`${f.name} ${origin.roll}/${origin.effectiveTarget??pct}% (${origin.label}) against ${victim.name} ${TRIP_SKILL_NAMES[k]} ${res.roll}/${res.effectiveTarget??base}% (${res.label}): ${stands?'stays standing':'falls prone'}.`,'hit','Core p.97: the holder may spend an Action Point to trip an entangled foe.',{actor:f.id,target:victim.id});
-    advanceStun(f);S.turnIndex++;advance();
-   });
-  };
-  if(victim.kind==='human'){S.pending={kind:'tripResistChoice',owner:f.id,other:victim.id,chosen:[],effectsLeft:0,resistTrip:resist};render();}
-  else resist(bestTripSkill(victim));
- });
+ const origin=victim.entangled.origin||{grade:2,roll:0,label:'Success'};
+ const resist=skill=>{
+  S.pending=null;
+  const k=tripResistOptions(victim).includes(skill)?skill:'brawn',base=tripResistPct(victim,k);
+  requestSkill(victim.id,base,`Trip · ${victim.name} ${TRIP_SKILL_NAMES[k]}`,res=>{
+   const stands=opposedBetter(res,origin);
+   if(!stands)victim.prone=true;
+   log('Entangle · Trip',`${victim.name} ${TRIP_SKILL_NAMES[k]} ${res.roll}/${res.effectiveTarget??base}% (${res.label}) against ${f.name}'s original Entangle roll ${origin.roll} (${origin.label}): ${stands?'stays standing':'falls prone'}.`,'hit','Core pp.97, 101: 1 AP, opposed against the roll that won Entangle.',{actor:f.id,target:victim.id});
+   advanceStun(f);S.turnIndex++;advance();
+  });
+ };
+ if(victim.kind==='human'){S.pending={kind:'tripResistChoice',owner:f.id,other:victim.id,chosen:[],effectsLeft:0,resistTrip:resist};render();}
+ else resist(bestTripSkill(victim));
 }
 // Core p.97: an entangled victim may yank free with an opposed Brawn roll.
 function beginFreeEntangle(id){
@@ -2386,7 +2388,7 @@ function applyEffect(effect){
   releaseEntangle(actor,`${actor.name} chooses ${SPECIAL_EFFECT_NAMES[effect]} and pulls the ${actor.entangled.loc} free (Core p.97).`);
  if(effect==='entangle'){
   if(p.owner===p.atk){p.entangle=true;note('Entangle',`${actor.name} will entangle the location struck.`);}
-  else entangleLocation(actor,target,target.weaponHand||'Right Arm');
+  else entangleLocation(actor,target,target.weaponHand||'Right Arm',p.defenseRoll);
   finishOneEffect();return;
  }
  if(effect==='pinWeapon'){
@@ -2576,7 +2578,7 @@ function resolveHit(){
         if(passive>parry){parry=passive;parryText=`Passive shield ward on ${loc}: ${parry} damage stopped.`;}
         const armour=p.bypassArmour&&!p.sunder?0:armourAt(def,loc),afterParry=Math.max(0,dmg.total-parry),wound=p.sunder?0:Math.max(0,afterParry-armour),old=def.hp[loc];
         if(p.sunder){const apLost=Math.max(0,afterParry-armour);def.armourLocations[loc]=Math.max(0,armourAt(def,loc)-apLost);log('Sunder',`${atk.name} damages armour on ${def.name}'s ${loc}: ${apLost} AP removed (${def.armourLocations[loc]} AP remains).`,'hit');}
-        if(p.entangle)entangleLocation(atk,def,loc);
+        if(p.entangle)entangleLocation(atk,def,loc,p.attackRoll);
         def.hp[loc]-=wound;const sourceWound=registerWound(def,loc,wound);def.lastDamage={loc,wound,attacker:atk.name,weapon:ARENA_WEAPONS[atk.weapon].name};
         log(`${atk.name} hits ${loc}`,`${weaponDmg.total} weapon (${weaponDmg.detail}) ${mod.label} (${dmValue>=0?'+':''}${dmValue}) = ${dmg.total} total; ${parry} parry; ${Math.min(afterParry,armour)} armour; ${wound} HP lost.`,'hurt',`${parryText} ${loc}: ${old} → ${def.hp[loc]} HP.`,{actor:atk.id,impact:{target:def.id,location:loc,hpLost:wound},dice:[...chosen.map((r,i)=>makeDie(dmg.sides,r,`Weapon ${i+1}`)),...dmDice.map((r,i)=>makeDie(Array.isArray(mod.sides)?mod.sides[i]:mod.sides,r,`Modifier ${i+1}`))]});
         if(p.bash){

@@ -120,12 +120,14 @@ Six more deterministic tests in `tests/practice-procedure.cjs` (14 in total), pl
 | PIT-SE08 | Trip Opponent offers Acrobatics beside Brawn and Evade when the victim has the skill. Forge characters bring their Acrobatics; generated opponents have none, so the computer picks the best of what it has. |
 | PIT-SE01 | Entangle is offered to entangling weapons (Chain, Ball & chain, Net, Whip, Halberd/Poleaxe). The struck location is held: an arm cannot use what it holds (weapon, or a shield on the left arm); a leg cannot move (no range change, Close/Open Range or Withdraw); head, chest or abdomen make every skill roll one grade harder. The holder may spend 1 AP on a Trip attempt. The victim frees itself with 1 AP and opposed Brawn, or by winning Slip Free, Damage Weapon or Disarm Opponent. The hold ends when the fighters separate or the entangling weapon is lost or broken. |
 
-Interpretations in this batch, for ChatGPT to confirm or correct against Core p.97 (recorded in `docs/decisions.md`):
+Entangle readings, checked by ChatGPT against Core pp.97, 101 (2026-11-07):
 
-1. **"Automatic Trip Opponent attempt":** read as "needs no Special Effect", not "always succeeds". The holder rolls Combat Style and the victim resists with Brawn, Evade or Acrobatics, as for Trip Opponent.
-2. **Breaking free:** the victim's Brawn is opposed by the holder's Brawn, as the arena already does for Pin Weapon.
-3. **Defensive Entangle:** a defender who parries with an entangling weapon and wins the effect wraps the attacker's weapon arm (Core gives no struck location for a parry).
-4. **Holder attacks:** attacking with the entangling weapon lets go of the hold first (arena convention; Core is silent).
-5. **Damage Weapon / Disarm as escape:** choosing either against the holder frees the victim, whatever the effect's own roll gives.
+| # | Reading | Result |
+|---|---|---|
+| 1 | The holder's Trip on a following turn costs 1 AP and needs no further Special Effect | **CORRECTED and fixed:** the victim resists (Brawn, Evade or Acrobatics) against the **original roll that won Entangle**, not a fresh Combat Style roll. The arena stores that roll with the hold (the attack roll, or the parry roll for a defensive Entangle). Test: `tests/practice-procedure.cjs`. |
+| 2 | Breaking free is the victim's Brawn opposed by the holder's Brawn | **PASS** (Core p.97) |
+| 3 | A defensive (parrying) Entangle wraps the attacker's weapon arm | **ARENA CONVENTION:** reasonable simplification; Core gives no location for a defensive Entangle |
+| 4 | Attacking with the entangling weapon releases the hold | **ARENA CONVENTION:** not a Core requirement |
+| 5 | Choosing Damage Weapon or Disarm Opponent against the holder frees the victim | **PASS** (Core p.97) |
 
 Still open: PIT-SE03 (Unarmed, Grip, Flurry), PIT-SE04 (Kill Silently, ambush scope), PIT-SE14 (Prepare Counter eligibility), PIT-P02 (tied Initiative), PIT-P07 (shield attacks and shield Bash), PIT-R06 (optional Reach toggle).

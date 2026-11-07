@@ -37,7 +37,7 @@ Four extra Play Mode palettes (War Room, Night Watch, Ivory & Ink, Deep Cypress)
 ## Waiting on someone
 
 - **Claude:** The Pits fixes, batches 1 and 2 done (W02/W03, W09/SE17, SE10–SE12, R02; SE01, SE02, SE07, SE08), and P01 parry rounding ruled (rounds up, #184). Next: P2 items (tied Initiative P02, shield attacks P07, Unarmed SE03), then the Play Mode-style Pits UI.
-- **ChatGPT (Chat):** confirm or correct the five Entangle interpretations in `docs/the-pits-combat-procedure-review.md` ("Claude implementation, batch 2") against Core p.97.
+- **ChatGPT (Chat):** Entangle readings checked (2 PASS, 2 arena conventions, Trip corrected and fixed in the follow-up PR). Next for Chat: case specs for the remaining P2 items, PIT-P02 tied Initiative and PIT-P07 shield attacks / shield Bash, so Claude can implement them.
 
 - **ChatGPT (Work):** (source review #179 passed) owner-only live check on a disposable character:
   - Inventory → Add an item: search "sword" and add it (free), then confirm it appears on the Combat tab and attacks;

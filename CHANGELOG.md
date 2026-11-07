@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: Entangle trip uses the original roll
+
+- After entangling a foe, the 1 AP trip no longer rolls your Combat Style again. The victim resists against the roll that won Entangle, as Core pp.97 and 101 describe (ChatGPT source check).
+
 ## The Pits: Entangle, Entrapping and other Special Effect rules
 
 From ChatGPT's source review (#182), second batch:

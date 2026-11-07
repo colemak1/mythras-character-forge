@@ -120,7 +120,7 @@ test('Entangle is offered to entangling weapons only, and holds the struck locat
  setup('chain');assert(effectsFor().includes('entangle'));
  // Weapon arm: the victim cannot use what it holds.
  hit({entangle:true,chosenLoc:'Right Arm'});answer(1,1);
- assert.deepEqual(JSON.parse(run('JSON.stringify(S.fighters.b.entangled)')),{loc:'Right Arm',by:'a'});
+ assert.equal(run('S.fighters.b.entangled.loc'),'Right Arm');assert.equal(run('S.fighters.b.entangled.by'),'a');
  assert.equal(run('canUseWeapon(S.fighters.b)'),false);assert.equal(run('canMakeAttack(S.fighters.b)'),false);
  assert(logs().some(l=>/^Entangle :: .*Chain wraps .*Right Arm/.test(l)),logs().join('\n'));
  // Leg: no moving, so no range change or Withdraw.
@@ -133,13 +133,21 @@ test('Entangle is offered to entangling weapons only, and holds the struck locat
  // Separation ends the hold.
  run('S.disengaged=true');assert.equal(run('entangledLoc(S.fighters.b)'),null);
 });
-test('Entangle: the holder can trip for 1 AP; the victim breaks free with Brawn (Core p.97)',()=>{
- setup('chain');hit({entangle:true,chosenLoc:'Left Leg'});answer(1,1);
- run(`S.pending=null;R=null;S.order=['a','b'];S.turnIndex=0;S.fighters.a.ap=3;S.fighters.b.ap=3;S.fighters.b.brawn=40;S.fighters.b.evade=30;S.fighters.a.style=60;S.logs=[]`);
- run(`beginEntangleTrip('a')`);assert.equal(run('S.fighters.a.ap'),2,'1 AP');
- assert.match(answer(20),/Entangle trip · .* Combat Style/);   // success
- assert.equal(run('S.pending.kind'),'tripResistChoice');
- run(`(()=>{const p=S.pending;p.kind='effect';p.resistTrip('brawn');})()`);answer(90);
+test('Entangle: the holder trips for 1 AP against the original Entangle roll; the victim breaks free with Brawn (Core pp.97, 101)',()=>{
+ const trip=(victimRoll)=>{
+  setup('chain');hit({entangle:true,chosenLoc:'Left Leg'});answer(1,1);   // Entangle won by the attack roll 20 (Success)
+  assert.deepEqual(JSON.parse(run('JSON.stringify(S.fighters.b.entangled.origin)')),{grade:2,roll:20,label:'Success',effectiveTarget:60});
+  run(`S.pending=null;R=null;S.order=['a','b'];S.turnIndex=0;S.fighters.a.ap=3;S.fighters.b.ap=3;S.fighters.b.brawn=40;S.fighters.b.evade=30;S.logs=[]`);
+  run(`beginEntangleTrip('a')`);assert.equal(run('S.fighters.a.ap'),2,'1 AP');
+  assert.equal(run('S.pending.kind'),'tripResistChoice','no new roll for the holder: straight to the victim');
+  run(`(()=>{const p=S.pending;p.kind='effect';p.resistTrip('brawn');})()`);
+  assert.match(answer(victimRoll),/Trip · .* Brawn/);
+ };
+ trip(30);                                            // Brawn 30/40 succeeds and beats the original 20
+ assert.equal(run('S.fighters.b.prone'),false);assert(logs().some(l=>/^Entangle · Trip :: .*Brawn 30\/40%.*original Entangle roll 20 \(Success\): stays standing/.test(l)),logs().join('\n'));
+ trip(15);                                            // 15 succeeds but loses to 20
+ assert.equal(run('S.fighters.b.prone'),true);
+ trip(90);                                            // failure
  assert.equal(run('S.fighters.b.prone'),true);assert(logs().some(l=>/^Entangle · Trip :: .*falls prone/.test(l)),logs().join('\n'));
  // Victim's turn: opposed Brawn to yank free.
  run(`R=null;S.pending=null;S.phase='fight';S.order=['b','a'];S.turnIndex=0;S.fighters.b.ap=3;S.logs=[]`);
@@ -155,5 +163,11 @@ test('Entangle ends on Slip Free, on Damage Weapon or Disarm against the holder,
  tangled();run(`S.pending=null;R=null;S.order=['a','b'];S.turnIndex=0;S.fighters.a.ap=3;beginAttack('a')`);
  assert.equal(run('S.fighters.b.entangled'),null,'attacking with the chain lets go');
  assert(logs().some(l=>/^Entangle ends :: .*pulls the Chain free/.test(l)),logs().join('\n'));
+});
+test('a parrying Entangle (arena convention) stores the winning parry roll for the later Trip',()=>{
+ setup('chain');run(`S.fighters.b.weapon='sword';`);
+ effectsFor({owner:'a',other:'b',atk:'b',def:'a',attackRoll:{grade:1,roll:70,label:'Failure'},defenseRoll:{grade:2,roll:33,label:'Success',effectiveTarget:60}});
+ run(`applyEffect('entangle')`);
+ assert.equal(run('S.fighters.b.entangled.loc'),'Right Arm');assert.equal(run('S.fighters.b.entangled.origin.roll'),33);
 });
 console.log(passed+' practice procedure tests passed');
