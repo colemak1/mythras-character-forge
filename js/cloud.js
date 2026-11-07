@@ -991,9 +991,7 @@ function menuTile(title,desc,onclick,disabled,primary){
 // itself and the code paths that check it elsewhere are untouched, this only
 // drops the panel that used to set it.
 function accountHTML(){
-  let h='<div class="mmenu"><div class="mmenu-topbar"><span class="mmenu-brandmark">Mythras</span><span class="mmenu-branddiv">&middot;</span><span class="mmenu-brandsub">Character Forge</span>'
-   +'<button class="mmenu-acctbtn" onclick="APP.toMenu()">&#8592; Main Menu</button></div>';
-  h+='<div class="mmenu-pagehead"><h1>Account</h1><p>Sign in to sync Campaigns between people and devices.</p></div>';
+  let h='<div class="mmenu st-page">'+stPageHead({eyebrow:'Your table',title:'Account',sub:'Sign in to keep your characters and campaigns in sync across devices.'});
   if(GUEST_TEST_ENABLED&&!AUTH_USER){
     h+='<div class="mmenu-panel" style="margin-bottom:16px"><div class="mmenu-panel-eyebrow">Try without an account</div>'
      +'<p class="note">Guest mode works without Supabase. Characters and campaigns are saved only in this browser on this device, not synced or backed up. Export your character before clearing website data or changing devices.</p>'
@@ -1072,13 +1070,14 @@ function renderMenuView(){
 }
 /* ---- campaign list ---- */
 function campaignsHTML(){
+  if(!stSignedIn())return '<div class="menuwrap st-page">'+stPageHead({title:'Campaign',sub:'Your table: the GM, the party and what happens next.'})+stGateHTML('campaigns')+'</div>';
   if(CAMP_LOAD_ERROR)return '<div class="menuwrap"><div class="menuhead"><h1>Campaigns</h1></div><p class="warn" role="alert">'+esc(CAMP_LOAD_ERROR)+'</p><button class="chip" onclick="loadCampaignsUnified()">Retry loading campaigns</button></div>';
   if(CAMP_CACHE===null)return '<div class="menuwrap"><p class="note" style="text-align:center">Loading campaigns&hellip;</p></div>';
   const camps=CAMP_CACHE.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  let h='<div class="menuwrap"><div class="menuhead"><h1>Campaigns</h1><p>'+(cloudActive()?"Synced to your account — DMs see every linked character.":"Local to this browser only.")+'</p></div>';
-  h+='<p style="text-align:center;margin-bottom:20px"><button class="nav" onclick="APP.toMenu()">&#8592; Main Menu</button> <button class="nav primary" onclick="APP.newCampaign()">+ New Campaign</button></p>';
+  let h='<div class="menuwrap st-page">'+stPageHead({title:'Campaign',sub:cloudActive()?"Synced to your account. GMs see every linked character.":"Local to this browser only.",
+    action:'<button type="button" class="st-btn st-btn-primary" onclick="APP.newCampaign()"><span aria-hidden="true">+</span> New campaign</button>'});
   if(CAMP_MSG)h+='<p class="warn" style="text-align:center;margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
-  if(!camps.length){h+='<p class="note" style="text-align:center">No campaigns yet — start one above, or join one with an invite code from the Main Menu.</p>';}
+  if(!camps.length){h+='<p class="note" style="text-align:center">No campaigns yet. Start one with New campaign, or join one with the invite link your GM sends you.</p>';}
   h+='<div class="menutiles">'+camps.map(c=>{
     const mineAsDm=!cloudActive()||c.dm_id===(AUTH_USER&&AUTH_USER.id);
     return '<button class="menutile" onclick="APP.openCampaign(\''+c.id+'\')"><span class="mt-title">'+esc(c.name||"Untitled Campaign")+'</span>'
@@ -1095,14 +1094,16 @@ function renderCampaignsView(){
 }
 /* ---- my characters ---- */
 function libraryHTML(){
-  let h='<div class="mmenu"><div class="mmenu-topbar"><span class="mmenu-brandmark">Mythras</span><span class="mmenu-branddiv">&middot;</span><span class="mmenu-brandsub">Character Forge</span>'
-   +'<button class="mmenu-acctbtn" onclick="APP.toMenu()">&#8592; Main Menu</button></div>';
-  h+='<div class="mmenu-pagehead"><h1>My Characters</h1><p>'+(cloudActive()?"Every character saved to your account.":"Every character autosaved in this browser.")+'</p></div>';
+  if(!stSignedIn())return '<div class="mmenu st-page">'+stPageHead({title:'Characters',sub:'Build a character, play them at the table, or take them into The Pits.'})+stGateHTML('library')+'</div>';
+  const count=Array.isArray(LIB_CACHE)?LIB_CACHE.length:null;
+  let h='<div class="mmenu st-page">'+stPageHead({title:'Characters',
+    sub:count==null?(cloudActive()?"Every character saved to your account.":"Every character autosaved in this browser."):count+' saved '+(cloudActive()?'to your account.':'in this browser.'),
+    action:'<button type="button" class="st-btn st-btn-primary" onclick="APP.fromMenuNew()"><span aria-hidden="true">+</span> New character</button>'});
   if(CAMP_MSG)h+='<p class="warn" style="margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
   if(LIB_LOAD_ERROR){h+='<p class="warn" role="alert">'+esc(LIB_LOAD_ERROR)+'</p><button class="chip" onclick="loadLibraryUnified()">Retry loading characters</button></div>';return h;}
   if(LIB_CACHE===null){h+='<p class="note">Loading&hellip;</p></div>';return h;}
   if(!LIB_CACHE.length){
-    h+='<div class="mmenu-panel"><p class="note">No characters saved yet — start one from the Main Menu and it&rsquo;ll show up here automatically as you build it.</p>'
+    h+='<div class="mmenu-panel"><p class="note">No characters saved yet. Start one with New character and it&rsquo;ll show up here automatically as you build it.</p>'
      +'<button class="mmenu-cta-primary" style="margin-top:14px" onclick="APP.fromMenuNew()">Create New Character &rarr;</button></div></div>';
     return h;
   }

@@ -126,10 +126,9 @@ function wikiCoreStubHTML(stub){
 }
 
 function wikiHTML(){
-  let h='<div class="menuwrap wiki-wrap">';
-  h+='<p style="text-align:center"><button class="nav" onclick="APP.toMenu()">&#8592; Main Menu</button>'
-   +(WIKI_CHAPTER?' <button class="nav" onclick="APP.wikiBack()">&#8592; All Chapters</button>':'')+'</p>';
-  h+='<div class="menuhead"><h1>Rules Wiki</h1><p>Search the verified Core chapter index and look up the corresponding rule in your rulebook.</p></div>';
+  let h='<div class="menuwrap wiki-wrap st-page">'+stPageHead({eyebrow:'Reference',title:'Rules',
+    sub:'A searchable index of the Core chapters. Page numbers refer to the Mythras Core Rulebook.',
+    action:WIKI_CHAPTER?'<button type="button" class="st-btn" onclick="APP.wikiBack()">&#8592; All chapters</button>':''});
   h+='<input type="text" class="wiki-search" id="wikiSearchBox" placeholder="Search the rules&hellip;" oninput="wikiSearch(this.value)">';
   h+='<div id="wikiSearchResults" class="wiki-results" style="display:none"></div>';
   h+='<div id="wikiBrowseArea">';

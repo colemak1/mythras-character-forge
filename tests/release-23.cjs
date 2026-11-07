@@ -46,9 +46,16 @@ async function test(name,fn){await fn();console.log('PASS '+name);passed++;}
  });
  await test('guest entry and protected deep links require an account',async()=>{
   run('APP.mockSignIn();');assert.equal(run('MOCK_AUTH'),null);
-  for(const view of ['character','library','campaigns','board','play','sheet']){
+  for(const view of ['character','board','play','sheet']){
    await run('applyRoute({view:'+JSON.stringify(view)+'})');
    assert.equal(run('APPVIEW'),'account');
+  }
+  // Owner handoff 2026-11-07: Characters and Campaign show a sign-in gate on
+  // their own page instead of jumping to Account; still nothing private.
+  for(const [view,html] of [['library','libraryHTML()'],['campaigns','campaignsHTML()']]){
+   await run('applyRoute({view:'+JSON.stringify(view)+'})');
+   assert.equal(run('APPVIEW'),view);
+   assert.match(run(html),/class="st-gate"/);assert.match(run(html),/APP\.toAccount\(\)/);
   }
  });
  await test('failed campaign and homebrew writes are reported',()=>{

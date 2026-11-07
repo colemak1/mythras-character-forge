@@ -32,9 +32,10 @@
 <link rel="stylesheet" href="sitota-forge.css?v=386a2cac5f">
 <link rel="stylesheet" href="sitota-public.css?v=f6090476cb">
 <link rel="stylesheet" href="sitota-home-16x9.css?v=6882e3166a">
-<link rel="stylesheet" href="sitota-interior.css?v=7b66b2720f">
+<link rel="stylesheet" href="sitota-interior.css?v=96d813dcc9">
 <link rel="stylesheet" href="play-clean.css?v=0456ec415f">
 <link rel="stylesheet" href="play-stone.css?v=b4948b6ec4">
+<link rel="stylesheet" href="sitota-menus.css?v=6fccd69797">
 </head>
 <body>
 <a class="sitota-skip" href="#main" onclick="document.getElementById('main').focus();return false">Skip to content</a>
@@ -47,6 +48,22 @@
 <a href="#/world/welcome" data-site-view="world">World Guide</a>
 <a href="#/account" data-site-view="account" id="siteAccount"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2c0-5 3.5-7 8-7s8 2 8 7v2"/></svg>Account</a>
 </nav></div></header>
+<nav class="st-tabbar" id="stTabbar" aria-label="Main sections">
+<a href="#/" data-tab="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span>Home</span></a>
+<a href="#/my-characters" data-tab="library"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3 2.8 3 6"/></svg><span>Characters</span></a>
+<a href="#/my-campaigns" data-tab="campaigns"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V3M6 4h11l-2 4 2 4H6"/></svg><span>Campaign</span></a>
+<a href="#/the-pits" data-tab="pits"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l10 10M14 14l-2 2 4 4 2-2zM20 4L10 14M10 14l2 2-4 4-2-2z"/></svg><span>The Pits</span></a>
+<button type="button" data-tab="more" id="stMoreBtn" aria-haspopup="true" aria-expanded="false" aria-controls="stMoreSheet" onclick="stOpenMore()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>More</span></button>
+</nav>
+<div class="st-more" id="stMoreSheet" hidden>
+<button type="button" class="st-more-scrim" aria-label="Close" onclick="stCloseMore()"></button>
+<div class="st-more-panel" role="dialog" aria-modal="true" aria-label="More">
+<div class="st-more-grip" aria-hidden="true"></div>
+<a href="#/wiki" data-site-view="wiki">Rules<small>Core chapter index</small></a>
+<a href="#/world/welcome" data-site-view="world">World Guide<small>Places, peoples and history</small></a>
+<a href="#/account" data-site-view="account">Account<small>Sign in, sync and backups</small></a>
+<button type="button" class="st-btn st-more-close" onclick="stCloseMore()">Close</button>
+</div></div>
 <div class="app">
   <nav id="rail" aria-label="Creation steps"></nav>
   <main id="main" tabindex="-1"></main>
@@ -59,14 +76,14 @@
 <input id="guestBackupImportFile" type="file" accept=".json,application/json" hidden onchange="APP.importGuestBackupFile(this)">
 <script src="js/data.js?v=ea343c2e36"></script>
 <script src="js/engine.js?v=2fcd117663"></script>
-<script src="js/cloud.js?v=40fb110d17"></script>
+<script src="js/cloud.js?v=e3875311fd"></script>
 <script src="js/wiki-data.js?v=d7953e7a5a"></script>
-<script src="js/wiki.js?v=2753b23e14"></script>
-<script src="js/sitota.js?v=fe126902e0"></script>
-<script src="js/render.js?v=fc74ed3774"></script>
-<script src="js/router.js?v=76dcd0e6a0"></script>
+<script src="js/wiki.js?v=ed857fd6e7"></script>
+<script src="js/sitota.js?v=90520d893b"></script>
+<script src="js/render.js?v=8f33e02da5"></script>
+<script src="js/router.js?v=74e993e6fd"></script>
 <script src="js/play.js?v=ec3e9278d6"></script>
 <script src="js/app.js?v=37f6616cf6"></script>
-<script src="js/practice.js?v=a72628ec78"></script>
+<script src="js/practice.js?v=70a392e372"></script>
 </body>
 </html>
