@@ -1,0 +1,261 @@
+/* The Pits, Stone look (v0 design chosen by the owner, 2026-11-07).
+   Uses Play Mode's Stone tokens (--st-*, from ../play-stone.css) and the same
+   saved colour scheme (body.pm-cw-<name>). Presentation only: the rules
+   engine and its markup hooks (data-act, classes the tests read) are unchanged.
+   Everything is scoped to body.pits-stone #root so it outranks the arena's older
+   inline styles. */
+body.pits-stone{
+  --p-bg:var(--st-bg); --p-surface:var(--st-surface); --p-surface-2:var(--st-surface-2);
+  --p-line:var(--st-line); --p-line-strong:var(--st-line-strong); --p-text:var(--st-text); --p-dim:var(--st-text-dim);
+  --p-accent:var(--st-accent); --p-brass:var(--st-accent-2); --p-on-accent:var(--st-on-accent);
+  --p-head-bg:var(--st-header-bg); --p-head-text:var(--st-header-text); --p-head-line:var(--st-header-line);
+  --p-ok:var(--st-wound-ok); --p-minor:var(--st-wound-minor); --p-serious:var(--st-wound-serious); --p-major:var(--st-wound-major);
+  --p-display:var(--st-display); --p-body:var(--st-body);
+  font-family:var(--p-body); font-size:15px; color:var(--p-text);
+  scrollbar-width:thin; scrollbar-color:var(--p-line-strong) transparent;
+}
+body.pits-stone *{scrollbar-width:thin;scrollbar-color:var(--p-line-strong) transparent}
+body.pits-stone ::-webkit-scrollbar{width:6px;height:6px}
+body.pits-stone ::-webkit-scrollbar-thumb{background:var(--p-line-strong);border-radius:6px}
+body.pits-stone ::-webkit-scrollbar-track{background:transparent}
+body.pits-stone button,body.pits-stone #root select,body.pits-stone #root input{font-family:var(--p-body)}
+body.pits-stone :focus-visible{outline:2px solid var(--p-accent);outline-offset:2px}
+
+/* Stone card: flat, hairline border, inner top highlight. */
+body.pits-stone #root .fighter,body.pits-stone #root .center-top,body.pits-stone #root .decision-panel,
+body.pits-stone #root .combat-history,body.pits-stone #root .exchange-board,body.pits-stone #root .exchange-recap,
+body.pits-stone #root .combat-narration,body.pits-stone #root .setup,body.pits-stone #root .statbox,body.pits-stone #root .formcard{
+  background-color:var(--p-surface);background-image:var(--st-noise);color:var(--p-text);
+  border:1px solid var(--p-line-strong);border-radius:3px;
+  box-shadow:inset 0 1px 0 var(--st-hi),inset 0 0 0 1px var(--st-hi-soft),0 1px 0 color-mix(in srgb,var(--p-text) 14%,transparent),0 4px 10px var(--st-shadow);
+}
+
+/* ---------- Header ---------- */
+body.pits-stone .topbar{background:var(--p-head-bg);border-bottom:2px solid var(--p-head-line);color:var(--p-head-text)}
+body.pits-stone .topbar .brand{font:600 20px/1 var(--p-display);letter-spacing:.14em;text-transform:uppercase;color:var(--p-head-text)}
+body.pits-stone .topbar .brand small{font:500 11px var(--p-body);letter-spacing:.08em;color:color-mix(in srgb,var(--p-head-text) 60%,transparent)}
+body.pits-stone .toplinks a,body.pits-stone .toplinks span{color:var(--p-head-text);font-family:var(--p-body)}
+body.pits-stone .toplinks span{color:var(--p-head-line)}
+body.pits-stone #root .mast{border:0;margin-bottom:14px}
+body.pits-stone #root .mast .eyebrow{font:500 11px/1.2 var(--p-display);letter-spacing:.22em;color:var(--p-accent)}
+body.pits-stone #root .mast h1{font:600 30px/1.1 var(--p-display);letter-spacing:.12em;text-transform:uppercase;color:var(--p-text)}
+body.pits-stone #root .mast p{color:var(--p-dim)}
+body.pits-stone #root .toolbutton,body.pits-stone #root .pill{background:var(--p-surface-2);color:var(--p-text);border:1px solid var(--p-line-strong);border-radius:1px;font:600 12.5px var(--p-body);letter-spacing:.04em;text-transform:none;min-height:40px}
+body.pits-stone #root .toolbutton:hover{border-color:var(--p-accent);color:var(--p-accent)}
+body.pits-stone #root .toolbutton[aria-pressed="true"]{color:var(--p-accent);border-color:var(--p-accent);background:color-mix(in srgb,var(--p-accent) 12%,var(--p-surface-2))}
+body.pits-stone #root .pill{display:inline-flex;align-items:center;padding:0 12px;color:var(--p-brass);border-color:var(--p-brass)}
+
+/* ---------- Board: you | strip, prompt, dice | foe, chronicle below ---------- */
+body.pits-stone #root .arena{display:grid;gap:14px;grid-template-columns:330px minmax(0,1fr) 330px;
+  grid-template-areas:"you center foe" "log log log";align-items:start}
+body.pits-stone #root .exchange-column{display:contents}
+body.pits-stone #root .fighter.player{grid-area:you}
+body.pits-stone #root .fighter.enemy{grid-area:foe}
+body.pits-stone #root .center{grid-area:center;background:transparent;border:0;box-shadow:none;min-height:0;display:flex;flex-direction:column;gap:14px;color:var(--p-text)}
+body.pits-stone #root .combat-history{grid-area:log}
+
+/* ---------- Fighter panels ---------- */
+body.pits-stone #root .fighter{padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+body.pits-stone #root .fighter.decision-focus{border-color:var(--p-accent);box-shadow:inset 0 1px 0 var(--st-hi),inset 0 0 0 1px color-mix(in srgb,var(--p-accent) 35%,transparent),0 5px 12px var(--st-shadow)}
+body.pits-stone #root .fighter.enemy.decision-focus{border-color:var(--p-brass);box-shadow:inset 0 1px 0 var(--st-hi),inset 0 0 0 1px color-mix(in srgb,var(--p-brass) 35%,transparent),0 5px 12px var(--st-shadow)}
+body.pits-stone #root .fighter::before,body.pits-stone #root .fighter::after{display:none}
+body.pits-stone #root .fighter-head{padding:0;background:transparent;border:0;display:flex;flex-direction:column;gap:10px}
+body.pits-stone #root .fighter .tag{font:600 10px/1.5 var(--p-display);letter-spacing:.14em;text-transform:uppercase;padding:2px 8px;border:1px solid var(--p-line-strong);color:var(--p-dim);background:transparent;align-self:flex-start}
+body.pits-stone #root .fighter.decision-focus .tag{color:var(--p-accent);border-color:var(--p-accent);background:color-mix(in srgb,var(--p-accent) 12%,transparent)}
+body.pits-stone #root .fighter h2{font:600 20px/1.15 var(--p-display);letter-spacing:.06em;text-transform:uppercase;margin:0;color:var(--p-text);border-bottom:1px solid var(--p-line);padding-bottom:10px}
+body.pits-stone #root .fighter-profile{display:flex;align-items:stretch;gap:8px;padding:0;border:0;background:transparent}
+body.pits-stone #root .profile-weapon{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding:8px 10px;background:var(--p-surface-2);border:1px solid var(--p-line);border-radius:1px}
+body.pits-stone #root .profile-weapon strong{font:600 15px var(--p-display);letter-spacing:.03em;color:var(--p-text)}
+body.pits-stone #root .profile-skill{display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 10px;background:var(--p-surface-2);border:1px solid var(--p-line);border-radius:1px}
+body.pits-stone #root .profile-skill strong{font:600 22px/1 var(--p-display);color:var(--p-text)}
+body.pits-stone #root .profile-label,body.pits-stone #root .track label,body.pits-stone #root .figure-title,body.pits-stone #root .label{font:600 10px var(--p-body);letter-spacing:.14em;text-transform:uppercase;color:var(--p-dim)}
+body.pits-stone #root .pits-stats{display:flex;gap:6px;flex-wrap:wrap}
+body.pits-stone #root .stat{font:500 12px var(--p-body);color:var(--p-dim);border:1px solid var(--p-line-strong);padding:1px 7px}
+body.pits-stone #root .stat strong{font:700 12px var(--p-body);color:var(--p-text);margin-left:3px;letter-spacing:0}
+body.pits-stone #root .tracks{display:grid;grid-template-columns:1fr 1fr;gap:8px;border:0;padding:0;background:transparent}
+body.pits-stone #root .track{padding:0;border:0;background:transparent}
+body.pits-stone #root .track b{font:600 20px/1.1 var(--p-display);color:var(--p-text)}
+body.pits-stone #root .track b small{font:500 12px var(--p-body);color:var(--p-dim)}
+body.pits-stone #root .track div[style]{color:var(--p-dim)!important;font-family:var(--p-body)!important}
+body.pits-stone #root .dots{display:flex;gap:6px;margin-top:6px}
+body.pits-stone #root .dots i{width:16px;height:16px;border-radius:50%;background:var(--p-accent);border:0}
+body.pits-stone #root .dots i.off{background:transparent;box-shadow:inset 0 0 0 2px var(--p-line-strong)}
+body.pits-stone #root .pits-chips{display:flex;gap:6px;flex-wrap:wrap}
+body.pits-stone #root .chip{font:600 12.5px var(--p-body);padding:3px 9px 3px 8px;background:var(--p-surface-2);border:1px solid var(--p-line-strong);border-left:3px solid var(--p-minor);color:var(--p-text)}
+body.pits-stone #root .chip.bad{border-left-color:var(--p-serious)}
+body.pits-stone #root .chip.none{border-left-color:var(--p-line-strong);color:var(--p-dim);font-weight:500}
+
+/* Body figure and locations */
+body.pits-stone #root .figure-area{padding:0;background:transparent;border:0;display:grid;grid-template-columns:minmax(0,1fr) 82px;grid-template-areas:"title title" "list fig" "key key";gap:8px 10px;align-items:start}
+body.pits-stone #root .fighter.enemy .figure-area{grid-template-columns:82px minmax(0,1fr);grid-template-areas:"title title" "fig list" "key key"}
+body.pits-stone #root .figure-title{grid-area:title;display:flex;justify-content:space-between}
+body.pits-stone #root .fig{grid-area:fig;position:relative;width:100%;margin:0}
+body.pits-stone #root .fig svg{width:100%;height:auto}
+body.pits-stone #root .location-list{grid-area:list;display:flex;flex-direction:column;gap:5px}
+body.pits-stone #root .anatomy-key{grid-area:key;display:flex;gap:10px;flex-wrap:wrap;font:500 11.5px var(--p-body);color:var(--p-dim)}
+body.pits-stone #root .anatomy-key i{background:var(--p-ok)}
+body.pits-stone #root .anatomy-key .minor i{background:var(--p-minor)}body.pits-stone #root .anatomy-key .serious i{background:var(--p-serious)}body.pits-stone #root .anatomy-key .major i{background:var(--p-major)}
+body.pits-stone #root .loc{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n h" "b b";gap:3px 8px;align-items:center;padding:6px 8px;min-height:44px;width:100%;
+  background:var(--p-surface-2);border:1px solid var(--p-line);border-radius:1px;text-align:left;color:var(--p-text);box-shadow:none}
+body.pits-stone #root .loc:hover,body.pits-stone #root .loc.sel{border-color:var(--p-accent);background:var(--p-surface-2)}
+body.pits-stone #root .loc.recent-impact{border-color:var(--p-serious)}
+body.pits-stone #root .loc-ident{grid-area:n;display:flex;align-items:baseline;gap:6px;min-width:0}
+body.pits-stone #root .loc-name{font:600 13px var(--p-body);color:var(--p-text);display:flex;align-items:center;gap:6px;white-space:nowrap}
+body.pits-stone #root .loc-rolls{font:500 11px var(--p-body);color:var(--p-dim)}
+body.pits-stone #root .loc-hp{grid-area:h;font:700 13px var(--p-body);color:var(--p-text);text-align:right;white-space:nowrap}
+body.pits-stone #root .loc-hp small{font:600 11.5px var(--p-body);color:var(--p-dim)}
+body.pits-stone #root .loc-gauge{grid-area:b;height:4px;border-radius:4px;background:var(--p-line);overflow:hidden;display:block}
+body.pits-stone #root .loc-gauge i{display:block;height:100%;background:var(--p-ok)}
+body.pits-stone #root .loc.minor .loc-gauge i{background:var(--p-minor)}body.pits-stone #root .loc.serious .loc-gauge i{background:var(--p-serious)}body.pits-stone #root .loc.major .loc-gauge i{background:var(--p-major)}
+body.pits-stone #root .wd{font:600 9.5px/1.5 var(--p-display);letter-spacing:.08em;text-transform:uppercase;padding:0 5px;border:1px solid currentColor;white-space:nowrap;background:color-mix(in srgb,currentColor 14%,transparent)}
+body.pits-stone #root .wd.minor{color:var(--p-minor)}body.pits-stone #root .wd.serious{color:var(--p-serious)}body.pits-stone #root .wd.major{color:var(--p-major)}
+body.pits-stone #root .fighter-foot{padding:0;background:transparent;border:0;display:flex;flex-direction:column;gap:8px}
+body.pits-stone #root .fighter-foot .condition{font:600 12.5px var(--p-body);background:var(--p-surface-2);border:1px solid var(--p-line-strong);border-left:3px solid var(--p-minor);color:var(--p-text);padding:4px 10px;align-self:flex-start}
+body.pits-stone #root .fighter-foot .condition.safe{border-left-color:var(--p-ok)}
+body.pits-stone #root .fighter-foot .condition.danger{border-left-color:var(--p-major)}
+body.pits-stone #root .fighter-foot *{color:inherit}
+body.pits-stone #root .fighter-foot{color:var(--p-dim);font-size:13px}
+
+/* ---------- Strip ---------- */
+body.pits-stone #root .center-top{display:grid;grid-template-columns:130px minmax(0,1fr) 210px;align-items:stretch;padding:0;gap:0;min-height:0}
+body.pits-stone #root .center-top>div{padding:12px 16px;display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0}
+body.pits-stone #root .center-top>div+div{border-left:1px solid var(--p-line)}
+body.pits-stone #root .center-top h2{font:600 28px/1 var(--p-display);color:var(--p-text);margin:0}
+body.pits-stone #root .center-top h2 small{font:500 13px var(--p-body);color:var(--p-dim);margin-left:6px;letter-spacing:0}
+body.pits-stone #root .pits-turn{align-items:center;text-align:center}
+body.pits-stone #root .pits-pill{font:600 10.5px/1.5 var(--p-display);letter-spacing:.16em;text-transform:uppercase;padding:1px 10px;color:var(--p-accent);border:1px solid var(--p-accent);background:color-mix(in srgb,var(--p-accent) 12%,transparent)}
+body.pits-stone #root .pits-pill.foe-p{color:var(--p-brass);border-color:var(--p-brass);background:color-mix(in srgb,var(--p-brass) 12%,transparent)}
+body.pits-stone #root .pits-turn-name{font:600 18px/1.2 var(--p-display);letter-spacing:.06em;text-transform:uppercase}
+body.pits-stone #root .pits-turn-hint{font-size:13px;color:var(--p-dim)}
+body.pits-stone #root .round-context{align-items:flex-start!important;text-align:left}
+body.pits-stone #root .pits-range-now{font:600 22px/1.1 var(--p-display);color:var(--p-text)}
+body.pits-stone #root .pits-range-track{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;width:100%;margin-top:3px}
+body.pits-stone #root .pits-range-track span{font:600 10px var(--p-body);text-align:center;color:var(--p-dim);border-top:3px solid var(--p-line-strong);padding-top:3px;letter-spacing:.04em}
+body.pits-stone #root .pits-range-track span.on{color:var(--p-brass);border-top-color:var(--p-brass)}
+body.pits-stone #root .pits-range-note{font-size:12px;color:var(--p-dim)}
+
+/* ---------- Situation line and prompt ---------- */
+body.pits-stone #root .combat-narration{padding:12px 16px;border-left:3px solid var(--p-brass)}
+body.pits-stone #root .combat-narration p{font:600 17px/1.3 var(--p-display);letter-spacing:.02em;color:var(--p-text);margin:0}
+body.pits-stone #root .combat-narration div{font-size:14px;color:var(--p-dim);margin-top:4px}
+body.pits-stone #root .decision-panel{padding:16px 18px;display:flex;flex-direction:column;gap:12px;color:var(--p-text)}
+body.pits-stone #root .decision-kicker{font:500 11px/1.2 var(--p-display);letter-spacing:.22em;text-transform:uppercase;color:var(--p-accent)}
+body.pits-stone #root .turnline{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border:0;padding:0;margin:0}
+body.pits-stone #root .turnline h3{font:600 22px/1.2 var(--p-display);letter-spacing:.03em;margin:0;color:var(--p-text)}
+body.pits-stone #root .turnline span{font:600 11px var(--p-body);letter-spacing:.08em;text-transform:uppercase;color:var(--p-brass)}
+body.pits-stone #root .desc,body.pits-stone #root .decision-panel p{color:var(--p-dim)}
+body.pits-stone #root .choicegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+body.pits-stone #root .choice{position:relative;text-align:left;min-height:64px;padding:10px 12px;padding-right:56px;background:var(--p-surface-2);border:1px solid var(--p-line-strong);border-radius:1px;
+  display:flex;flex-direction:column;gap:3px;justify-content:center;color:var(--p-text);box-shadow:none;transition:border-color .15s,background .15s}
+body.pits-stone #root .choice:hover:not(:disabled){border-color:var(--p-accent);background:color-mix(in srgb,var(--p-accent) 6%,var(--p-surface-2))}
+body.pits-stone #root .choice.gold{border-color:var(--p-accent);background:color-mix(in srgb,var(--p-accent) 12%,var(--p-surface-2))}
+body.pits-stone #root .choice:disabled{opacity:.45}
+body.pits-stone #root .choice strong{font:600 15px/1.25 var(--p-display);letter-spacing:.03em;color:var(--p-text)}
+body.pits-stone #root .choice small{font:400 12.5px/1.35 var(--p-body);color:var(--p-dim)}
+body.pits-stone #root .pits-tag{position:absolute;right:8px;top:8px;font:600 10px/1.6 var(--p-body);letter-spacing:.08em;text-transform:uppercase;color:var(--p-brass);border:1px solid var(--p-brass);padding:0 6px}
+body.pits-stone #root .secondary-actions{border-top:1px solid var(--p-line);padding-top:10px}
+body.pits-stone #root .secondary-actions summary{font:600 13px var(--p-body);color:var(--p-dim);cursor:pointer;min-height:32px;display:flex;align-items:center}
+body.pits-stone #root .secondary-actions[open] summary{margin-bottom:8px}
+body.pits-stone #root .combat-guide,body.pits-stone #root .reach-context,body.pits-stone #root .tutorial-guide-details{background:var(--p-surface-2);border:1px solid var(--p-line);border-left:3px solid var(--p-accent);color:var(--p-dim);border-radius:1px}
+body.pits-stone #root .combat-guide strong{color:var(--p-text)}
+body.pits-stone #root .reach-context{padding:9px 12px;font-size:13.5px;margin:0}
+body.pits-stone #root .reach-context strong{color:var(--p-text)}
+
+/* ---------- Dice tray and exchange ---------- */
+body.pits-stone #root .exchange-board{background:repeating-linear-gradient(135deg,transparent 0 14px,color-mix(in srgb,var(--p-text) 3%,transparent) 14px 28px),var(--p-surface-2);border-style:dashed;padding:12px;gap:10px}
+body.pits-stone #root .exchange-half{background:var(--p-surface);border:1px solid var(--p-line);border-radius:1px;color:var(--p-text)}
+body.pits-stone #root .exchange-half.active{border-color:var(--p-accent)}
+body.pits-stone #root .half-heading strong{font:600 14px var(--p-display);color:var(--p-text)}
+body.pits-stone #root .half-heading span,body.pits-stone #root .half-detail{color:var(--p-dim)}
+body.pits-stone #root .exchange-recap{padding:14px 16px;color:var(--p-text)}
+body.pits-stone #root .exchange-recap h3{font:600 17px var(--p-display);color:var(--p-text)}
+body.pits-stone #root .recap-heading,body.pits-stone #root .recap-explanation,body.pits-stone #root .recap-steps{color:var(--p-dim)}
+body.pits-stone #root .inline-dice{background:var(--p-surface-2);border:1px dashed var(--p-line-strong);border-radius:3px;color:var(--p-text)}
+body.pits-stone #root .inline-dice-heading{color:var(--p-dim);font:600 12px var(--p-display);letter-spacing:.14em;text-transform:uppercase}
+body.pits-stone #root .inline-dice-result{color:var(--p-text);text-transform:none;letter-spacing:0;font-family:var(--p-body)}
+body.pits-stone #root .resolving{background:var(--p-surface-2);border:1px dashed var(--p-line-strong);color:var(--p-text)}
+
+/* ---------- Chronicle ---------- */
+body.pits-stone #root .combat-history{display:grid;grid-template-columns:210px minmax(0,1fr);padding:0;overflow:hidden;margin:0}
+body.pits-stone #root .history-header{padding:16px;border-right:1px solid var(--p-line);display:flex;flex-direction:column;gap:10px;align-items:flex-start;border-bottom:0;margin:0}
+body.pits-stone #root .history-header h3{font:600 12.5px/1.2 var(--p-display);letter-spacing:.2em;text-transform:uppercase;color:var(--p-accent);margin:0 0 6px}
+body.pits-stone #root .history-intro{margin:0;color:var(--p-dim);font-size:13px}
+body.pits-stone #root .history-toggle{min-height:36px;padding:0 12px;background:transparent;border:1px solid var(--p-line-strong);border-radius:1px;color:var(--p-text);font:600 12.5px var(--p-body)}
+body.pits-stone #root .history-toggle:hover{border-color:var(--p-accent);color:var(--p-accent)}
+body.pits-stone #root .chronicle-list{max-height:280px;overflow:auto;margin:0;padding:0;border:0}
+body.pits-stone #root .chronicle-entry{border:0;border-bottom:1px solid color-mix(in srgb,var(--p-line) 70%,transparent);background:transparent;margin:0;border-radius:0}
+body.pits-stone #root .chronicle-entry summary{padding:10px 16px;color:var(--p-text);font-size:14.5px;background:transparent}
+body.pits-stone #root .chronicle-entry summary strong,body.pits-stone #root .chronicle-entry summary b{color:var(--p-accent)}
+body.pits-stone #root .chronicle-entry:hover summary{background:color-mix(in srgb,var(--p-text) 4%,transparent)}
+body.pits-stone #root .chronicle-mechanics{margin:0 16px 10px;padding:8px 12px;background:var(--p-surface-2);border-left:2px solid var(--p-brass);font-size:13px;color:var(--p-dim);line-height:1.6}
+body.pits-stone #root .chronicle-entry *{border-color:var(--p-line)}
+
+/* ---------- Footers, modals, setup ---------- */
+body.pits-stone #root .footer-notes,body.pits-stone #root .footer-notes summary,body.pits-stone #root details.catalogue summary{color:var(--p-dim)}
+body.pits-stone #root .setup h2,body.pits-stone #root .setup h3{font-family:var(--p-display);letter-spacing:.04em;color:var(--p-text)}
+body.pits-stone #root .mode{background:var(--p-surface-2);border:1px solid var(--p-line-strong);color:var(--p-text);border-radius:1px}
+body.pits-stone #root .mode.on{border-color:var(--p-accent);background:color-mix(in srgb,var(--p-accent) 12%,var(--p-surface-2))}
+body.pits-stone #root .cta{background:var(--p-accent);color:var(--p-on-accent);border:1px solid var(--p-accent);border-radius:1px;font:700 13px var(--p-body);letter-spacing:.06em;text-transform:uppercase;min-height:44px}
+
+/* ---------- Narrower screens ---------- */
+@media(max-width:1180px){
+  body.pits-stone #root .arena{grid-template-columns:300px minmax(0,1fr) 300px}
+}
+@media(max-width:980px){
+  body.pits-stone #root .arena{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"center center" "you foe" "log log"}
+}
+@media(max-width:700px){
+  body.pits-stone{font-size:14px}
+  body.pits-stone #root .arena{grid-template-columns:minmax(0,1fr);grid-template-areas:"center" "you" "foe" "log";gap:10px}
+  body.pits-stone #root .center-top{grid-template-columns:1fr 1fr;grid-template-areas:"turn turn" "round range"}
+  body.pits-stone #root .center-top>div{padding:10px 12px}
+  body.pits-stone #root .center-top>div+div{border-left:0}
+  body.pits-stone #root .center-top .pits-turn{grid-area:turn;border-bottom:1px solid var(--p-line)}
+  body.pits-stone #root .center-top>div:first-child{grid-area:round}
+  body.pits-stone #root .center-top .round-context{grid-area:range;border-left:1px solid var(--p-line)!important}
+  body.pits-stone #root .center-top h2{font-size:23px}
+  body.pits-stone #root .choicegrid{grid-template-columns:minmax(0,1fr)}
+  body.pits-stone #root .choice{min-height:56px}
+  body.pits-stone #root .fighter.enemy .figure-area{grid-template-columns:minmax(0,1fr) 70px;grid-template-areas:"title title" "list fig" "key key"}
+  body.pits-stone #root .figure-area{grid-template-columns:minmax(0,1fr) 70px}
+  body.pits-stone #root .combat-history{grid-template-columns:1fr}
+  body.pits-stone #root .history-header{border-right:0;border-bottom:1px solid var(--p-line);padding:12px 14px}
+  body.pits-stone #root .mast h1{font-size:22px}
+}
+@media(prefers-reduced-motion:reduce){
+  body.pits-stone #root .choice{transition:none}
+}
+
+/* ---------- Fixes over the older arena rules ---------- */
+body.pits-stone #root .fighter .fighter-head,body.pits-stone #root .fighter.decision-focus .fighter-head{box-shadow:none;border:0;padding:0;margin:0;background:transparent}
+body.pits-stone #root .fighter .tracks{margin:0;padding:0;border:0;box-shadow:none}
+body.pits-stone #root .center-top h2{white-space:nowrap}
+body.pits-stone #root .center-top{grid-template-columns:150px minmax(0,1fr) 210px}
+body.pits-stone #root .center-top .label{font:600 10px var(--p-body);letter-spacing:.14em;text-transform:uppercase;color:var(--p-dim)}
+body.pits-stone #root .combat-narration{min-height:0}
+body.pits-stone #root .combat-guide,body.pits-stone #root .combat-guide *{color:var(--p-dim)}
+body.pits-stone #root .combat-guide strong,body.pits-stone #root .combat-guide-main strong{color:var(--p-text)}
+body.pits-stone #root .combat-guide summary{color:var(--p-accent)}
+body.pits-stone #root .combat-guide{padding:10px 12px;border-left-width:3px}
+body.pits-stone #root .tutorial-guide-details{border:0;background:transparent}
+body.pits-stone #root .chronicle-entry summary *{color:var(--p-dim)}
+body.pits-stone #root .chronicle-entry summary strong,body.pits-stone #root .chronicle-entry summary b{color:var(--p-accent)}
+body.pits-stone #root .exchange-recap *{color:var(--p-dim)}
+body.pits-stone #root .exchange-recap h3,body.pits-stone #root .exchange-recap strong{color:var(--p-text)}
+body.pits-stone #root .exchange-recap summary{color:var(--p-accent)}
+body.pits-stone #root details summary{color:var(--p-dim)}
+body.pits-stone .footer-notes,body.pits-stone .footer-notes summary,body.pits-stone #root > details > summary{color:var(--p-dim)}
+/* Body figure: Stone wound tokens, colour plus the location list's text label. */
+body.pits-stone #root .fighter .fig .zone,body.pits-stone #root .fighter .anatomy-chart .zone{--c:var(--p-ok);--m:14%;fill:color-mix(in srgb,var(--c) var(--m),var(--p-surface-2));stroke:var(--p-dim);stroke-width:1.4}
+body.pits-stone #root .fighter .fig .zone *{fill:inherit;stroke:inherit}
+body.pits-stone #root .fighter .fig .zone.minor{--c:var(--p-minor);--m:34%}
+body.pits-stone #root .fighter .fig .zone.serious{--c:var(--p-serious);--m:54%}
+body.pits-stone #root .fighter .fig .zone.major{--c:var(--p-major);--m:72%}
+body.pits-stone #root .fighter .fig .zone:hover,body.pits-stone #root .fighter .fig .zone.sel{stroke:var(--p-accent);stroke-width:2.6}
+body.pits-stone #root .fighter .fig .zone.impact-zone{fill:color-mix(in srgb,var(--st-fumble) 60%,var(--p-surface-2))!important;stroke:var(--st-fumble);stroke-width:4}
+body.pits-stone #root .fighter .anatomy-guide{stroke:var(--p-line)}
+body.pits-stone #root .fighter .anatomy-wound-mark{fill:var(--p-surface);stroke:var(--p-text)}
+body.pits-stone #root .choice,body.pits-stone #root .choice.gold{outline:0;box-shadow:none}
+body.pits-stone #root .choice:focus-visible{outline:2px solid var(--p-accent);outline-offset:2px}
+body.pits-stone #root .track label{color:var(--p-dim)}
+body.pits-stone #root .pits-turn-name{font-size:16px}
