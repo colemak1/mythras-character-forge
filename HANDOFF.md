@@ -19,7 +19,7 @@ _Last updated: 2026-11-07 by Claude (credit-saving rules; handoff trimmed)_
 
 ## Next
 
-- **ChatGPT (Chat):** short case specs (only cases needing code, with Core pages) for **ranged combat in The Pits**: range bands, reload and ammunition, aiming, parrying and evading missiles, thrown weapons, firing at engaged targets, closing distance; then minimum mounted rules for the Lance and an ambush opener for the Garrotte (say if either should stay out of scope). Docs-only PR, no `CHANGELOG.md` edits.
+- **ChatGPT (Chat):** Ranged Core code cases `PIT-R01–R17` and deferred Lance/Garrotte minima documented in `docs/the-pits-ranged-cases.md` (docs-only PR). **Claude next:** implement ranged in one code PR; leave Lance and Garrotte unsupported until mounted/ambush scenarios are approved.
 - **Claude:** then implement ranged combat (one PR), Lance and Garrotte if in scope. Also queued: Unarmed in The Pits (44 cases already in the ledger, PIT-SE03); split `experiments/practice-combat.html`'s very long lines when next touching it.
 - **ChatGPT (Work), one batched live check when the owner has credits** (only what Claude can't test headless):
   - Signed in: Play Mode item search (add a sword free, it attacks; paid rope −10 silver; mail location +5 ENC; reload keeps all); builder offers only the 26 Core traits. Use a disposable character and delete it afterwards.
