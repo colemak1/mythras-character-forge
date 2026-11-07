@@ -519,7 +519,7 @@ const CORE_TOOLS=[
 ];
 
 // Core p.62 ammunition bundles [name, sp]; ENC is the GM's call.
-const CORE_AMMO=[["Arrows (12)",4],["Crossbow quarrels (12)",3],["Sling bullets (20)",1],["Blowgun darts (6)",2],["Thrown darts (12)",2]];
+const CORE_AMMO=[["Arrows (12)",4],["Crossbow quarrels (12)",3],["Lead sling bullets (20)",1],["Blowgun darts (6)",2],["Thrown darts (12)",2]];
 // Core p.64 siege weapons and vehicles (also shown in the Money & Gear reference).
 const CORE_SIEGE=[["Scorpion","3d6","150 / 300",4,"1 / 1","Impale, Sunder","4 / 15","A–M",750],["Ballista","4d6","200 / 400",5,"2 / 4","Impale, Sunder","4 / 25","A–M",1000],
  ["Mangonel","5d6","250 / 500",6,"2 / 4","Bash, Stun","4 / 50","M",1250],["Onager","6d6","300 / 600",7,"3 / 6","Bash, Stun","4 / 75","A–M",1500],

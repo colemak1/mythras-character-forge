@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Item search: source check passed
+
+- ChatGPT checked the item search and Core trait data against Core pp.58, 62 and 89 (#179): every ammunition price, armour value and Core trait matches. Sling bullets are now listed as "Lead sling bullets", as in the book. Mail keeps the book's own figures (5 ENC per location, 30 for a suit).
+
 ## 2026-11-06 — Item catalogue and Core trait source check
 
 - Compared uploaded Core rendered pp.58,62,89 (and Skirmishing p.108) with #176/#177 data: all 5 ammunition quantities/prices, all 8 armour per-location AP/ENC/prices and all 26 offered traits PASS. No required rules correction.

@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by ChatGPT (source review)_
+_Last updated: 2026-11-07 by Claude_
 
 ## Priorities
 
@@ -31,8 +31,7 @@ Practice Combat features remain paused. Progress **5/8**.
 
 ## Waiting on someone
 
-- **Claude:** source review complete: `docs/item-search-core-cases.md` (all requested data PASS;34 scripts pass). Review/merge the docs PR. Optional precise label: Lead sling bullets (20). Printed Mail ENC inconsistency documented; no automatic mechanics change.
-- **ChatGPT (Work), after Chat:** owner-only live check on a disposable character:
+- **ChatGPT (Work):** (source review #179 passed) owner-only live check on a disposable character:
   - Inventory → Add an item: search "sword" and add it (free), then confirm it appears on the Combat tab and attacks;
   - tick Paid for it and add rope: silver goes down by 10;
   - add a mail location: ENC up 5, worn AP unchanged;
