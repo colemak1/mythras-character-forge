@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits stays melee only
+
+- The owner decided ranged combat is not an option in The Pits, so the ranged and thrown weapons from #206 are removed (reverted). Missile weapons on a character are listed as "The Pits is melee only". The melee fixes from #205 stay.
+
 ## The Pits: every melee weapon and shield works with saved characters
 
 - Bringing a saved character into The Pits only accepted the five original weapons (Broadsword, Shortspear, Mace, Dagger, Greatsword) and three shields (Buckler, Heater, Hoplite). A character with any other weapon or shield got "could not be loaded". All 35 supported Core melee weapons and all 8 shields now load and fight.

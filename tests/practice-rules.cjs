@@ -41,7 +41,7 @@ test('the original five arena keys still point at the same Core weapons',()=>{
  for(const [k,n] of [['buckler','Buckler'],['heater','Heater'],['hoplite','Hoplite']])assert.equal(A(`SHIELDS.${k}.name`),n);
 });
 test('ranged, mounted-only and ambush-only weapons are reported as unsupported, with a reason',()=>{
- assert.equal(A(`practiceUnsupportedReason(WEAPON_MAP['Long bow'])`),'ranged weapons are not simulated yet');
+ assert.equal(A(`practiceUnsupportedReason(WEAPON_MAP['Long bow'])`),'The Pits is melee only');
  assert.equal(A(`practiceUnsupportedReason(WEAPON_MAP['Lance'])`),'only usable from a moving mount');
  assert.equal(A(`practiceUnsupportedReason(WEAPON_MAP['Garrotte'])`),'only usable from ambush');
  assert.equal(A(`'lance' in ARENA_WEAPONS`),false);

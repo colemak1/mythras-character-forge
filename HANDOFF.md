@@ -3,9 +3,9 @@
 Read `AGENTS.md`, then this, at the start of every session; update it before ending one. Keep it short: replace finished items, don't append history (history goes in `CHANGELOG.md`).
 
 **Owner kickoff line for a new Claude session** (paste as the first message):
-> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/deployment-issues-delays-tvolc7.
+> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/happy-brahmagupta-votbg4.
 
-_Last updated: 2026-11-07 by Claude (credit-saving rules; handoff trimmed)_
+_Last updated: 2026-11-07 by Claude (The Pits melee only; back to the subsystems)_
 
 ## Where things stand
 
@@ -15,12 +15,12 @@ _Last updated: 2026-11-07 by Claude (credit-saving rules; handoff trimmed)_
 - **The Pits** (`experiments/practice-combat.html`, route `#/the-pits`):
   - Rules from ChatGPT's reviews implemented through #191: parry rounding (blocked half rounds up), Knockback, Impale, Barbed, Reach, Entangle (original-roll Trip), Entrapping, Disarm STR limit, Acrobatics vs Trip, concurrent tied Initiative, shield strikes and shield Bash. Ledger: `docs/the-pits-combat-procedure-review.md`.
   - v0 fight screen done (#193–#195, fixes #202): Stone look, view adapter `experiments/pits-view.js`, game layer `experiments/pits-game.js` (Glory, Momentum, Marks: presentation only, never rules).
-  - **Weapons: 43 of 64 Core weapons playable** (all melee and shields). Missing: 19 ranged/thrown, Lance (mounted), Garrotte (ambush).
+  - **Melee only (owner, 2026-11-07).** All 35 Core melee weapons and 8 shields playable; saved characters can use any weapon their style trains, carried or not (#205). Ranged was built and removed (#206 reverted); its spec `docs/the-pits-ranged-cases.md` is shelved. Lance and Garrotte unsupported.
 
 ## Next
 
-- **ChatGPT (Chat):** Ranged Core code cases `PIT-R01–R17` and deferred Lance/Garrotte minima documented in `docs/the-pits-ranged-cases.md` (docs-only PR). **Claude next:** implement ranged in one code PR; leave Lance and Garrotte unsupported until mounted/ambush scenarios are approved.
-- **Claude:** then implement ranged combat (one PR), Lance and Garrotte if in scope. Also queued: Unarmed in The Pits (44 cases already in the ledger, PIT-SE03); split `experiments/practice-combat.html`'s very long lines when next touching it.
+- **Owner, then Claude:** back to the eight subsystems (`docs/subsystem-plan.md`, progress 5/8). Open: 6 Magic (partial; gaps in `magic-subsystem-cases.md`), 7 Creatures (no case inventory yet: ChatGPT (Chat) writes it first), 8 Campaign (critical items done; owner decisions D-S1 to D-S4 pending).
+- **Claude:** queued for The Pits only if the owner asks: Unarmed (44 cases in the ledger, PIT-SE03); split `experiments/practice-combat.html`'s very long lines when next touching it.
 - **ChatGPT (Work), one batched live check when the owner has credits** (only what Claude can't test headless):
   - Signed in: Play Mode item search (add a sword free, it attacks; paid rope −10 silver; mail location +5 ENC; reload keeps all); builder offers only the 26 Core traits. Use a disposable character and delete it afterwards.
   - The Pits after #202: Basalt setup readable; pill / Last roll / end recap follow the dice; a settled Opponent pill; audible sound if possible.

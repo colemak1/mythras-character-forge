@@ -369,7 +369,7 @@ function practiceWeaponKey(name){return PRACTICE_LEGACY_KEYS[name]||String(name)
 function practiceUnsupportedReason(w){
   if(!w)return "not a Core weapon";
   const traits=String(w.traits||"");
-  if(w.group==="Ranged")return "ranged weapons are not simulated yet";
+  if(w.group==="Ranged")return "The Pits is melee only";
   if(/\bMount\b/.test(traits))return "only usable from a moving mount";
   if(/\bStealth\b/.test(traits))return "only usable from ambush";
   if(!/^\d+d\d+(\+\d+)?$/.test(String(w.dmg||"")))return "damage not supported";
