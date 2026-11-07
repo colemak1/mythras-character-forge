@@ -518,6 +518,14 @@ const CORE_TOOLS=[
  ["Waterskin or canteen",1,0.5],["Wax block",1,0.2]
 ];
 
+// Core p.62 ammunition bundles [name, sp]; ENC is the GM's call.
+const CORE_AMMO=[["Arrows (12)",4],["Crossbow quarrels (12)",3],["Sling bullets (20)",1],["Blowgun darts (6)",2],["Thrown darts (12)",2]];
+// Core p.64 siege weapons and vehicles (also shown in the Money & Gear reference).
+const CORE_SIEGE=[["Scorpion","3d6","150 / 300",4,"1 / 1","Impale, Sunder","4 / 15","A–M",750],["Ballista","4d6","200 / 400",5,"2 / 4","Impale, Sunder","4 / 25","A–M",1000],
+ ["Mangonel","5d6","250 / 500",6,"2 / 4","Bash, Stun","4 / 50","M",1250],["Onager","6d6","300 / 600",7,"3 / 6","Bash, Stun","4 / 75","A–M",1500],
+ ["Couillard","7d6","350 / 700",8,"3 / 6","Bash, Stun","4 / 100","M",3000],["Trebuchet","8d6","400 / 800",9,"4 / 8","Bash, Stun","4 / 150","M",5000]];
+const CORE_VEHICLES=[["Two-wheeled cart",6,60,1,"A–I",60],["Two-wheeled wagon",10,100,1,"A–I",175],["Four-wheeled freight wagon",10,200,2,"A–I",500],
+ ["War chariot",2,20,2,"A–I",1200],["Sedan chair",1,10,2,"A–I",400],["Palanquin",4,40,8,"A–I",2000],["Stage coach",8,200,4,"R, I",8000],["Heavy coach",12,400,8,"R, I",15000]];
 const ARMOR_MAP=Object.fromEntries(ARMOR_MATERIALS.map(a=>[a.name,a]));
 const ARMOR_LOCATIONS=["Head","Chest","Abdomen","Right Arm","Left Arm","Right Leg","Left Leg"];
 // Core p.58 material multipliers for GM-approved armour construction.

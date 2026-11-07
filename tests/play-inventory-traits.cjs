@@ -63,4 +63,17 @@ test('Combat Style Traits: only the 26 Core traits are offered; saved supplement
  assert.doesNotMatch(h,new RegExp('cstyle-traitbody"><b>'+supp.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'<'),'not in the picker list');
  run('APP.toggleStyleTrait("style:cult",'+JSON.stringify(supp)+')');assert.deepEqual([...run('styleDef("style:cult").traits')],['Daredevil'],'removal still works');
 });
+test('the search covers Core weapons, armour, gear and ammunition only (owner, 2026-11-07)',()=>{
+ setup();const cat=JSON.parse(run('JSON.stringify(pmItemCatalog())'));
+ assert.deepEqual([...new Set(cat.map(x=>x.kind))].sort(),['ammo','armour','gear','weapon']);
+ for(const n of ['Boots','Horse (riding)','Two-wheeled cart','Trebuchet','Trail rations (7 days)'])assert(!cat.some(x=>x.name===n),n+' is not offered');
+ const suit=cat.find(x=>x.name==='Mail (mail hauberk, laminar) armour, full suit');assert.equal(suit.enc,30);assert.equal(suit.cost,6300,'Core p.58 printed suit values');
+ const piece=cat.find(x=>x.name==='Mail (mail hauberk, laminar) armour, one location');assert.equal(piece.enc,5);assert.equal(piece.cost,900);
+ assert.equal(cat.find(x=>x.name==='Arrows (12)').cost,4);
+});
+test('picked-up armour is carried at full ENC and does not change worn armour',()=>{
+ setup();const enc=run('gearEncTotal()'),ap=run('armorApAt("Chest")');
+ run('APP.playAddCatalogItem("armour","Mail (mail hauberk, laminar) armour, one location")');
+ assert.equal(run('gearEncTotal()'),enc+5);assert.equal(run('armorApAt("Chest")'),ap);
+});
 console.log(passed+' play inventory and traits tests passed');

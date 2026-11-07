@@ -1220,11 +1220,11 @@ window.APP={
  giftSeen(id){if(VIEW_ONLY)return;const it=(S.inventory||[]).find(x=>giftValid(x.gift)&&x.gift.id===id);if(!it)return;it.gift.seen=true;render();},
  playAddCatalogItem(kind,name){if(inventoryBlock())return;
    const it=pmItemCatalog().find(x=>x.kind===kind&&x.name===name);if(!it)return;
-   const cost=PM_ITEM_PAY?it.cost:0;
-   const same=S.inventory.find(x=>x.name===it.name&&Number(x.cost||0)===cost&&!!x.weapon===(kind==="weapon")&&!giftValid(x.gift));
+   const label=it.name,cost=PM_ITEM_PAY?it.cost:0;
+   const same=S.inventory.find(x=>x.name===label&&Number(x.cost||0)===cost&&!!x.weapon===(kind==="weapon")&&!giftValid(x.gift));
    if(same)same.qty=(Number(same.qty)||0)+1;
-   else S.inventory.push({name:it.name,qty:1,enc:it.enc,cost,...(kind==="weapon"?{weapon:true}:{})});
-   PM_MSG="Added "+it.name+(kind==="weapon"?" (also on the Combat tab)":"")+(cost?", paid "+cost+" sp.":", found (free).");
+   else S.inventory.push({name:label,qty:1,enc:it.enc,cost,...(kind==="weapon"?{weapon:true}:{})});
+   PM_MSG="Added "+label+(kind==="weapon"?" (also on the Combat tab)":"")+(cost?", paid "+cost+" sp.":", found (free).");
    render();},
  playInvAdd(){if(inventoryBlock())return;S.inventory.push({name:"",qty:1,enc:0,cost:0});render();},
  playInvDel(i){if(inventoryBlock())return;S.inventory.splice(i,1);render();},

@@ -1112,24 +1112,7 @@ function moneySpentTotal(){return gearCostTotal()+inventoryCostTotal()+(S.money.
 function moneyRemaining(){return moneyTotal()-moneySpentTotal();}
 function equipmentReference(){
   // Mythras Core p.64. These tables describe crew-operated gear and transport.
-  const siege=[
-    ["Scorpion","3d6","150 / 300",4,"1 / 1","Impale, Sunder","4 / 15","A–M",750],
-    ["Ballista","4d6","200 / 400",5,"2 / 4","Impale, Sunder","4 / 25","A–M",1000],
-    ["Mangonel","5d6","250 / 500",6,"2 / 4","Bash, Stun","4 / 50","M",1250],
-    ["Onager","6d6","300 / 600",7,"3 / 6","Bash, Stun","4 / 75","A–M",1500],
-    ["Couillard","7d6","350 / 700",8,"3 / 6","Bash, Stun","4 / 100","M",3000],
-    ["Trebuchet","8d6","400 / 800",9,"4 / 8","Bash, Stun","4 / 150","M",5000]
-  ];
-  const vehicles=[
-    ["Two-wheeled cart",6,60,1,"A–I",60],
-    ["Two-wheeled wagon",10,100,1,"A–I",175],
-    ["Four-wheeled freight wagon",10,200,2,"A–I",500],
-    ["War chariot",2,20,2,"A–I",1200],
-    ["Sedan chair",1,10,2,"A–I",400],
-    ["Palanquin",4,40,8,"A–I",2000],
-    ["Stage coach",8,200,4,"R, I",8000],
-    ["Heavy coach",12,400,8,"R, I",15000]
-  ];
+  const siege=CORE_SIEGE,vehicles=CORE_VEHICLES;
   const table=(caption,headers,rows)=>'<div class="pm-tablewrap"><table class="rt"><caption>'+caption+'</caption><thead><tr>'
     +headers.map(label=>'<th scope="col">'+label+'</th>').join("")+'</tr></thead><tbody>'
     +rows.map(([name,...values])=>'<tr><th scope="row">'+name+'</th>'+values.map(value=>'<td>'+value+'</td>').join("")+'</tr>').join("")
