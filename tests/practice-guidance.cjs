@@ -12,7 +12,7 @@ function arena(){
  vm.createContext(context);
  const page=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8');
  vm.runInContext(fs.readFileSync(path.join(root,'js/data.js'),'utf8'),context); // the arena loads ../js/data.js first
- vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-guidance.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'experiments/pits-view.js'),'utf8')+'\n'+page.match(/<script>([\s\S]*?)<\/script>/)[1],context);
+ vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-guidance.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'experiments/pits-view.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'experiments/pits-ranged.js'),'utf8')+'\n'+page.match(/<script>([\s\S]*?)<\/script>/)[1],context);
  const run=s=>vm.runInContext(s,context);
  return {handlers,run,html:()=>output.innerHTML,fresh(){run(`startRun();R=null;V.busy=false;S.phase='fight';S.order=['a','b'];S.turnIndex=0;S.pending=null;V.events=[];render();`);}};
 }

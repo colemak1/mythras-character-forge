@@ -48,13 +48,13 @@ await test('the arena is named The Pits and links back to it',()=>{
  assert.doesNotMatch(page,/Practice Combat/);assert.doesNotMatch(page,/#\/my-characters/);
  assert.match(page,/href="\.\.\/index\.html#\/the-pits"/);
 });
-await test('any Core melee weapon a character carries goes to the arena, not just the original five',()=>{
+await test('any Core melee or supported missile weapon a character carries goes to the arena, not just the original five',()=>{
  run(`var a=freshState();a.concept.name='Axe';a.chars={STR:13,CON:12,SIZ:14,DEX:15,INT:14,POW:11,CHA:10};a.cultStyleOn=true;a.cultStyleName='Axes';
   a.styleDefs['style:cult']={weapons:['Battleaxe','Kite','Long bow'],traits:[]};a.gearWeapons=['Battleaxe','Kite','Long bow','Lance'];
   var pr=practiceSnapshot({id:'x',ownerId:'user',state:a});`);
- assert.deepEqual(JSON.parse(run('JSON.stringify(pr.styles[0].weapons)')),[{name:'Battleaxe',key:'battleaxe'}]);
+ assert.deepEqual(JSON.parse(run('JSON.stringify(pr.styles[0].weapons)')),[{name:'Battleaxe',key:'battleaxe'},{name:'Long bow',key:'long-bow'}]);
  assert.deepEqual(JSON.parse(run('JSON.stringify(pr.styles[0].shields)')),[{name:'Kite',key:'kite'}]);
- assert.deepEqual(JSON.parse(run('JSON.stringify(pr.unsupportedGear)')),['Long bow','Lance']);
+ assert.deepEqual(JSON.parse(run('JSON.stringify(pr.unsupportedGear)')),['Lance']);
 });
 await test('a weapon the style trains can be practised even when the character does not carry it',()=>{
  run(`var c=freshState();c.concept.name='Unarmed kit';c.chars={STR:13,CON:12,SIZ:14,DEX:15,INT:14,POW:11,CHA:10};c.cultStyleOn=true;c.cultStyleName='Spear and shield';
