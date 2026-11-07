@@ -73,3 +73,17 @@ If (g)–(i) pass, Claude closes Subsystem 4 (**4/8 → 5/8**). Everything else 
 ## Final focused owner-only live evidence — 2026-11-06
 
 Steps **(g)–(i) PASS** and hazard tables present: [detailed observations and limitations](advancement-final-live-20261106.md). Optional campaign 1d6+1: natural ER 66 + INT16 versus Willpower24 gained +6→30; formula visible in instructions. Weak Passion deepen +1; wane reached 0 and stayed 0. Reload retained values. Maiming maximum Right Arm4→2 survived reload and saved account reopen. Luck1/2→2/2 via Start a new session, retained on reopen. Character deleted/reload verified; campaign delete accepted, but final saved absence unverified after environment reset. Screenshot removed by workspace maintenance. 33 current local scripts pass; no code changed. These are pre-Stone deployment observations (`play.js?v=74f8277601`, `app.js?v=56de852493`), not acceptance of the later UI. Claude to decide closeout; **4/8 pending that decision**.
+
+## Claude closeout decision (2026-11-07): Subsystem 4 CLOSED, progress 5/8
+
+Reviewed #172. Steps (g)–(i) pass with clear observations:
+- **(g)** A +6 Experience Roll gain is only possible under the campaign's 1d6+1 option (the default 1d4+1 tops out at +5), so the option demonstrably applied. Passion Weak shift and the 0 floor held through reload.
+- **(h)** The maiming maximum (Right Arm 4 → 2) survived reload and account reopen.
+- **(i)** A new session refilled Luck 1/2 → 2/2.
+
+Together with (a)–(f) in #164, every live gate in the closeout review is met. The remaining rows are GM-assisted by design or covered by regression tests.
+
+**Accepted limitations:**
+1. **Campaign cleanup:** the disposable campaign's deletion was submitted but not re-checked after a browser reset. This is test-data cleanup, not Subsystem 4 behaviour; the owner checks the campaign list and deletes **Disposable S4 Final Campaign** if it is still there. Campaign deletion itself belongs to Subsystem 8.
+2. **Pre-Stone UI:** the passes ran before the Stone layout. That layout changed presentation only: the advancement code paths (Improve Skills, Advance time, location maximum, Luck) are unchanged and their tests still pass. The Stone walkthrough stays a separate pending live check.
+3. **Formula placement:** "1d6+1" appears in the Improve Skills instructions, not on each history line. That is acceptable as is.

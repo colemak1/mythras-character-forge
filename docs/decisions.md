@@ -36,3 +36,4 @@ Standing rulings and product decisions. Add an entry whenever something is agree
 | Play Mode reference pages go behind one "Rules reference" item in the ☰ menu, not links on the sheet | Decided 2026-11-07 (owner) | Revisit when the site is ready for players |
 | Skill descriptions in Play Mode are short summaries in our own words with Core page references, not the book's text | Decided 2026-11-07 (Claude; public repo) | `SKILL_INFO` in `js/data.js`. ChatGPT may check them for accuracy |
 | Phones: page zoom disabled in the site's viewport | Decided 2026-11-07 (owner) | iOS may still allow pinch zoom for accessibility; inputs are 16px so focusing them doesn't zoom |
+| Subsystem 4 (Advancement, hazards and recovery) closed; progress 5/8 | Decided 2026-11-07 (Claude, per the closeout gate in #165) | Live (a)–(f) #164 and (g)–(i) #172 pass; limitations in `advancement-reconciliation.md` |

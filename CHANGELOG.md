@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Subsystem 4 closed: Advancement, hazards and recovery (5/8)
+
+- The final live checks (#172) passed: the 1d6+1 campaign option, the Passion helper, permanent-injury maximum HP and the new-session Luck refill, each surviving a reload. Together with steps (a)–(f) (#164), source checks and regression tests, Subsystem 4 is closed. Progress is now **5/8**.
+- One leftover: a disposable test campaign may still be listed; delete it if so. The new Play Mode look still needs its own live walkthrough.
+
 ## 2026-11-06 — Subsystem 4 final focused live gates pass
 
 - Owner-only (g)–(i): campaign 1d6+1 ER gained +6, Weak Passion helper/floor 0/reload, maiming maximum 2 HP persisted, and new-session Luck refilled. Acid/fall/fire tables present.
