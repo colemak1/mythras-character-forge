@@ -1145,6 +1145,7 @@ function conciseLog(entry){
   if(/ hits (Head|Chest|Abdomen|Right Arm|Left Arm|Right Leg|Left Leg)$/i.test(entry.title)){
     const m=/= (\d+) HP lost/.exec(body);return m?`${m[1]} HP lost`:body;
   }
+  if(/^Encounter \d+ · Initiative/.test(entry.title)&&/Tied: they act concurrently/.test(body))return 'Tied · act concurrently';
   if(/^Encounter \d+ · Initiative/.test(entry.title)){const last=body.match(/([^.]*) acts first\./);return last?`${last[1]} acts first`:body;}
   if(/Initiative$/.test(entry.title)){const m=/rolls (\d+) \+ .*?= (\d+)/.exec(body);return m?`d10 ${m[1]} · total ${m[2]}`:body;}
   if(/Hit Location/.test(entry.title)){const m=/: ([A-Za-z ]+)\./.exec(body);return m?m[1]:body;}
@@ -2170,8 +2171,8 @@ function beginEncounter(){
   S.order=['a','b'];S.engagement=engagementInfo().active?'long':'equal';S.disengaged=false;S.gapMetres=0;S.ringClearance={a:6,b:6};for(const f of [a,b]){f.braced=false;f.delaying=false;f.pressedTurns=0;f.overextendedTurns=0;}
   const rollNext=(index)=>{
     if(index>=2){
-      S.order=a.initiative>=b.initiative?['a','b']:['b','a'];
-      log(`Encounter ${S.wave} · Initiative`,`${a.name}: ${a.initRoll}+${a.init}−${a.armourInitPenalty} = ${a.initiative}. ${b.name}: ${b.initRoll}+${b.init}−${b.armourInitPenalty} = ${b.initiative}. ${S.fighters[S.order[0]].name} acts first.`,'system');
+      S.order=a.initiative>=b.initiative?['a','b']:['b','a'];S.tie=null;
+      log(`Encounter ${S.wave} · Initiative`,`${a.name}: ${a.initRoll}+${a.init}−${a.armourInitPenalty} = ${a.initiative}. ${b.name}: ${b.initRoll}+${b.init}−${b.armourInitPenalty} = ${b.initiative}. ${a.initiative===b.initiative?'Tied: they act concurrently.':S.fighters[S.order[0]].name+' acts first.'}`,'system');
       if(b.kind==='ai'&&b.shield!=='none')b.warded=HIT_LOCS.slice(0,SHIELDS[b.shield].coverage);
       if(engagementInfo().active)log('Starting Weapon Reach',`${S.fighters[engagementInfo().longer].name} controls the opening engagement at longer reach. ${a.name}: ${reachName(a)}; ${b.name}: ${reachName(b)}.`, 'system');
       advance();return;
@@ -2185,10 +2186,105 @@ function beginEncounter(){
   };
   rollNext(0);
 }
-function advance(){if(S.phase!=='fight'||S.pending||S.roundProcessing)return;let tries=0;while(tries++<25){if(S.turnIndex>=2){if(S.fighters.a.ap<=0&&S.fighters.b.ap<=0){
+
+// ---- Core p.90: equal Initiative totals act concurrently (PIT-P02) ----
+// The arena still takes the two tied turns one after the other, but the
+// first fighter's turn in a tied cycle cannot stop the second fighter's
+// action that cycle. Arena convention (not Core): the declaring order
+// alternates each cycle; the second fighter acts with their state from the
+// start of the cycle; what the first fighter inflicted applies right after;
+// a defeat inflicted first waits until the second fighter has acted, and if
+// both fall the bout is a draw. See docs/decisions.md.
+const CONCURRENT_FIELDS=['prone','disarmed','recoveringWeapon','skipAttack','pressedTurns','overextendedTurns','blindedTurns','droppedMetres','stunnedLocations','disabled','impaledWounds','weaponGuard','entangled','pinnedGear','pinnedBy','remiseFrom','weaponHand'];
+const CONCURRENT_GLOBALS=['disengaged','gapMetres','engagement'];
+function concurrentKey(){return S.wave+':'+S.round+':'+S.cycle;}
+const cloneVal=v=>v==null?v:JSON.parse(JSON.stringify(v));
+function concurrentCapture(f){return {f:Object.fromEntries(CONCURRENT_FIELDS.map(k=>[k,cloneVal(f[k])])),g:Object.fromEntries(CONCURRENT_GLOBALS.map(k=>[k,cloneVal(S[k])]))};}
+function beginConcurrentCycle(){
+ const a=S.fighters.a,b=S.fighters.b,key=concurrentKey();
+ if(S.tie?.key===key)return;
+ if(a.initiative!==b.initiative){S.tie=null;return;}
+ const first=S.cycle%2===1?'a':'b',second=first==='a'?'b':'a';
+ S.order=[first,second];
+ S.tie={key,first,second,snap:concurrentCapture(S.fighters[second]),granted:false,pendingEnd:null};
+ log('Tied Initiative',`${a.name} and ${b.name} both have Initiative ${a.initiative}, so they act concurrently this cycle. ${S.fighters[first].name} declares first (arena convention, alternating each cycle); nothing done in that turn can stop ${S.fighters[second].name}'s action this cycle.`,'system','Core p.90: tied Initiative totals act concurrently.');
+}
+// The second fighter's state for its concurrent turn: whichever of the
+// start-of-cycle state and the current state is better for them.
+function concurrentGraceView(snap,cur){
+ const v={};
+ for(const k of CONCURRENT_FIELDS){
+  const a=snap.f[k],c=cur.f[k];
+  if(['prone','disarmed','recoveringWeapon'].includes(k))v[k]=!!a&&!!c;
+  else if(['skipAttack','pressedTurns','overextendedTurns','blindedTurns','droppedMetres'].includes(k))v[k]=Math.min(a||0,c||0);
+  else if(k==='stunnedLocations'){v[k]={};for(const loc of Object.keys(a||{}))if(c?.[loc]>0&&a[loc]>0)v[k][loc]=Math.min(a[loc],c[loc]);}
+  else if(k==='disabled')v[k]=(a||[]).filter(x=>(c||[]).includes(x));
+  else if(k==='impaledWounds')v[k]=cloneVal((a||[]).length<=(c||[]).length?a:c)||[];
+  else if(k==='weaponGuard')v[k]=a&&c?{...a,hp:Math.max(a.hp,c.hp)}:cloneVal(a||c);
+  else if(['entangled','pinnedGear','pinnedBy','remiseFrom'].includes(k))v[k]=a==null||c==null?null:cloneVal(a);
+  else v[k]=cloneVal(a);
+ }
+ const g={disengaged:!!snap.g.disengaged&&!!cur.g.disengaged,gapMetres:Math.min(snap.g.gapMetres||0,cur.g.gapMetres||0),engagement:snap.g.engagement};
+ return {f:v,g};
+}
+function grantConcurrentTurn(id){
+ const t=S.tie;if(!t||t.key!==concurrentKey()||t.granted||id!==t.second)return;
+ const f=S.fighters[id],cur=concurrentCapture(f),view=concurrentGraceView(t.snap,cur);
+ t.granted=true;t.deferred=cur;t.view=view;
+ for(const k of CONCURRENT_FIELDS)f[k]=cloneVal(view.f[k]);
+ for(const k of CONCURRENT_GLOBALS)S[k]=cloneVal(view.g[k]);
+ const changed=JSON.stringify(cur)!==JSON.stringify(view);
+ if(changed||t.pendingEnd)log('Concurrent turn',`${f.name} acts at the same moment as ${S.fighters[t.first].name}'s turn: what that turn did to them takes effect after this action.`,'system','Core p.90: tied Initiative totals act concurrently.',{actor:id});
+}
+// Apply what the first fighter did, plus any change from the second
+// fighter's own turn, relative to the grace view.
+function mergeConcurrent(d,g,c){
+ if(typeof d==='number'||typeof c==='number')return Math.max(0,(d||0)+((c||0)-(g||0)));
+ if(Array.isArray(d)||Array.isArray(c)){const key=x=>JSON.stringify(x),out=cloneVal(c||[]);for(const x of d||[])if(!(g||[]).some(y=>key(y)===key(x))&&!out.some(y=>key(y)===key(x)))out.push(cloneVal(x));return out;}
+ return JSON.stringify(c)!==JSON.stringify(g)?cloneVal(c):cloneVal(d);
+}
+function finishConcurrentCycle(){
+ const t=S.tie;if(!t||t.key!==concurrentKey())return false;
+ S.tie=null;
+ if(t.granted){
+  const f=S.fighters[t.second];
+  for(const k of CONCURRENT_FIELDS){
+   const d=t.deferred.f[k],g=t.view.f[k],c=f[k];
+   if(k==='stunnedLocations'){const out={};for(const loc of new Set([...Object.keys(d||{}),...Object.keys(c||{})])){const v=mergeConcurrent(d?.[loc]||0,g?.[loc]||0,c?.[loc]||0);if(v>0)out[loc]=v;}f[k]=out;}
+   else if(k==='weaponGuard'&&d&&c)f[k]={...c,hp:Math.max(0,d.hp+(c.hp-(g?.hp??c.hp)))};
+   else if(['prone','disarmed','recoveringWeapon','entangled','pinnedGear','pinnedBy','remiseFrom','weaponHand'].includes(k))f[k]=JSON.stringify(c)!==JSON.stringify(g)?cloneVal(c):cloneVal(d);
+   else f[k]=mergeConcurrent(d,g,c);
+  }
+  for(const k of CONCURRENT_GLOBALS){const d=t.deferred.g[k],g=t.view.g[k],c=S[k];S[k]=k==='gapMetres'?mergeConcurrent(d,g,c):JSON.stringify(c)!==JSON.stringify(g)?c:d;}
+  if(f.weaponGuard&&f.weaponGuard.hp<=0)f.disarmed=true;
+ }
+ if(t.pendingEnd){const e=t.pendingEnd;endFight(e.winnerId,e.reason);return true;}
+ return false;
+}
+function deferConcurrentEnd(winnerId,reason){
+ const t=S.tie;if(!t||t.key!==concurrentKey()||S.phase!=='fight')return false;
+ const loser=winnerId==='a'?'b':'a';
+ if(!t.granted&&S.order[S.turnIndex]===t.first&&loser===t.second&&S.fighters[t.second].ap>0&&!t.pendingEnd){
+  t.pendingEnd={winnerId,reason};
+  log('Falling',`${S.fighters[loser].name} is going down, but their concurrent action this cycle still happens first. ${reason}`,'hurt','Core p.90: tied Initiative totals act concurrently.',{actor:loser});
+  endAction();return true;
+ }
+ if(t.granted&&t.pendingEnd&&loser===t.first&&winnerId===t.second){
+  S.tie=null;S.pending=null;
+  for(const f of Object.values(S.fighters))f.status='Defeated';
+  S.phase='over';S.winnerId=null;S.winner='Neither fighter';
+  S.endReason=`Both fighters fall in the same concurrent exchange. ${t.pendingEnd.reason} ${reason}`;
+  S.finalCause={type:'mutual',victim:S.fighters.a.name+' and '+S.fighters.b.name};S.showEndModal=true;
+  log('DRAW',S.endReason,'system','Core p.90: tied Initiative totals act concurrently.');render();return true;
+ }
+ return false;
+}
+function advance(){if(S.phase!=='fight'||S.pending||S.roundProcessing)return;let tries=0;while(tries++<25){if(S.turnIndex>=2){if(finishConcurrentCycle())return;if(S.fighters.a.ap<=0&&S.fighters.b.ap<=0){
   finishCombatRound();return;
  }else S.cycle++;S.turnIndex=0;}
+if(S.turnIndex===0)beginConcurrentCycle();
 let id=S.order[S.turnIndex],f=S.fighters[id];expireDelay(f);if(f.ap<=0){advanceStun(f);S.turnIndex++;continue;}
+ if(S.turnIndex===1)grantConcurrentTurn(id);
  if(f.kind==='ai'||f.remiseFrom)captureActionBoundary(f.remiseFrom||id);
  // Core p.99 Remise: on the recipient's next proactive turn, a Small-weapon
  // follow-up attack takes its place. The recipient can use AP to react.
@@ -2794,6 +2890,7 @@ function resolveWound(atk,def,loc,cls,wound,attackRoll,onContinue){
 }
 function endAction(){const rangeAfter=S.pending?.rangeAfter,withdrawAfter=S.pending?.withdrawAfter;if(rangeAfter&&S.phase==='fight')setCombatRange(rangeAfter,`${S.fighters.a.name} and ${S.fighters.b.name} now fight at ${rangeAfter} reach after the interception.`);if(withdrawAfter&&S.phase==='fight'){S.disengaged=true;S.gapMetres=Math.max(1,S.gapMetres||0);dropPinIfSeparated();log('Withdraw',`${S.fighters[withdrawAfter].name} has broken engagement; the opponents must re-engage before another melee attack.`,'system','',{actor:withdrawAfter});}S.pending=null;if(S.phase!=='fight'){render();return;}advanceStun(S.fighters[S.order[S.turnIndex]]);S.turnIndex++;advance();}
 function endFight(winnerId,reason){
+  if(deferConcurrentEnd(winnerId,reason))return;
   S.pending=null;for(const f of Object.values(S.fighters||{})){f.pinnedGear=null;f.pinnedBy=null;}
   const winner=S.fighters[winnerId],loser=S.fighters[winnerId==='a'?'b':'a'];
   loser.status='Defeated';S.endReason=reason;S.winner=winner.name;S.winnerId=winnerId;

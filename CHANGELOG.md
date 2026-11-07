@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: tied Initiative acts concurrently
+
+- When both fighters have the same Initiative, they now act at the same time (Core p.90). The game still shows one turn after the other, alternating who declares first each cycle, but nothing done in the first turn can stop the second fighter's action that cycle. A fighter who is dropped in the first turn still gets their blow in, and if both fall it's a draw.
+- Before, the player always went first on a tie.
+
 ## The Pits P2 tied Initiative and shield attacks — Core case specifications (docs only)
 
 - Added **28** detailed child acceptance cases to `docs/the-pits-combat-procedure-review.md`: eight under PIT-P02 for initial and later-round concurrent Initiative ties (Core p.90), and twenty under PIT-P07 for all eight shields' attack profiles, reach/Size interactions, Bash and defensive regressions (Core pp.63,91,95–96; p.104 ordinary Knockback).

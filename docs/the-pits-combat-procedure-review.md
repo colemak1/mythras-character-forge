@@ -184,3 +184,18 @@ Core distinction: Each shield has a **weapon attack line**, not merely parry Siz
 - **Third**: verify Bash with fixed damage totals 1 / 5 / 6: shield 0 / 2 / 3m, ordinary bludgeon 0 / 1 / 2m. Check eligibility at SIZ equality and one point over; no Bash+ordinary Knockback double count. Test after successful full parry/armour. Use current owner parry rounding separately.
 - **Regression boundaries**: eight shields' source data already exist in the shared WEAPONS table; this is an **attack-path** gap, not a claim that shield defence stats were transcribed wrong. Two-handed+shield equipment conflicts, optional Reach toggles, and broader multi-actor simultaneous initiatives are separate scopes; do not invent an arena house rule without clearly labelling it.
 - **Status:** docs/source inspection, **not a Node test pass or deployed gameplay check**. Only Claude edits production and tests, then merges after Tests passes. ChatGPT does not merge. Main **Subsystem 5 remains CLOSED**; the overall progress in docs/subsystem-plan.md is **5/8**.
+
+## Claude implementation, PIT-P02 tied Initiative (2026-11-07)
+
+Tests: `tests/practice-initiative.cjs` (7), plus a 3,000-bout computer-vs-computer run with matching Initiative bonuses (1,112 tied cycles) that ended every bout cleanly.
+
+| Case | Result |
+|---|---|
+| P02-01, P02-03 | A tie is equal **final** totals (d10 + bonus − armour − Fatigue), not equal d10 faces. Unequal totals keep higher-first. |
+| P02-02, P02-04 | Tied fighters act concurrently. The second fighter's action in a tied cycle cannot be stopped by the first fighter's turn: it acts with its state from the start of the cycle (or better, if its own reactions helped it), and what the first turn did (prone, stun, disarm, Entangle, pin, Press Advantage, knockback, broken weapon, Remise) applies right after. AP the second fighter spent reacting stays spent. |
+| P02-04 | A defeat inflicted in the first tied turn waits until the second fighter has acted ("Falling"). If the second fighter fells the first in that action, the bout is a draw. |
+| P02-05 | Ties hold in every cycle of the round. |
+| P02-06–08 | Later rounds keep the original d10s and recompute current penalties; a tie formed by Fatigue acts concurrently; a broken tie reverts to higher-first. No DEX/INT tie-break. |
+
+**Arena conventions (not Core rules):** the two tied turns are still shown one after the other, and the declaring order alternates each cycle (A first in odd cycles, B first in even cycles). Neither order gives a mechanical advantage, because the first turn cannot cancel the second.
+

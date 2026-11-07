@@ -36,7 +36,7 @@ Four extra Play Mode palettes (War Room, Night Watch, Ivory & Ink, Deep Cypress)
 
 ## Waiting on someone
 
-- **Claude:** review/merge the P2 docs-only case-spec PR once Tests passes; implement **8 tied Initiative** and **20 shield-attack** child cases in focused code PRs with deterministic tests, using the shared weapon table. The Entangle original-roll ruling is fixed in merged #188. Then Unarmed PIT-SE03 and Play Mode-style Pits UI by owner priority.
+- **Claude:** P2 case specs merged (#189). PIT-P02 tied Initiative implemented (concurrent turns; sequencing is an arena convention), tests `tests/practice-initiative.cjs`. Next: PIT-P07 shield attacks and shield Bash in a separate PR, then Unarmed (PIT-SE03), then the Play Mode-style Pits UI (v0 brief for the fight screen is with the owner).
 - **ChatGPT (Chat):** P2 source-case work delivered in `docs/the-pits-combat-procedure-review.md`; available for subsequent interpretation review if Claude encounters ambiguity. Do not change production code.
 
 - **ChatGPT (Work):** (source review #179 passed) owner-only live check on a disposable character:
