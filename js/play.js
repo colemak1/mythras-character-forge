@@ -660,7 +660,7 @@ const SPECIAL_EFFECTS=[
 ["Impale",1,0,"Impaling Weapons","",0,"The attacker drives an impaling weapon deep into the defender. Roll weapon damage twice and choose the better result, if armour is penetrated and a wound caused. The attacker can leave the weapon in the wound — inflicting a difficulty grade on the victim's future skill attempts, worse for larger weapons in smaller victims — or yank it free next turn (unopposed Brawn roll, or opposed if the opponent resists) for further injury equal to half the normal damage roll to the same location."],
 ["Kill Silently",1,0,"Small Weapons","See Description",0,"Restricted to Combat Styles trained with the Assassination benefit. Neutralises a victim in complete silence, covering their mouth or grasping their throat while stabbing, cutting, or garrotting. This prevents the victim from crying out or otherwise raising an alarm. If the attack inflicts a Serious or Major Wound, the victim automatically fails their Endurance roll. Kill Silently can only be used on a surprised opponent, and only on the first attack against them."],
 ["Marksman",1,0,"Ranged Weapons","",0,"Permits the shooter to move the hit location struck by his shot one step to an immediately adjoining body area — physiology and common sense should apply to what's a plausible retarget."],
-["Maximise Damage",1,0,"","Attacker Criticals",1,"On a critical the character may substitute one of their weapon's damage dice for its full value (e.g. 1d6 becomes a 6). Can be stacked. Does not affect the Damage Modifier of the attacker, which must still be rolled normally; cannot be used with natural weapons."],
+["Maximise Damage",1,0,"","Attacker Criticals",1,"On a critical the character may substitute one of their weapon's damage dice for its full value (e.g. 1d6 becomes a 6). Can be stacked. Does not affect the Damage Modifier of the attacker, which must still be rolled normally. It also works with natural weapons (Core p.98)."],
 ["Open Range",0,1,"","",0,"Permits the character to automatically change the engagement range between themselves and their opponent, so they end up at the range favoured by the longer weapon. Under the optional Closing & Opening Range rule (p.106, see the note above), holding a foe at your weapon's longer Reach restricts their shorter weapon to attacking your weapon itself (trying to knock it aside, grab it, etc) rather than you, until they can close the distance."],
 ["Overextend Opponent",0,1,"","",1,"The defender sidesteps or retreats at an inconvenient moment, causing the attacker to overreach themselves. The opponent cannot attack on their next turn. This Special Effect can be stacked."],
 ["Overpenetration",1,0,"Ranged Weapons","Critical Only",0,"If shooting at densely packed opponents or into a tightly packed group, this effect allows the shot to travel completely through the first victim's body armour and strike a second victim behind them, at half damage due to attenuation/slowing down of the shot."],
@@ -973,7 +973,7 @@ function pmSetColorway(k){if(!PM_COLORWAYS.some(c=>c[0]===k))return;try{localSto
 const PM_SITE_LINKS=[["#/","Home"],["#/my-characters","Characters"],["#/my-campaigns","Campaign"],["#/wiki","Rules"],["#/world/welcome","World Guide"],["#/account","Account"]];
 function pmSiteMenuHTML(){
   return '<details class="pmx-sitemenu"><summary aria-label="Site menu" title="Site menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>'
-   +'<nav class="pmx-sitemenu-list" aria-label="Site navigation">'+PM_SITE_LINKS.map(([href,l])=>'<a href="'+href+'">'+l+'</a>').join("")+'<button type="button" onclick="this.closest(\'details\').open=false;APP.pmPopup(\'ref\')">Rules reference</button><button type="button" class="pmx-sitemenu-plain" onclick="this.closest(\'details\').open=false;APP.pmPopup(\'settings\')">Settings</button></nav></details>';
+   +'<nav class="pmx-sitemenu-list" aria-label="Site navigation">'+PM_SITE_LINKS.map(([href,l])=>'<a href="'+href+'">'+l+'</a>').join("")+'<button type="button" onclick="this.closest(\'details\').open=false;APP.pmPopup(\'ref\')">Rules reference</button><button type="button" class="pmx-sitemenu-plain" onclick="this.closest(\'details\').open=false;APP.pmModal(\'settings\')">Settings</button></nav></details>';
 }
 // Skill description in the side panel (owner, 2026-11-07): our short summary
 // of the Core text, the formula and current value, and a Roll button.
@@ -1011,6 +1011,12 @@ function pmCharSubtitle(){
   const career=S.customCareer&&S.customCareer.isCustom?S.customCareer.name:S.career;
   return [race,archetype,S.culture,career].filter(Boolean).map(esc).join(" · ");
 }
+function pmModalHTML(){
+  if(PM_MODAL!=="settings")return "";
+  return '<div class="pmx-modal-back" onclick="if(event.target===this)APP.pmModalClose()"><div class="pmx-modal" role="dialog" aria-modal="true" aria-label="Settings">'
+   +'<div class="pmx-pophead"><h2>Settings</h2><button type="button" class="pmx-popx" aria-label="Close" onclick="APP.pmModalClose()">&times;</button></div>'
+   +'<div class="pmx-popbody">'+pmSettingsHTML()+'</div></div></div>';
+}
 function pmSettingsHTML(){
   return '<h3 class="pmx-setth">Colour scheme</h3>'+pmStyleHTML()
    +'<h3 class="pmx-setth">Dice</h3><label class="pmx-opt"><input type="checkbox" '+(pmDiceAnimated()?'checked':'')+' onchange="pmToggleDice3d(this.checked)"> Animated dice</label>';
@@ -1020,6 +1026,7 @@ function pmStyleHTML(){
   return '<p class="pmx-small" style="margin-top:0">Changes the colours of Play Mode on this device only.</p><div class="pmx-cwlist">'
    +PM_COLORWAYS.map(([k,n,d])=>'<button type="button" class="pmx-cw'+(k===cur?" on":"")+'" aria-pressed="'+(k===cur)+'" onclick="pmSetColorway(\''+k+'\')"><span class="pmx-cwsw pm-cw-'+k+'" aria-hidden="true"><i></i><i></i><i></i></span><span><b>'+esc(n)+'</b><span>'+esc(d)+'</span></span></button>').join("")+'</div>';
 }
+let PM_MODAL=null;     // centred window, e.g. "settings" (owner, 2026-11-07)
 let PM_POPUP=null;      // {k, i} for the description pop-up
 function pmActiveTab(){
   const legacy={actions:"combat",effects:"combat",inventory:"gear",skills:"combat",body:"combat",stats:"combat"};
@@ -1338,7 +1345,6 @@ function pmPopupHTML(){
   else if(k==="advance"){title="Advance time";body=pmAdvanceTimeHTML();}
   else if(k==="rulesref"){title="Combat situations";body=pmCombatRulesRefHTML();}
   else if(k==="range"){title="Distance and target size";body=pmRangeHelperHTML();}
-  else if(k==="style"||k==="settings"){title="Settings";body=pmSettingsHTML();}
   else if(k==="fxref"){title="Special Effects";body='<div id="pm-actions">'+specialEffectsPanel()+'</div>';}
   else if(k==="ref"){title="Rules reference";body=pmRulesRefHTML();}
   else if(k==="initiative"){title="Initiative";body=pmInitiativeHTML();}
@@ -1414,6 +1420,7 @@ function renderPlayView(){
   const phoneOn=k=>PM_VIEW==="right"?(k==="combat"?tab==="combat":k==="more"&&tab!=="combat"):k===PM_VIEW;
   h+='<nav class="pmx-phonebar" aria-label="Play Mode sections">'+PM_PHONE_TABS.map(([k,l])=>'<button type="button" class="pmx-tab'+(phoneOn(k)?" on":"")+'"'+(phoneOn(k)?' aria-current="page"':'')+' onclick="APP.playTab(\''+k+'\')">'+(PM_PHONE_ICONS[k]||"")+l+'</button>').join("")+'</nav>';
   h+='</div>';
+  h+=pmModalHTML();
   if(XP_OPEN&&!VIEW_ONLY)h+=xpModalHtml();
   h+=giftPopupHtml();
   $("#main").innerHTML=h;
@@ -1421,7 +1428,7 @@ function renderPlayView(){
   pmFitDash();
   if(!PM_RESIZE_BOUND&&typeof window.addEventListener==="function"){PM_RESIZE_BOUND=true;
     window.addEventListener("resize",()=>{pmFitDash();pmDicePlace();});
-    document.addEventListener("keydown",e=>{if(e.key==="Escape"&&PM_POPUP&&APPVIEW==="play")APP.pmPopupClose();});}
+    document.addEventListener("keydown",e=>{if(e.key!=="Escape"||APPVIEW!=="play")return;if(PM_MODAL)APP.pmModalClose();else if(PM_POPUP)APP.pmPopupClose();});}
   if(tab==="combat"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
   if(PM_SKILL_SEARCH){const search=document.querySelector(".pmx-skillsearch");if(search)pmSkillFilter(search);}
   pmDiceSync();
@@ -1492,7 +1499,7 @@ function pmResolveCardHTML(){
      +'<div class="pmx-doneline"><b class="pmx-resolve-d">'+(r.roll===100?"00":esc(String(r.roll)))+'</b><span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span>'
      +'<span class="pmx-donetext">'+what+' '+esc(r.weapon||r.label)+' vs '+(r.opponentAction==="no-parry"?'no defence':esc(r.oppTier))+' &rarr; '
      +(n0>0?'<b class="good">'+esc(picked.join(", "))+'</b>':n0<0?'opponent wins <b class="bad">'+(-n0)+' Special Effect'+(-n0>1?"s":"")+'</b>':'no effects')+'</span></div>'
-     +pmDamageLineHTML(r)
+     +pmDamageLineHTML(r,i)
      +'<div class="pmx-doneacts">'+dmgBtn
      +(canRepeat?again("attack","Attack again")+(w&&!weaponCanParry(w)?'':again("defence","Parry")):'')
      +(r.combatKind==="evade"?'<button type="button" class="pmx-act"'+ro+' onclick="APP.roll(\'std:Evade\')">Evade again</button>':'')
@@ -1542,7 +1549,7 @@ function pmResolveCardHTML(){
 }
 // One Special Effect as a tick row (v0 design): name, a one-line summary,
 // and a "?" that opens the full rule in the side panel.
-function pmFxSummary(text){const t=String(text||"").split(/(?<=\.)\s/)[0];return t.length>120?t.slice(0,117).replace(/\s+\S*$/,"")+"…":t;}
+function pmFxSummary(text){const t=String(text||"").split(/(?<=[a-z0-9)]{2}\.)\s/)[0];return t.length>120?t.slice(0,117).replace(/\s+\S*$/,"")+"…":t;}
 function pmFxToggleHTML(e,r,n){
   const idx=SPECIAL_EFFECTS.indexOf(e),picked=r.effectsPicked||[],count=picked.filter(x=>x===e[0]).length,on=count>0;
   const room=picked.length<n,can=!VIEW_ONLY&&(on||room);
@@ -1590,22 +1597,43 @@ function pmRollDamageFor(r,rng){
   const useDM=w.group!=="Ranged"||w.dmgMod==="Y";
   const dmTxt=useDM?String(dmCalc(effectiveChars().STR,effectiveChars().SIZ)).trim():"";
   const dmTerms=useDM?pmDiceTerms(dmTxt):{dice:[],mod:0};
-  const maxCount=w.natural?0:picks.filter(x=>x==="Maximise Damage").length;
+  // R6: Maximise Damage works with natural weapons too (Core p.98).
+  const maxCount=picks.filter(x=>x==="Maximise Damage").length;
   const wpn=pmRollTerms(pmDiceTerms(w.dmg),rng,maxCount);
+  // R7: Impale rolls the weapon dice twice; the attacker picks one, then adds
+  // the Damage Modifier once (Core pp.97, 110). The better roll is preselected.
   const impale=picks.includes("Impale")?pmRollTerms(pmDiceTerms(w.dmg),rng,maxCount).total:null;
   const dm=dmTerms?pmRollTerms(dmTerms,rng,0).total:null;
-  const d20=1+Math.floor(rng()*20);
-  const loc=(HIT_D20.find(([range])=>{const [a,b]=range.split("-").map(Number);return d20>=a&&d20<=(b||a);})||[])[1]||"";
-  return {weaponDice:w.dmg,weaponRoll:wpn.total,maxed:wpn.maxed,impaleRoll:impale,dmText:useDM?dmTxt:"none",dmRoll:dm,
-    total:Math.max(0,wpn.total+(dm||0)),d20,loc,chooseLocation:picks.includes("Choose Location")};
+  // R8: Choose Location replaces the random roll (Core pp.95–96): no d20.
+  const choose=picks.includes("Choose Location");
+  const d20=choose?null:1+Math.floor(rng()*20);
+  const loc=choose?null:(HIT_D20.find(([range])=>{const [a,b]=range.split("-").map(Number);return d20>=a&&d20<=(b||a);})||[])[1]||"";
+  const d={weaponDice:w.dmg,weaponRoll:wpn.total,maxed:wpn.maxed,impaleRoll:impale,impaleUse:impale!=null&&impale>wpn.total?"second":"first",
+    dmText:useDM?dmTxt:"none",dmRoll:dm,d20,loc,chooseLocation:choose};
+  d.total=pmDamageTotal(d);
+  return d;
 }
-function pmDamageLineHTML(r){
+// The attack's damage before parry and armour: the chosen weapon roll plus
+// one Damage Modifier, never below 0 (Core p.9).
+function pmDamageTotal(d){
+  const w=d.impaleRoll!=null&&d.impaleUse==="second"?d.impaleRoll:d.weaponRoll;
+  return Math.max(0,w+(d.dmRoll||0));
+}
+function pmDamageLineHTML(r,i){
   const d=r.damage;if(!d)return "";
+  const ro=VIEW_ONLY?' disabled':'';
+  const used=d.impaleRoll!=null&&d.impaleUse==="second"?d.impaleRoll:d.weaponRoll;
+  const wpnTxt=d.impaleRoll!=null
+    ?'Impale: '+esc(d.weaponDice)+' rolled twice, <button type="button" class="pmx-mini'+(d.impaleUse!=="second"?" on":"")+'"'+ro+' onclick="APP.playImpaleChoice('+i+',\'first\')">'+d.weaponRoll+'</button> or <button type="button" class="pmx-mini'+(d.impaleUse==="second"?" on":"")+'"'+ro+' onclick="APP.playImpaleChoice('+i+',\'second\')">'+d.impaleRoll+'</button>, using '+used
+    :esc(d.weaponDice)+' = '+d.weaponRoll;
+  const locTxt=d.chooseLocation
+    ?'Choose Location: <select'+ro+' aria-label="Chosen hit location" onchange="APP.playSetDamageLoc('+i+',this.value)"><option value="">pick a location in reach</option>'+PLAY_HP_LOCS.map(l=>'<option'+(d.loc===l?' selected':'')+'>'+l+'</option>').join("")+'</select>'
+    :'d20 '+d.d20+' &rarr; <b>'+esc(d.loc)+'</b>';
   return '<div class="pmx-dmg"><b class="pmx-dmg-n">'+d.total+'</b><div><b>damage</b> <span class="pmx-dim">before parry and armour</span>'
-   +'<div class="pmx-small" style="margin:2px 0 0">'+esc(d.weaponDice)+' = '+d.weaponRoll+(d.maxed?' (maximised ×'+d.maxed+')':'')
+   +'<div class="pmx-small" style="margin:2px 0 0">'+wpnTxt+(d.maxed?' (maximised ×'+d.maxed+')':'')
    +(d.dmRoll==null?(d.dmText==="none"?' · no Damage Modifier':' · add your Damage Modifier'):' · DM '+esc(d.dmText)+' = '+d.dmRoll)
-   +' · d20 '+d.d20+' &rarr; <b>'+esc(d.loc)+'</b>'+(d.chooseLocation?' (or choose, Choose Location)':'')
-   +(d.impaleRoll!=null?' · Impale second roll '+d.impaleRoll+': use the better weapon roll if it gets through armour':'')+'</div>'
+   +' · '+locTxt+'</div>'
+   +(d.impaleRoll!=null?'<div class="pmx-small" style="margin:2px 0 0">Pick the weapon roll now (Core p.97). Leaving the weapon in the wound needs it to get through armour and cause a wound.</div>':'')
    +'<div class="pmx-small" style="margin:2px 0 0">A successful parry blocks by weapon size (Core pp.94–95); armour then reduces what is left.</div></div></div>';
 }
 // Four-step bar above the combat card: Attack → Opponent → Effects → Resolve.
@@ -1618,7 +1646,7 @@ function pmCombatStepsHTML(r){
     if(r.oppTier){done[1]=true;txt[1]=r.opponentAction==="no-parry"?"No defence":r.oppTier;cur=2;
       const n=rollEffectsWon(r),picked=r.effectsPicked||[];
       if(n<=0||picked.length>=n){done[2]=true;txt[2]=n>0?picked.join(", "):n<0?"opponent +"+(-n):"none";cur=3;
-        if(r.damage){done[3]=true;txt[3]=r.damage.total+' dmg · '+r.damage.loc;cur=4;}
+        if(r.damage){done[3]=true;txt[3]=r.damage.total+' dmg · '+(r.damage.loc||'choose location');cur=4;}
         else if(!pmCanRollDamage(r)){done[3]=true;txt[3]="done";cur=4;}}
       else txt[2]=picked.length+' of '+n;}
   }

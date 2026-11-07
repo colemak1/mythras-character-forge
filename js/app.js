@@ -1223,6 +1223,8 @@ window.APP={
  // Phones show one area at a time: stats, skills, or the tabbed panel.
  playTab(t){if(t==="skills"||t==="stats"||t==="body"){PM_VIEW=t;}else if(t==="more"){if(pmActiveTab()==="combat")S.play.tab="magic";PM_VIEW="right";}else{S.play.tab=t;PM_VIEW="right";}render();},
  // Descriptions and secondary detail open in one pop-up (see pmPopupHTML).
+ pmModal(k){PM_MODAL=k==="settings"?"settings":null;render();},
+ pmModalClose(){PM_MODAL=null;render();},
  pmSkillInfo(key){if(!allEntries().some(e=>e.key===key))return;PM_POPUP={k:"skill",key:String(key)};render();},
  pmPopup(k,i){PM_POPUP={k:String(k),i:Number.isInteger(i)?i:null};render();},
  pmPopupClose(){PM_POPUP=null;render();},
@@ -1234,6 +1236,8 @@ window.APP={
    const panel=$("#pm-resolve")||$("#pm-actions");if(panel)panel.scrollIntoView({block:"start"});
  });},
  // The hit location diagram lives on the Body tab.
+ playImpaleChoice(i,which){if(VIEW_ONLY)return;const d=S.rollLog[i]&&S.rollLog[i].damage;if(!d||d.impaleRoll==null||!["first","second"].includes(which))return;d.impaleUse=which;d.total=pmDamageTotal(d);render();},
+ playSetDamageLoc(i,loc){if(VIEW_ONLY)return;const d=S.rollLog[i]&&S.rollLog[i].damage;if(!d||!d.chooseLocation)return;d.loc=PLAY_HP_LOCS.includes(loc)?loc:null;render();},
  playRollDamage(i){if(VIEW_ONLY)return;const r=S.rollLog[i];const d=pmRollDamageFor(r);if(!d)return;r.damage=d;render();},
  playJumpToInjury(){PM_VIEW="body";if(PM_POPUP&&PM_POPUP.k==="log")PM_POPUP=null;render();requestAnimationFrame(()=>{
    const panel=$("#pm-vitals");if(panel)panel.scrollIntoView({block:"start"});

@@ -401,3 +401,8 @@ body.play-mode .sitota-header{display:none}
   .pm-style-stone .pmx-headbtns .pm-btn .lbl{display:none}
   .pm-style-stone .pmx-headbtns .pm-xpbadge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;font:700 10.5px/18px var(--st-body);text-align:center;background:var(--st-accent-2);color:var(--st-on-accent);box-shadow:0 0 0 2px var(--st-header-bg)}
 }
+
+/* Centred window (Settings) */
+.pmx-modal-back{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,14,13,.55)}
+.pmx-modal{width:min(480px,100%);max-height:min(85vh,720px);display:flex;flex-direction:column;background-color:var(--pmx-surface);background-image:var(--st-noise,none);border:1px solid var(--st-line-strong,var(--pmx-line));border-radius:3px;box-shadow:0 20px 50px rgba(0,0,0,.4);overflow:hidden}
+.pmx-modal .pmx-popbody{overflow-y:auto}

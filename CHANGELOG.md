@@ -5,6 +5,19 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode: damage roll rule fixes, corrected skill summaries, centred Settings
+
+- **Damage roll, checked against the rulebook by ChatGPT (#170):**
+  - **Maximise Damage** now works with natural weapons such as Unarmed (Core p.98).
+  - **Impale** shows both weapon rolls. Pick one; the total is that roll plus your Damage Modifier once (Core pp.97, 110).
+  - **Choose Location** gives you a location picker instead of rolling a d20 (Core pp.95–96).
+- **Skill summaries:**
+  - **Brawn** gains its +1 SIZ per 10% carrying bonus.
+  - **Courtesy**: a fumble *may* give offence.
+  - **Literacy** is capped by your skill in that language.
+  - **Exhort** and **Folk Magic** now have page references (pp.178 and 121).
+- **Settings** opens in the middle of the screen rather than in the side panel.
+
 ## Play Mode: race under the name, Settings menu, cleaner skill rows
 
 - Under the character's name: **race**, culture and career. The campaign name is gone.
