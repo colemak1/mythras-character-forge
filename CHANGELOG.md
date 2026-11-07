@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: shield strikes and shield Bash
+
+- Fighters with a shield can now **strike with it** for 1 AP. Each of the eight Core shields uses its own damage, Size and effects: Bash for all, Stun Location for most, Impale for the Target.
+- **Shield Bash** pushes 1m for every two full points of damage before parry and armour; bludgeons stay at three.
+- A Bash into the ring's barrier now lets you use Acrobatics instead of Athletics if it's better.
+
 ## The Pits: tied Initiative acts concurrently
 
 - When both fighters have the same Initiative, they now act at the same time (Core p.90). The game still shows one turn after the other, alternating who declares first each cycle, but nothing done in the first turn can stop the second fighter's action that cycle. A fighter who is dropped in the first turn still gets their blow in, and if both fall it's a draw.
