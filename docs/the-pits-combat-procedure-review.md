@@ -286,3 +286,13 @@ Tests: `tests/practice-shield.cjs` (12), plus a 3,000-bout computer-vs-computer 
 - **Arena bounds:** exactly **two humanoid fighters**. A multi-holder grapple, third-party rescue, giant creature limbs or natural armaments with unusual effects are not silently claimed as covered. Label any simulation simplification or persistent possession restriction as an **arena convention**, not Mythras Core.
 - **Tests:** fixed dice for strike damage/DM, Size mismatches including an earned defensive Special Effect despite 0 absorption, eligible/disabled limbs, a won Grip with no extra roll, four possible Brawn/Unarmed escape pairings, a separate full grapple and DM-only squeeze, 0/1 AP Flurry, and Take Weapon on both offensive/defensive sides with STR exactly 2× and 2×+1. No local Node suite or live browser test ran for this docs-only source audit.
 
+### PR #191 shield-convention source check (printed Core)
+
+| Arena convention | Verdict | Page-cited distinction |
+|---|---|---|
+| Shield uses its own **Short Reach** for a strike, including optional significant-Reach comparisons | **PASS / ARENA MODEL** | Core p.63 assigns each shield Short Reach; pp.105–106 distinguish the actual striking item's reach and the optional rule's two-or-more-category disparity. Context-based engagement distance is an arena representation; don't silently treat an equipped longer *other* weapon as giving the shield longer reach. |
+| An Impaling **Target shield** deliberately left in the wound is **lost for the rest of the bout** | **CORE EXCEPTION — LABEL AS ARENA CONVENTION** | Core p.63 grants Target Impale. Core p.97 permits leaving an impaling weapon embedded, **but also permits later retrieval** by Ready Weapon plus the required Brawn test. A blanket permanent-bout loss is **not** what Core requires. Existing Pits behavior may be retained only as an explicitly marked, Pits-only simplification; do not promote it to a general Sit'ota rule or an unqualified Core PASS. |
+| After shield Bash into a barrier, the arena automatically uses the higher of **Athletics or Acrobatics** | **PASS / CHOICE CONVENTION** | Core p.96 allows either skill at Hard for an obstacle. Choosing the higher eligible **effective** skill for an AI is not contrary to that allowance, but the book does not mandate that choice. Avoid mislabelling the automatic selection as a Core rule; let player input take priority if that control is ever offered. |
+
+The long-form decision is also in `docs/decisions.md`. No shield code change is requested by this source glance; the Target-shield convention must remain visibly differentiated from a rules-as-written claim.
+
