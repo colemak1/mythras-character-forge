@@ -9,7 +9,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 - Owner-only (g)–(i), hazard tables, Settings colour switch, skill description and Dagger→Impale→Roll damage all PASS. Natural ER17+INT16 gained+3; maiming2HP and Luck refill persisted. Three live screenshots: `docs/advancement-stone-live-20261106.md`.
 - Both fixtures deleted and absence checked after reload. Older #172 campaign also absent. Original Verdigris restored. No code changes; all33 scripts pass.
-- UI observations for Claude: Finish picker omits new campaign despite working rule; Notes wraps at1363px; dice tray retains attack result after damage. Progress4/8 pending Claude closeout.
+- UI observations for Claude: Finish picker omits new campaign despite working rule; Notes wraps at1363px; dice tray retains attack result after damage. Preserves Claude closeout #173 and progress5/8.
+
+## Subsystem 4 closed: Advancement, hazards and recovery (5/8)
+
+- The final live checks (#172) passed: the 1d6+1 campaign option, the Passion helper, permanent-injury maximum HP and the new-session Luck refill, each surviving a reload. Together with steps (a)–(f) (#164), source checks and regression tests, Subsystem 4 is closed. Progress is now **5/8**.
+- One leftover: a disposable test campaign may still be listed; delete it if so. The new Play Mode look still needs its own live walkthrough.
 
 ## 2026-11-06 — Subsystem 4 final focused live gates pass
 

@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by ChatGPT (Work), retaining newer Claude work_
+_Last updated: 2026-11-06 by ChatGPT (Work), preserving Claude closeout #173_
 
 ## Priorities
 
@@ -10,17 +10,17 @@ _Last updated: 2026-11-06 by ChatGPT (Work), retaining newer Claude work_
 
 1. **Subsystem 8 critical work:** security fix merged (PR #130). Migration `20261106120000_gm_private_state_and_assignment_checks.sql` **ran successfully live** with an owner-private safety copy. Verification: table `campaign_gm_state`, 1 private row, 0 campaigns retaining old session state. Multi-account acceptance remains outstanding and was excluded from the latest owner-only session.
 2. **Play Mode UX: done**, now in the v0 "Stone & Verdigris" look (2026-11-07; earlier: PRs #133–#137, then layout v2 from the owner's sketch: one-screen columns and a D&D Beyond-style side panel, 2026-11-06): layout, physics dice tray, combat flow, skill search and pins, Body tab, tips, Gear and Notes. The theme lives in `play-clean.css` under `data-pm-style="clean"`, so a future player style picker only swaps token sets. Owner-only live pass recorded in `docs/play-mode-live-acceptance-20261105.md`: desktop overflow and incomplete result compaction fail; numerical Core spot-checks pass; terminal Fatigue labels need correction. Exact 390px phone pass remains unverified (browser limitation).
-3. **Subsystem 5 Combat: CLOSED 2026-11-06** (progress **4/8**). **Subsystem 4 final live gates (g)–(i) PASS on the new Stone deployment**, repeating #172: optional1d6+1 ER gained+3, Passion floor0/reload, maiming2HP/reload, Luck refill; saved account reopen retains all. New desktop Settings/colour, skill description and Impale damage flow PASS. See `docs/advancement-stone-live-20261106.md` and screenshots. Both new fixtures deleted/reload checked; older #172 campaign also absent. Claude to review/close S4 (then5/8); currently OPEN.
+3. **Subsystem 4 Advancement: CLOSED (#173); Subsystem 5 Combat: CLOSED. Progress 5/8.** Fresh new-Stone owner pass also confirms (g)–(i), hazards and requested desktop controls: `docs/advancement-stone-live-20261106.md` (three screenshots). Both fixtures deleted/reload verified; #172 campaign also absent. Next subsystem audits: 6 (Magic, low priority per owner), 7 (creatures), 8 (campaign/multi-account; critical items done).
 
-Practice Combat features remain paused. Progress **4/8**.
+Practice Combat features remain paused. Progress **5/8**.
 
 ## In progress
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
+| New desktop live acceptance | ChatGPT (Work) → Claude | docs/s4-stone-live | All requested checks PASS;33 scripts pass. Review UI observations in `docs/advancement-stone-live-20261106.md`: Finish picker omits new campaign, Notes wraps, damage tray retains attack result. |
 | Skill summary + damage helper Core audit | ChatGPT (Chat) → Claude | `docs/play-skill-info-damage-core-review` (docs-only PR) | All **58** `SKILL_INFO` entries and all **10** damage cases source checked. Corrections: 3 substantive skill summaries, 2 magic citations; **R6, R7, R8** code/copy fixes. No tests or app code changed. Keep progress **4/8**. |
 | Play Mode hazard/recovery wording audit | ChatGPT (Chat) → Claude | `docs/subsystem4-hazard-note-source-review-20261106` docs-only PR | Audited printed Core pp.68,71,74–85. `docs/advancement-hazard-notes-review.md` identifies incorrect/ambiguous or absent popup phrasing with compact suggested copy. **All treatment/damage decisions remain GM-assisted; no production code or tests edited.** |
-| Advancement final + new desktop pass | ChatGPT (Work) → Claude | `docs/s4-stone-live` docs-only PR | (g)–(i), hazards, Settings/colour, skill description and Impale damage flow PASS on play56772afe28/app9772b7a37c. Both fixtures deleted/reload verified;33 scripts pass. Three screenshots in `docs/advancement-stone-live-20261106.md`. |
 | Combat Batch 3 focused acceptance | ChatGPT (Work) → Claude | #150 verified; docs PR follows | All 4 groups PASS. Earlier Knockback failure retracted; no extra starting metre. Screenshot confirms table fit. Throwaway deleted/reload checked; 28 scripts pass. |
 | Combat Batch 2 live acceptance | ChatGPT (Work) → Claude | PR #144 verified; docs PR follows | All five requested check groups passed. Evidence and fumble-scope caveat: `docs/combat-batch2-live-acceptance-20261106.md`. Disposable fixture deleted; absence confirmed after reload. All 27 local test scripts passed. No code changed. |
 | Play Mode live re-check | ChatGPT (Work) | after the fixes PR | Retest: no page scroll at your desktop size; finished combat roll is one card with Attack again / Parry; Comatose/Dead wording; tabs on one line. Exact phone width: the owner checks on a real phone |
@@ -31,8 +31,7 @@ Practice Combat features remain paused. Progress **4/8**.
 ## Waiting on someone
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **Claude:** review `docs/advancement-stone-live-20261106.md`, then decide S4 closeout. New deployment (g)–(i) PASS; all fixtures absent after reload, including #172 campaign. Review small UI observations: new campaign missing from Finish picker, Notes wraps, damage tray retains attack result.
-- **Owner:** send Claude the v0 zip for the new UI (the earlier message arrived without it).
+- **Cleanup resolved (Work):** #172 Disposable S4 Final Campaign absent from owner list; new Stone character and campaign both deleted and absent after reload.
 - **v0 (design):** delivered the "Stone & Verdigris" Play Mode design; Claude built it (this PR: `play-stone.css`, five colour schemes, contour body figure, four-step combat bar, five phone sections; physics dice docked in the side panel per owner). Next v0 brief only when the owner wants another screen.
 - **Done (Claude):** #170 merged; R6/R7/R8 and the five skill-summary corrections implemented with tests (see the end of `docs/play-mode-damage-roll-cases.md`).
 - **Done (Work):** new desktop menu/Settings colour switch, body figure, Athletics description and natural Dagger→Impale→Roll damage checked. Dice tray stays right and retains attack result after damage; no Critical occurred. Full observations/screenshots in `docs/advancement-stone-live-20261106.md`.
