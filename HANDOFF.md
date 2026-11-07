@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-06 by Claude_
+_Last updated: 2026-11-06 by ChatGPT (Work)_
 
 ## Priorities
 
@@ -10,7 +10,7 @@ _Last updated: 2026-11-06 by Claude_
 
 1. **Subsystem 8 critical work:** security fix merged (PR #130). Migration `20261106120000_gm_private_state_and_assignment_checks.sql` **ran successfully live** with an owner-private safety copy. Verification: table `campaign_gm_state`, 1 private row, 0 campaigns retaining old session state. Multi-account acceptance remains outstanding and was excluded from the latest owner-only session.
 2. **Play Mode UX: done** (PRs #133–#137, then layout v2 from the owner's sketch: one-screen columns and a D&D Beyond-style side panel, 2026-11-06): layout, physics dice tray, combat flow, skill search and pins, Body tab, tips, Gear and Notes. The theme lives in `play-clean.css` under `data-pm-style="clean"`, so a future player style picker only swaps token sets. Owner-only live pass recorded in `docs/play-mode-live-acceptance-20261105.md`: desktop overflow and incomplete result compaction fail; numerical Core spot-checks pass; terminal Fatigue labels need correction. Exact 390px phone pass remains unverified (browser limitation).
-3. **Subsystem 5 Combat: CLOSED 2026-11-06** (progress **4/8**). Evidence and decision are in `combat-closeout-review.md`. **Now: Subsystem 4 (Advancement, hazards and recovery)**: Claude adds regression tests for the "Pass (code)" rows, the owner decides the two optional extras, then Work runs one live pass.
+3. **Subsystem 5 Combat: CLOSED 2026-11-06** (progress **4/8**). Evidence and decision are in `combat-closeout-review.md`. **Now: Subsystem 4 (Advancement, hazards and recovery)**: owner-only live steps **(a)–(f) PASS**, including maintenance/atrophy, fumble-before-ER, mentor lock/unlock, 3-roll learning and Serious/Major recovery/treatment, with reload after every step. See `docs/advancement-live-acceptance-20261106.md`. Disposable deleted/reload checked; 32 scripts pass. Added campaign-option step (g) was outside the requested pass and remains unverified. Claude to reconcile remaining closeout evidence. Subsystem 4 OPEN.
 
 Practice Combat features remain paused. Progress **4/8**.
 
@@ -19,7 +19,7 @@ Practice Combat features remain paused. Progress **4/8**.
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
 | Play Mode hazard/recovery wording audit | ChatGPT (Chat) → Claude | `docs/subsystem4-hazard-note-source-review-20261106` docs-only PR | Audited printed Core pp.68,71,74–85. `docs/advancement-hazard-notes-review.md` identifies incorrect/ambiguous or absent popup phrasing with compact suggested copy. **All treatment/damage decisions remain GM-assisted; no production code or tests edited.** |
-| Advancement reconciliation (start) | ChatGPT (Chat) → Claude | `docs/advancement-reconciliation.md` in same docs-only PR | Existing 216-case inventory summarized against `docs/subsystem-plan.md`. Training/passion/recovery live gaps and two optional choices remain; Subsystem 4 OPEN. |
+| Advancement live acceptance | ChatGPT (Work) → Claude | docs-only PR follows | Requested (a)–(f) all PASS on #163 stamps; final account reopen retains correct pool/history/HP. One disposable deleted/reload verified. 32 local scripts pass. Added (g) remains untested. |
 | Combat Batch 3 focused acceptance | ChatGPT (Work) → Claude | #150 verified; docs PR follows | All 4 groups PASS. Earlier Knockback failure retracted; no extra starting metre. Screenshot confirms table fit. Throwaway deleted/reload checked; 28 scripts pass. |
 | Combat Batch 2 live acceptance | ChatGPT (Work) → Claude | PR #144 verified; docs PR follows | All five requested check groups passed. Evidence and fumble-scope caveat: `docs/combat-batch2-live-acceptance-20261106.md`. Disposable fixture deleted; absence confirmed after reload. All 27 local test scripts passed. No code changed. |
 | Play Mode live re-check | ChatGPT (Work) | after the fixes PR | Retest: no page scroll at your desktop size; finished combat roll is one card with Attack again / Parry; Comatose/Dead wording; tabs on one line. Exact phone width: the owner checks on a real phone |
@@ -30,7 +30,7 @@ Practice Combat features remain paused. Progress **4/8**.
 ## Waiting on someone
 
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
-- **ChatGPT (Work):** Subsystem 4 owner-only live pass, steps (a)–(g) in `docs/advancement-reconciliation.md` (Claude review and update).
+- **Claude:** review/merge `docs/advancement-live-acceptance-20261106.md`: requested (a)–(f) complete, all PASS. Reconcile the remaining gate; added campaign-option (g) was outside this owner-requested pass. Request only any remaining focused check, not another full pass.
 - **v0 (design):** briefed by the owner; mockups only. Claude rebuilds the chosen design (see `AGENTS.md`).
 - **Hazard notes:** ChatGPT's source audit (#161) is implemented with tests (`tests/hazard-notes.cjs`). Work can glance at Body → Hazards and recovery during its Subsystem 4 pass.
 - **ChatGPT (Chat):** Combat closeout map and missing child cases delivered in docs-only PR; `docs/advancement-reconciliation.md` begins Subsystem 4. Further S4 source/test reconciliation follows Claude's Combat closeout review.

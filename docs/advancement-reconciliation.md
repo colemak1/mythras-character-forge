@@ -50,3 +50,10 @@ Both have tests (`tests/advancement-options.cjs`). What remains for Subsystem 4 
 ## Play Mode hazard note source review (ChatGPT, 2026-11-06)
 
 Read `docs/advancement-hazard-notes-review.md` for a page-verified audit of the actual Body → Hazards popup. The review covers Acid (printed Core p.68), asphyxiation/blood loss (p.71), disease and poison (pp.74–75), falls/sleep (p.78), fire/exertion (p.79) and healing (p.80). Its compact wording recommendations remain GM-assisted and do not request automated hazard timers. Claude to review and, if approved, fix prose in a separate code PR. This source review does **not** count as the still-outstanding owner-only live Subsystem 4 pass or optional owner decisions. **Progress 4/8.**
+
+
+## Owner-only live evidence — 2026-11-06
+
+Requested Claude-review steps **(a)–(f) all PASS**: [full live report and screenshot](advancement-live-acceptance-20261106.md). One disposable character; no accounts created or campaign rules changed. Immediate reloads use the offered same-owner recovery draft; final account reopen confirms correct skills, pool and wounds. Natural Experience Rolls **76** and **54**; pool ends **2**, Athletics **54%**, newly learned Acrobatics **28%**. Serious Chest −2→0 over one week; Major Arm −5 unchanged without treatment, −3 after confirmed monthly treatment. Disposable deleted and absence checked after reload; all **32** local scripts pass.
+
+The later-added campaign-option **(g)** was outside the owner's requested (a)–(f) pass and remains unverified. Retain Subsystem 4 OPEN and overall **4/8** pending Claude's remaining-gate review; this is not a new full source audit or automatic closeout.

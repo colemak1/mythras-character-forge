@@ -331,3 +331,8 @@ Mapped against the code after PR #124. Claude re-checked Core pp.73 (training ta
 
 - Campaign option for 1d6+1 skill improvement (X14).
 - Passion shift helper: pick Weak, Moderate or Strong and roll (X19).
+
+
+## Subsystem 4 live acceptance — 2026-11-06
+
+See [owner-only live report](advancement-live-acceptance-20261106.md): requested reconciliation steps **(a)–(f) all PASS**, including characteristic maintenance/atrophy across awards, fumble +1 before ER, mentor +25/re-training gate and unlock, new Professional Skill for 3 rolls, Serious weekly and Major treated monthly recovery, and reload after each. Latest state also retained on saved account reopen; one disposable deleted and absence verified after reload. All 32 local scripts passed; no code changed. This evidence covers the exercised branches, not all 216 cases; added campaign-option (g) remains untested. Subsystem 4 OPEN, overall 4/8.
