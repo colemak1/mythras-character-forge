@@ -8,11 +8,13 @@ window.readPracticeCharacter=function(){
     const p=JSON.parse(raw),locs=['Head','Chest','Abdomen','Right Arm','Left Arm','Right Leg','Left Leg'];
     const integer=(n,min,max)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
     const label=n=>typeof n==='string'&&n.length<=200;
+    // Any arena key (the arena itself skips keys it does not know).
+    const key=k=>typeof k==='string'&&/^[a-z0-9-]{1,40}$/.test(k);
     if(p.version!==1||!label(p.name)||!label(p.player)||!integer(p.apMax,1,20)||!integer(p.init,0,100)||!integer(p.armourInitPenalty,0,100))throw Error('invalid profile');
     if(!['STR','SIZ','CON','DEX','INT'].every(k=>integer(p.chars?.[k],1,100))||p.chars.STR+p.chars.SIZ>130)throw Error('invalid characteristics');
     if(!locs.every(l=>integer(p.hp?.[l],1,999)&&integer(p.armour?.[l],0,100)))throw Error('invalid locations');
     if(!['Evade','Brawn','Endurance','Athletics','First Aid','Willpower'].every(k=>integer(p.skills?.[k],0,10000)))throw Error('invalid skills');
-    if(!Array.isArray(p.styles)||p.styles.length>100||!p.styles.every(s=>label(s.key)&&label(s.name)&&integer(s.percent,0,10000)&&Array.isArray(s.traits)&&s.traits.every(label)&&Array.isArray(s.weapons)&&s.weapons.every(w=>label(w.name)&&['sword','spear','mace','dagger','greatsword'].includes(w.key))&&Array.isArray(s.shields)&&s.shields.every(w=>label(w.name)&&['buckler','heater','hoplite'].includes(w.key))))throw Error('invalid styles');
+    if(!Array.isArray(p.styles)||p.styles.length>100||!p.styles.every(s=>label(s.key)&&label(s.name)&&integer(s.percent,0,10000)&&Array.isArray(s.traits)&&s.traits.every(label)&&Array.isArray(s.weapons)&&s.weapons.every(w=>label(w.name)&&key(w.key))&&Array.isArray(s.shields)&&s.shields.every(w=>label(w.name)&&key(w.key))))throw Error('invalid styles');
     if(!Array.isArray(p.unsupportedGear)||!p.unsupportedGear.every(label))throw Error('invalid equipment');
     return p;
   }catch(e){return {error:'Your practice character could not be loaded. Return to My Characters and choose Practice Combat again.'};}

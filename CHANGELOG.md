@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: every melee weapon and shield works with saved characters
+
+- Bringing a saved character into The Pits only accepted the five original weapons (Broadsword, Shortspear, Mace, Dagger, Greatsword) and three shields (Buckler, Heater, Hoplite). A character with any other weapon or shield got "could not be loaded". All 35 supported Core melee weapons and all 8 shields now load and fight.
+- New regression test in `tests/practice-character.cjs` builds a real saved character carrying every supported melee weapon and shield, and starts a bout with each one.
+
 ## The Pits: fixes from ChatGPT's live check
 
 From the live acceptance in #196:

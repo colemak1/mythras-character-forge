@@ -323,7 +323,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>The Pits</span><a href="../index.html#/the-pits">Choose a character</a><a href="#" id="homeLink">Reset</a></div></header>
 <main class="main" id="root"></main>
 <script src="../js/data.js?v=ea343c2e36"></script>
-<script src="practice-character.js?v=19ba1929b4"></script>
+<script src="practice-character.js?v=0c0d2375a0"></script>
 <script src="practice-guidance.js?v=3bb978cd88"></script>
 <script src="pits-view.js?v=766aacde41"></script>
 <script src="pits-game.js?v=1d86e29baf"></script>
@@ -653,7 +653,9 @@ function applyPracticeLoadout(){
  if(practiceCharacter.error)return false;
  const style=selectedPracticeStyle();
  if(!style?.weapons.length)return false;
- if(!style.weapons.some(w=>w.key===config.weapon))config.weapon=style.weapons[0].key;
+ if(!style.weapons.some(w=>w.key===config.weapon&&ARENA_WEAPONS[w.key]))config.weapon=(style.weapons.find(w=>ARENA_WEAPONS[w.key])||{}).key;
+ if(!ARENA_WEAPONS[config.weapon])return false;
+ if(config.shield!=='none'&&!SHIELDS[config.shield])config.shield='none';
  if(ARENA_WEAPONS[config.weapon].twoHanded||!style.shields.some(w=>w.key===config.shield))config.shield='none';
  const p=practiceCharacter,c=p.chars;
  Object.assign(config,{charname:p.name,username:p.player,style:style.percent,evade:p.skills.Evade,firstAid:p.skills['First Aid'],willpower:p.skills.Willpower,str:c.STR,siz:c.SIZ,con:c.CON,dex:c.DEX,int:c.INT});
