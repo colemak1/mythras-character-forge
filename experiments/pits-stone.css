@@ -259,3 +259,4 @@ body.pits-stone #root .choice,body.pits-stone #root .choice.gold{outline:0;box-s
 body.pits-stone #root .choice:focus-visible{outline:2px solid var(--p-accent);outline-offset:2px}
 body.pits-stone #root .track label{color:var(--p-dim)}
 body.pits-stone #root .pits-turn-name{font-size:16px}
+body.pits-stone #root .pits-why{font:600 11px var(--p-body);letter-spacing:.04em;color:var(--p-minor)}

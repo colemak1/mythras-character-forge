@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: prompt follows the fight (v0 design, step 2)
+
+- The pill at the top of the middle column now names the moment: Your turn, Defend, Special Effects, Resist, Roll or Opponent.
+- Actions you can't take right now stay on screen and say why ("Needs 1 AP", "Out of reach", "Not prone", "No reach to contest"). Delay is tagged "Holds 1 AP".
+- Behind the scenes, a small read-only view adapter (`experiments/pits-view.js`) turns the fight's state into what the screen shows, so later rules fixes don't touch the look. No rules changed.
+
 ## The Pits: Stone look (v0 design, step 1)
 
 - The Pits now looks like Play Mode: the same stone panels, Cinzel headings and colour scheme (it follows the scheme picked in Play Mode's Settings).

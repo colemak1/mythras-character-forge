@@ -39,7 +39,8 @@ const sandbox = {
   setInterval,
   clearInterval,
 };
-const guidance = fs.readFileSync(path.join(__dirname, '../experiments/practice-guidance.js'), 'utf8');
+const guidance = fs.readFileSync(path.join(__dirname, '../experiments/practice-guidance.js'), 'utf8') + '\n' +
+  fs.readFileSync(path.join(__dirname, '../experiments/pits-view.js'), 'utf8');   // loaded by the page before the arena script
 const sharedData = fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'); // the arena loads ../js/data.js first
 const api = vm.runInNewContext(sharedData + '\n' + guidance + '\n' + match[1] +
   '\n;({startRun, render, state: () => S, resetRoll: () => { R = null; V.busy = false; }, setRoll: value => { R = value; }, availableEffects, d100Dice, rollSummary})',

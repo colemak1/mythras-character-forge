@@ -316,7 +316,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .recovery-options{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 0 16px;border-bottom:1px solid #9d876145;margin-bottom:10px}.recovery-options button{padding:9px 13px;border:1px solid #af9972;border-radius:2px;background:transparent;color:inherit;cursor:pointer;font:600 12px system-ui}.recovery-options button:disabled{opacity:.45;cursor:not-allowed}.recovery-options small{font:11px/1.5 system-ui;color:#b6a48c;max-width:330px}
 
 </style>
-<link rel="stylesheet" href="pits-stone.css?v=bb0469bb17">
+<link rel="stylesheet" href="pits-stone.css?v=ad6bb24583">
 <link rel="stylesheet" href="practice-combat-ux.css?v=bda12b759c">
 </head>
 <body>
@@ -325,6 +325,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 <script src="../js/data.js?v=ea343c2e36"></script>
 <script src="practice-character.js?v=19ba1929b4"></script>
 <script src="practice-guidance.js?v=3bb978cd88"></script>
+<script src="pits-view.js?v=2e8e78eb3a"></script>
 <script>
 'use strict';
 const HIT_LOCS=['Head','Chest','Abdomen','Right Arm','Left Arm','Right Leg','Left Leg'];
@@ -1599,11 +1600,18 @@ function applyPitsTheme(){
 }
 // Option cards: show an action's AP cost as a corner tag (display only).
 function decoratePitsChoices(){
+ // Disabled options keep their label and say why (from the view adapter).
+ const id=S.phase==='fight'&&!S.pending&&!R?S.order?.[S.turnIndex]:null;
+ const why=id?Object.fromEntries(pitsLegalActions(id).filter(a=>!a.enabled).map(a=>[a.act,a.reason])):{};
+ document.querySelectorAll('.choice[disabled][data-act]').forEach(b=>{
+  const r=why[b.dataset.act];if(!r||b.querySelector('.pits-why'))return;
+  const tag=document.createElement('span');tag.className='pits-why';tag.textContent=r;b.append(tag);
+ });
  document.querySelectorAll('.choice > strong').forEach(st=>{
   if(st.dataset.pitsTag)return;st.dataset.pitsTag='1';
-  const m=/^(.*?)\s*·\s*(?:hold\s+)?(\d+ AP|Free|No AP)\s*$/.exec(st.textContent||'');
+  const m=/^(.*?)\s*·\s*(hold\s+)?(\d+ AP|Free|No AP)\s*$/.exec(st.textContent||'');
   if(!m)return;st.textContent=m[1];
-  const tag=document.createElement('span');tag.className='pits-tag';tag.textContent=m[2];st.parentElement.prepend(tag);
+  const tag=document.createElement('span');tag.className='pits-tag';tag.textContent=(m[2]?'Holds ':'')+m[3];st.parentElement.prepend(tag);
  });
 }
 function render(){if(V.capturing)return;applyPitsTheme();const setup=S.phase==='setup';$('#root').innerHTML=`<section class="mast"><div><div class="eyebrow">NEW SIT’OTA / THE PITS</div><h1>The Pits</h1>${setup?'<p>Test · Learn · Survive</p>':''}</div><div class="header-actions">${!setup?`<span class="pill">${esc(modeName(S.mode))}</span>${guidanceToggleHtml()}<button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Standard pace'}</button><button class="toolbutton" data-act="reset">Exit battle</button>`:`<span class="pill">Rules prototype v23 · Turn scheduling</span>`}</div></section>${setup?setupHtml():S.phase==='intro'?opponentIntroHtml():arenaHtml()}${!setup?resultModalHtml():''}${!setup?meleeEffectReference():''}<details class="footer-notes"><summary>Prototype rules and limitations</summary><p>Forge characters enter through My Characters using a temporary practice copy. Simplified melee, reactions, sourcebook-gated Special Effects, wounds, initiative and optional reach. Implemented: sourcebook-derived AP (INT+DEX), hit-location HP (CON+SIZ), initiative bonus (average INT/DEX), mixed-location armour and armour ENC penalty, weapon/shield Size parries, shield wards, STR+SIZ Damage Modifier, and Withdraw. Still simplified: unarmed grapples, complex terrain for Bash beyond a 6m training-ring clearance, Luck and long-term natural recovery over days/weeks; exertion Fatigue uses Core pp.78–79 and Hardcore rest uses training-arena pacing. Delay holds an AP for an available reaction until the next turn. Tied initiative acts concurrently: the turns are shown one after the other, alternating who declares first, and the first cannot stop the second (Core p.90). Interrupt is not implemented. A short separated gap can be re-engaged without a Move AP; beyond 3m the training prototype charges 1 AP. Hardcore First Aid restores partial function after Serious Wounds, but not HP. Major Wounds remain incapacitating. Source: uploaded Mythras 2e Core, pp. 9, 37–38, 58, 63–64, 90–110; Special Effects summary and descriptions pp. 95–101.</p></details>`;if(!setup){document.querySelectorAll('.choice small').forEach(n=>{const b=n.closest('button');if(b){b.title=n.textContent;b.dataset.help=n.textContent;b.setAttribute('aria-label',(b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;decoratePitsChoices();mountDiceTray();focusActiveDecision();}}
@@ -1822,9 +1830,10 @@ function combatNarrationHtml(){
 function pitsTurnCellHtml(){
  if(S.phase!=='fight')return `<div class="pits-turn"><span class="pits-pill">${S.phase==='between'?'Won':'Bout over'}</span></div>`;
  const id=currentDecisionOwner()||S.order?.[S.turnIndex],f=S.fighters[id];if(!f)return '';
- const mine=f.kind==='human',p=S.pending;
+ const phase=pitsPhase(),mine=phase!=='opponent',p=S.pending;
  const what=R?'Rolling':p?.kind==='reaction'?'Reacting':p?.kind==='effect'?'Special Effects':p?'Deciding':mine?'Choose an action':'Thinking';
- return `<div class="pits-turn"><span class="pits-pill${mine?'':' foe-p'}">${mine?(S.mode==='pvp'?esc(f.name)+'’s turn':'Your turn'):'Opponent'}</span><strong class="pits-turn-name">${esc(f.name)}</strong><span class="pits-turn-hint">${what} · ${f.ap} AP left</span></div>`;
+ const pill=phase==='action'&&S.mode==='pvp'?esc(f.name)+'’s turn':PITS_PHASE_PILL[phase]||'Your turn';
+ return `<div class="pits-turn"><span class="pits-pill${mine?'':' foe-p'}" aria-live="polite">${pill}</span><strong class="pits-turn-name">${esc(f.name)}</strong><span class="pits-turn-hint">${what} · ${f.ap} AP left</span></div>`;
 }
 function pitsRangeTrackHtml(range){
  const r=engagementInfo(),now=S.disengaged?'apart':!r.active?'even':S.engagement==='short'?'short':'long';
