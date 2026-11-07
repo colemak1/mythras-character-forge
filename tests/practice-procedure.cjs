@@ -19,7 +19,8 @@ const logs=()=>JSON.parse(run('JSON.stringify(S.logs.map(l=>l.title+" :: "+l.bod
 function setup(atkWeapon){
  run(`(()=>{startRun();R=null;V.busy=false;const a=S.fighters.a,b=S.fighters.b;b.kind='human';
   a.weapon=${JSON.stringify(atkWeapon)};b.weapon='sword';a.str=13;a.siz=13;b.siz=10;b.athletics=50;b.endurance=40;
-  for(const f of [a,b]){ensureEffectState(f);f.armourLocations=Object.fromEntries(HIT_LOCS.map(l=>[l,0]));f.armor=0;f.prone=false;f.disarmed=false;f.impaledWeapon=null;
+  for(const f of [a,b]){f.weaponGuard=null;ensureEffectState(f);   // durability must follow the weapon set above, not the random starting one
+  f.armourLocations=Object.fromEntries(HIT_LOCS.map(l=>[l,0]));f.armor=0;f.prone=false;f.disarmed=false;f.impaledWeapon=null;
    for(const l of HIT_LOCS){f.hp[l]=100;f.maxHp[l]=100;}}
   S.phase='fight';S.disengaged=false;S.ringClearance={a:6,b:6};S.gapMetres=0;S.logs=[];})()`);
 }
