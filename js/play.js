@@ -984,13 +984,22 @@ const PM_PHONE_ICONS=Object.fromEntries(Object.entries({
   body:'<circle cx="12" cy="5" r="2.5"/><path d="M7 21l2-9-3-3M17 21l-2-9 3-3M9 12h6"/>',
   skills:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
   combat:'<path d="M5 19L19 5M14 5h5v5M5 5l14 14"/>',
-  more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'
+  more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  home:'<path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/>'
 }).map(([k,d])=>[k,'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>']));
 // Colour schemes for the Stone style (v0 design). Per device, like the
 // animated-dice preference: it is a display choice, not character data.
 const PM_COLORWAYS=[["verdigris","Verdigris","Cool grey stone, verdigris green and bronze."],["ember","Basalt & Ember","Warm grey stone, forge orange and brass."],["indigo","Sandstone & Indigo","Warm sandstone, deep indigo and copper."],["moss","Moss & Gold","Lichen stone, moss green and old gold."],["basalt","Basalt (dark)","Dark basalt for dim tables."]];
 function pmColorway(){let v=null;try{v=localStorage.getItem("pm-colorway");}catch(e){}return PM_COLORWAYS.some(c=>c[0]===v)?v:"verdigris";}
 function pmSetColorway(k){if(!PM_COLORWAYS.some(c=>c[0]===k))return;try{localStorage.setItem("pm-colorway",k);}catch(e){}render();}
+// Play Mode hides the site's top bar (owner, 2026-11-07); one menu button in
+// the character header opens the same links. Phones also get Home in the
+// bottom bar.
+const PM_SITE_LINKS=[["#/","Home"],["#/my-characters","Characters"],["#/my-campaigns","Campaign"],["#/wiki","Rules"],["#/world/welcome","World Guide"],["#/account","Account"]];
+function pmSiteMenuHTML(){
+  return '<details class="pmx-sitemenu"><summary aria-label="Site menu" title="Site menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>'
+   +'<nav class="pmx-sitemenu-list" aria-label="Site navigation">'+PM_SITE_LINKS.map(([href,l])=>'<a href="'+href+'">'+l+'</a>').join("")+'</nav></details>';
+}
 function pmStyleHTML(){
   const cur=pmColorway();
   return '<p class="pmx-small" style="margin-top:0">Changes the colours of Play Mode on this device only.</p><div class="pmx-cwlist">'
@@ -1362,7 +1371,7 @@ function renderPlayView(){
   const initials=name.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join("")||"?";
   const scroll=pmSaveScroll();
   let h='<div class="pm-wrap pmx pmx-dash" data-pm-style="stone" data-view="'+(PM_VIEW==="right"?"right":PM_VIEW)+'" data-tab="'+tab+'">';
-  h+='<header class="pmx-head">'
+  h+='<header class="pmx-head">'+pmSiteMenuHTML()
    +'<div class="pmx-avatar">'+(S.concept.portrait?'<img src="'+S.concept.portrait+'" alt="">':'<span>'+esc(initials)+'</span>')+'</div>'
    +'<div class="pmx-id"><button class="pmx-back" onclick="APP.backFromPlay()">'+backLabel+'</button>'
    +'<h1 class="pmx-name">'+esc(name)+'</h1>'+(sub?'<p class="pmx-sub">'+sub+'</p>':'')+'</div>'
@@ -1391,7 +1400,7 @@ function renderPlayView(){
   else h+=pmNotesPanelHTML();
   h+='</div></section>'+pmPopupHTML()+'</div>';
   const phoneOn=k=>PM_VIEW==="right"?(k==="combat"?tab==="combat":k==="more"&&tab!=="combat"):k===PM_VIEW;
-  h+='<nav class="pmx-phonebar" aria-label="Play Mode sections">'+PM_PHONE_TABS.map(([k,l])=>'<button type="button" class="pmx-tab'+(phoneOn(k)?" on":"")+'"'+(phoneOn(k)?' aria-current="page"':'')+' onclick="APP.playTab(\''+k+'\')">'+(PM_PHONE_ICONS[k]||"")+l+'</button>').join("")+'</nav>';
+  h+='<nav class="pmx-phonebar" aria-label="Play Mode sections">'+PM_PHONE_TABS.map(([k,l])=>'<button type="button" class="pmx-tab'+(phoneOn(k)?" on":"")+'"'+(phoneOn(k)?' aria-current="page"':'')+' onclick="APP.playTab(\''+k+'\')">'+(PM_PHONE_ICONS[k]||"")+l+'</button>').join("")+'<a class="pmx-tab pmx-hometab" href="#/">'+PM_PHONE_ICONS.home+'Home</a></nav>';
   h+='</div>';
   if(XP_OPEN&&!VIEW_ONLY)h+=xpModalHtml();
   h+=giftPopupHtml();
@@ -1478,44 +1487,61 @@ function pmResolveCardHTML(){
      +'<button type="button" class="pmx-mini" onclick="PM_FX_EDIT=S.rollLog['+i+'];render()">Change</button>'
      +'<button type="button" class="pmx-mini" onclick="APP.playJumpToInjury()">Record damage</button></div></div>';
   }
-  let h='<div class="pm-box pmx-resolve" id="pm-resolve"><h3>Combat roll'+(i>0?' <span class="pmx-dim">(earlier roll)</span>':'')+'</h3>'+pmCombatStepsHTML(r)
+  // In progress (v0 design): only the current step's question, big result
+  // buttons, then Special Effects as a tick list with one-line summaries.
+  const what=r.combatRole==="attack"?"Attack":r.combatRole==="defence"?(r.combatKind==="evade"?"Evade":"Parry"):"Roll";
+  let h='<div class="pm-box pmx-resolve" id="pm-resolve"><h3>Combat roll <span class="pmx-dim">'+(i>0?'earlier roll · ':'')+what+(r.weapon?' · '+esc(r.weapon):'')+'</span></h3>'+pmCombatStepsHTML(r)
    +'<div class="pmx-resolve-top"><b class="pmx-resolve-d">'+(r.roll===100?"00":esc(String(r.roll)))+'</b>'
-   +'<span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span>'
-   +'<span class="pmx-resolve-lbl">'+(r.combatRole==="attack"?"Attack":r.combatRole==="defence"?(r.combatKind==="evade"?"Evade":"Parry"):"")+' '+esc(r.label)+' <span class="pmx-dim">'+r.pct+'%</span></span></div>';
+   +'<div><span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span>'
+   +'<div class="pmx-resolve-lbl">'+(r.combatRole?what+' · ':'')+esc(r.label)+' · d100 vs '+r.pct+'%</div></div></div>';
   if(!r.combatRole){
-    h+='<div class="pmx-step"><span>Was this an attack or a defence?</span> '
-     +(r.combatKind==="evade"?'':'<button class="pmx-mini"'+ro+' onclick="APP.playSetCombatRole('+i+',\'attack\')">Attack</button> ')
-     +'<button class="pmx-mini"'+ro+' onclick="APP.playSetCombatRole('+i+',\'defence\')">Defence</button></div>';
+    h+='<p class="pmx-prompt">Was this an attack or a defence?</p><div class="pmx-btnrow">'
+     +(r.combatKind==="evade"?'':'<button class="pmx-act"'+ro+' onclick="APP.playSetCombatRole('+i+',\'attack\')">Attack</button>')
+     +'<button class="pmx-act"'+ro+' onclick="APP.playSetCombatRole('+i+',\'defence\')">Defence</button></div>';
   }
   if(r.combatKind!=="evade"&&!r.weapon){
     const opts=["Unarmed",...(S.gearWeapons||[])];
     h+='<div class="pmx-step"><label>Weapon <select'+ro+' onchange="APP.playSetRollWeapon('+i+',this.value)"><option value="">Not recorded (all effects shown)</option>'
      +opts.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("")+'</select></label></div>';
   }
-  if(r.combatRole){
-    const noParry=r.opponentAction==="no-parry";
-    h+='<div class="pmx-step"><span>'+(r.combatRole==="attack"?"Their defence:":"Their attack:")+'</span> '
-     +["Critical","Success","Failure","Fumble"].map(t=>'<button class="pmx-mini'+(r.oppTier===t&&!noParry?' on':'')+'"'+ro+' onclick="APP.playSetOpponentTier('+i+',\''+t+'\')">'+t+'</button>').join(" ")
-     +(r.combatRole==="attack"?' <button class="pmx-mini'+(noParry?' on':'')+'"'+ro+' onclick="APP.playNoParry('+i+')" title="They didn\'t parry or evade: treat as a Failure (Core p.100)">No defence</button>':'')+'</div>';
+  const opts='' // situational options that change the effects count or eligibility
+   +(r.weapon==="Javelin"&&r.combatRole==="attack"&&r.tier!=="Critical"?'<label class="pmx-opt"><input type="checkbox"'+ro+(r.vsShield?' checked':'')+' onchange="APP.playSetVsShield('+i+',this.checked)"> The target defended with a shield <span class="pmx-dim">Pin Weapon without a Critical (Core p.62)</span></label>':'')
+   +(r.combatRole==="attack"&&(r.tier==="Critical"||r.tier==="Success")?'<label class="pmx-opt"><input type="checkbox"'+ro+(r.targetSurprised?' checked':'')+' onchange="APP.playSetTargetSurprised('+i+',this.checked)"> Target was Surprised, and this is the first successful attack on them <span class="pmx-dim">+1 Special Effect (Core p.105)</span></label>':'');
+  if(r.combatRole&&!r.oppTier){
+    h+='<p class="pmx-prompt">'+(r.combatRole==="attack"?"Their defence: what did the opponent roll?":"Their attack: what did the opponent roll?")+'</p>'
+     +'<div class="pmx-oppchips">'+["Critical","Success","Failure","Fumble"].map(t=>'<button class="pmx-oppchip '+pmDiceTier(t)+'"'+ro+' onclick="APP.playSetOpponentTier('+i+',\''+t+'\')">'+t+'</button>').join("")
+     +(r.combatRole==="attack"?'<button class="pmx-oppchip none"'+ro+' onclick="APP.playNoParry('+i+')" title="They didn\'t parry or evade: treat as a Failure (Core p.100)">No defence</button>':'')+'</div>'+opts;
   }
-  if(r.weapon==="Javelin"&&r.combatRole==="attack"&&r.tier!=="Critical")h+='<div class="pmx-step"><label><input type="checkbox"'+ro+(r.vsShield?' checked':'')+' onchange="APP.playSetVsShield('+i+',this.checked)"> The target defended with a shield</label> <span class="pmx-dim">Pin Weapon without a Critical (Core p.62)</span></div>';
-  if(r.combatRole==="attack"&&(r.tier==="Critical"||r.tier==="Success"))h+='<div class="pmx-step"><label><input type="checkbox"'+ro+(r.targetSurprised?' checked':'')+' onchange="APP.playSetTargetSurprised('+i+',this.checked)"> Target was Surprised, and this is the first successful attack on them</label> <span class="pmx-dim">+1 Special Effect (Core p.105)</span></div>';
   if(r.combatRole&&r.oppTier){
     const n=rollEffectsWon(r);
+    h+='<p class="pmx-small pmx-oppline">Opponent: <b>'+(r.opponentAction==="no-parry"?'no defence':esc(r.oppTier))+'</b> <button type="button" class="pmx-link"'+ro+' onclick="APP.playClearOpponent('+i+')">Change</button></p>';
     if(n>0){
       const picked=r.effectsPicked||[];
       const eligible=SPECIAL_EFFECTS.filter(e=>canPickEffectForRoll(e,r));
-      h+='<p class="pmx-outcome good">You win <b>'+n+' Special Effect'+(n>1?"s":"")+'</b>'+(rollSurpriseBonus(r)?' <span class="pmx-dim">(including 1 for surprise)</span>':'')+pmTip("effects")+': '+picked.length+' of '+n+' chosen.</p>';
-      if(picked.length)h+='<div class="pm-fx-picks">'+picked.map((name,k)=>'<button type="button" class="pmx-mini on"'+ro+' title="Remove '+esc(name)+'" onclick="APP.playRemoveEffectChoice('+k+')">'+esc(name)+' &times;</button>').join(" ")+'</div>';
-      if(picked.length>=n&&PM_FX_EDIT!==r)h+='<p class="pmx-small">All chosen. <button type="button" class="pmx-link" onclick="PM_FX_EDIT=S.rollLog['+i+'];render()">Change</button></p>';
-      else h+='<div class="pmx-fx-eligible">'+eligible.map(fxItemHTML).join("")+'</div>'
-       +'<p class="pmx-dim pmx-small">Showing the '+eligible.length+' effects this roll allows'+(r.weapon?' with '+esc(r.weapon):'')+'. Check situational requirements with your GM.</p>';
+      h+='<p class="pmx-outcome good">You win <b>'+n+' Special Effect'+(n>1?"s":"")+'</b>'+(rollSurpriseBonus(r)?' <span class="pmx-dim">(including 1 for surprise)</span>':'')+pmTip("effects")+': '+picked.length+' of '+n+' chosen.</p>'+opts
+       +'<div class="pmx-fx-eligible pmx-selist">'+eligible.map(e=>pmFxToggleHTML(e,r,n)).join("")+'</div>'
+       +(picked.length>=n?'<div class="pmx-btnrow"><button type="button" class="pmx-act atk" onclick="PM_FX_EDIT=null;render()">Done</button></div>':'')
+       +'<p class="pmx-dim pmx-small">The '+eligible.length+' effects this roll allows'+(r.weapon?' with '+esc(r.weapon):'')+'. Tap ? for the full rule; check situational requirements with your GM.</p>';
     }else if(n<0){
       h+='<p class="pmx-outcome bad">Your opponent wins <b>'+(-n)+' Special Effect'+(-n>1?"s":"")+'</b> against you. They choose.</p>';
     }else h+='<p class="pmx-outcome">No Special Effects either way.</p>';
-    h+='<div class="pmx-step"><button class="pmx-mini" onclick="APP.playJumpToInjury()">Record damage on Body</button></div>';
   }
   return h+'</div>';
+}
+// One Special Effect as a tick row (v0 design): name, a one-line summary,
+// and a "?" that opens the full rule in the side panel.
+function pmFxSummary(text){const t=String(text||"").split(/(?<=\.)\s/)[0];return t.length>120?t.slice(0,117).replace(/\s+\S*$/,"")+"…":t;}
+function pmFxToggleHTML(e,r,n){
+  const idx=SPECIAL_EFFECTS.indexOf(e),picked=r.effectsPicked||[],count=picked.filter(x=>x===e[0]).length,on=count>0;
+  const room=picked.length<n,can=!VIEW_ONLY&&(on||room);
+  const req=e[4]?(pinWeaponWithoutCritical(e,r)?"No Critical needed":e[4]):"";
+  return '<div class="pmx-se'+(on?" on":"")+'" data-fx="'+esc(e[0])+'"><button type="button" class="pmx-se-pick" aria-pressed="'+on+'"'+(can?'':' disabled')+' onclick="pmFxToggle('+idx+')"><span class="pmx-cbx" aria-hidden="true"></span><span><b>'+esc(e[0])+(count>1?' ×'+count:'')+'</b>'+(req?' <span class="pmx-se-req">'+esc(req)+'</span>':'')+(e[5]?' <span class="pmx-se-req">Stacks</span>':'')+'<i>'+esc(pmFxSummary(e[6]))+'</i></span></button>'
+   +'<button type="button" class="pmx-se-info" aria-label="Rules for '+esc(e[0])+'" onclick="APP.pmPopup(\'fx\','+idx+')">?</button></div>';
+}
+function pmFxToggle(idx){
+  const r=selectedEffectRoll(),e=SPECIAL_EFFECTS[idx];if(!r||!e||VIEW_ONLY)return;
+  const picked=r.effectsPicked||[],has=picked.includes(e[0]),room=picked.length<rollEffectsWon(r);
+  if(has&&(!e[5]||!room))APP.playRemoveEffectChoice(picked.lastIndexOf(e[0]));else APP.playChooseEffect(idx);
 }
 // ---- Damage and hit location (v0 design's "Resolve" step) ----
 // Rolls weapon damage + Damage Modifier and a d20 hit location for a

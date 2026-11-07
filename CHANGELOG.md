@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode: site menu button, mockup-style combat card, smaller dice
+
+- **More room:** the site's top bar is hidden in Play Mode. A menu button (☰) beside the character's name opens Home, Characters, Campaign, Rules, World Guide and Account. On phones the bottom bar also ends with **Home**.
+- **Combat card, closer to the v0 design:** one question at a time. The opponent's result is four large coloured buttons (plus No defence). Special Effects are a tick list with a one-line summary each; ? opens the full rule. **Change** next to the opponent's result lets you correct it.
+- **Smaller dice:** the physics dice in the side panel are now a small tray beside the result, like the mockup.
+
 ## Play Mode: new "Stone" look (from the v0 design)
 
 - **New look:** carved-stone cards, a dark character header, and five **colour schemes** from the palette button in the header: Verdigris (default), Basalt & Ember, Sandstone & Indigo, Moss & Gold and Basalt (dark). The choice is saved on each device.
