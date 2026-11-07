@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits lobby
+
+From the owner's menu redesign handoff (Part A, item 7):
+- Pick your fighter from a list of cards instead of a drop-down. Each card shows the portrait or initials, the best Combat Style % and Action Points.
+- On desktop, a summary panel stays beside the list: the fighter's culture, career, Combat Style, AP and campaign, the **Enter the Pits** button, and "Wounds here never touch your saved character". On phones it sits below the list.
+- When this device has arena runs on record, a strip shows your best run, best hardcore run, and how many fighters are on the board.
+- "Fight without a character" is always there, signed in or out.
+
 ## Characters and Campaign pages
 
 From the owner's menu redesign handoff (Part A, items 5 and 6):
