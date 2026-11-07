@@ -18,6 +18,8 @@ _Last updated: 2026-11-07 by Claude_
 
 ## In progress
 
+Owner-requested implementation exception: ChatGPT added four Play Mode palettes (War Room, Night Watch, Ivory & Ink, Deep Cypress), with shared wound tokens and saved Settings selection. Branch `feat/play-mode-four-palettes`; review/merge required. Progress5/8 unchanged.
+
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
 | The Pits combat procedure source audit | ChatGPT (Chat) → Claude | `docs/the-pits-combat-procedure-source-review` (docs-only PR) | **51 Core-linked cases; 21 NEEDS CODE + 1 NEEDS COPY, 21 PASS checks, 2 decisions and scope notes.** Printed pp.86–111, with source screenshots for p.95 rounding ambiguity. Claude owns code/tests; no work on main Combat scope. **5/8**. |

@@ -136,9 +136,11 @@ test('colour schemes: Verdigris by default, chosen per device, unknown values ig
  setup();store.delete('pm-colorway');
  assert.equal(run('pmColorway()'),'verdigris');
  run('pmSetColorway("basalt")');assert.equal(store.get('pm-colorway'),'basalt');assert.equal(run('pmColorway()'),'basalt');
+ for(const key of ['war-room','night-watch','ivory-ink','deep-cypress']){run('pmSetColorway('+JSON.stringify(key)+')');assert.equal(run('pmColorway()'),key);}
+ run('pmSetColorway("basalt")');
  run('pmSetColorway("neon")');assert.equal(store.get('pm-colorway'),'basalt');
  store.set('pm-colorway','bogus');assert.equal(run('pmColorway()'),'verdigris');
- const h=run('pmStyleHTML()');assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,5);
+ const h=run('pmStyleHTML()');assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,9);
 });
 test('phone sections: Sheet, Body, Skills, Combat, More (Home is in the ☰ menu)',()=>{
  assert.doesNotMatch(fs.readFileSync(path.join(root,'js','play.js'),'utf8'),/pmx-hometab/,'no Home tab in the phone bar (owner, 2026-11-07)');
@@ -214,7 +216,7 @@ test('Settings in the ☰ menu opens a centred window with the colour scheme and
  assert.equal(run('pmModalHTML()'),'','closed by default');
  run('APP.pmModal("settings")');assert.equal(run('PM_POPUP'),null,'not the side panel');
  const h=run('pmModalHTML()');
- assert.match(h,/class="pmx-modal" role="dialog" aria-modal="true" aria-label="Settings"/);assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,5);assert.match(h,/pmToggleDice3d/);
+ assert.match(h,/class="pmx-modal" role="dialog" aria-modal="true" aria-label="Settings"/);assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,9);assert.match(h,/pmToggleDice3d/);
  run('APP.pmModalClose()');assert.equal(run('pmModalHTML()'),'');run('APP.pmModal("bogus")');assert.equal(run('PM_MODAL'),null);
 });
 test('Roll damage sends its dice to the tray: weapon dice, Damage Modifier dice, then the d20 (live check #174)',()=>{

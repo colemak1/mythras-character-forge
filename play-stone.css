@@ -1,7 +1,7 @@
 /* Play Mode, "Stone" style: the v0 design the owner chose (Stone & Verdigris,
    2026-11-07). Loaded after play-clean.css, which keeps the layout. This file
    maps the design tokens onto the --pmx-* tokens and restyles the parts.
-   Five colour schemes are token sets only: body.pm-cw-<name>. */
+   Nine colour schemes are token sets only: body.pm-cw-<name>. */
 body.play-mode.pm-style-stone{
   --st-bg:#c8ccc8; --st-surface:#e7e9e5; --st-surface-2:#dbded9; --st-line:#bcc2bb; --st-line-strong:#8b948c;
   --st-text:#1c2320; --st-text-dim:#525c56; --st-accent:#1d6a5e; --st-accent-2:#a06a28; --st-on-accent:#f0f7f4;
@@ -36,6 +36,81 @@ body.play-mode.pm-style-stone.pm-cw-basalt{
   --st-wound-ok:#6fcf8c; --st-wound-minor:#e0b04a; --st-wound-serious:#f0966a; --st-wound-major:#f0708a;
   --st-die-a:#5fd0b6; --st-die-b:#12453b;
   --st-hi:rgba(255,255,255,.07); --st-hi-soft:rgba(255,255,255,.03); --st-glow:rgba(255,255,255,.05); --st-shadow:rgba(0,0,0,.45);
+  color-scheme:dark;
+}
+/* Owner-selected additional palettes. Wound tokens remain shared. */
+body.play-mode.pm-style-stone.pm-cw-war-room{
+  --st-bg:#201815;
+  --st-surface:#332623;
+  --st-surface-2:#291e1b;
+  --st-line:#59433a;
+  --st-line-strong:#997662;
+  --st-text:#f3e6d9;
+  --st-text-dim:#cdb6a6;
+  --st-accent:#d39b72;
+  --st-accent-2:#b88568;
+  --st-on-accent:#241512;
+  --st-header-bg:#180f0d;
+  --st-header-text:#f3e6d9;
+  --st-header-line:#b88568;
+  --st-die-a:#ad594f;
+  --st-die-b:#512021;
+  --st-hi:rgba(255,255,255,.06); --st-hi-soft:rgba(255,255,255,.025); --st-glow:rgba(255,255,255,.04); --st-shadow:rgba(0,0,0,.4);
+  color-scheme:dark;
+}
+body.play-mode.pm-style-stone.pm-cw-night-watch{
+  --st-bg:#101927;
+  --st-surface:#1c2a3b;
+  --st-surface-2:#152132;
+  --st-line:#3b4b60;
+  --st-line-strong:#7c8da3;
+  --st-text:#e7eef7;
+  --st-text-dim:#b0c1d5;
+  --st-accent:#94b6d7;
+  --st-accent-2:#c3a76c;
+  --st-on-accent:#102035;
+  --st-header-bg:#0b121e;
+  --st-header-text:#e7eef7;
+  --st-header-line:#c3a76c;
+  --st-die-a:#779fc8;
+  --st-die-b:#233e61;
+  --st-hi:rgba(255,255,255,.06); --st-hi-soft:rgba(255,255,255,.025); --st-glow:rgba(255,255,255,.04); --st-shadow:rgba(0,0,0,.4);
+  color-scheme:dark;
+}
+body.play-mode.pm-style-stone.pm-cw-ivory-ink{
+  --st-bg:#dedbd0;
+  --st-surface:#faf7ed;
+  --st-surface-2:#efebdf;
+  --st-line:#c7c4b6;
+  --st-line-strong:#8d928e;
+  --st-text:#17283e;
+  --st-text-dim:#536173;
+  --st-accent:#253e60;
+  --st-accent-2:#8b6c3e;
+  --st-on-accent:#fffaf0;
+  --st-header-bg:#182a43;
+  --st-header-text:#f7f1e4;
+  --st-header-line:#ab8957;
+  --st-die-a:#49688d;
+  --st-die-b:#192b46;
+}
+body.play-mode.pm-style-stone.pm-cw-deep-cypress{
+  --st-bg:#121d19;
+  --st-surface:#21352c;
+  --st-surface-2:#19291f;
+  --st-line:#405a4a;
+  --st-line-strong:#839d88;
+  --st-text:#e9efe2;
+  --st-text-dim:#b0c3af;
+  --st-accent:#a5c2a1;
+  --st-accent-2:#d0bf87;
+  --st-on-accent:#13251b;
+  --st-header-bg:#0c1712;
+  --st-header-text:#e9efe2;
+  --st-header-line:#d0bf87;
+  --st-die-a:#91b38d;
+  --st-die-b:#254432;
+  --st-hi:rgba(255,255,255,.06); --st-hi-soft:rgba(255,255,255,.025); --st-glow:rgba(255,255,255,.04); --st-shadow:rgba(0,0,0,.4);
   color-scheme:dark;
 }
 /* Map onto the tokens play-clean.css and the older panels already use. */
@@ -435,3 +510,11 @@ body.play-mode .sitota-header{display:none}
 .pmx-itemrow[hidden],.pmx-itemnone[hidden]{display:none}
 .pmx-itemnm{flex:1;min-width:0;display:flex;flex-direction:column}
 .pmx-itemnm b{font-size:14px}.pmx-itemnm span{font-size:12px;color:var(--pmx-muted)}
+
+.pmx-cwsw.pm-cw-war-room i:nth-child(1){background:#201815}.pmx-cwsw.pm-cw-war-room i:nth-child(2){background:#d39b72}.pmx-cwsw.pm-cw-war-room i:nth-child(3){background:#b88568}
+
+.pmx-cwsw.pm-cw-night-watch i:nth-child(1){background:#101927}.pmx-cwsw.pm-cw-night-watch i:nth-child(2){background:#94b6d7}.pmx-cwsw.pm-cw-night-watch i:nth-child(3){background:#c3a76c}
+
+.pmx-cwsw.pm-cw-ivory-ink i:nth-child(1){background:#dedbd0}.pmx-cwsw.pm-cw-ivory-ink i:nth-child(2){background:#253e60}.pmx-cwsw.pm-cw-ivory-ink i:nth-child(3){background:#8b6c3e}
+
+.pmx-cwsw.pm-cw-deep-cypress i:nth-child(1){background:#121d19}.pmx-cwsw.pm-cw-deep-cypress i:nth-child(2){background:#a5c2a1}.pmx-cwsw.pm-cw-deep-cypress i:nth-child(3){background:#d0bf87}
