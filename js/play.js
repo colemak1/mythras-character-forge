@@ -1293,14 +1293,10 @@ function pmAdvanceTimeHTML(){
    +opt("fight","End the fight","Clears initiative and Surprised, and restores all Action Points.")
    +opt("session","Start a new session","Refills Luck Points ("+playCurLuck()+" of "+playMaxLuck()+" now). Magic Points stay manual.");
 }
-// Top of the side panel (v0 design): the latest d100 roll on a faceted die,
-// then Details / Roll log tabs. The physics dice tray still animates rolls.
-function pmSideTrayHTML(){
-  const r=S.rollLog[0];
-  if(!r||r.roll==null||r.roll==="")return '<div class="pmx-tray"><div class="pmx-die empty" aria-hidden="true">d100</div><div class="pmx-tray-i"><b>Dice tray</b><span>Roll a skill or attack to see it here.</span></div></div>';
-  return '<div class="pmx-tray" aria-live="polite"><div class="pmx-die">'+esc(r.roll===100||r.roll==="00"?"00":String(r.roll).padStart(2,"0"))+'</div>'
-   +'<div class="pmx-tray-i"><b>'+esc(r.label||"Roll")+'</b><span>d100 vs '+esc(String(r.pct??"—"))+'%</span>'+(r.tier?'<span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span>':'')+'</div></div>';
-}
+// Top of the side panel (v0 design): a slot for the physics dice tray
+// (owner, 2026-11-07: keep the Practice Combat dice, not a static die).
+// The tray element itself lives outside the re-rendered HTML; see pmDicePlace.
+function pmSideTrayHTML(){return '<div class="pmx-tray-slot" id="pm-trayslot"></div>';}
 function pmSideTabsHTML(onLog){
   return '<div class="pmx-ptabs" role="tablist"><button type="button" role="tab" class="pmx-ptab" aria-selected="'+(!onLog)+'" onclick="'+(onLog?'APP.pmPopupClose()':'')+'">Details</button>'
    +'<button type="button" role="tab" class="pmx-ptab" aria-selected="'+onLog+'" onclick="APP.pmPopup(\'log\')">Roll log'+(S.rollLog.length?' · '+S.rollLog.length:'')+'</button></div>';
@@ -1403,7 +1399,7 @@ function renderPlayView(){
   pmRestoreScroll(scroll);
   pmFitDash();
   if(!PM_RESIZE_BOUND&&typeof window.addEventListener==="function"){PM_RESIZE_BOUND=true;
-    window.addEventListener("resize",pmFitDash);
+    window.addEventListener("resize",()=>{pmFitDash();pmDicePlace();});
     document.addEventListener("keydown",e=>{if(e.key==="Escape"&&PM_POPUP&&APPVIEW==="play")APP.pmPopupClose();});}
   if(tab==="combat"&&PM_FX_SEARCH){const search=document.querySelector(".pm-fx-search");if(search)pmFxFilter(search);}
   if(PM_SKILL_SEARCH){const search=document.querySelector(".pmx-skillsearch");if(search)pmSkillFilter(search);}
@@ -1678,26 +1674,57 @@ function pmDiceTier(t){return t==="Critical"?"crit":t==="Success"?"ok":t==="Fumb
 // Called at the end of every Play Mode render: animates only a roll made
 // since the last render, never the saved log restored on load.
 function pmDiceSync(){
+  pmDicePlace();
   const log=S.rollLog||[];
   const first=PM_DICE_S!==S;PM_DICE_S=S;
   const fresh=log[0],isNew=!first&&fresh&&!PM_DICE_SEEN.has(fresh);
   log.forEach(r=>PM_DICE_SEEN.add(r));
   if(isNew)pmDiceShow(fresh);
 }
+// One tray element for the whole session. On desktop it sits in the side
+// panel's slot; on phones (no side panel) it floats over the page as before.
+// Re-renders replace #main's HTML, so the same element is re-attached after
+// each render and a die that is still tumbling keeps going.
+let PM_TRAY_EL=null;
+function pmTrayEl(){
+  if(!PM_TRAY_EL){PM_TRAY_EL=document.createElement("div");PM_TRAY_EL.id="pm-dicetray";PM_TRAY_EL.className="pmx-dicetray";PM_TRAY_EL.setAttribute("role","status");PM_TRAY_EL.setAttribute("aria-live","polite");}
+  return PM_TRAY_EL;
+}
+function pmTrayDocked(){return !!(PM_TRAY_EL&&PM_TRAY_EL.classList.contains("docked"));}
+function pmDiceIdleHTML(){
+  const r=(S.rollLog||[])[0];
+  if(!r||r.roll==null||r.roll==="")return '<div class="pmx-dicetray-idle"><b>Dice tray</b><span>Roll a skill or attack to see it here.</span></div>';
+  return '<div class="pmx-dicetray-label">'+esc(r.label)+' <span>'+esc(String(r.pct??""))+'%</span></div>'
+   +'<div class="pmx-dicetray-out"><b>'+(r.roll==="00"||r.roll===100?"00":String(r.roll).padStart(2,"0"))+'</b>'+(r.tier?'<span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span>':'')+'</div>';
+}
+function pmDicePlace(){
+  if(typeof document.createElement!=="function")return;
+  const tray=pmTrayEl(),slot=document.getElementById("pm-trayslot");
+  const dock=!!(slot&&slot.getClientRects&&slot.getClientRects().length);
+  if(dock){
+    if(tray.parentNode!==slot)slot.appendChild(tray);
+    if(!tray.classList.contains("docked")){clearTimeout(PM_DICE_TIMER);tray.classList.add("docked");}
+    if(!tray.dataset.for&&!tray.classList.contains("rolling")){tray.classList.add("show");tray.innerHTML=pmDiceIdleHTML();}
+  }else{
+    if(tray.classList.contains("docked")){tray.classList.remove("docked","show");tray.dataset.for="";tray.innerHTML="";}
+    if(tray.parentNode!==document.body)document.body.appendChild(tray);
+  }
+}
 function pmDiceShow(r){
-  let tray=document.getElementById("pm-dicetray");
-  if(!tray){tray=document.createElement("div");tray.id="pm-dicetray";tray.className="pmx-dicetray";tray.setAttribute("role","status");tray.setAttribute("aria-live","polite");document.body.appendChild(tray);}
+  pmDicePlace();
+  const tray=pmTrayEl();
   if(PM_DICE_CANCEL){try{PM_DICE_CANCEL();}catch(e){}PM_DICE_CANCEL=null;}
   clearTimeout(PM_DICE_TIMER);
   const value=r.roll==="00"?100:Number(r.roll);
-  tray.className="pmx-dicetray show rolling";
-  tray.innerHTML='<button class="pmx-dicetray-x" aria-label="Close" onclick="pmDiceHide()">&times;</button>'
-   +'<button class="pmx-dicetray-log" onclick="pmDiceHide();APP.pmPopup(\'log\')">Log</button>'
+  const docked=pmTrayDocked();
+  tray.className="pmx-dicetray show rolling"+(docked?" docked":"");
+  tray.innerHTML=(docked?'':'<button class="pmx-dicetray-x" aria-label="Close" onclick="pmDiceHide()">&times;</button>'
+   +'<button class="pmx-dicetray-log" onclick="pmDiceHide();APP.pmPopup(\'log\')">Log</button>')
    +'<div class="pmx-dicetray-label">'+esc(r.label)+' <span>'+r.pct+'%</span></div>'
    +'<canvas aria-hidden="true"></canvas>'
    +'<div class="pmx-dicetray-out"><b>'+(r.roll==="00"?"00":String(r.roll).padStart(2,"0"))+'</b><span class="pmx-tier '+pmDiceTier(r.tier)+'">'+esc(r.tier)+'</span></div>';
   const settle=()=>{if(tray.dataset.for!==String(value)+r.label)return;tray.classList.remove("rolling");tray.classList.add("settled");
-    PM_DICE_TIMER=setTimeout(pmDiceHide,r.combat?9000:5000);};
+    if(!tray.classList.contains("docked"))PM_DICE_TIMER=setTimeout(pmDiceHide,r.combat?9000:5000);};
   tray.dataset.for=String(value)+r.label;
   if(!pmDiceAnimated()){tray.querySelector("canvas").hidden=true;settle();return;}
   const fallback=setTimeout(()=>{tray.querySelector("canvas").hidden=true;settle();},1200);
@@ -1712,7 +1739,7 @@ function pmDiceShow(r){
 function pmDiceHide(){
   clearTimeout(PM_DICE_TIMER);
   if(PM_DICE_CANCEL){try{PM_DICE_CANCEL();}catch(e){}PM_DICE_CANCEL=null;}
-  const tray=document.getElementById("pm-dicetray");if(tray){tray.className="pmx-dicetray";tray.dataset.for="";}
+  const tray=PM_TRAY_EL;if(tray&&!tray.classList.contains("docked")){tray.className="pmx-dicetray";tray.dataset.for="";}
 }
 function pmToggleDice3d(on){try{localStorage.setItem("pm-dice-3d",on?"on":"off");}catch(e){}render();}
 // ---- Improve Skills modal (Experience Rolls, core rulebook pp.71-73) ----

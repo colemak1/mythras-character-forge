@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode: new "Stone" look (from the v0 design)
+
+- **New look:** carved-stone cards, a dark character header, and five **colour schemes** from the palette button in the header: Verdigris (default), Basalt & Ember, Sandstone & Indigo, Moss & Gold and Basalt (dark). The choice is saved on each device.
+- **Body:** a new contour figure, shaded by wound level. The list beside it shows each location's d20 range, HP bar, armour and wound level as a word (OK, Minor, Serious, Major).
+- **Skills:** each row shows the formula under the name, the percentage and a Roll button; Passions have a Test button.
+- **Combat:** a four-step bar (Attack, Opponent, Effects, Resolve) on the combat card. Weapon cards show your percentage on the Attack and Parry buttons. New **Roll damage** button for a successful attack: weapon damage + Damage Modifier and a d20 hit location, before parry and armour. It never changes HP. Rules check pending: `docs/play-mode-damage-roll-cases.md`.
+- **Side panel:** the physics dice now roll at the top of the panel, above Details and Roll log tabs.
+- **Phones:** five sections in the bottom bar: Sheet, Body, Skills, Combat and More.
+
 ## 2026-11-06 — Subsystem 4 live steps (a)–(f) pass
 
 - Owner-only disposable pass verifies characteristic maintenance/atrophy, free fumble +1 before an Experience Roll, mentor training lock/unlock, learning for 3 rolls, Serious weekly and Major treated monthly recovery, and reload after each stage.
