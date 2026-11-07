@@ -2203,7 +2203,7 @@ function concurrentCapture(f){return {f:Object.fromEntries(CONCURRENT_FIELDS.map
 function beginConcurrentCycle(){
  const a=S.fighters.a,b=S.fighters.b,key=concurrentKey();
  if(S.tie?.key===key)return;
- if(a.initiative!==b.initiative){S.tie=null;return;}
+ if(!Number.isFinite(a.initiative)||a.initiative!==b.initiative){S.tie=null;return;}
  const first=S.cycle%2===1?'a':'b',second=first==='a'?'b':'a';
  S.order=[first,second];
  S.tie={key,first,second,snap:concurrentCapture(S.fighters[second]),granted:false,pendingEnd:null};
