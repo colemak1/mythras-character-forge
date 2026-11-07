@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/happy-brahmagupta-votbg4.
 
-_Last updated: 2026-11-07 by Claude (The Pits melee only; back to the subsystems)_
+_Last updated: 2026-11-07 by Claude (Subsystem 8 decisions D-S1, D-S2, D-S4 answered)_
 
 ## Where things stand
 
@@ -19,14 +19,19 @@ _Last updated: 2026-11-07 by Claude (The Pits melee only; back to the subsystems
 
 ## Next
 
-- **Owner, then Claude:** back to the eight subsystems (`docs/subsystem-plan.md`, progress 5/8). Open: 6 Magic (partial; gaps in `magic-subsystem-cases.md`), 7 Creatures (no case inventory yet: ChatGPT (Chat) writes it first), 8 Campaign (critical items done; owner decisions D-S1 to D-S4 pending).
+- **Claude (next, fresh session): Subsystem 8 Campaign**, one PR. The owner answered D-S1, D-S2 and D-S4 (see `decisions.md`, 2026-11-07):
+  - D-S1: GM "New code" button that replaces the invite code (old code and `#/join/` link stop working); members still see the code.
+  - D-S2: warn and reload. A save checks whether the character changed on the server since it was opened (e.g. an `updated_at`/version check); if so, it doesn't overwrite, warns, and offers to reload. Covers GM inventory edits vs an open player sheet, and two tabs.
+  - D-S4: GM can remove a member, transfer the GM role to a member, and download the whole campaign as a backup file.
+  - Needs a new migration in `supabase/migrations/` (RLS/RPC for code rotation, removal, transfer, version check); the owner must run it on the live project. Tests in the `campaign-*.cjs` style. Then ChatGPT (Work) runs the multi-account live check at the end of `campaign-cases-batch-1.md`.
+  - Still open for the owner: D-S3 (any signed-in user can see display names). Other subsystems: 6 Magic (partial; gaps in `magic-subsystem-cases.md`), 7 Creatures (needs a ChatGPT (Chat) case inventory first).
 - **Claude:** queued for The Pits only if the owner asks: Unarmed (44 cases in the ledger, PIT-SE03); split `experiments/practice-combat.html`'s very long lines when next touching it.
 - **ChatGPT (Work), one batched live check when the owner has credits** (only what Claude can't test headless):
   - Signed in: Play Mode item search (add a sword free, it attacks; paid rope −10 silver; mail location +5 ENC; reload keeps all); builder offers only the 26 Core traits. Use a disposable character and delete it afterwards.
   - The Pits after #202: Basalt setup readable; pill / Last roll / end recap follow the dice; a settled Opponent pill; audible sound if possible.
   - Menus signed in and out on a real phone if possible: tab bar, More sheet, gates, Undo delete (disposable character), Join with a code.
   - Earlier blocked items: multi-account permission check (plan at the end of `campaign-cases-batch-1.md`); new-item pop-up (needs a second player account).
-- **Owner:** turn on Settings → General → "Allow auto-merge". Later: decisions D-S1 to D-S4 (Subsystem 8), D-4 and D-5 (Magic, low priority).
+- **Owner:** turn on Settings → General → "Allow auto-merge". Run the Subsystem 8 migration once Claude's PR merges. Later: D-S3 (display names), D-4 and D-5 (Magic, low priority).
 
 ## Notes
 

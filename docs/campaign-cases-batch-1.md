@@ -320,6 +320,8 @@ Verified by running the new migration on Postgres 16 (PGlite) with stand-ins for
 
 ### Decisions for the owner
 
+**Answered 2026-11-07 (owner):** D-S1 visible + GM "New code" button; D-S2 warn and reload; D-S4 all three (remove member, transfer GM, download backup). D-S3 still open. See `decisions.md`.
+
 - **D-S1 Invites:** keep invite codes visible to members, and add a "new code" button for the GM?
 - **D-S2 Conflicting edits:** when the GM edits a player's inventory, or one character is open in two tabs, should the later save win (today), or should the app warn and reload?
 - **D-S3 Profiles:** fine for any signed-in user to see display names?
