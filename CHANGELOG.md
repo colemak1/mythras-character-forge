@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: first combat-procedure fixes
+
+From ChatGPT's source review (#182):
+- **Knockback** now happens on any hit that does more damage than the target's SIZ, not only with Bash: 1m per 5 points over, then Athletics to stay standing. Stand Fast prevents it.
+- **Major limb wounds** knock the victim prone. The fatal clock only applies if the GM rules the limb severed, punctured or ripped off.
+- **Impale:** after impaling, choose to keep hold of the weapon or leave it in the wound. Pulling out a Barbed weapon (Trident) does full damage. Withdrawal injuries now show up for First Aid.
+- **Reach:** when a longer weapon keeps you off its wielder, you can still attack their weapon.
+
 ## The Pits Core combat-procedure source reconciliation (docs only)
 
 - Compared The Pits' own `experiments/practice-combat.html` engine to the uploaded **Mythras 2e Core** printed pp.86–111 and the previously source-audited Combat ledger; added **51** `PIT-*` cases in `docs/the-pits-combat-procedure-review.md`. Distinguishes **21** `NEEDS CODE` cases plus **1** `NEEDS COPY` item from **21** already-correct paths, rounding decisions, and declared arena exclusions.

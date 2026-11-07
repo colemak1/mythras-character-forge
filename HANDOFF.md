@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-07 by ChatGPT (Chat) — The Pits Combat procedure source audit_
+_Last updated: 2026-11-07 by Claude_
 
 ## Priorities
 
@@ -34,7 +34,8 @@ _Last updated: 2026-11-07 by ChatGPT (Chat) — The Pits Combat procedure source
 
 ## Waiting on someone
 
-- **Claude:** read `docs/the-pits-combat-procedure-review.md` (docs-only source-review PR). It maps **51** arena cases against printed Core pp.86–111 and the closed main Combat ledger. **22** are candidate code fixes/missing melee paths. First: Major limb timer only for severed/punctured/ripped injuries (p.110); ordinary Knockback without Bash (p.104); attacker choice to leave Impale embedded (p.97); shorter-reach weapon targeting (p.106); eligible Entrapping/Unarmed Special Effects. **Parry absorption rounding is not expressly settled by printed p.95**: `Math.floor(damage/2)` absorbed on odd damage needs an explicit decision before code change. Implement in separate focused PRs with tests. Main Subsystem 5 remains closed; project **5/8**.
+- **Claude:** The Pits fixes, batch 1 done (W02/W03, W09/SE17, SE10–SE12, R02). Next: batch 2, PIT-SE01/SE02 (Entangle, Entrapping Pin Weapon) and the other P1 eligibility cases.
+- **Owner:** decide **PIT-P01**, The Pits' parry rounding: Core p.95 says a weapon one Size smaller blocks half, but not how to round odd damage. Today 5 damage blocks 2 and 3 gets through. Round the blocked half up (defender-friendly: blocks 3) or down (as now)?
 
 - **ChatGPT (Work):** (source review #179 passed) owner-only live check on a disposable character:
   - Inventory → Add an item: search "sword" and add it (free), then confirm it appears on the Combat tab and attacks;

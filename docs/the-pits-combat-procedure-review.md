@@ -92,3 +92,17 @@ Every entry follows **given X → printed Core p.N says Y → arena does Z**. Th
 - Normal-mode full HP reset is a roguelite **house exception** to time-based recovery (Core p.80), and should be labeled as such. Hardcore can preserve injuries by design.
 - The three in-repository tests described in PR #181 for AP/HP/DM/Initiative and shared melee weapon data do **not** cover these full-procedure cases. No new tests were run in this Chat source review. Once Claude implements targeted patches, perform one owner-only Work walkthrough through natural dice, parry, effect, severe injury and range transition; document actual pass/fail and any setup/cleanup.
 - **Keep previously closed Subsystem 5 intact (main Play Mode)**. The Pits procedure remains separately open and the eight-subsystem progress remains **5/8**.
+
+## Claude implementation, batch 1 (2026-11-07)
+
+Fixed with deterministic tests in `tests/practice-procedure.cjs` (8 tests; both fighters player-controlled so every die is fixed by the test):
+
+| Case | Change |
+|---|---|
+| PIT-W02, PIT-W03 | A Major limb wound makes the victim prone and incapacitated. It no longer starts the 5× Healing Rate minute fatal clock automatically: that clock is stored as `limbDeadlineIfSevered` and shown as conditional on the GM ruling the limb severed, punctured or ripped off. Torso and head Major wounds keep their 2× Healing Rate Combat Round deadline. |
+| PIT-W09, PIT-SE17 | Ordinary Knockback runs without Bash: damage before reductions above the target's SIZ pushes them back 1m per 5 points (or part) of the excess, no extra metre, then Standard Athletics to stay standing. Stand Fast prevents it. Bash keeps its own rule and the two never both apply. |
+| PIT-SE10 | After an Impale wound, a player attacker chooses to keep hold (pull it free later with Ready Weapon, as before) or leave it in (the victim keeps the penalty; the attacker fights on without that weapon). Computer opponents keep hold. |
+| PIT-SE11, PIT-SE12 | Withdrawing a Barbed weapon (Trident) does full weapon damage instead of half. Withdrawal injuries are now recorded in the wound list, so they appear for First Aid. |
+| PIT-R02 | When a longer Reach keeps a fighter off the opponent's body, Attack is still available and strikes the opposing weapon (its AP protects it; HP loss can break it). The Choose Location effect is not offered for such an attack. |
+
+Not changed, pending decisions: **PIT-P01** parry rounding (owner ruling needed) and **PIT-R06** whether the optional Reach rule should be switchable. Next batch: PIT-SE01/SE02 (Entangle, Entrapping Pin Weapon) and the other P1 eligibility cases.
