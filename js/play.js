@@ -1211,16 +1211,31 @@ function pmGearPanelHTML(){
 // "Paid for it" uses the listed price, which comes off remaining silver.
 let PM_ITEM_SEARCH="",PM_ITEM_PAY=false;
 function pmItemCatalog(){
-  return allWeapons().filter(w=>w.name&&w.dmg!=="—").map(w=>({kind:"weapon",name:w.name,enc:Number(w.enc)||0,cost:Number(w.cost)||0,
-      meta:"Weapon · "+w.group+(w.dmg?" · "+w.dmg:"")}))
-    .concat(CORE_TOOLS.map(([name,enc,cost])=>({kind:"gear",name,enc,cost,meta:"Gear"})));
+  const tiers3=(row,labels)=>labels.map((l,k)=>[l,row[k+1]]);
+  const out=[];
+  allWeapons().filter(w=>w.name&&w.dmg!=="—").forEach(w=>out.push({kind:"weapon",name:w.name,enc:Number(w.enc)||0,cost:Number(w.cost)||0,
+    meta:"Weapon · "+w.group+(w.dmg?" · "+w.dmg:"")}));
+  ARMOR_MATERIALS.filter(m=>m.name!=="None").forEach(m=>{
+    const [suitEnc,suitCost]=String(m.suit).split("/").map(Number);
+    out.push({kind:"armour",name:m.name+" armour, one location",enc:m.encPerLoc,cost:Math.round(suitCost/7*100)/100,meta:"Armour (Core p.58) · "+m.ap+" AP · carried; wear it on the Money & Gear step"});
+    out.push({kind:"armour",name:m.name+" armour, full suit",enc:suitEnc,cost:suitCost,meta:"Armour (Core p.58) · "+m.ap+" AP · carried; wear it on the Money & Gear step"});
+  });
+  CORE_TOOLS.forEach(([name,enc,cost])=>out.push({kind:"gear",name,enc,cost,meta:"Gear (Core pp.60–61)"}));
+  CORE_CLOTHING.forEach(r=>out.push({kind:"clothing",name:r[0],enc:0,tiers:tiers3(r,["cheap","reasonable","superior"]),meta:"Clothing (Core p.59) · no ENC"}));
+  CORE_FOOD.forEach(r=>out.push({kind:"food",name:r[0],enc:0,tiers:tiers3(r,["cheap","reasonable","superior"]),meta:"Food and drink (Core p.59)"}));
+  CORE_LIVESTOCK.forEach(r=>out.push({kind:"livestock",name:r[0],enc:0,tiers:tiers3(r,["poor","reasonable","superior"]),meta:"Livestock (Core p.60) · not carried"}));
+  CORE_AMMO.forEach(([name,cost])=>out.push({kind:"ammo",name,enc:0,cost,meta:"Ammunition (Core p.62) · ENC: ask your GM"}));
+  CORE_VEHICLES.forEach(r=>out.push({kind:"vehicle",name:r[0],enc:0,cost:r[5],meta:"Vehicle (Core p.64) · cargo "+r[2]+" ENC · not carried"}));
+  CORE_SIEGE.forEach(r=>out.push({kind:"siege",name:r[0],enc:0,cost:r[8],meta:"Siege weapon (Core p.64) · "+r[1]+" · not carried"}));
+  return out;
 }
 function pmItemSearchHTML(){
-  const rows=pmItemCatalog().map(it=>'<div class="pmx-itemrow" data-search="'+esc((it.name+" "+it.meta).toLowerCase())+'" hidden>'
-   +'<span class="pmx-itemnm"><b>'+esc(it.name)+'</b><span>'+esc(it.meta)+' · ENC '+it.enc+' · '+it.cost+' sp</span></span>'
-   +'<button type="button" class="pmx-mini" onclick="APP.playAddCatalogItem(\''+it.kind+'\',\''+jsq(it.name)+'\')" aria-label="Add '+esc(it.name)+'">Add</button></div>').join("");
+  const add=(it,tier,label)=>'<button type="button" class="pmx-mini" onclick="APP.playAddCatalogItem(\''+it.kind+'\',\''+jsq(it.name)+'\''+(tier!=null?','+tier:'')+')" aria-label="Add '+esc(it.name)+(label?' ('+label+')':'')+'">'+(label?esc(label[0].toUpperCase()+label.slice(1))+' '+it.tiers[tier][1]+' sp':'Add')+'</button>';
+  const rows=pmItemCatalog().map(it=>'<div class="pmx-itemrow'+(it.tiers?' tiers':'')+'" data-search="'+esc((it.name+" "+it.meta).toLowerCase())+'" hidden>'
+   +'<span class="pmx-itemnm"><b>'+esc(it.name)+'</b><span>'+esc(it.meta)+(it.tiers?'':' · ENC '+it.enc+' · '+it.cost+' sp')+'</span></span>'
+   +'<span class="pmx-itembtns">'+(it.tiers?it.tiers.map((t,k)=>add(it,k,t[0])).join(""):add(it))+'</span></div>').join("");
   return '<div class="pmx-itemsearch"><label class="pmx-itemsearch-lbl" for="pmItemSearch">Add an item</label>'
-   +'<input type="search" id="pmItemSearch" class="pmx-skillsearch" placeholder="Search weapons and gear, e.g. sword, rope&hellip;" value="'+esc(PM_ITEM_SEARCH)+'" oninput="pmItemFilter(this)">'
+   +'<input type="search" id="pmItemSearch" class="pmx-skillsearch" placeholder="Search any Core item: sword, rope, boots, horse, mail&hellip;" value="'+esc(PM_ITEM_SEARCH)+'" oninput="pmItemFilter(this)">'
    +'<label class="pmx-opt"><input type="checkbox" '+(PM_ITEM_PAY?'checked':'')+' onchange="PM_ITEM_PAY=this.checked"> Paid for it <span class="pmx-dim">(otherwise found: free, no silver spent)</span></label>'
    +'<div class="pmx-itemresults">'+rows+'<p class="pmx-dim pmx-small pmx-itemnone" hidden>No Core item matches. Use + Add item below for anything else.</p></div></div>';
 }

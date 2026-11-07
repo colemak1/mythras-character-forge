@@ -435,3 +435,5 @@ body.play-mode .sitota-header{display:none}
 .pmx-itemrow[hidden],.pmx-itemnone[hidden]{display:none}
 .pmx-itemnm{flex:1;min-width:0;display:flex;flex-direction:column}
 .pmx-itemnm b{font-size:14px}.pmx-itemnm span{font-size:12px;color:var(--pmx-muted)}
+.pmx-itembtns{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.pmx-itemrow.tiers{flex-wrap:wrap}.pmx-itemrow.tiers .pmx-itembtns{flex-basis:100%;justify-content:flex-start}

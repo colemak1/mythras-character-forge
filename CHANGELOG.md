@@ -5,6 +5,17 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Add any Core item, not just weapons and gear
+
+- **Add an item** in Play Mode's Inventory now searches every priced item in the Core rulebook:
+  - weapons;
+  - armour (one location or a full suit, carried);
+  - tools and gear;
+  - clothing, food and drink, and livestock, each in cheap/poor, reasonable or superior quality;
+  - ammunition bundles;
+  - vehicles and siege weapons.
+- Clothing has no ENC (Core p.56). Livestock, vehicles and siege weapons are listed but not carried, so they add no ENC either. Picked-up armour counts its full ENC until you wear it from the Money & Gear step.
+
 ## Add items to your inventory by searching; Core-only Combat Style traits
 
 - **Play Mode → Inventory → Add an item:** type part of a name (e.g. "sword", "rope") to search all Core weapons and gear, then tap **Add**.

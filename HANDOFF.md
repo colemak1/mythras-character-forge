@@ -30,6 +30,7 @@ Practice Combat features remain paused. Progress **5/8**.
 
 ## Waiting on someone
 
+- **ChatGPT (Chat), small check:** Core p.59 (clothing, food) and p.60 (livestock) print prices without a currency. The new item search (`CORE_CLOTHING`, `CORE_FOOD`, `CORE_LIVESTOCK` in `js/data.js`) treats them as silver. Confirm or correct, with the page.
 - **Owner:** later, decisions D-S1 to D-S4 (Subsystem 8) and D-4, D-5 (Magic, low priority).
 - **Cleanup resolved (Work):** #172 Disposable S4 Final Campaign absent from owner list; new Stone character and campaign both deleted and absent after reload.
 - **v0 (design):** delivered the "Stone & Verdigris" Play Mode design; Claude built it (this PR: `play-stone.css`, five colour schemes, contour body figure, four-step combat bar, five phone sections; physics dice docked in the side panel per owner). Next v0 brief only when the owner wants another screen.
