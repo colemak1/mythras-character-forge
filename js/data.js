@@ -361,6 +361,20 @@ const WEAPONS=[
  {name:"Trident (thrown)",group:"Ranged",impaleSize:"M",dmg:"1d8",dmgMod:"Y",size:"L",reach:"L",range:"10/15/30",load:"—",effects:"Barbed, Impale",enc:2,apHp:"4/10",traits:"",milieu:"A-M",cost:155}
 ];
 const WEAPON_MAP=Object.fromEntries(WEAPONS.map(w=>[w.name,w]));
+// Practice Combat uses this table too (experiments/practice-combat.html).
+// Short keys from the original five-weapon arena are kept for saved setups.
+const PRACTICE_LEGACY_KEYS={Broadsword:"sword",Shortspear:"spear",Mace:"mace",Dagger:"dagger",Greatsword:"greatsword",Buckler:"buckler",Heater:"heater",Hoplite:"hoplite"};
+function practiceWeaponKey(name){return PRACTICE_LEGACY_KEYS[name]||String(name).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
+// Why a weapon cannot be used in the melee practice arena, or "" if it can.
+function practiceUnsupportedReason(w){
+  if(!w)return "not a Core weapon";
+  const traits=String(w.traits||"");
+  if(w.group==="Ranged")return "ranged weapons are not simulated yet";
+  if(/\bMount\b/.test(traits))return "only usable from a moving mount";
+  if(/\bStealth\b/.test(traits))return "only usable from ambush";
+  if(!/^\d+d\d+(\+\d+)?$/.test(String(w.dmg||"")))return "damage not supported";
+  return "";
+}
 
 // Combat Style Traits, sourced from the fan-compiled "Mythras Combat Style
 // Traits Encyclopedia V2.3" (notesfrompavis.wordpress.com; Mythras is a

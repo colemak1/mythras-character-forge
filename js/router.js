@@ -43,6 +43,7 @@ function currentRoute(){
   if(APPVIEW==="account")return "/account";
   if(APPVIEW==="library")return "/my-characters";
   if(APPVIEW==="campaigns")return "/my-campaigns";
+  if(APPVIEW==="pits")return "/the-pits";
   if(APPVIEW==="campaign-setup")return CAMPAIGN_SETUP_EDIT&&CURRENT_CAMPAIGN_ID?"/campaign/"+encodeURIComponent(CURRENT_CAMPAIGN_ID)+"/settings":"/campaign/new";
   if(APPVIEW==="campaign")return CURRENT_CAMPAIGN_ID?"/campaign/"+encodeURIComponent(CURRENT_CAMPAIGN_ID):"/my-campaigns";
   if(APPVIEW==="board")return CURRENT_CAMPAIGN_ID?"/campaign/"+encodeURIComponent(CURRENT_CAMPAIGN_ID)+"/board":"/my-campaigns";
@@ -69,6 +70,7 @@ function parseRoute(hash){
   if(path==="/account")return {view:"account"};
   if(path==="/my-characters")return {view:"library"};
   if(path==="/my-campaigns")return {view:"campaigns"};
+  if(path==="/the-pits")return {view:"pits"};
   if(path==="/campaign/new")return {view:"campaign-setup",campaignId:null};
   if((m=path.match(/^\/campaign\/([^/]+)\/settings$/)))return {view:"campaign-setup",campaignId:decodeURIComponent(m[1])};
   if((m=path.match(/^\/campaign\/([^/]+)\/board$/)))return {view:"board",campaignId:decodeURIComponent(m[1])};
@@ -132,6 +134,7 @@ async function applyRoute(route,opts){
     case "account": APPVIEW="account";render();break;
     case "library": APPVIEW="library";LIB_CACHE=null;render();loadLibraryUnified();break;
     case "campaigns": APPVIEW="campaigns";CAMP_CACHE=null;render();loadCampaignsUnified();break;
+    case "pits": APP.toPits();break;
     case "campaign-setup": {
       CAMPAIGN_SETUP_DRAFT=null;CAMPAIGN_SETUP_EDIT=!!route.campaignId;CAMP_MSG=null;
       if(route.campaignId){

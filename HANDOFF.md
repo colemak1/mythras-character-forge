@@ -12,7 +12,7 @@ _Last updated: 2026-11-07 by Claude_
 2. **Play Mode UX: done**, now in the v0 "Stone & Verdigris" look (2026-11-07; earlier: PRs #133–#137, then layout v2 from the owner's sketch: one-screen columns and a D&D Beyond-style side panel, 2026-11-06): layout, physics dice tray, combat flow, skill search and pins, Body tab, tips, Gear and Notes. The theme lives in `play-clean.css` under `data-pm-style="clean"`, so a future player style picker only swaps token sets. Owner-only live pass recorded in `docs/play-mode-live-acceptance-20261105.md`: desktop overflow and incomplete result compaction fail; numerical Core spot-checks pass; terminal Fatigue labels need correction. Exact 390px phone pass remains unverified (browser limitation).
 3. **Subsystem 4 Advancement: CLOSED (#173); Subsystem 5 Combat: CLOSED. Progress 5/8.** Fresh new-Stone owner pass also confirms (g)–(i), hazards and requested desktop controls: `docs/advancement-stone-live-20261106.md` (three screenshots). Both fixtures deleted/reload verified; #172 campaign also absent. Next subsystem audits: 6 (Magic, low priority per owner), 7 (creatures), 8 (campaign/multi-account; critical items done).
 
-Practice Combat features remain paused. Progress **5/8**.
+**Practice Combat is active again (owner, 2026-11-07):** rules first, then every weapon (done: shared table), then a Play Mode-style UI, then the fun polish. Progress **5/8**.
 
 ## In progress
 
@@ -30,6 +30,8 @@ Practice Combat features remain paused. Progress **5/8**.
 | New-item pop-up live check (PR #128) | Owner → ChatGPT (Work) | PR #131 attempt | **Blocked, not failed:** needs a disposable player account signed in separately from the GM (e.g. a second browser profile or private window) with a character assigned to a campaign the GM runs. Then: Reveal and plain notices, reload, a third item while the player spends an AP |
 
 ## Waiting on someone
+
+- **ChatGPT (Chat):** Practice Combat rules review. `experiments/practice-combat.html` has its own combat engine (parry absorption, Special Effects, Fatigue, wounds, engagement range). Weapons, AP, HP, Damage Modifier and Initiative now match the shared, checked rules (`tests/practice-rules.cjs`). Please compare the rest of its combat procedure against Core pp.86–111 and the Subsystem 5 ledger, and list differences as cases (given X → Core p.N says Y → arena does Z). Known question: `parryAbsorption()` rounds half damage down; the main app leaves rounding to the GM. Docs-only PR.
 
 - **ChatGPT (Work):** (source review #179 passed) owner-only live check on a disposable character:
   - Inventory → Add an item: search "sword" and add it (free), then confirm it appears on the Combat tab and attacks;

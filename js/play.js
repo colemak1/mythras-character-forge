@@ -970,7 +970,7 @@ function pmSetColorway(k){if(!PM_COLORWAYS.some(c=>c[0]===k))return;try{localSto
 // Play Mode hides the site's top bar (owner, 2026-11-07); one menu button in
 // the character header opens the same links. Phones also get Home in the
 // bottom bar.
-const PM_SITE_LINKS=[["#/","Home"],["#/my-characters","Characters"],["#/my-campaigns","Campaign"],["#/wiki","Rules"],["#/world/welcome","World Guide"],["#/account","Account"]];
+const PM_SITE_LINKS=[["#/","Home"],["#/my-characters","Characters"],["#/my-campaigns","Campaign"],["#/the-pits","The Pits"],["#/wiki","Rules"],["#/world/welcome","World Guide"],["#/account","Account"]];
 function pmSiteMenuHTML(){
   return '<details class="pmx-sitemenu"><summary aria-label="Site menu" title="Site menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>'
    +'<nav class="pmx-sitemenu-list" aria-label="Site navigation">'+PM_SITE_LINKS.map(([href,l])=>'<a href="'+href+'">'+l+'</a>').join("")+'<button type="button" onclick="this.closest(\'details\').open=false;APP.pmPopup(\'ref\')">Rules reference</button><button type="button" class="pmx-sitemenu-plain" onclick="this.closest(\'details\').open=false;APP.pmModal(\'settings\')">Settings</button></nav></details>';

@@ -40,7 +40,8 @@ const sandbox = {
   clearInterval,
 };
 const guidance = fs.readFileSync(path.join(__dirname, '../experiments/practice-guidance.js'), 'utf8');
-const api = vm.runInNewContext(guidance + '\n' + match[1] +
+const sharedData = fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'); // the arena loads ../js/data.js first
+const api = vm.runInNewContext(sharedData + '\n' + guidance + '\n' + match[1] +
   '\n;({startRun, render, state: () => S, resetRoll: () => { R = null; V.busy = false; }, setRoll: value => { R = value; }, availableEffects, d100Dice, rollSummary})',
   sandbox, { filename: 'practice-combat-inline.js' });
 
@@ -1187,7 +1188,7 @@ const generatedBout=vm.runInContext(`
      const f=newEnemy(6);
      styles.add(f.tactic);
      valid&&=!!AI_STYLES[f.tactic]&&(f.tactic!=='shield'||f.shield!=='none')&&
-       (f.tactic!=='reach'||WEAPONS[f.weapon].reach>=3);
+       (f.tactic!=='reach'||ARENA_WEAPONS[f.weapon].reach>=3);
    }
    config.mode='hardcore';
    startRun(true);
