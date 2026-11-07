@@ -106,3 +106,14 @@ Fixed with deterministic tests in `tests/practice-procedure.cjs` (8 tests; both 
 | PIT-R02 | When a longer Reach keeps a fighter off the opponent's body, Attack is still available and strikes the opposing weapon (its AP protects it; HP loss can break it). The Choose Location effect is not offered for such an attack. |
 
 Not changed, pending decisions: **PIT-P01** parry rounding (owner ruling needed) and **PIT-R06** whether the optional Reach rule should be switchable. Next batch: PIT-SE01/SE02 (Entangle, Entrapping Pin Weapon) and the other P1 eligibility cases.
+
+
+## Independent verification of batch one — 2026-11-06
+
+[Detailed live/controlled evidence](item-search-pits-verification-20261106.md). All8 existing procedure tests pass;7/8 additional controlled assertions pass. W02/W03, W09/SE17, SE10–SE12 pass the exercised branches. **R02 remains partial: new PIT-R02a FAIL** below. No claims of a full51-case live pass; main Play Mode Combat stays closed and5/8 unchanged.
+
+| Case | Given | Core expectation | Observed | Status |
+|---|---|---|---|---|
+| PIT-R02a | Short Dagger attacks longer Pike weapon; both attack and normal larger-weapon parry succeed, no bypass effect. | Core pp.95,106: permitted weapon target, with normal parry Size reduction; successful larger parry stops all before weapon AP/HP. | Natural live attack13/67, parry24/65, damage6: Pike4AP,2HP lost. Controlled damage7: Pike12→9HP despite parry. Early vsWeapon resolution skips parry calculation. Attack copy also incorrectly insists Close Inside first. | **FAIL / NEEDS CODE + COPY** |
+
+Claude: add successful-parry weapon-target regression and correct damage/copy; existing batch-one tests do not cover this branch. Pending PIT-P01 rounding and R06 optional-rule decisions unchanged.
