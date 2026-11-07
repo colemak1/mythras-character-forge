@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-07 by Claude_
+_Last updated: 2026-11-07 by ChatGPT (Chat) — SKILL_INFO and damage helper source audit_
 
 ## Priorities
 
@@ -18,6 +18,7 @@ Practice Combat features remain paused. Progress **4/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
+| Skill summary + damage helper Core audit | ChatGPT (Chat) → Claude | `docs/play-skill-info-damage-core-review` (docs-only PR) | All **58** `SKILL_INFO` entries and all **10** damage cases source checked. Corrections: 3 substantive skill summaries, 2 magic citations; **R6, R7, R8** code/copy fixes. No tests or app code changed. Keep progress **4/8**. |
 | Play Mode hazard/recovery wording audit | ChatGPT (Chat) → Claude | `docs/subsystem4-hazard-note-source-review-20261106` docs-only PR | Audited printed Core pp.68,71,74–85. `docs/advancement-hazard-notes-review.md` identifies incorrect/ambiguous or absent popup phrasing with compact suggested copy. **All treatment/damage decisions remain GM-assisted; no production code or tests edited.** |
 | Advancement final focused pass | ChatGPT (Work) | after #164 | (a)–(f) PASS (#164). Remaining: (g)–(i) in `advancement-reconciliation.md` → "Claude closeout gate review". |
 | Combat Batch 3 focused acceptance | ChatGPT (Work) → Claude | #150 verified; docs PR follows | All 4 groups PASS. Earlier Knockback failure retracted; no extra starting metre. Screenshot confirms table fit. Throwaway deleted/reload checked; 28 scripts pass. |
@@ -33,7 +34,7 @@ Practice Combat features remain paused. Progress **4/8**.
 - **ChatGPT (Work):** Subsystem 4 final focused pass, steps (g)–(i) (see `advancement-reconciliation.md`, "Claude closeout gate review").
 - **Owner:** send Claude the v0 zip for the new UI (the earlier message arrived without it).
 - **v0 (design):** delivered the "Stone & Verdigris" Play Mode design; Claude built it (this PR: `play-stone.css`, five colour schemes, contour body figure, four-step combat bar, five phone sections; physics dice docked in the side panel per owner). Next v0 brief only when the owner wants another screen.
-- **ChatGPT (Chat):** check the Play Mode skill summaries (`SKILL_INFO` in `js/data.js`, Core pp.38–50) for accuracy; reply with corrections. Also verify the new damage roll helper, cases R1–R10 in `docs/play-mode-damage-roll-cases.md`, with page references. Docs-only PR.
+- **Claude:** review/merge the docs-only `SKILL_INFO` and damage-helper source audit (`docs/play-mode-skill-info-source-review.md` and `docs/play-mode-damage-roll-cases.md`) after CI. Then fix **R6 natural-weapon Maximise Damage**, **R7 Impale attack total** and **R8 Choose Location override** with deterministic tests in a separate code PR. Make three concise skill wording fixes (Brawn, Courtesy, Literacy) and add Core page references for Exhort/Folk Magic. Do not reopen Subsystem 5 or alter existing training/Combat calculations unnecessarily.
 - **ChatGPT (Work):** in the same batch as the Subsystem 4 (g)–(i) pass, glance at the new Play Mode look on desktop: colour scheme switch, body figure click, a full attack through Resolve (Roll damage), and that the dice roll in the side panel.
 - **Hazard notes:** done (#161 audit, #163 implementation and tests).
 - **ChatGPT (Chat):** Combat closeout map and missing child cases delivered in docs-only PR; `docs/advancement-reconciliation.md` begins Subsystem 4. Further S4 source/test reconciliation follows Claude's Combat closeout review.
@@ -41,6 +42,7 @@ Practice Combat features remain paused. Progress **4/8**.
 
 ## Notes
 
+- Source audit of PR #168 `SKILL_INFO` and new damage helper: original Core printed pp.38–50, p.9, pp.94–98,109–110, plus p.121 Folk Magic and pp.178/181 Exhort. R6: **Maximise Damage does apply to natural weapons**; R7: Impale rolls *weapon dice twice*, adds Damage Modifier *once*, must show chosen roll's total; R8: Choose Location should override d20. R1 parry and R4 zero floor confirmed. Full work in `docs/play-mode-skill-info-source-review.md` / `docs/play-mode-damage-roll-cases.md`. **Docs-only, no live/test pass, 4/8 unchanged**.
 - S4 hazard popup source review uses privately supplied Core, printed **p.68 for Acid**, **p.71** for suffocation/blood loss, **pp.74–75** for disease/poison, **p.78** for falls/sleep, **p.79** for fire/exertion, **p.80** for healing. The current `pmHazardsHTML()` text is mostly accurate but lacks crucial table/exception reminders. Review: `docs/advancement-hazard-notes-review.md`. Claude may make **wording-only code corrections in a separate PR**. Core hazard automation remains GM-assisted and Subsystem 4 remains open, progress 4/8.
 - Combat closeout mapping verified against privately uploaded Core printed pp.86–111 (parsed text first; difficult tables/pages visually inspected). Added 12 C5-CL case rows, **6 HANDLED / 6 NEEDS CODE**, and one final owner-only Work fight scenario. Source/JS review is not a deployed PASS. User settled Knockback with **no extra initial metre**. Creature anatomy/Rabble-Underlings remain S7; multi-account/GM/Party Board remain S8. Reconciliation started in `docs/advancement-reconciliation.md`. **3/8 unchanged.**
 - Combat Batch 3 checked the user's uploaded Mythras 2e Core source directly (text search first, rendered printed pp.61–65 and 96–110 for tables and special cases) and reviewed current source code after #146. **92 new specification rows**, not live implementation evidence; added to the existing ledger without changing previous acceptance. **Creature anatomy excluded**, for Subsystem 7. Total Combat ledger now **368** cases (191 + 85 + 92). Status is initial and may need Claude adjudication. No production code or tests were changed by ChatGPT. CI pending.
