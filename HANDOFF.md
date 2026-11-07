@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-07 by ChatGPT (Chat) — The Pits P2 Initiative/Shield source cases_
+_Last updated: 2026-11-07 by ChatGPT (Chat) — The Pits Unarmed source cases and shield-convention review_
 
 ## Priorities
 
@@ -14,7 +14,7 @@ _Last updated: 2026-11-07 by ChatGPT (Chat) — The Pits P2 Initiative/Shield so
 
 **Practice Combat is active again (owner, 2026-11-07):** rules first, then every weapon (done: shared table), then a Play Mode-style UI, then the fun polish. Progress **5/8**.
 
-**Current Pits rule-check handoff:** `docs/the-pits-combat-procedure-review.md` contains the original **51** source-linked cases plus **28 detailed P2 child cases** (PIT-P02: eight tied Initiative; PIT-P07: twenty shield attacks/Bash). These are source specs, not implemented or live-accepted. Main Play Mode Combat **CLOSED**; Pits procedure remains active separately; progress **5/8**.
+**Current Pits rule-check handoff:** Original **51** cases plus **28** Initiative/Shield child cases and **44** new Unarmed child cases are in `docs/the-pits-combat-procedure-review.md` (**123** entries including existing parent rows). #190 tied Initiative and #191 shield attack/Bash **merged**; #188 Entangle correction retained. **New Unarmed cases are source specs, not implemented or live-accepted.** Main Play Mode Combat **Subsystem 5 CLOSED**; total **5/8**.
 
 ## In progress
 
@@ -22,7 +22,7 @@ Four extra Play Mode palettes (War Room, Night Watch, Ivory & Ink, Deep Cypress)
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
-| The Pits P2 source test specifications | ChatGPT (Chat) → Claude | `docs/pits-p2-initiative-shield-core-cases-20261107` docs-only PR | **28** child cases in `docs/the-pits-combat-procedure-review.md`: **8** P02 tied Initiative (Core p.90), **20** P07 shield attack and Bash (pp.63,91,95–96; p.104 cross-check). Claude owns code/tests. **5/8; S5 CLOSED**. |
+| The Pits Unarmed P2 source-case specs | ChatGPT (Chat) → Claude | `docs/pits-unarmed-grip-flurry-take-weapon-cases-20261107` docs-only PR | **44** deterministic Core-cited PIT-SE03 cases: unarmed strike/parry, Grip vs full Grappling, Flurry, Take Weapon, effect eligibility and two-human arena scope. Three PR #191 shield conventions verified; Target left-embedded unavailable-for-bout explicitly **arena deviation** from recoverable Core p.97. **S5 CLOSED, 5/8**. |
 | Item search / Core traits source review | ChatGPT → Claude | `docs/item-traits-source-review` docs-only PR | **PASS:** 5 ammo bundles (p.62), 8 armour per-location AP/ENC/cost rows (p.58), all 26 offered trait names/descriptions (p.89; Skirmishing cap p.108). `docs/item-search-core-cases.md`. Optional Lead sling label; printed Mail5-per-location/30-suit inconsistency documented. 34 scripts pass; no code changes;5/8 retained. |
 | New desktop live acceptance | ChatGPT (Work) → Claude | #174 merged | All checks PASS. Its three UI observations are fixed in the follow-up PR: campaign picker refresh, tabs on one line, damage dice in the tray. |
 | Skill summary + damage helper Core audit | ChatGPT (Chat) → Claude | `docs/play-skill-info-damage-core-review` (docs-only PR) | All **58** `SKILL_INFO` entries and all **10** damage cases source checked. Corrections: 3 substantive skill summaries, 2 magic citations; **R6, R7, R8** code/copy fixes. No tests or app code changed. Keep progress **4/8**. |
@@ -36,8 +36,8 @@ Four extra Play Mode palettes (War Room, Night Watch, Ivory & Ink, Deep Cypress)
 
 ## Waiting on someone
 
-- **Claude:** P2 case specs merged (#189). PIT-P02 tied Initiative merged (#190, `tests/practice-initiative.cjs`); PIT-P07 shield strikes and shield Bash in the follow-up PR (`tests/practice-shield.cjs`). Next: Unarmed (PIT-SE03), then the Play Mode-style Pits UI (v0 brief for the fight screen is with the owner).
-- **ChatGPT (Chat):** P2 source-case work delivered in `docs/the-pits-combat-procedure-review.md`; available for subsequent interpretation review if Claude encounters ambiguity. Do not change production code.
+- **Claude:** P2 Initiative #190 and Shield Bash #191 merged. Review/merge new **docs-only PIT-SE03 source-spec PR** after Tests passes, then implement Unarmed Attack/Parry, Grip, separate full Grapple if in scope, Flurry and Take Weapon with deterministic tests in focused code PRs. Preserve #188, #190 and #191. After rules, proceed with owner-approved v0 Pits fight-screen design.
+- **ChatGPT (Chat):** 44 PIT-SE03 rule cases and three shield-convention verdicts delivered in docs-only PR; no code edits. Available for later source disputes or a bundled live-test spec once Claude implements them.
 
 - **ChatGPT (Work):** (source review #179 passed) owner-only live check on a disposable character:
   - Inventory → Add an item: search "sword" and add it (free), then confirm it appears on the Combat tab and attacks;
@@ -58,9 +58,8 @@ Four extra Play Mode palettes (War Room, Night Watch, Ivory & Ink, Deep Cypress)
 
 ## Notes
 
-- **Pits P2 source cases, 2026-11-07:** owner-uploaded Core printed **p.90**: equal final Initiative totals act concurrently, original d10 remains through later rounds absent forced re-roll; **p.63**: all eight shields have damage/Size/Short Reach and their own Special Effects; **p.96**: shield Bash uses one metre per two **whole** points of raw damage, regular bludgeoning Bash per three (pp.91,95,104,106 are related). Added **28** detailed deterministic case specifications to the existing Pits ledger. Simultaneous-declaration UI strategy must be labelled an arena convention, not a hidden Core tie-break. No tests or live checks run in Chat, and no production files touched. Main S5 CLOSED, overall **5/8**.
+- **Current Pits source handoff (2026-11-07):** owner-uploaded Mythras Core **pp.9,43,89,91–92,95,97–98,100–101,105–106**, plus **p.222 for human fists/parry distinction**, checked on rendered printed pages. **44 new** `PIT-SE03-*` specs; **Grip SE p.97 ≠ full Grappling p.106**. Shield conventions #191: Short Reach source-compatible (pp.63,106); AI's better Hard Athletics/Acrobatics for Bash obstacle permitted as choice (p.96); Target shield lost for entire bout is **an arena-only restriction**, because Core p.97 allows later withdrawal. Rulings in `docs/decisions.md` and `docs/the-pits-combat-procedure-review.md`. No test/live claim, **S5 CLOSED / 5/8**.
 
-- **Pits source-review (2026-11-07):** privately uploaded Mythras Core printed pp.86–111 inspected (rendered tables p.95 and wound p.110), comparing `experiments/practice-combat.html` SHA `73cc27a0556fb9e048ab8dc29dab78a469b5cbf8` and main `docs/combat-cases-batch-1.md`. Reviewed 51 cases, 21 NEEDS CODE plus 1 NEEDS COPY candidate; 29 of 43 SE names are selectable. `parryAbsorption` currently floors amount **blocked** at half on odd damage: p.95 table says Half but gives no explicit integer rounding, so record a decision. No production changes or automated/live tests run. **5/8 remains**.
 
 - Source audit of PR #168 `SKILL_INFO` and new damage helper: original Core printed pp.38–50, p.9, pp.94–98,109–110, plus p.121 Folk Magic and pp.178/181 Exhort. R6: **Maximise Damage does apply to natural weapons**; R7: Impale rolls *weapon dice twice*, adds Damage Modifier *once*, must show chosen roll's total; R8: Choose Location should override d20. R1 parry and R4 zero floor confirmed. Full work in `docs/play-mode-skill-info-source-review.md` / `docs/play-mode-damage-roll-cases.md`. **Docs-only, no live/test pass, 4/8 unchanged**.
 - S4 hazard popup source review uses privately supplied Core, printed **p.68 for Acid**, **p.71** for suffocation/blood loss, **pp.74–75** for disease/poison, **p.78** for falls/sleep, **p.79** for fire/exertion, **p.80** for healing. The current `pmHazardsHTML()` text is mostly accurate but lacks crucial table/exception reminders. Review: `docs/advancement-hazard-notes-review.md`. Claude may make **wording-only code corrections in a separate PR**. Core hazard automation remains GM-assisted and Subsystem 4 remains open, progress 4/8.

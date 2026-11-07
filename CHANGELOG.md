@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits PIT-SE03 Unarmed rules source cases and shield conventions — docs only
+
+- Added **44** Core-cited, deterministic `PIT-SE03-*` cases to `docs/the-pits-combat-procedure-review.md`: **8** Unarmed attack, **6** Unarmed parry, **7** Grip, **5** distinct full-Grapple, **5** Flurry, **6** Take Weapon, **5** effect-eligibility, **2** two-fighter scope cases.
+- Verified the owner's private Core printed **pp.9,43,89,91–92,95,97–98,100–101,105–106**, plus **p.222** for default human natural-weapon/hand-fist data. Core p.97's earned **Grip** effect must not silently impose all p.106 **Grappling** restrictions; Flurry's different-limb follow-up costs another AP, and Take Weapon works offensively or defensively against the original Unarmed roll (p.101).
+- Source-checked #191 shield conventions: shield Short Reach follows p.63 and optional Reach p.106; automatically picking the better eligible skill for a p.96 barrier test is an acceptable arena input convention; an impaled Target shield remaining unavailable for the whole bout is **not Core-mandated**, since p.97 permits later withdrawal. Keep clearly labeled as a Pits-only limitation, **not** a Sit'ota campaign rule. Ruling updated in `docs/decisions.md`.
+- PR #188, #190, #191 already merged; no files outside `docs/`, `HANDOFF.md` or `CHANGELOG.md` changed. Source/docs verification only: no local Node suite or deployed live acceptance performed in Chat. **Main Combat Subsystem 5 CLOSED; project 5/8**.
+
 ## The Pits: shield strikes and shield Bash
 
 - Fighters with a shield can now **strike with it** for 1 AP. Each of the eight Core shields uses its own damage, Size and effects: Bash for all, Stun Location for most, Impale for the Target.
