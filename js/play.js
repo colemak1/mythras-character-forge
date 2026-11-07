@@ -1409,7 +1409,7 @@ function renderPlayView(){
   h+='<section class="pmx-col pmx-col-stats" data-scroll="stats" aria-label="Characteristics and body">'+pmStatsColumnHTML()+'</section>';
   h+='<section class="pmx-col pmx-col-skills" data-scroll="skills" aria-label="Skills">'+pmSkillsPanelHTML()+'</section>';
   h+='<section class="pmx-col pmx-col-right" aria-label="'+esc(PM_TABS.find(t=>t[0]===tab)[1])+'"><nav class="pmx-tabs" aria-label="Sections">'
-   +PM_TABS.map(([k,l])=>'<button type="button" class="pmx-tab'+(tab===k?" on":"")+'"'+(tab===k?' aria-current="page"':'')+' onclick="APP.playTab(\''+k+'\')">'+l+'</button>').join("")
+   +PM_TABS.map(([k,l])=>'<button type="button" class="pmx-tab'+(tab===k?" on":"")+'"'+(tab===k?' aria-current="page"':'')+' onclick="APP.playTab(\''+k+'\')">'+(k==="features"?'<span class="pmx-tab-full">'+l+'</span><span class="pmx-tab-short" aria-hidden="true">Traits</span>':l)+'</button>').join("")
    +'</nav><div class="pmx-scroll" data-scroll="right-'+tab+'">';
   if(tab==="combat")h+=pmCombatTabHTML();
   else if(tab==="gear")h+=pmGearPanelHTML();
@@ -1603,12 +1603,16 @@ function pmRollDamageFor(r,rng){
   // R7: Impale rolls the weapon dice twice; the attacker picks one, then adds
   // the Damage Modifier once (Core pp.97, 110). The better roll is preselected.
   const impale=picks.includes("Impale")?pmRollTerms(pmDiceTerms(w.dmg),rng,maxCount).total:null;
-  const dm=dmTerms?pmRollTerms(dmTerms,rng,0).total:null;
+  const dmRolled=dmTerms?pmRollTerms(dmTerms,rng,0):null;
+  const dm=dmRolled?dmRolled.total:null,dmFaces=dmRolled?dmRolled.faces:[];
   // R8: Choose Location replaces the random roll (Core pp.95–96): no d20.
   const choose=picks.includes("Choose Location");
   const d20=choose?null:1+Math.floor(rng()*20);
   const loc=choose?null:(HIT_D20.find(([range])=>{const [a,b]=range.split("-").map(Number);return d20>=a&&d20<=(b||a);})||[])[1]||"";
-  const d={weaponDice:w.dmg,weaponRoll:wpn.total,maxed:wpn.maxed,impaleRoll:impale,impaleUse:impale!=null&&impale>wpn.total?"second":"first",
+  const wT=pmDiceTerms(w.dmg);
+  // The physical dice behind the result, for the dice tray (live check #174).
+  const dice=[...wT.dice.map((x,k)=>({sides:x.sides,value:wpn.faces[k]})),...(dmTerms&&dm!=null?dmTerms.dice.map((x,k)=>({sides:x.sides,value:dmFaces[k]})):[]),...(d20!=null?[{sides:20,value:d20}]:[])];
+  const d={weaponDice:w.dmg,weaponRoll:wpn.total,dice,maxed:wpn.maxed,impaleRoll:impale,impaleUse:impale!=null&&impale>wpn.total?"second":"first",
     dmText:useDM?dmTxt:"none",dmRoll:dm,d20,loc,chooseLocation:choose};
   d.total=pmDamageTotal(d);
   return d;
@@ -1745,6 +1749,7 @@ function pmDiceSync(){
   const fresh=log[0],isNew=!first&&fresh&&!PM_DICE_SEEN.has(fresh);
   log.forEach(r=>PM_DICE_SEEN.add(r));
   if(isNew)pmDiceShow(fresh);
+  else if(PM_DICE_DAMAGE){const r=PM_DICE_DAMAGE;PM_DICE_DAMAGE=null;pmDiceShowDamage(r);}
 }
 // One tray element for the whole session. On desktop it sits in the side
 // panel's slot; on phones (no side panel) it floats over the page as before.
@@ -1782,7 +1787,7 @@ function pmDiceShow(r){
   clearTimeout(PM_DICE_TIMER);
   const value=r.roll==="00"?100:Number(r.roll);
   const docked=pmTrayDocked();
-  tray.className="pmx-dicetray show rolling"+(docked?" docked":"");
+  tray.className="pmx-dicetray show rolling"+(docked?" docked":"");  // d100 view (not "multi")
   tray.innerHTML=(docked?'':'<button class="pmx-dicetray-x" aria-label="Close" onclick="pmDiceHide()">&times;</button>'
    +'<button class="pmx-dicetray-log" onclick="pmDiceHide();APP.pmPopup(\'log\')">Log</button>')
    +'<div class="pmx-dicetray-label">'+esc(r.label)+' <span>'+r.pct+'%</span></div>'
@@ -1798,6 +1803,33 @@ function pmDiceShow(r){
     clearTimeout(fallback);
     if(!engine){tray.querySelector("canvas").hidden=true;settle();return;}
     try{PM_DICE_CANCEL=engine.animateDice(tray.querySelector("canvas"),[{sides:100}],[value],1000,settle);}
+    catch(e){console.warn("dice",e);tray.querySelector("canvas").hidden=true;settle();}
+  });
+}
+// Damage dice in the tray: weapon dice, Damage Modifier dice and the d20.
+let PM_DICE_DAMAGE=null;
+function pmDiceShowDamage(r){
+  const d=r&&r.damage;if(!d||!Array.isArray(d.dice)||!d.dice.length)return;
+  pmDicePlace();
+  const tray=pmTrayEl();
+  if(PM_DICE_CANCEL){try{PM_DICE_CANCEL();}catch(e){}PM_DICE_CANCEL=null;}
+  clearTimeout(PM_DICE_TIMER);
+  const docked=pmTrayDocked(),key="dmg"+d.total+d.dice.map(x=>x.sides+":"+x.value).join(",");
+  tray.className="pmx-dicetray show rolling multi"+(docked?" docked":"");
+  tray.innerHTML=(docked?'':'<button class="pmx-dicetray-x" aria-label="Close" onclick="pmDiceHide()">&times;</button>')
+   +'<div class="pmx-dicetray-label">Damage · '+esc(r.weapon||"")+' <span>before parry and armour</span></div>'
+   +'<canvas aria-hidden="true"></canvas>'
+   +'<div class="pmx-dicetray-out"><b>'+d.total+'</b><span class="pmx-dmgloc">'+(d.loc?esc(d.loc):'choose location')+'</span></div>';
+  tray.dataset.for=key;
+  const settle=()=>{if(tray.dataset.for!==key)return;tray.classList.remove("rolling");tray.classList.add("settled");
+    if(!tray.classList.contains("docked"))PM_DICE_TIMER=setTimeout(pmDiceHide,9000);};
+  if(!pmDiceAnimated()){tray.querySelector("canvas").hidden=true;settle();return;}
+  const fallback=setTimeout(()=>{tray.querySelector("canvas").hidden=true;settle();},1200);
+  pmDiceEngine().then(engine=>{
+    if(tray.dataset.for!==key)return;
+    clearTimeout(fallback);
+    if(!engine){tray.querySelector("canvas").hidden=true;settle();return;}
+    try{PM_DICE_CANCEL=engine.animateDice(tray.querySelector("canvas"),d.dice.map(x=>({sides:x.sides})),d.dice.map(x=>x.value),1000,settle);}
     catch(e){console.warn("dice",e);tray.querySelector("canvas").hidden=true;settle();}
   });
 }

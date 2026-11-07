@@ -1238,7 +1238,7 @@ window.APP={
  // The hit location diagram lives on the Body tab.
  playImpaleChoice(i,which){if(VIEW_ONLY)return;const d=S.rollLog[i]&&S.rollLog[i].damage;if(!d||d.impaleRoll==null||!["first","second"].includes(which))return;d.impaleUse=which;d.total=pmDamageTotal(d);render();},
  playSetDamageLoc(i,loc){if(VIEW_ONLY)return;const d=S.rollLog[i]&&S.rollLog[i].damage;if(!d||!d.chooseLocation)return;d.loc=PLAY_HP_LOCS.includes(loc)?loc:null;render();},
- playRollDamage(i){if(VIEW_ONLY)return;const r=S.rollLog[i];const d=pmRollDamageFor(r);if(!d)return;r.damage=d;render();},
+ playRollDamage(i){if(VIEW_ONLY)return;const r=S.rollLog[i];const d=pmRollDamageFor(r);if(!d)return;r.damage=d;PM_DICE_DAMAGE=r;render();},
  playJumpToInjury(){PM_VIEW="body";if(PM_POPUP&&PM_POPUP.k==="log")PM_POPUP=null;render();requestAnimationFrame(()=>{
    const panel=$("#pm-vitals");if(panel)panel.scrollIntoView({block:"start"});
  });},
@@ -1458,6 +1458,9 @@ window.APP={
    try{
      if(camp){const saved=await saveCampaignRulesUnified(camp,rules);camp.rules_settings=saved;CURRENT_CAMPAIGN_ID=camp.id;}
      else {const created=await createCampaignUnified(name,rules);CURRENT_CAMPAIGN_ID=created.id;}
+     // A new or renamed campaign must show in the builder's "Assign to
+     // campaign" picker (live check #174): drop the cached list.
+     CAMP_CACHE=null;
      CAMPAIGN_SETUP_DRAFT=null;CAMPAIGN_SETUP_EDIT=false;APPVIEW="campaign";CAMPAIGN_VIEW=null;render();await loadCampaignViewUnified(CURRENT_CAMPAIGN_ID);window.scrollTo(0,0);
    }catch(e){CAMP_MSG="Could not save campaign setup: "+(e?.message||"Unknown error");render();}
    finally{CAMPAIGN_SETUP_BUSY=false;if(APPVIEW==="campaign-setup")render();}
