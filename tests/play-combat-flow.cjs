@@ -65,8 +65,8 @@ test('a Combat Style roll from the Skills tab is resolved on the card',()=>{
  assert.match(run('pmResolveCardHTML()'),/Was this an attack or a defence\?/);
  run('APP.playJumpToEffects(0)');assert.equal(run('pmActiveTab()'),'combat');
 });
-test('Record damage shows the Body area (the stats column on a phone)',()=>{
- setup();run('S.play.tab="combat";PM_VIEW="right";APP.playJumpToInjury()');assert.equal(run('PM_VIEW'),'stats');
+test('Record damage shows the Body area (its own section on a phone)',()=>{
+ setup();run('S.play.tab="combat";PM_VIEW="right";APP.playJumpToInjury()');assert.equal(run('PM_VIEW'),'body');
  assert.equal(run('pmActiveTab()'),'combat','the right-hand panel keeps its tab');
 });
 test('an effect name opens its description in a pop-up, with Choose when allowed',()=>{

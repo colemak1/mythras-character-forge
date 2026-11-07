@@ -46,11 +46,12 @@ test('every skill row is searchable by name and formula',()=>{
  assert.match(h,/class="pmx-skillsearch"/);
  assert.match(h,/data-search="athletics str\+dex"/);
 });
-test('location rows show an HP bar and the wound status',()=>{
+test('location rows show an HP bar, the d20 range and the wound status as a word',()=>{
  setup();run('S.play.hp={"Chest":2}');
  const row=run('pmLocRow("Chest")');const max=run('playMaxHP("Chest")');
  assert.match(row,new RegExp('width:'+Math.round(2/max*100)+'%'));
- assert.match(row,/class="pmx-locst">[^<]+</);
+ assert.match(row,/class="pmx-wd minor">Minor</,'wound level is a word, not only a colour');
+ assert.match(row,/Chest <small>10–12<\/small>/,'d20 hit-location range');
  assert.match(run('pmLocRow("Head")'),/width:100%/);
 });
 console.log(passed+' play skills and body tests passed');
