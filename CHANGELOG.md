@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits Core combat-procedure source reconciliation (docs only)
+
+- Compared The Pits' own `experiments/practice-combat.html` engine to the uploaded **Mythras 2e Core** printed pp.86–111 and the previously source-audited Combat ledger; added **51** `PIT-*` cases in `docs/the-pits-combat-procedure-review.md`. Distinguishes **22** candidate `NEEDS CODE`/missing melee branches from **21** already-correct paths, rounding decisions, and declared arena exclusions.
+- Highest-priority mismatches: unconditional Major limb injury death clock (p.110), ordinary Knockback omitted unless Bash (p.104), Impale always left embedded (p.97), short-reach fighter cannot target enemy weapon (p.106), Entrapping Pin Weapon exception and Entangle/Unarmed effects. A normal-mode HP reset is documented as a roguelite convention, not Core natural recovery.
+- **Core p.95 parry half rounding:** printed table says Half but gives no odd-integer rounding instruction. Arena `parryAbsorption()` floors the **blocked** amount, increasing pass-through on odd numbers. Mark as a decision rather than silently certifying that choice.
+- **Docs only**, no production code, test files, workflows or deployments changed. No local Node suite or signed-in acceptance in this source review. Prior Main Play Mode Combat Subsystem 5 remains closed; progress **5/8**.
+
 ## The Pits (was Practice Combat): its own tab, every Core melee weapon, shared rules
 
 - **The Pits** is a new tab in the top bar (and in Play Mode's ☰ menu). Pick one of your characters there and enter, or fight without one. The Practice Combat button on each character card is gone.
