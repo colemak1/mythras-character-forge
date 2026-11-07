@@ -68,3 +68,8 @@ Merged #164: steps (a)–(f) pass, with reload and account reopen. Chat's hazard
 - Glance at Body → Hazards and recovery: acid, fall and fire tables are present (Core pp.68, 78, 79).
 
 If (g)–(i) pass, Claude closes Subsystem 4 (**4/8 → 5/8**). Everything else in the table above is GM-assisted by design or already has passing evidence.
+
+
+## Final focused owner-only live evidence — 2026-11-06
+
+Steps **(g)–(i) PASS** and hazard tables present: [detailed observations and limitations](advancement-final-live-20261106.md). Optional campaign 1d6+1: natural ER 66 + INT16 versus Willpower24 gained +6→30; formula visible in instructions. Weak Passion deepen +1; wane reached 0 and stayed 0. Reload retained values. Maiming maximum Right Arm4→2 survived reload and saved account reopen. Luck1/2→2/2 via Start a new session, retained on reopen. Character deleted/reload verified; campaign delete accepted, but final saved absence unverified after environment reset. Screenshot removed by workspace maintenance. 33 current local scripts pass; no code changed. These are pre-Stone deployment observations (`play.js?v=74f8277601`, `app.js?v=56de852493`), not acceptance of the later UI. Claude to decide closeout; **4/8 pending that decision**.
