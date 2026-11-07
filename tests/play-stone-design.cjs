@@ -171,4 +171,17 @@ test('the wound watch moved from the left column into the location panel',()=>{
 test('phones cannot zoom the page',()=>{
  assert.match(fs.readFileSync(path.join(root,'index.html'),'utf8'),/name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/);
 });
+test('skill rows have no ✓ checked flag; the fumble flag and pin stay',()=>{
+ setup();const h=run('pmSkillsPanelHTML()');assert.doesNotMatch(h,/pm-ckflag/);assert.match(h,/pm-xpflag/);assert.match(h,/pmx-pin/);
+});
+test('under the name: race, culture and career, never the campaign',()=>{
+ setup();run('S.culture="Ridge-clan";S.career="Warrior";S.campaignId="c-123"');
+ assert.equal(run('pmCharSubtitle()'),'Human · Ridge-clan · Warrior');
+ assert.doesNotMatch(fs.readFileSync(path.join(root,'js','play.js'),'utf8'),/pmCampaignLabel/);
+});
+test('Settings in the ☰ menu holds the colour scheme and the dice option',()=>{
+ setup();assert.match(run('pmSiteMenuHTML()'),/APP\.pmPopup\('settings'\)">Settings/);
+ const h=run('PM_POPUP={k:"settings"};pmPopupHTML()');
+ assert.match(h,/aria-label="Settings"/);assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,5);assert.match(h,/pmToggleDice3d/);
+});
 console.log(passed+' play stone design tests passed');
