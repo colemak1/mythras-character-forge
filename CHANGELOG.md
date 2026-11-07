@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-06 — Four more Play Mode palettes
+
+- Settings → Colour scheme now offers The War Room, Night Watch, Ivory & Ink and Deep Cypress alongside the existing five. Backgrounds, panels, text, accents and dice colours change together.
+- The new palettes inherit shared wound-severity colours. Selection still saves on this device. Gameplay is unchanged.
+
 ## The Pits: first combat-procedure fixes
 
 From ChatGPT's source review (#182):

@@ -964,7 +964,7 @@ const PM_PHONE_ICONS=Object.fromEntries(Object.entries({
 }).map(([k,d])=>[k,'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>']));
 // Colour schemes for the Stone style (v0 design). Per device, like the
 // animated-dice preference: it is a display choice, not character data.
-const PM_COLORWAYS=[["verdigris","Verdigris","Cool grey stone, verdigris green and bronze."],["ember","Basalt & Ember","Warm grey stone, forge orange and brass."],["indigo","Sandstone & Indigo","Warm sandstone, deep indigo and copper."],["moss","Moss & Gold","Lichen stone, moss green and old gold."],["basalt","Basalt (dark)","Dark basalt for dim tables."]];
+const PM_COLORWAYS=[["verdigris","Verdigris","Cool grey stone, verdigris green and bronze."],["ember","Basalt & Ember","Warm grey stone, forge orange and brass."],["indigo","Sandstone & Indigo","Warm sandstone, deep indigo and copper."],["moss","Moss & Gold","Lichen stone, moss green and old gold."],["basalt","Basalt (dark)","Dark basalt for dim tables."],["war-room","The War Room","Dark brown, aged copper and oxblood."],["night-watch","Night Watch","Midnight blue, muted steel and brass."],["ivory-ink","Ivory & Ink","Cream, deep navy and muted bronze."],["deep-cypress","Deep Cypress","Forest charcoal, sage and pale gold."]];
 function pmColorway(){let v=null;try{v=localStorage.getItem("pm-colorway");}catch(e){}return PM_COLORWAYS.some(c=>c[0]===v)?v:"verdigris";}
 function pmSetColorway(k){if(!PM_COLORWAYS.some(c=>c[0]===k))return;try{localStorage.setItem("pm-colorway",k);}catch(e){}render();}
 // Play Mode hides the site's top bar (owner, 2026-11-07); one menu button in
