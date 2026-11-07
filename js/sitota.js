@@ -116,6 +116,68 @@ function updateSiteHeader(){
  nav.querySelectorAll('[data-site-view]').forEach(link=>{
   if(link.dataset.siteView===active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
  });
+ updateSiteTabbar(active);
  const account=document.getElementById('siteAccount');
  if(account)account.title=AUTH_PROFILE&&AUTH_PROFILE.display_name?'Account — '+AUTH_PROFILE.display_name:'Account and sign-in';
 }
+
+/* ---- Shared interior page pattern (2026-11-07 menu redesign) ----
+   Every interior view (Characters, Campaign, The Pits, Rules, Account) opens
+   with the same header: eyebrow, serif title, one-line subtitle and an
+   optional primary action. Home is reached through the site nav, so these
+   pages no longer carry a "Main Menu" button. */
+function stPageHead(o){
+ o=o||{};
+ return '<header class="st-pagehead"><div class="st-pagehead-text">'
+  +'<p class="st-eyebrow">'+esc(o.eyebrow||'Your table')+'</p>'
+  +'<h1'+(o.h1Class?' class="'+o.h1Class+'"':'')+'>'+esc(o.title||'')+'</h1>'
+  +(o.sub?'<p class="st-sub">'+o.sub+'</p>':'')
+  +'</div>'+(o.action?'<div class="st-pageaction">'+o.action+'</div>':'')+'</header>';
+}
+// Signed-out pages that need an account show a gate card, not a silent jump
+// to Account. kind: 'library' | 'campaigns' | 'pits'.
+function stGateHTML(kind){
+ const what={library:['characters','Your characters are saved to your account, so you can play them on any device.'],
+  campaigns:['campaigns','Campaigns sync between the GM and players, so they need an account.'],
+  pits:['characters in The Pits','Bring one of your own characters into the arena.']}[kind]||['this page',''];
+ return '<section class="st-gate" aria-labelledby="stGateTitle"><svg class="st-gate-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+  +'<h2 id="stGateTitle">Sign in to see your '+esc(what[0])+'</h2><p>'+esc(what[1])+'</p>'
+  +'<div class="st-gate-actions"><button type="button" class="st-btn st-btn-primary" onclick="APP.toAccount()">Sign in</button>'
+  +'<button type="button" class="st-btn" onclick="APP.toAccount()">Create account</button></div></section>';
+}
+function stSignedIn(){return !!(AUTH_USER||MOCK_AUTH);}
+// After a route change, move focus to the page title for keyboard and
+// screen-reader users (the h1 gets tabindex=-1 only while focused).
+function focusPageTitle(){
+ const h=document.querySelector('#main h1');if(!h)return;
+ if(!h.hasAttribute('tabindex'))h.setAttribute('tabindex','-1');
+ try{h.focus({preventScroll:true});}catch(e){h.focus();}
+}
+// Phone tab bar (below 900px): mark the active tab and close the More sheet.
+function updateSiteTabbar(active){
+ const bar=document.getElementById('stTabbar');if(!bar)return;
+ const more=['wiki','world','account'].includes(active);
+ bar.querySelectorAll('[data-tab]').forEach(t=>{
+  const on=t.dataset.tab===active||(t.dataset.tab==='more'&&more);
+  if(on)t.setAttribute('aria-current','page');else t.removeAttribute('aria-current');
+ });
+ const sheet=document.getElementById('stMoreSheet');
+ if(sheet&&!sheet.hidden&&!sheet.dataset.keep)stCloseMore();
+ if(sheet)delete sheet.dataset.keep;
+ document.querySelectorAll('#stMoreSheet [data-site-view]').forEach(l=>{
+  if(l.dataset.siteView===active)l.setAttribute('aria-current','page');else l.removeAttribute('aria-current');
+ });
+}
+function stOpenMore(){
+ const s=document.getElementById('stMoreSheet'),b=document.getElementById('stMoreBtn');if(!s)return;
+ s.hidden=false;b&&b.setAttribute('aria-expanded','true');s.dataset.keep='1';
+ const first=s.querySelector('a,button');first&&first.focus();
+}
+function stCloseMore(){
+ const s=document.getElementById('stMoreSheet'),b=document.getElementById('stMoreBtn');if(!s)return;
+ s.hidden=true;b&&b.setAttribute('aria-expanded','false');
+}
+if(typeof document!=='undefined'&&document.addEventListener)document.addEventListener('keydown',e=>{
+ const s=document.getElementById('stMoreSheet');
+ if(e.key==='Escape'&&s&&!s.hidden){stCloseMore();document.getElementById('stMoreBtn')?.focus();}
+});

@@ -63,10 +63,10 @@ function renderPitsView(){
   document.body.classList.remove("play-mode","sheet-mode");document.body.classList.add("menu-mode");
   document.title="The Pits — New Sit’ota";
   const signedIn=!!(AUTH_USER||MOCK_AUTH),chars=Array.isArray(LIB_CACHE)?LIB_CACHE:null;
-  let h='<div class="menuwrap pits-page"><h1 class="pits-title">The Pits</h1>'
-   +'<p class="pits-lede">Fight your character against escalating opponents to learn Mythras combat before the campaign. Wounds here never touch your saved character.</p>';
+  let h='<div class="menuwrap pits-page st-page">'+stPageHead({eyebrow:'Training arena',title:'The Pits',h1Class:'pits-title',
+    sub:'Fight your character against escalating opponents to learn Mythras combat before the campaign. Wounds here never touch your saved character.'});
   if(PITS_MSG)h+='<p class="warn" role="alert">'+esc(PITS_MSG)+'</p>';
-  if(!signedIn)h+='<div class="card"><h3>Bring a character</h3><p class="note">Sign in to fight with one of your own characters.</p><p><button class="mmenu-cta-primary" onclick="APP.toAccount()">Sign in</button></p></div>';
+  if(!signedIn)h+=stGateHTML('pits');
   else if(chars===null)h+='<div class="card"><p class="note">Loading your characters&hellip;</p></div>';
   else if(!chars.length)h+='<div class="card"><h3>Bring a character</h3><p class="note">You have no saved characters yet.</p><p><button class="mmenu-cta-primary" onclick="APP.fromMenuNew()">Create a character</button></p></div>';
   else{

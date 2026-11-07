@@ -76,7 +76,7 @@ body[data-sitota-view="wiki"] .app{
   min-height:calc(100vh - 85px);
 }
 body:is([data-sitota-view="account"],[data-sitota-view="library"],[data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .mmenu,
-body:is([data-sitota-view="account"],[data-sitota-view="library"],[data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap{
+body:is([data-sitota-view="account"],[data-sitota-view="library"],[data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"],[data-sitota-view="pits"]) .menuwrap{
   background:transparent;
   color:var(--sitota-cream);
   border:0;
@@ -287,8 +287,8 @@ body[data-sitota-view="wiki"] .wiki-rescrumb{
   color:var(--sitota-muted);
   font-style:normal;
 }
-body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap > p > .nav,
-body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap > p > .chip{
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"],[data-sitota-view="pits"]) .menuwrap > p > .nav,
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"],[data-sitota-view="pits"]) .menuwrap > p > .chip{
   background:transparent;
   border:1px solid #786448;
   color:var(--sitota-cream);
@@ -297,11 +297,11 @@ body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitot
   letter-spacing:0;
   text-transform:none;
 }
-body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap > p > .nav:hover{
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"],[data-sitota-view="pits"]) .menuwrap > p > .nav:hover{
   border-color:var(--sitota-gold);
   background:var(--sitota-raised);
 }
-body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap > .note{
+body:is([data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"],[data-sitota-view="pits"]) .menuwrap > .note{
   font:15px var(--sitota-ui);
   color:var(--sitota-muted);
 }
@@ -320,7 +320,7 @@ body[data-sitota-view="wiki"] .wiki-search::placeholder{color:#c1b3a2}
 body[data-sitota-view="wiki"] .wiki-search:focus{outline:2px solid var(--sitota-gold);outline-offset:2px}
 body[data-sitota-view="wiki"] .wiki-results{margin:0 0 28px;max-width:780px}
 /* Long rules chapters and campaign details stay paper-toned for readability. */
-body:is([data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap .card,
+body:is([data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"],[data-sitota-view="pits"]) .menuwrap .card,
 body[data-sitota-view="wiki"] .wiki-article,
 body[data-sitota-view="wiki"] .wiki-corestub{
   background:var(--sitota-paper);
@@ -330,8 +330,8 @@ body[data-sitota-view="wiki"] .wiki-corestub{
   border-radius:3px;
   box-shadow:none;
 }
-body:is([data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap .card::before{content:none}
-body:is([data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap :is(.card h3,.card h4),
+body:is([data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"],[data-sitota-view="pits"]) .menuwrap .card::before{content:none}
+body:is([data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"],[data-sitota-view="pits"]) .menuwrap :is(.card h3,.card h4),
 body[data-sitota-view="wiki"] .wiki-article :is(h1,h2,h3,h4,h5){
   color:#4f371c;
   font-family:var(--sitota-display);
@@ -672,7 +672,7 @@ body[data-sitota-view="world"] .st-copy{color:#2d2922}
   body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-header-inner{width:calc(100% - 40px);gap:15px}
   body:not(.sheet-mode):not([data-sitota-view="menu"]):not([data-sitota-view="play"]) .sitota-header nav{gap:16px}
   body:is([data-sitota-view="account"],[data-sitota-view="library"],[data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .mmenu,
-  body:is([data-sitota-view="account"],[data-sitota-view="library"],[data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"]) .menuwrap{
+  body:is([data-sitota-view="account"],[data-sitota-view="library"],[data-sitota-view="campaigns"],[data-sitota-view="campaign"],[data-sitota-view="board"],[data-sitota-view="wiki"],[data-sitota-view="pits"]) .menuwrap{
     width:calc(100% - 40px);
     padding:30px 0 70px;
   }

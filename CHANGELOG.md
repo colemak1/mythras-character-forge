@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Menus: shared page header, phone tab bar and sign-in gates
+
+From the owner's home and menu redesign handoff (Part A, items 1–3):
+- Characters, Campaign, The Pits, Rules and Account open with the same header: a small label, the page title, a one-line description and the page's main button (New character, New campaign). The "Main Menu" buttons are gone; Home is in the navigation.
+- **Phones (under 900px):** a tab bar along the bottom (Home, Characters, Campaign, The Pits, More). More opens a sheet with Rules, World Guide and Account. The top bar shrinks to the logo and a round account button.
+- **Signed out:** Characters and Campaign now show a "Sign in to see your characters / campaigns" card on their own page, instead of jumping to Account. The Pits shows the same card and still lets you fight without a character.
+- After you change page, keyboard focus moves to the page title.
+
 ## The Pits: game feel (v0 design, steps 3 and 5)
 
 - **Bout bar:** Glory, a Momentum meter (Steady, Warming, Hot, Surging) and Pit Marks sit above the arena. They're **for fun and never change a roll**, and the bar says so.

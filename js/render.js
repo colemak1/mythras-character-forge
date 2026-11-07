@@ -13,7 +13,8 @@ function render(){
   updateSaveStatus();
 }
 function renderInner(){
-  if(!AUTH_USER&&!MOCK_AUTH&&!["menu","account","wiki","world"].includes(APPVIEW)){
+  // Characters, Campaign and The Pits render their own sign-in gate.
+  if(!AUTH_USER&&!MOCK_AUTH&&!["menu","account","wiki","world","library","campaigns","pits"].includes(APPVIEW)){
     APPVIEW="account";
     AUTH_MSG={text:"Sign in to create and manage your characters and campaigns."};
   }
