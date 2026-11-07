@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits P2 tied Initiative and shield attacks — Core case specifications (docs only)
+
+- Added **28** detailed child acceptance cases to `docs/the-pits-combat-procedure-review.md`: eight under PIT-P02 for initial and later-round concurrent Initiative ties (Core p.90), and twenty under PIT-P07 for all eight shields' attack profiles, reach/Size interactions, Bash and defensive regressions (Core pp.63,91,95–96; p.104 ordinary Knockback).
+- Source rulings: compare final modified totals, **ties act concurrently**, and original initiative dice carry into later rounds unless forced to reroll. A shield's own damage/Size/Short Reach/effects govern shield strikes. Shield Bash moves one metre per **two complete points** of damage before armour/parry; other bludgeons use **three complete points**, with no additional first metre.
+- Docs and handoff only; no production code or tests changed. Claude to implement in code PR(s), run the full suite, and merge after Tests passes. Main Combat Subsystem 5 remains CLOSED; progress **5/8**.
+
 ## The Pits: Entangle trip uses the original roll
 
 - After entangling a foe, the 1 AP trip no longer rolls your Combat Style again. The victim resists against the roll that won Entangle, as Core pp.97 and 101 describe (ChatGPT source check).
