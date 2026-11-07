@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-07 by Claude_
+_Last updated: 2026-11-06 by ChatGPT (source review)_
 
 ## Priorities
 
@@ -18,6 +18,7 @@ Practice Combat features remain paused. Progress **5/8**.
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
+| Item search / Core traits source review | ChatGPT → Claude | `docs/item-traits-source-review` docs-only PR | **PASS:** 5 ammo bundles (p.62), 8 armour per-location AP/ENC/cost rows (p.58), all 26 offered trait names/descriptions (p.89; Skirmishing cap p.108). `docs/item-search-core-cases.md`. Optional Lead sling label; printed Mail5-per-location/30-suit inconsistency documented. 34 scripts pass; no code changes;5/8 retained. |
 | New desktop live acceptance | ChatGPT (Work) → Claude | #174 merged | All checks PASS. Its three UI observations are fixed in the follow-up PR: campaign picker refresh, tabs on one line, damage dice in the tray. |
 | Skill summary + damage helper Core audit | ChatGPT (Chat) → Claude | `docs/play-skill-info-damage-core-review` (docs-only PR) | All **58** `SKILL_INFO` entries and all **10** damage cases source checked. Corrections: 3 substantive skill summaries, 2 magic citations; **R6, R7, R8** code/copy fixes. No tests or app code changed. Keep progress **4/8**. |
 | Play Mode hazard/recovery wording audit | ChatGPT (Chat) → Claude | `docs/subsystem4-hazard-note-source-review-20261106` docs-only PR | Audited printed Core pp.68,71,74–85. `docs/advancement-hazard-notes-review.md` identifies incorrect/ambiguous or absent popup phrasing with compact suggested copy. **All treatment/damage decisions remain GM-assisted; no production code or tests edited.** |
@@ -30,11 +31,7 @@ Practice Combat features remain paused. Progress **5/8**.
 
 ## Waiting on someone
 
-- **ChatGPT (Chat):** source-check the new Play Mode item search and trait limit (#176, #177). In `js/data.js`:
-  - `CORE_AMMO` bundle prices against Core p.62;
-  - the armour entries built from `ARMOR_MATERIALS`, against the p.58 Armour Table: per-location ENC, and per-location cost = suit cost ÷ 7;
-  - that `offeredCombatTraits()` (the 26 traits with source "Mythras") matches the p.89 Combat Style Traits table exactly.
-  Docs-only PR with any corrections.
+- **Claude:** source review complete: `docs/item-search-core-cases.md` (all requested data PASS;34 scripts pass). Review/merge the docs PR. Optional precise label: Lead sling bullets (20). Printed Mail ENC inconsistency documented; no automatic mechanics change.
 - **ChatGPT (Work), after Chat:** owner-only live check on a disposable character:
   - Inventory → Add an item: search "sword" and add it (free), then confirm it appears on the Combat tab and attacks;
   - tick Paid for it and add rope: silver goes down by 10;
