@@ -55,6 +55,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 - New `docs/advancement-hazard-notes-review.md` distinguishes **correct**, **missing**, and **imprecise** instructions with short suggested wording. Missing include acid entirely, fall/fire intensity thresholds, physical effort intervals and healing restrictions; p.74's generic successful-treatment wording needs a cure-specific qualifier. Cause-specific Fatigue recovery already works separately and must be preserved.
 - All medical/hazard/disease mechanics remain **GM-assisted**. This PR does not modify application code, calculations, tests, Core sourcebook or release assets. No live check or Node suite run. Subsystem 4 remains **OPEN**, progress **4/8**.
 
+## Play Mode skill descriptions and damage helper source review (docs only)
+
+- Compared **58** `SKILL_INFO` entries in `js/data.js` with the privately uploaded Mythras Core (56 ordinary skill-chapter entries from printed pp.38–50 plus Exhort p.178/181 and Folk Magic p.121). `docs/play-mode-skill-info-source-review.md` lists every entry, page and verdict.
+- Small corrections recommended for **Brawn** (p.39 capacity increases with skill), **Courtesy** (p.45 fumble does not invariably insult), **Literacy** (p.47 language cap and non-alphabetic records), and blank page references for **Exhort** and **Folk Magic**.
+- Source-verified **R1–R10** in `docs/play-mode-damage-roll-cases.md`: R1 successful parry reduces attack damage by weapon Size (pp.94–95), R4 negatives floor at zero (p.9), R6 natural weapons **are eligible** for Maximise Damage (p.98), R7 Impale rolls weapon damage twice then applies DM once (pp.97,110) but current total shows only the first roll, R8 Choose Location supersedes a random d20 (pp.95–96). R9 software invalidation is app logic, not a separately printed Core rule.
+- **Docs only:** no JS, CSS, tests, HTML or workflow changes and no live/Node verification in Chat. Claude to patch three narrow helper issues in code with tests. Keep Combat S5 closed for its earlier scoped acceptance; S4 remains open; progress **4/8**.
+
 ## Advancement: regression tests
 
 - New automated tests cover Experience Rolls, fumble bonuses, skill training and teachers, learning new skills, Passion improvement, characteristic training and permanent improvement, natural healing intervals and Fatigue recovery times. No calculation errors were found. What's left for Subsystem 4 is two optional owner decisions and one live check.
