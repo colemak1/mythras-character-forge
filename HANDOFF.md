@@ -2,7 +2,7 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-07 by Claude_
+_Last updated: 2026-11-07 by ChatGPT (Chat) — The Pits Combat procedure source audit_
 
 ## Priorities
 
@@ -14,10 +14,13 @@ _Last updated: 2026-11-07 by Claude_
 
 **Practice Combat is active again (owner, 2026-11-07):** rules first, then every weapon (done: shared table), then a Play Mode-style UI, then the fun polish. Progress **5/8**.
 
+**Current Pits rule-check handoff:** `docs/the-pits-combat-procedure-review.md` contains 51 source-linked acceptance cases. This is not a live/CI certification. Main Play Mode Combat remains closed, The Pits has a separate implementation backlog; 5/8 retained.
+
 ## In progress
 
 | Task | Owner | Branch / PR | State |
 |---|---|---|---|
+| The Pits combat procedure source audit | ChatGPT (Chat) → Claude | `docs/the-pits-combat-procedure-source-review` (docs-only PR) | **51 Core-linked cases; 21 NEEDS CODE + 1 NEEDS COPY, 21 PASS checks, 2 decisions and scope notes.** Printed pp.86–111, with source screenshots for p.95 rounding ambiguity. Claude owns code/tests; no work on main Combat scope. **5/8**. |
 | Item search / Core traits source review | ChatGPT → Claude | `docs/item-traits-source-review` docs-only PR | **PASS:** 5 ammo bundles (p.62), 8 armour per-location AP/ENC/cost rows (p.58), all 26 offered trait names/descriptions (p.89; Skirmishing cap p.108). `docs/item-search-core-cases.md`. Optional Lead sling label; printed Mail5-per-location/30-suit inconsistency documented. 34 scripts pass; no code changes;5/8 retained. |
 | New desktop live acceptance | ChatGPT (Work) → Claude | #174 merged | All checks PASS. Its three UI observations are fixed in the follow-up PR: campaign picker refresh, tabs on one line, damage dice in the tray. |
 | Skill summary + damage helper Core audit | ChatGPT (Chat) → Claude | `docs/play-skill-info-damage-core-review` (docs-only PR) | All **58** `SKILL_INFO` entries and all **10** damage cases source checked. Corrections: 3 substantive skill summaries, 2 magic citations; **R6, R7, R8** code/copy fixes. No tests or app code changed. Keep progress **4/8**. |
@@ -31,7 +34,7 @@ _Last updated: 2026-11-07 by Claude_
 
 ## Waiting on someone
 
-- **ChatGPT (Chat):** Practice Combat rules review. `experiments/practice-combat.html` has its own combat engine (parry absorption, Special Effects, Fatigue, wounds, engagement range). Weapons, AP, HP, Damage Modifier and Initiative now match the shared, checked rules (`tests/practice-rules.cjs`). Please compare the rest of its combat procedure against Core pp.86–111 and the Subsystem 5 ledger, and list differences as cases (given X → Core p.N says Y → arena does Z). Known question: `parryAbsorption()` rounds half damage down; the main app leaves rounding to the GM. Docs-only PR.
+- **Claude:** read `docs/the-pits-combat-procedure-review.md` (docs-only source-review PR). It maps **51** arena cases against printed Core pp.86–111 and the closed main Combat ledger. **22** are candidate code fixes/missing melee paths. First: Major limb timer only for severed/punctured/ripped injuries (p.110); ordinary Knockback without Bash (p.104); attacker choice to leave Impale embedded (p.97); shorter-reach weapon targeting (p.106); eligible Entrapping/Unarmed Special Effects. **Parry absorption rounding is not expressly settled by printed p.95**: `Math.floor(damage/2)` absorbed on odd damage needs an explicit decision before code change. Implement in separate focused PRs with tests. Main Subsystem 5 remains closed; project **5/8**.
 
 - **ChatGPT (Work):** (source review #179 passed) owner-only live check on a disposable character:
   - Inventory → Add an item: search "sword" and add it (free), then confirm it appears on the Combat tab and attacks;
@@ -51,6 +54,8 @@ _Last updated: 2026-11-07 by Claude_
 
 
 ## Notes
+
+- **Pits source-review (2026-11-07):** privately uploaded Mythras Core printed pp.86–111 inspected (rendered tables p.95 and wound p.110), comparing `experiments/practice-combat.html` SHA `73cc27a0556fb9e048ab8dc29dab78a469b5cbf8` and main `docs/combat-cases-batch-1.md`. Reviewed 51 cases, 21 NEEDS CODE plus 1 NEEDS COPY candidate; 29 of 43 SE names are selectable. `parryAbsorption` currently floors amount **blocked** at half on odd damage: p.95 table says Half but gives no explicit integer rounding, so record a decision. No production changes or automated/live tests run. **5/8 remains**.
 
 - Source audit of PR #168 `SKILL_INFO` and new damage helper: original Core printed pp.38–50, p.9, pp.94–98,109–110, plus p.121 Folk Magic and pp.178/181 Exhort. R6: **Maximise Damage does apply to natural weapons**; R7: Impale rolls *weapon dice twice*, adds Damage Modifier *once*, must show chosen roll's total; R8: Choose Location should override d20. R1 parry and R4 zero floor confirmed. Full work in `docs/play-mode-skill-info-source-review.md` / `docs/play-mode-damage-roll-cases.md`. **Docs-only, no live/test pass, 4/8 unchanged**.
 - S4 hazard popup source review uses privately supplied Core, printed **p.68 for Acid**, **p.71** for suffocation/blood loss, **pp.74–75** for disease/poison, **p.78** for falls/sleep, **p.79** for fire/exertion, **p.80** for healing. The current `pmHazardsHTML()` text is mostly accurate but lacks crucial table/exception reminders. Review: `docs/advancement-hazard-notes-review.md`. Claude may make **wording-only code corrections in a separate PR**. Core hazard automation remains GM-assisted and Subsystem 4 remains open, progress 4/8.
