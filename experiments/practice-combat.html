@@ -323,7 +323,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 <header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>The Pits</span><a href="../index.html#/the-pits">Choose a character</a><a href="#" id="homeLink">Reset</a></div></header>
 <main class="main" id="root"></main>
 <script src="../js/data.js?v=ea343c2e36"></script>
-<script src="practice-character.js?v=19ba1929b4"></script>
+<script src="practice-character.js?v=0c0d2375a0"></script>
 <script src="practice-guidance.js?v=3bb978cd88"></script>
 <script src="pits-view.js?v=766aacde41"></script>
 <script src="pits-game.js?v=1d86e29baf"></script>
@@ -653,7 +653,9 @@ function applyPracticeLoadout(){
  if(practiceCharacter.error)return false;
  const style=selectedPracticeStyle();
  if(!style?.weapons.length)return false;
- if(!style.weapons.some(w=>w.key===config.weapon))config.weapon=style.weapons[0].key;
+ if(!style.weapons.some(w=>w.key===config.weapon&&ARENA_WEAPONS[w.key]))config.weapon=(style.weapons.find(w=>ARENA_WEAPONS[w.key])||{}).key;
+ if(!ARENA_WEAPONS[config.weapon])return false;
+ if(config.shield!=='none'&&!SHIELDS[config.shield])config.shield='none';
  if(ARENA_WEAPONS[config.weapon].twoHanded||!style.shields.some(w=>w.key===config.shield))config.shield='none';
  const p=practiceCharacter,c=p.chars;
  Object.assign(config,{charname:p.name,username:p.player,style:style.percent,evade:p.skills.Evade,firstAid:p.skills['First Aid'],willpower:p.skills.Willpower,str:c.STR,siz:c.SIZ,con:c.CON,dex:c.DEX,int:c.INT});
@@ -675,7 +677,7 @@ function practiceCharacterHtml(){
  <p>Practice starts rested, using your character’s location HP maximums. Your saved character and campaign wounds stay unchanged.</p>
  <div class="practice-loadout"><label>Combat Style<select id="practiceStyle">${p.styles.map(s=>`<option value="${esc(s.key)}" ${s.key===practiceStyle?'selected':''}>${esc(s.name)} · ${s.percent}%${s.weapons.length?'':' · no supported weapon'}</option>`).join('')}</select></label>
  ${ready?`<label>Weapon<select id="practiceWeapon">${style.weapons.map(w=>`<option value="${w.key}" ${w.key===config.weapon?'selected':''}>${esc(w.name)}</option>`).join('')}</select></label><label>Shield<select id="practiceShield" ${ARENA_WEAPONS[config.weapon].twoHanded?'disabled':''}><option value="none">No shield</option>${ARENA_WEAPONS[config.weapon].twoHanded?'':style.shields.map(w=>`<option value="${w.key}" ${w.key===config.shield?'selected':''}>${esc(w.name)}</option>`).join('')}</select></label>`:''}</div>
- ${ready?`<p class="practice-summary">${p.apMax} Action Points · Evade ${p.skills.Evade}% · Endurance ${p.skills.Endurance}%</p>`:'<p role="alert">Choose a style containing an owned Broadsword, Shortspear, Mace, Dagger or Greatsword. Add its weapon to the Combat Style and equipment in Forge, then reopen practice.</p>'}
+ ${ready?`<p class="practice-summary">${p.apMax} Action Points · Evade ${p.skills.Evade}% · Endurance ${p.skills.Endurance}%</p>`:'<p role="alert">This Combat Style has no weapon The Pits supports. Choose another style, or attach a melee weapon to this style in Forge, then reopen practice.</p>'}
  <a href="../index.html#/the-pits">Choose another character</a></div>`;
 }
 

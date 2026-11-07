@@ -102,6 +102,23 @@ function arena(payload,forge=true){
   }
  });
  check('A direct arena visit retains the independent demo',()=>assert.match(arena(snapshot,false).html(),/Kethan Voss/));
+ // Regression: the profile check used to accept only the five original
+ // weapons and three shields, so most saved characters could not load.
+ run(`var every=freshState();every.concept.name='Weapons master';every.chars={STR:13,CON:12,SIZ:14,DEX:15,INT:14,POW:11,CHA:10};
+  every.cultStyleOn=true;every.cultStyleName='Everything';
+  var everyMelee=WEAPONS.filter(w=>!practiceUnsupportedReason(w)).map(w=>w.name);
+  every.styleDefs['style:cult']={weapons:everyMelee,traits:[]};every.gearWeapons=everyMelee.slice();
+  var everyProfile=JSON.stringify(practiceSnapshot({id:'every',ownerId:'user',state:every}));`);
+ check('Every supported Core melee weapon and shield on a saved character loads and fights in the arena',()=>{
+  const profile=JSON.parse(run('everyProfile')),style=profile.styles[0];
+  assert.equal(style.weapons.length,35);assert.equal(style.shields.length,8);
+  for(const w of style.weapons){
+   const a=arena(JSON.stringify(profile));assert.equal(a.run('practiceCharacter.error||""'),'',w.name);
+   a.run(`config.weapon=${JSON.stringify(w.key)};startRun();`);assert.equal(a.run('S.fighters.a.weapon'),w.key,w.name);
+  }
+  const a=arena(JSON.stringify(profile));a.run(`config.weapon='sword';config.shield='kite';startRun();`);
+  assert.equal(a.run('S.fighters.a.shield'),'kite');
+ });
  run(`entry.ownerId='someone-else';`);ctx.destination=null;await run(`APP.openCharToPractice('saved')`);
  check('A character owned by someone else cannot be sent to practice',()=>assert.equal(ctx.destination,null));
  console.log(checks+' character-practice integration checks passed');

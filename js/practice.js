@@ -11,17 +11,17 @@ function practiceSnapshot(entry){
     const chars=effectiveChars();
     if(!CHARS.every(k=>Number.isFinite(chars[k])&&chars[k]>0))throw Error("Finish this character's characteristics before practicing.");
     if(chars.STR+chars.SIZ>130)throw Error("This character's Damage Modifier is outside the arena's current supported range.");
-    // Every Core melee weapon and shield the arena supports (shared table).
+    // Every Core weapon and shield the arena supports (shared table) that the
+    // Combat Style trains. Practice is a disposable bout, so the character
+    // does not need to carry it; carried ones are listed first.
     const owned=typeof pmCarriedWeapons==="function"?pmCarriedWeapons():(S.gearWeapons||[]);
     const usable=n=>{const w=WEAPON_MAP[n];return !!w&&!practiceUnsupportedReason(w);};
-    const weapons=Object.fromEntries(owned.filter(n=>usable(n)&&WEAPON_MAP[n].group!=="Shield").map(n=>[n,practiceWeaponKey(n)]));
-    const shields=Object.fromEntries(owned.filter(n=>usable(n)&&WEAPON_MAP[n].group==="Shield").map(n=>[n,practiceWeaponKey(n)]));
     const styles=stylesList().map(style=>{
       const def=S.styleDefs[style.key]||{weapons:[],traits:[]};
-      const trained=Array.isArray(def.weapons)?def.weapons:[];
-      return {key:style.key,name:style.name,percent:finalPct(style.key),traits:def.traits||[],
-        weapons:owned.filter(n=>weapons[n]&&trained.includes(n)).map(n=>({name:n,key:weapons[n]})),
-        shields:owned.filter(n=>shields[n]&&trained.includes(n)).map(n=>({name:n,key:shields[n]}))};
+      const trained=[...new Set(Array.isArray(def.weapons)?def.weapons:[])].filter(usable);
+      const ordered=[...trained.filter(n=>owned.includes(n)),...trained.filter(n=>!owned.includes(n))];
+      const pick=shield=>ordered.filter(n=>(WEAPON_MAP[n].group==="Shield")===shield).map(n=>({name:n,key:practiceWeaponKey(n)}));
+      return {key:style.key,name:style.name,percent:finalPct(style.key),traits:def.traits||[],weapons:pick(false),shields:pick(true)};
     });
     const vitals=charVitals(S);
     return {version:1,name:S.concept.name||entry.name||"Unnamed character",player:AUTH_PROFILE?.display_name||S.concept.player||"Player",
@@ -29,7 +29,7 @@ function practiceSnapshot(entry){
       apMax:vitals.baseAP,init:initBonus(chars.INT,chars.DEX),armourInitPenalty:armourPenaltyToInit(),
       hp:Object.fromEntries(vitals.locs.map(l=>[l.loc,l.max])),
       armour:Object.fromEntries(vitals.locs.map(l=>[l.loc,armorApAt(l.loc)])),
-      unsupportedGear:owned.filter(n=>!weapons[n]&&!shields[n]),
+      unsupportedGear:owned.filter(n=>!usable(n)),
       species:S.species||"human"};
   }finally{S=original;}
 }
