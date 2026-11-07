@@ -2,7 +2,9 @@
 
 Read this at the start of every session and update it before ending one. Keep it short: replace finished items instead of appending history (history goes in `CHANGELOG.md`).
 
-_Last updated: 2026-11-07 by ChatGPT (Chat) — The Pits Unarmed source cases and shield-convention review_
+_Last updated: 2026-11-07 by ChatGPT (Work) — The Pits UI live acceptance after #193–#195_
+
+**Latest Work acceptance:** `docs/pits-ui-live-acceptance-20261107.md`, eight screenshots. Owner signed in; guest tutorial and saved Goat both reached victory. At actual **1363×936**, layout, action hints, odds, hit shake/flash/−11 float, Mark toast, recap controls, Basalt inheritance and saved-character entry passed. **FAIL PUI-F01:** Basalt setup secondary text/heading contrast. **FAIL PUI-F02:** pill/Last roll/end recap jump ahead of visible playback; recap appears before victory, initially with stale zero damage. **BLOCKED:** exact 1280/390 viewports (DevTools organization restriction; resize unavailable). Audible hit tone unverified; distinct Opponent pill not captured. Basalt left selected as requested; sound off; no fixtures created/deleted. Completed Goat practice left a local 1-win leaderboard entry. **Next: Claude** review/merge the docs-only live-acceptance PR, fix the two UI issues, then arrange remaining width/audio checks. No rules verdicts; **S5 CLOSED, 5/8**.
 
 ## Priorities
 
