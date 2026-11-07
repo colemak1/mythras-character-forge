@@ -7,30 +7,6 @@
 // instead of a blocking alert(). Cleared at the top of each new roll/cast
 // attempt so it never lingers past whatever prompted it.
 let PM_MSG=null;
-// Masthead campaign label (see pmCampaignLabel below, used in place of D's
-// fabricated "No. 042" edition number). Keyed by campaignId so switching
-// between characters linked to different campaigns (or the same one
-// again) never shows a stale name, without refetching one already
-// resolved this session. Ephemeral, like PM_MSG above -- not part of
-// character state, resets on reload.
-let PM_CAMPAIGN_NAME_CACHE={};
-// Resolves S.campaignId to that campaign's name for the masthead, via the
-// same loadCampaignRowUnified() the Party Board's own refetch already uses
-// (cloud row or local-storage record, whichever mode is active) -- Play
-// Mode's render() is synchronous and can't await a fetch mid-render, so
-// this kicks the fetch off on first call for a given id and returns null
-// (caller falls back to a neutral label) until it resolves, at which point
-// it re-renders once with the real name cached for next time.
-function pmCampaignLabel(){
-  if(!S.campaignId)return "";
-  if(S.campaignId in PM_CAMPAIGN_NAME_CACHE)return PM_CAMPAIGN_NAME_CACHE[S.campaignId];
-  PM_CAMPAIGN_NAME_CACHE[S.campaignId]=null;
-  loadCampaignRowUnified(S.campaignId).then(camp=>{
-    PM_CAMPAIGN_NAME_CACHE[S.campaignId]=camp?camp.name:"";
-    if(APPVIEW==="play")render();
-  });
-  return null;
-}
 // Transient "here's the armour math that just happened" confirmation for
 // playApplyDamage() (see APP.playApplyDamage in app.js) -- {loc,raw,ap,
 // applied} for whichever location most recently had damage applied through
@@ -997,7 +973,7 @@ function pmSetColorway(k){if(!PM_COLORWAYS.some(c=>c[0]===k))return;try{localSto
 const PM_SITE_LINKS=[["#/","Home"],["#/my-characters","Characters"],["#/my-campaigns","Campaign"],["#/wiki","Rules"],["#/world/welcome","World Guide"],["#/account","Account"]];
 function pmSiteMenuHTML(){
   return '<details class="pmx-sitemenu"><summary aria-label="Site menu" title="Site menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>'
-   +'<nav class="pmx-sitemenu-list" aria-label="Site navigation">'+PM_SITE_LINKS.map(([href,l])=>'<a href="'+href+'">'+l+'</a>').join("")+'<button type="button" onclick="this.closest(\'details\').open=false;APP.pmPopup(\'ref\')">Rules reference</button></nav></details>';
+   +'<nav class="pmx-sitemenu-list" aria-label="Site navigation">'+PM_SITE_LINKS.map(([href,l])=>'<a href="'+href+'">'+l+'</a>').join("")+'<button type="button" onclick="this.closest(\'details\').open=false;APP.pmPopup(\'ref\')">Rules reference</button><button type="button" class="pmx-sitemenu-plain" onclick="this.closest(\'details\').open=false;APP.pmPopup(\'settings\')">Settings</button></nav></details>';
 }
 // Skill description in the side panel (owner, 2026-11-07): our short summary
 // of the Core text, the formula and current value, and a Roll button.
@@ -1026,6 +1002,19 @@ function pmInitiativeHTML(){
    +'<label class="pmx-opt"><input type="checkbox"'+ro+(S.play.surprised?' checked':'')+' onchange="APP.playSetSurprised(this.checked)"> Surprised <span class="pmx-dim">initiative −10, can\'t defend until your turn (Core p.105)</span></label>'
    +(rec?'<div class="pmx-btnrow"><button type="button" class="pmx-act"'+ro+' onclick="APP.playClearInitiative()">End fight</button></div><p class="pmx-small pmx-dim">Ending the fight clears initiative and Surprised and restores Action Points.</p>':'');
 }
+// Settings (☰ menu): per-device display choices. Colour scheme for now;
+// room for more later (owner, 2026-11-07).
+// Under the name: race, then culture and career. Not the campaign (owner, 2026-11-07).
+function pmCharSubtitle(){
+  const race=(SPECIES_MAP[S.species||"human"]||{label:"Human"}).label;
+  const archetype=S.archetype!=="ordinary"&&ARCHETYPES[S.archetype]?ARCHETYPES[S.archetype].label:null;
+  const career=S.customCareer&&S.customCareer.isCustom?S.customCareer.name:S.career;
+  return [race,archetype,S.culture,career].filter(Boolean).map(esc).join(" · ");
+}
+function pmSettingsHTML(){
+  return '<h3 class="pmx-setth">Colour scheme</h3>'+pmStyleHTML()
+   +'<h3 class="pmx-setth">Dice</h3><label class="pmx-opt"><input type="checkbox" '+(pmDiceAnimated()?'checked':'')+' onchange="pmToggleDice3d(this.checked)"> Animated dice</label>';
+}
 function pmStyleHTML(){
   const cur=pmColorway();
   return '<p class="pmx-small" style="margin-top:0">Changes the colours of Play Mode on this device only.</p><div class="pmx-cwlist">'
@@ -1051,13 +1040,9 @@ function pmSkillsPanelHTML(){
     const pctTxt=fatigueNoActivity()?"—":fluency?String(base):g.pct===null?GRADE_LABEL[g.grade]:String(g.pct);
     const cbt=e.grp==="Combat Style";
     const baseFmt=(e.formula||"").replace(/x(\d)/i,"×$1").toUpperCase();
-    const checked=S.xp.checked.includes(e.key);
     const fumbled=S.xp.fumbled.includes(e.key);
-    // Checked-skill flag (Experience Roll eligibility) -- small icon toggle
-    // rather than a native checkbox, bronze accent. Manual toggle for a
-    // dramatic non-crit success the app can't detect on its own; auto-set
-    // on a Critical (in-app roll, or the Improve Skills modal's own copy).
-    const ckflag='<button class="pm-ckflag'+(checked?" on":"")+'" title="'+(checked?"Checked (note only). Click to clear.":"Mark checked (note only)")+'" onclick="APP.xpToggleChecked(\''+jsq(e.key)+'\')">&#10003;</button>';
+    // The ✓ "checked" flag left the skill rows (owner, 2026-11-07); it is still
+    // in the Improve Skills window, and a Critical still sets it.
     // Fumble flag -- direct toggle, not a "log a result" step: most tables
     // roll real dice instead of clicking "roll" below, so flip this the
     // instant a physical die actually comes up a Fumble. Same flag/icon
@@ -1073,7 +1058,7 @@ function pmSkillsPanelHTML(){
     const pinned=S.play.pinned.includes(e.key);
     const pin='<button class="pmx-pin'+(pinned?" on":"")+'" aria-pressed="'+pinned+'" title="'+(pinned?"Unpin":"Pin to the top")+'" onclick="APP.playTogglePin(\''+jsq(e.key)+'\')">'+(pinned?"&#9733;":"&#9734;")+'</button>';
     return '<div class="pm-skillrow'+(cbt?" cbt":"")+'" data-search="'+esc((e.label+" "+(e.formula||"")).toLowerCase())+'">'
-     +pin+(fluency?"":ckflag+fumbleflag)
+     +pin+(fluency?"":fumbleflag)
      +'<span class="pmx-skn"><button type="button" class="nm pmx-sknm" onclick="APP.pmSkillInfo(\''+jsq(e.key)+'\')" title="What this skill covers">'+esc(e.label)+'</button>'
      +(baseFmt?'<span class="base">'+esc(baseFmt)+'</span>':'')+'</span>'
      +'<span class="lead"></span>'
@@ -1353,7 +1338,7 @@ function pmPopupHTML(){
   else if(k==="advance"){title="Advance time";body=pmAdvanceTimeHTML();}
   else if(k==="rulesref"){title="Combat situations";body=pmCombatRulesRefHTML();}
   else if(k==="range"){title="Distance and target size";body=pmRangeHelperHTML();}
-  else if(k==="style"){title="Colour scheme";body=pmStyleHTML();}
+  else if(k==="style"||k==="settings"){title="Settings";body=pmSettingsHTML();}
   else if(k==="fxref"){title="Special Effects";body='<div id="pm-actions">'+specialEffectsPanel()+'</div>';}
   else if(k==="ref"){title="Rules reference";body=pmRulesRefHTML();}
   else if(k==="initiative"){title="Initiative";body=pmInitiativeHTML();}
@@ -1395,8 +1380,7 @@ function renderPlayView(){
   const careerName=S.customCareer.isCustom?S.customCareer.name:S.career;
   const tab=pmActiveTab();
   const backLabel=(VIEW_ONLY||PLAY_RETURN_VIEW==="board")?"&#8592; Party Board":"&#8592; Edit character";
-  const species=S.archetype!=="ordinary"?ARCHETYPES[S.archetype].label:null;
-  const sub=[species,S.culture,careerName,pmCampaignLabel()].filter(Boolean).map(esc).join(" · ");
+  const sub=pmCharSubtitle();
   const initials=name.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join("")||"?";
   const scroll=pmSaveScroll();
   let h='<div class="pm-wrap pmx pmx-dash" data-pm-style="stone" data-view="'+(PM_VIEW==="right"?"right":PM_VIEW)+'" data-tab="'+tab+'">';
@@ -1407,7 +1391,6 @@ function renderPlayView(){
    +'<div class="pmx-headbtns">'
    +'<button class="pm-btn" onclick="APP.pmPopup(\'log\')" aria-label="Roll log"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/></svg><span class="lbl">Roll log'+(S.rollLog.length?' <span class="pmx-dim">'+S.rollLog.length+'</span>':'')+'</span></button>'
    +(VIEW_ONLY?"":'<button class="pm-btn" onclick="APP.pmPopup(\'advance\')" aria-label="Advance time"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span class="lbl">Advance time</span></button>')
-   +'<button class="pm-btn pmx-stylebtn" onclick="APP.pmPopup(\'style\')" aria-label="Colour scheme" title="Colour scheme"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.8 1.6-1.6 0-1.3-1.2-1.6-1.2-2.8 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7.2" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg></button>'
    +(VIEW_ONLY?"":'<button class="pm-btn pmx-pri" onclick="APP.openXP()" aria-label="Improve skills"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span class="lbl">Improve skills</span>'+(S.xp.pool?' <span class="pm-xpbadge">'+S.xp.pool+'</span>':'')+'</button>')
    +'</div></header>';
   if(VIEW_ONLY){

@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode: race under the name, Settings menu, cleaner skill rows
+
+- Under the character's name: **race**, culture and career. The campaign name is gone.
+- **Settings** in the ☰ menu: colour scheme and animated dice. The palette button left the header.
+- Skill rows no longer show the ✓ "checked" mark; it's still in Improve Skills, and a Critical still sets it.
+- On phones, **Improve skills** is just its icon, with the number of Experience Rolls as a small badge.
+
 ## Play Mode: skill descriptions, tidier sheet, no zoom on phones
 
 - **Skill descriptions:** tap a skill's name to read what it covers in the side panel, with its formula, value, page reference and a Roll button. These are short summaries of Mythras Core pp.38–50 in our own words (the site is public, so the book's text isn't copied).

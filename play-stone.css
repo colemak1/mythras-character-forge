@@ -72,7 +72,6 @@ body.play-mode.pm-style-stone .app{background:transparent}
 .pm-style-stone .pmx .pmx-headbtns .pm-btn.pmx-pri{background:var(--st-accent);border-color:var(--st-accent);color:var(--st-on-accent);font-weight:600}
 .pm-style-stone .pmx .pmx-headbtns .pm-btn.pmx-pri:hover{background:var(--pmx-accent-hover);color:var(--st-on-accent)}
 .pm-style-stone .pmx-headbtns .pm-btn{display:inline-flex;align-items:center;gap:8px}
-.pm-style-stone .pmx-stylebtn{justify-content:center;padding:8px 10px!important}
 .pm-style-stone .pm-xpbadge{background:var(--st-on-accent);color:var(--st-accent)}
 
 /* Characteristics and trackers */
@@ -390,4 +389,15 @@ body.play-mode .sitota-header{display:none}
   .pm-style-stone .pmx .pm-loclist{gap:4px}
   .pm-style-stone .pmx-attrs div{padding:6px 14px}
   .pm-style-stone .pmx .pmx-bodybox{padding:12px 14px}
+}
+
+/* Settings popup */
+.pmx-setth{margin:14px 0 6px!important}
+.pmx-setth:first-child{margin-top:0!important}
+.pmx-sitemenu-list .pmx-sitemenu-plain{border-top:0;margin-top:0}
+/* Phones: header buttons are icons only; the Experience Roll count is a small badge on the icon */
+@media (max-width:1100px){
+  .pm-style-stone .pmx .pmx-headbtns .pm-btn{position:relative}
+  .pm-style-stone .pmx-headbtns .pm-btn .lbl{display:none}
+  .pm-style-stone .pmx-headbtns .pm-xpbadge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;font:700 10.5px/18px var(--st-body);text-align:center;background:var(--st-accent-2);color:var(--st-on-accent);box-shadow:0 0 0 2px var(--st-header-bg)}
 }
