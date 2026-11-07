@@ -56,4 +56,18 @@ test('snapshot: both fighters with weapon Size/Reach, locations, wounds and skil
  assert.equal(s.fighters.b.locations.find(l=>l.loc==='Chest').wound,'serious');
  assert.ok('acrobatics' in s.fighters.a.skills);
 });
+test('roll bands come from the engine grading: crit, auto-success 01–05, auto-fail 96–98, fumbles',()=>{
+ const b=pct=>json(`pitsRollBands(${pct})`).map(x=>[x.kind,x.from,x.to]);
+ assert.deepEqual(b(67),[['critical',1,7],['success',8,67],['failure',68,98],['fumble',99,100]]);
+ assert.deepEqual(b(3),[['critical',1,1],['success',2,5],['failure',6,98],['fumble',99,100]],'01–05 always succeed');
+ assert.deepEqual(b(120),[['critical',1,12],['success',13,95],['failure',96,99],['fumble',100,100]],'over 100: only 00 fumbles');
+ assert.match(run('pitsOddsText(67)'),/<b>67%<\/b> to succeed · .*7% critical.*2% fumble/);
+});
+test('the readout shows the latest skill roll; odds come from the option the player would roll',()=>{
+ setup();assert.match(run('pitsReadoutHtml()'),/No roll yet this bout/);
+ run(`requestSkill('a',60,'Attack · Combat Style 60%',()=>{});R.callback([42])`);
+ assert.match(run('pitsReadoutHtml()'),/Attack: <b>42<\/b> against 60% — <span class="o-success">Success/);
+ assert.equal(run(`pitsOddsFor('attack')`),run('combatTarget(S.fighters.a)'));
+ run(`S.pending={kind:'reaction',atk:'b',def:'a'}`);assert.equal(run(`pitsOddsFor('react','evade')`),run('evadeTarget(S.fighters.a)'));
+});
 console.log(passed+' pits view tests passed');

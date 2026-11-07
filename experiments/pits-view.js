@@ -64,3 +64,52 @@ function pitsSnapshot(){
 }
 // Short words for the strip pill, per phase.
 const PITS_PHASE_PILL={action:'Your turn',opponent:'Opponent',reaction:'Defend',effects:'Special Effects',resist:'Resist',rolling:'Roll',recap:'Bout over',intro:'Next opponent',setup:'Setup'};
+
+// Percentile band for a skill: contiguous zones of critical / success /
+// failure / fumble, found by grading every face 1–100 with the engine's own
+// rollSkill(), so the band can never disagree with the rules.
+function pitsRollBands(pct){
+  const out=[];
+  for(let r=1;r<=100;r++){
+    const g=rollSkill(pct,r).grade,kind=['fumble','failure','success','critical'][g];
+    const last=out[out.length-1];
+    if(last&&last.kind===kind)last.to=r;else out.push({kind,from:r,to:r});
+  }
+  return out;
+}
+const PITS_ZONE_WORD={critical:'Critical',success:'Success',failure:'Failure',fumble:'Fumble'};
+function pitsBandHtml(pct,roll){
+  const bands=pitsRollBands(pct);
+  const zones=bands.map(b=>`<i class="z-${b.kind}" style="flex:${b.to-b.from+1}" title="${PITS_ZONE_WORD[b.kind]} ${b.from===b.to?String(b.from).padStart(2,'0'):String(b.from).padStart(2,'0')+'–'+String(b.to).padStart(2,'0')}"></i>`).join('');
+  const marker=roll==null?'':`<span class="pits-mk" style="left:calc(${(roll-0.5)}% - 1px)"${roll<8?' data-edge="l"':roll>92?' data-edge="r"':''}><b>${String(roll).padStart(2,'0')}</b></span>`;
+  return `<div class="pits-band-wrap">${marker}<div class="pits-band" aria-hidden="true">${zones}</div></div>`;
+}
+// Odds in words: chance of each grade for a skill (count of faces).
+function pitsOddsText(pct){
+  const n={critical:0,success:0,failure:0,fumble:0};
+  for(const b of pitsRollBands(pct))n[b.kind]+=b.to-b.from+1;
+  return `<b>${n.critical+n.success}%</b> to succeed · <span class="k-c">${n.critical}% critical</span> · <span class="k-x">${n.fumble}% fumble</span>`;
+}
+// The skill an option would roll, for the odds preview (null when none).
+function pitsOddsFor(act,val){
+  const p=S.pending;
+  if(act==='react'&&p?.kind==='reaction'){
+    const d=S.fighters[p.def];
+    if(val==='parry')return combatTarget(d,'weapon');
+    if(val==='shield')return combatTarget(d,'shield');
+    if(val==='evade')return evadeTarget(d);
+    return null;
+  }
+  const f=S.fighters?.[S.order?.[S.turnIndex]];if(!f)return null;
+  if(act==='attack')return combatTarget(f);
+  if(act==='shieldAttack')return combatTarget(f,'shield');
+  if(act==='stand'||act==='freePin'||act==='freeEntangle')return f.brawn;
+  return null;
+}
+// Readout under the dice: the latest d100 skill roll with its verdict.
+function pitsReadoutHtml(){
+  const r=typeof V!=='undefined'?V.lastSkillRoll:null;
+  if(!r)return `<section class="pits-readout" aria-label="Last roll"><div class="pits-ro-top"><span class="label">Last roll</span><span class="pits-ro-text">No roll yet this bout</span></div>${pitsBandHtml(50,null).replace('pits-band-wrap','pits-band-wrap is-empty')}<div class="pits-ro-scale"><span>01</span><span>50</span><span>00</span></div></section>`;
+  const kind=['fumble','failure','success','critical'][r.grade]||'failure';
+  return `<section class="pits-readout" aria-label="Last roll"><div class="pits-ro-top"><span class="label">Last roll · ${esc(r.name)}</span><span class="pits-ro-text">${esc(r.what)}: <b>${String(r.roll).padStart(2,'0')}</b> against ${r.pct}% — <span class="o-${kind}">${PITS_ZONE_WORD[kind]}</span></span></div>${pitsBandHtml(r.pct,r.roll)}<div class="pits-ro-scale"><span>01</span><span>50</span><span>00</span></div></section>`;
+}
