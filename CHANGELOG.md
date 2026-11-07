@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Play Mode: skill descriptions, tidier sheet, no zoom on phones
+
+- **Skill descriptions:** tap a skill's name to read what it covers in the side panel, with its formula, value, page reference and a Roll button. These are short summaries of Mythras Core pp.38–50 in our own words (the site is public, so the book's text isn't copied).
+- **Rules reference** now lives in the ☰ menu: skill and task rulings, combat actions, combat situations, all Special Effects, hazards and recovery, and casting. Their links are gone from the sheet.
+- **Combat tab:** initiative is no longer repeated there; it's in the top row. The **…** button next to it holds your own d10, Surprised and End fight.
+- **Left column fits without scrolling:** the wound watch moved into the body location panel.
+- **Phones:** no zooming (pinch or double-tap), and the Home button left the bottom bar (Home is in the ☰ menu).
+- **Thinner, quieter scrollbars.**
+
 ## Play Mode: site menu button, mockup-style combat card, smaller dice
 
 - **More room:** the site's top bar is hidden in Play Mode. A menu button (☰) beside the character's name opens Home, Characters, Campaign, Rules, World Guide and Account. On phones the bottom bar also ends with **Home**.

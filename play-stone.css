@@ -355,3 +355,39 @@ body.play-mode .sitota-header{display:none}
   .pm-style-stone .pmx-name{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pm-style-stone .pmx-id{min-width:0}
 }
+
+/* Phones: no double-tap zoom, and inputs at 16px so iOS doesn't zoom on focus */
+@media (max-width:1100px){
+  body.play-mode{touch-action:manipulation}
+  .pmx input,.pmx select,.pmx textarea{font-size:16px!important}
+}
+
+/* Minimal scrollbars */
+.pmx,.pmx *{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--pmx-muted) 45%,transparent) transparent}
+.pmx ::-webkit-scrollbar{width:6px;height:6px}
+.pmx ::-webkit-scrollbar-track{background:transparent}
+.pmx ::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--pmx-muted) 40%,transparent);border-radius:6px}
+.pmx ::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--pmx-muted) 70%,transparent)}
+@media (min-width:1101px){.pmx-col-stats,.pmx-col-skills,.pmx-scroll{scrollbar-gutter:auto}}
+
+/* Skill names open their description */
+.pmx-sknm{border:0;background:none;padding:0;text-align:left;color:inherit;cursor:pointer;max-width:100%}
+.pmx-sknm:hover{color:var(--pmx-accent);text-decoration:underline;text-underline-offset:2px}
+.pmx-skinfo-top{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+.pmx-skinfo-pct{font:600 32px/1 var(--pmx-num)}
+
+/* Rules reference list (☰ menu) */
+.pmx-reflist{display:flex;flex-direction:column;gap:6px}
+.pmx-refitem{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;min-height:48px;border:1px solid var(--pmx-line);border-radius:2px;background:var(--pmx-sunk);color:var(--pmx-ink);font:inherit;cursor:pointer}
+.pmx-refitem:hover{border-color:var(--pmx-accent)}
+.pmx-refitem b{font-size:14px}.pmx-refitem span{font-size:12px;color:var(--pmx-muted)}
+.pmx-sitemenu-list button{padding:11px 16px;border:0;border-top:1px solid color-mix(in srgb,var(--st-header-text,#fff) 18%,transparent);margin-top:4px;background:none;text-align:left;color:var(--st-header-text,#fff);font:600 14px var(--st-body,system-ui);cursor:pointer}
+.pmx-sitemenu-list button:hover{background:color-mix(in srgb,var(--st-header-text,#fff) 12%,transparent);color:var(--st-accent-2,#c99a54)}
+
+/* Left column fits without scrolling at common desktop sizes */
+@media (min-width:1101px){
+  .pm-style-stone .pmx .pmx-bodybox .pm-locrow{min-height:38px;padding:3px 7px}
+  .pm-style-stone .pmx .pm-loclist{gap:4px}
+  .pm-style-stone .pmx-attrs div{padding:6px 14px}
+  .pm-style-stone .pmx .pmx-bodybox{padding:12px 14px}
+}
