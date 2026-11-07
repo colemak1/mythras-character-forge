@@ -834,6 +834,7 @@ window.APP={
    if(r.combatRole!==role){r.combatRole=role;r.effectsPicked=[];if(r.opponentAction==="no-parry"){r.oppTier=null;r.opponentAction=null;}}render();},
  playNoParry(i){if(VIEW_ONLY||!S.rollLog[i]?.combat||S.rollLog[i].combatRole!=="attack")return;
    const r=S.rollLog[i];r.oppTier="Failure";r.opponentAction="no-parry";r.effectsPicked=[];delete r.damage;render();},
+ playClearOpponent(i){if(VIEW_ONLY||!S.rollLog[i])return;const r=S.rollLog[i];r.oppTier=null;r.opponentAction=null;r.effectsPicked=[];delete r.damage;render();},
  playSetOpponentTier(i,tier){if(VIEW_ONLY||!S.rollLog[i]||!["Critical","Success","Failure","Fumble"].includes(tier))return;
    S.rollLog[i].oppTier=tier;S.rollLog[i].opponentAction="rolled";S.rollLog[i].effectsPicked=[];delete S.rollLog[i].damage;render();},
  playChooseEffect(i){if(VIEW_ONLY)return;

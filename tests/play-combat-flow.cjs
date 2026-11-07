@@ -49,7 +49,7 @@ test('the combat card asks for the opponent result, then lists only eligible eff
  assert.match(h,/You win <b>2 Special Effects<\/b>/);
  const eligible=run('SPECIAL_EFFECTS.filter(e=>canPickEffectForRoll(e,S.rollLog[0])).map(e=>e[0])');
  assert(eligible.includes('Bleed'),'a dagger can Bleed');assert(!eligible.includes('Arise'),'defensive-only effects are not offered');assert(!eligible.includes('Bash'));
- const listed=[...h.matchAll(/class="pmx-link pmx-fxname"[^>]*>([^<]+)<\/button>/g)].map(m=>m[1]);
+ const listed=[...h.matchAll(/class="pmx-se[^"]*" data-fx="([^"]+)"/g)].map(m=>m[1].replace(/&#39;/g,"'"));
  assert.deepEqual(listed.sort(),[...eligible].sort(),'the card lists exactly the eligible effects');
  run('APP.playChooseEffect(SPECIAL_EFFECTS.findIndex(e=>e[0]==="Bleed"))');
  assert.deepEqual(JSON.parse(run('JSON.stringify(S.rollLog[0].effectsPicked)')),['Bleed']);

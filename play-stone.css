@@ -287,3 +287,71 @@ body.play-mode.pm-style-stone .app{background:transparent}
   .pmx-dash[data-view="skills"] .pmx-top,.pmx-dash[data-view="right"]:not([data-tab="combat"]) .pmx-top{display:none}
 }
 @media (max-width:560px){.pm-style-stone .pmx-char .k{letter-spacing:.06em}.pm-style-stone .pmx-char b{font-size:20px}}
+
+/* Site top bar hidden in Play Mode; one menu button in the character header */
+body.play-mode .sitota-header{display:none}
+.pmx-sitemenu{position:relative;flex:0 0 auto}
+.pmx-sitemenu>summary{list-style:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;cursor:pointer;color:var(--st-header-text,#fff);border:1px solid color-mix(in srgb,var(--st-header-text,#fff) 28%,transparent);border-radius:1px}
+.pmx-sitemenu>summary::-webkit-details-marker{display:none}
+.pmx-sitemenu>summary:hover,.pmx-sitemenu[open]>summary{background:color-mix(in srgb,var(--st-header-text,#fff) 12%,transparent)}
+.pmx-sitemenu-list{position:absolute;top:calc(100% + 8px);left:0;z-index:80;min-width:200px;display:flex;flex-direction:column;padding:6px 0;background:var(--st-header-bg,#232928);border:1px solid var(--st-header-line,#a06a28);box-shadow:0 12px 30px rgba(0,0,0,.35)}
+.pmx-sitemenu-list a{padding:11px 16px;color:var(--st-header-text,#fff);text-decoration:none;font:600 14px var(--st-body,system-ui)}
+.pmx-sitemenu-list a:hover,.pmx-sitemenu-list a:focus-visible{background:color-mix(in srgb,var(--st-header-text,#fff) 12%,transparent);color:var(--st-accent-2,#c99a54)}
+@media (max-width:1100px){
+  .pm-style-stone .pmx-phonebar .pmx-tab{text-decoration:none}
+}
+@media (max-width:560px){.pm-style-stone .pmx-phonebar .pmx-tab{font-size:10px}.pm-style-stone .pmx-phonebar .pmx-tab svg{width:20px;height:20px}}
+
+/* Docked dice: small, beside the result, like the mockup's tray */
+.pmx-dicetray.docked{display:grid;grid-template-columns:96px minmax(0,1fr);grid-template-areas:"c l" "c o";column-gap:12px;row-gap:4px;align-items:center;padding:12px 16px}
+.pmx-dicetray.docked canvas{grid-area:c;width:96px;height:64px;margin:0}
+.pmx-dicetray.docked canvas[hidden]{display:none}
+.pmx-dicetray.docked:has(canvas[hidden]),.pmx-dicetray.docked:not(:has(canvas)){grid-template-columns:minmax(0,1fr);grid-template-areas:"l" "o"}
+.pmx-dicetray.docked .pmx-dicetray-label{grid-area:l;align-self:end;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pmx-dicetray.docked .pmx-dicetray-out{grid-area:o;align-self:start}
+.pmx-dicetray.docked .pmx-dicetray-idle{grid-column:1/-1;padding:8px 0}
+.pmx-tray-slot{min-height:88px}
+.pm-style-stone .pmx-dicetray.docked .pmx-dicetray-out b{font-size:24px}
+
+/* Combat card, v0 style: one question at a time */
+.pmx-resolve-top{display:flex;align-items:center;gap:12px;margin:2px 0 10px}
+.pmx-resolve-top .pmx-resolve-lbl{font-size:12px;color:var(--pmx-muted);margin-top:4px;font-weight:500}
+.pmx-prompt{font-weight:600;margin:4px 0 8px}
+.pmx-oppchips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:8px}
+.pmx-oppchip{min-height:44px;border:1px solid currentColor;border-radius:0;font:700 12px var(--pmx-ui);letter-spacing:.04em;text-transform:uppercase;background:color-mix(in srgb,currentColor 8%,transparent);cursor:pointer}
+.pmx-oppchip:hover:not([disabled]){background:color-mix(in srgb,currentColor 22%,transparent)}
+.pmx-oppchip.crit{color:var(--st-crit,#85560f)}.pmx-oppchip.ok{color:var(--st-success,#25673c)}.pmx-oppchip.fail{color:var(--st-fail,#a24a1e)}.pmx-oppchip.fumble{color:var(--st-fumble,#8a2038)}
+.pmx-oppchip.none{grid-column:1/-1;min-height:36px;color:var(--pmx-muted);font-weight:600}
+.pmx-oppchip[disabled]{opacity:.45;cursor:not-allowed}
+.pmx-opt{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:6px 0}
+.pmx-opt input{margin-top:3px}
+.pmx-opt .pmx-dim{font-weight:500}
+.pmx-oppline{margin:0 0 4px}
+.pmx-btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.pmx-btnrow .pmx-act{flex:1;min-height:44px}
+.pmx-selist{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.pmx-se{display:flex;align-items:stretch;border:1px solid var(--pmx-line);border-radius:1px;background:var(--pmx-surface)}
+.pmx-se:hover{border-color:var(--pmx-accent)}
+.pmx-se.on{border-color:var(--pmx-accent);background:color-mix(in srgb,var(--pmx-accent) 14%,var(--pmx-surface))}
+.pmx-se-pick{flex:1;display:grid;grid-template-columns:20px minmax(0,1fr);gap:2px 8px;align-items:start;text-align:left;padding:7px 9px;min-height:44px;border:0;background:none;color:var(--pmx-ink);font:inherit;cursor:pointer}
+.pmx-se-pick[disabled]{cursor:not-allowed;opacity:.5}
+.pmx-se-pick b{font-size:13px}
+.pmx-se-pick i{display:block;font-style:normal;font-size:12px;color:var(--pmx-muted);margin-top:1px}
+.pmx-se-req{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--st-accent-2,#a06a28);font-weight:700;margin-left:4px}
+.pmx-cbx{width:18px;height:18px;border:2px solid var(--st-line-strong,#8b948c);border-radius:3px;margin-top:1px;display:grid;place-items:center}
+.pmx-se.on .pmx-cbx{background:var(--pmx-accent);border-color:var(--pmx-accent);color:var(--pmx-accent-ink)}
+.pmx-se.on .pmx-cbx::after{content:"";width:8px;height:4px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg) translate(1px,-1px)}
+.pmx-se-info{flex:0 0 40px;border:0;border-left:1px solid var(--pmx-line);background:none;color:var(--pmx-muted);font:700 13px var(--pmx-ui);cursor:pointer}
+.pmx-se-info:hover{color:var(--pmx-accent)}
+.pmx-resolve-done .pmx-doneacts .pmx-act{min-height:44px;flex:1}
+.pmx-resolve-done .pmx-doneacts .pmx-mini{min-height:44px}
+.pmx-resolve-done .pmx-doneacts{gap:8px}
+@media (max-width:560px){.pmx-oppchips{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){
+  .pm-style-stone .pmx-head{gap:8px;padding:8px 10px}
+  .pm-style-stone .pmx-avatar{display:none}
+  .pm-style-stone .pmx .pmx-headbtns .pm-btn,.pmx-sitemenu>summary{min-width:36px;width:36px;height:36px}
+  .pm-style-stone .pmx-headbtns{gap:4px}
+  .pm-style-stone .pmx-name{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pm-style-stone .pmx-id{min-width:0}
+}

@@ -111,7 +111,8 @@ test('colour schemes: Verdigris by default, chosen per device, unknown values ig
  store.set('pm-colorway','bogus');assert.equal(run('pmColorway()'),'verdigris');
  const h=run('PM_POPUP={k:"style"};pmPopupHTML()');assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,5);
 });
-test('phone sections: Sheet, Body, Skills, Combat, More',()=>{
+test('phone sections: Sheet, Body, Skills, Combat, More, and a Home link',()=>{
+ assert.match(fs.readFileSync(path.join(root,'js','play.js'),'utf8'),/<a class="pmx-tab pmx-hometab" href="#\/">/,'phone bar ends with a Home link');
  setup();assert.deepEqual(JSON.parse(run('JSON.stringify(PM_PHONE_TABS.map(t=>t[1]))')),['Sheet','Body','Skills','Combat','More']);
  run('APP.playTab("body")');assert.equal(run('PM_VIEW'),'body');
  run('APP.playTab("combat")');assert.equal(run('PM_VIEW'),'right');assert.equal(run('pmActiveTab()'),'combat');
@@ -126,5 +127,27 @@ test('side panel keeps a slot for the physics dice tray, with Details and Roll l
 test('passions are tested, skills rolled',()=>{
  setup();run('S.passions=[{type:"loyalty",subject:"Clan",name:"Loyalty (Clan)",base:60}]');
  const h=run('pmSkillsPanelHTML()');assert.match(h,/>Test<\/button>/);assert.match(h,/>Roll<\/button>/);
+});
+test('the site top bar is hidden in Play Mode; a header menu holds the same links, and phones get Home',()=>{
+ setup();const h=run('pmSiteMenuHTML()');
+ for(const [href,l] of [['#/','Home'],['#/my-characters','Characters'],['#/my-campaigns','Campaign'],['#/wiki','Rules'],['#/world/welcome','World Guide'],['#/account','Account']])
+  assert.match(h,new RegExp('<a href="'+href.replace(/\//g,'\\/')+'">'+l+'</a>'));
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ for(const href of ['#/','#/my-characters','#/my-campaigns','#/wiki','#/world/welcome','#/account'])assert(html.includes('href="'+href+'"'),'menu matches the site nav: '+href);
+ assert.match(fs.readFileSync(path.join(root,'play-stone.css'),'utf8'),/body\.play-mode \.sitota-header\{display:none\}/);
+});
+test('Special Effects are a tick list: tap to choose, tap again to remove',()=>{
+ setup();run('S.rollLog=[{label:"Battleaxe",pct:60,roll:4,tier:"Critical",combat:true,combatKind:"style",combatRole:"attack",oppTier:"Failure",opponentAction:"rolled",weapon:"Battleaxe",effectsPicked:[]}];PM_EFFECT_ROLL_REF=S.rollLog[0];');
+ let h=run('pmResolveCardHTML()');assert.match(h,/data-fx="Bleed"><button type="button" class="pmx-se-pick" aria-pressed="false"/);
+ const bleed=run('SPECIAL_EFFECTS.findIndex(e=>e[0]==="Bleed")');
+ run('pmFxToggle('+bleed+')');assert.deepEqual(JSON.parse(run('JSON.stringify(S.rollLog[0].effectsPicked)')),['Bleed']);
+ h=run('pmResolveCardHTML()');assert.match(h,/class="pmx-se on" data-fx="Bleed"/);
+ run('pmFxToggle('+bleed+')');assert.deepEqual(JSON.parse(run('JSON.stringify(S.rollLog[0].effectsPicked)')),[]);
+ assert.match(run('pmFxSummary("First sentence. Second sentence.")'),/^First sentence\.$/);
+});
+test('the opponent result can be changed, which clears effects and damage',()=>{
+ setup();run('S.rollLog=[{label:"Battleaxe",pct:60,roll:4,tier:"Critical",combat:true,combatKind:"style",combatRole:"attack",oppTier:"Failure",opponentAction:"rolled",weapon:"Battleaxe",effectsPicked:["Bleed"],damage:{total:5,loc:"Chest"}}];');
+ run('APP.playClearOpponent(0)');assert.equal(run('S.rollLog[0].oppTier'),null);assert.equal(run('S.rollLog[0].effectsPicked.length'),0);assert.equal(run('S.rollLog[0].damage'),undefined);
+ assert.match(run('pmResolveCardHTML()'),/Their defence: what did the opponent roll\?/);
 });
 console.log(passed+' play stone design tests passed');
