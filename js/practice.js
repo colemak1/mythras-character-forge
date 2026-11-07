@@ -64,17 +64,39 @@ function renderPitsView(){
   document.title="The Pits — New Sit’ota";
   const signedIn=!!(AUTH_USER||MOCK_AUTH),chars=Array.isArray(LIB_CACHE)?LIB_CACHE:null;
   let h='<div class="menuwrap pits-page st-page">'+stPageHead({eyebrow:'Training arena',title:'The Pits',h1Class:'pits-title',
-    sub:'Fight your character against escalating opponents to learn Mythras combat before the campaign. Wounds here never touch your saved character.'});
+    sub:'Fight your character against escalating opponents to learn Mythras combat before the campaign.'});
   if(PITS_MSG)h+='<p class="warn" role="alert">'+esc(PITS_MSG)+'</p>';
-  if(!signedIn)h+=stGateHTML('pits');
-  else if(chars===null)h+='<div class="card"><p class="note">Loading your characters&hellip;</p></div>';
-  else if(!chars.length)h+='<div class="card"><h3>Bring a character</h3><p class="note">You have no saved characters yet.</p><p><button class="mmenu-cta-primary" onclick="APP.fromMenuNew()">Create a character</button></p></div>';
-  else{
-    if(!chars.some(c=>c.id===PITS_PICK))PITS_PICK=chars[0].id;
-    h+='<div class="card"><h3>Bring a character</h3><label class="pits-pick">Character <select onchange="APP.pitsPick(this.value)" aria-label="Character">'
-     +chars.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===PITS_PICK?' selected':'')+'>'+esc(c.name||"Unnamed Character")+'</option>').join("")+'</select></label>'
-     +'<p><button class="mmenu-cta-primary" onclick="APP.enterPits()">Enter the Pits &rarr;</button></p></div>';
-  }
-  h+='<div class="card"><h3>Or just fight</h3><p class="note">Try it with a ready-made fighter, no character needed.</p><p><a class="mmenu-cta-secondary" href="experiments/practice-combat.html">Fight without a character</a></p></div></div>';
+  h+=pitsRecordHTML();
+  const fightFree='<p class="st-pits-free"><a class="st-btn" href="experiments/practice-combat.html">Fight without a character</a><span>A ready-made fighter, no character needed.</span></p>';
+  if(!signedIn){$("#main").innerHTML=h+stGateHTML('pits')+fightFree+'</div>';return;}
+  if(chars===null){$("#main").innerHTML=h+'<p class="note" role="status">Loading your characters&hellip;</p>'+fightFree+'</div>';return;}
+  if(!chars.length){$("#main").innerHTML=h+'<div class="st-empty">You have no saved characters yet. <button type="button" class="st-btn st-btn-sm" onclick="APP.fromMenuNew()">Create a character</button></div>'+fightFree+'</div>';return;}
+  if(!chars.some(c=>c.id===PITS_PICK))PITS_PICK=chars[0].id;
+  // Native radios styled as cards (visible focus, 44px+ targets).
+  const list='<fieldset class="st-pick"><legend>Choose your fighter</legend>'+chars.map(c=>{
+    const st=stCharStats(c),line=[st.style?esc(st.style.name)+' '+st.style.pct+'%':null,st.ap!=null?st.ap+' AP':null].filter(Boolean).join(' · ')||[c.culture,c.career].filter(Boolean).map(esc).join(' · ');
+    return '<label class="st-pick-row"><input type="radio" name="pitsPick" value="'+esc(c.id)+'"'+(c.id===PITS_PICK?' checked':'')+' onchange="APP.pitsPick(this.value);pitsSummaryRefresh()">'
+      +stPortrait(c,'st-mono st-mono-sm')+'<span class="st-pick-txt"><b>'+esc(c.name||"Unnamed Character")+'</b><small>'+line+'</small></span><span class="st-pick-mark" aria-hidden="true"></span></label>';
+  }).join('')+'</fieldset>';
+  h+='<div class="st-two st-pits-two"><div>'+list+fightFree+'</div><aside class="st-summary" id="pitsSummary" aria-live="polite">'+pitsSummaryHTML()+'</aside></div></div>';
   $("#main").innerHTML=h;
+}
+// Selected fighter's summary: real stats from the saved character.
+function pitsSummaryHTML(){
+  const c=(LIB_CACHE||[]).find(x=>x.id===PITS_PICK);if(!c)return '';
+  const st=stCharStats(c),meta=[c.culture,c.career].filter(Boolean).map(esc).join(' · ');
+  const row=(k,v)=>v?'<div class="st-sum-row"><span>'+k+'</span><b>'+v+'</b></div>':'';
+  return '<p class="st-eyebrow st-eyebrow-teal">Ready</p><h2>'+esc(c.name||"Unnamed Character")+'</h2>'+(meta?'<p class="st-sum-meta">'+meta+'</p>':'')
+    +'<div class="st-sum-rows">'+row('Combat Style',st.style?esc(st.style.name)+' '+st.style.pct+'%':'')+row('Action Points',st.ap!=null?String(st.ap):'')+row('Campaign',st.campaign?esc(st.campaign):'')+'</div>'
+    +'<button type="button" class="st-btn st-btn-teal" onclick="APP.enterPits()">Enter the Pits <span aria-hidden="true">→</span></button>'
+    +'<p class="st-sum-note">Wounds here never touch your saved character.</p>';
+}
+function pitsSummaryRefresh(){const el=document.getElementById('pitsSummary');if(el)el.innerHTML=pitsSummaryHTML();}
+// Record strip from the arena's local leaderboard (only when runs exist).
+function pitsRecordHTML(){
+  let rows=[];try{rows=JSON.parse(localStorage.getItem('sitota-practice-score-v1')||'[]');}catch(e){}
+  rows=(Array.isArray(rows)?rows:[]).filter(r=>r&&r.wins>0);if(!rows.length)return '';
+  const best=m=>Math.max(0,...rows.filter(r=>r.mode===m).map(r=>r.wins));
+  const cell=(k,v)=>'<div><span>'+k+'</span><b>'+v+'</b></div>';
+  return '<div class="st-record" aria-label="Your arena record on this device">'+cell('Best run',best('normal')||'—')+cell('Best hardcore run',best('hardcore')||'—')+cell('Fighters on the board',new Set(rows.map(r=>r.charname)).size)+'</div>';
 }
