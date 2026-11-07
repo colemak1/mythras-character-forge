@@ -59,4 +59,10 @@ test('Action Points, hit points, Damage Modifier and Initiative match the main a
  for(let v=2;v<=130;v++){const s=Math.floor(v/2),z=v-s;
   assert.equal(A(`damageModifierFor(${s},${z}).label`).replace('−','-'),E(`dmCalc(${s},${z})`),'DM '+v);}
 });
+test('parry by a weapon one Size smaller blocks half, odd damage rounding the blocked half up, same as Play Mode (PIT-P01)',()=>{
+ for(const [dmg,blocked] of [[1,1],[3,2],[5,3],[8,4]]){
+  assert.equal(A(`parryAbsorption(${dmg},3,2)`),blocked,'arena '+dmg);
+ }
+ assert.equal(A('parryAbsorption(5,2,2)'),5,'equal Size blocks all');assert.equal(A('parryAbsorption(5,4,2)'),0,'two smaller blocks none');
+});
 console.log(passed+' practice rules tests passed');

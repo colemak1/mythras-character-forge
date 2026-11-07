@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Parry rounding: the blocked half rounds up
+
+- When a weapon one Size smaller parries, it blocks half the damage. With odd damage the blocked half now rounds **up**, matching how the rest of the site rounds: 5 damage blocks 3 and 2 gets through. This applies to The Pits and Play Mode's parry calculator, which used to leave the half point to the GM.
+
 ## The Pits: first combat-procedure fixes
 
 From ChatGPT's source review (#182):
