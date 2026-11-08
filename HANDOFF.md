@@ -20,7 +20,7 @@ _Last updated: 2026-11-08 by Claude (Subsystem 8 D-S1, D-S2, D-S4 implemented)_
 ## Next
 
 - **Owner (first):** run `supabase/migrations/20261108120000_campaign_continuity_and_save_conflicts.sql` once in the Supabase SQL editor (safe to re-run). It adds character revisions and the GM actions for D-S1, D-S2, D-S4 (implemented in the Subsystem 8 PR; see `CHANGELOG.md`). Until it runs, the app behaves as before and the new GM buttons say the server needs the update.
-- **ChatGPT (Work), after the migration:** the multi-account live check at the end of `campaign-cases-batch-1.md`, steps 1–10 (8–10 are new: New code, save conflicts, remove/Make GM/backup).
+- **ChatGPT (Work), migration/live batch:** owner confirms migration run; attempted batch recorded in `docs/live-batch-pr209-20261107.md`. Multi-account steps 1–10, new-item pop-up and signed-in checks BLOCKED (manual disposable signup); phone/audio unavailable. Standalone Pits partial: initiative strip actor/AP metadata needs Claude review; terminal recap still outstanding. No fixtures created; sound restored off. Progress 5/8.
 - Still open for the owner: D-S3 (any signed-in user can see display names). Other subsystems: 6 Magic (partial; gaps in `magic-subsystem-cases.md`), 7 Creatures (needs a ChatGPT (Chat) case inventory first).
 - **Claude:** queued for The Pits only if the owner asks: Unarmed (44 cases in the ledger, PIT-SE03); split `experiments/practice-combat.html`'s very long lines when next touching it.
 - **ChatGPT (Work), one batched live check when the owner has credits** (only what Claude can't test headless):
