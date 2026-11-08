@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Creatures in the GM Combat Tracker (Subsystem 7, CRTR-B01–B05)
+
+- **Add a creature from its stat block (B02):** the Combat Tracker has a new "Add a creature from its stat block" box. The GM pastes or types the entry from their rulebook, one item per line: characteristics (with dice), INT or INS, Move, hit-location rows (`1-3 Right Hind Leg 2/5`, natural+worn as `2+1/4`), `Weapon:` lines (ending "natural" for natural weapons), `Trait:` lines, `Worn armour ENC:`, `Skills:` and `Notes:`. Missing or unreadable lines are listed and block adding; nothing is guessed or filled with human defaults. No bestiary data ships with the app.
+- **Instinct (B01):** a creature with INS uses it wherever INT would be: Action Points, Initiative and INT-based skill bases. A sapient creature keeps INT.
+- **Armour (B03):** natural armour protects its location but adds no Initiative penalty; only worn armour ENC does (Core p.58). "Apply after armour" takes off natural plus worn armour at the location hit.
+- **Hit locations (B04):** the creature's own d20 table must cover 1–20 exactly once, with no repeated names. "Roll hit location" rolls on that table, never the human one, so a wing or a tail stays a wing or a tail. The generic anatomy tables (Core pp.276–277) aren't built in yet.
+- **Natural weapons (B05):** without the Formidable Natural Weapons trait, the card shows natural weapons can't parry (use Evade or armour).
+- "Roll initiative for everyone" now adds a creature's Initiative bonus.
+- New tests: `tests/creature-cases.cjs` (an invented test creature, not a Core entry).
+
 ## Magic: confirmed cult rank required, Core animist rank names (fixes from the #219 review)
 
 ChatGPT's review of #219 is merged (docs #220).

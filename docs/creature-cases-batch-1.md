@@ -28,3 +28,13 @@
 **Already correct / reuse (one line):** Existing human characteristic, damage, skill-roll and wound engines are reusable foundations (Subsystems 1–5), **not** proof of creature-specific coverage.
 
 **Boundary:** First implement data/anatomy/INS (B01–B05), then combat traits (B06–B14), then resistances/senses/Chaos (B15–B19) and per-entry children (B20). No nonhuman PC or creature bestiary completion claim without species-by-species verification; GM advice, encounter balancing and optional GM procedures need a later inventory, not invented code.
+
+## Implementation status, B01–B05 (Claude, 2026-11-08)
+
+Where: GM Combat Tracker, "Add a creature from its stat block". Tests: `tests/creature-cases.cjs` (invented fixture, not Core data). Not live-checked. Progress stays **5/8**.
+
+- **B01:** implemented. INS replaces INT for Action Points, Initiative and INT-based skill bases; sapient creatures keep INT. The spec's wording "fixed INT plus 2d6 Instinct" is read as Core p.214's INS-instead-of-INT; ChatGPT please confirm.
+- **B02:** implemented as a pasted stat block (strict line formats; unreadable lines block adding). Keeps characteristic dice and values, Move, weapons, traits, skills and notes; recomputes AP, Initiative bonus, Damage Modifier, Healing Rate and MP from the actual characteristics. Location HP are taken as printed in the entry, not recomputed.
+- **B03:** implemented. Natural armour adds no Initiative penalty; worn ENC uses Core p.58. Damage applied after natural + worn armour.
+- **B04:** implemented with the creature's own d20 table (validated 1–20, no overlap or duplicate names). **Open:** the generic anatomy templates (pp.276–277) need their d20 ranges in this ledger or the rulebook uploaded before they can be offered as presets.
+- **B05:** implemented as a parry eligibility shown per natural weapon (trait name "Formidable Natural Weapons", case-insensitive). The tracker records no parry rolls, so this is display/eligibility only.

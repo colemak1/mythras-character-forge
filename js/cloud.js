@@ -1447,6 +1447,8 @@ function renderCampaignView(){
 let BOARD_CHARS=null;          // array of {id,name,tier,culture,career,owner_id,owner_name,campaign_id,state,updated_at}, or null while loading
 let BOARD_TAB="status";        // "status" (live character grid), "gm" (Combat Tracker, DM-only), or "homebrew" (custom content, DM-only)
 let GM_SESSION_ERROR=null;     // set when a GM-tools save fails, cleared on the next successful edit
+let CREATURE_DRAFT="";         // pasted creature stat block, before it joins the fight (CRTR-B02)
+let CREATURE_HIT={};           // last rolled hit location per creature combatant id
 let HB_ERROR=null;             // set when a homebrew add/delete fails, cleared on the next successful action
 // In-progress "new item" forms for the Homebrew tab -- one draft per type,
 // reset to freshHbDraft() after a successful add. Kept separate from the
@@ -1617,7 +1619,7 @@ function combatantCardHTML(c,isActive){
   const apRemain=Math.max(0,c.ap.max-c.ap.used);
   const locs=c.locations||[];
   return '<div class="cbt-card'+(isActive?" on":"")+'">'
-   +'<div class="cbt-head"><span class="cbt-name">'+esc(c.name||"Unnamed")+' <i>'+(isPc?"PC":"NPC")+'</i>'+(isActive?' <strong class="cbt-active">ACTING NOW</strong>':'')+'</span>'
+   +'<div class="cbt-head"><span class="cbt-name">'+esc(c.name||"Unnamed")+' <i>'+(isPc?"PC":c.creature?"Creature":"NPC")+'</i>'+(isActive?' <strong class="cbt-active">ACTING NOW</strong>':'')+'</span>'
    +'<input type="number" class="cbt-init" value="'+c.init+'" onchange="APP.gmSetInit(\''+c.id+'\',this.value)" aria-label="Initiative" title="Initiative">'
    +'<button class="chip sm" onclick="APP.gmRemoveCombatant(\''+c.id+'\')" aria-label="remove from combat">&times;</button></div>'
    +'<div class="cbt-ap"><span class="cbt-aplbl">AP</span>'
@@ -1625,6 +1627,7 @@ function combatantCardHTML(c,isActive){
    +'<span class="cbt-apval">'+apRemain+'</span>'
    +'<button class="chip sm" onclick="APP.gmApAdj(\''+c.id+'\',1)" '+(apRemain>=c.ap.max?"disabled":"")+' title="Restore 1 AP">+</button>'
    +'<span class="note">/ <input type="number" class="cbt-apmax" value="'+c.ap.max+'" onchange="APP.gmSetApMax(\''+c.id+'\',this.value)" aria-label="Max AP" title="Max AP"></span></div>'
+   +creatureBlockHTML(c)
    +'<div class="cbt-loclist">'+locs.map(loc=>{
      const hp=(c.hp&&c.hp[loc])||{cur:0,max:0};
      const idv="cbtdmg-"+c.id+"-"+loc.replace(/\s+/g,"_");
@@ -1650,6 +1653,37 @@ function combatantCardHTML(c,isActive){
    +'<input type="text" class="cbt-statnote" value="'+esc(c.stat2||"")+'" placeholder="special abilities, notes" onchange="APP.gmCombatantField(\''+c.id+'\',\'stat2\',this.value)">'
    +'</div>';
 }
+// CRTR-B02: paste a creature's stat block from your rulebook. Nothing is
+// guessed: missing or unreadable lines are listed before it can be added.
+function creatureImportHTML(){
+  const parsed=CREATURE_DRAFT.trim()?parseCreatureStatBlock(CREATURE_DRAFT):null;
+  let h='<details class="cbt-creature-import"'+(CREATURE_DRAFT?' open':'')+'><summary>Add a creature from its stat block</summary>'
+   +'<p class="note">Paste or type it one item per line (Core pp.218–220). Use INS instead of INT for an animal (p.214). Location rows are d20 range, name, armour/HP; write natural+worn armour as 2+3/6. Natural weapons end with &ldquo;natural&rdquo;.</p>'
+   +'<textarea id="gmCreatureText" rows="9" placeholder="Name: Hill Beast\nSTR 2d6+6 13\nCON 3d6 11\nSIZ 2d6+6 13\nDEX 2d6+6 13\nINS 2d6+6 13\nPOW 1d6+6 10\nMove 10\n1-3 Right Hind Leg 2/5\n...\nWeapon: Bite 1d8 natural\nTrait: Formidable Natural Weapons\nWorn armour ENC: 0\nSkills: Athletics 60%, Perception 70%" onchange="APP.gmCreatureDraft(this.value)">'+esc(CREATURE_DRAFT)+'</textarea>';
+  if(parsed){
+    if(parsed.errors.length)h+='<ul class="warn" style="padding-left:18px">'+parsed.errors.map(e=>'<li>'+esc(e)+'</li>').join("")+'</ul>';
+    if(parsed.unread.length)h+='<p class="warn">Lines not understood (fix or move them into a Notes: line): '+parsed.unread.map(esc).join(" · ")+'</p>';
+    if(!parsed.errors.length){const a=creatureAttributes(parsed.creature);
+      h+='<p class="note">'+esc(parsed.creature.name)+': '+a.mind.key+' '+a.mind.value+' · Action Points '+a.ap+' · Initiative bonus '+a.initBonus+(a.armourPenalty?' (worn armour −'+a.armourPenalty+')':'')+' · Damage Modifier '+esc(a.damageMod)+' · '+parsed.creature.locations.length+' locations</p>';}
+  }
+  h+='<button class="chip" onclick="APP.gmAddCreature()" '+(parsed&&!parsed.errors.length&&!parsed.unread.length?'':'disabled')+'>Add creature to the fight</button></details>';
+  return h;
+}
+function creatureBlockHTML(c){
+  const cr=c.creature;if(!cr)return "";
+  const a=creatureAttributes(cr),hit=CREATURE_HIT[c.id];
+  const dice=k=>cr.dice&&cr.dice[k]?' <i>('+esc(cr.dice[k])+')</i>':'';
+  return '<div class="cbt-creature">'
+   +'<p class="note">'+CREATURE_CHARS.filter(k=>Object.hasOwn(cr.chars,k)).map(k=>k+' '+cr.chars[k]+dice(k)).join(' · ')+(cr.move?' · Move '+esc(cr.move):'')+'</p>'
+   +'<p class="note">Initiative bonus '+a.initBonus+(a.armourPenalty?' (worn armour −'+a.armourPenalty+'; natural armour adds none)':'')+' · Damage Modifier '+esc(a.damageMod)+' · MP '+a.mp+(a.mind.key==="INS"?' · uses INS for INT':'')+'</p>'
+   +(cr.weapons.length?'<p class="note">'+cr.weapons.map(w=>{const p=creatureCanParry(cr,w);return esc(w.name)+' '+esc(w.damage)+(w.natural?' (natural)':'')+' · '+(p.ok?'can parry':'<span title="'+esc(p.reason)+'">no parry: Evade or armour</span>');}).join(' | ')+'</p>':'')
+   +(cr.traits.length?'<p class="note">Traits: '+cr.traits.map(esc).join(', ')+'</p>':'')
+   +'<div class="cbt-locadd"><button class="chip sm" onclick="APP.gmCreatureRollLoc(\''+c.id+'\')">Roll hit location (d20)</button>'
+   +(hit?'<span class="note"> d20 '+hit.roll+': <b>'+esc(hit.loc)+'</b>, armour '+hit.armour+'</span>'
+     +'<input type="number" id="cbtraw-'+c.id+'" placeholder="damage" min="0" style="width:84px" aria-label="Damage rolled, before armour">'
+     +'<button class="chip sm" onclick="APP.gmCreatureHit(\''+c.id+'\')">apply after armour</button>':'')
+   +'</div></div>';
+}
 function gmToolsHTML(camp){
   const st=sessionStateOf(camp);
   const order=st.combatants.slice().sort((a,b)=>b.init-a.init);
@@ -1671,6 +1705,7 @@ function gmToolsHTML(camp){
    +pcChoices.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+'</select>'
    +'<button class="chip" onclick="APP.gmAddPcInit()" '+(pcChoices.length?"":"disabled")+'>add</button>'
    +(pcChoices.length>1?'<button class="chip" onclick="APP.gmAddAllPcs()" title="Add every remaining party member at once">add all</button>':'')+'</div>';
+  h+=creatureImportHTML();
   h+='<div class="pb-initadd">'
    +'<input type="text" id="gmNpcInitName" placeholder="NPC/monster name">'
    +'<input type="number" id="gmNpcInitVal" placeholder="Init" style="width:70px">'
