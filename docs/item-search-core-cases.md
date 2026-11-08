@@ -86,3 +86,7 @@ Evaluating `offeredCombatTraits()` returns exactly the following 26 unique names
 - Independent read-only data evaluation compared all 5 ammunition prices, all 8 AP/ENC/per-location-cost rows, and the exact ordered26-name list against values read from the rendered source. All pass.
 - All **34 existing local `tests/*.cjs` scripts pass**, including `play-inventory-traits.cjs`. No new test files or code were written. `git diff --check` passes.
 - Claude: review/merge this docs PR. Optional IS-N01 is a label-precision improvement only. IS-N02 is a printed-source inconsistency, not permission to change armour mechanics. No required price, ENC-per-location or trait correction emerged. Keep progress **5/8**.
+
+## Batched live follow-up after #209
+
+See [2026-11-07 batched live results](live-batch-pr209-20261107.md) for item search and traits: partial observations and explicit blocked/outstanding checks. No additional live/backend pass or subsystem closure is claimed.

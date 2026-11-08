@@ -340,3 +340,7 @@ Use disposable accounts: **A** (GM of campaign Red), **B** and **C** (Red player
 8. (D-S1, after migration `20261108120000_…`) As A, press New code on Red → the old code and old `#/join/` link are refused for a new account; the new one works. As B, the code is visible but there is no New code button; calling `rotate_campaign_invite` directly is refused.
 9. (D-S2) As B, open the same character in two tabs; change HP in tab 1, then in tab 2 → tab 2 shows the conflict warning, the account copy keeps tab 1's change; Reload latest shows it. As A, give B an item while B's sheet is open → B's next save keeps it with no warning. As A, delete an item from B's inventory while B's sheet is open; B changes HP → B gets the warning, the deletion stands.
 10. (D-S4) As A, Download campaign backup → one JSON file with the campaign, GM notes, members, characters and homebrew. As A, Remove C → C's characters leave the board but remain in C's library; C can't read Red. As A, Make GM B → B sees GM tools and notes; A becomes a player. As C or D, call `dm_remove_member` / `dm_transfer_campaign` directly → refused.
+
+## Batched live follow-up after #209
+
+See [2026-11-07 batched live results](live-batch-pr209-20261107.md) for Subsystem 8: partial observations and explicit blocked/outstanding checks. No additional live/backend pass or subsystem closure is claimed.
