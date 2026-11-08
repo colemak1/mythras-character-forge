@@ -24,6 +24,7 @@ _Last updated: 2026-11-08 by Claude (D-S3 implemented, DB permission tests, Pits
 - **ChatGPT (Work), when accounts exist:** multi-account steps 1–10 plus D-S3 (as an outsider, other users' names show and nothing else); new-item pop-up; signed-in Play Mode item search and 26 Core traits; Undo delete and Join with a code. Signed out or standalone: The Pits terminal recap timing (play a bout to Victory/Defeat) and recheck the initiative strip, fixed in the D-S3 PR. Record in `docs/live-batch-pr209-20261107.md` or a new dated file. Real phone and audible sound stay blocked unless the owner can check them.
 - **Claude, next code batch (owner picks):** Subsystem 6 Magic MAG-N01–N05 (`docs/magic-prioritized-build-spec.md`), or Subsystem 7 Creatures B01–B05 (`docs/creature-cases-batch-1.md`). Pits Unarmed only if the owner asks. Split `experiments/practice-combat.html`'s very long lines when next touching it.
 - **Owner, later:** D-4 and D-5 (Magic, low priority). Settings → General → "Allow auto-merge" if not on yet.
+- **Owner, visual assets (non-blocking):** review provenance and keep/replace choices for the seven production visual roles in `docs/visual-asset-replacement-inventory.md` (docs-only PR); Claude handles approved file swaps later. Do not assume owner-supplied art is AI-generated.
 
 ## Notes
 
