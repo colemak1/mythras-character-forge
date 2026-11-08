@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Magic: Combine choices, learned Talents, one pool per cult (Subsystem 6, MAG-N01–N05)
+
+- **Sorcery Combine (MAG-N02):** each Combine point now asks which *different* recorded spell it joins, and for confirmation that the spells share target(s). Casting is blocked until that's done. A character with several Invocation skills picks each spell's source, and a combined casting rolls the lowest of them (one grade harder per extra spell, as before).
+- **Mysticism (MAG-N04):** a recorded Talent isn't usable until it's ticked **Learned / practised (GM confirmed)**. At most half POW distinct Talents can be learned (the same Talent at two Intensities counts once). Existing Talents start unticked, like unbound spirits. The 34% → Intensity 2 and Meditation/10 limits are unchanged.
+- **Theism (MAG-N05):** a theist can record one Devotional Pool per cult, each with its own cult name, rank limit and available points. All pools together hold at most POW. A miracle draws only on its own cult's pool; with several pools it must name one. Personal MP and other pools are never used instead. Play Mode shows each pool with its own +, − and refill, and donations go to the chosen pool. The first pool keeps the old save fields, so existing characters load unchanged.
+- **MAG-N01 and MAG-N03** were already built (Shaping 47% → 5 points, no Intensity shaping, cost and turns by modified component, critical/failure/fumble costs). They now have their own tests.
+- New tests: `tests/magic-build-n01-n05.cjs`. Existing Sorcery and Mysticism test fixtures gained the combined-spell and learned fields.
+
 ## Display names for signed-in users only; database permission tests; Pits strip fix
 
 - **D-S3 option A (owner):** any signed-in user can see other users' display names, and nothing else on a profile. Signed-out visitors can't read profiles at all. **Needs the new migration** `supabase/migrations/20261108130000_display_names_signed_in_only.sql` run once in the Supabase SQL editor (safe to re-run). The app already asks only for names, so nothing changes on screen.

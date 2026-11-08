@@ -106,7 +106,7 @@ window.APP={
  // and rebuilt this button) -- these sit right next to Miracle/spell name
  // and stat fields, so they're just as exposed to it.
  addMagic(tradition){debounceFire('addMagic',()=>{
-   S.magic.known.push({tradition,name:"",notes:"",cost:1,intensity:1,pow:0,cha:0,spiritStatus:"unbound",spiritContact:"unknown",spiritAttitude:"neutral",spiritMP:null,spiritCombatNote:"",bindingType:"none",shapings:[],shapingLevels:{},combineExtra:0,active:false,durationTurns:0,remainingTurns:0});
+   S.magic.known.push({tradition,name:"",notes:"",cost:1,intensity:1,pow:0,cha:0,spiritStatus:"unbound",spiritContact:"unknown",spiritAttitude:"neutral",spiritMP:null,spiritCombatNote:"",bindingType:"none",shapings:[],shapingLevels:{},combineExtra:0,combinedSpells:[],combineSharedTargets:false,talentLearned:false,active:false,durationTurns:0,remainingTurns:0});
    render();});},
  // Update 17: Spirit negotiation, ritual outcome and spirit-combat bookkeeping.
  // The GM confirms contact, bargains and bindings; these controls never invent a successful ritual.
@@ -172,6 +172,8 @@ window.APP={
    m.combineExtra=n;render();},
  toggleTalent(i){if(viewOnlyBlock())return;const m=S.magic.known[i];if(!m||m.tradition!=="mysticism")return;
    if(m.active){m.active=false;m.remainingTurns=0;render();return;}
+   const ready=mysticismTalentReady(S.magic.known,i,Number(effectiveChars().POW));
+   if(ready){PM_MSG=ready;render();return;}
    const limits=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
    const err=mysticismActivationCheck(S.magic.known,i,limits.individual,limits.combined);
    if(err){PM_MSG=err;render();return;}
@@ -180,30 +182,71 @@ window.APP={
  mysticismCancel(){if(viewOnlyBlock())return;S.play.mysticismCasting=null;PM_MSG="Talent preparation cancelled; no Mysticism roll was made.";render();},
  theismCancel(){if(viewOnlyBlock())return;S.play.theismCasting=null;PM_MSG="Miracle exhortation cancelled; no Exhort roll was made.";render();},
  delMagic(i){debounceFire('delMagic'+i,()=>{S.magic.known.splice(i,1);render();});},
- devotionalRank(v){if(viewOnlyBlock())return;
-   if(!["","lay","initiate","acolyte","priest","highpriest"].includes(v))return;
-   S.magic.devotionalRank=v;DEVOTIONAL_MSG="";render();},
- devotional(v){if(viewOnlyBlock())return;
-   const raw=String(v).trim(),n=Number(raw),limit=devotionalRankLimit(),old=devotionalMax();
+ devotionalRank(v,p=0){if(viewOnlyBlock())return;
+   if(!DEVOTIONAL_RANKS.includes(v)||!devotionalPool(p))return;
+   setDevotionalPool(p,{rank:v});DEVOTIONAL_MSG="";render();},
+ devotionalCult(p,v){if(viewOnlyBlock()||!devotionalPool(p))return;
+   setDevotionalPool(p,{cult:String(v||"").trim().slice(0,120)});render();},
+ devotional(v,p=0){if(viewOnlyBlock())return;const pool=devotionalPool(p);if(!pool)return;
+   const raw=String(v).trim(),n=Number(raw),limit=devotionalRankLimit(p),old=pool.max;
    if(!raw||!Number.isSafeInteger(n)||n<0){DEVOTIONAL_MSG="Enter a non-negative whole number.";render();return;}
    if(Number.isInteger(limit)&&n>limit&&n>old){DEVOTIONAL_MSG="This exceeds the confirmed rank limit of "+limit+"; reduce the amount or review the rank.";render();return;}
-   DEVOTIONAL_MSG="";S.magic.devotional=n;
-   S.magic.devotionalUsed=Math.min(S.magic.devotionalUsed,S.magic.devotional);render();},
- devotionalAdj(n){if(viewOnlyBlock())return;
-   S.magic.devotionalUsed=Math.max(0,Math.min(devotionalMax(),(S.magic.devotionalUsed||0)-n));render();},
- devotionalDonate(raw,confirmed){if(viewOnlyBlock())return;
-   const text=String(raw).trim(),n=Number(text),limit=devotionalRankLimit(),current=devotionalCur();
+   const used=Math.min(pool.used,n),held=devotionalHeldCheck(p,n-used);
+   if(held&&n>old){DEVOTIONAL_MSG=held;render();return;}
+   DEVOTIONAL_MSG="";setDevotionalPool(p,{max:n,used});render();},
+ devotionalAdj(n,p=0){if(viewOnlyBlock())return;const pool=devotionalPool(p);if(!pool)return;
+   const used=Math.max(0,Math.min(pool.max,pool.used-n));
+   if(n>0){const held=devotionalHeldCheck(p,pool.max-used);if(held){PM_MSG=held;render();return;}}
+   setDevotionalPool(p,{used});render();},
+ devotionalDonate(raw,confirmed,p=0){if(viewOnlyBlock())return;
+   const pool=devotionalPool(p);if(!pool)return;
+   const text=String(raw).trim(),n=Number(text),limit=devotionalRankLimit(p),current=devotionalCur(p);
    const fail=msg=>{PM_MSG=msg;render();};
    if(!confirmed)return fail("Confirm the holy place and donation with your GM.");
    if(!/^\d+$/.test(text)||!Number.isSafeInteger(n)||n<1)return fail("Enter a positive whole-number donation.");
    if(!Number.isInteger(limit))return fail("Confirm an unambiguous cult rank limit in the builder before transferring points.");
-   if(devotionalMax()>limit)return fail("Review the recorded pool above its rank limit before donating.");
+   if(pool.max>limit)return fail("Review the recorded pool above its rank limit before donating.");
    if(n>playCurMagic())return fail("Not enough personal Magic Points for that donation.");
-   if(n>devotionalMax())return fail("The donation exceeds the recorded Devotional Pool maximum.");
+   if(n>pool.max)return fail("The donation exceeds the recorded Devotional Pool maximum.");
    if(n<=current)return fail("Under the Core suggested donation rule, this donation would not increase the pool; consult your GM.");
-   S.play.magic=playCurMagic()-n;S.magic.devotionalUsed=devotionalMax()-n;
-   PM_MSG="Donated "+n+" personal Magic Points; the Devotional Pool now has "+n+" points (Core p.180).";render();},
- devotionalReset(){if(viewOnlyBlock())return;S.magic.devotionalUsed=0;render();},
+   const held=devotionalHeldCheck(p,n);if(held)return fail(held);
+   S.play.magic=playCurMagic()-n;setDevotionalPool(p,{used:pool.max-n});
+   PM_MSG="Donated "+n+" personal Magic Points; the "+devotionalPoolLabel(p)+" now has "+n+" points (Core p.180).";render();},
+ devotionalReset(p=0){if(viewOnlyBlock())return;const pool=devotionalPool(p);if(!pool)return;
+   const held=devotionalHeldCheck(p,pool.max);if(held){PM_MSG=held;render();return;}
+   setDevotionalPool(p,{used:0});render();},
+ // MAG-N05: another cult's separate pool. Existing miracles stay with the
+ // first pool; the player chooses a pool for each new one.
+ addDevotionalPool(){if(viewOnlyBlock())return;
+   if(devotionalPoolCount()>=MAX_DEVOTIONAL_POOLS){DEVOTIONAL_MSG="At most "+MAX_DEVOTIONAL_POOLS+" cult pools can be recorded.";render();return;}
+   for(const m of S.magic.known)if(m.tradition==="theism"&&m.pool==null)m.pool=0;
+   S.magic.extraPools.push({cult:"",rank:"",max:0,used:0});DEVOTIONAL_MSG="";render();},
+ removeDevotionalPool(p){if(viewOnlyBlock())return;
+   if(!Number.isInteger(p)||p<1||!devotionalPool(p))return;
+   if(devotionalMax(p)>0&&!confirm("Remove "+devotionalPoolLabel(p)+" and its "+devotionalCur(p)+" held points?"))return;
+   S.magic.extraPools.splice(p-1,1);
+   for(const m of S.magic.known)if(m.tradition==="theism"&&Number.isInteger(m.pool)){if(m.pool===p)delete m.pool;else if(m.pool>p)m.pool--;}
+   S.play.theismCasting=null;render();},
+ miraclePool(i,raw){const m=S.magic.known[i],n=Number(raw);if(!m||m.tradition!=="theism")return;
+   if(raw===""){delete m.pool;render();return;}
+   if(!Number.isInteger(n)||!devotionalPool(n))return;m.pool=n;render();},
+ // MAG-N02: the spells a Combine casting joins, the shared-target check and
+ // which Invocation skill the spell comes from.
+ combinedSpell(i,slot,name){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;
+   if(!Number.isInteger(slot)||slot<0||slot>19)return;
+   const list=Array.isArray(m.combinedSpells)?m.combinedSpells.slice():[];
+   while(list.length<=slot)list.push("");
+   list[slot]=String(name||"").slice(0,120);
+   while(list.length&&!list[list.length-1])list.pop();
+   m.combinedSpells=list;render();},
+ combineTargets(i,on){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;m.combineSharedTargets=!!on;render();},
+ invocationSource(i,key){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;
+   if(key==="")delete m.invocationKey;else if(invocationOptions().some(o=>o.key===key))m.invocationKey=key;render();},
+ talentLearned(i,on){if(viewOnlyBlock())return;const m=S.magic.known[i];if(!m||m.tradition!=="mysticism")return;
+   if(!on){m.talentLearned=false;m.active=false;m.remainingTurns=0;render();return;}
+   const err=mysticismLearnCheck(S.magic.known,i,Number(effectiveChars().POW));
+   if(err){PM_MSG=err;render();return;}
+   m.talentLearned=true;render();},
  // Core p.136: Calling upon a bound spirit is its own Binding action.
  // GM still adjudicates the spirit's action and possible
  // continued resistance. No generic spell or spirit combat automation.
@@ -252,6 +295,8 @@ window.APP={
      if(err){PM_MSG=err;render();return;}
      if(!magicSkillKey("Mysticism")){PM_MSG="Add the Mysticism skill before preparing a Talent.";render();return;}
      if(record.active){PM_MSG="This Talent is already marked active. End it before preparing it again.";render();return;}
+     const ready=mysticismTalentReady(S.magic.known,knownIndex,Number(effectiveChars().POW));
+     if(ready){PM_MSG=ready;render();return;}
      const limits=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
      const limitError=mysticismActivationCheck(S.magic.known,knownIndex,limits.individual,limits.combined);
      if(limitError){PM_MSG=limitError;render();return;}
@@ -264,13 +309,15 @@ window.APP={
      if(pending&&pending.completed+1<pending.total){pending.completed++;PM_MSG="Talent preparation turn "+pending.completed+" of "+pending.total+" recorded. No roll yet.";render();return;}
    }
    if(m.tradition==="theism"){
-     const poolLimit=devotionalRankLimit();
-     if(Number.isInteger(poolLimit)&&devotionalMax()>poolLimit){PM_MSG="The recorded Devotional Pool exceeds its confirmed rank limit ("+poolLimit+"). Review the pool in the builder before casting; saved points are unchanged.";render();return;}
-     const err=magicCastPreflight(m,playCurMagic(),devotionalCur());
+     const pi=theismPoolIndex(m),poolLimit=pi===null?null:devotionalRankLimit(pi);
+     if(Number.isInteger(poolLimit)&&devotionalMax(pi)>poolLimit){PM_MSG="The recorded "+devotionalPoolLabel(pi)+" exceeds its confirmed rank limit ("+poolLimit+"). Review the pool in the builder before casting; saved points are unchanged.";render();return;}
+     const pow=Number(effectiveChars().POW);
+     if(Number.isSafeInteger(pow)&&pow>=1&&devotionalHeldTotal()>pow){PM_MSG="Your Devotional Pools together hold "+devotionalHeldTotal()+" points, more than POW ("+pow+"). Review them in the builder before casting (Core p.180).";render();return;}
+     const err=magicCastPreflight(m,playCurMagic(),devotionalCur(pi??0));
      if(err){PM_MSG=err;render();return;}
      if(!magicSkillKey("Exhort")){PM_MSG="Add the Exhort skill before requesting a miracle.";render();return;}
      const details=theismDetails(m),pending=S.play.theismCasting;
-     const signature=JSON.stringify([m.name,m.miracleLevel,m.miracleInstances]);
+     const signature=JSON.stringify([m.name,m.miracleLevel,m.miracleInstances,pi]);
      if(pending&&(pending.index!==idx||pending.signature!==signature||pending.total!==details.turns)){PM_MSG="A miracle is underway or its details changed. Cancel the exhortation before continuing.";render();return;}
      if(details.turns>1&&!pending){S.play.theismCasting={index:idx,total:details.turns,completed:1,signature};PM_MSG="Exhortation turn 1 of "+details.turns+" recorded. Roll on the final turn (Core p.181).";render();return;}
      if(pending&&pending.completed+1<pending.total){pending.completed++;PM_MSG="Exhortation turn "+pending.completed+" of "+pending.total+" recorded. No roll yet.";render();return;}
@@ -279,25 +326,27 @@ window.APP={
    // A Sorcery click starts/advances a tracker until that final turn. It does
    // not automatically spend action points or assume uninterrupted casting.
    if(m.tradition==="sorcery"){
-     const err=magicCastPreflight(m,playCurMagic(),devotionalCur());
+     const err=magicCastPreflight(m,playCurMagic(),0)||sorceryCombineCheck(m);
      if(err){PM_MSG=err;render();return;}
+     if(!sorceryRollKey(m)){PM_MSG=invocationOptions().length>1?"Choose which Invocation skill each spell in this casting comes from, in the builder.":"This character doesn't have the Invocation skill, so there's nothing to roll. Add it as a Professional Skill first.";render();return;}
      const total=sorceryCost(m).turns;
      const pending=S.play.sorceryCasting;
-     const shaping=JSON.stringify(sorceryLevels(m));
-     if(pending && (pending.index!==idx || pending.name!==m.name || pending.total!==total || pending.shaping!==shaping)){
+     const shaping=JSON.stringify(sorceryLevels(m)),combo=JSON.stringify([sorceryCombinedNames(m),m.invocationKey||""]);
+     if(pending && (pending.index!==idx || pending.name!==m.name || pending.total!==total || pending.shaping!==shaping || (pending.combo!==undefined&&pending.combo!==combo))){
        PM_MSG="Another Sorcery invocation is underway. Cancel it before changing spells or shaping.";render();return;
      }
      if(total>1 && !pending){
-       S.play.sorceryCasting={index:idx,name:m.name,total,completed:1,shaping};
+       S.play.sorceryCasting={index:idx,name:m.name,total,completed:1,shaping,combo};
        PM_MSG="Sorcery casting turn 1 of "+total+" recorded. Advance on the next casting turn; roll Invocation only on the last turn (Core p.165).";render();return;
      }
      if(pending && pending.completed+1<pending.total){
        pending.completed++;PM_MSG="Sorcery casting turn "+pending.completed+" of "+pending.total+" recorded. No Invocation roll yet.";render();return;
      }
    }
-   const blocking=magicCastPreflight(m,playCurMagic(),devotionalCur());
+   const poolIdx=m.tradition==="theism"?theismPoolIndex(m):null;
+   const blocking=magicCastPreflight(m,playCurMagic(),devotionalCur(poolIdx??0))||(m.tradition==="sorcery"?sorceryCombineCheck(m):null);
    if(blocking){PM_MSG=blocking;render();return;}
-   const key=magicSkillKey(trad.castSkill);
+   const key=m.tradition==="sorcery"?sorceryRollKey(m):magicSkillKey(trad.castSkill);
    if(!key){PM_MSG="This character doesn't have the "+trad.castSkill+" skill, so there's nothing to roll. Add it as a Professional Skill first.";render();return;}
    const base=finalPct(key);let g=gradedPct(key,base);
    if(m.tradition==="sorcery" && sorceryCost(m).combinedSpells)g=sorceryInvocationGrade(key,base,sorceryCost(m).combinedSpells);
@@ -322,9 +371,10 @@ window.APP={
        :m.tradition==="mysticism"?mysticismOutcomeCost(m,tier)
        :magicEntryCost(m);
      if(trad.pool==="devotional"){
-       if(cost>devotionalCur()){PM_MSG="Not enough left in the Devotional Pool ("+devotionalCur()+" of "+devotionalMax()+") to invoke that.";render();return;}
-       S.magic.devotionalUsed=(S.magic.devotionalUsed||0)+cost;
-       costTxt=cost+" from the Devotional Pool";
+       const pi=poolIdx??0;
+       if(cost>devotionalCur(pi)){PM_MSG="Not enough left in the "+devotionalPoolLabel(pi)+" ("+devotionalCur(pi)+" of "+devotionalMax(pi)+") to invoke that.";render();return;}
+       setDevotionalPool(pi,{used:devotionalPool(pi).used+cost});
+       costTxt=cost+" from the "+devotionalPoolLabel(pi);
      }else if(trad.pool==="mp"&&cost>0){
        S.play.magic=playCurMagic()-cost;
        costTxt=cost+" Magic Point"+(cost>1?"s":"");
@@ -1879,7 +1929,7 @@ function buildMD(){
   md+=grp("Standard","Standard Skills")+grp("Professional","Professional Skills")+grp("Magic","Magic Skills")+grp("Combat Style","Combat Styles");
   const magicKnown=allMagic();
   if(magicKnown.length)md+="## Magic Known\n\n"
-    +(devotionalMax()?"Devotional Pool: "+devotionalCur()+" / "+devotionalMax()+" MP\n\n":"")
+    +Array.from({length:devotionalPoolCount()},(_,p)=>devotionalMax(p)?(devotionalPoolCount()>1?devotionalPoolLabel(p):"Devotional Pool")+": "+devotionalCur(p)+" / "+devotionalMax(p)+" MP\n\n":"").join("")
     +"| Magic | Tradition | Cast with | Cost |\n|---|---|---|---|\n"
     +magicKnown.map(m=>{const t=MAGIC_TRAD_MAP[m.tradition];
       const cost=m.tradition==="folk"?"1 MP (0 on a Critical)"

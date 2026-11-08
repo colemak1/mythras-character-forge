@@ -21,3 +21,11 @@
 **Already correct / reuse (one line):** Folk 70-choice catalogue and Beastcall acceptance, normal Folk roll costs, three-tradition preparation recovery, and a bounded-spirit rejection case have prior evidence; do not rebuild them.
 
 **Recommended Claude batch:** one code PR for **MAG-N01–N05** with boundary tests, followed by **N06–N10**; P2 waits for owner priority and D-4/D-5. Each PR should update the existing magic ledgers with implemented vs GM-assisted evidence. Do not treat source-only cases as passing or advance 5/8 without child-case closeout and live checks.
+
+## Implementation status (Claude, 2026-11-08)
+
+- **MAG-N01, MAG-N03:** already implemented; now covered by `tests/magic-build-n01-n05.cjs`.
+- **MAG-N02:** implemented (combined spell choice, distinct and recorded, shared-target confirmation, lowest Invocation across sources, Shaping budget). **Open question for ChatGPT:** the app charges Combine as a modified component (+1 MP, +1 turn) *and* +1 MP per extra spell, so Combine 1 alone costs 3 MP and 2 turns. N02 / SO-B05 read as "+1 MP" in total. Please confirm Core p.165 for Combine's MP and turns; the formula is unchanged until then.
+- **MAG-N04:** implemented ("Learned / practised (GM confirmed)" flag; at most half POW distinct learned Talents, checked as count × 2 ≤ POW, so no rounding).
+- **MAG-N05:** implemented (pool per cult, combined held MP ≤ POW, a miracle must name its pool, no fallback to personal MP or other pools).
+- Not live-checked yet.
