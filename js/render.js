@@ -800,6 +800,21 @@ function folkMagicPicker(){
   return h;
 }
 let DEVOTIONAL_MSG="";
+// MAG-N02: choose the different spells a Combine casting joins, confirm they
+// share target(s), and (with several schools) the Invocation skill to use.
+function sorceryCombineEditor(m,i){
+  let h="";const opts=invocationOptions();
+  if(opts.length>1)h+='<label class="mnum">Invocation source<select aria-label="Invocation skill for this spell" onchange="APP.invocationSource('+i+',this.value)"><option value="">Choose</option>'
+    +opts.map(o=>'<option value="'+esc(o.key)+'" '+(m.invocationKey===o.key?'selected':'')+'>Invocation ('+esc(o.spec||"unnamed")+') '+finalPct(o.key)+'%</option>').join("")+'</select></label>';
+  const n=sorceryLevels(m).Combine||0;if(!n)return h;
+  const others=S.magic.known.filter(x=>x.tradition==="sorcery"&&String(x.name||"").trim()&&magicNameKey(x.name)!==magicNameKey(m.name)).map(x=>String(x.name).trim());
+  const chosen=Array.isArray(m.combinedSpells)?m.combinedSpells:[];
+  for(let slot=0;slot<n;slot++)h+='<label class="mnum">Combined spell '+(slot+1)+'<select onchange="APP.combinedSpell('+i+','+slot+',this.value)"><option value="">Choose a different spell</option>'
+    +[...new Set(others)].map(name=>'<option value="'+esc(name)+'" '+(chosen[slot]&&magicNameKey(chosen[slot])===magicNameKey(name)?'selected':'')+'>'+esc(name)+'</option>').join("")+'</select></label>';
+  h+='<label class="mnum"><input type="checkbox" '+(m.combineSharedTargets?'checked':'')+' onchange="APP.combineTargets('+i+',this.checked)"> Combined spells share the same target(s)</label>';
+  const err=sorceryCombineCheck(m);if(err)h+='<span class="warn">'+esc(err)+'</span>';
+  return h;
+}
 function knownMagicEditor(t){
   const rows=S.magic.known.map((m,i)=>({m,i})).filter(x=>x.m.tradition===t.key);
   let h='<div class="reservednote">'+esc(t.contentNote)+'</div>';
@@ -815,17 +830,29 @@ function knownMagicEditor(t){
     if(Number.isInteger(int)&&named>int)h+='<p class="warn">This character has '+named+' named Sorcery entries and can memorise '+int+'. Confirm which spells are memorised before casting.</p>';
   }
   if(t.key==="theism"){
-    const rank=S.magic.devotionalRank||"",limit=devotionalRankLimit(),pool=devotionalMax();
-    h+='<p class="note rulesrc">Core p.180: each cult has a separate pool. Confirm the rank for this pool; the tracker handles one pool and does not enforce the combined limit for multiple cults. Confirm fractional rounding and other pools with the GM.</p>';
-    h+='<label>Rank for this pool <select onchange="APP.devotionalRank(this.value)">'
-     +[["","Not confirmed"],["lay","Lay Member"],["initiate","Initiate"],["acolyte","Acolyte"],["priest","Priest"],["highpriest","High Priest"]].map(([v,label])=>'<option value="'+v+'" '+(rank===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>';
-    h+='<p class="note">'+(limit===null?'Rank limit not confirmed.':Number.isInteger(limit)?'Confirmed rank limit: '+limit+' points.':'Rank formula gives '+limit+' points; confirm rounding with your GM.')+'</p>';
-    if(Number.isInteger(limit)&&pool>limit)h+='<p class="warn" role="alert">The recorded pool exceeds the confirmed rank limit. Existing points are preserved; review this with your GM.</p>';
+    const pow=Number(effectiveChars().POW),count=devotionalPoolCount();
+    const devotions=acquiredProfs().filter(x=>x.name==="Devotion"&&x.spec);
+    h+='<p class="note rulesrc">Core p.180: each cult has its own Devotional Pool, with its own rank limit. All pools together may hold at most POW'+(Number.isSafeInteger(pow)&&pow>=1?' ('+pow+')':'')+' Magic Points; now held: '+devotionalHeldTotal()+'. A miracle draws only on its own cult&rsquo;s pool, never on personal Magic Points or another cult&rsquo;s pool. Confirm fractional rounding with the GM.</p>';
+    if(devotions.length)h+='<datalist id="devotionCults">'+devotions.map(x=>'<option value="'+esc(x.spec)+'">').join("")+'</datalist>';
     if(DEVOTIONAL_MSG)h+='<p class="warn" role="alert">'+esc(DEVOTIONAL_MSG)+'</p>';
-    h+='<div class="grid2">'
-     +fld("Devotional Pool (Magic Points offered up)",'<input type="number" min="0" value="'+devotionalMax()+'" onchange="APP.devotional(this.value)">')
-     +fld("Currently available",'<div class="agetotal">'+devotionalCur()+' / '+devotionalMax()+'</div>')
-     +'</div>';
+    for(let p=0;p<count;p++){
+      const pool=devotionalPool(p),limit=devotionalRankLimit(p);
+      const dev=devotions.find(x=>pool.cult&&x.spec.toLowerCase()===pool.cult.toLowerCase());
+      h+='<div class="magicrow devpool"><label>Cult <input type="text" maxlength="120" list="devotionCults" aria-label="Cult for pool '+(p+1)+'" placeholder="cult or god" value="'+esc(pool.cult)+'" onchange="APP.devotionalCult('+p+',this.value)"></label>'
+       +(dev?' <span class="note">Devotion ('+esc(dev.spec)+') '+finalPct(dev.key)+'%</span>':'')
+       +' <label>Rank for this pool <select onchange="APP.devotionalRank(this.value,'+p+')">'
+       +[["","Not confirmed"],["lay","Lay Member"],["initiate","Initiate"],["acolyte","Acolyte"],["priest","Priest"],["highpriest","High Priest"]].map(([v,label])=>'<option value="'+v+'" '+(pool.rank===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'
+       +'<p class="note">'+(limit===null?'Rank limit not confirmed.':Number.isInteger(limit)?'Confirmed rank limit: '+limit+' points.':'Rank formula gives '+limit+' points; confirm rounding with your GM.')+'</p>'
+       +(Number.isInteger(limit)&&pool.max>limit?'<p class="warn" role="alert">The recorded pool exceeds the confirmed rank limit. Existing points are preserved; review this with your GM.</p>':'')
+       +'<div class="grid2">'
+       +fld("Devotional Pool (Magic Points offered up)",'<input type="number" min="0" value="'+pool.max+'" onchange="APP.devotional(this.value,'+p+')">')
+       +fld("Currently available",'<div class="agetotal">'+devotionalCur(p)+' / '+pool.max+'</div>')
+       +'</div>'
+       +(p>0?'<button type="button" class="chip" onclick="APP.removeDevotionalPool('+p+')">Remove this cult&rsquo;s pool</button>':'')
+       +'</div>';
+    }
+    if(Number.isSafeInteger(pow)&&pow>=1&&devotionalHeldTotal()>pow)h+='<p class="warn" role="alert">The pools together hold more than POW. Points are preserved; miracles are blocked until you review them.</p>';
+    if(count<MAX_DEVOTIONAL_POOLS)h+='<p><button type="button" class="chip" onclick="APP.addDevotionalPool()">+ add another cult&rsquo;s pool</button></p>';
   }
   if(t.key==="mysticism"){
     const lim=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
@@ -843,6 +870,8 @@ function knownMagicEditor(t){
       r+='<label class="mnum">Miracle level<select onchange="APP.miracleLevel('+i+',this.value)"><option value="" '+(!m.miracleLevel?'selected':'')+'>Confirm with GM</option>'
        +[[1,"Initiate"],[2,"Acolyte"],[3,"Priest"]].map(([v,label])=>'<option value="'+v+'" '+(Number(m.miracleLevel)===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'
        +'<label class="mnum">Instances<input type="number" min="1" max="100" value="'+(m.miracleInstances||1)+'" onchange="APP.miracleInstances('+i+',this.value)"></label>'
+       +(devotionalPoolCount()>1?'<label class="mnum">Pool<select aria-label="Devotional Pool for this miracle" onchange="APP.miraclePool('+i+',this.value)"><option value="" '+(theismPoolIndex(m)===null?'selected':'')+'>Choose a cult</option>'
+         +Array.from({length:devotionalPoolCount()},(_,p)=>'<option value="'+p+'" '+(theismPoolIndex(m)===p?'selected':'')+'>'+esc(devotionalPoolLabel(p))+'</option>').join("")+'</select></label>':'')
        +(det?'<span class="mcost">'+det.cost+' pool points · '+det.turns+' turns</span>':'<span class="warn">Confirm the miracle level with your GM before casting. Previously recorded cost: '+esc(String(m.cost||0))+'; preserved for review.</span>');
     }
     if(t.shaping){
@@ -851,7 +880,8 @@ function knownMagicEditor(t){
        +t.shaping.map(sn=>'<label class="mnum">'+esc(sn)+'<input aria-label="'+esc(sn)+' Shaping points" type="number" min="0" max="100" value="'+(levels[sn]||0)+'" onchange="APP.shapingLevel('+i+',\''+jsq(sn)+'\',this.value)"></label>').join("")
        +(Number(m.combineExtra)>0?'<span class="warn">Legacy additional-spell count: '+esc(String(m.combineExtra))+'. Review before casting. <button type="button" onclick="APP.reviewLegacyCombine('+i+')">Use as Combine points</button></span>':'')
        +(Number(m.shapingLevels?.Intensity)>0||m.shapings?.includes("Intensity")?'<span class="warn">Legacy Intensity Shaping: '+esc(String(m.shapingLevels?.Intensity||1))+' points. Review with the GM; Intensity is not a Core Shaping component. <button type="button" onclick="APP.clearLegacyIntensity('+i+')">Remove legacy value</button></span>':'')
-       +'<span class="mcost">'+c.mp+' MP &middot; '+c.turns+' turn'+(c.turns>1?"s":"")+' to cast · '+c.shapingPoints+' Shaping points</span></div>';
+       +'<span class="mcost">'+c.mp+' MP &middot; '+c.turns+' turn'+(c.turns>1?"s":"")+' to cast · '+c.shapingPoints+' Shaping points</span>'
+       +sorceryCombineEditor(m,i)+'</div>';
     }
     if(t.key==="animism"){
       r+='<label class="mnum">Spirit Intensity<input type="number" min="1" max="100" value="'+(m.intensity||1)+'" onchange="APP.magicField('+i+',\'intensity\',this.value)"></label>'
@@ -873,6 +903,7 @@ function knownMagicEditor(t){
       r+='<label class="mnum">Talent category<select onchange="APP.talentCategory('+i+',this.value)"><option value="" '+(!m.talentCategory?'selected':'')+'>Confirm with GM</option>'
        +[["augment","Augment skill"],["invoke","Invoke trait"],["enhance","Enhance attribute"]].map(([v,label])=>'<option value="'+v+'" '+(m.talentCategory===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'
        +(details?'<span class="mcost">'+details.cost+' MP base cost</span>':'<span class="warn">Select a category and valid Intensity before casting. Invoke traits use Intensity 1. Previously recorded cost: '+esc(String(m.cost??"not recorded"))+'; preserved for review.</span>');
+      r+='<label class="mnum"><input type="checkbox" '+(m.talentLearned?'checked':'')+' onchange="APP.talentLearned('+i+',this.checked)"> Learned / practised (GM confirmed)</label>';
       r+='<label class="mnum">Duration (turns; 0 = GM)<input type="number" min="0" max="9999" value="'+(m.durationTurns||0)+'" onchange="APP.talentDuration('+i+',this.value)"></label>'
        +'<button class="chip '+(m.active?'on':'')+'" onclick="APP.toggleTalent('+i+')">'+(m.active?'Active — end Talent':'Mark active')+'</button>'
        +(m.active&&m.durationTurns>0?'<span class="mcost">'+(m.remainingTurns||0)+' turns left</span><button class="chip" onclick="APP.talentTurn('+i+')">Advance 1 turn</button>':'');

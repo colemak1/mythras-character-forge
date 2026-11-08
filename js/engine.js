@@ -291,7 +291,7 @@ function freshState(){return {
  // traditions whose content lives in the player's own rulebook. `devotional`
  // is the Magic Points a theist has invested in their Devotional Pool, and
  // `devotionalUsed` how much of it is currently spent.
- magic:{folk:[],known:[],devotional:0,devotionalUsed:0},
+ magic:{folk:[],known:[],devotional:0,devotionalUsed:0,devotionalCult:"",extraPools:[]},
  campaignId:null, _libId:null, _libLastSaved:null,
  // True whenever this character's data came from somewhere not yet
  // verified as belonging to whoever is currently signed in -- the autosave
@@ -428,7 +428,16 @@ function normalizeState(){
       if(!Number.isSafeInteger(m.spiritMP)||m.spiritMP<0||m.spiritMP>999)m.spiritMP=null;
       m.spiritCombatNote=String(m.spiritCombatNote||"").slice(0,800);
     }
+    if(m.tradition==="sorcery"){
+      // MAG-N02: which other recorded spells a Combine casting joins, and the
+      // player's confirmation that they share target(s). Never inferred.
+      m.combinedSpells=Array.isArray(m.combinedSpells)?m.combinedSpells.map(x=>String(x||"").slice(0,120)).slice(0,20):[];
+      m.combineSharedTargets=m.combineSharedTargets===true;
+      if(m.invocationKey!=null&&typeof m.invocationKey!=="string")delete m.invocationKey;
+    }
     if(m.tradition==="mysticism"){
+      // MAG-N04: a recorded Talent is not learned until the GM confirms it.
+      m.talentLearned=m.talentLearned===true;
       m.active=!!m.active;
       m.durationTurns=Number.isInteger(Number(m.durationTurns))&&Number(m.durationTurns)>=0?Number(m.durationTurns):0;
       m.remainingTurns=m.active&&Number.isInteger(Number(m.remainingTurns))&&Number(m.remainingTurns)>=0?Number(m.remainingTurns):0;
@@ -436,6 +445,7 @@ function normalizeState(){
   }
   if(typeof S.magic.devotional!=="number")S.magic.devotional=0;
   if(typeof S.magic.devotionalUsed!=="number")S.magic.devotionalUsed=0;
+  normalizeDevotionalPools();
   if(S.concept&&S.concept.heightM===undefined)S.concept.heightM="";
   if(S.concept&&S.concept.weightKg===undefined)S.concept.weightKg="";
   S.archAdvantages=S.archAdvantages||[];
@@ -836,6 +846,69 @@ function sorceryCost(entry){
   return {mp:1+categories+extra,turns:1+categories,shapings:categories,
     shapingPoints:points,combinedSpells:extra};
 }
+// MAG-N02 (Core p.162): each Combine point joins one more *different*
+// recorded spell. The spells share target(s); the player confirms that.
+function magicNameKey(v){return String(v||"").trim().toLowerCase();}
+// Only the first Combine-many choices count; lowering Combine keeps the rest
+// saved but unused.
+function sorceryCombinedNames(entry){
+  const n=sorceryLevels(entry).Combine||0;
+  return (Array.isArray(entry.combinedSpells)?entry.combinedSpells:[]).slice(0,n).map(x=>String(x||"").trim()).filter(Boolean);
+}
+function sorceryCombineCheck(entry,known){
+  const n=sorceryLevels(entry).Combine||0;if(!n)return null;
+  known=known||S.magic.known;
+  const names=sorceryCombinedNames(entry);
+  if(names.length!==n)return "Combine "+n+" joins "+n+" other spell"+(n>1?"s":"")+" to this one; choose "+(n>1?"them":"it")+" in the builder ("+names.length+" chosen, Core p.162).";
+  const seen=new Set([magicNameKey(entry.name)]);
+  for(const name of names){
+    const k=magicNameKey(name);
+    if(seen.has(k))return "Combined spells must be different spells; "+name+" appears twice (Core p.162).";
+    seen.add(k);
+    if(!known.some(m=>m.tradition==="sorcery"&&magicNameKey(m.name)===k))return name+" is not a recorded Sorcery spell.";
+  }
+  if(entry.combineSharedTargets!==true)return "Confirm that the combined spells share the same target(s) before casting (Core p.162).";
+  return null;
+}
+// Invocation skills are per school or grimoire. With several, a spell must
+// say which one it comes from; with one, that one is used.
+function invocationOptions(){return acquiredProfs().filter(p=>p.name==="Invocation");}
+function sorceryInvocationKeyFor(entry){
+  const opts=invocationOptions();
+  if(opts.length>1){const o=opts.find(x=>x.key===entry?.invocationKey);return o?o.key:null;}
+  return magicSkillKey("Invocation");
+}
+// MAG-N02: a combined casting rolls the lowest Invocation of the spells
+// involved when they come from different sources (Core p.162).
+function sorceryRollKey(entry,known){
+  known=known||S.magic.known;
+  const records=[entry].concat(sorceryCombinedNames(entry)
+    .map(name=>known.find(m=>m.tradition==="sorcery"&&magicNameKey(m.name)===magicNameKey(name))).filter(Boolean));
+  const keys=records.map(sorceryInvocationKeyFor);
+  if(keys.some(k=>!k))return null;
+  return keys.reduce((low,k)=>finalPct(k)<finalPct(low)?k:low);
+}
+// MAG-N04 (Core p.155): a mystic practises at most half their POW in distinct
+// Talents. Names are compared case-insensitively; one Talent recorded at two
+// Intensities counts once. Integer count against POW/2 needs no rounding.
+function mysticismLearnedNames(entries){
+  return new Set(entries.filter(m=>m.tradition==="mysticism"&&m.talentLearned===true&&String(m.name||"").trim()).map(m=>magicNameKey(m.name)));
+}
+function mysticismLearnCheck(entries,index,pow){
+  const m=entries[index];if(!m||m.tradition!=="mysticism")return "Not a Mysticism Talent.";
+  if(!String(m.name||"").trim())return "Name the Talent before marking it learned.";
+  if(!Number.isSafeInteger(pow)||pow<1)return "Confirm POW before marking Talents learned.";
+  const names=mysticismLearnedNames(entries);names.add(magicNameKey(m.name));
+  if(names.size*2>pow)return "A mystic can practise at most half their POW in distinct Talents ("+Math.floor(pow/2)+" at POW "+pow+", Core p.155).";
+  return null;
+}
+function mysticismTalentReady(entries,index,pow){
+  const m=entries[index];if(!m||m.tradition!=="mysticism")return "Not a Mysticism Talent.";
+  if(m.talentLearned!==true)return "Mark this Talent as learned (GM confirmed) first. A recorded or catalogue Talent is not automatically learned (Core p.155).";
+  const count=mysticismLearnedNames(entries).size;
+  if(Number.isSafeInteger(pow)&&pow>=1&&count*2>pow)return count+" learned Talents exceed half POW ("+Math.floor(pow/2)+" at POW "+pow+"). Review them in the builder before using any (Core p.155).";
+  return null;
+}
 function mysticismActiveTotal(entries){
   return entries.filter(m=>m.tradition==="mysticism"&&m.active)
     .reduce((total,m)=>total+Math.max(0,Math.floor(Number(m.intensity)||0)),0);
@@ -961,6 +1034,7 @@ function magicCastPreflight(entry, availableMP, availableDevotion){
   const t=MAGIC_TRAD_MAP[entry.tradition];
   if(entry.tradition==="mysticism"&&!mysticismDetails(entry))return "Confirm the Talent category and a valid Intensity before casting; invoked traits use Intensity 1 (Core p.156).";
   if(entry.tradition==="theism"&&!theismDetails(entry))return "Confirm this miracle's cult level and number of instances before casting (Core p.181).";
+  if(entry.tradition==="theism"&&theismPoolIndex(entry)===null)return "Choose which cult's Devotional Pool this miracle draws on. Pools are separate; personal Magic Points and other cults' pools are never used instead (Core pp.180–181).";
   if(entry.tradition==="folk" && mp<1)return "Not enough Magic Points to attempt Folk Magic (minimum 1 MP).";
   const cost=magicEntryCost(entry);
   if(t.pool==="mp" && entry.tradition!=="folk" && (!Number.isInteger(cost)||cost<1))
@@ -971,15 +1045,62 @@ function magicCastPreflight(entry, availableMP, availableDevotion){
   if(t.pool==="devotional" && dp<cost)return "Not enough Devotional Pool points: need "+cost+", have "+dp+".";
   return null;
 }
-function devotionalMax(){return Math.max(0,parseInt(S.magic.devotional,10)||0);}
-function devotionalCur(){return Math.max(0,devotionalMax()-(S.magic.devotionalUsed||0));}
+// MAG-N05 (Core p.180): one Devotional Pool per cult. Pool 0 keeps the
+// original fields (devotional, devotionalUsed, devotionalRank, devotionalCult)
+// so older saves and builds still read it; further cults are in extraPools.
+const DEVOTIONAL_RANKS=["","lay","initiate","acolyte","priest","highpriest"];
+const MAX_DEVOTIONAL_POOLS=8;
+function normalizeDevotionalPools(){
+  S.magic.devotionalCult=String(S.magic.devotionalCult||"").slice(0,120);
+  if(!DEVOTIONAL_RANKS.includes(S.magic.devotionalRank||""))S.magic.devotionalRank="";
+  S.magic.extraPools=(Array.isArray(S.magic.extraPools)?S.magic.extraPools:[])
+    .filter(x=>x&&typeof x==="object"&&!Array.isArray(x)).slice(0,MAX_DEVOTIONAL_POOLS-1).map(x=>{
+      const max=Number.isSafeInteger(Number(x.max))&&Number(x.max)>=0?Number(x.max):0;
+      const used=Number.isSafeInteger(Number(x.used))&&Number(x.used)>=0?Math.min(max,Number(x.used)):0;
+      return {cult:String(x.cult||"").slice(0,120),rank:DEVOTIONAL_RANKS.includes(x.rank)?x.rank:"",max,used};
+    });
+  const count=devotionalPoolCount();
+  for(const m of S.magic.known)if(m.tradition==="theism"&&m.pool!=null&&!(Number.isInteger(m.pool)&&m.pool>=0&&m.pool<count))delete m.pool;
+}
+function devotionalPoolCount(){return 1+(Array.isArray(S.magic.extraPools)?S.magic.extraPools.length:0);}
+function devotionalPool(p=0){
+  if(p===0)return {cult:S.magic.devotionalCult||"",rank:S.magic.devotionalRank||"",
+    max:Math.max(0,parseInt(S.magic.devotional,10)||0),used:Math.max(0,Number(S.magic.devotionalUsed)||0)};
+  const x=Number.isInteger(p)&&p>0?(S.magic.extraPools||[])[p-1]:null;
+  return x?{cult:x.cult||"",rank:x.rank||"",max:Math.max(0,parseInt(x.max,10)||0),used:Math.max(0,Number(x.used)||0)}:null;
+}
+function setDevotionalPool(p,patch){
+  if(p===0){
+    const map={cult:"devotionalCult",rank:"devotionalRank",max:"devotional",used:"devotionalUsed"};
+    for(const [k,v] of Object.entries(patch))S.magic[map[k]]=v;
+    return;
+  }
+  const x=(S.magic.extraPools||[])[p-1];if(x)Object.assign(x,patch);
+}
+function devotionalMax(p=0){return devotionalPool(p)?.max||0;}
+function devotionalCur(p=0){const x=devotionalPool(p);return x?Math.max(0,x.max-x.used):0;}
 // Core p.180. Rank is confirmed for this pool, not inferred from the
 // character's general cult field. Fractional limits need GM interpretation.
-function devotionalRankLimit(){
+function devotionalRankLimit(p=0){
   const fractions={lay:0,initiate:0.25,acolyte:0.5,priest:0.75,highpriest:1};
-  const rank=S.magic.devotionalRank,pow=Number(effectiveChars().POW);
+  const rank=devotionalPool(p)?.rank,pow=Number(effectiveChars().POW);
   if(!Object.prototype.hasOwnProperty.call(fractions,rank)||!Number.isSafeInteger(pow)||pow<1)return null;
   return pow*fractions[rank];
+}
+// MAG-N05: the MP held across all of a theist's pools may not exceed POW.
+function devotionalHeldTotal(){let t=0;for(let p=0;p<devotionalPoolCount();p++)t+=devotionalCur(p);return t;}
+function devotionalHeldCheck(p,newHeld){
+  const pow=Number(effectiveChars().POW);if(!Number.isSafeInteger(pow)||pow<1)return null;
+  const total=devotionalHeldTotal()-devotionalCur(p)+newHeld;
+  return total>pow?"All Devotional Pools together may hold at most POW ("+pow+") Magic Points; this would make "+total+" (Core p.180).":null;
+}
+function devotionalPoolLabel(p){const x=devotionalPool(p);return x?(x.cult?x.cult:"Cult "+(p+1))+" pool":"pool";}
+// A miracle draws only on its own cult's pool. With one pool, that pool;
+// with several, the miracle must name one. null = not confirmed.
+function theismPoolIndex(m){
+  const n=devotionalPoolCount();
+  if(m?.pool==null)return n===1?0:null;
+  return Number.isInteger(m.pool)&&m.pool>=0&&m.pool<n?m.pool:null;
 }
 // Every piece of magic the character knows, in one list, for the sheet and
 // Play Mode's Magic tab.
