@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Magic: confirmed cult rank required, Core animist rank names (fixes from the #219 review)
+
+ChatGPT's review of #219 is merged (docs #220).
+
+- **Miracles need a confirmed cult rank (MAG-N07):** until "Rank for this pool" is set, that cult's miracles can't be requested (Core pp.180–181). Saved pools and miracles are kept, and the builder says what to confirm.
+- **Animist ranks use the Core names (MAG-N09):** Follower (¼ CHA), Spirit Worshipper (½), Shaman (¾), High Shaman (all), from Core p.136. Saved characters keep their rank.
+- **Overflow is the GM's call:** Core says the strongest spirits break free but doesn't define "strongest". The builder now says the GM decides; the app's Intensity-then-POW list is shown only as a suggestion, and its button asks for GM confirmation. Commands stay blocked until the overflow is resolved.
+- **Rounding (MAG-N06):** an odd half cost on a critical still rounds up. Comments now call this app policy pending D-4, not a book rule (Core p.156 gives no direction).
+
 ## Magic: miracle rank, bound-spirit slots, pending-cast checks (MAG-N06–N10)
 
 ChatGPT's #217 review is merged (docs #218): Core p.178 does not require a separate Exhort per cult, so a generic Exhort stays valid. Cult-specific miracle and pool links are kept. The Exhort choice per pool is now labelled as an app setting.

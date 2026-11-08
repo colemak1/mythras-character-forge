@@ -159,7 +159,8 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   run('S=freshState();S.magic.known=[{tradition:"theism",name:"Bless",cost:3}];S.magic.devotional=12;S.magic.devotionalUsed=0;S.play.magic=12;APPVIEW="play";allMagic=()=>S.magic.known;magicSkillKey=()=>"exhort";finalPct=()=>80;gradeForEntry=()=>"standard";playCurMagic=()=>S.play.magic;Math.random=()=>0.49;viewOnlyBlock=()=>false;render=()=>{};');
   run('APP.castMagic(0)');assert.match(run('PM_MSG'),/Confirm/);assert.equal(run('S.magic.known[0].cost'),3);assert.equal(run('S.rollLog.length'),0);
   run('S.chars.POW=12;S.magic.devotionalRank="initiate";APP.castMagic(0)');assert.match(run('PM_MSG'),/exceeds/);assert.equal(run('S.magic.devotional'),12);assert.equal(run('S.rollLog.length'),0);
-  run('S.magic.devotionalRank=""');
+  run('S.magic.devotionalRank=""');run('APP.miracleLevel(0,"2");APP.castMagic(0)');assert.match(run('PM_MSG'),/Confirm your rank/);assert.equal(run('S.play.theismCasting'),null);
+  run('S.magic.devotionalRank="highpriest"');
   run('APP.miracleLevel(0,"2");APP.castMagic(0)');assert.equal(run('S.play.theismCasting.completed'),1);assert.equal(run('S.magic.devotionalUsed'),0);
   const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
   run('APP.castMagic(0)');assert.equal(run('S.rollLog[0].tier'),"Success");assert.equal(run('S.magic.devotionalUsed'),2);assert.equal(run('S.play.theismCasting'),null);

@@ -61,6 +61,13 @@ test('MAG-N07 a miracle above the pool\'s confirmed rank cannot be requested',()
  assert.match(run('knownMagicEditor(MAGIC_TRAD_MAP.theism)'),/Sun/);
  theist({miracleLevel:3},"initiate",3);assert.match(run('knownMagicEditor(MAGIC_TRAD_MAP.theism)'),/level 3 miracle/);
 });
+test('MAG-N07 an unconfirmed cult rank blocks miracle requests but keeps the data',()=>{
+ theist({miracleLevel:1},"",3);dice([]);run('APP.castMagic(0)');
+ assert.match(msg(),/Confirm your rank in Sun/);assert.equal(run('S.play.theismCasting'),null);assert.equal(run('S.rollLog.length'),0);
+ assert.equal(run("devotionalMax(0)"),3);assert.equal(run("S.magic.known[0].miracleLevel"),1);
+ assert.match(run('knownMagicEditor(MAGIC_TRAD_MAP.theism)'),/Confirm your rank in Sun/);
+ run('APP.devotionalRank("initiate")');dice([20]);run('APP.castMagic(0)');assert.equal(run('S.rollLog[0].tier'),'Success');
+});
 test('MAG-N07 the pool ceiling is enforced before the roll',()=>{
  theist({miracleLevel:3,miracleInstances:2});run('S.magic.devotionalUsed=4');dice([]);
  run('APP.castMagic(0)');assert.match(msg(),/need 6, have 5/);assert.equal(run('S.play.theismCasting'),null);
@@ -91,6 +98,7 @@ test('MAG-N09 binding needs a GM-confirmed bargain or Spirit Combat win',()=>{
 });
 test('MAG-N09 slots are ¼/½/¾/all CHA, and a fractional limit waits for the GM',()=>{
  animist({});
+ assert.deepEqual(JSON.parse(run('JSON.stringify(ANIMIST_RANK_LABEL.slice(1).map(x=>x[1].split(":")[0]))')),["Follower","Spirit Worshipper","Shaman","High Shaman"]);
  for(const [rank,x] of [["r1",3],["r2",6],["r3",9],["r4",12]]){run('APP.animistRank("'+rank+'")');assert.equal(run('boundSpiritFormula()'),x);assert.equal(run('boundSpiritLimit()'),x);}
  run('S.chars.CHA=13;APP.animistRank("r1")');assert.equal(run('boundSpiritFormula()'),3.25);assert.equal(run('boundSpiritLimit()'),null,'no hidden rounding');
  run('S.magic.known.push({tradition:"animism",name:"Wisp",pow:5,intensity:1,spiritStatus:"unbound",spiritAcquired:"bargain"});APP.spiritStatus(1,"bound")');
@@ -106,8 +114,8 @@ test('MAG-N09 a full set of slots blocks binding; on overflow the strongest esca
  run('APP.spiritStatus(2,"bound")');assert.match(msg(),/All 2 bound-spirit slots are in use/);
  run('APP.animistRank("r4");APP.spiritStatus(2,"bound");APP.animistRank("r1")');
  assert.deepEqual(JSON.parse(run('JSON.stringify(boundSpiritOverflow().map(m=>m.name))')),["Bear"]);
- dice([]);run('APP.commandSpirit(1)');assert.match(msg(),/resolve the escaping spirit/);assert.equal(run('S.play.magic'),10);
- assert.match(run('knownMagicEditor(MAGIC_TRAD_MAP.animism)'),/The strongest escape: Bear/);
+ dice([]);run('APP.commandSpirit(1)');assert.match(msg(),/strongest break free/);assert.equal(run('S.play.magic'),10);
+ assert.match(run('knownMagicEditor(MAGIC_TRAD_MAP.animism)'),/the GM decides which are strongest[\s\S]*App suggestion \(highest Intensity, then POW\): Bear/);
  run('APP.releaseOverflowSpirits()');assert.equal(run('S.magic.known[0].spiritStatus'),'unbound');assert.equal(run('boundSpirits().length'),2);
  dice([40]);run('APP.commandSpirit(1)');assert.equal(run('S.rollLog[0].tier'),'Success');
 });

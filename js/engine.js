@@ -937,7 +937,8 @@ function mysticismActivationCheck(entries,index,individual,combined){
   return null;
 }
 // Core p.165 Invocation Costs: success/full, critical/half, failure/zero,
-// fumble/full. Half points are rounded up to a payable integer.
+// fumble/full. Core gives no rounding for an odd half: the app rounds up as
+// policy pending owner decision D-4, not as a book rule.
 function sorceryOutcomeCost(entry,tier){
   const full=sorceryCost(entry).mp;
   if(tier==="Failure")return 0;
@@ -968,6 +969,8 @@ function mysticismDetails(entry){
   if(entry.talentCategory==="invoke"&&intensity===1)return {cost:2};
   return null;
 }
+// Core p.156: a critical costs half. Odd halves round up as app policy
+// pending D-4; the book does not give a direction.
 function mysticismOutcomeCost(entry,tier){
   const full=mysticismDetails(entry)?.cost;
   if(full==null)return null;
@@ -999,17 +1002,18 @@ function spiritCommandPreflight(m,mp,bindingPct){
   if(!Number.isFinite(mp)||mp<1)return "You need at least 1 Magic Point available to attempt a bound-spirit command.";
   if(!Number.isFinite(bindingPct)||bindingPct<=0)return "Add the Binding skill before commanding a spirit.";
   if(!Number.isSafeInteger(Number(m.pow))||Number(m.pow)<1)return "Enter the spirit's POW before attempting a command; consult your GM if unknown.";
-  if(boundSpiritOverflow().length)return "More spirits are bound than your rank allows; resolve the escaping spirit(s) in the builder first (Core p.136).";
+  if(boundSpiritOverflow().length)return "More spirits are bound than your rank allows, so the strongest break free (Core p.136). Ask your GM which, mark them not bound in the builder, then command again.";
   const limit=3*Math.ceil(bindingPct/10);
   if(Number(m.pow)>limit)return "The spirit's POW exceeds your Binding limit ("+limit+"); the command fails (Core pp.131, 136).";
   return null;
 }
 // MAG-N09 (Core pp.135–136): bound-spirit slots by animist rank are ¼, ½, ¾
-// or all of CHA. A fractional result is not rounded by the app: the GM
+// or all of CHA (Follower, Spirit Worshipper, Shaman, High Shaman). The saved
+// keys stay r1–r4. A fractional result is not rounded by the app: the GM
 // confirms the whole-number limit (S.magic.boundLimitGM), which must lie
 // between the fraction's floor and ceiling.
 const ANIMIST_RANK_FRACTION={r1:0.25,r2:0.5,r3:0.75,r4:1};
-const ANIMIST_RANK_LABEL=[["","Not confirmed"],["r1","Rank 1: ¼ CHA"],["r2","Rank 2: ½ CHA"],["r3","Rank 3: ¾ CHA"],["r4","Rank 4: all CHA"]];
+const ANIMIST_RANK_LABEL=[["","Not confirmed"],["r1","Follower: ¼ CHA"],["r2","Spirit Worshipper: ½ CHA"],["r3","Shaman: ¾ CHA"],["r4","High Shaman: all CHA"]];
 function boundSpiritFormula(){
   const f=ANIMIST_RANK_FRACTION[S.magic.animistRank],cha=Number(effectiveChars().CHA);
   if(f==null||!Number.isSafeInteger(cha)||cha<1)return null;
@@ -1022,7 +1026,10 @@ function boundSpiritLimit(){
   return Number.isInteger(gm)&&gm>=Math.floor(x)&&gm<=Math.ceil(x)?gm:null;
 }
 function boundSpirits(){return S.magic.known.filter(m=>m.tradition==="animism"&&m.spiritStatus==="bound");}
-// Spirits over the limit escape, strongest first: highest Intensity, then POW.
+// Core p.136: over the limit, the strongest spirit(s) break free. Core doesn't
+// define "strongest", so this is only the app's suggestion for the GM
+// (highest Intensity, then POW). Commands stay blocked until the GM-chosen
+// spirits are marked free.
 function boundSpiritOverflow(){
   const limit=boundSpiritLimit(),bound=boundSpirits();
   if(limit==null||bound.length<=limit)return [];
@@ -1163,11 +1170,12 @@ function exhortKeyForPool(p){
 }
 // MAG-N07 (Core pp.179–181): a miracle's level (1 Initiate, 2 Acolyte,
 // 3 Priest) must be within the confirmed rank of the pool it draws on. A Lay
-// Member has no pool. An unconfirmed rank is not checked here; the builder
-// asks for it.
+// Member has no pool. Until the rank is confirmed no miracle can be requested;
+// saved pool and miracle data are kept.
 const POOL_RANK_MIRACLE={lay:0,initiate:1,acolyte:2,priest:3,highpriest:3};
 function theismRankCheck(m,pi){
-  const rank=devotionalPool(pi)?.rank;if(!Object.hasOwn(POOL_RANK_MIRACLE,rank))return null;
+  const rank=devotionalPool(pi)?.rank;
+  if(!Object.hasOwn(POOL_RANK_MIRACLE,rank))return "Confirm your rank in "+(devotionalPool(pi)?.cult||"this cult")+" (Rank for this pool, in the builder) before requesting miracles. Rank decides which miracles and how large a pool you have (Core pp.180–181).";
   const level=Number(m.miracleLevel),max=POOL_RANK_MIRACLE[rank];
   if(Number.isInteger(level)&&level>max)return (m.name||"This miracle")+" is a level "+level+" miracle; the "+devotionalPoolLabel(pi)+"'s confirmed rank allows up to level "+max+" (Core pp.179–181).";
   return null;
