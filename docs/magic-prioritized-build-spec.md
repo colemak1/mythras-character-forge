@@ -96,3 +96,13 @@ Tests: `tests/magic-build-n06-n10.cjs`. Static/automated only; live checks pendi
 - **N06:** odd critical half cost rounds up as **D-4 app policy**, not a Core rule (p.156); comments say so. Changes if the owner decides D-4 otherwise.
 - **N10:** a skill-percentage change mid-cast is not invalidating by app policy (the final-turn skill is rolled). Two-account live check remains open.
 - Progress stays **5/8**.
+
+## One-pass static review of merged PR #221 (ChatGPT, 2026-11-08)
+
+**Result: pass for the three requested #219-review fixes; no blocking discrepancy in scoped diff.** Compared merged #221 (`f095479e9910c60fb5fb9f15525c021fb8abea24`) against the previous Core rulings: **p.136** (Animist ranks and overflow), **p.156** (critical Mysticism half cost), **pp.180–181** (cult rank and miracle eligibility). Reviewed added/changed tests; did **not** independently run the suite or perform live acceptance.
+
+- **N07 — pass:** unknown devotional-pool rank now rejects Exhort before rolling; pool and miracle data are retained. New regression covers rejection, retention and successful casting after rank confirmation. Confirmed-rank ceiling checks remain.
+- **N09 — pass:** UI uses **Follower, Spirit Worshipper, Shaman, High Shaman**, preserving `r1`–`r4` save keys. Overflow explicitly asks the GM which spirits are strongest; Intensity-then-POW is an **app suggestion**, not a Core definition. The suggested-release button requests GM confirmation; manual unbinding supports a different GM selection. Commands remain blocked while bound count exceeds the confirmed limit. The Core escape is represented as GM-assisted resolution, not silently automated.
+- **N06 — pass:** comments identify rounding odd half-costs up as **pending D-4 app policy**, not an explicit Core rounding rule; cost formula unchanged.
+
+**Remaining:** D-4 decision; other Magic P2 cases; two-account and deployed Magic acceptance. **Progress stays 5/8; Magic remains open.**
