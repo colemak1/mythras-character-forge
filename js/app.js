@@ -106,7 +106,7 @@ window.APP={
  // and rebuilt this button) -- these sit right next to Miracle/spell name
  // and stat fields, so they're just as exposed to it.
  addMagic(tradition){debounceFire('addMagic',()=>{
-   S.magic.known.push({tradition,name:"",notes:"",cost:1,intensity:1,pow:0,cha:0,spiritStatus:"unbound",spiritContact:"unknown",spiritAttitude:"neutral",spiritMP:null,spiritCombatNote:"",bindingType:"none",shapings:[],shapingLevels:{},combineExtra:0,combinedSpells:[],combineSharedTargets:false,talentLearned:false,active:false,durationTurns:0,remainingTurns:0});
+   S.magic.known.push({tradition,name:"",notes:"",cost:1,intensity:1,pow:0,cha:0,spiritStatus:"unbound",spiritAcquired:"",spiritContact:"unknown",spiritAttitude:"neutral",spiritMP:null,spiritCombatNote:"",bindingType:"none",shapings:[],shapingLevels:{},combineExtra:0,combinedSpells:[],combineSharedTargets:false,talentLearned:false,active:false,durationTurns:0,remainingTurns:0});
    render();});},
  // Update 17: Spirit negotiation, ritual outcome and spirit-combat bookkeeping.
  // The GM confirms contact, bargains and bindings; these controls never invent a successful ritual.
@@ -130,7 +130,20 @@ window.APP={
  spiritCombatNote(i,v){if(viewOnlyBlock())return;const m=S.magic.known[i];if(m&&m.tradition==="animism"){m.spiritCombatNote=String(v).slice(0,800);render();}},
  spiritStatus(i,status){if(viewOnlyBlock())return;const m=S.magic.known[i];
    if(!m||m.tradition!=="animism"||!["bound","unbound"].includes(status))return;
+   if(status==="bound"&&m.spiritStatus!=="bound"){const err=spiritBindCheck(m);if(err){PM_MSG=err;render();return;}}
    m.spiritStatus=status;render();},
+ // MAG-N09: acquisition, animist rank and the GM-confirmed slot limit.
+ spiritAcquired(i,v){if(viewOnlyBlock())return;const m=S.magic.known[i];
+   if(!m||m.tradition!=="animism"||!["","bargain","combat"].includes(v))return;m.spiritAcquired=v;render();},
+ animistRank(v){if(viewOnlyBlock()||!(v===""||Object.hasOwn(ANIMIST_RANK_FRACTION,v)))return;S.magic.animistRank=v;delete S.magic.boundLimitGM;render();},
+ boundLimitGM(raw){if(viewOnlyBlock())return;const x=boundSpiritFormula(),str=String(raw).trim(),n=Number(str);
+   if(str===""){delete S.magic.boundLimitGM;render();return;}
+   if(x==null||Number.isInteger(x)||!Number.isSafeInteger(n)||n<Math.floor(x)||n>Math.ceil(x)){PM_MSG="The GM-confirmed limit must be "+(x==null?"set after the rank":Math.floor(x)+" or "+Math.ceil(x))+".";render();return;}
+   S.magic.boundLimitGM=n;render();},
+ releaseOverflowSpirits(){if(viewOnlyBlock())return;const out=boundSpiritOverflow();if(!out.length)return;
+   if(!confirm("Mark "+out.map(m=>m.name||"unnamed spirit").join(", ")+" as escaped (unbound)?"))return;
+   out.forEach(m=>{m.spiritStatus="unbound";});
+   PM_MSG="Escaped, strongest first: "+out.map(m=>m.name||"unnamed spirit").join(", ")+". Resolve their behaviour with your GM (Core p.136).";render();},
  magicField(i,f,v){const m=S.magic.known[i];if(!m)return;
    if(f==="name"||f==="notes")m[f]=v;
    else {const raw=String(v).trim();const n=Number(raw);
@@ -315,10 +328,10 @@ window.APP={
      if(Number.isInteger(poolLimit)&&devotionalMax(pi)>poolLimit){PM_MSG="The recorded "+devotionalPoolLabel(pi)+" exceeds its confirmed rank limit ("+poolLimit+"). Review the pool in the builder before casting; saved points are unchanged.";render();return;}
      const pow=Number(effectiveChars().POW);
      if(Number.isSafeInteger(pow)&&pow>=1&&devotionalHeldTotal()>pow){PM_MSG="Your Devotional Pools together hold "+devotionalHeldTotal()+" points, more than POW ("+pow+"). Review them in the builder before casting (Core p.180).";render();return;}
+     const assoc=theismDetails(m)?theismAssociationCheck(m):null;
+     if(assoc){PM_MSG=assoc;render();return;}
      const err=magicCastPreflight(m,playCurMagic(),devotionalCur(pi??0));
      if(err){PM_MSG=err;render();return;}
-     const assoc=theismAssociationCheck(m);
-     if(assoc){PM_MSG=assoc;render();return;}
      const details=theismDetails(m),pending=S.play.theismCasting;
      const signature=JSON.stringify([m.name,m.miracleLevel,m.miracleInstances,pi,magicNameKey(m.cult),exhortKeyForPool(pi)]);
      if(pending&&(pending.index!==idx||pending.signature!==signature||pending.total!==details.turns)){PM_MSG="A miracle is underway or its details changed. Cancel the exhortation before continuing.";render();return;}

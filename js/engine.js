@@ -427,6 +427,7 @@ function normalizeState(){
       if(!["none","fetish","location","creature"].includes(m.bindingType))m.bindingType="none";
       if(!Number.isSafeInteger(m.spiritMP)||m.spiritMP<0||m.spiritMP>999)m.spiritMP=null;
       m.spiritCombatNote=String(m.spiritCombatNote||"").slice(0,800);
+      if(!["bargain","combat"].includes(m.spiritAcquired))m.spiritAcquired="";
     }
     if(m.tradition==="sorcery"){
       // MAG-N02: which other recorded spells a Combine casting joins, and the
@@ -446,6 +447,8 @@ function normalizeState(){
   if(typeof S.magic.devotional!=="number")S.magic.devotional=0;
   if(typeof S.magic.devotionalUsed!=="number")S.magic.devotionalUsed=0;
   normalizeDevotionalPools();
+  if(!Object.hasOwn(ANIMIST_RANK_FRACTION,S.magic.animistRank))S.magic.animistRank="";
+  if(!Number.isSafeInteger(S.magic.boundLimitGM)||S.magic.boundLimitGM<0)delete S.magic.boundLimitGM;
   if(S.concept&&S.concept.heightM===undefined)S.concept.heightM="";
   if(S.concept&&S.concept.weightKg===undefined)S.concept.weightKg="";
   S.archAdvantages=S.archAdvantages||[];
@@ -996,8 +999,44 @@ function spiritCommandPreflight(m,mp,bindingPct){
   if(!Number.isFinite(mp)||mp<1)return "You need at least 1 Magic Point available to attempt a bound-spirit command.";
   if(!Number.isFinite(bindingPct)||bindingPct<=0)return "Add the Binding skill before commanding a spirit.";
   if(!Number.isSafeInteger(Number(m.pow))||Number(m.pow)<1)return "Enter the spirit's POW before attempting a command; consult your GM if unknown.";
+  if(boundSpiritOverflow().length)return "More spirits are bound than your rank allows; resolve the escaping spirit(s) in the builder first (Core p.136).";
   const limit=3*Math.ceil(bindingPct/10);
   if(Number(m.pow)>limit)return "The spirit's POW exceeds your Binding limit ("+limit+"); the command fails (Core pp.131, 136).";
+  return null;
+}
+// MAG-N09 (Core pp.135–136): bound-spirit slots by animist rank are ¼, ½, ¾
+// or all of CHA. A fractional result is not rounded by the app: the GM
+// confirms the whole-number limit (S.magic.boundLimitGM), which must lie
+// between the fraction's floor and ceiling.
+const ANIMIST_RANK_FRACTION={r1:0.25,r2:0.5,r3:0.75,r4:1};
+const ANIMIST_RANK_LABEL=[["","Not confirmed"],["r1","Rank 1: ¼ CHA"],["r2","Rank 2: ½ CHA"],["r3","Rank 3: ¾ CHA"],["r4","Rank 4: all CHA"]];
+function boundSpiritFormula(){
+  const f=ANIMIST_RANK_FRACTION[S.magic.animistRank],cha=Number(effectiveChars().CHA);
+  if(f==null||!Number.isSafeInteger(cha)||cha<1)return null;
+  return cha*f;
+}
+function boundSpiritLimit(){
+  const x=boundSpiritFormula();if(x==null)return null;
+  if(Number.isInteger(x))return x;
+  const gm=S.magic.boundLimitGM;
+  return Number.isInteger(gm)&&gm>=Math.floor(x)&&gm<=Math.ceil(x)?gm:null;
+}
+function boundSpirits(){return S.magic.known.filter(m=>m.tradition==="animism"&&m.spiritStatus==="bound");}
+// Spirits over the limit escape, strongest first: highest Intensity, then POW.
+function boundSpiritOverflow(){
+  const limit=boundSpiritLimit(),bound=boundSpirits();
+  if(limit==null||bound.length<=limit)return [];
+  return bound.slice().sort((a,b)=>(Number(b.intensity)||0)-(Number(a.intensity)||0)||(Number(b.pow)||0)-(Number(a.pow)||0)).slice(0,bound.length-limit);
+}
+// A spirit is bound only after a GM-confirmed bargain or Spirit Combat win,
+// and only into a free slot.
+function spiritBindCheck(m){
+  if(!m||m.tradition!=="animism")return "Select an Animism spirit.";
+  if(!["bargain","combat"].includes(m.spiritAcquired))return "Record how the spirit was acquired (a bargain, or winning Spirit Combat, GM confirmed) before binding it (Core pp.135–136).";
+  const formula=boundSpiritFormula(),limit=boundSpiritLimit();
+  if(formula==null)return "Confirm your animist rank and CHA before binding: they set how many spirits you can hold (Core p.136).";
+  if(limit==null)return "Your rank gives "+formula+" bound spirits. Enter the whole-number limit your GM confirms before binding.";
+  if(boundSpirits().filter(x=>x!==m).length>=limit)return "All "+limit+" bound-spirit slots are in use (Core p.136).";
   return null;
 }
 // Starting-magic review is an explicit snapshot, never inferred from old saves.
@@ -1122,6 +1161,17 @@ function exhortKeyForPool(p){
   if(match.length===1)return match[0].key;
   return opts.length===1?opts[0].key:null;
 }
+// MAG-N07 (Core pp.179–181): a miracle's level (1 Initiate, 2 Acolyte,
+// 3 Priest) must be within the confirmed rank of the pool it draws on. A Lay
+// Member has no pool. An unconfirmed rank is not checked here; the builder
+// asks for it.
+const POOL_RANK_MIRACLE={lay:0,initiate:1,acolyte:2,priest:3,highpriest:3};
+function theismRankCheck(m,pi){
+  const rank=devotionalPool(pi)?.rank;if(!Object.hasOwn(POOL_RANK_MIRACLE,rank))return null;
+  const level=Number(m.miracleLevel),max=POOL_RANK_MIRACLE[rank];
+  if(Number.isInteger(level)&&level>max)return (m.name||"This miracle")+" is a level "+level+" miracle; the "+devotionalPoolLabel(pi)+"'s confirmed rank allows up to level "+max+" (Core pp.179–181).";
+  return null;
+}
 // MAG-N05: a miracle belongs to one cult. With several pools it must name
 // that cult, and the pool it draws on must be the same cult's. Legacy
 // miracles are never reassigned silently.
@@ -1132,6 +1182,7 @@ function theismAssociationCheck(m){
   if(n>1&&!pool.cult)return "Name the cult for "+devotionalPoolLabel(pi)+" in the builder before requesting its miracles.";
   if(n>1&&!String(m.cult||"").trim())return "Confirm which cult "+(m.name||"this miracle")+" comes from in the builder (Core p.180).";
   if(String(m.cult||"").trim()&&magicNameKey(m.cult)!==magicNameKey(pool.cult))return (m.name||"This miracle")+" belongs to "+m.cult+", not "+(pool.cult||"this pool")+". A cult's miracles are requested only through that cult (Core pp.180–181).";
+  const rankErr=theismRankCheck(m,pi);if(rankErr)return rankErr;
   if(!exhortKeyForPool(pi))return exhortOptions().length>1?"Choose which Exhort skill the "+devotionalPoolLabel(pi)+" uses, in the builder.":"Add the Exhort skill before requesting a miracle.";
   return null;
 }

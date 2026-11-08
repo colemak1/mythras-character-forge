@@ -210,7 +210,7 @@ test('MAG-N05 with several Exhort skills and no name match, the pool must choose
  dice([]);run('APP.castMagic(1)');assert.match(msg(),/Choose which Exhort skill the Moon pool uses/);
  run('APP.poolExhort(1,"exhort:nope")');assert.equal(run('exhortKeyForPool(1)'),null);
  run('APP.poolExhort(1,"exhort:storm")');assert.equal(run('exhortKeyForPool(1)'),'exhort:storm');
- assert.match(run('knownMagicEditor(MAGIC_TRAD_MAP.theism)'),/Exhort for this cult/);
+ assert.match(run('knownMagicEditor(MAGIC_TRAD_MAP.theism)'),/Exhort used for this cult/);
  run('S=JSON.parse(JSON.stringify(S));normalizeState()');assert.equal(run('S.magic.extraPools[0].exhortKey'),'exhort:storm');
  run('APP.poolExhort(1,"")');assert.equal(run('exhortKeyForPool(1)'),null);
 });

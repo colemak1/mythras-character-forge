@@ -810,7 +810,7 @@ function miracleCultChoice(m){
 function exhortPoolEditor(p){
   const opts=exhortOptions(),key=exhortKeyForPool(p),pool=devotionalPool(p);
   if(opts.length<=1)return key?' <span class="note">Exhort '+finalPct(key)+'%</span>':'';
-  return ' <label>Exhort for this cult <select onchange="APP.poolExhort('+p+',this.value)"><option value="" '+(!pool.exhortKey?'selected':'')+'>'+(key&&!pool.exhortKey?'Matches the cult name':'Choose')+'</option>'
+  return ' <label title="An app setting: Core does not require a separate Exhort for each cult (p.178).">Exhort used for this cult <select onchange="APP.poolExhort('+p+',this.value)"><option value="" '+(!pool.exhortKey?'selected':'')+'>'+(key&&!pool.exhortKey?'Matches the cult name':'Choose')+'</option>'
     +opts.map(o=>'<option value="'+esc(o.key)+'" '+(pool.exhortKey===o.key?'selected':'')+'>Exhort'+(o.spec?' ('+esc(o.spec)+')':'')+' '+finalPct(o.key)+'%</option>').join("")+'</select></label>';
 }
 // MAG-N02: choose the different spells a Combine casting joins, confirm they
@@ -868,6 +868,14 @@ function knownMagicEditor(t){
     if(Number.isSafeInteger(pow)&&pow>=1&&devotionalHeldTotal()>pow)h+='<p class="warn" role="alert">The pools together hold more than POW. Points are preserved; miracles are blocked until you review them.</p>';
     if(count<MAX_DEVOTIONAL_POOLS)h+='<p><button type="button" class="chip" onclick="APP.addDevotionalPool()">+ add another cult&rsquo;s pool</button></p>';
   }
+  if(t.key==="animism"){
+    const x=boundSpiritFormula(),limit=boundSpiritLimit(),over=boundSpiritOverflow();
+    h+='<p class="note rulesrc">Core pp.135–136: bound-spirit slots by rank are ¼, ½, ¾ or all of CHA. A spirit must first be acquired through a bargain or by winning Spirit Combat, with the GM, before it is bound. If more are bound than the rank allows, the strongest escape. The app does not round a fractional limit: your GM confirms it.</p>'
+     +'<label>Animist rank <select onchange="APP.animistRank(this.value)">'+ANIMIST_RANK_LABEL.map(([v,l])=>'<option value="'+v+'" '+((S.magic.animistRank||"")===v?'selected':'')+'>'+esc(l)+'</option>').join("")+'</select></label>'
+     +'<p class="note">'+(x==null?'Confirm the rank (and CHA) to see the bound-spirit limit.':Number.isInteger(x)?'Bound spirits: '+boundSpirits().length+' / '+x+'.':'The rank gives '+x+' bound spirits.')+'</p>'
+     +(x!=null&&!Number.isInteger(x)?'<label class="mnum">GM-confirmed limit<input type="number" min="'+Math.floor(x)+'" max="'+Math.ceil(x)+'" value="'+(Number.isInteger(S.magic.boundLimitGM)?S.magic.boundLimitGM:'')+'" onchange="APP.boundLimitGM(this.value)"></label>'+(limit!=null?' <span class="note">Bound spirits: '+boundSpirits().length+' / '+limit+'.</span>':''):'');
+    if(over.length)h+='<p class="warn" role="alert">'+boundSpirits().length+' spirits are bound but the limit is '+limit+'. The strongest escape: '+esc(over.map(m=>m.name||"unnamed").join(", "))+'. <button type="button" class="chip" onclick="APP.releaseOverflowSpirits()">Mark them escaped</button></p>';
+  }
   if(t.key==="mysticism"){
     const lim=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
     h+='<p class="note rulesrc">Core pp.155–157: One preparation turn per Intensity. Individual Intensity ceiling: '+lim.individual+'; combined active Intensity ceiling: '+lim.combined+'. The book confirms 34% permits Intensity 2; other rounding boundaries require GM confirmation. Currently active: '+mysticismActiveTotal(S.magic.known)+' / '+lim.combined+'. Activation is a tracking marker only; casting and effects still require normal resolution.</p>';
@@ -886,7 +894,7 @@ function knownMagicEditor(t){
        +'<label class="mnum">Instances<input type="number" min="1" max="100" value="'+(m.miracleInstances||1)+'" onchange="APP.miracleInstances('+i+',this.value)"></label>'
        +(devotionalPoolCount()>1?'<label class="mnum">Cult<select aria-label="Cult this miracle comes from" onchange="APP.miraclePool('+i+',this.value)"><option value="" '+(miracleCultChoice(m)===null?'selected':'')+'>Choose a cult</option>'
          +Array.from({length:devotionalPoolCount()},(_,p)=>'<option value="'+p+'" '+(miracleCultChoice(m)===p?'selected':'')+'>'+esc(devotionalPool(p).cult||devotionalPoolLabel(p))+'</option>').join("")+'</select></label>':'')
-       +(()=>{const err=theismAssociationCheck(m);return err&&devotionalPoolCount()>1?'<span class="warn">'+esc(err)+'</span>':'';})()
+       +(()=>{const err=theismAssociationCheck(m);return err&&(devotionalPoolCount()>1||/level \d miracle/.test(err))?'<span class="warn">'+esc(err)+'</span>':'';})()
        +(det?'<span class="mcost">'+det.cost+' pool points · '+det.turns+' turns</span>':'<span class="warn">Confirm the miracle level with your GM before casting. Previously recorded cost: '+esc(String(m.cost||0))+'; preserved for review.</span>');
     }
     if(t.shaping){
@@ -902,7 +910,10 @@ function knownMagicEditor(t){
       r+='<label class="mnum">Spirit Intensity<input type="number" min="1" max="100" value="'+(m.intensity||1)+'" onchange="APP.magicField('+i+',\'intensity\',this.value)"></label>'
        +'<label class="mnum">Binding status<select aria-label="Spirit binding status" onchange="APP.spiritStatus('+i+',this.value)">'
        +'<option value="unbound" '+(m.spiritStatus!=="bound"?'selected':'')+'>Not bound / unconfirmed</option>'
-       +'<option value="bound" '+(m.spiritStatus==="bound"?'selected':'')+'>Bound (GM confirmed)</option></select></label>';
+       +'<option value="bound" '+(m.spiritStatus==="bound"?'selected':'')+'>Bound (GM confirmed)</option></select></label>'
+       +'<label class="mnum">Acquired by<select aria-label="How the spirit was acquired" onchange="APP.spiritAcquired('+i+',this.value)">'
+       +[["","Not recorded"],["bargain","Bargain (GM confirmed)"],["combat","Won Spirit Combat (GM confirmed)"]].map(([v,l])=>'<option value="'+v+'" '+((m.spiritAcquired||"")===v?'selected':'')+'>'+l+'</option>').join("")+'</select></label>'
+       +(m.spiritStatus==="bound"&&!m.spiritAcquired?'<span class="note">Bound before acquisition was recorded; kept as bound. Record how it was acquired.</span>':'');
       r+='<label class="mnum">Spirit contact<select onchange="APP.spiritSelect('+i+',\'spiritContact\',this.value)">'
        +["unknown","located","contacted"].map(v=>'<option value="'+v+'" '+(m.spiritContact===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label>'
        +'<label class="mnum">Attitude<select onchange="APP.spiritSelect('+i+',\'spiritAttitude\',this.value)">'
