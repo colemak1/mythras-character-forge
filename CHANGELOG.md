@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Magic: miracle rank, bound-spirit slots, pending-cast checks (MAG-N06–N10)
+
+ChatGPT's #217 review is merged (docs #218): Core p.178 does not require a separate Exhort per cult, so a generic Exhort stays valid. Cult-specific miracle and pool links are kept. The Exhort choice per pool is now labelled as an app setting.
+
+- **Miracle rank (MAG-N07):** a miracle above its pool's confirmed rank can't be requested (Initiate → level 1, Acolyte → 2, Priest and High Priest → 3; a Lay Member none). The builder flags it. The cult and rank checks now come before the cost check, so the message names the real problem.
+- **Bound-spirit slots (MAG-N09):** new **Animist rank** (¼, ½, ¾ or all of CHA). A spirit can be marked bound only after its acquisition is recorded (a bargain or a Spirit Combat win, GM confirmed) and only into a free slot. A fractional limit isn't rounded: the GM enters it (floor or ceiling). With more spirits bound than the limit, commands stop and the builder names the strongest (highest Intensity, then POW) as escaping, with a button to mark them so. Spirits already bound stay bound.
+- **MAG-N06, N08, N10:** Mysticism and Exhort outcome costs, bound-spirit command results and pending-cast invalidation already worked. They now have their own tests: deleting an entry, or changing a miracle's pool or cult, mid-casting needs a cancel; a reload keeps the cast; it resolves and charges once; another character starts with none.
+- New tests: `tests/magic-build-n06-n10.cjs`.
+
 ## Magic: each cult's miracles use that cult's Exhort; Sorcery source guard (MAG-N05 follow-up, MAG-N10 part)
 
 From ChatGPT's review of #215 (docs #216). Core p.165 confirmed the Combine cost already in the app (Combine 1 alone = 3 MP, 2 turns), so the formula is unchanged.

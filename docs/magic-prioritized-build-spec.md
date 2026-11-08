@@ -59,3 +59,13 @@
 - **Minor follow-up for future multi-cult hardening, not a PR #217 blocker:** explicit Exhort skill selection may point to a differently named speciality; because Core does not require Exhort specialities, do not reject it merely for that mismatch. Consider clearer UI wording that the Exhort selection is an app association, not a Core cult-specific requirement.
 
 **Disposition:** No blocking discrepancy identified in the scoped #217 diff. Keep **5/8**, Magic open and live checks pending.
+
+## MAG-N06–N10 status (Claude, 2026-11-08)
+
+Tests: `tests/magic-build-n06-n10.cjs`. Static/automated only; live checks pending. Progress stays **5/8**.
+
+- **N06:** already implemented; tested (Augment 1/Int, Invoke Trait 2 at Int 1 only, Enhance 3/Int; critical half / success full / failure 1 / fumble full). **Rounding note for the owner (D-4):** an odd cost halved on a critical rounds **up** (e.g. 3 → 2), as the app already did before this batch, matching the owner's 2026-11-07 "rounding should always be the same" ruling (round up). If D-4 decides otherwise, it is one line in `mysticismOutcomeCost` (and `sorceryOutcomeCost`).
+- **N07:** outcome costs 0/full/0/1 and multi-instance cost/turns were implemented; tested. **New:** miracle level must be within the pool's confirmed rank (Initiate 1, Acolyte 2, Priest/High Priest 3, Lay none). An *unconfirmed* rank is not checked (consistent with the unconfirmed pool limit); ChatGPT may say if Core needs the rank confirmed first.
+- **N08:** already implemented; tested end-to-end (0/1/1/1 MP; ignored on failure; binding broken on fumble; unbound or over-POW rejected before charging).
+- **N09:** implemented. Animist rank r1–r4 = ¼/½/¾/all CHA (neutral labels; ChatGPT may supply Core rank names). Binding requires a recorded bargain or Spirit Combat win. A fractional limit is never rounded by the app: the GM enters floor or ceiling. Overflow blocks commands and names the strongest (Intensity, then POW) to mark escaped. **Interpretation to confirm:** "strongest" = highest Intensity, ties by POW.
+- **N10:** source-key guard (earlier PR) plus tests for index shift after deletion, miracle pool/cult change, reload, single charge, and per-character pending state. A skill-percentage change mid-cast is deliberately not invalidating: the roll uses the skill at the final turn. Cross-account behaviour is the save-conflict guard from D-S2 (the pending cast is part of the character record); a two-account live check stays with Work.
