@@ -24,3 +24,9 @@ jobs:
             echo "::endgroup::"
           done
           exit $failed
+      - name: Database permission tests
+        # Runs every migration on a real Postgres (PGlite) and checks what
+        # each signed-in account can and cannot do (tests/db/permissions.cjs).
+        run: |
+          npm install --no-save --no-audit --no-fund --prefix .ci-deps @electric-sql/pglite@0.2.17
+          node tests/db/permissions.cjs

@@ -5,11 +5,11 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/happy-brahmagupta-votbg4.
 
-_Last updated: 2026-11-08 by Claude (Subsystem 8 D-S1, D-S2, D-S4 implemented)_
+_Last updated: 2026-11-08 by Claude (D-S3 implemented, DB permission tests, Pits strip fix; docs #210 #211 merged)_
 
 ## Where things stand
 
-- **Progress 5/8** (`docs/subsystem-plan.md`). Subsystems 1–5 closed; Main Play Mode Combat stays CLOSED. Next audits when the owner resumes them: 6 Magic (low priority), 7 Creatures, 8 Campaign/multi-account (decided items implemented; live check and D-S3 left).
+- **Progress 5/8** (`docs/subsystem-plan.md`). Subsystems 1–5 closed; Main Play Mode Combat stays CLOSED. Next audits when the owner resumes them: 6 Magic (low priority), 7 Creatures, 8 Campaign/multi-account (D-S1–D-S4 implemented; DB permission tests in CI; signed-in live check remains).
 - **Play Mode:** v0 "Stone & Verdigris" look, nine colour schemes (`play-stone.css`), item search, Core-only traits. Nothing waiting on a live check.
 - **Home and menus:** owner's redesign handoff Part A done (#197–#201): shared page header, phone tab bar and More sheet, sign-in gates, Home Continue card and character cards, Characters search/sort/Undo delete, Campaign cards and Join with a code, The Pits lobby, Rules table of contents, World Guide chips, Account tabs and profile. Styles in `sitota-menus.css`; tests in `tests/site-menus.cjs`.
 - **The Pits** (`experiments/practice-combat.html`, route `#/the-pits`):
@@ -19,16 +19,11 @@ _Last updated: 2026-11-08 by Claude (Subsystem 8 D-S1, D-S2, D-S4 implemented)_
 
 ## Next
 
-- **Owner (first):** run `supabase/migrations/20261108120000_campaign_continuity_and_save_conflicts.sql` once in the Supabase SQL editor (safe to re-run). It adds character revisions and the GM actions for D-S1, D-S2, D-S4 (implemented in the Subsystem 8 PR; see `CHANGELOG.md`). Until it runs, the app behaves as before and the new GM buttons say the server needs the update.
-- **ChatGPT (Work), migration/live batch:** owner confirms migration run; attempted batch recorded in `docs/live-batch-pr209-20261107.md`. Multi-account steps 1–10, new-item pop-up and signed-in checks BLOCKED (manual disposable signup); phone/audio unavailable. Standalone Pits partial: initiative strip actor/AP metadata needs Claude review; terminal recap still outstanding. No fixtures created; sound restored off. Progress 5/8.
-- Still open for the owner: D-S3 (any signed-in user can see display names). Other subsystems: 6 Magic (partial; gaps in `magic-subsystem-cases.md`), 7 Creatures (needs a ChatGPT (Chat) case inventory first).
-- **Claude:** queued for The Pits only if the owner asks: Unarmed (44 cases in the ledger, PIT-SE03); split `experiments/practice-combat.html`'s very long lines when next touching it.
-- **ChatGPT (Work), one batched live check when the owner has credits** (only what Claude can't test headless):
-  - Signed in: Play Mode item search (add a sword free, it attacks; paid rope −10 silver; mail location +5 ENC; reload keeps all); builder offers only the 26 Core traits. Use a disposable character and delete it afterwards.
-  - The Pits after #202: Basalt setup readable; pill / Last roll / end recap follow the dice; a settled Opponent pill; audible sound if possible.
-  - Menus signed in and out on a real phone if possible: tab bar, More sheet, gates, Undo delete (disposable character), Join with a code.
-  - Earlier blocked items: new-item pop-up (needs a second player account); fold it into the Subsystem 8 multi-account check.
-- **Owner:** turn on Settings → General → "Allow auto-merge". Later: D-S3 (display names), D-4 and D-5 (Magic, low priority).
+- **Owner (first):** run `supabase/migrations/20261108130000_display_names_signed_in_only.sql` once in the Supabase SQL editor (safe to re-run). It implements D-S3 option A: signed-in users read only display names; signed-out visitors read no profiles. (The D-S1/D-S2/D-S4 migration `20261108120000_…` is already run.)
+- **Owner:** the signed-in live checks need disposable accounts that Work can't create (its browser forbids automated sign-up). Either create 3–4 test accounts and give Work their sign-ins, or run steps 8–10 of the plan in `campaign-cases-batch-1.md` yourself with two browsers. The database side of steps 1–6, 8 and 10 and of D-S3 is now covered by `tests/db/permissions.cjs` (CI), against a stand-in schema.
+- **ChatGPT (Work), when accounts exist:** multi-account steps 1–10 plus D-S3 (as an outsider, other users' names show and nothing else); new-item pop-up; signed-in Play Mode item search and 26 Core traits; Undo delete and Join with a code. Signed out or standalone: The Pits terminal recap timing (play a bout to Victory/Defeat) and recheck the initiative strip, fixed in the D-S3 PR. Record in `docs/live-batch-pr209-20261107.md` or a new dated file. Real phone and audible sound stay blocked unless the owner can check them.
+- **Claude, next code batch (owner picks):** Subsystem 6 Magic MAG-N01–N05 (`docs/magic-prioritized-build-spec.md`), or Subsystem 7 Creatures B01–B05 (`docs/creature-cases-batch-1.md`). Pits Unarmed only if the owner asks. Split `experiments/practice-combat.html`'s very long lines when next touching it.
+- **Owner, later:** D-4 and D-5 (Magic, low priority). Settings → General → "Allow auto-merge" if not on yet.
 
 ## Notes
 

@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Display names for signed-in users only; database permission tests; Pits strip fix
+
+- **D-S3 option A (owner):** any signed-in user can see other users' display names, and nothing else on a profile. Signed-out visitors can't read profiles at all. **Needs the new migration** `supabase/migrations/20261108130000_display_names_signed_in_only.sql` run once in the Supabase SQL editor (safe to re-run). The app already asks only for names, so nothing changes on screen.
+- **Database permission tests:** `tests/db/permissions.cjs` runs every migration on a real Postgres (PGlite) and checks, account by account, what a GM, players, another campaign's GM and an outsider can and can't do: profiles, GM notes, character edits, assignment, GM tools, new invite code, removing members and handing over the GM role. CI runs it as a second step.
+- **The Pits:** while the initiative dice played, the strip under the dice already named the opponent with "Reacting · 1 AP left". It now names whoever's die is on screen, with their AP at that moment (found in ChatGPT's live batch after #209).
+- Docs from ChatGPT merged: creature cases (#210), magic build spec (#210), live batch after #209 (#211).
+
 ## Campaigns: new invite code, save conflicts, GM handover and backup (Subsystem 8)
 
 Implements the owner's decisions D-S1, D-S2 and D-S4 (`docs/decisions.md`). **Needs the new migration** `supabase/migrations/20261108120000_campaign_continuity_and_save_conflicts.sql` run once in the Supabase SQL editor; until then the app works as before.

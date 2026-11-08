@@ -1,5 +1,7 @@
 # Subsystem 6 verification ledger
 
+**Prioritized code-needed backlog:** [Magic build spec](magic-prioritized-build-spec.md) (owner priority remains low; source cases below are not implementation passes).
+
 Rule-by-rule cases with app status: [Batch 1, Core pp.112–129 (General Magic and Folk Magic)](magic-cases-batch-1.md).
 
 This ledger consolidates existing implementation and session evidence. Source ranges come from the repository's Core scope register. Individual spell, Talent, miracle and spirit entries still require child cases. These rows are audit work packages, not verified whole chapters.
