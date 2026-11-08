@@ -142,9 +142,10 @@ const theist=()=>run('S=freshState();S.chars.POW=12;S.play.magic=10;'+base
  +'magicSkillKey=n=>n==="Exhort"?"exhort":null;finalPct=()=>80;'
  +'S.magic.known=[{tradition:"theism",name:"Bless",miracleLevel:1,miracleInstances:1},{tradition:"theism",name:"Smite",miracleLevel:2,miracleInstances:1}];'
  +'S.magic.devotionalCult="Sun";S.magic.devotionalRank="priest";S.magic.devotional=6;');
-test('MAG-N05 a second cult gets its own pool; existing miracles stay with the first',()=>{
+test('MAG-N05 a second cult gets its own pool; existing miracles are not reassigned silently',()=>{
  theist();run('APP.addDevotionalPool();APP.devotionalCult(1,"Storm");APP.devotionalRank("acolyte",1);APP.devotional("6",1)');
- assert.equal(run('devotionalPoolCount()'),2);assert.equal(run('S.magic.known[0].pool'),0);assert.equal(run('devotionalMax(1)'),6);
+ assert.equal(run('devotionalPoolCount()'),2);assert.equal(run('S.magic.known[0].pool'),undefined);assert.equal(run('S.magic.known[0].cult'),undefined);assert.equal(run('devotionalMax(1)'),6);
+ dice([]);run('APP.castMagic(0)');assert.match(msg(),/Choose which cult/);assert.equal(run('S.rollLog.length'),0);
  assert.equal(run('devotionalPoolLabel(1)'),'Storm pool');
  const html=run('knownMagicEditor(MAGIC_TRAD_MAP.theism)');
  assert.match(html,/Storm/);assert.match(html,/Remove this cult/);assert.match(html,/now held: 12/);
@@ -160,14 +161,14 @@ test('MAG-N05 combined held pool MP may not exceed POW',()=>{
  run('S.magic.devotionalUsed=0;S.play.magic=10');run('APP.devotionalDonate("6",true,1)');assert.match(msg(),/at most POW/);assert.equal(run('S.play.magic'),10);
 });
 test('MAG-N05 a miracle needs its pool chosen and draws only on that pool',()=>{
- theist();run('APP.addDevotionalPool();APP.devotionalRank("acolyte",1);APP.devotional("6",1);S.magic.known.push({tradition:"theism",name:"Gust",miracleLevel:1,miracleInstances:1})');
+ theist();run('APP.addDevotionalPool();APP.devotionalCult(1,"Storm");APP.devotionalRank("acolyte",1);APP.devotional("6",1);S.magic.known.push({tradition:"theism",name:"Gust",miracleLevel:1,miracleInstances:1})');
  dice([]);run('APP.castMagic(2)');assert.match(msg(),/Choose which cult/);assert.equal(run('S.rollLog.length'),0);
  run('APP.miraclePool(2,"1");S.magic.extraPools[0].used=6');
  run('APP.castMagic(2)');assert.match(msg(),/Not enough Devotional Pool points: need 1, have 0/);
  assert.equal(run('S.play.magic'),10,'personal MP untouched');assert.equal(run('devotionalCur(0)'),6,'other pool untouched');
  run('S.magic.extraPools[0].used=0');dice([20]);run('APP.castMagic(2)');
  assert.equal(run('S.rollLog[0].tier'),'Success');assert.equal(run('devotionalCur(1)'),5);assert.equal(run('devotionalCur(0)'),6);assert.equal(run('S.play.magic'),10);
- assert.match(run('S.rollLog[0].magic'),/1 from the Cult 2 pool/);
+ assert.match(run('S.rollLog[0].magic'),/1 from the Storm pool/);
 });
 test('MAG-N05 removing a pool clears its miracles and keeps others pointing at the right pool',()=>{
  theist();run('APP.addDevotionalPool();APP.addDevotionalPool();APP.miraclePool(0,"1");APP.miraclePool(1,"2");APP.removeDevotionalPool(1)');
@@ -180,5 +181,50 @@ test('MAG-N05 an old single-pool save loads as pool 1, and pools survive a JSON 
  assert.equal(run('devotionalMax(1)'),4);assert.equal(run('S.magic.known[0].pool'),undefined,'an out-of-range pool reference is dropped for review');
  run('S.magic.extraPools=[{cult:5,rank:"pope",max:-3,used:9}];normalizeState()');
  assert.equal(run('JSON.stringify(S.magic.extraPools[0])'),JSON.stringify({cult:"5",rank:"",max:0,used:0}));
+});
+// Two cults whose miracles are requested with different Exhort skills.
+const twoCults=()=>{theist();run('var __ex=[["exhort:sun","Sun",70],["exhort:storm","Storm",40]];acquiredProfs=()=>__ex.map(([key,spec])=>({key,name:"Exhort",spec,src:["learned"]}));'
+ +'finalPct=k=>{const x=__ex.find(i=>i[0]===k);return x?x[2]:0;};'
+ +'APP.addDevotionalPool();APP.devotionalCult(1,"Storm");APP.devotionalRank("acolyte",1);APP.devotional("6",1);APP.miraclePool(0,"0");APP.miraclePool(1,"1");');};
+test('MAG-N05 each cult requests its miracles with its own Exhort skill',()=>{
+ twoCults();
+ assert.equal(run('S.magic.known[0].cult'),'Sun');assert.equal(run('S.magic.known[1].cult'),'Storm');
+ assert.equal(run('miracleCultChoice(S.magic.known[1])'),1);
+ run('S.magic.known.push({tradition:"theism",name:"Old",miracleLevel:1,miracleInstances:1,pool:0})');
+ assert.equal(run('miracleCultChoice(S.magic.known[2])'),null,'a bare legacy pool index is shown as unconfirmed');run('S.magic.known.pop()');
+ assert.equal(run('exhortKeyForPool(0)'),'exhort:sun');assert.equal(run('exhortKeyForPool(1)'),'exhort:storm');
+ dice([50]);run('APP.castMagic(0)');assert.equal(run('S.rollLog[0].pct'),70);assert.equal(run('S.rollLog[0].tier'),'Success');
+ run('APP.castMagic(1)');dice([50]);run('APP.castMagic(1)');assert.equal(run('S.rollLog[0].pct'),40);assert.equal(run('S.rollLog[0].tier'),'Failure');
+ assert.equal(run('devotionalCur(1)'),6,'a failed Exhort spends nothing');
+});
+test('MAG-N05 a miracle of one cult is rejected through another cult\'s pool',()=>{
+ twoCults();run('S.magic.known[1].pool=0');
+ dice([]);run('APP.castMagic(1)');assert.match(msg(),/Smite belongs to Storm, not Sun/);
+ assert.equal(run('S.rollLog.length'),0);assert.equal(run('devotionalCur(0)'),6);assert.equal(run('S.play.magic'),10);
+ run('APP.devotionalCult(1,"Thunder")');run('APP.miraclePool(1,"1");APP.devotionalCult(1,"Storm")');
+ run('APP.castMagic(1)');assert.match(msg(),/belongs to Thunder, not Storm/,'renaming a pool needs the miracle re-confirmed');
+});
+test('MAG-N05 with several Exhort skills and no name match, the pool must choose one',()=>{
+ twoCults();run('APP.devotionalCult(1,"Moon");APP.miraclePool(1,"1")');
+ assert.equal(run('exhortKeyForPool(1)'),null);
+ dice([]);run('APP.castMagic(1)');assert.match(msg(),/Choose which Exhort skill the Moon pool uses/);
+ run('APP.poolExhort(1,"exhort:nope")');assert.equal(run('exhortKeyForPool(1)'),null);
+ run('APP.poolExhort(1,"exhort:storm")');assert.equal(run('exhortKeyForPool(1)'),'exhort:storm');
+ assert.match(run('knownMagicEditor(MAGIC_TRAD_MAP.theism)'),/Exhort for this cult/);
+ run('S=JSON.parse(JSON.stringify(S));normalizeState()');assert.equal(run('S.magic.extraPools[0].exhortKey'),'exhort:storm');
+ run('APP.poolExhort(1,"")');assert.equal(run('exhortKeyForPool(1)'),null);
+});
+test('MAG-N05 a single-cult legacy theist casts unchanged',()=>{
+ theist();dice([20]);run('APP.castMagic(0)');assert.equal(run('S.rollLog[0].tier'),'Success');assert.equal(run('devotionalCur(0)'),5);
+});
+
+// ---------- MAG-N10 (partial): pending Sorcery source guard ----------
+test('MAG-N10 changing a combined spell\'s Invocation source mid-casting needs a cancel',()=>{
+ const inv=[["inv:a","Fire School",80],["inv:b","Grimoire of Wards",50]];
+ sorcery([ward({combinedSpells:["Shield"],combineSharedTargets:true,invocationKey:"inv:a"}),{tradition:"sorcery",name:"Shield",invocationKey:"inv:b"}],{inv});
+ run('APP.castMagic(0)');assert.equal(run('S.play.sorceryCasting.completed'),1);
+ run('APP.invocationSource(1,"inv:a")');dice([]);run('APP.castMagic(0)');
+ assert.match(msg(),/Cancel it/);assert.equal(run('S.rollLog.length'),0);assert.equal(run('S.play.magic'),20);
+ run('APP.invocationSource(1,"inv:b")');dice([30]);run('APP.castMagic(0)');assert.equal(run('S.rollLog[0].pct'),33,'restored sources resolve on the final turn with the lower skill at Hard');
 });
 console.log('Magic MAG-N01–N05 tests passed');

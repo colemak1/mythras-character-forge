@@ -800,6 +800,19 @@ function folkMagicPicker(){
   return h;
 }
 let DEVOTIONAL_MSG="";
+// The cult select shows a pool only once the miracle's cult is confirmed and
+// still matches it; a bare legacy pool index is not a confirmed choice.
+function miracleCultChoice(m){
+  const pi=theismPoolIndex(m);
+  return pi!==null&&String(m.cult||"").trim()&&magicNameKey(m.cult)===magicNameKey(devotionalPool(pi).cult)?pi:null;
+}
+// MAG-N05: which Exhort skill a cult's miracles are requested with.
+function exhortPoolEditor(p){
+  const opts=exhortOptions(),key=exhortKeyForPool(p),pool=devotionalPool(p);
+  if(opts.length<=1)return key?' <span class="note">Exhort '+finalPct(key)+'%</span>':'';
+  return ' <label>Exhort for this cult <select onchange="APP.poolExhort('+p+',this.value)"><option value="" '+(!pool.exhortKey?'selected':'')+'>'+(key&&!pool.exhortKey?'Matches the cult name':'Choose')+'</option>'
+    +opts.map(o=>'<option value="'+esc(o.key)+'" '+(pool.exhortKey===o.key?'selected':'')+'>Exhort'+(o.spec?' ('+esc(o.spec)+')':'')+' '+finalPct(o.key)+'%</option>').join("")+'</select></label>';
+}
 // MAG-N02: choose the different spells a Combine casting joins, confirm they
 // share target(s), and (with several schools) the Invocation skill to use.
 function sorceryCombineEditor(m,i){
@@ -839,7 +852,8 @@ function knownMagicEditor(t){
       const pool=devotionalPool(p),limit=devotionalRankLimit(p);
       const dev=devotions.find(x=>pool.cult&&x.spec.toLowerCase()===pool.cult.toLowerCase());
       h+='<div class="magicrow devpool"><label>Cult <input type="text" maxlength="120" list="devotionCults" aria-label="Cult for pool '+(p+1)+'" placeholder="cult or god" value="'+esc(pool.cult)+'" onchange="APP.devotionalCult('+p+',this.value)"></label>'
-       +(dev?' <span class="note">Devotion ('+esc(dev.spec)+') '+finalPct(dev.key)+'%</span>':'')
+       +(dev?' <span class="note">Devotion ('+esc(dev.spec)+') '+finalPct(dev.key)+'%</span>':(pool.cult&&devotions.length?' <span class="note">No Devotion skill names this cult yet.</span>':''))
+       +exhortPoolEditor(p)
        +' <label>Rank for this pool <select onchange="APP.devotionalRank(this.value,'+p+')">'
        +[["","Not confirmed"],["lay","Lay Member"],["initiate","Initiate"],["acolyte","Acolyte"],["priest","Priest"],["highpriest","High Priest"]].map(([v,label])=>'<option value="'+v+'" '+(pool.rank===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'
        +'<p class="note">'+(limit===null?'Rank limit not confirmed.':Number.isInteger(limit)?'Confirmed rank limit: '+limit+' points.':'Rank formula gives '+limit+' points; confirm rounding with your GM.')+'</p>'
@@ -870,8 +884,9 @@ function knownMagicEditor(t){
       r+='<label class="mnum">Miracle level<select onchange="APP.miracleLevel('+i+',this.value)"><option value="" '+(!m.miracleLevel?'selected':'')+'>Confirm with GM</option>'
        +[[1,"Initiate"],[2,"Acolyte"],[3,"Priest"]].map(([v,label])=>'<option value="'+v+'" '+(Number(m.miracleLevel)===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'
        +'<label class="mnum">Instances<input type="number" min="1" max="100" value="'+(m.miracleInstances||1)+'" onchange="APP.miracleInstances('+i+',this.value)"></label>'
-       +(devotionalPoolCount()>1?'<label class="mnum">Pool<select aria-label="Devotional Pool for this miracle" onchange="APP.miraclePool('+i+',this.value)"><option value="" '+(theismPoolIndex(m)===null?'selected':'')+'>Choose a cult</option>'
-         +Array.from({length:devotionalPoolCount()},(_,p)=>'<option value="'+p+'" '+(theismPoolIndex(m)===p?'selected':'')+'>'+esc(devotionalPoolLabel(p))+'</option>').join("")+'</select></label>':'')
+       +(devotionalPoolCount()>1?'<label class="mnum">Cult<select aria-label="Cult this miracle comes from" onchange="APP.miraclePool('+i+',this.value)"><option value="" '+(miracleCultChoice(m)===null?'selected':'')+'>Choose a cult</option>'
+         +Array.from({length:devotionalPoolCount()},(_,p)=>'<option value="'+p+'" '+(miracleCultChoice(m)===p?'selected':'')+'>'+esc(devotionalPool(p).cult||devotionalPoolLabel(p))+'</option>').join("")+'</select></label>':'')
+       +(()=>{const err=theismAssociationCheck(m);return err&&devotionalPoolCount()>1?'<span class="warn">'+esc(err)+'</span>':'';})()
        +(det?'<span class="mcost">'+det.cost+' pool points · '+det.turns+' turns</span>':'<span class="warn">Confirm the miracle level with your GM before casting. Previously recorded cost: '+esc(String(m.cost||0))+'; preserved for review.</span>');
     }
     if(t.shaping){

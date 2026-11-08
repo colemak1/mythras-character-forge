@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Magic: each cult's miracles use that cult's Exhort; Sorcery source guard (MAG-N05 follow-up, MAG-N10 part)
+
+From ChatGPT's review of #215 (docs #216). Core p.165 confirmed the Combine cost already in the app (Combine 1 alone = 3 MP, 2 turns), so the formula is unchanged.
+
+- **Miracle cult (MAG-N05):** with more than one cult pool, each miracle names its cult (the builder's "Cult" choice). A miracle is rejected through another cult's pool, and renaming a pool's cult means its miracles must be confirmed again. Adding a second pool no longer moves existing miracles anywhere: each one asks for its cult. A theist with one cult casts as before.
+- **Exhort per cult:** each pool uses one Exhort skill. That is the pool's chosen Exhort, else an Exhort whose speciality names the cult, else the character's only Exhort. If the character has several Exhort skills and none matches, the builder asks for one; it never guesses. The pool row also shows its matching Devotion skill.
+- **Pending Sorcery (MAG-N10, part):** a casting in progress now also records every combined spell's Invocation source. Changing one mid-casting needs a cancel instead of silently rolling a different skill on the final turn.
+- New cases in `tests/magic-build-n01-n05.cjs`: two cults with different Exhort %, wrong-cult rejection, a renamed pool, Exhort choice, legacy single cult, the N10 source change.
+
 ## Magic: Combine choices, learned Talents, one pool per cult (Subsystem 6, MAG-N01–N05)
 
 - **Sorcery Combine (MAG-N02):** each Combine point now asks which *different* recorded spell it joins, and for confirmation that the spells share target(s). Casting is blocked until that's done. A character with several Invocation skills picks each spell's source, and a combined casting rolls the lowest of them (one grade harder per extra spell, as before).
