@@ -1471,3 +1471,100 @@ function creationReview(){
   return rows;
 }
 
+
+/* ================= CREATURES (Subsystem 7, CRTR-B01–B05) =================
+   A creature comes from its own stat block (Core pp.214–220): the GM pastes
+   it as text and the app keeps the actual values, its own d20 hit-location
+   table, natural weapons and traits, without human defaults. No bestiary
+   data is shipped (Core entries are the GM's rulebook content). Generic
+   anatomy tables (Core pp.276–277) are not built in yet. */
+const CREATURE_CHARS=["STR","CON","SIZ","DEX","INT","INS","POW","CHA"];
+function parseCreatureStatBlock(text){
+  const c={name:"",chars:{},dice:{},move:"",locations:[],weapons:[],traits:[],wornEnc:0,skills:"",notes:""};
+  const errors=[],unread=[];
+  const lines=String(text||"").split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  for(const line of lines){
+    let m;
+    if((m=line.match(/^name\s*:\s*(.+)$/i))){c.name=m[1].trim().slice(0,80);continue;}
+    if((m=line.match(/^(STR|CON|SIZ|DEX|INT|INS|POW|CHA)\s*:?\s+(?:(\d*d\d+(?:\s*[+-]\s*\d+)?)\s+)?\(?(\d+)\)?$/i))){
+      const k=m[1].toUpperCase();
+      if(Object.hasOwn(c.chars,k))errors.push(k+" is given twice.");
+      c.chars[k]=Number(m[3]);if(m[2])c.dice[k]=m[2].replace(/\s+/g,"");continue;
+    }
+    if((m=line.match(/^(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?\s+(.+?)\s+(\d{1,2})(?:\s*\+\s*(\d{1,2}))?\s*\/\s*(\d{1,3})$/))){
+      c.locations.push({lo:Number(m[1]),hi:Number(m[2]||m[1]),name:m[3].trim().slice(0,40),natural:Number(m[4]),worn:Number(m[5]||0),hp:Number(m[6])});continue;
+    }
+    if((m=line.match(/^weapon\s*:\s*(.+?)\s+(\d*d\d+(?:\s*[+-]\s*\d*d?\d+)*)(\s+natural)?$/i))){
+      c.weapons.push({name:m[1].trim().slice(0,60),damage:m[2].replace(/\s+/g,""),natural:!!m[3]});continue;
+    }
+    if((m=line.match(/^traits?\s*:\s*(.+)$/i))){m[1].split(/[,;]/).map(t=>t.trim()).filter(Boolean).forEach(t=>c.traits.push(t.slice(0,60)));continue;}
+    if((m=line.match(/^move(?:ment)?\s*:?\s*(.+)$/i))){c.move=m[1].trim().slice(0,40);continue;}
+    if((m=line.match(/^worn armou?r enc\s*:?\s*(\d+)$/i))){c.wornEnc=Number(m[1]);continue;}
+    if((m=line.match(/^skills?\s*:\s*(.+)$/i))){c.skills=m[1].trim().slice(0,600);continue;}
+    if((m=line.match(/^notes?\s*:\s*(.+)$/i))){c.notes=(c.notes?c.notes+" ":"")+m[1].trim().slice(0,600);continue;}
+    unread.push(line.slice(0,120));
+  }
+  if(!c.name)errors.push("Add a Name: line.");
+  for(const k of ["STR","CON","SIZ","DEX","POW"])if(!Object.hasOwn(c.chars,k))errors.push(k+" is missing.");
+  if(Object.hasOwn(c.chars,"INT")&&Object.hasOwn(c.chars,"INS"))errors.push("Give INT (sapient) or INS (instinct), not both (Core p.214).");
+  if(!Object.hasOwn(c.chars,"INT")&&!Object.hasOwn(c.chars,"INS"))errors.push("Give INT or INS.");
+  const table=creatureLocationTableCheck(c.locations);if(table)errors.push(table);
+  return {creature:c,errors,unread};
+}
+// CRTR-B01 (Core p.214): an unintelligent creature has INS instead of INT, and
+// INS is used wherever INT would be. A sapient creature keeps INT.
+function creatureMind(c){
+  const key=Object.hasOwn(c.chars||{},"INS")?"INS":"INT";
+  return {key,value:Number(c.chars?.[key])||0};
+}
+// A skill's base from its characteristic formula ("INT+POW", "DEX×2"), with
+// INS standing in for INT on an instinctive creature.
+function creatureSkillBase(c,formula){
+  const val=k=>{k=k.trim().toUpperCase();if(k==="INT")k=creatureMind(c).key;return Number(c.chars?.[k])||0;};
+  const m=String(formula||"").match(/^\s*([A-Z]{3})\s*(?:([+x×])\s*([A-Z]{3}|2))?\s*$/i);
+  if(!m)return null;
+  if(!m[2])return val(m[1]);
+  return m[2]==="+"?val(m[1])+val(m[3]):val(m[1])*2;
+}
+// CRTR-B01/B03: attributes from the creature's own characteristics. Only worn
+// armour adds the Initiative penalty (Core p.58: total worn ENC / 5, round
+// up); natural armour never does (p.219).
+function creatureAttributes(c){
+  const ch=c.chars||{},mind=creatureMind(c),DEX=Number(ch.DEX)||0;
+  const penalty=Number(c.wornEnc)>0?Math.ceil(Number(c.wornEnc)/5):0;
+  return {mind,ap:apCalc(mind.value,DEX),initBonus:initBonus(mind.value,DEX)-penalty,armourPenalty:penalty,
+    damageMod:dmCalc(Number(ch.STR)||0,Number(ch.SIZ)||0),healingRate:healRate(Number(ch.CON)||0),mp:Number(ch.POW)||0};
+}
+// CRTR-B04: the creature's own d20 table must cover 1–20 once each.
+function creatureLocationTableCheck(locs){
+  if(!Array.isArray(locs)||!locs.length)return "Add the creature's hit-location rows (e.g. 1-3 Right Hind Leg 2/5).";
+  const seen=new Array(21).fill(null),names=new Set();
+  for(const l of locs){
+    if(!(Number.isInteger(l.lo)&&Number.isInteger(l.hi)&&l.lo>=1&&l.hi<=20&&l.lo<=l.hi))return "Location "+(l.name||"?")+" has an invalid d20 range.";
+    const key=String(l.name||"").toLowerCase();if(!key)return "Every location needs a name.";
+    if(names.has(key))return "Location "+l.name+" appears twice.";names.add(key);
+    for(let r=l.lo;r<=l.hi;r++){if(seen[r])return "d20 roll "+r+" is in both "+seen[r]+" and "+l.name+".";seen[r]=l.name;}
+  }
+  const missing=[];for(let r=1;r<=20;r++)if(!seen[r])missing.push(r);
+  return missing.length?"The d20 table doesn't cover roll"+(missing.length>1?"s ":" ")+missing.join(", ")+".":null;
+}
+function creatureHitLocation(c,roll){return (c.locations||[]).find(l=>roll>=l.lo&&roll<=l.hi)||null;}
+// CRTR-B03: damage through a location's natural plus worn armour.
+function creatureDamageAfterArmour(c,locName,raw){
+  const l=(c.locations||[]).find(x=>x.name===locName);if(!l)return null;
+  return Math.max(0,Math.floor(Number(raw)||0)-(l.natural||0)-(l.worn||0));
+}
+// CRTR-B05 (Core p.216): natural weapons can parry only with the Formidable
+// Natural Weapons trait; otherwise the creature relies on armour or Evade.
+function creatureHasTrait(c,name){return (c.traits||[]).some(t=>t.toLowerCase()===name.toLowerCase());}
+function creatureCanParry(c,w){
+  if(!w)return {ok:false,reason:"No weapon."};
+  if(!w.natural)return {ok:true,reason:""};
+  return creatureHasTrait(c,"Formidable Natural Weapons")?{ok:true,reason:"Formidable Natural Weapons"}
+    :{ok:false,reason:"Natural weapons can't parry without Formidable Natural Weapons; use Evade or natural armour (Core p.216)."};
+}
+function combatantFromCreature(c,init,id){
+  const hp={};c.locations.forEach(l=>{hp[l.name]={cur:l.hp,max:l.hp};});
+  return {id:id||genId(),kind:"npc",ref:null,name:c.name,init:init||0,ap:{max:creatureAttributes(c).ap,used:0},
+    locations:c.locations.map(l=>l.name),hp,effects:[],stat1:c.skills||"",stat2:c.notes||"",creature:c};
+}

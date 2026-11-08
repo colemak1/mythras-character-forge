@@ -1664,6 +1664,26 @@ window.APP={
    if(!name)return;
    const init=(valEl&&parseInt(valEl.value,10))||0;
    APP.gmSessionMutate(st=>st.combatants.push(combatantFromNpc(name,init)));},
+ gmCreatureDraft(v){CREATURE_DRAFT=String(v||"").slice(0,6000);render();},
+ gmAddCreature(){
+   const el=$("#gmCreatureText");if(el)CREATURE_DRAFT=String(el.value||"").slice(0,6000);
+   const parsed=parseCreatureStatBlock(CREATURE_DRAFT);
+   if(parsed.errors.length||parsed.unread.length){render();return;}
+   APP.gmSessionMutate(st=>st.combatants.push(combatantFromCreature(parsed.creature,0)));
+   CREATURE_DRAFT="";render();},
+ // CRTR-B04: roll on the creature's own d20 table, never the human one.
+ gmCreatureRollLoc(id){
+   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
+   const c=sessionStateOf(camp).combatants.find(x=>x.id===id);if(!c||!c.creature)return;
+   const roll=d(20),l=creatureHitLocation(c.creature,roll);if(!l)return;
+   CREATURE_HIT[id]={roll,loc:l.name,armour:(l.natural||0)+(l.worn||0)};render();},
+ gmCreatureHit(id){
+   const hit=CREATURE_HIT[id],el=$("#cbtraw-"+id),raw=el?parseInt(el.value,10):NaN;
+   if(!hit||!Number.isFinite(raw)||raw<0)return;
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature||!c.hp[hit.loc])return;
+     const dmg=creatureDamageAfterArmour(c.creature,hit.loc,raw);
+     c.hp[hit.loc].cur=Math.max(-c.hp[hit.loc].max,c.hp[hit.loc].cur-dmg);});
+   delete CREATURE_HIT[id];if(el)el.value="";render();},
  gmSetInit(id,val){
    const n=parseInt(val,10)||0;
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(c)c.init=n;});},
@@ -1678,7 +1698,7 @@ window.APP={
      st.combatants.forEach(c=>{
        const row=c.kind==="pc"?(BOARD_CHARS||[]).find(b=>b.id===c.ref):null;
        const pc=row&&row.state&&row.state.chars?effectiveChars(row.state):null;
-       const bonus=pc?initBonus(pc.INT,pc.DEX):0;
+       const bonus=pc?initBonus(pc.INT,pc.DEX):c.creature?creatureAttributes(c.creature).initBonus:0;
        c.init=d(10)+bonus;
      });
    });},
