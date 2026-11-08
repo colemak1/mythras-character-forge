@@ -272,10 +272,10 @@ Mapped against the code and against the security rules in `supabase/migrations/`
 | S1 | **GM session notes and Combat Tracker NPCs were readable by every campaign member.** They lived in `campaigns.session_state`, and `campaigns_select_member` lets members read the whole campaign row. Every player's browser downloaded them whenever they opened the campaign. | SEC12, BRD17, E2E07 | High (spoilers, "secrets" box) | **Fixed in code + migration** `20261106120000_…`: new GM-only `campaign_gm_state` table, existing data copied, old column cleared and blocked. Takes effect once the owner runs the SQL. |
 | S2 | A player could move their own character into **any** campaign by a direct request (no membership check on `campaign_id`). The character then shows on that campaign's Party Board. | OWN03, SEC22 | Medium | **Fixed in migration:** a trigger refuses a new or changed `campaign_id` unless the owner is a member or GM. Unchanged assignments aren't re-checked. |
 | S3 | The GM inventory RPC accepted any JSON, not just a list. | BRD07, SEC08 | Low | **Fixed in migration.** |
-| S4 | A GM's inventory edits (other than "Give an item") can still be overwritten by the player's open sheet saving its whole state. | BRD06, SAVE19 | Medium | Gifts fixed in PR #128. Plain edits: **Not implemented**; needs a decision on the conflict policy (D-S2 below). |
-| S5 | Two tabs or devices editing the same character: last save wins, with no warning. | SAVE09, E2E10 | Medium | **Decision** (D-S2). |
+| S4 | A GM's inventory edits (other than "Give an item") can still be overwritten by the player's open sheet saving its whole state. | BRD06, SAVE19 | Medium | Gifts fixed in PR #128. **Fixed (D-S2)** in migration `20261108120000_…`: a character revision; the player sheet won't overwrite a newer GM edit, and the GM's push won't overwrite a changed inventory. Gifts still merge quietly. Live. |
+| S5 | Two tabs or devices editing the same character: last save wins, with no warning. | SAVE09, E2E10 | Medium | **Fixed (D-S2):** a stale tab or device is stopped, warned, and offered "Download my version" and "Reload latest". Live. |
 | S6 | Any signed-in user can read every profile's display name. | SEC17 | Low | **Decision** (D-S3). Only display names are stored. |
-| S7 | Members can read the campaign's invite code. | INV12, SEC18 | Low | **Decision** (D-S1). Members could share the link anyway. |
+| S7 | Members can read the campaign's invite code. | INV12, SEC18 | Low | **Decided (D-S1):** members keep seeing the code; the GM's "New code" replaces it. Live. |
 
 Verified by running the new migration on Postgres 16 (PGlite) with stand-ins for Supabase's `auth.uid()` and helper functions: it runs and re-runs cleanly, copies the existing session state, blocks writes to the old column, refuses an assignment to a campaign the owner isn't in, still allows a former member's saves, refuses a non-list or non-GM inventory call, and only the campaign's own GM can read its GM row.
 
@@ -292,7 +292,7 @@ Verified by running the new migration on Postgres 16 (PGlite) with stand-ins for
 | AUTH06–AUTH08, AUTH13–AUTH15 | **Pass (code) / Live** | Recovery link, profile name, stale links, account switch mid-request (owner checks before applying responses), Supabase unavailable. |
 | INV01–INV11 | **Pass (code) + Live** | Join RPC trims and upper-cases codes, ignores repeat joins, survives sign-in and email confirmation via a stashed code. |
 | INV13–INV15, SEC14, SEC15 | **Pass (policy) + Live** | `join_campaign` requires sign-in and always inserts `role='player'`; the only insert policy is a GM adding themselves as GM; there is no update policy on memberships. |
-| INV16, LIFE08, LIFE11, LIFE13 | **Decision** | Invite rotation, member removal UI, GM transfer, disaster recovery (D-S1, D-S4). |
+| INV16, LIFE08, LIFE11, LIFE13 | **Pass (code) + Live** | D-S1/D-S4: `rotate_campaign_invite`, `dm_remove_member` (characters unassigned, never deleted), `dm_transfer_campaign` (old GM stays as a player), and a whole-campaign backup file. `campaign-continuity.cjs`. |
 | OWN01, OWN02, OWN07, OWN12, OWN13, OWN18, OWN20 | **Pass (code)** | |
 | OWN03 | **Fixed (S2)** + Live | |
 | OWN04–OWN06, OWN08–OWN11 | **Pass (policy) + Live** | Owner-only writes; `dm_unassign_character` checks the caller is that campaign's GM; campaign_id is never written by background saves. |
@@ -305,7 +305,7 @@ Verified by running the new migration on Postgres 16 (PGlite) with stand-ins for
 | BRD21, SEC16 | **Pass (policy) + Live** | Custom content: GM-only insert, update and delete; members read. |
 | SAVE01–SAVE06 | **Pass** | Reload fix, recovery prompt and decline (PR #110; live evidence in `magic-subsystem-cases.md`). |
 | SAVE07, SAVE08, SAVE14, SAVE16, SAVE17, SAVE18 | **Pass** | Save queue, old acknowledgement can't clear newer draft, flush before reopening (`unified-routes.cjs`). |
-| SAVE09 | **Decision** (S5) | |
+| SAVE09 | **Pass (code) + Live** (S5) | Revision check, `campaign-continuity.cjs`. |
 | SAVE10, SAVE11, SAVE13, SAVE22–SAVE26, SAVE28 | **Pass (code)** | Offline retry on reconnect, storage errors surfaced, load failures don't delete data, legacy fields normalised. |
 | SAVE19 | See S4 | |
 | IMP01, IMP03–IMP18 | **Pass (code)** | Import refuses non-objects, library backups in the single importer, oversize files; strips IDs and owner/campaign fields; text is escaped on render (`unified-routes.cjs`). |
@@ -337,3 +337,6 @@ Use disposable accounts: **A** (GM of campaign Red), **B** and **C** (Red player
 5. As C and D, update or delete B's character → no rows changed.
 6. As D, read Red's campaign, members and characters → nothing.
 7. As A, edit Combat Tracker and session notes, reload → still there; open from a second tab → live update.
+8. (D-S1, after migration `20261108120000_…`) As A, press New code on Red → the old code and old `#/join/` link are refused for a new account; the new one works. As B, the code is visible but there is no New code button; calling `rotate_campaign_invite` directly is refused.
+9. (D-S2) As B, open the same character in two tabs; change HP in tab 1, then in tab 2 → tab 2 shows the conflict warning, the account copy keeps tab 1's change; Reload latest shows it. As A, give B an item while B's sheet is open → B's next save keeps it with no warning. As A, delete an item from B's inventory while B's sheet is open; B changes HP → B gets the warning, the deletion stands.
+10. (D-S4) As A, Download campaign backup → one JSON file with the campaign, GM notes, members, characters and homebrew. As A, Remove C → C's characters leave the board but remain in C's library; C can't read Red. As A, Make GM B → B sees GM tools and notes; A becomes a player. As C or D, call `dm_remove_member` / `dm_transfer_campaign` directly → refused.

@@ -253,13 +253,69 @@ async function cloudDmUnassignCharacter(id){
   const {error}=await sb.rpc("dm_unassign_character",{p_char:id});
   if(error)throw error;
 }
-async function cloudDmUpdateCharacterInventory(id,inventory){
+async function cloudDmUpdateCharacterInventory(id,inventory,revision){
   // Same reasoning as cloudDmUnassignCharacter above — the DM has no general
   // UPDATE grant on a player's character, so this goes through a narrow
   // SECURITY DEFINER RPC that touches only state.inventory (loot distribution,
   // adding/removing gear mid-session) and nothing else on the sheet.
+  // With a revision (D-S2) the server refuses to write over a newer copy and
+  // returns the new revision. Before the migration runs, the old form is used.
+  if(Number.isSafeInteger(revision)){
+    const {data,error}=await sb.rpc("dm_update_character_inventory",{p_char:id,p_inventory:inventory,p_revision:revision});
+    if(!error)return Number(data);
+    if(!isMissingFunctionError(error))throw error;
+  }
   const {error}=await sb.rpc("dm_update_character_inventory",{p_char:id,p_inventory:inventory});
   if(error)throw error;
+  return null;
+}
+function isMissingFunctionError(e){return !!e&&(e.code==="PGRST202"||e.code==="42883"||/could not find the function|does not exist/i.test(String(e.message||"")));}
+// D-S1 and D-S4 GM actions (docs/decisions.md, 2026-11-07). Each is a
+// SECURITY DEFINER RPC that checks the caller is this campaign's GM
+// (supabase/migrations/20261108120000_campaign_continuity_and_save_conflicts.sql).
+async function cloudRotateInvite(campaignId){
+  const {data,error}=await sb.rpc("rotate_campaign_invite",{p_campaign:campaignId});
+  if(error)throw error;
+  return data;
+}
+async function cloudRemoveMember(campaignId,userId){
+  const {error}=await sb.rpc("dm_remove_member",{p_campaign:campaignId,p_user:userId});
+  if(error)throw error;
+}
+async function cloudTransferCampaign(campaignId,userId){
+  const {error}=await sb.rpc("dm_transfer_campaign",{p_campaign:campaignId,p_user:userId});
+  if(error)throw error;
+}
+function campaignActionError(e){
+  return isMissingFunctionError(e)?"This needs the November 2026 campaign update on the server. Ask the site owner to run it.":e.message;
+}
+// D-S4 whole-campaign backup: everything the GM can read about the campaign,
+// in one JSON file. Characters keep their full saved state, so any one of
+// them can be imported again through Account > Import character backup.
+async function buildCampaignBackup(campaignId){
+  let campaign,gmState=null,members=[],characters=[],customContent=[];
+  if(cloudActive()){
+    const {data,error}=await sb.from("campaigns").select("*").eq("id",campaignId).maybeSingle();
+    if(error)throw error;
+    if(!data)throw new Error("Campaign not found");
+    campaign=Object.assign({},data);delete campaign.session_state;
+    if(AUTH_USER&&data.dm_id===AUTH_USER.id){
+      try{gmState=await fetchGmSessionState(campaignId);}catch(e){gmState=null;}
+      if(gmState==null&&data.session_state)gmState=data.session_state;
+    }
+    members=(await cloudFetchMembers(campaignId)).map(m=>({user_id:m.userId,name:m.name,role:m.role,joined_at:m.joinedAt}));
+    characters=await cloudFetchCharacters({campaignId});
+    customContent=await cloudFetchCustomContent(campaignId);
+  }else{
+    const local=getCampaignLocal(campaignId);if(!local)throw new Error("Campaign not found");
+    campaign=normalizeLocalCampaign(local);gmState=local.sessionState||null;
+    characters=charsInCampaignLocal(campaignId).map(localCharShape);
+    customContent=customContentForCampaignLocal(campaignId);
+  }
+  return {format:"mythras-forge-campaign-backup",version:1,exportedAt:new Date().toISOString(),
+    campaign,gmSessionState:gmState,members,
+    characters:characters.map(c=>({id:c.id,name:c.name,owner_id:c.owner_id,owner_name:c.owner_name,updated_at:c.updated_at,revision:c.revision,state:c.state})),
+    customContent};
 }
 async function cloudJoinCampaign(code){
   const {data,error}=await sb.rpc("join_campaign",{p_code:code.trim().toUpperCase()});
@@ -333,9 +389,15 @@ async function cloudUpsertCharacter(entry){
   const updateFields={name:entry.name,tier:entry.tier,
     culture:entry.culture,career:entry.career,state:entry.state};
   if(entry.id){
-    const {data,error}=await sb.from("characters").update(updateFields).eq("id",entry.id).select().single();
+    // D-S2: with a known revision, only write if nobody saved since we read it.
+    let q=sb.from("characters").update(updateFields).eq("id",entry.id);
+    const checked=Number.isSafeInteger(entry.revision);
+    if(checked)q=q.eq("revision",entry.revision);
+    const {data,error}=await q.select();
     if(error)throw error;
-    return data;
+    const row=Array.isArray(data)?data[0]:data;
+    if(!row)throw checked?characterConflict(entry.name):new Error("Character not found on the account");
+    return row;
   }
   const insertFields=Object.assign({campaign_id:entry.campaignId||null},updateFields);
   const {data,error}=await sb.from("characters").insert(Object.assign({owner_id:AUTH_USER.id},insertFields)).select().single();
@@ -743,16 +805,21 @@ async function saveToLibraryUnified(explicit,actor=S){
     if(!AUTH_USER||AUTH_USER.id!==owner)throw new Error("Account changed before saving. Reopen the original account to recover the draft.");
     // A GM may have given items through dm_update_character_inventory since
     // this sheet loaded. Pull those gifts in first so this save can't erase them.
+    if(CLOUD_CONFLICTS.has(actor))throw CLOUD_CONFLICTS.get(actor);
     if(isUuid(actor._libId)&&(snapshot._ownerId==null||snapshot._ownerId===owner)){
-      const added=await mergeServerGifts(actor);
+      // Also checks the revision (D-S2): GM gifts are merged quietly, any
+      // other newer save stops this one before it overwrites anything.
+      const added=await syncWithServerCopy(actor);
       if(added){snapshot.inventory=JSON.parse(JSON.stringify(actor.inventory));if(actor===S&&typeof render==="function")setTimeout(render,0);}
     }
+    const state=Object.assign({},snapshot);delete state._rev;
     const saved=await cloudUpsertCharacter({
       id:isUuid(actor._libId)?actor._libId:undefined,campaignId:snapshot.campaignId||null,
       name:snapshot.concept.name||"Unnamed Character",tier:snapshot.archetype,culture:snapshot.culture||"",
       career:(snapshot.customCareer&&snapshot.customCareer.isCustom?snapshot.customCareer.name:snapshot.career)||"",
-      state:snapshot});
+      state,revision:isUuid(actor._libId)?actor._rev:undefined});
     actor._libId=saved.id;actor._pendingClaim=false;
+    if(Number.isSafeInteger(saved.revision)){actor._rev=saved.revision;rememberServerCopy(saved.id,saved.revision,saved.state||state);}
     // A completed older write must not acknowledge a newer local draft.
     try{
       const key=AUTOSAVE_KEY+":"+owner,raw=localStorage.getItem(key),draft=raw?JSON.parse(raw):null;
@@ -766,7 +833,9 @@ async function saveToLibraryUnified(explicit,actor=S){
   });
   CHARACTER_SAVE_QUEUES.set(actor,job);CLOUD_SAVE_JOBS.add(job);
   job.then(()=>{CLOUD_SAVE_JOBS.delete(job);updateSaveStatus();},e=>{
-    CLOUD_SAVE_JOBS.delete(job);CLOUD_FAILED_ACTORS.set(actor,"Cloud save failed for "+snapshot.concept.name+": "+e.message+". Keep this tab open and retry; export JSON for a backup.");
+    CLOUD_SAVE_JOBS.delete(job);
+    if(isCharacterConflict(e)){CLOUD_CONFLICTS.set(actor,e);CLOUD_FAILED_ACTORS.set(actor,conflictMessage(snapshot.concept.name));}
+    else CLOUD_FAILED_ACTORS.set(actor,"Cloud save failed for "+snapshot.concept.name+": "+e.message+". Keep this tab open and retry; export JSON for a backup.");
     CLOUD_SAVE_ERROR=[...CLOUD_FAILED_ACTORS.values()].join(" ");updateSaveStatus();
   });
   updateSaveStatus();return job;
@@ -777,18 +846,90 @@ async function saveToLibraryUnified(explicit,actor=S){
 // read never blocks the player's own save.
 async function mergeServerGifts(actor){
   try{
-    const {data,error}=await sb.from("characters").select("state").eq("id",actor._libId).maybeSingle();
-    if(error||!Array.isArray(data?.state?.inventory))return 0;
+    const {data,error}=await sb.from("characters").select("*").eq("id",actor._libId).maybeSingle();
+    if(error)return 0;
+    return mergeGiftItems(actor,data?.state?.inventory);
+  }catch(e){return 0;}
+}
+function mergeGiftItems(actor,inventory){
+  {
+    if(!Array.isArray(inventory))return 0;
     const have=rememberGifts(actor);
-    const incoming=data.state.inventory.filter(it=>it&&typeof it==="object"&&giftValid(it.gift)&&!have.has(it.gift.id));
+    const incoming=inventory.filter(it=>it&&typeof it==="object"&&giftValid(it.gift)&&!have.has(it.gift.id));
     if(!incoming.length)return 0;
     actor.inventory=(actor.inventory||[]).concat(incoming.map(it=>({name:String(it.name||"").slice(0,120),qty:Number.isSafeInteger(it.qty)&&it.qty>0?it.qty:1,
       enc:Number(it.enc)>=0?Number(it.enc):0,cost:Number(it.cost)>=0?Number(it.cost):0,
       gift:{id:it.gift.id,reveal:it.gift.reveal===true,note:String(it.gift.note||"").slice(0,200),at:String(it.gift.at||""),seen:it.gift.seen===true}})));
     rememberGifts(actor);
     return incoming.length;
-  }catch(e){return 0;}
+  }
 }
+/* D-S2 save conflicts (docs/decisions.md, 2026-11-07). Each character row has
+   a revision the server bumps whenever its state changes. A sheet remembers
+   the revision it opened and saves only if it still matches; otherwise it
+   stops, warns and offers to reload. GM "Give an item" gifts are the one
+   change merged quietly: SERVER_COPIES remembers each server state seen
+   (minus gift items), so a newer revision that differs only by gifts is
+   adopted instead of reported. Before the migration runs there is no
+   revision and saves behave as before (last save wins). */
+const SERVER_COPIES=new Map(); // "id:revision" -> {key,invKey}; key null when only the inventory is known
+const CLOUD_CONFLICTS=new Map(); // actor -> conflict error; its saves stop until reload
+function stableJson(v){
+  if(Array.isArray(v))return "["+v.map(stableJson).join(",")+"]";
+  if(v&&typeof v==="object")return "{"+Object.keys(v).filter(k=>v[k]!==undefined).sort().map(k=>JSON.stringify(k)+":"+stableJson(v[k])).join(",")+"}";
+  return JSON.stringify(v===undefined?null:v);
+}
+function giftlessKey(state){
+  if(!state||typeof state!=="object")return "";
+  const copy=Object.assign({},state);delete copy._rev;
+  if(Array.isArray(copy.inventory))copy.inventory=copy.inventory.filter(it=>!(it&&typeof it==="object"&&it.gift));
+  return stableJson(copy);
+}
+function rememberServerCopy(id,rev,state){
+  if(id&&Number.isSafeInteger(rev))rememberCopy(id,rev,giftlessKey(state),Array.isArray(state?.inventory)?state.inventory:[]);
+}
+function rememberCopy(id,rev,key,inventory){
+  SERVER_COPIES.set(id+":"+rev,{key,invKey:stableJson(inventory)});
+  if(SERVER_COPIES.size>200)SERVER_COPIES.delete(SERVER_COPIES.keys().next().value);
+}
+function characterConflict(name){
+  const e=new Error((name||"This character")+" was changed somewhere else since it was opened");
+  e.conflict=true;return e;
+}
+function isCharacterConflict(e){return !!e&&(e.conflict===true||e.code==="40001"||/^conflict:/i.test(String(e.message||"")));}
+function conflictMessage(name){
+  return (name||"This character")+" was saved somewhere else (another tab, device or the GM) since you opened it. Your latest changes were not saved, so nothing was overwritten. Download your version if you want to keep it, then reload the latest copy.";
+}
+async function syncWithServerCopy(actor){
+  let row=null;
+  try{const {data,error}=await sb.from("characters").select("*").eq("id",actor._libId).maybeSingle();if(!error)row=data;}catch(e){}
+  if(!row)return 0; // unreadable: the conditional update still guards the write
+  const added=mergeGiftItems(actor,row.state?.inventory);
+  const rev=row.revision;
+  if(!Number.isSafeInteger(rev))return added; // migration not run yet
+  if(!Number.isSafeInteger(actor._rev)){actor._rev=rev;rememberServerCopy(row.id,rev,row.state);return added;} // opened before revisions existed
+  if(rev===actor._rev)return added;
+  const seen=SERVER_COPIES.get(row.id+":"+actor._rev);
+  if(seen&&seen.key!=null&&seen.key===giftlessKey(row.state)){actor._rev=rev;rememberServerCopy(row.id,rev,row.state);return added;}
+  throw characterConflict(actor.concept&&actor.concept.name);
+}
+// Reload the open character from the account after a conflict.
+async function reloadConflictedCharacter(){
+  const actor=S,id=actor._libId;if(!isUuid(id))return false;
+  const entry=await openCharUnified(id);if(!entry)return false;
+  CLOUD_CONFLICTS.delete(actor);CLOUD_FAILED_ACTORS.delete(actor);CLOUD_SEEN_STATE.delete(actor);
+  const t=CLOUD_PENDING_ACTORS.get(actor);if(t){clearTimeout(t);CLOUD_PENDING_ACTORS.delete(actor);}
+  CLOUD_SAVE_ERROR=[...CLOUD_FAILED_ACTORS.values()].join(" ");
+  S=Object.assign(freshState(),entry.state);if(!Object.prototype.hasOwnProperty.call(entry.state,"_creationFlowVersion"))S._creationFlowVersion=1;normalizeState();
+  S._libId=entry.id;S.campaignId=entry.campaignId;S._ownerId=entry.ownerId;S._pendingClaim=false;
+  CLOUD_SEEN_STATE.set(S,cloudSignature(S));
+  try{const key=autosaveKey(),raw=localStorage.getItem(key),draft=raw?JSON.parse(raw):null;
+    if(draft?.S?._libId===id){draft.pendingCloud=false;localStorage.setItem(key,JSON.stringify(draft));}}catch(e){}
+  updateSaveStatus();
+  return true;
+}
+// The revision changes on every save; it alone is not an edit worth pushing.
+function cloudSignature(actor){return JSON.stringify(actor,(k,v)=>k==="_rev"?undefined:v);}
 // While the owner has Play Mode open, check for new gifts now and then.
 let GIFT_POLL=null;
 function startGiftPoll(){
@@ -818,7 +959,12 @@ async function openCharUnified(id){
   if(cloudActive()){
     const {data,error}=await sb.from("characters").select("*").eq("id",id).maybeSingle();
     if(error||!data)return null;
-    return {id:data.id,name:data.name,state:data.state,campaignId:data.campaign_id||null,ownerId:data.owner_id};
+    let state=data.state;
+    if(Number.isSafeInteger(data.revision)){
+      state=Object.assign({},data.state,{_rev:data.revision});
+      rememberServerCopy(data.id,data.revision,data.state);
+    }
+    return {id:data.id,name:data.name,state,campaignId:data.campaign_id||null,ownerId:data.owner_id};
   }
   const entry=loadCharLibLocal().find(c=>c.id===id);
   return entry?{id:entry.id,name:entry.name,state:entry.state,campaignId:entry.campaignId||null,ownerId:"local"}:null;
@@ -841,7 +987,8 @@ function scheduleCloudPush(){
   if(!cloudActive()||VIEW_ONLY||!hasUnsavedWork())return;
   const actor=S;
   if(actor._pendingClaim&&!isUuid(actor._libId))return;
-  const signature=JSON.stringify(actor);
+  if(CLOUD_CONFLICTS.has(actor))return;
+  const signature=cloudSignature(actor);
   if(CLOUD_SEEN_STATE.get(actor)===signature)return;
   CLOUD_SEEN_STATE.set(actor,signature);
   const old=CLOUD_PENDING_ACTORS.get(actor);if(old)clearTimeout(old);
@@ -852,7 +999,7 @@ function scheduleCloudPush(){
   CLOUD_PENDING_ACTORS.set(actor,timer);updateSaveStatus();
 }
 async function flushCloudSaves(){
-  const actors=[...new Set([...CLOUD_PENDING_ACTORS.keys(),...CLOUD_FAILED_ACTORS.keys()])];
+  const actors=[...new Set([...CLOUD_PENDING_ACTORS.keys(),...CLOUD_FAILED_ACTORS.keys()])].filter(a=>!CLOUD_CONFLICTS.has(a));
   for(const timer of CLOUD_PENDING_ACTORS.values())clearTimeout(timer);
   CLOUD_PENDING_ACTORS.clear();
   const jobs=actors.map(actor=>saveToLibraryUnified(false,actor));
@@ -873,7 +1020,15 @@ function updateSaveStatus(){
   const backup=document.getElementById("forgeExportRecovery");
   if(backup)backup.hidden=!(LOCAL_SAVE_ERROR||CLOUD_SAVE_ERROR);
   const warning=document.getElementById("localSaveWarning");
-  if(warning){warning.textContent=LOCAL_SAVE_ERROR||CLOUD_SAVE_ERROR||(APPVIEW==="board"?BOARD_LOAD_ERROR:"");warning.hidden=!warning.textContent;}
+  if(warning){
+    const text=LOCAL_SAVE_ERROR||CLOUD_SAVE_ERROR||(APPVIEW==="board"?BOARD_LOAD_ERROR:"");
+    // A conflict on the open sheet offers its two ways out right in the warning.
+    if(!LOCAL_SAVE_ERROR&&CLOUD_CONFLICTS.has(S)){
+      warning.innerHTML=esc(CLOUD_FAILED_ACTORS.get(S)||text)+'<span class="save-warning-actions"><button type="button" onclick="APP.exportConflictCopy()">Download my version</button> <button type="button" onclick="APP.reloadAfterConflict()">Reload latest</button></span>';
+      warning.dataset.conflict="true";
+    }else{warning.textContent=LOCAL_SAVE_ERROR||CLOUD_SAVE_ERROR||(APPVIEW==="board"?BOARD_LOAD_ERROR:"");delete warning.dataset.conflict;}
+    warning.hidden=!text;
+  }
 }
 window.addEventListener("beforeunload",e=>{
   if(CLOUD_PENDING_ACTORS.size||CLOUD_SAVE_JOBS.size||CLOUD_SAVE_ERROR||LOCAL_SAVE_ERROR){e.preventDefault();e.returnValue="";}
@@ -898,9 +1053,38 @@ let DM_INV_PUSH_TIMER=null;
 function scheduleDmInventoryPush(){
   if(!cloudActive()||!S._libId||!VIEW_ONLY_IS_DM)return;
   clearTimeout(DM_INV_PUSH_TIMER);
+  const actor=S;
+  if(CLOUD_CONFLICTS.has(actor))return;
   DM_INV_PUSH_TIMER=setTimeout(()=>{
-    cloudDmUpdateCharacterInventory(S._libId,S.inventory).catch(e=>console.warn("dm inventory sync",e));
+    dmPushInventory(actor).catch(e=>{
+      if(isCharacterConflict(e)){
+        CLOUD_CONFLICTS.set(actor,e);CLOUD_FAILED_ACTORS.set(actor,conflictMessage(actor.concept&&actor.concept.name));
+        CLOUD_SAVE_ERROR=[...CLOUD_FAILED_ACTORS.values()].join(" ");updateSaveStatus();
+      }else console.warn("dm inventory sync",e);
+    });
   },1500);
+}
+// The GM's inventory push carries the revision the GM opened. The player
+// saving HP or skills since then is no reason to stop: if the inventory on
+// the server is still the one the GM started from, adopt the new revision
+// and send again. A changed inventory is a real conflict.
+async function dmPushInventory(actor){
+  const id=actor._libId,inventory=JSON.parse(JSON.stringify(actor.inventory||[]));
+  const done=rev=>{
+    if(Number.isSafeInteger(rev)){actor._rev=rev;rememberCopy(id,rev,null,inventory);}
+    return rev;
+  };
+  try{return done(await cloudDmUpdateCharacterInventory(id,inventory,actor._rev));}
+  catch(e){
+    if(!isCharacterConflict(e))throw e;
+    const {data:row}=await sb.from("characters").select("*").eq("id",id).maybeSingle();
+    const seen=SERVER_COPIES.get(id+":"+actor._rev);
+    if(row&&Number.isSafeInteger(row.revision)&&seen&&seen.invKey===stableJson(Array.isArray(row.state?.inventory)?row.state.inventory:[])){
+      actor._rev=row.revision;rememberServerCopy(id,row.revision,row.state);
+      return done(await cloudDmUpdateCharacterInventory(id,inventory,row.revision));
+    }
+    throw e;
+  }
 }
 let LOCAL_SAVE_ERROR="";
 function saveAutosave(){
@@ -1201,18 +1385,31 @@ function campaignDetailHTML(){
   const campaignRules=normalizedCampaignRules(camp.rules_settings);
   h+='<p class="note"><b>Characteristic improvement:</b> '+(campaignRules?.characteristicImprovement==="permanent"?'Permanent (optional)':campaignRules?.characteristicImprovement==="training"?'Ongoing training':'Not configured')+'. <b>Skill improvement:</b> '+(campaignRules?.skillImprovement==="d6"?'1d6+1 (optional)':'1d4+1')+'. <b>Additional books:</b> '+(campaignRules?.books?.length?campaignRules.books.map(esc).join(", "):"None recorded")+'.</p>'
     +(isDM?'<button class="chip" onclick="APP.editCampaignRules()">Campaign rules &amp; books</button>':'');
-  if(cloudActive()&&isDM&&camp.invite_code){
-    h+='<p class="note" style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+  // D-S1: members still see the code; only the GM can replace it.
+  if(cloudActive()&&camp.invite_code){
+    h+='<p class="note camp-invite" style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
      +'invite code <b style="font-family:var(--mono)">'+esc(camp.invite_code)+'</b>'
      +'<button class="chip sm" onclick="APP.copyInviteLink(\''+jsq(camp.invite_code)+'\',this)">Copy Invite Link</button>'
-     +'</p>';
+     +(isDM?'<button class="chip sm" onclick="APP.rotateInvite()">New code</button>':'')
+     +'</p>'
+     +(isDM?'<p class="note">New code replaces this one: the old code and link stop working. Members already in the campaign stay.</p>':'');
   }
   h+='<p style="margin-top:12px"><button class="nav primary" onclick="APP.toBoard(\''+camp.id+'\')">Live Party Board &rarr;</button>'
+   +(isDM?' <button class="chip" onclick="APP.downloadCampaignBackup()">Download campaign backup</button>':'')
    +(isDM?' <button class="chip" onclick="APP.deleteCampaign()">Delete campaign</button>':'')+'</p>';
   h+='</div>';
   if(members.length){
+    // D-S4: the GM can remove a player or hand the GM role to them.
+    const me=AUTH_USER&&AUTH_USER.id;
     h+='<div class="card"><h3>Members ('+members.length+')</h3>'
-     +members.map(m=>'<div class="skrow"><span>'+esc(m.name)+'</span><span class="note" style="text-transform:capitalize">'+esc(m.role)+'</span></div>').join("")+'</div>';
+     +members.map(m=>{
+       const other=cloudActive()&&isDM&&m.userId&&m.userId!==me&&m.role!=="dm";
+       return '<div class="skrow camp-member"><span>'+esc(m.name)+' <span class="note" style="text-transform:capitalize">'+esc(m.role==="dm"?"GM":m.role)+'</span></span>'
+        +(other?'<span><button class="chip sm" onclick="APP.transferGm(\''+jsq(m.userId)+'\')">Make GM</button> <button class="chip sm" onclick="APP.removeMember(\''+jsq(m.userId)+'\')">Remove</button></span>':'')
+        +'</div>';
+     }).join("")
+     +(cloudActive()&&isDM&&members.length>1?'<p class="note">Removing a player unassigns their characters here; the characters stay theirs. Making someone GM hands them the campaign, its tracker and notes; you stay on as a player.</p>':'')
+     +'</div>';
   }
   h+='<div class="card"><h3>Characters ('+chars.length+')</h3>';
   if(!chars.length)h+='<p class="note">No characters linked yet.</p>';
