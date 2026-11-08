@@ -888,6 +888,16 @@ function sorceryRollKey(entry,known){
   if(keys.some(k=>!k))return null;
   return keys.reduce((low,k)=>finalPct(k)<finalPct(low)?k:low);
 }
+// MAG-N10 guard: everything that decides a pending Sorcery roll. Changing a
+// combined spell, or any involved spell's Invocation source, mid-casting
+// needs a cancel rather than a silent switch at the final roll.
+function sorceryPendingCombo(entry,known){
+  known=known||S.magic.known;
+  const names=sorceryCombinedNames(entry);
+  const sources=[entry].concat(names.map(n=>known.find(m=>m.tradition==="sorcery"&&magicNameKey(m.name)===magicNameKey(n))||null))
+    .map(r=>r?sorceryInvocationKeyFor(r)||"":"missing");
+  return JSON.stringify([names,sources]);
+}
 // MAG-N04 (Core p.155): a mystic practises at most half their POW in distinct
 // Talents. Names are compared case-insensitively; one Talent recorded at two
 // Intensities counts once. Integer count against POW/2 needs no rounding.
@@ -1034,7 +1044,7 @@ function magicCastPreflight(entry, availableMP, availableDevotion){
   const t=MAGIC_TRAD_MAP[entry.tradition];
   if(entry.tradition==="mysticism"&&!mysticismDetails(entry))return "Confirm the Talent category and a valid Intensity before casting; invoked traits use Intensity 1 (Core p.156).";
   if(entry.tradition==="theism"&&!theismDetails(entry))return "Confirm this miracle's cult level and number of instances before casting (Core p.181).";
-  if(entry.tradition==="theism"&&theismPoolIndex(entry)===null)return "Choose which cult's Devotional Pool this miracle draws on. Pools are separate; personal Magic Points and other cults' pools are never used instead (Core pp.180–181).";
+  if(entry.tradition==="theism"&&theismPoolIndex(entry)===null)return theismAssociationCheck(entry);
   if(entry.tradition==="folk" && mp<1)return "Not enough Magic Points to attempt Folk Magic (minimum 1 MP).";
   const cost=magicEntryCost(entry);
   if(t.pool==="mp" && entry.tradition!=="folk" && (!Number.isInteger(cost)||cost<1))
@@ -1057,21 +1067,25 @@ function normalizeDevotionalPools(){
     .filter(x=>x&&typeof x==="object"&&!Array.isArray(x)).slice(0,MAX_DEVOTIONAL_POOLS-1).map(x=>{
       const max=Number.isSafeInteger(Number(x.max))&&Number(x.max)>=0?Number(x.max):0;
       const used=Number.isSafeInteger(Number(x.used))&&Number(x.used)>=0?Math.min(max,Number(x.used)):0;
-      return {cult:String(x.cult||"").slice(0,120),rank:DEVOTIONAL_RANKS.includes(x.rank)?x.rank:"",max,used};
+      const out={cult:String(x.cult||"").slice(0,120),rank:DEVOTIONAL_RANKS.includes(x.rank)?x.rank:"",max,used};
+      if(typeof x.exhortKey==="string"&&x.exhortKey)out.exhortKey=x.exhortKey.slice(0,200);
+      return out;
     });
+  if(typeof S.magic.devotionalExhortKey!=="string"||!S.magic.devotionalExhortKey)delete S.magic.devotionalExhortKey;
+  for(const m of S.magic.known)if(m.tradition==="theism"){if(m.cult!=null)m.cult=String(m.cult).slice(0,120);}
   const count=devotionalPoolCount();
   for(const m of S.magic.known)if(m.tradition==="theism"&&m.pool!=null&&!(Number.isInteger(m.pool)&&m.pool>=0&&m.pool<count))delete m.pool;
 }
 function devotionalPoolCount(){return 1+(Array.isArray(S.magic.extraPools)?S.magic.extraPools.length:0);}
 function devotionalPool(p=0){
-  if(p===0)return {cult:S.magic.devotionalCult||"",rank:S.magic.devotionalRank||"",
+  if(p===0)return {cult:S.magic.devotionalCult||"",rank:S.magic.devotionalRank||"",exhortKey:S.magic.devotionalExhortKey||"",
     max:Math.max(0,parseInt(S.magic.devotional,10)||0),used:Math.max(0,Number(S.magic.devotionalUsed)||0)};
   const x=Number.isInteger(p)&&p>0?(S.magic.extraPools||[])[p-1]:null;
-  return x?{cult:x.cult||"",rank:x.rank||"",max:Math.max(0,parseInt(x.max,10)||0),used:Math.max(0,Number(x.used)||0)}:null;
+  return x?{cult:x.cult||"",rank:x.rank||"",exhortKey:x.exhortKey||"",max:Math.max(0,parseInt(x.max,10)||0),used:Math.max(0,Number(x.used)||0)}:null;
 }
 function setDevotionalPool(p,patch){
   if(p===0){
-    const map={cult:"devotionalCult",rank:"devotionalRank",max:"devotional",used:"devotionalUsed"};
+    const map={cult:"devotionalCult",rank:"devotionalRank",max:"devotional",used:"devotionalUsed",exhortKey:"devotionalExhortKey"};
     for(const [k,v] of Object.entries(patch))S.magic[map[k]]=v;
     return;
   }
@@ -1095,6 +1109,32 @@ function devotionalHeldCheck(p,newHeld){
   return total>pow?"All Devotional Pools together may hold at most POW ("+pow+") Magic Points; this would make "+total+" (Core p.180).":null;
 }
 function devotionalPoolLabel(p){const x=devotionalPool(p);return x?(x.cult?x.cult:"Cult "+(p+1))+" pool":"pool";}
+// MAG-N05: a pool's Exhort skill. An explicit choice wins; otherwise an
+// Exhort whose speciality names the pool's cult; otherwise the character's
+// only Exhort. Several candidates and no choice = null (ask, never guess).
+function exhortOptions(){return acquiredProfs().filter(p=>p.name==="Exhort");}
+function exhortKeyForPool(p){
+  const pool=devotionalPool(p);if(!pool)return null;
+  const opts=exhortOptions();
+  if(!opts.length)return magicSkillKey("Exhort");
+  if(pool.exhortKey){const o=opts.find(x=>x.key===pool.exhortKey);return o?o.key:null;}
+  const match=opts.filter(x=>x.spec&&pool.cult&&magicNameKey(x.spec)===magicNameKey(pool.cult));
+  if(match.length===1)return match[0].key;
+  return opts.length===1?opts[0].key:null;
+}
+// MAG-N05: a miracle belongs to one cult. With several pools it must name
+// that cult, and the pool it draws on must be the same cult's. Legacy
+// miracles are never reassigned silently.
+function theismAssociationCheck(m){
+  const n=devotionalPoolCount(),pi=theismPoolIndex(m);
+  if(pi===null)return "Choose which cult's Devotional Pool this miracle draws on. Pools are separate; personal Magic Points and other cults' pools are never used instead (Core pp.180–181).";
+  const pool=devotionalPool(pi);
+  if(n>1&&!pool.cult)return "Name the cult for "+devotionalPoolLabel(pi)+" in the builder before requesting its miracles.";
+  if(n>1&&!String(m.cult||"").trim())return "Confirm which cult "+(m.name||"this miracle")+" comes from in the builder (Core p.180).";
+  if(String(m.cult||"").trim()&&magicNameKey(m.cult)!==magicNameKey(pool.cult))return (m.name||"This miracle")+" belongs to "+m.cult+", not "+(pool.cult||"this pool")+". A cult's miracles are requested only through that cult (Core pp.180–181).";
+  if(!exhortKeyForPool(pi))return exhortOptions().length>1?"Choose which Exhort skill the "+devotionalPoolLabel(pi)+" uses, in the builder.":"Add the Exhort skill before requesting a miracle.";
+  return null;
+}
 // A miracle draws only on its own cult's pool. With one pool, that pool;
 // with several, the miracle must name one. null = not confirmed.
 function theismPoolIndex(m){

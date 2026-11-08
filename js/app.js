@@ -215,11 +215,10 @@ window.APP={
  devotionalReset(p=0){if(viewOnlyBlock())return;const pool=devotionalPool(p);if(!pool)return;
    const held=devotionalHeldCheck(p,pool.max);if(held){PM_MSG=held;render();return;}
    setDevotionalPool(p,{used:0});render();},
- // MAG-N05: another cult's separate pool. Existing miracles stay with the
- // first pool; the player chooses a pool for each new one.
+ // MAG-N05: another cult's separate pool. Every miracle then names its cult;
+ // none is reassigned silently.
  addDevotionalPool(){if(viewOnlyBlock())return;
    if(devotionalPoolCount()>=MAX_DEVOTIONAL_POOLS){DEVOTIONAL_MSG="At most "+MAX_DEVOTIONAL_POOLS+" cult pools can be recorded.";render();return;}
-   for(const m of S.magic.known)if(m.tradition==="theism"&&m.pool==null)m.pool=0;
    S.magic.extraPools.push({cult:"",rank:"",max:0,used:0});DEVOTIONAL_MSG="";render();},
  removeDevotionalPool(p){if(viewOnlyBlock())return;
    if(!Number.isInteger(p)||p<1||!devotionalPool(p))return;
@@ -228,8 +227,11 @@ window.APP={
    for(const m of S.magic.known)if(m.tradition==="theism"&&Number.isInteger(m.pool)){if(m.pool===p)delete m.pool;else if(m.pool>p)m.pool--;}
    S.play.theismCasting=null;render();},
  miraclePool(i,raw){const m=S.magic.known[i],n=Number(raw);if(!m||m.tradition!=="theism")return;
-   if(raw===""){delete m.pool;render();return;}
-   if(!Number.isInteger(n)||!devotionalPool(n))return;m.pool=n;render();},
+   if(raw===""){delete m.pool;delete m.cult;render();return;}
+   if(!Number.isInteger(n)||!devotionalPool(n))return;m.pool=n;m.cult=devotionalPool(n).cult;render();},
+ poolExhort(p,key){if(viewOnlyBlock()||!devotionalPool(p))return;
+   if(key===""){if(p===0)delete S.magic.devotionalExhortKey;else delete S.magic.extraPools[p-1].exhortKey;render();return;}
+   if(exhortOptions().some(o=>o.key===key))setDevotionalPool(p,{exhortKey:key});render();},
  // MAG-N02: the spells a Combine casting joins, the shared-target check and
  // which Invocation skill the spell comes from.
  combinedSpell(i,slot,name){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;
@@ -315,9 +317,10 @@ window.APP={
      if(Number.isSafeInteger(pow)&&pow>=1&&devotionalHeldTotal()>pow){PM_MSG="Your Devotional Pools together hold "+devotionalHeldTotal()+" points, more than POW ("+pow+"). Review them in the builder before casting (Core p.180).";render();return;}
      const err=magicCastPreflight(m,playCurMagic(),devotionalCur(pi??0));
      if(err){PM_MSG=err;render();return;}
-     if(!magicSkillKey("Exhort")){PM_MSG="Add the Exhort skill before requesting a miracle.";render();return;}
+     const assoc=theismAssociationCheck(m);
+     if(assoc){PM_MSG=assoc;render();return;}
      const details=theismDetails(m),pending=S.play.theismCasting;
-     const signature=JSON.stringify([m.name,m.miracleLevel,m.miracleInstances,pi]);
+     const signature=JSON.stringify([m.name,m.miracleLevel,m.miracleInstances,pi,magicNameKey(m.cult),exhortKeyForPool(pi)]);
      if(pending&&(pending.index!==idx||pending.signature!==signature||pending.total!==details.turns)){PM_MSG="A miracle is underway or its details changed. Cancel the exhortation before continuing.";render();return;}
      if(details.turns>1&&!pending){S.play.theismCasting={index:idx,total:details.turns,completed:1,signature};PM_MSG="Exhortation turn 1 of "+details.turns+" recorded. Roll on the final turn (Core p.181).";render();return;}
      if(pending&&pending.completed+1<pending.total){pending.completed++;PM_MSG="Exhortation turn "+pending.completed+" of "+pending.total+" recorded. No roll yet.";render();return;}
@@ -331,7 +334,7 @@ window.APP={
      if(!sorceryRollKey(m)){PM_MSG=invocationOptions().length>1?"Choose which Invocation skill each spell in this casting comes from, in the builder.":"This character doesn't have the Invocation skill, so there's nothing to roll. Add it as a Professional Skill first.";render();return;}
      const total=sorceryCost(m).turns;
      const pending=S.play.sorceryCasting;
-     const shaping=JSON.stringify(sorceryLevels(m)),combo=JSON.stringify([sorceryCombinedNames(m),m.invocationKey||""]);
+     const shaping=JSON.stringify(sorceryLevels(m)),combo=sorceryPendingCombo(m);
      if(pending && (pending.index!==idx || pending.name!==m.name || pending.total!==total || pending.shaping!==shaping || (pending.combo!==undefined&&pending.combo!==combo))){
        PM_MSG="Another Sorcery invocation is underway. Cancel it before changing spells or shaping.";render();return;
      }
@@ -346,7 +349,7 @@ window.APP={
    const poolIdx=m.tradition==="theism"?theismPoolIndex(m):null;
    const blocking=magicCastPreflight(m,playCurMagic(),devotionalCur(poolIdx??0))||(m.tradition==="sorcery"?sorceryCombineCheck(m):null);
    if(blocking){PM_MSG=blocking;render();return;}
-   const key=m.tradition==="sorcery"?sorceryRollKey(m):magicSkillKey(trad.castSkill);
+   const key=m.tradition==="sorcery"?sorceryRollKey(m):m.tradition==="theism"?exhortKeyForPool(poolIdx):magicSkillKey(trad.castSkill);
    if(!key){PM_MSG="This character doesn't have the "+trad.castSkill+" skill, so there's nothing to roll. Add it as a Professional Skill first.";render();return;}
    const base=finalPct(key);let g=gradedPct(key,base);
    if(m.tradition==="sorcery" && sorceryCost(m).combinedSpells)g=sorceryInvocationGrade(key,base,sorceryCost(m).combinedSpells);

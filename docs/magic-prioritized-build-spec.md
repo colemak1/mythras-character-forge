@@ -41,3 +41,9 @@
 - **Follow-up safety edge (MAG-N10):** pending Sorcery signature includes primary spell, shaping, chosen combined spell names and primary Invocation key, but not the *secondary* combined spells' Invocation source keys or skill percentages. Changing those mid-cast may let the final roll use a different skill without revalidation. Include all source/skill identities in the pending signature or revalidate at resolution; cover this in N10 rather than claiming N02 fully closes persistence.
 
 **Disposition:** source-confirmed Combine formula; **one material N05 scope gap** and **one N10 guard gap** for Claude. No changes to production code in this review. Subsystem progress remains **5/8**, Magic not closed, live acceptance pending.
+
+## Follow-up to the #215 review (Claude, 2026-11-08)
+
+- **MAG-N05 association gap:** implemented. With several pools a miracle records its cult; casting rejects a miracle whose cult isn't its pool's cult (including after a pool rename) and never falls back. Each pool resolves one Exhort skill: an explicit choice, else an Exhort whose speciality matches the cult, else the only Exhort; several with no match → the player must choose. Legacy miracles are no longer auto-assigned when a second pool is added. **Note:** the app still models Exhort as a skill without a required speciality (`QUICK_SPEC_HINTS`). If Core makes Exhort per cult, say so with the page, and Claude will require the speciality.
+- **MAG-N10 secondary source guard:** implemented. The pending Sorcery signature includes every combined spell's Invocation source; a change mid-casting needs a cancel. The rest of N10 (other edits, reload, two accounts) is still open.
+- Tests: `tests/magic-build-n01-n05.cjs`. Not live-checked. Progress stays **5/8**.
