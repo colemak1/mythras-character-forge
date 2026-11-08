@@ -63,3 +63,7 @@ Expected: phase pill, Last roll and end recap should follow the exchange current
 ## Closeout
 
 **Partial acceptance; not an all-pass.** Desktop core controls, hit feel, score/Marks recap, eventual victory, theme inheritance and real-character entry passed at 1363px. Fix PUI-F01/PUI-F02; exact 1280px and 390px plus audible sound still need acceptance in a suitable browser. The distinct Opponent pill also needs a settled-phase observation. No production code changed. All **41** repository test scripts passed; `git diff --check` passed. Automated passes do not substitute for the blocked live checks.
+
+## Batched live follow-up after #209
+
+See [2026-11-07 batched live results](live-batch-pr209-20261107.md) for Pits follow-up: partial observations and explicit blocked/outstanding checks. No additional live/backend pass or subsystem closure is claimed.
