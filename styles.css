@@ -1523,6 +1523,9 @@ body.play-mode #main{background:transparent;max-width:none;padding:0;margin-inli
 
 /* Update 18: data-loss warning remains visible even while editing or in Play Mode. */
 .save-warning:not([hidden]){position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:9999;width:min(92vw,640px);padding:12px 16px;background:#5f2422;color:#fff6ef;border:2px solid #f1c9a9;border-radius:9px;box-shadow:0 4px 16px #0005;font:600 14px/1.4 system-ui,sans-serif;text-align:center;pointer-events:none}
+.save-warning-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
+.save-warning-actions button{pointer-events:auto;min-height:36px;padding:6px 12px;border:1px solid #f1c9a9;border-radius:6px;background:#fff6ef;color:#5f2422;font:700 13px/1.2 system-ui,sans-serif;cursor:pointer}
+.save-warning-actions button:focus-visible{outline:3px solid #f1c9a9;outline-offset:2px}
 
 /* Release and storage visibility across every view. */
 .forge-releasebar{position:relative;z-index:100;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;justify-content:center;padding:7px 16px;background:#24231f;color:#f5e8c9;font:12px/1.4 system-ui,sans-serif}

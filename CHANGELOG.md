@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Campaigns: new invite code, save conflicts, GM handover and backup (Subsystem 8)
+
+Implements the owner's decisions D-S1, D-S2 and D-S4 (`docs/decisions.md`). **Needs the new migration** `supabase/migrations/20261108120000_campaign_continuity_and_save_conflicts.sql` run once in the Supabase SQL editor; until then the app works as before.
+
+- **New code (D-S1):** the GM can replace a campaign's invite code. The old code and its join link stop working at once; players already in stay. Members now see the code too.
+- **No silent overwrites (D-S2):** each character has a revision that goes up whenever it's saved. A sheet that's out of date (another tab or device, or the GM changed the inventory) no longer overwrites the newer copy. It stops saving and shows a warning with **Download my version** and **Reload latest**. A GM's "Give an item" still arrives quietly, and a GM's inventory edit is only stopped if the player changed the inventory meanwhile.
+- **GM continuity (D-S4):** on the campaign page the GM can **Remove** a player (their characters are unassigned, never deleted), **Make GM** another member (the old GM stays as a player; the tracker and notes go with the campaign), and **Download campaign backup**: one JSON file with the campaign, GM notes, members, every character's full sheet and homebrew.
+- New tests: `tests/campaign-continuity.cjs`. The migration was also run (twice) on Postgres with stand-ins for Supabase.
+
 ## The Pits stays melee only
 
 - The owner decided ranged combat is not an option in The Pits, so the ranged and thrown weapons from #206 are removed (reverted). Missile weapons on a character are listed as "The Pits is melee only". The melee fixes from #205 stay.

@@ -1513,6 +1513,40 @@ window.APP={
  // DM detaching a PLAYER's character (not their own) from the campaign —
  // routes through the dm_unassign_character RPC, never a direct table
  // write. The DM can only do this, never delete the character outright.
+ // D-S1: replace the invite code; the old code and #/join/ link stop working.
+ rotateInvite(){
+   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
+   if(!confirm("Make a new invite code? The current code and invite link stop working at once. Players already in the campaign are not affected."))return;
+   cloudRotateInvite(camp.id).then(code=>{camp.invite_code=code;CAMP_MSG="New invite code: "+code+". Send the new link to anyone still to join.";render();})
+     .catch(e=>{CAMP_MSG="Could not change the invite code: "+campaignActionError(e);render();});},
+ // D-S4: remove a member. Their characters are unassigned, never deleted.
+ removeMember(userId){
+   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
+   const m=(CAMPAIGN_VIEW.members||[]).find(x=>x.userId===userId);const name=m?m.name:"this player";
+   if(!confirm("Remove "+name+" from \""+camp.name+"\"? Their characters are unassigned from this campaign but stay in their library. They can only rejoin with the invite code; make a new code to stop that."))return;
+   cloudRemoveMember(camp.id,userId).then(()=>{CAMP_MSG=name+" was removed.";return loadCampaignViewUnified(camp.id);})
+     .catch(e=>{CAMP_MSG="Could not remove member: "+campaignActionError(e);render();});},
+ // D-S4: hand the GM role to another member; the old GM stays as a player.
+ transferGm(userId){
+   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
+   const m=(CAMPAIGN_VIEW.members||[]).find(x=>x.userId===userId);const name=m?m.name:"this player";
+   if(!confirm("Make "+name+" the GM of \""+camp.name+"\"? They get the campaign settings, Combat Tracker and GM notes. You stay as a player and can't undo this yourself."))return;
+   cloudTransferCampaign(camp.id,userId).then(()=>{CAMP_MSG=name+" is now the GM.";CAMP_CACHE=null;return loadCampaignViewUnified(camp.id);})
+     .catch(e=>{CAMP_MSG="Could not hand over the campaign: "+campaignActionError(e);render();});},
+ // D-S4: the whole campaign as one backup file.
+ downloadCampaignBackup(){
+   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
+   buildCampaignBackup(camp.id).then(backup=>{
+     dl(String(camp.name||"campaign").replace(/[^\w-]+/g,"_")+"-"+backup.exportedAt.slice(0,10)+".campaign.json",JSON.stringify(backup,null,2),"application/json");
+     CAMP_MSG="Campaign backup downloaded: "+backup.characters.length+" character"+(backup.characters.length===1?"":"s")+".";render();
+   }).catch(e=>{CAMP_MSG="Could not build the campaign backup: "+e.message;render();});},
+ // D-S2: after a save conflict, keep the player's copy as a file and/or
+ // load the newer account copy.
+ exportConflictCopy(){
+   dl((S.concept.name||"character").replace(/\s+/g,"_")+"-my-version.mythras.json",JSON.stringify(S,null,2),"application/json");},
+ reloadAfterConflict(){
+   reloadConflictedCharacter().then(ok=>{if(!ok){showError("Could not reload the character. Check your connection and try again.");return;}render();})
+     .catch(e=>showError("Could not reload the character: "+e.message));},
  dmUnassignChar(id){
    if(!confirm("Unassign this character from the campaign? The character itself is untouched, just no longer linked here."))return;
    cloudDmUnassignCharacter(id).then(()=>loadCampaignViewUnified(CURRENT_CAMPAIGN_ID))
