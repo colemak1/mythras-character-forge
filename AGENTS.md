@@ -13,7 +13,7 @@ Three assistants work on this project: **Claude** (Claude Code), **ChatGPT** and
 ## Rules
 
 1. Never commit directly to `main`. Work on a branch and open a pull request. Claude merges its own PRs once the **Tests** check passes on the latest commit (owner's standing approval, 2026-11-05), or turns on GitHub auto-merge so the PR merges itself when Tests passes. Merging deploys the site. ChatGPT does not merge. Only one assistant edits a given area at a time.
-2. Run every test before pushing: `for f in tests/*.cjs; do node "$f" || echo "FAIL $f"; done`. The **Tests** workflow runs the same check on every push and pull request. Never skip, delete or weaken a test to get it passing.
+2. Run every test before pushing: `for f in tests/*.cjs; do node "$f" || echo "FAIL $f"; done`. The **Tests** workflow runs the same check on every push and pull request. After changing anything in `supabase/migrations/`, also run the database permission tests: `npm install --no-save --prefix .ci-deps @electric-sql/pglite@0.2.17 && node tests/db/permissions.cjs` (CI runs them too). Never skip, delete or weaken a test to get it passing.
 3. After changing any JS or CSS file, run `python3 scripts/stamp-assets.py`. It stamps each `?v=` in `index.html` with a hash of the file, so returning players get the new version. `tests/asset-versions.cjs` fails if you forget.
 4. Claude adds release notes at the top of `CHANGELOG.md` for code changes. Docs-only PRs (ChatGPT) do not edit `CHANGELOG.md`. Do not create new `CHANGELOG-*.md` files.
 5. Write rulings and interpretations in `docs/decisions.md` or the relevant `docs/*-cases.md` ledger, not only in chat.

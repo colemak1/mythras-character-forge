@@ -84,4 +84,18 @@ test('during a replay the pill and Last roll follow the beat on screen, not the 
  run(`V.roll.settled=true`);assert.equal(run('pitsShownSkillRoll().roll'),92);
  run(`V.busy=false;V.roll=null`);assert.equal(run('pitsShownSkillRoll().roll'),92);
 });
+test('during a replay the turn cell names the fighter whose die is showing, with their AP then (live batch after #209)',()=>{
+ setup();
+ // Live state has already moved on: the foe is reacting with 1 AP left.
+ run(`S.fighters.a.name='Kethan';S.fighters.b.name='Deserter';S.fighters.a.kind='human';S.fighters.b.kind='ai';
+  S.pending={kind:'reaction',atk:'a',def:'b'};S.fighters.b.ap=1;
+  V.shown=clone(S.fighters);V.shown.b.ap=2;V.shown.a.ap=2;
+  V.busy=true;V.step=0;V.events=[];V.roll={actor:'a',settled:false};`);
+ let h=run('pitsTurnCellHtml()');
+ assert.match(h,/Kethan/);assert.doesNotMatch(h,/Deserter|Reacting/);assert.match(h,/Rolling · 2 AP left/);
+ run(`V.roll={actor:'b',settled:false}`);h=run('pitsTurnCellHtml()');
+ assert.match(h,/Deserter/);assert.match(h,/2 AP left/,'AP as shown on screen, not the live 1');assert.match(h,/foe-p/);
+ run(`V.roll=null`);h=run('pitsTurnCellHtml()');assert.doesNotMatch(h,/Kethan|Deserter/,'between dice, no name is guessed');
+ run(`V.busy=false;V.shown=null`);assert.match(run('pitsTurnCellHtml()'),/Reacting · 1 AP left/,'after the replay, the live state');
+});
 console.log(passed+' pits view tests passed');

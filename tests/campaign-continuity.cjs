@@ -205,5 +205,12 @@ await test('the migration adds revisions, conditional GM edits, code rotation, r
  assert.match(sql,/on conflict \(campaign_id, user_id\) do update set role = 'player'/);
  assert.match(sql,/cannot remove themselves/);
 });
+await test('D-S3 the app only ever asks for id and display_name from profiles',()=>{
+ const src=fs.readFileSync(path.join(root,'js/cloud.js'),'utf8');
+ const reads=[...src.matchAll(/from\("profiles"\)\.select\("([^"]*)"\)/g)].map(m=>m[1]);
+ assert(reads.length>=3,'profile reads found');
+ for(const cols of reads)assert.equal(cols,'id,display_name');
+ assert.doesNotMatch(src,/from\("profiles"\)\.select\(\)|from\("profiles"\)\.select\("\*"\)/);
+});
 console.log(passed+' campaign continuity tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

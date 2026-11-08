@@ -1855,6 +1855,16 @@ function combatNarrationHtml(){
 // The Pits Stone layout (v0 design, 2026-11-07): the strip's turn cell and
 // engagement-range track. Presentation only; reads engine state.
 function pitsTurnCellHtml(){
+ // During a replay the cell follows the beat on screen, like the pill: the
+ // actor whose die is showing and their AP at that moment, never the live
+ // state that has already moved on (live batch after #209).
+ if(typeof V!=='undefined'&&V.busy){
+  const view=V.shown||S.fighters,rid=V.roll?.actor,rf=rid&&view[rid];
+  const rpill=PITS_PHASE_PILL[pitsPhase()]||'Resolving';
+  if(!rf)return `<div class="pits-turn"><span class="pits-pill" aria-live="polite">${rpill}</span></div>`;
+  const rmine=S.fighters[rid]?.kind==='human';
+  return `<div class="pits-turn"><span class="pits-pill${rmine?'':' foe-p'}" aria-live="polite">${rpill}</span><strong class="pits-turn-name">${esc(rf.name)}</strong><span class="pits-turn-hint">Rolling · ${rf.ap} AP left</span></div>`;
+ }
  if(S.phase!=='fight')return `<div class="pits-turn"><span class="pits-pill">${S.phase==='between'?'Won':'Bout over'}</span></div>`;
  const id=currentDecisionOwner()||S.order?.[S.turnIndex],f=S.fighters[id];if(!f)return '';
  const phase=pitsPhase(),mine=phase!=='opponent',p=S.pending;

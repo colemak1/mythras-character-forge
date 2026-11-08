@@ -274,7 +274,7 @@ Mapped against the code and against the security rules in `supabase/migrations/`
 | S3 | The GM inventory RPC accepted any JSON, not just a list. | BRD07, SEC08 | Low | **Fixed in migration.** |
 | S4 | A GM's inventory edits (other than "Give an item") can still be overwritten by the player's open sheet saving its whole state. | BRD06, SAVE19 | Medium | Gifts fixed in PR #128. **Fixed (D-S2)** in migration `20261108120000_…`: a character revision; the player sheet won't overwrite a newer GM edit, and the GM's push won't overwrite a changed inventory. Gifts still merge quietly. Live. |
 | S5 | Two tabs or devices editing the same character: last save wins, with no warning. | SAVE09, E2E10 | Medium | **Fixed (D-S2):** a stale tab or device is stopped, warned, and offered "Download my version" and "Reload latest". Live. |
-| S6 | Any signed-in user can read every profile's display name. | SEC17 | Low | **Decision** (D-S3). Only display names are stored. |
+| S6 | Any signed-in user can read every profile's display name. | SEC17 | Low | **Decided (D-S3 option A)** and narrowed in migration `20261108130000_…`: signed-in users read only `id` and `display_name`; other profile columns are unreadable; signed-out visitors read nothing. Live. |
 | S7 | Members can read the campaign's invite code. | INV12, SEC18 | Low | **Decided (D-S1):** members keep seeing the code; the GM's "New code" replaces it. Live. |
 
 Verified by running the new migration on Postgres 16 (PGlite) with stand-ins for Supabase's `auth.uid()` and helper functions: it runs and re-runs cleanly, copies the existing session state, blocks writes to the old column, refuses an assignment to a campaign the owner isn't in, still allows a former member's saves, refuses a non-list or non-GM inventory call, and only the campaign's own GM can read its GM row.
@@ -311,7 +311,7 @@ Verified by running the new migration on Postgres 16 (PGlite) with stand-ins for
 | IMP01, IMP03–IMP18 | **Pass (code)** | Import refuses non-objects, library backups in the single importer, oversize files; strips IDs and owner/campaign fields; text is escaped on render (`unified-routes.cjs`). |
 | IMP02 | **Pass (policy) + Live** | Export reads only rows RLS returns. |
 | SEC05, SEC06, SEC10, SEC11, SEC13 | **Pass (policy) + Live** | |
-| SEC17, SEC18 | **Decision** (S6, S7) | |
+| SEC17, SEC18 | **Decided** (S6 D-S3 option A, S7 D-S1) + Live | `tests/db/permissions.cjs`. |
 | SEC19, SEC20 | **Pass (policy) + Live** | GM status comes from `campaigns.dm_id`, not the membership row, so a missing GM membership row doesn't lock the GM out. |
 | SEC21 | **Pass (design)** | Both migrations run in one transaction. |
 | SEC22 | **Live** | The core multi-account test. |
@@ -344,3 +344,7 @@ Use disposable accounts: **A** (GM of campaign Red), **B** and **C** (Red player
 ## Batched live follow-up after #209
 
 See [2026-11-07 batched live results](live-batch-pr209-20261107.md) for Subsystem 8: partial observations and explicit blocked/outstanding checks. No additional live/backend pass or subsystem closure is claimed.
+
+### Database-level evidence (2026-11-08, Claude)
+
+`tests/db/permissions.cjs` runs every migration on a real Postgres (PGlite), on top of a stand-in for the production base schema (`tests/db/base-schema.sql`), and acts as accounts A–E through the same `anon`/`authenticated` roles and `auth.uid()` the API uses. It covers D-S3 and the database side of steps 1–6, 8 and 10 above, plus the D-S2 revision rules. CI runs it on every push. **Limit:** the base schema is a stand-in, so the live check is still needed to confirm production matches; the UI parts of steps 7, 9 and 10 also stay live-only.
