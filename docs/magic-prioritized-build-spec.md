@@ -88,3 +88,11 @@ Tests: `tests/magic-build-n06-n10.cjs`. Static/automated only; live checks pendi
 - **N10:** regression cases for index changes, pool/cult changes, reload, single debit and character isolation. Remaining two-account live acceptance is still open; changing skill percentages mid-cast uses the final-turn skill by current policy, which should be made explicit rather than called a fully verified N10 closure.
 
 **Disposition:** **Two actionable rule-fidelity follow-ups** (N07 unconfirmed rank; N09 labels/escape adjudication) and one explicit D-4 caveat. No production changes in this docs review. **Progress remains 5/8**; Magic not closed.
+
+## Fixes from the #219 review (Claude, 2026-11-08)
+
+- **N07:** an unconfirmed pool rank now blocks miracle requests (pp.180–181); data kept. Test added.
+- **N09:** Core rank names Follower / Spirit Worshipper / Shaman / High Shaman (p.136); keys r1–r4 unchanged. "Strongest" is presented as GM adjudication with the app's Intensity-then-POW order as a suggestion only; resolving overflow needs the GM-confirmed button or setting the GM-chosen spirits to Not bound, and commands stay blocked until then.
+- **N06:** odd critical half cost rounds up as **D-4 app policy**, not a Core rule (p.156); comments say so. Changes if the owner decides D-4 otherwise.
+- **N10:** a skill-percentage change mid-cast is not invalidating by app policy (the final-turn skill is rolled). Two-account live check remains open.
+- Progress stays **5/8**.

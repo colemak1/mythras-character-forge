@@ -141,9 +141,9 @@ window.APP={
    if(x==null||Number.isInteger(x)||!Number.isSafeInteger(n)||n<Math.floor(x)||n>Math.ceil(x)){PM_MSG="The GM-confirmed limit must be "+(x==null?"set after the rank":Math.floor(x)+" or "+Math.ceil(x))+".";render();return;}
    S.magic.boundLimitGM=n;render();},
  releaseOverflowSpirits(){if(viewOnlyBlock())return;const out=boundSpiritOverflow();if(!out.length)return;
-   if(!confirm("Mark "+out.map(m=>m.name||"unnamed spirit").join(", ")+" as escaped (unbound)?"))return;
+   if(!confirm("Has your GM confirmed that "+out.map(m=>m.name||"unnamed spirit").join(", ")+" are the strongest and break free? They will be marked not bound."))return;
    out.forEach(m=>{m.spiritStatus="unbound";});
-   PM_MSG="Escaped, strongest first: "+out.map(m=>m.name||"unnamed spirit").join(", ")+". Resolve their behaviour with your GM (Core p.136).";render();},
+   PM_MSG="Broke free (GM confirmed): "+out.map(m=>m.name||"unnamed spirit").join(", ")+". Resolve what they do next with your GM (Core p.136).";render();},
  magicField(i,f,v){const m=S.magic.known[i];if(!m)return;
    if(f==="name"||f==="notes")m[f]=v;
    else {const raw=String(v).trim();const n=Number(raw);

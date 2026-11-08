@@ -870,11 +870,11 @@ function knownMagicEditor(t){
   }
   if(t.key==="animism"){
     const x=boundSpiritFormula(),limit=boundSpiritLimit(),over=boundSpiritOverflow();
-    h+='<p class="note rulesrc">Core pp.135–136: bound-spirit slots by rank are ¼, ½, ¾ or all of CHA. A spirit must first be acquired through a bargain or by winning Spirit Combat, with the GM, before it is bound. If more are bound than the rank allows, the strongest escape. The app does not round a fractional limit: your GM confirms it.</p>'
+    h+='<p class="note rulesrc">Core pp.135–136: bound-spirit slots by rank are ¼, ½, ¾ or all of CHA. A spirit must first be acquired through a bargain or by winning Spirit Combat, with the GM, before it is bound. Ranks: Follower ¼, Spirit Worshipper ½, Shaman ¾, High Shaman all (p.136). If more are bound than the rank allows, the strongest break free; the GM decides which are strongest. The app does not round a fractional limit: your GM confirms it.</p>'
      +'<label>Animist rank <select onchange="APP.animistRank(this.value)">'+ANIMIST_RANK_LABEL.map(([v,l])=>'<option value="'+v+'" '+((S.magic.animistRank||"")===v?'selected':'')+'>'+esc(l)+'</option>').join("")+'</select></label>'
      +'<p class="note">'+(x==null?'Confirm the rank (and CHA) to see the bound-spirit limit.':Number.isInteger(x)?'Bound spirits: '+boundSpirits().length+' / '+x+'.':'The rank gives '+x+' bound spirits.')+'</p>'
      +(x!=null&&!Number.isInteger(x)?'<label class="mnum">GM-confirmed limit<input type="number" min="'+Math.floor(x)+'" max="'+Math.ceil(x)+'" value="'+(Number.isInteger(S.magic.boundLimitGM)?S.magic.boundLimitGM:'')+'" onchange="APP.boundLimitGM(this.value)"></label>'+(limit!=null?' <span class="note">Bound spirits: '+boundSpirits().length+' / '+limit+'.</span>':''):'');
-    if(over.length)h+='<p class="warn" role="alert">'+boundSpirits().length+' spirits are bound but the limit is '+limit+'. The strongest escape: '+esc(over.map(m=>m.name||"unnamed").join(", "))+'. <button type="button" class="chip" onclick="APP.releaseOverflowSpirits()">Mark them escaped</button></p>';
+    if(over.length)h+='<p class="warn" role="alert">'+boundSpirits().length+' spirits are bound but the limit is '+limit+': '+over.length+' must break free, the strongest first (Core p.136). Commands are blocked until this is resolved. Ask your GM which are strongest, then set those to &ldquo;Not bound&rdquo;. App suggestion (highest Intensity, then POW): '+esc(over.map(m=>m.name||"unnamed").join(", "))+'. <button type="button" class="chip" onclick="APP.releaseOverflowSpirits()">GM agrees: mark these free</button></p>';
   }
   if(t.key==="mysticism"){
     const lim=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
@@ -894,7 +894,7 @@ function knownMagicEditor(t){
        +'<label class="mnum">Instances<input type="number" min="1" max="100" value="'+(m.miracleInstances||1)+'" onchange="APP.miracleInstances('+i+',this.value)"></label>'
        +(devotionalPoolCount()>1?'<label class="mnum">Cult<select aria-label="Cult this miracle comes from" onchange="APP.miraclePool('+i+',this.value)"><option value="" '+(miracleCultChoice(m)===null?'selected':'')+'>Choose a cult</option>'
          +Array.from({length:devotionalPoolCount()},(_,p)=>'<option value="'+p+'" '+(miracleCultChoice(m)===p?'selected':'')+'>'+esc(devotionalPool(p).cult||devotionalPoolLabel(p))+'</option>').join("")+'</select></label>':'')
-       +(()=>{const err=theismAssociationCheck(m);return err&&(devotionalPoolCount()>1||/level \d miracle/.test(err))?'<span class="warn">'+esc(err)+'</span>':'';})()
+       +(()=>{const err=theismAssociationCheck(m);return err&&(devotionalPoolCount()>1||/level \d miracle|Confirm your rank/.test(err))?'<span class="warn">'+esc(err)+'</span>':'';})()
        +(det?'<span class="mcost">'+det.cost+' pool points · '+det.turns+' turns</span>':'<span class="warn">Confirm the miracle level with your GM before casting. Previously recorded cost: '+esc(String(m.cost||0))+'; preserved for review.</span>');
     }
     if(t.shaping){
