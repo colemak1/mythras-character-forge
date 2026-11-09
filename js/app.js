@@ -1684,7 +1684,7 @@ window.APP={
      const dmg=creatureDamageAfterArmour(c.creature,hit.loc,raw);
      c.hp[hit.loc].cur=Math.max(-c.hp[hit.loc].max,c.hp[hit.loc].cur-dmg);
      creatureSyncAp(c);
-     CREATURE_MSG[id]=hit.loc+": "+dmg+" damage after armour."+(creatureTrait(c.creature,"Venomous")?(creatureVenomEligible(c.creature,dmg)?" Through armour: Inject Venom may deliver its poison (GM, Core p.97).":" Nothing got through: no venom."):"");});
+     CREATURE_MSG[id]=hit.loc+": "+dmg+" damage after armour."+(creatureTrait(c.creature,"Venomous")?" An ordinary hit injects no venom.":"");});
    delete CREATURE_HIT[id];if(el)el.value="";render();},
  // CRTR-B06–B14 trait state on a creature combatant.
  gmCreatureState(id,key,v){
@@ -1695,6 +1695,19 @@ window.APP={
      else if(key==="breathRecovery"){const n=parseInt(v,10);if(Number.isInteger(n)&&n>=1&&n<=99)cs.breathRecovery=n;else delete cs.breathRecovery;}
      else if(key==="bindingLoc")cs.bindingLoc=(c.locations||[]).includes(v)?v:"";
      else cs.destroyWhen=String(v||"").slice(0,200);});},
+ // B09: the GM marks a head incapacitated or severed; only that removes its action.
+ gmCreatureHead(id,name,out){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
+     if(!creatureHeads(c.creature,c.hp,[]).heads.includes(name))return;
+     const cs=c.cs=c.cs||{},set=new Set(cs.headsOut||[]);
+     if(out)set.add(name);else set.delete(name);
+     cs.headsOut=[...set];creatureSyncAp(c);});},
+ // B12: Inject Venom chosen on a successful attack delivers the poison in
+ // place of damage, armour or not.
+ gmCreatureVenom(id){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
+     if(!creatureVenomEligible(c.creature,true))return;
+     CREATURE_MSG[id]="Inject Venom: no attack damage; the poison is delivered whatever the armour. Resolve "+c.name+"'s own poison with the GM (Core pp.97, 218).";});},
  gmCreatureLeap(id,won){
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
      const w=creatureLeapBonus(c.creature,!!won);
