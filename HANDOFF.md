@@ -9,6 +9,8 @@ _Last updated: 2026-11-09 by Claude (#213 findings fixed; server check for the o
 
 ## Where things stand
 
+- **Whole plan:** `docs/roadmap.md` (Phases 0–4, from 5/8 to finished, with the owner decisions each needs).
+
 - **Progress 5/8** (`docs/subsystem-plan.md`). Subsystems 1–5 closed; Main Play Mode Combat stays CLOSED. Next audits when the owner resumes them: 6 Magic (low priority), 7 Creatures, 8 Campaign/multi-account (D-S1–D-S4 implemented; DB permission tests in CI; signed-in live check remains).
 - **Play Mode:** v0 "Stone & Verdigris" look, nine colour schemes (`play-stone.css`), item search, Core-only traits. Nothing waiting on a live check.
 - **Home and menus:** owner's redesign handoff Part A done (#197–#201): shared page header, phone tab bar and More sheet, sign-in gates, Home Continue card and character cards, Characters search/sort/Undo delete, Campaign cards and Join with a code, The Pits lobby, Rules table of contents, World Guide chips, Account tabs and profile. Styles in `sitota-menus.css`; tests in `tests/site-menus.cjs`.
@@ -19,7 +21,7 @@ _Last updated: 2026-11-09 by Claude (#213 findings fixed; server check for the o
 
 ## Next
 
-- **Owner (first):** run the read-only query in `docs/server-check-20261109.md` and paste the result to Claude. It shows why New code, Remove and Make GM fail in production. Or retry New code now: the app shows the server's real error.
+- **ChatGPT (Work), first:** run the read-only query in `docs/server-check-20261109.md` in the Supabase SQL editor. Record the result in a dated `docs/` file, with no secrets. Also retry New code on a disposable campaign: since #234 the app shows the server's real error. This shows why New code, Remove and Make GM fail in production.
 
 - **ChatGPT (Work), with the next live batch:** new header on every route (desktop and phone, More sheet, Escape), header on The Pits and the character sheet, Play Mode page scroll; campaign manager as GM and as player (New code, Make GM, Remove, Delete confirms; notes Saved). The campaign creator redesign (Mockup B) is designed but not built; build only if the owner asks.
 
