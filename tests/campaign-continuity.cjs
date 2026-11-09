@@ -184,6 +184,24 @@ await test('campaign manager (v0, 2026-11-09): party first, rule chips, and on-p
  run('confirm=()=>true;AUTH_USER={id:"player"};');h=run('campaignDetailHTML()');
  assert.match(h,/Player view/);assert.doesNotMatch(h,/Rules &amp; books|GM tools|cmNotesText|stTwoTap/);
 });
+await test('live batch #213: only a missing function is called a missing update; other server errors are shown as they are',()=>{
+ assert.match(run('campaignActionError({code:"PGRST202",message:"Could not find the function"})'),/November 2026 campaign update/);
+ const other=run('campaignActionError({code:"42P01",message:"relation \\"campaign_log\\" does not exist"})');
+ assert.doesNotMatch(other,/November 2026/);assert.match(other,/The server refused it: relation "campaign_log" does not exist \(code 42P01\)/);
+});
+await test('live batch #213: status messages are cleared when the signed-in account changes',async()=>{
+ run('CAMP_MSG="Could not change the invite code";MENU_MSG={text:"x"};clearAccountMessages();');
+ assert.equal(run('CAMP_MSG'),null);assert.equal(run('MENU_MSG'),null);
+});
+await test('live batch #213: deleting the open character drops its queued save, so sign-out is not blocked',async()=>{
+ run(`CLOUD_FAILED_ACTORS.clear();CLOUD_PENDING_ACTORS.clear();CLOUD_CONFLICTS.clear();S=freshState();S._libId="dead-1";S.concept.name="Gone";CLOUD_FAILED_ACTORS.set(S,"Character not found on the account");CLOUD_SAVE_ERROR="Character not found on the account";
+ var __t=setTimeout(()=>{},0);CLOUD_PENDING_ACTORS.set(S,__t);var __other=freshState();__other._libId="keep";CLOUD_FAILED_ACTORS.set(__other,"offline");`);
+ assert.equal(run('forgetDeletedCharacter("dead-1")'),true,'the open sheet was the deleted one');
+ assert.notEqual(run("S._libId"),"dead-1");assert.equal(run("CLOUD_PENDING_ACTORS.size"),0);
+ assert.equal(run('[...CLOUD_FAILED_ACTORS.values()].join()'),'offline','other characters keep their failed saves');
+ run('CLOUD_FAILED_ACTORS.clear();CLOUD_SAVE_ERROR="";');
+ assert.equal(run('forgetDeletedCharacter("not-open")'),false);
+});
 await test('D-S4 LIFE13 the whole-campaign backup holds the campaign, GM state, members, characters and homebrew',async()=>{
  run(`campRow.session_state={sessionNotes:"stale"};charRows=[{id:ID,name:"Hero",owner_id:"player",state:hero(),updated_at:"2026-11-08T00:00:00Z",revision:3}];
  cloudFetchMembers=async()=>clone(members);cloudFetchCustomContent=async()=>[{id:"w1",type:"weapon",name:"Hook"}];

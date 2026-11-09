@@ -117,3 +117,6 @@ revoke all on function public.dm_transfer_campaign(uuid, uuid) from public, anon
 grant execute on function public.dm_transfer_campaign(uuid, uuid) to authenticated;
 
 commit;
+
+-- Ask the API to pick up the new functions at once (live batch #213).
+notify pgrst, 'reload schema';
