@@ -188,10 +188,36 @@ async function initAuth(){
   sb.auth.onAuthStateChange(async(event,session)=>{
     if(event==="PASSWORD_RECOVERY"){AUTH_RECOVERY=true;APPVIEW="account";render();return;}
     if(session&&(!AUTH_USER||AUTH_USER.id!==session.user.id)){await onSignedIn(session.user);render();}
-    else if(!session&&AUTH_USER){AUTH_USER=null;AUTH_PROFILE=null;CAMP_CACHE=null;render();}
+    else if(!session&&AUTH_USER){AUTH_USER=null;AUTH_PROFILE=null;CAMP_CACHE=null;clearAccountMessages();render();}
   });
 }
+// Status messages belong to the account that caused them: clear them when
+// the signed-in account changes, so one person's error never shows on the
+// next person's pages (live batch #213).
+function clearAccountMessages(){
+  CAMP_MSG=null;MENU_MSG=null;
+  if(typeof PM_MSG!=="undefined")PM_MSG=null;
+  if(typeof PITS_MSG!=="undefined")PITS_MSG="";
+  CAMP_LOAD_ERROR="";LIB_LOAD_ERROR="";
+}
+// A character deleted here stops being the open sheet: its queued or failed
+// saves are dropped, so sign-out never waits on a row that no longer exists
+// (live batch #213).
+function forgetDeletedCharacter(id){
+  if(!id)return false;
+  const match=a=>a&&a._libId===id;
+  for(const [a,t] of CLOUD_PENDING_ACTORS)if(match(a)){clearTimeout(t);CLOUD_PENDING_ACTORS.delete(a);}
+  for(const a of [...CLOUD_FAILED_ACTORS.keys()])if(match(a))CLOUD_FAILED_ACTORS.delete(a);
+  for(const a of [...CLOUD_CONFLICTS.keys()])if(match(a))CLOUD_CONFLICTS.delete(a);
+  const open=match(S);
+  if(open){S=freshState();try{const k=autosaveKey(),d=JSON.parse(localStorage.getItem(k)||"null");if(d&&d.S&&d.S._libId===id)localStorage.removeItem(k);}catch(e){}}
+  if(!CLOUD_FAILED_ACTORS.size)CLOUD_SAVE_ERROR="";
+  updateSaveStatus();
+  return open;
+}
 async function onSignedIn(user){
+  const switched=!!(AUTH_USER&&AUTH_USER.id!==user.id)||!AUTH_USER;
+  if(switched)clearAccountMessages();
   AUTH_USER={id:user.id,email:user.email};
   AUTH_PENDING=false;
   const {data}=await sb.from("profiles").select("id,display_name").eq("id",user.id).maybeSingle();
@@ -287,8 +313,13 @@ async function cloudTransferCampaign(campaignId,userId){
   const {error}=await sb.rpc("dm_transfer_campaign",{p_campaign:campaignId,p_user:userId});
   if(error)throw error;
 }
+// Only a function the API can't find means the server update is missing.
+// Anything else (a table or column an older trigger can't find, a refusal)
+// is shown as the server said it, so it can be diagnosed (live batch #213).
 function campaignActionError(e){
-  return isMissingFunctionError(e)?"This needs the November 2026 campaign update on the server. Ask the site owner to run it.":e.message;
+  if(e&&(e.code==="PGRST202"||e.code==="42883"))return "This needs the November 2026 campaign update on the server. Ask the site owner to run it.";
+  const msg=String((e&&e.message)||"Unknown error");
+  return "The server refused it: "+msg+(e&&e.code?" (code "+e.code+")":"")+".";
 }
 // D-S4 whole-campaign backup: everything the GM can read about the campaign,
 // in one JSON file. Characters keep their full saved state, so any one of

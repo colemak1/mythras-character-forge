@@ -1497,7 +1497,7 @@ window.APP={
  // way back, so no second confirm() (owner menu redesign, 2026-11-07).
  deleteLibChar(id,name,opts){
    if(!(opts&&opts.confirmed)&&!confirm('Delete "'+name+'"? This can\'t be undone — Export JSON first if you want a copy.'))return;
-   deleteCharUnified(id).then(()=>{LIB_CACHE=null;if(APPVIEW==='menu'&&typeof loadHomeCharacters==='function')loadHomeCharacters();render();loadLibraryUnified();})
+   deleteCharUnified(id).then(()=>{forgetDeletedCharacter(id);LIB_CACHE=null;if(APPVIEW==='menu'&&typeof loadHomeCharacters==='function')loadHomeCharacters();render();loadLibraryUnified();})
      .catch(e=>{CAMP_MSG="Could not delete character: "+e.message;render();});},
  /* account */
  toAccount(){APPVIEW="account";AUTH_MSG=null;render();window.scrollTo(0,0);},
@@ -1995,7 +1995,7 @@ window.APP={
    }).then(()=>sb.auth.signOut()).then(result=>{
      if(result&&result.error)throw result.error;
      clearLocalCharacterData(uid);
-     AUTH_USER=null;AUTH_PROFILE=null;AUTH_PENDING=false;CAMP_CACHE=null;
+     AUTH_USER=null;AUTH_PROFILE=null;AUTH_PENDING=false;CAMP_CACHE=null;clearAccountMessages();
      CLOUD_SAVE_ERROR="";CLOUD_LAST_SAVED=null;
      S=freshState();APPVIEW="menu";render();
    }).catch(e=>{

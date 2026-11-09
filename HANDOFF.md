@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/gallant-hypatia-3el31w.
 
-_Last updated: 2026-11-09 by Claude (header, campaign manager, creature body plans/Chaos/Points Build)_
+_Last updated: 2026-11-09 by Claude (#213 findings fixed; server check for the owner)_
 
 ## Where things stand
 
@@ -18,6 +18,8 @@ _Last updated: 2026-11-09 by Claude (header, campaign manager, creature body pla
   - **Melee only (owner, 2026-11-07).** All 35 Core melee weapons and 8 shields playable; saved characters can use any weapon their style trains, carried or not (#205). Ranged was built and removed (#206 reverted); its spec `docs/the-pits-ranged-cases.md` is shelved. Lance and Garrotte unsupported.
 
 ## Next
+
+- **Owner (first):** run the read-only query in `docs/server-check-20261109.md` and paste the result to Claude. It shows why New code, Remove and Make GM fail in production. Or retry New code now: the app shows the server's real error.
 
 - **ChatGPT (Work), with the next live batch:** new header on every route (desktop and phone, More sheet, Escape), header on The Pits and the character sheet, Play Mode page scroll; campaign manager as GM and as player (New code, Make GM, Remove, Delete confirms; notes Saved). The campaign creator redesign (Mockup B) is designed but not built; build only if the owner asks.
 

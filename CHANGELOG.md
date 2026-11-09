@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Fixes from the live batch of 2026-11-08 (#213)
+
+- **Campaign server errors:** New code, Remove and Make GM now show the server's real error and code. Before, any "does not exist" error was reported as a missing server update, which hid the real cause. The campaign migration now asks the API to reload its function list. A read-only check for the owner is in `docs/server-check-20261109.md`.
+- **Messages from another account:** status messages (campaign, menu, Play Mode, The Pits) are cleared when the signed-in account changes or signs out, so one account's error no longer shows on the next account's pages.
+- **Deleting the open character:** its queued and failed saves are dropped and the sheet is closed, so sign-out no longer stops with "Character not found on the account".
+
 ## Creatures: body plans, Chaos Features, nonhuman Points Build (CRTR-B04 option, B18, B19)
 
 Checked against the owner's Core PDF; see `docs/creature-cases-batch-1.md`.
