@@ -208,7 +208,7 @@ function heightWeight(){
   if(!charsReady())return null;
   const spKey=(speciesDef()&&speciesDef().key)||"human";
   const a=HW_ANCHORS[spKey]||HW_ANCHORS.human;
-  const avgSiz=(SPECIES_MAP[spKey]||SPECIES_MAP.human).avg.SIZ;
+  const avgSiz=(speciesDef()||SPECIES_MAP.human).avg.SIZ;
   const build=BUILD_FACTORS[S.concept.frame]||1;
   const siz=S.chars.SIZ;
   let derivedM=a.heightAt*Math.pow(siz/avgSiz,1/3)*build;
@@ -282,7 +282,7 @@ function freshState(){return {
  // null = plain human on the core rulebook's own dice. A key into SPECIES_MAP
  // swaps in that species' characteristic dice, bounds, Movement Rate and
  // traits (see the Species step).
- species:null,
+ species:null,creaturePc:null,
  // Age band (Experience Table). `years` is the rolled or typed age; `events`
  // holds generated Life Events and whether each has been applied.
  age:{category:"adult",years:null,events:[],coreEvents:[]},
@@ -400,6 +400,8 @@ function normalizeState(){
   S.creationMode=S.creationMode||"full";S.archetype=S.archetype||"ordinary";
   if(S.fixedAP==null)S.fixedAP=0;
   if(S.species===undefined)S.species=null;
+  if(S.species==="creature"){S.creaturePc=creaturePcRestore(S.creaturePc);if(!S.creaturePc)S.species=null;}
+  else S.creaturePc=null;
   S.age=S.age||{category:"adult",years:null,events:[]};
   if(!AGE_MAP[S.age.category])S.age.category="adult";
   S.age.events=S.age.events||[];
@@ -588,7 +590,14 @@ const charsReady=()=>CHARS.every(c=>Number.isFinite(S.chars[c])&&S.chars[c]>0);
 // Species templates (characteristic dice, Movement Rate, traits) land here in
 // a later pass; charBounds() below is already written against it so the range
 // check has exactly one definition to widen when they arrive.
-function speciesDef(){return (typeof SPECIES_MAP!=="undefined"&&S.species)?(SPECIES_MAP[S.species]||null):null;}
+// A character's species for any state: a SPECIES template, or (CRTR-B18) the
+// GM-approved creature the player pasted in, read through creatureSpeciesDef.
+function speciesOf(state){
+  if(!state||!state.species)return null;
+  if(state.species==="creature")return creatureSpeciesDef(state.creaturePc);
+  return (typeof SPECIES_MAP!=="undefined")?(SPECIES_MAP[state.species]||null):null;
+}
+function speciesDef(){return speciesOf(S);}
 // Legal range for one characteristic. For humans this is the core rulebook's
 // own 3-18 (8-18 for INT/SIZ) — the range the 3d6 / 2d6+6 dice can actually
 // produce. Species templates carry their own dice, so their bounds are the
@@ -610,7 +619,7 @@ const charMin=c=>charBounds(c).min, charMax=c=>charBounds(c).max;
 function effectiveChars(state){
   state=state||S;const out={...state.chars},a=state.xp?.characteristics;
   const adv=a||{permanent:{},training:[]};
-  const sp=(typeof SPECIES_MAP!=="undefined"&&state.species)?SPECIES_MAP[state.species]:null;
+  const sp=speciesOf(state);
   for(const k of CHARS){
     if(!Number.isFinite(out[k])||k==="SIZ")continue;
     const max=sp?.bounds?.[k]?.[1]??18;
@@ -1480,7 +1489,7 @@ function creationReview(){
    anatomy tables (Core pp.276–277) are offered as presets below. */
 const CREATURE_CHARS=["STR","CON","SIZ","DEX","INT","INS","POW","CHA"];
 function parseCreatureStatBlock(text){
-  const c={name:"",chars:{},dice:{},move:"",locations:[],weapons:[],traits:[],wornEnc:0,skills:"",notes:""};
+  const c={name:"",chars:{},dice:{},move:"",locations:[],weapons:[],traits:[],wornEnc:0,skills:"",notes:"",abilities:[]};
   const errors=[],unread=[];
   const lines=String(text||"").split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
   for(const line of lines){
@@ -1505,8 +1514,19 @@ function parseCreatureStatBlock(text){
     if((m=line.match(/^worn armou?r enc\s*:?\s*(\d+)$/i))){c.wornEnc=Number(m[1]);continue;}
     if((m=line.match(/^skills?\s*:\s*(.+)$/i))){c.skills=m[1].trim().slice(0,600);continue;}
     if((m=line.match(/^notes?\s*:\s*(.+)$/i))){c.notes=(c.notes?c.notes+" ":"")+m[1].trim().slice(0,600);continue;}
+    // CRTR-B20: an entry's own ability, poison, magic or weapon effect is kept
+    // as the GM wrote it and marked GM-resolved.
+    if((m=line.match(/^(ability|poison|magic|spells?|weapon effect)\s*:\s*(.+)$/i))){
+      const label=m[1].toLowerCase(),kind=label==="weapon effect"?"weapon":label.startsWith("spell")?"magic":label;
+      let name="",text=m[2].trim();const nm=text.match(/^([^:]{1,60}):\s*(.+)$/);
+      if(nm){name=nm[1].trim();text=nm[2].trim();}
+      if(kind!=="magic"&&!name){errors.push("Write the "+m[1]+" line as Name: what it does.");continue;}
+      c.abilities.push({kind,name:name||"Magic",text:text.slice(0,600)});continue;
+    }
     unread.push(line.slice(0,120));
   }
+  for(const a of c.abilities)if(a.kind==="weapon"&&!c.weapons.some(w=>w.name.toLowerCase()===a.name.toLowerCase()))
+    errors.push("Weapon effect "+a.name+" needs a matching Weapon: line.");
   if(!c.name)errors.push("Add a Name: line.");
   for(const k of ["STR","CON","SIZ","DEX","POW"])if(!Object.hasOwn(c.chars,k))errors.push(k+" is missing.");
   if(Object.hasOwn(c.chars,"INT")&&Object.hasOwn(c.chars,"INS"))errors.push("Give INT (sapient) or INS (instinct), not both (Core p.214).");
@@ -1788,10 +1808,92 @@ function creaturePointsCheck(c,values){
  if(!errors.length&&spent!==pb.pool)errors.push("Spend exactly "+pb.pool+" points ("+spent+" spent).");
  return errors;
 }
-// B18 (Core pp.218–219): only a sapient creature (INT, not INS), and only
-// with the GM's permission, may be played as a character.
+// B18 (Core pp.218–219): only a sapient creature (INT, not INS) with INT 8 or
+// more, and only with the GM's permission, may be played as a character.
+const CREATURE_PC_MIN_INT=8;
 function creaturePcEligibility(c,gmPermitted){
   if(creatureMind(c).key!=="INT")return {ok:false,reason:"An instinctive (INS) creature can't be a player character (Core p.218)."};
+  if(!(Number(c.chars&&c.chars.INT)>=CREATURE_PC_MIN_INT))return {ok:false,reason:"Only a creature with INT "+CREATURE_PC_MIN_INT+" or more can be a player character (Core p.218)."};
   if(gmPermitted!==true)return {ok:false,reason:"A sapient creature can be a player character only with the GM's permission (Core p.218)."};
   return {ok:true,reason:"GM-permitted sapient creature: build with its own characteristic dice, the Core alternate point-buy total and minimums, and its own anatomy (Core pp.218–219)."};
+}
+
+/* ---- CRTR-B20: entry-specific mechanics stay GM-resolved ----
+   Traits the tracker has controls for are listed here; any other trait, and
+   every Ability / Poison / Magic / Weapon effect line, is shown as the GM
+   entered it and left to the GM. No generic effect is substituted. */
+const CREATURE_TRAITS_HANDLED=["Formidable Natural Weapons","Flying","Leaper","Grappler","Multi-headed","Breathe","Trample","Venomous","Frenzy","Undead","Immunity","Vulnerable","Allergy","Camouflaged","Echolocation","Earth Sense","Intimidate","Chaos Feature"];
+function creatureTraitHandled(t){
+  const x=String(t||"").toLowerCase();
+  return CREATURE_TRAITS_HANDLED.some(n=>{n=n.toLowerCase();return x===n||x===n+"s"||x.startsWith(n+" ")||x.startsWith(n+"(")||x.startsWith(n+"s ");});
+}
+const CREATURE_ABILITY_LABEL={ability:"Ability",poison:"Poison",magic:"Magic",weapon:"Weapon effect"};
+function creatureGmResolved(c){
+  return {traits:(c.traits||[]).filter(t=>!creatureTraitHandled(t)),abilities:Array.isArray(c.abilities)?c.abilities:[]};
+}
+// The stat block as text, in the format parseCreatureStatBlock reads, so a GM
+// can hand a permitted creature to a player (B18) without retyping it.
+function creatureStatBlockText(c){
+  const L=["Name: "+c.name];
+  for(const k of CREATURE_CHARS)if(Object.hasOwn(c.chars||{},k))L.push(k+" "+(c.dice&&c.dice[k]?c.dice[k]+" ":"")+c.chars[k]);
+  if(c.move)L.push("Move "+c.move);
+  (c.locations||[]).forEach(l=>L.push((l.lo===l.hi?String(l.lo):l.lo+"-"+l.hi)+" "+l.name+" "+(l.natural||0)+(l.worn?"+"+l.worn:"")+"/"+l.hp));
+  (c.weapons||[]).forEach(w=>L.push("Weapon: "+w.name+" "+w.damage+(w.natural?" natural":"")));
+  if((c.traits||[]).length)L.push("Traits: "+c.traits.join(", "));
+  if(c.wornEnc)L.push("Worn armour ENC: "+c.wornEnc);
+  if(c.skills)L.push("Skills: "+c.skills);
+  (c.abilities||[]).forEach(a=>L.push(CREATURE_ABILITY_LABEL[a.kind]+": "+(a.kind==="magic"&&a.name==="Magic"?"":a.name+": ")+a.text));
+  if(c.notes)L.push("Notes: "+c.notes);
+  return L.join("\n");
+}
+
+/* ---- CRTR-B18 builder path: a player character built from a creature ----
+   Core pp.8, 218–219. The GM approves a sapient creature (INT 8+); the player
+   pastes its stat block on the Concept step. It then works as the species:
+   its own dice and ranges, the nonhuman Points Build pool (averages added
+   up, rounded up), its Movement and anatomy. Culture and career are chosen
+   as normal. The character's own INT can't go below 8 either (reading of
+   p.218, recorded in docs/decisions.md for review). */
+function creaturePcDice(expr){
+  const m=String(expr||"").replace(/\s+/g,"").match(/^(\d*)d(\d+)(?:([+-])(\d+))?$/i);if(!m)return null;
+  const n=Number(m[1]||1),d=Number(m[2]),k=Number(m[4]||0);
+  if(!(n>=1&&d>=1))return null;
+  return n+"d"+d+(k?(m[3]||"+")+k:"");
+}
+function creatureMoveMetres(move){const m=String(move||"").match(/(\d+(?:\.\d+)?)/);return m?Number(m[1]):null;}
+function creaturePcProblems(c,gmApproved){
+  const out=[],e=creaturePcEligibility(c,gmApproved);if(!e.ok)out.push(e.reason);
+  for(const k of CHARS){
+    if(!Object.hasOwn(c.chars||{},k)){out.push(k+" is missing: a character needs all seven characteristics.");continue;}
+    if(!creaturePcDice(c.dice&&c.dice[k]))out.push("Add the characteristic dice for "+k+" (e.g. "+k+" 2d6+6 13).");
+  }
+  if(!(creatureMoveMetres(c.move)>0))out.push("Add the creature's Move in metres (e.g. Move 6).");
+  return out;
+}
+function creatureSpeciesDef(cp){
+  if(!cp||typeof cp!=="object"||!cp.chars||creaturePcProblems(cp,cp.gmApproved===true).length)return null;
+  const dice={},bounds={},avg={};let total=0;
+  for(const k of CHARS){
+    dice[k]=creaturePcDice(cp.dice[k]);const r=creatureDiceRange(dice[k]);total+=r.avg;
+    const min=k==="INT"?Math.max(CREATURE_PC_MIN_INT,r.min):r.min;bounds[k]=[min,r.max];
+    const listed=Number(cp.chars[k]);
+    avg[k]=Number.isInteger(listed)&&listed>=min&&listed<=r.max?listed:Math.min(r.max,Math.max(min,Math.round(r.avg)));
+  }
+  const pool=Math.ceil(total-1e-9),res=creatureGmResolved(cp);
+  const traits=[...(cp.traits||[]).map(t=>[t,"As the creature's entry describes (Core pp.215–218). GM-resolved on a character."]),
+    ...res.abilities.map(a=>[CREATURE_ABILITY_LABEL[a.kind]+": "+a.name,a.text+" (GM-resolved)"]),
+    ...(cp.weapons||[]).filter(w=>w.natural).map(w=>["Natural weapon: "+w.name,w.damage+" damage. "+(creatureTrait(cp,"Formidable Natural Weapons")?"Can parry (Formidable Natural Weapons).":"Can't parry with it; use Evade or armour (Core p.216).")])];
+  return {key:"creature",label:cp.name,creature:true,move:creatureMoveMetres(cp.move),lifespan:"as its entry describes",
+    blurb:"A GM-approved creature (Core pp.218–219).",dice,bounds,avg,avgTotal:pool,pbPool:pool,traits,locations:cp.locations||[]};
+}
+// Saved data is re-read through the stat-block parser, so a hand-edited save
+// can't bring in an unchecked creature.
+function creaturePcRestore(cp){
+  if(!cp||typeof cp!=="object")return null;
+  try{
+    const p=parseCreatureStatBlock(creatureStatBlockText(cp));
+    if(p.errors.length||p.unread.length||cp.gmApproved!==true)return null;
+    const out={...p.creature,gmApproved:true,approvedOn:/^\d{4}-\d{2}-\d{2}$/.test(String(cp.approvedOn||""))?cp.approvedOn:""};
+    return creaturePcProblems(out,true).length?null:out;
+  }catch(e){return null;}
 }

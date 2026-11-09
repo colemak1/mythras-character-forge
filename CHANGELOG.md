@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Creature characters and entry abilities (CRTR-B18, B20)
+
+- **Play a creature your GM approved** (Concept step, Core pp.218–219): paste its stat block and tick "My GM approved". A sapient creature with INT 8+ then becomes your species: its own characteristic dice and ranges, its Points Build pool (its averages added up, rounded up), its Move and its hit-location table. Culture and career work as normal. Your INT can't go below 8. Instinctive (INS) creatures and INT below 8 are refused.
+- **GM Combat Tracker:** after ticking "GM permits it as a player character", the GM can copy the stat block for the player.
+- **Entry abilities:** a creature stat block can now keep its own Ability, Poison, Magic/Spells and Weapon effect lines. The tracker shows them, and traits it has no controls for, as GM-resolved. Nothing is applied automatically.
+- **Limits:** Play Mode's HP boxes and The Pits still use human locations. The sheet and Play Mode show the creature's own table, and The Pits doesn't accept creature characters yet.
+
 ## GM tracker keeps your place; campaign migration hand-off (live batch 2026-11-09)
 
 - **Party Board redraws** (every 15 s and on each live update) no longer close the creature form or wipe what you typed. Open sections, typed-but-unsaved fields and the cursor are kept; a field the server actually changed shows the new value. A redraw can no longer start inside another redraw, which a field's change handler could trigger.

@@ -508,9 +508,24 @@ window.APP={
    const nw=(key==="human"||!key)?(key||null):key;
    if(S.species===nw)return;
    if(charsReady()&&!confirm("Switching species resets your characteristics — each species rolls its own characteristic dice. Continue?"))return;
-   S.species=nw;
+   S.species=nw;S.creaturePc=null;
    CHARS.forEach(c=>S.chars[c]=null);S.poolA=[];S.poolB=[];S.assignA={};S.assignB={};
    render();},
+ // CRTR-B18: play a creature the GM approved (Core pp.218–219). The player
+ // pastes its stat block (the GM tracker can copy it) and confirms approval.
+ creaturePcDraft(v){CREATURE_PC_DRAFT=String(v||"").slice(0,6000);CREATURE_PC_MSG=[];render();},
+ useCreaturePc(){
+   if(viewOnlyBlock())return;
+   const el=$("#creaturePcText"),ok=$("#creaturePcApproved");
+   if(el)CREATURE_PC_DRAFT=String(el.value||"").slice(0,6000);
+   const p=parseCreatureStatBlock(CREATURE_PC_DRAFT);
+   const problems=[...p.errors,...(p.unread.length?["Lines not understood: "+p.unread.join(" · ")]:[])];
+   if(!problems.length)problems.push(...creaturePcProblems(p.creature,!!(ok&&ok.checked)));
+   if(problems.length){CREATURE_PC_MSG=problems;render();return;}
+   if(charsReady()&&!confirm("Playing this creature resets your characteristics — it rolls its own characteristic dice. Continue?"))return;
+   S.species="creature";S.creaturePc={...p.creature,gmApproved:true,approvedOn:new Date().toISOString().slice(0,10)};
+   CHARS.forEach(c=>S.chars[c]=null);S.poolA=[];S.poolB=[];S.assignA={};S.assignB={};
+   CREATURE_PC_DRAFT="";CREATURE_PC_MSG=[];render();},
  // Non-human characteristics are rolled per characteristic off that species'
  // own dice, not from the two shared human pools (a dwarf's STR 2d6+9 and DEX
  // 3d6 aren't interchangeable, so there is nothing to allocate between).
@@ -1730,6 +1745,14 @@ window.APP={
      if(!creatureTrait(c.creature,"Chaos Feature")&&!creatureTrait(c.creature,"Chaos Features"))return;
      const cs=c.cs=c.cs||{};cs.chaos=(cs.chaos||[]).concat([{roll}]).slice(0,12);
      CREATURE_MSG[id]="Chaos Feature "+f.range+": "+f.name+" (Core pp.274–276).";});},
+ // CRTR-B18: hand a permitted creature to its player as stat-block text.
+ gmCreatureCopyForPlayer(id){
+   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
+   const c=sessionStateOf(camp).combatants.find(x=>x.id===id);if(!c||!c.creature)return;
+   if(!creaturePcEligibility(c.creature,c.cs&&c.cs.pcPermitted===true).ok)return;
+   const text=creatureStatBlockText(c.creature);
+   const done=ok=>{CREATURE_MSG[id]=ok?"Stat block copied. The player pastes it on the Concept step under “Play a creature your GM approved”.":"Couldn't copy automatically: select the stat block text and copy it.";render();};
+   try{navigator.clipboard.writeText(text).then(()=>done(true),()=>done(false));}catch(e){done(false);}},
  gmCreatureChaosRemove(id,i){
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature||!c.cs||!Array.isArray(c.cs.chaos))return;
      c.cs.chaos.splice(Number(i),1);});},
@@ -2026,7 +2049,7 @@ function buildMD(){
    "healing_rate: "+(charsReady()?healRate(c.CON):""),
    "movement: "+(charsReady()?moveText():"6m"),
    ...(charsReady()?["height_m: "+heightWeight().m.toFixed(2),"weight_kg: "+heightWeight().kg]:[]),
-   ...(S.species?["species: "+(SPECIES_MAP[S.species]?SPECIES_MAP[S.species].label:S.species)]:[]),
+   ...(S.species?["species: "+JSON.stringify(speciesDef()?speciesDef().label:S.species)]:[]),
    "tags:","  - character","---"].join("\n");
   let md=yaml+"\n\n# "+n+"\n\n";
   if(S.concept.homeland)md+="*"+[S.culture,S.career,S.concept.homeland].filter(Boolean).join(" · ")+"*\n\n";

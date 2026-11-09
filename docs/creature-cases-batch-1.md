@@ -121,3 +121,11 @@ Checked against the owner's Core PDF (printed pp.8, 216, 218–219, 274–277). 
 - **Anatomy presets (pp.276–277):** all 13 body plans (Arachnid, Centaurid, Draconic, Insect, Dorsal Finned Aquatic, Tailed Biped, Winged Quadruped, Pachyderm, Tailed Quadruped, Serpentine, Winged Biped, Tailed Arachnid, Winged Insect) are in `CREATURE_ANATOMY`, and each was checked to cover d20 1–20 exactly once. The import can start from a plan; each location's HP must be filled in before the creature can be added.
 
 Progress stays **5/8** until Subsystem 7 is audited live.
+
+## Implementation status, B18 builder path and B20 (Claude, 2026-11-09)
+
+Tests in `tests/creature-pc.cjs`. Not live-checked. Progress stays **5/8**.
+
+- **B18 builder path (Core pp.8, 218–219):** on the Concept step, "Play a creature your GM approved" takes the creature's stat block (the GM tracker's "Copy stat block for the player" gives it once the GM ticks permission) and a "My GM approved" checkbox. Refused: INS creatures, INT below 8, missing dice for any of the seven characteristics, no Move. Once used, the creature is the species: its own dice for rolling, its dice ranges, its Points Build pool (averages added up, rounded up; no +6), its Move and its anatomy table. Culture, career and the rest are as normal. The character's own INT can't go below 8 (reading recorded in `docs/decisions.md`; **to confirm**). Saved creatures are re-checked on load; a save without approval or with INT below 8 falls back to human.
+- **Anatomy limits:** the sheet and Play Mode show the creature's own d20 table with natural armour and the entry's HP (GM confirms HP for the character's CON+SIZ). Play Mode's HP tracking and The Pits still use the seven human locations; The Pits refuses creature characters. Nonhuman location tracking in Play Mode is a later item.
+- **B20 (pp.220–273):** stat blocks accept `Ability: Name: text`, `Poison: Name: text`, `Magic: text` (or `Spells: Tradition: text`) and `Weapon effect: Weapon: text` (must match a Weapon line). Each is kept as entered, shown on the tracker card and on a creature character's traits as GM-resolved. Traits with no tracker controls are listed as GM-resolved too. One child fixture per kind (ability, poison, magic, spells, weapon effect). No per-entry effect is automated; each needs its own case spec first.
