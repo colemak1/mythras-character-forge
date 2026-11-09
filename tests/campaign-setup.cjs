@@ -5,7 +5,7 @@ const ctx={console,URL,Date,Map,Set,WeakMap,setTimeout,clearTimeout,setInterval,
  document:{getElementById:()=>null,querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},removeEventListener(){}},
  location:{hash:'#/'},supabase:{createClient:()=>({auth:{signOut:async()=>({})}})},requestAnimationFrame(){},confirm:()=>true};
 ctx.window=ctx;ctx.addEventListener=()=>{};ctx.scrollTo=()=>{};vm.createContext(ctx);
-for(const name of ['data','engine','cloud','render','router','play','app']){let src=fs.readFileSync(path.join(root,'js',name+'.js'),'utf8');if(name==='app')src=src.replace(/boot\(\);\s*$/,'');vm.runInContext(src,ctx,{filename:name+'.js'});}
+for(const name of ['combat-rules','data','engine','cloud','render','router','play','app']){let src=fs.readFileSync(path.join(root,'js',name+'.js'),'utf8');if(name==='app')src=src.replace(/boot\(\);\s*$/,'');vm.runInContext(src,ctx,{filename:name+'.js'});}
 const run=s=>vm.runInContext(s,ctx);run('render=()=>{};');
 (async()=>{
  run('AUTH_USER=null;MOCK_AUTH={id:"local"};APPVIEW="campaigns";APP.newCampaign()');

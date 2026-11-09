@@ -1,7 +1,7 @@
 // Run with `node tests/rules-smoke.cjs`; no external dependencies.
 const fs=require('fs'),vm=require('vm'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'..');
-const code=['data','engine'].map(n=>fs.readFileSync(path.join(root,'js',n+'.js'),'utf8')).join('\n');
+const code=['combat-rules','data','engine'].map(n=>fs.readFileSync(path.join(root,'js',n+'.js'),'utf8')).join('\n');
 const ctx=vm.createContext({console});vm.runInContext(code,ctx);
 const evalRule=x=>vm.runInContext(x,ctx);
 const test=(name,run)=>{run();console.log('PASS',name)};

@@ -351,37 +351,34 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 <div class="pits-subbar"><a href="../index.html#/the-pits">&larr; Choose a character</a><a href="#" id="homeLink">Reset bout</a></div>
 <main class="main" id="root"></main>
 
-<script src="../js/data.js?v=f2c6141fd4"></script>
+<script src="../js/combat-rules.js?v=1f912c40fd"></script>
+<script src="../js/data.js?v=ce6802caa1"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
 <script src="practice-guidance.js?v=3bb978cd88"></script>
 <script src="pits-view.js?v=766aacde41"></script>
 <script src="pits-game.js?v=1d86e29baf"></script>
 <script>
 'use strict';
-const HIT_LOCS=['Head','Chest','Abdomen','Right Arm','Left Arm','Right Leg','Left Leg'];
-const HIT_TABLE=['Right Leg','Right Leg','Right Leg','Left Leg','Left Leg','Left Leg','Abdomen','Abdomen','Abdomen','Chest','Chest','Chest','Right Arm','Right Arm','Right Arm','Left Arm','Left Arm','Left Arm','Head','Head'];
-// Core p.10: CON + SIZ determines hit points at each location.
+// The combat rules themselves live in ../js/combat-rules.js (CombatRules),
+// shared with Play Mode. This script keeps the fight state, the prompts, the
+// AI and the screen; the functions below hand the rules their numbers.
+// The human hit-location table (Core p.104); a creature would pass its own.
+const HIT_LOCATION_TABLE=CombatRules.HUMAN_HIT_LOCATIONS;
+const HIT_LOCS=CombatRules.HUMAN_LOCATION_ORDER.slice();
+const HIT_TABLE=CombatRules.hitLocationFaces(HIT_LOCATION_TABLE);
 // Core p.8: INT + DEX determines AP; no fixed three-AP assumption.
-function actionPointsFor(int,dex){
- const total=Number(int)+Number(dex);
- return total<=12?1:total<=24?2:total<=36?3:3+Math.ceil((total-36)/12);
-}
-function hitPointsFor(con,siz){
- const total=Number(con)+Number(siz),bracket=Math.max(0,Math.min(7,Math.ceil(total/5)-1));
- const extra=total>40?Math.ceil((total-40)/5):0;
- const row=[[1,2,3,1,1],[2,3,4,1,2],[3,4,5,2,3],[4,5,6,3,4],[5,6,7,4,5],[6,7,8,5,6],[7,8,9,6,7],[8,9,10,7,8]][bracket];
- const [leg,abdomen,chest,arm,head]=row.map(x=>x+extra);
- return {'Head':head,'Chest':chest,'Abdomen':abdomen,'Right Arm':arm,'Left Arm':arm,'Right Leg':leg,'Left Leg':leg};
-}
-// Core p.8: Initiative Bonus is the average of INT and DEX, rounded up (same as the main app's initBonus).
-function initiativeBonusFor(int,dex){return Math.ceil((Number(int)+Number(dex))/2);}
-function healingRateFor(con){return con<=6?1:con<=12?2:con<=18?3:3+Math.ceil((con-18)/6);}
+function actionPointsFor(int,dex){return CombatRules.actionPoints(Number(int)+Number(dex));}
+// Core p.10: CON + SIZ determines hit points at each location.
+function hitPointsFor(con,siz){return CombatRules.hitPointsByLocation(Number(con)+Number(siz),HIT_LOCATION_TABLE,HIT_LOCS);}
+// Core p.8: Initiative Bonus is the average of INT and DEX, rounded up.
+function initiativeBonusFor(int,dex){return CombatRules.initiativeBonus(Number(int)+Number(dex));}
+function healingRateFor(con){return CombatRules.healingRate(con);}
 
 // Weapons and shields come from the shared, source-checked table in
 // js/data.js (Core pp.63–64), so any Core melee weapon a character owns can
 // be used here (owner, 2026-11-07). Older keys stay for saved setups/tests.
-const SIZE_STEP={S:1,M:2,L:3,H:4,E:5},SIZE_WORD=['','Small','Medium','Large','Huge','Enormous'];
-const REACH_STEP={T:0,S:1,M:2,L:3,VL:4},REACH_WORD=['Touch','Short','Medium','Long','Very Long'];
+const SIZE_STEP=CombatRules.SIZE_STEP,SIZE_WORD=CombatRules.SIZE_NAMES;
+const REACH_STEP=CombatRules.REACH_STEP,REACH_WORD=CombatRules.REACH_NAMES;
 const ARENA_EFFECT_KEYS={Bleed:'bleed',Impale:'impale',Bash:'bash','Stun Location':'stun',Sunder:'sunder',Entangle:'entangle'};
 const arenaKey=practiceWeaponKey,arenaUnsupportedReason=practiceUnsupportedReason;
 function arenaDice(dmg){const m=/^(\d+)d(\d+)(?:\+(\d+))?$/.exec(String(dmg||''));return m?{dice:[+m[1],+m[2]],bonus:+(m[3]||0)}:null;}
@@ -410,51 +407,47 @@ function attackTraits(key){return String(key||'').startsWith('shield:')?(SHIELD_
 function attackKeyOf(p){return p?.attackKey||S.fighters?.[p?.atk]?.weapon;}
 // Special Effects from Mythras Core, printed pp.95-101. The catalogue is complete;
 // only effects supported by this melee-only simulator are offered as choices.
-const SPECIAL_EFFECT_CATALOG=[
- ['accidental','Accidental Injury','defensive','Attacker fumbles'],
- ['arise','Arise','defensive',''],
- ['bash','Bash','offensive','Shield or bludgeoning weapon'],
- ['bleed','Bleed','offensive','Cutting weapon'],
- ['blind','Blind Opponent','defensive','Defender critical'],
- ['bypassArmour','Bypass Armour','offensive','Attacker critical'],
- ['choose','Choose Location','offensive','Melee: pick a location within reach. Ranged: critical unless the close target is stationary or unaware.'],
- ['circumventCover','Circumvent Cover','offensive','Ranged only'],
- ['circumventParry','Circumvent Parry','offensive','Attacker critical'],
- ['close','Close Range','both','Optional reach rules'],
- ['compel','Compel Surrender','both','Disadvantaged opponent'],
- ['damageWeapon','Damage Weapon','both',''],
- ['disarm','Disarm Opponent','both',''],
- ['drop','Drop Foe','offensive','Ranged only'],
- ['duck','Duck Back','offensive','Ranged only'],
- ['enhance','Enhance Parry','defensive','Defender critical'],
- ['entangle','Entangle','both','Entangling weapon'],
- ['flurry','Flurry','offensive','Unarmed'],
- ['forceFailure','Force Failure','both','Opponent fumbles; combine with opposed effect'],
- ['grip','Grip','offensive','Unarmed'],
- ['impale','Impale','offensive','Impaling weapon'],
- ['killSilently','Kill Silently','offensive','Assassination style, surprised opponent'],
- ['marksman','Marksman','offensive','Ranged only'],
- ['maximize','Maximise Damage','offensive','Attacker critical; stackable'],
- ['open','Open Range','defensive','Optional reach rules'],
- ['overextend','Overextend Opponent','defensive','Stackable'],
- ['overpenetration','Overpenetration','offensive','Ranged only'],
- ['pinDown','Pin Down','offensive','Ranged only; stackable'],
- ['pinWeapon','Pin Weapon','both','Critical, or any win with an Entrapping weapon'],
- ['prepareCounter','Prepare Counter','defensive','Stackable'],
- ['press','Press Advantage','offensive',''],
- ['rapidReload','Rapid Reload','offensive','Ranged only; stackable'],
- ['remise','Remise','offensive','Small weapon'],
- ['scar','Scar Foe','both',''],
- ['selectTarget','Select Target','defensive','Attacker fumbles'],
- ['slip','Slip Free','defensive','Defender critical'],
- ['standFast','Stand Fast','defensive',''],
- ['stun','Stun Location','offensive','Bludgeoning weapon'],
- ['sunder','Sunder','offensive','Axe or two-handed weapon'],
- ['takeWeapon','Take Weapon','both','Unarmed'],
- ['trip','Trip Opponent','both',''],
- ['malfunction','Weapon Malfunction','offensive','Ranged firearms, attacker fumbles'],
- ['withdraw','Withdraw','defensive','']
-].map(([id,name,role,condition])=>({id,name,role,condition}));
+// When each effect applies, in the arena's words. Names, roles and roll
+// requirements come from the shared table in js/combat-rules.js.
+const SPECIAL_EFFECT_CONDITIONS={
+ accidental:'Attacker fumbles',
+ bash:'Shield or bludgeoning weapon',
+ bleed:'Cutting weapon',
+ blind:'Defender critical',
+ bypassArmour:'Attacker critical',
+ choose:'Melee: pick a location within reach. Ranged: critical unless the close target is stationary or unaware.',
+ circumventCover:'Ranged only',
+ circumventParry:'Attacker critical',
+ close:'Optional reach rules',
+ compel:'Disadvantaged opponent',
+ drop:'Ranged only',
+ duck:'Ranged only',
+ enhance:'Defender critical',
+ entangle:'Entangling weapon',
+ flurry:'Unarmed',
+ forceFailure:'Opponent fumbles; combine with opposed effect',
+ grip:'Unarmed',
+ impale:'Impaling weapon',
+ killSilently:'Assassination style, surprised opponent',
+ marksman:'Ranged only',
+ maximize:'Attacker critical; stackable',
+ open:'Optional reach rules',
+ overextend:'Stackable',
+ overpenetration:'Ranged only',
+ pinDown:'Ranged only; stackable',
+ pinWeapon:'Critical, or any win with an Entrapping weapon',
+ prepareCounter:'Stackable',
+ rapidReload:'Ranged only; stackable',
+ remise:'Small weapon',
+ selectTarget:'Attacker fumbles',
+ slip:'Defender critical',
+ stun:'Bludgeoning weapon',
+ sunder:'Axe or two-handed weapon',
+ takeWeapon:'Unarmed',
+ malfunction:'Ranged firearms, attacker fumbles'
+};
+const SPECIAL_EFFECT_CATALOG=CombatRules.SPECIAL_EFFECTS.map(e=>({id:e.id,name:e.name,
+ role:e.offensive&&e.defensive?'both':e.offensive?'offensive':'defensive',condition:SPECIAL_EFFECT_CONDITIONS[e.id]||''}));
 const SPECIAL_EFFECT_NAMES=Object.fromEntries(SPECIAL_EFFECT_CATALOG.map(x=>[x.id,x.name]));
 function disadvantagedForSurrender(f){ensureEffectState(f);return f.disarmed||f.prone&&!canRegainFooting(f)||HIT_LOCS.some(loc=>['serious','major'].includes(zoneClass(f,loc)));}
 // Weapon AP/HP and combat effects are read from the printed Core pp.63-64 tables.
@@ -641,7 +634,7 @@ function meleeEffectReference(){const live=new Set(['entangle','slip','pinWeapon
  return `<details class="effects-reference"><summary>Special Effects catalogue · ${SPECIAL_EFFECT_CATALOG.length} Core entries</summary><p>The list below follows the Core summary table on page 100. This prototype enables the displayed melee subset only when legal; other effects require combat mechanics not yet modelled.</p><div class="effects-ref-grid">${SPECIAL_EFFECT_CATALOG.map(e=>`<div><b>${esc(e.name)}</b><span>${live.has(e.id)?'Implemented':'Not yet simulated'}${e.condition?' · '+esc(e.condition):''}</span></div>`).join('')}</div></details>`;
 }
 // Pin Weapon and Prepare Counter are intentionally limited to the two-actor melee case.
-const REACH_NAMES=['Touch','Short','Medium','Long','Very Long'];
+const REACH_NAMES=CombatRules.REACH_NAMES;
 // Mythras Core pp.58, 63, 90, 93-94 and 105; the prototype uses uniform armour on seven locations.
 const ARMOUR_ENC_BY_AP={0:0,1:2,2:1,3:2,4:3,5:4,6:5,7:6,8:7};
 function armourInitiativePenalty(apOrLocations){
@@ -649,22 +642,19 @@ function armourInitiativePenalty(apOrLocations){
  return Math.ceil(values.reduce((acc,ap)=>acc+(ARMOUR_ENC_BY_AP[Math.round(ap)]||0),0)/5);
 }
 // Mythras Core p.9: damage modifier uses STR+SIZ; it is distinct from weapon damage dice.
+// The table is in CombatRules; this keeps the arena's shape: one die size
+// up to STR+SIZ 70, a list of die sizes above it, and a typographic minus.
 function damageModifierFor(str,siz){
- const sum=(Number(str)||0)+(Number(siz)||0);
- const rows=[[5,-1,8],[10,-1,6],[15,-1,4],[20,-1,2],[25,0,0],[30,1,2],[35,1,4],[40,1,6],[45,1,8],[50,1,10],[60,1,12],[70,2,6],[80,0,0],[90,2,8],[100,0,0],[110,2,10],[120,0,0],[130,0,0]];
- if(sum<=70){const row=rows.find(x=>sum<=x[0]);return {count:Math.abs(row[1]),sides:row[2],sign:Math.sign(row[1]),label:row[1]===0?'+0':`${row[1]<0?'−':'+'}${Math.abs(row[1])}d${row[2]}`};}
- if(sum<=80)return {count:2,sides:[8,6],sign:1,label:'+1d8+1d6'};
- if(sum<=90)return {count:2,sides:[8,8],sign:1,label:'+2d8'};
- if(sum<=100)return {count:2,sides:[10,8],sign:1,label:'+1d10+1d8'};
- if(sum<=110)return {count:2,sides:[10,10],sign:1,label:'+2d10'};
- if(sum<=120)return {count:3,sides:[10,10,2],sign:1,label:'+2d10+1d2'};
- if(sum<=130)return {count:3,sides:[10,10,4],sign:1,label:'+2d10+1d4'};
- throw Error('STR + SIZ exceeds the prototype damage-modifier table');
+ const sum=(Number(str)||0)+(Number(siz)||0),mod=CombatRules.damageModifier(sum);
+ if(mod.extraSteps)throw Error('STR + SIZ exceeds the prototype damage-modifier table');
+ const label=mod.label.replace('-','−');
+ if(sum<=70)return {count:mod.dice.length,sides:mod.dice[0]||0,sign:mod.sign,label};
+ return {count:mod.dice.length,sides:mod.dice,sign:mod.sign,label};
 }
 function modifierDiceDefs(mod){return Array.from({length:mod.count},(_,i)=>({sides:Array.isArray(mod.sides)?mod.sides[i]:mod.sides,label:`DM ${i+1}`}))}
 // Core p.95: one Size smaller blocks half. Odd damage: the blocked half rounds
 // up, the same rounding as the rest of the project (owner, 2026-11-07, PIT-P01).
-function parryAbsorption(damage,attackSize,parrySize){const diff=attackSize-parrySize;return diff<=0?damage:diff===1?Math.ceil(damage/2):0}
+function parryAbsorption(damage,attackSize,parrySize){return CombatRules.parryReduction(damage,attackSize,parrySize).blocked;}
 
 const SHAPES={"Head":"<path class=\"anatomy-plate\" d=\"M120 12 C105 12 96 24 97 39 C97 54 106 68 120 72 C134 68 143 54 143 39 C144 24 135 12 120 12 Z\"/><path class=\"anatomy-seam\" d=\"M107 37 Q120 31 133 37 M111 54 Q120 58 129 54\"/>","Chest":"<path class=\"anatomy-plate\" d=\"M96 76 Q107 72 120 74 Q133 72 144 76 L156 88 Q160 104 155 123 L149 155 Q120 163 91 155 L85 123 Q80 104 84 88 Z\"/><path class=\"anatomy-seam\" d=\"M120 82 V149 M89 105 Q106 115 118 110 M122 110 Q134 115 151 105 M95 140 Q120 148 145 140\"/>","Abdomen":"<path class=\"anatomy-plate\" d=\"M91 157 Q120 166 149 157 L152 200 Q148 213 134 216 L106 216 Q92 213 88 200 Z\"/><path class=\"anatomy-seam\" d=\"M105 174 Q109 188 106 206 M135 174 Q131 188 134 206 M94 185 Q120 193 146 185\"/>","Right Arm":"<path class=\"anatomy-plate\" d=\"M85 85 Q77 80 69 92 L55 135 Q52 148 58 158 L71 164 L84 126 L93 97 Z\"/><path class=\"anatomy-plate\" d=\"M58 159 L71 165 L63 203 Q63 216 55 222 Q45 220 46 210 L48 191 Z\"/><path class=\"anatomy-seam\" d=\"M58 146 Q64 151 73 150 M51 191 Q58 194 67 193\"/>","Left Arm":"<path class=\"anatomy-plate\" d=\"M155 85 Q163 80 171 92 L185 135 Q188 148 182 158 L169 164 L156 126 L147 97 Z\"/><path class=\"anatomy-plate\" d=\"M182 159 L169 165 L177 203 Q177 216 185 222 Q195 220 194 210 L192 191 Z\"/><path class=\"anatomy-seam\" d=\"M182 146 Q176 151 167 150 M189 191 Q182 194 173 193\"/>","Right Leg":"<path class=\"anatomy-plate\" d=\"M95 215 Q106 211 118 218 L116 272 Q116 284 112 289 L96 288 Q90 281 90 268 Z\"/><path class=\"anatomy-plate\" d=\"M96 290 Q105 294 112 291 L111 335 Q113 345 101 349 L91 344 L90 336 Z\"/><path class=\"anatomy-seam\" d=\"M96 276 Q105 280 115 276 M98 309 L95 331\"/>","Left Leg":"<path class=\"anatomy-plate\" d=\"M145 215 Q134 211 122 218 L124 272 Q124 284 128 289 L144 288 Q150 281 150 268 Z\"/><path class=\"anatomy-plate\" d=\"M144 290 Q135 294 128 291 L129 335 Q127 345 139 349 L149 344 L150 336 Z\"/><path class=\"anatomy-seam\" d=\"M144 276 Q135 280 125 276 M142 309 L145 331\"/>"};
 const ANATOMY_MARKERS={"Head":[120,43],"Chest":[120,118],"Abdomen":[120,187],"Right Arm":[62,151],"Left Arm":[178,151],"Right Leg":[103,284],"Left Leg":[137,284]};

@@ -10,7 +10,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),crypto=require('node:crypto');
 const root=path.resolve(__dirname,'..');
 const fixturePath=path.join(__dirname,'fixtures','pits-golden.json');
-const SCRIPTS=['js/data.js','js/combat-rules.js','experiments/practice-character.js','experiments/practice-guidance.js','experiments/pits-view.js'];
+const SCRIPTS=['js/combat-rules.js','js/data.js','experiments/practice-character.js','experiments/practice-guidance.js','experiments/pits-view.js'];
 const lcg=seed=>{let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};};
 
 function arena(seed){
@@ -21,7 +21,7 @@ function arena(seed){
   window:{matchMedia:()=>({matches:false}),requestAnimationFrame(){}}};
  vm.createContext(ctx);
  vm.runInContext('Math.random=__rnd',Object.assign(ctx,{__rnd:lcg(seed)}));
- for(const f of SCRIPTS)if(fs.existsSync(path.join(root,f)))vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f});
+ for(const f of SCRIPTS)vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f});
  vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1],ctx,{filename:'practice-combat-inline.js'});
  return {run:x=>vm.runInContext(x,ctx),output};
 }

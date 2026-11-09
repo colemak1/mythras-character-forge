@@ -9,7 +9,7 @@ const ctx={console,URL,URLSearchParams,Date,Map,Set,WeakMap,setTimeout,clearTime
  supabase:{createClient:()=>({auth:{getSession:async()=>({data:{session:null}}),onAuthStateChange(){}}})},
  requestAnimationFrame(){},confirm:()=>true};
 ctx.window=ctx;ctx.scrollTo=()=>{};ctx.addEventListener=()=>{};vm.createContext(ctx);
-for(const name of ['data','engine','cloud','wiki-data','wiki','sitota','render','router','play','app','practice']){
+for(const name of ['combat-rules','data','engine','cloud','wiki-data','wiki','sitota','render','router','play','app','practice']){
  let code=fs.readFileSync(path.join(root,'js',name+'.js'),'utf8');
  if(name==='app')code=code.replace(/boot\(\);\s*$/,'');
  vm.runInContext(code,ctx,{filename:name+'.js'});
@@ -46,6 +46,7 @@ function arena(payload,forge=true){
   document:{querySelector:s=>s==='#root'?output:s==='#homeLink'?{addEventListener(){}}:null,querySelectorAll:()=>[],getElementById:()=>null},
   window:{matchMedia:()=>({matches:false}),requestAnimationFrame(){}}};
  vm.createContext(sandbox);
+ vm.runInContext(fs.readFileSync(path.join(root,'js/combat-rules.js'),'utf8'),sandbox); // the shared combat rules
  vm.runInContext(fs.readFileSync(path.join(root,'js/data.js'),'utf8'),sandbox); // the arena loads ../js/data.js first
  vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-character.js'),'utf8'),sandbox);
  vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-guidance.js'),'utf8'),sandbox);

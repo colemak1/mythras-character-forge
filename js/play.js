@@ -20,7 +20,7 @@ let PM_DMG_NOTE=null;
 // All derived maxes reuse the exact same functions the sheet already uses
 // (hpLocsFinal/luckFinal/c.POW) so Play Mode can never drift from the
 // character-gen numbers — only S.play holds anything new.
-const PLAY_HP_LOCS=["Head","Chest","Abdomen","Right Arm","Left Arm","Right Leg","Left Leg"];
+const PLAY_HP_LOCS=CombatRules.HUMAN_LOCATION_ORDER;
 // The core Hit Locations table (pp.9-10) gives one shared max-HP value for
 // "Each Arm" and "Each Leg" — both arms have the same max, both legs have
 // the same max. But current HP lost to a hit is per-side (a wound to the
@@ -57,6 +57,7 @@ function playValidHP(value,max){
   const v=Number(value);
   return Number.isFinite(v)&&Number.isSafeInteger(Math.trunc(v))?Math.min(max,Math.trunc(v)):max;
 }
+const PLAY_WOUND_TAGS={ok:"OK",minor:"Minor Wound",serious:"Serious Wound",major:"Major Wound"};
 function charVitals(state){
   state=state||S;
   const c=effectiveChars(state);
@@ -87,11 +88,7 @@ function charVitals(state){
     // but shown as its own visual tier so a damaged-but-stable location
     // doesn't read as untouched). Serious Wound: at 0 or below but not yet
     // at -max. Major Wound: at -max or lower.
-    let cls,tag;
-    if(cur>=max){cls="ok";tag="OK";}
-    else if(cur>0){cls="minor";tag="Minor Wound";}
-    else if(cur>-max){cls="serious";tag="Serious Wound";}
-    else{cls="major";tag="Major Wound";}
+    const cls=CombatRules.woundLevel(cur,max),tag=PLAY_WOUND_TAGS[cls];
     return {loc,cur,max,cls,tag};
   });
   const rank={ok:0,minor:1,serious:2,major:3};
@@ -300,16 +297,14 @@ function pmWoundEvents(loc){
 }
 // Core pp.94–95: reduction depends on the effective weapon sizes after
 // a successful parry. This calculator does not assume a roll or modify HP.
-const PARRY_SIZES=["Small","Medium","Large","Huge","Enormous"];
+const PARRY_SIZES=CombatRules.SIZE_NAMES.slice(1);
 function parryDamage(damage,attackSize,defenceSize,result){
   if(!Number.isSafeInteger(damage)||damage<0||!["success","failed","none"].includes(result))return null;
   if(result!=="success")return {remaining:damage,blocked:0};
   if(!PARRY_SIZES.includes(attackSize)||!PARRY_SIZES.includes(defenceSize))return null;
-  const delta=PARRY_SIZES.indexOf(attackSize)-PARRY_SIZES.indexOf(defenceSize);
-  // One Size smaller blocks half (Core p.95). Odd damage: the blocked half
-  // rounds up, the project's usual rounding (owner, 2026-11-07, PIT-P01).
-  const blocked=delta<=0?damage:delta===1?Math.ceil(damage/2):0;
-  return {remaining:damage-blocked,blocked};
+  // The rule (and its rounding, PIT-P01) is CombatRules.parryReduction.
+  const {blocked,remaining}=CombatRules.parryReduction(damage,PARRY_SIZES.indexOf(attackSize)+1,PARRY_SIZES.indexOf(defenceSize)+1);
+  return {remaining,blocked};
 }
 function pmParryCalculate(form){
   const raw=form.elements.damage.value.trim(),out=form.querySelector('[data-parry-result]');
@@ -497,13 +492,8 @@ function pmFatiguePanel(){
    matching freely from anything they qualify for. Transcribed directly off
    the rulebook's own Special Effects Summary table (p.100) plus each
    effect's full description (pp.96-102), not paraphrased from memory. */
-const DIFF_TABLE={
-  Critical:{Critical:0,Success:1,Failure:2,Fumble:3},
-  Success:{Critical:-1,Success:0,Failure:1,Fumble:2},
-  Failure:{Critical:-2,Success:-1,Failure:0,Fumble:0},
-  Fumble:{Critical:-3,Success:-2,Failure:0,Fumble:0}
-};
-function playEffectsWon(mine,theirs){return DIFF_TABLE[mine]?.[theirs] ?? 0;}
+// The differential table itself is CombatRules.effectsWon.
+function playEffectsWon(mine,theirs){return CombatRules.effectsWon(mine,theirs);}
 // Core p.105: the first attack on a Surprised target, if successful, gains a
 // bonus Special Effect (e.g. Success vs automatic Failure = 2). Recorded per
 // roll by the player; the GM confirms it really is the first such attack.
@@ -514,8 +504,7 @@ function rollEffectsWon(r){if(!r||!r.oppTier)return 0;return playEffectsWon(r.ti
 function contestedRollResult(skillA,rollA,skillB,rollB){
   if(![skillA,skillB].every(n=>Number.isInteger(n)&&n>=0)||
      ![rollA,rollB].every(n=>Number.isInteger(n)&&n>=1&&n<=100))return null;
-  const reduction=Math.max(0,skillA-100,skillB-100);
-  const a=Math.max(0,skillA-reduction), b=Math.max(0,skillB-reduction);
+  const {reduction,a,b}=CombatRules.opposedTargets(skillA,skillB);
   const tierA=resolveRoll(rollA,a), tierB=resolveRoll(rollB,b);
   const rank={Fumble:0,Failure:1,Success:2,Critical:3};
   let opposed;
@@ -623,20 +612,21 @@ function selectedEffectRoll(){
 }
 function canPickEffectForRoll(effect,r){
   if(!effect||!r||!["attack","defence"].includes(r.combatRole))return false;
-  if(r.combatRole==="attack"&&!effect[1]||r.combatRole==="defence"&&!effect[2])return false;
+  const offense=r.combatRole==="attack";
+  const rule={offensive:!!effect[1],defensive:!!effect[2],requirement:effect[4]||""};
+  if(!CombatRules.effectRoleAllows(rule,offense))return false;
   if(r.combatKind==="evade"&&["Enhance Parry","Blind Opponent"].includes(effect[0]))return false;
   if(r.weapon&&!weaponAllowsEffect(effect,weaponForRoll(r.weapon)))return false;
   // Core pp.89, 97: Kill Silently needs a Combat Style with Assassination (the
   // GM confirms the first-attack-on-a-surprised-victim condition).
   if(effect[0]==="Kill Silently"&&!rollHasTrait(r,"Assassination"))return false;
-  const requirement=effect[4]||"";
-  if(requirement==="Attacker Criticals"&&(r.combatRole!=="attack"||r.tier!=="Critical"))return false;
-  if(requirement==="Defender Criticals"&&(r.combatRole!=="defence"||r.tier!=="Critical"))return false;
-  if(requirement==="Critical Only"&&r.tier!=="Critical"&&!pinWeaponWithoutCritical(effect,r))return false;
-  if(requirement==="Opponent Fumbles"&&r.oppTier!=="Fumble")return false;
-  if(requirement==="Attacker Fumbles"&&(r.combatRole==="attack"?r.tier:r.oppTier)!=="Fumble")return false;
-  return true;
+  // The roll each effect needs (Core p.100) is checked by the shared rules.
+  return CombatRules.effectRequirementMet(rule,{offense,critical:r.tier==="Critical",ownFumble:r.tier==="Fumble",
+    opponentFumble:r.oppTier==="Fumble",withoutCritical:pinWeaponWithoutCritical(effect,r)});
 }
+// The same table is in combat-rules.js (CombatRules.SPECIAL_EFFECTS), which
+// decides what a roll may choose; tests/combat-rules.cjs checks the two agree.
+// This copy carries the rules text, and its layout is read by tests/rules-smoke.cjs.
 // [name, offensive, defensive, weapon restriction, specific roll requirement, stackable, description]
 const SPECIAL_EFFECTS=[
 ["Accidental Injury",0,1,"","Attacker Fumbles",0,"The defender deflects or twists the attack so it fumbles, injuring the attacker instead. Roll damage against the attacker in a random hit location using the weapon used to strike; if unarmed, it's an internal injury that ignores armour."],
@@ -1655,7 +1645,7 @@ function pmRollDamageFor(r,rng){
   // R8: Choose Location replaces the random roll (Core pp.95–96): no d20.
   const choose=picks.includes("Choose Location");
   const d20=choose?null:1+Math.floor(rng()*20);
-  const loc=choose?null:(HIT_D20.find(([range])=>{const [a,b]=range.split("-").map(Number);return d20>=a&&d20<=(b||a);})||[])[1]||"";
+  const loc=choose?null:CombatRules.hitLocation(d20)||"";
   const wT=pmDiceTerms(w.dmg);
   // The physical dice behind the result, for the dice tray (live check #174).
   const dice=[...wT.dice.map((x,k)=>({sides:x.sides,value:wpn.faces[k]})),...(dmTerms&&dm!=null?dmTerms.dice.map((x,k)=>({sides:x.sides,value:dmFaces[k]})):[]),...(d20!=null?[{sides:20,value:d20}]:[])];

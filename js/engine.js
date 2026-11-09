@@ -1,16 +1,19 @@
 "use strict";
-/* ================= ATTRIBUTE ENGINE (pure functions) ================= */
-function apCalc(INT,DEX,fixed){if(fixed)return fixed;const v=INT+DEX;
-  if(v<=12)return 1;if(v<=24)return 2;if(v<=36)return 3;return 3+Math.ceil((v-36)/12);}
-function dmCalc(STR,SIZ){const v=STR+SIZ;for(const[m,l]of DM_TABLE){if(v<=m)return l;}
-  const steps=Math.ceil((v-130)/10);return "+2d10+1d4 +"+steps+" step(s) (continue progression)";}
+/* ================= ATTRIBUTE ENGINE (pure functions) =================
+   Action Points, Damage Modifier, Healing Rate, Initiative, Hit Points, hit
+   locations and success levels are computed by combat-rules.js (CombatRules),
+   the one copy shared with The Pits. These wrappers keep the site's names
+   and return shapes. */
+function apCalc(INT,DEX,fixed){if(fixed)return fixed;return CombatRules.actionPoints(INT+DEX);}
+function dmCalc(STR,SIZ){const m=CombatRules.damageModifier(STR+SIZ);
+  return m.extraSteps===0?m.label:m.label+" +"+m.extraSteps+" step(s) (continue progression)";}
 function xpMod(CHA){return CHA<=6?-1:Math.floor((CHA-7)/6);}
-function healRate(CON){return CON<=6?1:Math.floor((CON-1)/6)+1;}
+function healRate(CON){return CombatRules.healingRate(CON);}
 function luckPts(POW){return POW<=6?1:Math.floor((POW-1)/6)+1;}
-function initBonus(INT,DEX){return Math.ceil((INT+DEX)/2);}
-function hpLocs(CON,SIZ){const i=Math.max(1,Math.ceil((CON+SIZ)/5));
-  return [["Head",i],["Chest",i+2],["Abdomen",i+1],["Each Arm",Math.max(1,i-1)],["Each Leg",i]];}
-const HIT_D20=[["1-3","Right Leg"],["4-6","Left Leg"],["7-9","Abdomen"],["10-12","Chest"],["13-15","Right Arm"],["16-18","Left Arm"],["19-20","Head"]];
+function initBonus(INT,DEX){return CombatRules.initiativeBonus(INT+DEX);}
+function hpLocs(CON,SIZ){const hp=CombatRules.locationHitPoints(CON+SIZ);
+  return [["Head",hp.head],["Chest",hp.chest],["Abdomen",hp.abdomen],["Each Arm",hp.arm],["Each Leg",hp.leg]];}
+const HIT_D20=CombatRules.hitLocationRanges();
 
 // Optional family tables, uploaded Mythras Core p.25 (visually verified).
 // Resolve one d100 with an injected die function; retain every follow-up roll.
@@ -262,15 +265,8 @@ function gradeRefRows(key){
 }
 
 /* ================= SUCCESS TIERS (core, Skills chapter) ================= */
-function resolveRoll(roll,skill,tierSkill=skill){
-  const crit=Math.max(0,Math.ceil(tierSkill/10));
-  const fumble=tierSkill>100?(roll===100):(roll>=99);
-  if(fumble)return "Fumble";
-  if(roll>=96)return "Failure";           // 96-00 always fails
-  if(roll<=crit)return "Critical";        // 1/10 of skill, round up
-  if(roll<=5)return "Success";            // 01-05 always succeeds
-  return roll<=skill?"Success":"Failure";
-}
+const TIER_NAMES={critical:"Critical",success:"Success",failure:"Failure",fumble:"Fumble"};
+function resolveRoll(roll,skill,tierSkill=skill){return TIER_NAMES[CombatRules.gradeRoll(roll,skill,tierSkill)];}
 const d=n=>1+Math.floor(Math.random()*n);
 const d100=()=>d(100);
 

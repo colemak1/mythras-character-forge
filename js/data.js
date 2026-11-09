@@ -563,10 +563,8 @@ function socialClassForRoll(culture,roll){
   return classes[bounds.findIndex(upper=>roll<=upper)]||null;
 }
 
-// Damage Modifier table (core p.9, verified visually)
-const DM_TABLE=[[5,"-1d8"],[10,"-1d6"],[15,"-1d4"],[20,"-1d2"],[25,"+0"],[30,"+1d2"],
-[35,"+1d4"],[40,"+1d6"],[45,"+1d8"],[50,"+1d10"],[60,"+1d12"],[70,"+2d6"],
-[80,"+1d8+1d6"],[90,"+2d8"],[100,"+1d10+1d8"],[110,"+2d10"],[120,"+2d10+1d2"],[130,"+2d10+1d4"]];
+// The Damage Modifier table (Core p.9) is in combat-rules.js
+// (CombatRules.DAMAGE_MODIFIER_STEPS), shared with The Pits.
 
 // Passions (workbook Passions Examples table)
 const PASSION_TYPES={
