@@ -1679,18 +1679,20 @@ window.APP={
    CREATURE_HIT[id]={roll,loc:l.name,armour:(l.natural||0)+(l.worn||0)};render();},
  gmCreatureHit(id){
    const hit=CREATURE_HIT[id],el=$("#cbtraw-"+id),raw=el?parseInt(el.value,10):NaN;
+   const srcEl=$("#cbtsrc-"+id),source=srcEl?String(srcEl.value||"").slice(0,60):"";
    if(!hit||!Number.isFinite(raw)||raw<0)return;
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature||!c.hp[hit.loc])return;
-     const dmg=creatureDamageAfterArmour(c.creature,hit.loc,raw);
+     const res=creatureResolveHit(c.creature,hit.loc,raw,source),dmg=res.damage;
      c.hp[hit.loc].cur=Math.max(-c.hp[hit.loc].max,c.hp[hit.loc].cur-dmg);
      creatureSyncAp(c);
-     CREATURE_MSG[id]=hit.loc+": "+dmg+" damage after armour."+(creatureTrait(c.creature,"Venomous")?" An ordinary hit injects no venom.":"");});
+     CREATURE_MSG[id]=hit.loc+": "+dmg+" damage"+(res.note?". "+res.note:" after armour.")+(creatureTrait(c.creature,"Venomous")?" An ordinary hit injects no venom.":"");});
    delete CREATURE_HIT[id];if(el)el.value="";render();},
  // CRTR-B06–B14 trait state on a creature combatant.
  gmCreatureState(id,key,v){
-   if(!["airborne","frenzied","bindingLoc","destroyWhen","breathRecovery"].includes(key))return;
+   if(!["airborne","frenzied","bindingLoc","destroyWhen","breathRecovery","pcPermitted"].includes(key))return;
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;const cs=c.cs=c.cs||{};
-     if(key==="airborne"||key==="frenzied"){const was=!!cs[key];cs[key]=!!v;
+     if(key==="pcPermitted")cs.pcPermitted=v===true;
+     else if(key==="airborne"||key==="frenzied"){const was=!!cs[key];cs[key]=!!v;
        if(key==="frenzied"&&was&&!v)CREATURE_MSG[id]="Frenzy ended: apply the fatigue the trait gives (Core p.216).";}
      else if(key==="breathRecovery"){const n=parseInt(v,10);if(Number.isInteger(n)&&n>=1&&n<=99)cs.breathRecovery=n;else delete cs.breathRecovery;}
      else if(key==="bindingLoc")cs.bindingLoc=(c.locations||[]).includes(v)?v:"";
@@ -1708,6 +1710,18 @@ window.APP={
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
      if(!creatureVenomEligible(c.creature,true))return;
      CREATURE_MSG[id]="Inject Venom: no attack damage; the poison is delivered whatever the armour. Resolve "+c.name+"'s own poison with the GM (Core pp.97, 218).";});},
+ // B17: one target's Willpower result against this creature's Intimidate.
+ gmCreatureIntimidate(id,tier){
+   const el=$("#cbtintim-"+id),target=el?String(el.value||"").trim().slice(0,60):"";
+   const out=intimidateOutcome(tier);if(!out)return;
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature||!creatureTrait(c.creature,"Intimidate"))return;
+     if(!target){CREATURE_MSG[id]="Name the target first.";return;}
+     const cs=c.cs=c.cs||{},log=cs.intimidated=cs.intimidated||{};
+     if(log[target]==="immune"){CREATURE_MSG[id]=target+" already ignores its intimidation this encounter.";return;}
+     log[target]=out.key;CREATURE_MSG[id]=target+" "+out.text+". The effect lasts while the creature keeps acting threateningly (Core p.216).";});
+   if(el)el.value="";},
+ gmCreatureIntimidateClear(id){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.cs)return;delete c.cs.intimidated;CREATURE_MSG[id]="Intimidation results cleared (encounter over).";});},
  gmCreatureLeap(id,won){
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
      const w=creatureLeapBonus(c.creature,!!won);

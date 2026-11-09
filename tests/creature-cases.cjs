@@ -171,4 +171,48 @@ test('CRTR-B14 undead: wounds don\'t incapacitate; binding location and destroy 
  run('APP.gmCreatureState("'+id+'","bindingLoc","Wing")');assert.equal(cb().cs.bindingLoc,'','not one of its locations');
  run('APP.gmCreatureState("'+id+'","hp",1)');assert.equal(cb().cs.hp,undefined,'unknown state keys are ignored');
 });
+
+// ---------- CRTR-B15–B18 ----------
+test('CRTR-B15 a bracketed trait keeps its sources, commas included',()=>{
+ const c=parse(hound({trait:'Traits: Immunity (fire, poison), Vulnerable (silver), Allergy (iron)'})).creature;
+ assert.deepEqual(c.traits,['Immunity (fire, poison)','Vulnerable (silver)','Allergy (iron)']);
+});
+test('CRTR-B15 the damage source is checked before armour',()=>{
+ const id=tracker({trait:'Traits: Immunity (fire, poison), Vulnerable (silver), Allergy (iron)'});
+ const hit=(raw,src)=>{run('Math.random=()=>0.5;APP.gmCreatureRollLoc("'+id+'");__el["#cbtraw-'+id+'"]={value:"'+raw+'"};__el["#cbtsrc-'+id+'"]={value:'+JSON.stringify(src)+'};APP.gmCreatureHit("'+id+'")');return note(id);};
+ assert.match(card(),/Immunity \(fire, poison\) · Vulnerable \(silver\) · Allergy \(iron\)/);run('Math.random=()=>0.5;APP.gmCreatureRollLoc("'+id+'")');assert.match(card(),/cbtsrc-/,'source box appears with a rolled hit');
+ assert.match(hit(9,'fire'),/0 damage\. Immune to fire/);assert.equal(cb().hp.Forequarters.cur,6);
+ assert.match(hit(4,'silver sword'),/4 damage\. Vulnerable to silver: armour doesn't protect/);assert.equal(cb().hp.Forequarters.cur,2);
+ assert.match(hit(3,'iron'),/1 damage\. Allergy \(iron\): contact at Forequarters/);
+ assert.match(hit(3,''),/1 damage after armour/,'no source: ordinary armour');
+ assert.match(hit(3,'firearm'),/1 damage after armour/,'a different word is not the listed source');
+ tracker({});run('APP.gmCreatureRollLoc("'+cb().id+'")');assert.doesNotMatch(card(),/cbtsrc-/);
+});
+test('CRTR-B16 senses explain their limits and appear only with the trait',()=>{
+ tracker({trait:'Traits: Camouflaged, Echolocation, Earth Sense'});
+ assert.match(card(),/Not invisibility/);assert.match(card(),/Echolocation<\/b> Senses by sound, within the range/);assert.match(card(),/Earth Sense<\/b> Senses through the ground/);
+ tracker({});assert.doesNotMatch(card(),/Echolocation|Camouflaged|Earth Sense/);
+});
+test('CRTR-B17 Intimidate resolves each target\'s Willpower and lasts the encounter',()=>{
+ const id=tracker({trait:'Trait: Intimidate'});
+ const roll=(who,tier)=>{run('__el["#cbtintim-'+id+'"]={value:'+JSON.stringify(who)+'};APP.gmCreatureIntimidate("'+id+'","'+tier+'")');return note(id);};
+ assert.match(roll('Aria','Success'),/Aria holds their ground/);
+ assert.match(roll('Bors','Failure'),/Bors spends their next round putting distance/);
+ assert.match(roll('Cael','Fumble'),/Cael flees at full speed/);
+ assert.match(roll('Dena','Critical'),/ignores this creature's intimidation for the rest of the encounter/);
+ assert.match(roll('Dena','Fumble'),/Dena already ignores its intimidation/);assert.equal(cb().cs.intimidated.Dena,'immune');
+ assert.match(roll('','Failure'),/Name the target first/);
+ assert.match(card(),/Aria: holds, Bors: falls back, Cael: flees, Dena: ignores it/);
+ run('APP.gmCreatureIntimidateClear("'+id+'")');assert.equal(cb().cs.intimidated,undefined);
+ tracker({});run('__el["#cbtintim-'+cb().id+'"]={value:"X"};APP.gmCreatureIntimidate("'+cb().id+'","Fumble")');assert.equal(cb().cs.intimidated,undefined,'no trait, no intimidation');
+});
+test('CRTR-B18 only a sapient creature, with GM permission, can be a player character',()=>{
+ const ins=JSON.stringify(parse(hound()).creature),sap=JSON.stringify(parse(hound({mind:'INT 12'})).creature);
+ assert.match(run('creaturePcEligibility('+ins+',true).reason'),/instinctive \(INS\) creature can't be a player character/);
+ assert.equal(run('creaturePcEligibility('+sap+',false).ok'),false);
+ assert.equal(run('creaturePcEligibility('+sap+',true).ok'),true);
+ const id=tracker({mind:'INT 12'});assert.match(card(),/only with the GM(&#39;|')s permission/);
+ run('APP.gmCreatureState("'+id+'","pcPermitted",true)');assert.match(card(),/GM-permitted sapient creature/);
+ tracker({});assert.doesNotMatch(card(),/As a character/);
+});
 console.log('Creature case tests passed');
