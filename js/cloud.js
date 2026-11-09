@@ -129,7 +129,8 @@ const COMBAT_EFFECT_TYPES=[
   {key:"pressed",label:"Pressed",locHint:false,mode:"duration"},
   {key:"prone",label:"Prone",locHint:false,mode:"counter"},
   {key:"stunned",label:"Stunned location",locHint:true,mode:"duration"},
-  {key:"unconscious",label:"Unconscious",locHint:false,mode:"counter"}
+  {key:"unconscious",label:"Unconscious",locHint:false,mode:"counter"},
+  {key:"breath",label:"Breath recovering",locHint:false,mode:"duration"}
 ];
 const COMBAT_EFFECT_MAP=Object.fromEntries(COMBAT_EFFECT_TYPES.map(e=>[e.key,e]));
 // Ticks every combatant's active effects one step -- duration effects count
@@ -1449,6 +1450,7 @@ let BOARD_TAB="status";        // "status" (live character grid), "gm" (Combat T
 let GM_SESSION_ERROR=null;     // set when a GM-tools save fails, cleared on the next successful edit
 let CREATURE_DRAFT="";         // pasted creature stat block, before it joins the fight (CRTR-B02)
 let CREATURE_HIT={};           // last rolled hit location per creature combatant id
+let CREATURE_MSG={};           // last trait result per creature combatant id (leap, trample, venom, breath)
 let HB_ERROR=null;             // set when a homebrew add/delete fails, cleared on the next successful action
 // In-progress "new item" forms for the Homebrew tab -- one draft per type,
 // reset to freshHbDraft() after a successful add. Kept separate from the
@@ -1678,11 +1680,36 @@ function creatureBlockHTML(c){
    +'<p class="note">Initiative bonus '+a.initBonus+(a.armourPenalty?' (worn armour −'+a.armourPenalty+'; natural armour adds none)':'')+' · Damage Modifier '+esc(a.damageMod)+' · MP '+a.mp+(a.mind.key==="INS"?' · uses INS for INT':'')+'</p>'
    +(cr.weapons.length?'<p class="note">'+cr.weapons.map(w=>{const p=creatureCanParry(cr,w);return esc(w.name)+' '+esc(w.damage)+(w.natural?' (natural)':'')+' · '+(p.ok?'can parry':'<span title="'+esc(p.reason)+'">no parry: Evade or armour</span>');}).join(' | ')+'</p>':'')
    +(cr.traits.length?'<p class="note">Traits: '+cr.traits.map(esc).join(', ')+'</p>':'')
+   +creatureTraitsHTML(c)
    +'<div class="cbt-locadd"><button class="chip sm" onclick="APP.gmCreatureRollLoc(\''+c.id+'\')">Roll hit location (d20)</button>'
    +(hit?'<span class="note"> d20 '+hit.roll+': <b>'+esc(hit.loc)+'</b>, armour '+hit.armour+'</span>'
      +'<input type="number" id="cbtraw-'+c.id+'" placeholder="damage" min="0" style="width:84px" aria-label="Damage rolled, before armour">'
      +'<button class="chip sm" onclick="APP.gmCreatureHit(\''+c.id+'\')">apply after armour</button>':'')
    +'</div></div>';
+}
+// CRTR-B06–B14: controls for the combat traits this creature has. Each one
+// states what the trait changes; entry-specific values come from the GM.
+function creatureTraitsHTML(c){
+  const cr=c.creature,cs=c.cs||{},id=c.id,q='\''+id+'\'';
+  const rows=[];
+  const tog=(key,on,label)=>'<label class="mnum"><input type="checkbox" '+(on?'checked':'')+' onchange="APP.gmCreatureState('+q+',\''+key+'\',this.checked)"> '+label+'</label>';
+  if(creatureTrait(cr,"Flying")){const d=creatureDefence(cr,!!cs.airborne);
+    rows.push('<b>Flying</b> '+tog("airborne",cs.airborne,"Airborne")+' Defends with '+d.skill+(d.pct!=null?' '+d.pct+'%':' (add it to Skills)')+'. Ordinary flight needs no roll; unusual manoeuvres need a Fly roll (Core p.216).');}
+  if(creatureTrait(cr,"Leaper"))rows.push('<b>Leaper</b> Opposed leap: <button class="chip sm" onclick="APP.gmCreatureLeap('+q+',true)">won</button> <button class="chip sm" onclick="APP.gmCreatureLeap('+q+',false)">lost</button> (Core pp.104, 216).');
+  if(creatureTrait(cr,"Grappler"))rows.push('<b>Grappler</b> When a natural attack hits, the trait&rsquo;s extra grapple follows, with its parry restriction, as the entry describes (Core p.216). Other creatures get no free grapple.');
+  if(creatureTrait(cr,"Multi-headed")||creatureTrait(cr,"Multi-Headed")){const h=creatureHeads(cr,c.hp);
+    rows.push('<b>Multi-headed</b> Working heads '+h.working.length+' / '+h.heads.length+': one extra action per working head beyond the first. Losing a head doesn&rsquo;t disable the body (Core p.216).');}
+  const breath=(cr.traits||[]).find(t=>/^breathe\b/i.test(t));
+  if(breath){const cooling=(c.effects||[]).find(e=>e.type==="breath"&&e.value>0);
+    rows.push('<b>'+esc(breath)+'</b> Recovery from the entry <input type="number" min="1" max="99" style="width:56px" value="'+(Number(cs.breathRecovery)||'')+'" onchange="APP.gmCreatureState('+q+',\'breathRecovery\',this.value)" aria-label="Breath recovery turns"> turns. '
+     +(cooling?'Recovering: '+cooling.value+' turn(s) left.':'<button class="chip sm" onclick="APP.gmCreatureBreath('+q+')">Breathe (1 AP)</button>')
+     +' A cone, not a single hit: each target in it rolls Evade to halve the damage; check each target&rsquo;s locations (Core p.215).');}
+  if(creatureTrait(cr,"Trample"))rows.push('<b>Trample</b> Target SIZ <input type="number" id="cbttrample-'+id+'" min="1" style="width:56px" aria-label="Target SIZ"> <button class="chip sm" onclick="APP.gmCreatureTrample('+q+')">check</button> Athletics roll; the trait doubles the base Damage Modifier ('+esc(creatureAttributes(cr).damageMod)+') and boosts attack Size. Stationary trample costs AP; a moving pass is free (Core p.218).');
+  if(creatureTrait(cr,"Venomous"))rows.push('<b>Venomous</b> Venom isn&rsquo;t injected on every hit: only with Inject Venom when the hit gets through armour, then the creature&rsquo;s own poison (Core pp.97, 218).');
+  if(creatureTrait(cr,"Frenzy"))rows.push('<b>Frenzy</b> '+tog("frenzied",cs.frenzied,"Frenzied (after its Willpower roll, GM)")+(cs.frenzied?' Limited actions; pain and fatigue penalties the trait names are ignored.':' When it ends, apply the trait&rsquo;s fatigue (Core p.216). Not a permanent bonus.'));
+  if(creatureTrait(cr,"Undead"))rows.push('<b>Undead</b> Serious and Major Wounds don&rsquo;t incapacitate or fatigue it. Binding location <select onchange="APP.gmCreatureState('+q+',\'bindingLoc\',this.value)"><option value="">not recorded</option>'+(c.locations||[]).map(l=>'<option '+(cs.bindingLoc===l?'selected':'')+'>'+esc(l)+'</option>').join("")+'</select> Destroyed when <input type="text" maxlength="200" placeholder="condition from the entry" value="'+esc(cs.destroyWhen||"")+'" onchange="APP.gmCreatureState('+q+',\'destroyWhen\',this.value)"> (Core p.218).');
+  if(!rows.length&&!CREATURE_MSG[id])return "";
+  return '<div class="cbt-traits">'+rows.map(r=>'<p class="note">'+r+'</p>').join("")+(CREATURE_MSG[id]?'<p class="note" role="status"><b>'+esc(CREATURE_MSG[id])+'</b></p>':'')+'</div>';
 }
 function gmToolsHTML(camp){
   const st=sessionStateOf(camp);

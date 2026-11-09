@@ -53,3 +53,17 @@ Where: GM Combat Tracker, "Add a creature from its stat block". Tests: `tests/cr
 **Anatomy templates, Core printed pp.276–277:** optional future presets only. Exact ranges **not added here** because the rendered tables could not be reliably retrieved and verified in this review. Do not invent ranges from memory; verify rendered source pages before adding templates.
 
 **Review scope:** read PR diff and tests once; did not independently execute tests or perform deployed signed-in acceptance. Keep **5/8**, Creatures open; B06–B14 next if prioritized.
+
+## Implementation status, B06–B14 (Claude, 2026-11-09)
+
+GM-assisted controls on the creature card, shown only for traits the creature has (matched by name at the start of a `Trait:` entry, e.g. "Multi-headed (3)"). Tests: `tests/creature-cases.cjs`. Not live-checked. Progress stays **5/8**.
+
+- **B06:** Airborne switch; Fly replaces Evade only while airborne and only with the Flying trait. Manoeuvre rolls stay GM-called.
+- **B07:** won/lost leap; only a win adds one natural-weapon hit (the first natural weapon listed).
+- **B08:** guidance only (trait-specific grapple and parry restriction per entry).
+- **B09:** AP max = base AP + working heads − 1, recomputed when damage is applied; "head" = a location whose name contains "Head"; a head at 0 HP or below stops counting. **To confirm:** whether a head stops working at 0 HP or only when the location is disabled by a Serious/Major Wound.
+- **B10:** 1 AP per breath; recovery turns entered from the entry and counted down on the creature's turns; refused while recovering or without AP. Cone geometry, per-target locations and Evade halving stay GM-resolved (no halving arithmetic, avoiding an unruled rounding).
+- **B11:** target SIZ × 2 > creature SIZ → refused. Doubled base Damage Modifier and Size boost are shown, not computed into a damage roll.
+- **B12:** venom offered only when damage after armour > 0 (Inject Venom, p.97); the poison itself is GM-resolved. **To confirm:** that "got through armour" is the right delivery condition in general.
+- **B13:** Frenzied state; ending prompts the trait's fatigue. Willpower trigger and action limits are GM-resolved.
+- **B14:** binding location (one of its locations) and entry destroy condition recorded; card states wounds don't incapacitate or fatigue it. The tracker never marks a creature dead automatically.

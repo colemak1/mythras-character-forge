@@ -1682,8 +1682,36 @@ window.APP={
    if(!hit||!Number.isFinite(raw)||raw<0)return;
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature||!c.hp[hit.loc])return;
      const dmg=creatureDamageAfterArmour(c.creature,hit.loc,raw);
-     c.hp[hit.loc].cur=Math.max(-c.hp[hit.loc].max,c.hp[hit.loc].cur-dmg);});
+     c.hp[hit.loc].cur=Math.max(-c.hp[hit.loc].max,c.hp[hit.loc].cur-dmg);
+     creatureSyncAp(c);
+     CREATURE_MSG[id]=hit.loc+": "+dmg+" damage after armour."+(creatureTrait(c.creature,"Venomous")?(creatureVenomEligible(c.creature,dmg)?" Through armour: Inject Venom may deliver its poison (GM, Core p.97).":" Nothing got through: no venom."):"");});
    delete CREATURE_HIT[id];if(el)el.value="";render();},
+ // CRTR-B06–B14 trait state on a creature combatant.
+ gmCreatureState(id,key,v){
+   if(!["airborne","frenzied","bindingLoc","destroyWhen","breathRecovery"].includes(key))return;
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;const cs=c.cs=c.cs||{};
+     if(key==="airborne"||key==="frenzied"){const was=!!cs[key];cs[key]=!!v;
+       if(key==="frenzied"&&was&&!v)CREATURE_MSG[id]="Frenzy ended: apply the fatigue the trait gives (Core p.216).";}
+     else if(key==="breathRecovery"){const n=parseInt(v,10);if(Number.isInteger(n)&&n>=1&&n<=99)cs.breathRecovery=n;else delete cs.breathRecovery;}
+     else if(key==="bindingLoc")cs.bindingLoc=(c.locations||[]).includes(v)?v:"";
+     else cs.destroyWhen=String(v||"").slice(0,200);});},
+ gmCreatureLeap(id,won){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
+     const w=creatureLeapBonus(c.creature,!!won);
+     CREATURE_MSG[id]=won?(w?"Leap won: it also lands one "+w.name+" hit ("+w.damage+").":"Leap won, but no natural weapon is recorded."):"Leap lost: no bonus hit.";});},
+ gmCreatureTrample(id){
+   const el=$("#cbttrample-"+id),t=el?parseInt(el.value,10):NaN;
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
+     const err=creatureTrampleCheck(c.creature,t);
+     CREATURE_MSG[id]=err||"Can trample SIZ "+t+": roll Athletics; damage uses the doubled base Damage Modifier.";});},
+ gmCreatureBreath(id){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;const cs=c.cs=c.cs||{};
+     if(!(c.creature.traits||[]).some(t=>/^breathe\b/i.test(t)))return;
+     if((c.effects||[]).some(e=>e.type==="breath"&&e.value>0)){CREATURE_MSG[id]="Still recovering its breath.";return;}
+     if(!Number.isInteger(cs.breathRecovery)){CREATURE_MSG[id]="Enter the breath recovery from the creature's entry first.";return;}
+     if(c.ap.max-c.ap.used<1){CREATURE_MSG[id]="No Action Points left to breathe.";return;}
+     c.ap.used++;(c.effects=c.effects||[]).push({id:genId(),type:"breath",loc:null,mode:"duration",value:cs.breathRecovery,unit:"turn"});
+     CREATURE_MSG[id]="Breath used (1 AP). Each target in the cone rolls Evade to halve the damage (Core p.215).";});},
  gmSetInit(id,val){
    const n=parseInt(val,10)||0;
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(c)c.init=n;});},
@@ -1737,7 +1765,7 @@ window.APP={
    const el=$("#"+inputId);const n=el?parseInt(el.value,10):NaN;
    if(!Number.isFinite(n)||n<=0)return;
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.hp[loc])return;
-     c.hp[loc].cur=Math.max(-c.hp[loc].max,c.hp[loc].cur-n);});
+     c.hp[loc].cur=Math.max(-c.hp[loc].max,c.hp[loc].cur-n);creatureSyncAp(c);});
    if(el)el.value="";},
  gmAddLoc(id){
    const nameEl=$("#cbtlocname-"+id),hpEl=$("#cbtlochp-"+id);

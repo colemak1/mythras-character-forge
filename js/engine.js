@@ -1565,6 +1565,59 @@ function creatureCanParry(c,w){
 }
 function combatantFromCreature(c,init,id){
   const hp={};c.locations.forEach(l=>{hp[l.name]={cur:l.hp,max:l.hp};});
-  return {id:id||genId(),kind:"npc",ref:null,name:c.name,init:init||0,ap:{max:creatureAttributes(c).ap,used:0},
+  return {id:id||genId(),kind:"npc",ref:null,name:c.name,init:init||0,ap:{max:creatureApMax(c,hp),used:0},cs:{},
     locations:c.locations.map(l=>l.name),hp,effects:[],stat1:c.skills||"",stat2:c.notes||"",creature:c};
+}
+
+/* ---- Creature combat traits (CRTR-B06–B14, Core pp.104, 215–218) ----
+   GM-assisted: the app tracks state the trait changes and refuses what the
+   rule forbids; values specific to one creature (breath recovery, poison,
+   the undead destroy condition) come from that creature's entry via the GM. */
+function creatureTrait(c,name){
+  const n=name.toLowerCase();
+  return (c.traits||[]).find(t=>{const x=t.toLowerCase();return x===n||x.startsWith(n+" ")||x.startsWith(n+"(");})||null;
+}
+// "Athletics 60%, Fly 75%" → 75 for "Fly". null if not listed.
+function creatureSkillPct(c,name){
+  const re=new RegExp("(?:^|[,;])\\s*"+name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\s+(\\d{1,3})%","i");
+  const m=String(c.skills||"").match(re);return m?Number(m[1]):null;
+}
+// B06: while airborne a Flying creature may defend with Fly instead of Evade.
+function creatureDefence(c,airborne){
+  if(airborne&&creatureTrait(c,"Flying")){const fly=creatureSkillPct(c,"Fly");if(fly!=null)return {skill:"Fly",pct:fly};}
+  return {skill:"Evade",pct:creatureSkillPct(c,"Evade")};
+}
+// B07: only a won opposed leap adds one natural-weapon hit.
+function creatureLeapBonus(c,won){
+  if(!creatureTrait(c,"Leaper")||!won)return null;
+  return (c.weapons||[]).find(w=>w.natural)||null;
+}
+// B09: one extra combat action per functioning head beyond the first. A head
+// is a location whose name contains "head" and that still has HP above 0.
+function creatureHeads(c,hp){
+  const heads=(c.locations||[]).filter(l=>/\bhead\b/i.test(l.name)).map(l=>l.name);
+  const working=heads.filter(n=>!hp||!hp[n]||hp[n].cur>0);
+  return {heads,working};
+}
+function creatureApMax(c,hp){
+  const base=creatureAttributes(c).ap;
+  if(!creatureTrait(c,"Multi-headed")&&!creatureTrait(c,"Multi-Headed"))return base;
+  return base+Math.max(0,creatureHeads(c,hp).working.length-1);
+}
+// B11: a target above half the trampler's SIZ can't be trampled.
+function creatureTrampleCheck(c,targetSiz){
+  const siz=Number(c.chars?.SIZ),t=Number(targetSiz);
+  if(!creatureTrait(c,"Trample"))return "This creature doesn't have the Trample trait.";
+  if(!Number.isFinite(t)||t<1)return "Enter the target's SIZ.";
+  if(t*2>siz)return "Too big to trample: SIZ "+t+" is more than half the creature's SIZ "+siz+" (Core p.218).";
+  return null;
+}
+// B12: venom can only be delivered when the hit's damage got through armour;
+// the creature's own poison is then resolved by the GM.
+function creatureVenomEligible(c,damageThrough){return !!creatureTrait(c,"Venomous")&&Number(damageThrough)>0;}
+// B09: keep a multi-headed creature's AP in step with its working heads.
+function creatureSyncAp(c){
+  if(!c||!c.creature)return;
+  const max=creatureApMax(c.creature,c.hp);
+  if(max!==c.ap.max){c.ap.max=max;c.ap.used=Math.min(c.ap.used,max);}
 }
