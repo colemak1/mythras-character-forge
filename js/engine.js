@@ -1477,7 +1477,7 @@ function creationReview(){
    it as text and the app keeps the actual values, its own d20 hit-location
    table, natural weapons and traits, without human defaults. No bestiary
    data is shipped (Core entries are the GM's rulebook content). Generic
-   anatomy tables (Core pp.276–277) are not built in yet. */
+   anatomy tables (Core pp.276–277) are offered as presets below. */
 const CREATURE_CHARS=["STR","CON","SIZ","DEX","INT","INS","POW","CHA"];
 function parseCreatureStatBlock(text){
   const c={name:"",chars:{},dice:{},move:"",locations:[],weapons:[],traits:[],wornEnc:0,skills:"",notes:""};
@@ -1493,6 +1493,9 @@ function parseCreatureStatBlock(text){
     }
     if((m=line.match(/^(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?\s+(.+?)\s+(\d{1,2})(?:\s*\+\s*(\d{1,2}))?\s*\/\s*(\d{1,3})$/))){
       c.locations.push({lo:Number(m[1]),hi:Number(m[2]||m[1]),name:m[3].trim().slice(0,40),natural:Number(m[4]),worn:Number(m[5]||0),hp:Number(m[6])});continue;
+    }
+    if((m=line.match(/^(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?\s+(.+?)\s+\d{1,2}(?:\s*\+\s*\d{1,2})?\s*\/\s*\?$/))){
+      errors.push("Give "+m[3].trim()+" its HP (replace the ? after the armour).");continue;
     }
     if((m=line.match(/^weapon\s*:\s*(.+?)\s+(\d*d\d+(?:\s*[+-]\s*\d*d?\d+)*)(\s+natural)?$/i))){
       c.weapons.push({name:m[1].trim().slice(0,60),damage:m[2].replace(/\s+/g,""),natural:!!m[3]});continue;
@@ -1670,6 +1673,120 @@ function intimidateOutcome(tier){
     Success:{key:"holds",text:"holds their ground"},
     Failure:{key:"retreats",text:"spends their next round putting distance between themselves and the creature"},
     Fumble:{key:"flees",text:"flees at full speed"}}[tier]||null;
+}
+/* ---- Generic anatomy presets (CRTR-B04 option, Core printed pp.276–277) ----
+   d20 ranges and location names only. HP and armour come from the creature. */
+const CREATURE_ANATOMY={
+ "Arachnid":[[1,2,"Right Rear Leg"],[3,4,"Left Rear Leg"],[5,6,"Mid Right Leg"],[7,8,"Mid Left Leg"],[9,10,"Fore Right Leg"],[11,12,"Fore Left Leg"],[13,14,"Abdomen"],[15,16,"Front Right Leg"],[17,18,"Front Left Leg"],[19,20,"Cephalothorax"]],
+ "Centaurid":[[1,3,"Right Leg"],[4,6,"Left Leg"],[7,8,"Hindquarters"],[9,10,"Forequarters"],[11,12,"Right Front Leg"],[13,14,"Left Front Leg"],[15,16,"Chest"],[17,17,"Right Arm"],[18,18,"Left Arm"],[19,20,"Head"]],
+ "Draconic":[[1,2,"Tail"],[3,4,"Right Hind Leg"],[5,6,"Left Hind Leg"],[7,8,"Hindquarters"],[9,10,"Right Wing"],[11,12,"Left Wing"],[13,14,"Forequarters"],[15,16,"Right Front Leg"],[17,18,"Left Front Leg"],[19,20,"Head"]],
+ "Insect":[[1,1,"Right Rear Leg"],[2,2,"Left Rear Leg"],[3,3,"Right Middle Leg"],[4,4,"Left Middle Leg"],[5,9,"Abdomen"],[10,13,"Thorax"],[14,14,"Right Front Leg"],[15,15,"Left Front Leg"],[16,20,"Head"]],
+ "Dorsal Finned Aquatic":[[1,3,"Tail"],[4,6,"Dorsal Fin"],[7,10,"Hindquarters"],[11,14,"Forequarters"],[15,16,"Right Fin"],[17,18,"Left Fin"],[19,20,"Head"]],
+ "Tailed Biped":[[1,3,"Tail"],[4,5,"Right Leg"],[6,7,"Left Leg"],[8,10,"Abdomen"],[11,14,"Chest"],[15,16,"Right Arm"],[17,18,"Left Arm"],[19,20,"Head"]],
+ "Winged Quadruped":[[1,2,"Right Hind Leg"],[3,4,"Left Hind Leg"],[5,7,"Hindquarters"],[8,10,"Forequarters"],[11,12,"Right Wing"],[13,14,"Left Wing"],[15,16,"Right Front Leg"],[17,18,"Left Front Leg"],[19,20,"Head"]],
+ "Pachyderm":[[1,2,"Right Hind Leg"],[3,4,"Left Hind Leg"],[5,8,"Hindquarters"],[9,12,"Forequarters"],[13,14,"Right Front Leg"],[15,16,"Left Front Leg"],[17,17,"Trunk"],[18,20,"Head"]],
+ "Tailed Quadruped":[[1,3,"Tail"],[4,5,"Right Hind Leg"],[6,7,"Left Hind Leg"],[8,10,"Hindquarters"],[11,14,"Forequarters"],[15,16,"Right Front Leg"],[17,18,"Left Front Leg"],[19,20,"Head"]],
+ "Serpentine":[[1,3,"Tail Tip"],[4,5,"Mid End-length"],[6,7,"Fore End-length"],[8,9,"Rear Mid-length"],[10,12,"Mid Mid-length"],[13,14,"Fore Mid-length"],[15,16,"Rear Fore-length"],[17,18,"Mid Fore-length"],[19,20,"Head"]],
+ "Winged Biped":[[1,3,"Right Leg"],[4,6,"Left Leg"],[7,9,"Abdomen"],[10,10,"Chest"],[11,12,"Right Wing"],[13,14,"Left Wing"],[15,16,"Right Arm"],[17,18,"Left Arm"],[19,20,"Head"]],
+ "Tailed Arachnid":[[1,2,"Tail"],[3,3,"Right Rear Leg"],[4,4,"Left Rear Leg"],[5,5,"Mid Right Leg"],[6,6,"Mid Left Leg"],[7,7,"Fore Right Leg"],[8,8,"Fore Left Leg"],[9,12,"Thorax"],[13,15,"Right Pincer"],[16,18,"Left Pincer"],[19,20,"Cephalothorax"]],
+ "Winged Insect":[[1,1,"Right Rear Leg"],[2,2,"Left Rear Leg"],[3,4,"Metathorax"],[5,5,"Mid Right Leg"],[6,6,"Mid Left Leg"],[7,10,"Prothorax"],[11,12,"Right Wing"],[13,14,"Left Wing"],[15,16,"Right Forelimb"],[17,18,"Left Forelimb"],[19,20,"Head"]]
+};
+// Stat-block lines for a preset, with 0 armour and HP left for the GM ("?").
+function creatureAnatomyLines(name){
+ const t=CREATURE_ANATOMY[name];if(!t)return "";
+ return t.map(([lo,hi,n])=>(lo===hi?String(lo):lo+"-"+hi)+" "+n+" 0/?").join("\n");
+}
+
+/* ---- Chaos Features (CRTR-B19, Core printed pp.274–276) ----
+   d100 in pairs (01–02 … 99–00). Effects are our own short summaries; the
+   GM applies them. Dice in brackets are the Core values. */
+const CHAOS_FEATURES=[
+ ["Acidic","Its blood is acid that splashes whoever wounds it; roll 1d4 for strength (1d2, 1d4, 1d6 or 1d8 damage per wound)."],
+ ["Alluring","Gives off a lure: gains Seduction at POW×5%, resisted by Willpower."],
+ ["Asymmetric","One side is bigger: double the HP of that side's locations and halve the other side's."],
+ ["Boneless","Cartilage, not bone: squeezes through any gap and takes no falling damage."],
+ ["Brainless","Senses spread over the body; its brain sits in a random location, not the head."],
+ ["Burning","Gives off heat that hurts everyone within Short range each round (roll 1d4: 1d2, 1d4, 1d6 or 1d8)."],
+ ["Chameleon","Blends in: effective Stealth 100%+POW."],
+ ["Climbing","Gains the Adhering ability."],
+ ["Contagious","Carries a disease (delay 1d8 hours, potency CON×5%) that drains a random characteristic by 1d8."],
+ ["Corroding","Weapons that strike it lose 1d8 HP each time; weapon armour points don't help."],
+ ["Dampener","Magic within POW metres is reduced by 1d8 Magnitude; spells brought to 0 end unless permanent."],
+ ["Deathly","Everyone within Short range makes an unopposed Endurance roll each round or takes 1 damage to every location, ignoring armour."],
+ ["Disturbing","Covered in unsettling growths: viewers make an unopposed Willpower roll or stand helpless until they pass."],
+ ["Domineering","Gives mental commands; a target resists only with an unopposed Willpower success."],
+ ["Draining","Each successful strike drains 1d8 MP from its foe."],
+ ["Droning","A buzzing within POW×5 metres: unopposed Willpower or fall asleep for 1d8 minutes."],
+ ["Entangle","Those in melee range make an unopposed Brawn roll each round or are held helpless."],
+ ["Frightening","Viewers make an unopposed Willpower roll or flee at once."],
+ ["Icy","Freezing cold hurts everyone in melee range each round (roll 1d4: 1d2, 1d4, 1d6 or 1d8)."],
+ ["Intangible","Passes through solid objects; while intangible it can't be harmed and can't attack."],
+ ["Leaper","Jump range multiplied by 1d4+1."],
+ ["Levitating","Hovers: crosses any surface without sinking or leaving tracks."],
+ ["Mimic","Takes the shape of a creature it touches, keeping its own characteristics."],
+ ["Mournful","Looks pitiful: an observer needs an unopposed Willpower success before attacking it."],
+ ["Mutated","A random location is missing, yet it functions without it."],
+ ["Nerveless","Feels no pain; ignores Serious Wound effects."],
+ ["Neutralising","Spells cast at it are neutralised at once."],
+ ["Obfuscating","Shrouded: observers need an unopposed Perception roll each turn to see it."],
+ ["Oversized","One location is swollen: double its HP."],
+ ["Paralysing","Whoever it touches makes an unopposed Endurance roll or is paralysed for 1d8 minutes."],
+ ["Perceptive","An unusual main sense (roll 1d6: sonar, heat, minds, pain, souls, magic); may have no eyes."],
+ ["Poisonous","One unarmed attack is venomous (delay 1d8 rounds, potency CON×5%), causing a poison condition (Core p.75)."],
+ ["Polymorph","Changes form every round, keeping characteristics and damage; uses the new form's locations (GM prepares forms)."],
+ ["Projector","Anyone within POW metres feels the psychological effect of its wounds, not the physical."],
+ ["Quick","Movement multiplied by 1d4+1."],
+ ["Reflecting","Magic cast on it rebounds on the caster."],
+ ["Regenerating","Heals 1 HP per round in every location, except a location with a Major Wound."],
+ ["Roaring","A roar: listeners make an unopposed Endurance roll or are stunned for 1d3 turns."],
+ ["Scintillating","A shifting aura: all attacks against it are one grade harder."],
+ ["Shadowy","Total darkness around it, radius POW metres."],
+ ["Shocking","Shocks whoever hits it with metal or bare hands, or is hit by it (roll 1d4: 1d2, 1d4, 1d6 or 1d8 per blow)."],
+ ["Silent","Makes no sound, even when attacking."],
+ ["Slimy","Can't be grappled or gripped; leaves a sticky trail."],
+ ["Stench","Inhalers make an unopposed Endurance roll or vomit helplessly for 1d3 combat rounds."],
+ ["Sticky","Items stick to it: an unopposed Brawn roll and a Combat Action free one."],
+ ["Teleporter","Teleports once per round, up to POW×2 metres."],
+ ["Transmuter","Turns organic material it touches into another substance; a living victim resists with an unopposed Endurance roll."],
+ ["Vampiric","HP damage it deals heals its own wounds."],
+ ["Warded","Invulnerable to one kind of material (steel, wood, stone, flesh…)."],
+ ["Weakening","Each successful undefended hit lowers the victim's STR by 1d8 for a time."]
+];
+// d100 roll (1–100) → the feature; 01–02 is index 0, 99–00 (100) is index 49.
+function chaosFeatureFor(roll){
+ const r=Math.floor(Number(roll));if(!(r>=1&&r<=100))return null;
+ const i=Math.floor((r-1)/2),[name,effect]=CHAOS_FEATURES[i];
+ const lo=i*2+1,hi=i*2+2,pad=n=>n===100?"00":String(n).padStart(2,"0");
+ return {roll:r,range:pad(lo)+"–"+pad(hi),name,effect};
+}
+
+/* ---- Nonhuman Points Build (CRTR-B18, Core pp.8, 218–219) ----
+   The pool is the species' average characteristics added up (rounded up);
+   each characteristic stays inside its dice range and every point is spent. */
+function creatureDiceRange(expr){
+ const m=String(expr||"").replace(/\s+/g,"").match(/^(\d*)d(\d+)(?:([+-])(\d+))?$/i);if(!m)return null;
+ const n=Number(m[1]||1),d=Number(m[2]),k=(m[3]==="-"?-1:1)*Number(m[4]||0);
+ if(!(n>=1&&d>=1))return null;
+ return {min:n+k,max:n*d+k,avg:n*(d+1)/2+k};
+}
+function creaturePointsBuild(c){
+ const keys=CREATURE_CHARS.filter(k=>Object.hasOwn(c.chars||{},k)&&k!=="INS");
+ const ranges={};let total=0;
+ for(const k of keys){const r=creatureDiceRange(c.dice&&c.dice[k]);if(!r)return {ok:false,reason:"Add the characteristic dice for "+k+" (e.g. STR 2d6+6 13) to work out the Points Build pool."};ranges[k]=r;total+=r.avg;}
+ return {ok:true,pool:Math.ceil(total-1e-9),ranges};
+}
+function creaturePointsCheck(c,values){
+ const pb=creaturePointsBuild(c);if(!pb.ok)return [pb.reason];
+ const errors=[];let spent=0;
+ for(const [k,r] of Object.entries(pb.ranges)){
+  const v=Number(values&&values[k]);
+  if(!Number.isInteger(v)){errors.push(k+" needs a value.");continue;}
+  if(v<r.min)errors.push(k+" can't be below "+r.min+".");
+  if(v>r.max)errors.push(k+" can't be above "+r.max+".");
+  spent+=v;
+ }
+ if(!errors.length&&spent!==pb.pool)errors.push("Spend exactly "+pb.pool+" points ("+spent+" spent).");
+ return errors;
 }
 // B18 (Core pp.218–219): only a sapient creature (INT, not INS), and only
 // with the GM's permission, may be played as a character.

@@ -1754,6 +1754,8 @@ function creatureImportHTML(){
   const parsed=CREATURE_DRAFT.trim()?parseCreatureStatBlock(CREATURE_DRAFT):null;
   let h='<details class="cbt-creature-import"'+(CREATURE_DRAFT?' open':'')+'><summary>Add a creature from its stat block</summary>'
    +'<p class="note">Paste or type it one item per line (Core pp.218–220). Use INS instead of INT for an animal (p.214). Location rows are d20 range, name, armour/HP; write natural+worn armour as 2+3/6. Natural weapons end with &ldquo;natural&rdquo;.</p>'
+   +'<p class="note"><label for="gmCreatureAnatomy">Start the locations from a body plan (Core pp.276–277)</label> <select id="gmCreatureAnatomy" onchange="APP.gmCreatureAnatomy(this.value)"><option value="">Choose&hellip;</option>'
+   +Object.keys(CREATURE_ANATOMY).map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("")+'</select> Then fill in each location&rsquo;s armour and HP.</p>'
    +'<textarea id="gmCreatureText" rows="9" placeholder="Name: Hill Beast\nSTR 2d6+6 13\nCON 3d6 11\nSIZ 2d6+6 13\nDEX 2d6+6 13\nINS 2d6+6 13\nPOW 1d6+6 10\nMove 10\n1-3 Right Hind Leg 2/5\n...\nWeapon: Bite 1d8 natural\nTrait: Formidable Natural Weapons\nWorn armour ENC: 0\nSkills: Athletics 60%, Perception 70%" onchange="APP.gmCreatureDraft(this.value)">'+esc(CREATURE_DRAFT)+'</textarea>';
   if(parsed){
     if(parsed.errors.length)h+='<ul class="warn" style="padding-left:18px">'+parsed.errors.map(e=>'<li>'+esc(e)+'</li>').join("")+'</ul>';
@@ -1812,8 +1814,12 @@ function creatureTraitsHTML(c){
      +["Critical","Success","Failure","Fumble"].map(t=>'<button class="chip sm" onclick="APP.gmCreatureIntimidate('+q+',\''+t+'\')">'+t+'</button>').join(" ")
      +(Object.keys(log).length?' '+Object.entries(log).map(([n,k])=>esc(n)+': '+({immune:"ignores it",holds:"holds",retreats:"falls back",flees:"flees"}[k]||k)).join(", ")+' <button class="chip sm" onclick="APP.gmCreatureIntimidateClear('+q+')">encounter over</button>':'')
      +' Not an automatic retreat on sight (Core p.216).');}
+  if(creatureTrait(cr,"Chaos Feature")||creatureTrait(cr,"Chaos Features")){const got=cs.chaos||[];
+    rows.push('<b>Chaos Feature</b> <button class="chip sm" onclick="APP.gmCreatureChaos('+q+')">Roll d100</button> Rolled on the Core table (pp.274–276) and kept with this creature; the GM applies each effect.'
+     +got.map((f,i)=>{const x=chaosFeatureFor(f.roll);return x?'<br><b>'+esc(x.range)+' '+esc(x.name)+'</b>: '+esc(x.effect)+' <button class="chip sm" onclick="APP.gmCreatureChaosRemove('+q+','+i+')" aria-label="Remove '+esc(x.name)+'">remove</button>':'';}).join(""));}
   if(creatureMind(cr).key==="INT"){const e=creaturePcEligibility(cr,cs.pcPermitted===true);
-    rows.push('<b>As a character</b> '+'<label class="mnum"><input type="checkbox" '+(cs.pcPermitted?'checked':'')+' onchange="APP.gmCreatureState('+q+',\'pcPermitted\',this.checked)"> GM permits it as a player character</label> '+esc(e.reason));}
+    rows.push('<b>As a character</b> '+'<label class="mnum"><input type="checkbox" '+(cs.pcPermitted?'checked':'')+' onchange="APP.gmCreatureState('+q+',\'pcPermitted\',this.checked)"> GM permits it as a player character</label> '+esc(e.reason)
+     +(e.ok?(()=>{const pb=creaturePointsBuild(cr);return pb.ok?' Points Build: '+pb.pool+' points, all spent, each within '+Object.entries(pb.ranges).map(([k,r])=>k+' '+r.min+'–'+r.max).join(', ')+' (Core pp.8, 219).':' '+esc(pb.reason);})():''));}
   if(!rows.length&&!CREATURE_MSG[id])return "";
   return '<div class="cbt-traits">'+rows.map(r=>'<p class="note">'+r+'</p>').join("")+(CREATURE_MSG[id]?'<p class="note" role="status"><b>'+esc(CREATURE_MSG[id])+'</b></p>':'')+'</div>';
 }
