@@ -215,4 +215,39 @@ test('CRTR-B18 only a sapient creature, with GM permission, can be a player char
  run('APP.gmCreatureState("'+id+'","pcPermitted",true)');assert.match(card(),/GM-permitted sapient creature/);
  tracker({});assert.doesNotMatch(card(),/As a character/);
 });
+// ---------- Anatomy presets, B19, B18 Points Build (Core pp.8, 218–219, 274–277) ----------
+test('CRTR-B04 option: the 13 Core body plans each cover d20 1–20 once, and insert rows that need HP',()=>{
+ const t=JSON.parse(run('JSON.stringify(CREATURE_ANATOMY)'));
+ assert.equal(Object.keys(t).length,13);
+ for(const [n,rows] of Object.entries(t)){const seen=[];rows.forEach(([lo,hi])=>{for(let r=lo;r<=hi;r++)seen.push(r);});assert.deepEqual(seen,Array.from({length:20},(_,i)=>i+1),n);}
+ assert.deepEqual(t.Pachyderm.find(r=>r[2]==='Trunk'),[17,17,'Trunk']);
+ assert.deepEqual(t['Tailed Arachnid'].find(r=>r[2]==='Right Pincer'),[13,15,'Right Pincer']);
+ const draft=hound({locs:run('creatureAnatomyLines("Draconic")')});
+ const p=parse(draft);assert.match(p.errors.join(' '),/Give Right Wing its HP/);assert.deepEqual(p.unread,[]);
+ assert.deepEqual(parse(draft.replace(/0\/\?/g,'3/7')).errors,[],'filled in, the plan imports');
+});
+test('CRTR-B19 a Chaos Feature is rolled on the Core d100 table and kept with the creature',()=>{
+ assert.equal(run('CHAOS_FEATURES.length'),50);
+ const f=r=>JSON.parse(run('JSON.stringify(chaosFeatureFor('+r+'))'));
+ assert.equal(f(1).name,'Acidic');assert.equal(f(2).range,'01–02');assert.equal(f(19).name,'Corroding');assert.equal(f(62).name,'Perceptive');
+ assert.equal(f(63).name,'Poisonous');assert.equal(f(100).name,'Weakening');assert.equal(f(100).range,'99–00');assert.equal(f(0),null);assert.equal(f(101),null);
+ const id=tracker({trait:'Trait: Chaos Feature'});
+ run('APP.gmCreatureChaos("'+id+'",()=>0.385)');assert.deepEqual(cb().cs.chaos,[{roll:39}]);
+ assert.match(note(id),/39–40: Intangible|Chaos Feature 39–40: Intangible/);assert.match(card(),/39–40 Intangible<\/b>: Passes through solid objects/);
+ run('APP.gmCreatureChaosRemove("'+id+'",0)');assert.deepEqual(cb().cs.chaos,[]);
+ tracker({});run('APP.gmCreatureChaos("'+cb().id+'",()=>0.5)');assert.equal(cb().cs&&cb().cs.chaos,undefined,'no trait, no roll');
+});
+test('CRTR-B18 a GM-permitted creature PC uses the nonhuman Points Build: average total, dice ranges, all points spent',()=>{
+ const c=parse(hound({mind:'INT 2d6+6 13',cha:'CHA 1d6 4'})).creature,cj=JSON.stringify(c);
+ const pb=JSON.parse(run('JSON.stringify(creaturePointsBuild('+cj+'))'));
+ // averages 10+10.5+9.5+16+13+9.5+3.5 = 72
+ assert.equal(pb.pool,72);assert.deepEqual(pb.ranges.STR,{min:5,max:15,avg:10});assert.deepEqual([pb.ranges.CHA.min,pb.ranges.CHA.max],[1,6]);
+ const chk=v=>JSON.parse(run('JSON.stringify(creaturePointsCheck('+cj+','+JSON.stringify(v)+'))'));
+ assert.deepEqual(chk({STR:10,CON:11,SIZ:9,DEX:16,INT:13,POW:10,CHA:3}),[]);
+ assert.match(chk({STR:4,CON:11,SIZ:9,DEX:16,INT:13,POW:10,CHA:9}).join(' '),/STR can't be below 5.*CHA can't be above 6/);
+ assert.match(chk({STR:10,CON:11,SIZ:9,DEX:16,INT:13,POW:10,CHA:2}).join(' '),/Spend exactly 72 points \(71 spent\)/);
+ assert.equal(run('creatureDiceRange("2d6+6").avg'),13);assert.equal(run('creatureDiceRange("3d6").avg'),10.5);
+ const id=tracker({mind:'INT 2d6+6 13'});run('APP.gmCreatureState("'+id+'","pcPermitted",true)');
+ assert.match(card(),/Points Build: \d+ points, all spent, each within STR 5–15/);
+});
 console.log('Creature case tests passed');

@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Creatures: body plans, Chaos Features, nonhuman Points Build (CRTR-B04 option, B18, B19)
+
+Checked against the owner's Core PDF; see `docs/creature-cases-batch-1.md`.
+
+- **Body plans:** the GM tracker's creature import can start from any of the 13 Core nonhuman hit-location tables (pp.276–277). You fill in each location's armour and HP; a missing HP is reported by name.
+- **Chaos Features:** a creature with the trait can roll d100 on the Core table (pp.274–276). Each result is kept on the creature with a short summary of its effect, and can be removed. The GM applies the effects.
+- **Creature as a character:** once the GM permits it, the card shows the Points Build pool (the species' averages added up, rounded up) and each characteristic's allowed range (pp.8, 219). B15 Vulnerable and B17 Intimidate were confirmed against the book with no changes.
+
 ## Fix: character sheet page scroll
 
 - An older rule still locked the page in Play Mode on desktop, so the page scroll from #231 did nothing. It is removed, and the sheet is now a full screen tall, so scrolling down moves the header fully out of view. Columns keep their own scroll.

@@ -108,4 +108,16 @@ GM tracker creature card; tests in `tests/creature-cases.cjs`. Not live-checked.
 - **B16:** guidance only for Camouflaged / Echolocation / Earth Sense: the sense, its range from the entry, no universal detection. No grade numbers are invented.
 - **B17:** per-target Willpower outcome (Critical: ignores for the encounter; Success: holds; Failure: falls back next round; Fumble: flees), kept until the GM ends the encounter. Any grade modifier on the Willpower roll stays with the GM. **To confirm:** this outcome table against Core p.216 (it matches the Intimidate text already used for formation traits in `js/data.js`).
 - **B18 (partial):** eligibility only: INS creatures refused; sapient INT creatures need the GM's permission. **Needs spec:** the Core alternate point-buy total, permitted minimums and how nonhuman anatomy enters the builder (pp.218–219), before a builder path is made. The existing builder species (Classic Fantasy Imperative SRD) are unchanged and are not Core creatures.
-- **B19 and anatomy presets:** held for the owner's page images of pp.274–277.
+- **B19 and anatomy presets:** see below.
+
+## Source check and B18/B19/anatomy, Claude, 2026-11-09
+
+Checked against the owner's Core PDF (printed pp.8, 216, 218–219, 274–277). Paraphrases only.
+
+- **B15 confirmed (p.218):** Vulnerable means protection can't reduce damage from the listed source. Nothing extra is added, which matches the build.
+- **B17 confirmed (p.216):** Willpower outcomes are Critical: ignores further intimidation that encounter; Success: holds; Failure: falls back next round; Fumble: flees. The effect lasts while the creature keeps acting threateningly. Matches the build.
+- **B18 (pp.8, 218–219):** any creature with INT 8+ may be a PC if the GM allows it. With Points Build, the pool is the species' average characteristics added up and rounded up. Each characteristic stays within its dice range (Core p.8 rule: no lower than the minimum, no higher than the maximum), and all points are spent. Implemented as `creaturePointsBuild` / `creaturePointsCheck` and shown on the GM tracker card. **Open:** a builder path that creates a PC from a creature (culture and career "as normal" per p.218) isn't built. The INT 8+ floor isn't enforced yet: eligibility needs INT and GM permission only.
+- **B19 (pp.274–276):** the 50-row d100 Chaos Feature table (pairs 01–02 … 99–00) is in `CHAOS_FEATURES`, with summaries in our own words. A creature with the Chaos Feature trait can roll on it. Results are kept on the combatant, and the GM applies each effect; none is automated.
+- **Anatomy presets (pp.276–277):** all 13 body plans (Arachnid, Centaurid, Draconic, Insect, Dorsal Finned Aquatic, Tailed Biped, Winged Quadruped, Pachyderm, Tailed Quadruped, Serpentine, Winged Biped, Tailed Arachnid, Winged Insect) are in `CREATURE_ANATOMY`, and each was checked to cover d20 1–20 exactly once. The import can start from a plan; each location's HP must be filled in before the creature can be added.
+
+Progress stays **5/8** until Subsystem 7 is audited live.

@@ -1718,6 +1718,21 @@ window.APP={
      if(!creatureVenomEligible(c.creature,true))return;
      CREATURE_MSG[id]="Inject Venom: no attack damage; the poison is delivered whatever the armour. Resolve "+c.name+"'s own poison with the GM (Core pp.97, 218).";});},
  // B17: one target's Willpower result against this creature's Intimidate.
+ // CRTR-B04 option: append a Core body plan's location rows to the draft.
+ gmCreatureAnatomy(name){
+   const lines=creatureAnatomyLines(name);if(!lines)return;
+   const el=$("#gmCreatureText");if(el)CREATURE_DRAFT=String(el.value||"");
+   CREATURE_DRAFT=(CREATURE_DRAFT.replace(/\s+$/,"")+(CREATURE_DRAFT.trim()?"\n":"")+lines).slice(0,6000);render();},
+ // CRTR-B19: roll a Chaos Feature and keep it with the creature.
+ gmCreatureChaos(id,rng){
+   const roll=Math.floor((rng||Math.random)()*100)+1,f=chaosFeatureFor(roll);if(!f)return;
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
+     if(!creatureTrait(c.creature,"Chaos Feature")&&!creatureTrait(c.creature,"Chaos Features"))return;
+     const cs=c.cs=c.cs||{};cs.chaos=(cs.chaos||[]).concat([{roll}]).slice(0,12);
+     CREATURE_MSG[id]="Chaos Feature "+f.range+": "+f.name+" (Core pp.274–276).";});},
+ gmCreatureChaosRemove(id,i){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature||!c.cs||!Array.isArray(c.cs.chaos))return;
+     c.cs.chaos.splice(Number(i),1);});},
  gmCreatureIntimidate(id,tier){
    const el=$("#cbtintim-"+id),target=el?String(el.value||"").trim().slice(0,60):"";
    const out=intimidateOutcome(tier);if(!out)return;
