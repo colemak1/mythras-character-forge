@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## New site header and campaign manager (v0 handoff, 2026-11-09)
+
+- **Header (v0 "Style A"):** sticky 76px bar with line icons, a 2px gold underline for the active tab (no pills), and an account button showing your initial and name. Phones get a 64px bar, the five-tab bottom bar with a gold top line on the active tab, and a More sheet (Rules, World Guide, Account) with icons. Styles in the new `sitota-header.css`; the old per-page header overrides are removed.
+- **Header on every page (owner):** The Pits fight page and the character sheet (Play Mode and the printable sheet) now show the site header. Play Mode's ☰ dropdown is gone; its Rules reference and Settings are header buttons. "Choose a character" and "Reset bout" sit under the header on The Pits. Printing still hides the header.
+- **Scrolling (owner):** Play Mode's columns keep their own scroll, but the page itself now scrolls a little: the header scrolls away so the sheet fills the screen, and a column hands the wheel back to the page at its ends.
+- **Campaign manager:** party cards first (sigil, tier and career, player, HP/AP/Luck, Open or View, Unassign), a New character card, your unassigned characters with Add to campaign, and table notes (GM edits with a Saved indicator; players read them). Side column: invite code with Copy and Copy invite link, New code with an inline confirm, members with two-tap Make GM / Remove, and collapsed GM tools (rename, backup, and Delete that needs the name typed). Rule settings show as chips. All existing handlers are reused.
+
 ## Creature resistances, senses, Intimidate and PC eligibility (CRTR-B15–B18)
 
 ChatGPT's #227 review is merged (docs #228). The Chaos Feature table and anatomy presets wait for clear Core pp.274–277 page images from the owner.

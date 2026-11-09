@@ -167,6 +167,23 @@ await test('D-S4 the GM can remove a player and hand over the GM role, never on 
  run('missingRpc=true;');run('APP.removeMember("player")');await new Promise(r=>setTimeout(r,0));
  assert.match(run('CAMP_MSG'),/campaign update on the server/);run('missingRpc=false;');
 });
+await test('campaign manager (v0, 2026-11-09): party first, rule chips, and on-page confirms before acting',async()=>{
+ run('AUTH_USER={id:"gm"};CAMPAIGN_VIEW={campaign:clone(campRow),members:clone(members),chars:[],unassigned:[]};CAMPAIGN_VIEW.campaign.rules_settings={characteristicImprovement:"permanent",skillImprovement:"d4",books:[]};');
+ let h=run('campaignDetailHTML()');
+ assert(h.indexOf('id="cmParty"')<h.indexOf('id="cmInvite"'),'party comes before the invite panel');
+ assert.match(h,/st-tag-opt">Permanent improvement/);assert.match(h,/st-tag-core">Skills 1d4\+1/);assert.match(h,/>Core only</);
+ assert.match(h,/You are the GM/);assert.match(h,/Delete forever/);assert.match(h,/id="cmDeleteGo" disabled/,'delete starts disabled');
+ assert.match(h,/stTwoTap\(this,'Sure\?'\)\)APP\.removeMember/);
+ // First tap only arms the button; the second acts without a browser confirm box.
+ run('rpcs=[];confirm=()=>false;var btn={textContent:"Remove",dataset:{},classList:{add(){},remove(){}}};');
+ assert.equal(run('stTwoTap(btn,"Sure?")'),false);assert.equal(run('btn.textContent'),'Sure?');
+ assert.equal(run('stTwoTap(btn,"Sure?")'),true);run('APP.removeMember("player")');await new Promise(r=>setTimeout(r,0));
+ assert.equal(run('rpcs.length'),1,'the on-page confirm stands in for confirm()');
+ run('rpcs=[];APP.removeMember("player")');await new Promise(r=>setTimeout(r,0));
+ assert.equal(run('rpcs.length'),0,'without it, a cancelled confirm() still does nothing');
+ run('confirm=()=>true;AUTH_USER={id:"player"};');h=run('campaignDetailHTML()');
+ assert.match(h,/Player view/);assert.doesNotMatch(h,/Rules &amp; books|GM tools|cmNotesText|stTwoTap/);
+});
 await test('D-S4 LIFE13 the whole-campaign backup holds the campaign, GM state, members, characters and homebrew',async()=>{
  run(`campRow.session_state={sessionNotes:"stale"};charRows=[{id:ID,name:"Hero",owner_id:"player",state:hero(),updated_at:"2026-11-08T00:00:00Z",revision:3}];
  cloudFetchMembers=async()=>clone(members);cloudFetchCustomContent=async()=>[{id:"w1",type:"weapon",name:"Hook"}];

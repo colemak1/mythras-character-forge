@@ -35,5 +35,6 @@ for(const [search,hash] of [
 }
 const css=fs.readFileSync(path.join(root,'sitota-public.css'),'utf8');
 assert(!css.includes(':root'),'public variables must not override application tokens');
-assert.match(fs.readFileSync(path.join(root,'sitota-forge.css'),'utf8'),/body\.sheet-mode \.sitota-header\{display:none\}/);
+assert.doesNotMatch(fs.readFileSync(path.join(root,'sitota-forge.css'),'utf8'),/body\.sheet-mode \.sitota-header\{display:none\}/,'the character sheet keeps the site header (owner, 2026-11-09)');
+assert.match(fs.readFileSync(path.join(root,'sitota-header.css'),'utf8'),/@media print\{\.sitota-header/,'printing still hides it');
 console.log('PASS unified application host, direct navigation, retained home actions, scoped design, legacy route and auth redirects');

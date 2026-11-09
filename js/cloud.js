@@ -1366,69 +1366,162 @@ function campaignSetupHTML(){
 }
 function renderCampaignSetupView(){document.body.classList.remove("play-mode","sheet-mode");document.body.classList.add("menu-mode");document.title="Campaign setup — Mythras Character Forge";$("#main").innerHTML=campaignSetupHTML();}
 /* ---- single campaign ---- */
+/* ---- Campaign manager (v0 handoff, 2026-11-09) ----
+   Party first, then table notes; invite, members and GM tools in a side
+   column. Every action goes through the existing APP handlers. */
+const CAMP_ICON={
+ person:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 3.6-6 8-6s8 2 8 6"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ copy:'<rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/>',
+ back:'<path d="M15 6l-6 6 6 6"/>',
+ chev:'<path d="M6 9l6 6 6-6"/>'
+};
+function campIcon(k){return '<svg class="st-ic" viewBox="0 0 24 24" aria-hidden="true">'+CAMP_ICON[k]+'</svg>';}
+function campSigilColor(name){
+ const pal=['#e0b27a','#6dbfae','#e0826f','#b9a6d8','#9fc27a','#d9c46a','#7fb0d8'];
+ let h=0;for(const ch of String(name||''))h=(h*31+ch.charCodeAt(0))>>>0;return pal[h%pal.length];
+}
+function campInitial(name){const m=String(name||'').match(/[A-Za-z0-9]/);return m?m[0].toUpperCase():'?';}
+// HP, AP and Luck for a party card, worked out on a copy (never the open draft).
+const CAMP_CARD_STATS={};
+function campCardStats(c){
+ if(!c||!c.state||typeof freshState!=='function'||typeof charVitals!=='function')return null;
+ const key=c.id+'|'+(c.updated_at||'');if(key in CAMP_CARD_STATS)return CAMP_CARD_STATS[key];
+ const original=S;let out=null;
+ try{
+  S=Object.assign(freshState(),JSON.parse(JSON.stringify(c.state)));normalizeState();
+  const v=charVitals(S);
+  if(v)out={hp:v.hpCur+'/'+v.hpMax,ap:Number.isFinite(v.baseAP)?v.baseAP:null,luck:v.curLuck+'/'+v.maxLuck};
+ }catch(e){out=null;}finally{S=original;}
+ return CAMP_CARD_STATS[key]=out;
+}
+function campRuleChips(rules){
+ const chips=[];
+ if(rules?.characteristicImprovement==="permanent")chips.push(['opt','Permanent improvement']);
+ else if(rules?.characteristicImprovement==="training")chips.push(['core','Ongoing training']);
+ if(rules)chips.push(rules.skillImprovement==="d6"?['opt','Skills 1d6+1']:['core','Skills 1d4+1']);
+ if(rules?.books?.length)rules.books.forEach(b=>chips.push(['','+ '+b]));else chips.push(['','Core only']);
+ if(!rules)chips.unshift(['','Rules not set']);
+ return '<div class="st-cm-chips" aria-label="Campaign rules">'+chips.map(([k,t])=>'<span class="st-tag'+(k?' st-tag-'+k:'')+'">'+esc(t)+'</span>').join('')+'</div>';
+}
 function campaignDetailHTML(){
   if(CAMPAIGN_VIEW===null)return '<div class="menuwrap"><p class="note" style="text-align:center">Loading campaign&hellip;</p></div>';
   const {campaign:camp,members,chars,unassigned}=CAMPAIGN_VIEW;
   if(!camp)return '<div class="menuwrap"><p class="warn">Campaign not found.</p><p><button class="nav" onclick="APP.toCampaigns()">&#8592; Campaigns</button></p></div>';
-  const isDM=!cloudActive()||camp.dm_id===(AUTH_USER&&AUTH_USER.id);
-  let h='<div class="menuwrap">';
-  h+='<p><button class="nav" onclick="APP.toCampaigns()">&#8592; Campaigns</button></p>';
-  if(CAMP_MSG)h+='<p class="warn">'+esc(CAMP_MSG)+'</p>';
-  h+='<div class="card"><h3>Campaign'+(isDM?"":' <span class="note">(player view)</span>')+'</h3>';
-  if(isDM){
-    h+=fld("Name",'<input type="text" value="'+esc(camp.name)+'" onchange="APP.campField(\'name\',this.value)">')
-     +fld("Notes",'<textarea rows="4" onchange="APP.campField(\'notes\',this.value)">'+esc(camp.notes||"")+'</textarea>');
-  }else{
-    h+='<p style="font-family:\'Cinzel\',serif;font-size:19px;letter-spacing:.03em;color:#8a5a12;text-transform:uppercase">'+esc(camp.name)+'</p>'
-     +(camp.notes?'<p class="note" style="margin-top:6px">'+esc(camp.notes)+'</p>':"");
-  }
-  h+='<p class="note" style="margin-top:8px">Created '+new Date(camp.created_at).toLocaleString()+'</p>';
-  const campaignRules=normalizedCampaignRules(camp.rules_settings);
-  h+='<p class="note"><b>Characteristic improvement:</b> '+(campaignRules?.characteristicImprovement==="permanent"?'Permanent (optional)':campaignRules?.characteristicImprovement==="training"?'Ongoing training':'Not configured')+'. <b>Skill improvement:</b> '+(campaignRules?.skillImprovement==="d6"?'1d6+1 (optional)':'1d4+1')+'. <b>Additional books:</b> '+(campaignRules?.books?.length?campaignRules.books.map(esc).join(", "):"None recorded")+'.</p>'
-    +(isDM?'<button class="chip" onclick="APP.editCampaignRules()">Campaign rules &amp; books</button>':'');
-  // D-S1: members still see the code; only the GM can replace it.
-  if(cloudActive()&&camp.invite_code){
-    h+='<p class="note camp-invite" style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
-     +'invite code <b style="font-family:var(--mono)">'+esc(camp.invite_code)+'</b>'
-     +'<button class="chip sm" onclick="APP.copyInviteLink(\''+jsq(camp.invite_code)+'\',this)">Copy Invite Link</button>'
-     +(isDM?'<button class="chip sm" onclick="APP.rotateInvite()">New code</button>':'')
-     +'</p>'
-     +(isDM?'<p class="note">New code replaces this one: the old code and link stop working. Members already in the campaign stay.</p>':'');
-  }
-  h+='<p style="margin-top:12px"><button class="nav primary" onclick="APP.toBoard(\''+camp.id+'\')">Live Party Board &rarr;</button>'
-   +(isDM?' <button class="chip" onclick="APP.downloadCampaignBackup()">Download campaign backup</button>':'')
-   +(isDM?' <button class="chip" onclick="APP.deleteCampaign()">Delete campaign</button>':'')+'</p>';
+  const cloud=cloudActive(),me=AUTH_USER&&AUTH_USER.id;
+  const isDM=!cloud||camp.dm_id===me;
+  const rules=normalizedCampaignRules(camp.rules_settings);
+  let h='<div class="menuwrap st-page st-cm">';
+  h+='<button type="button" class="st-cm-back" onclick="APP.toCampaigns()">'+campIcon('back')+'Campaigns</button>';
+  h+='<header class="st-pagehead st-cm-head"><div class="st-pagehead-text"><p class="st-eyebrow">Campaign &middot; '+(isDM?'You are the GM':'Player view')+'</p>'
+   +'<h1>'+esc(camp.name)+'</h1>'+campRuleChips(rules)+'</div>'
+   +'<div class="st-pageaction">'+(isDM?'<button type="button" class="st-btn" onclick="APP.editCampaignRules()">Rules &amp; books</button>':'')
+   +'<button type="button" class="st-btn st-btn-primary" onclick="APP.toBoard(\''+jsq(camp.id)+'\')">Live Party Board &rarr;</button></div></header>';
+  if(CAMP_MSG)h+='<p class="st-cm-msg" role="status">'+esc(CAMP_MSG)+'</p>';
+  h+='<div class="st-cm-grid"><div class="st-cm-main">';
+  // Party
+  h+='<section aria-labelledby="cmParty"><div class="st-cm-sechead"><h2 id="cmParty">Party <small>'+chars.length+(chars.length===1?' character':' characters')+'</small></h2></div><div class="st-cm-party">';
+  h+=chars.map(c=>{
+    const mine=!cloud||c.owner_id===me;
+    const st=campCardStats(c);
+    const meta=[c.tier&&c.tier!=="ordinary"?c.tier[0].toUpperCase()+c.tier.slice(1):null,c.career||c.culture].filter(Boolean).join(' · ');
+    const unassign=mine?'APP.unassignChar(\''+jsq(c.id)+'\')':(isDM?'APP.dmUnassignChar(\''+jsq(c.id)+'\')':'');
+    return '<article class="st-cm-card"><div class="st-cm-card-top"><span class="st-cm-sigil" style="--c:'+campSigilColor(c.name)+'" aria-hidden="true">'+esc(campInitial(c.name))+'</span>'
+     +'<div class="st-cm-card-id"><h3>'+esc(c.name||'Unnamed')+'</h3>'+(meta?'<p class="st-cm-meta">'+esc(meta)+'</p>':'')
+     +(cloud&&c.owner_name?'<p class="st-cm-player">'+campIcon('person')+esc(c.owner_name)+'</p>':'')+'</div>'
+     +(cloud&&mine?'<span class="st-tag st-cm-you">You</span>':'')+'</div>'
+     +(st?'<div class="st-cm-stats"><span class="st-cm-stat">HP<b>'+esc(st.hp)+'</b></span>'+(st.ap!=null?'<span class="st-cm-stat">AP<b>'+st.ap+'</b></span>':'')+'<span class="st-cm-stat">Luck<b>'+esc(st.luck)+'</b></span></div>':'')
+     +'<div class="st-cm-card-foot">'+(mine?'<button type="button" class="st-btn st-btn-sm" onclick="APP.openLibChar(\''+jsq(c.id)+'\')">Open</button>'
+        :'<button type="button" class="st-btn st-btn-sm" onclick="APP.toBoard(\''+jsq(camp.id)+'\')">View</button>')
+     +'<span class="st-grow"></span>'+(unassign?'<button type="button" class="st-btn st-btn-sm st-btn-danger" onclick="'+unassign+'">Unassign</button>':'')+'</div></article>';
+  }).join('');
+  h+='<button type="button" class="st-cm-card st-cm-add" onclick="APP.newCharacterForCampaign()">'+campIcon('plus')+'<b>New character</b><span>Build one for this campaign</span></button>';
   h+='</div>';
+  if(unassigned.length){
+    h+='<p class="st-cm-subhead">Your characters not in a campaign</p>'
+     +unassigned.map(c=>'<div class="st-cm-claim"><span class="st-cm-sigil st-cm-sigil-sm" style="--c:'+campSigilColor(c.name)+'" aria-hidden="true">'+esc(campInitial(c.name))+'</span>'
+       +'<div class="st-cm-claim-t"><b>'+esc(c.name||'Unnamed')+'</b><span>'+esc([c.culture,c.career].filter(Boolean).join(' · ')||'Not in any campaign')+'</span></div>'
+       +'<button type="button" class="st-btn st-btn-sm" onclick="APP.assignChar(\''+jsq(c.id)+'\')">Add to campaign</button></div>').join('');
+  }
+  h+='</section>';
+  // Table notes
+  h+='<section class="st-cm-panel st-cm-notes" aria-labelledby="cmNotes"><div class="st-cm-sechead"><h2 id="cmNotes">Table notes</h2>'
+   +(isDM?'<span class="st-cm-saved'+(CAMP_NOTES_SAVED?' on':'')+'" aria-live="polite">'+(CAMP_NOTES_SAVED?'Saved':'')+'</span>':'')+'</div>';
+  if(isDM)h+='<p class="st-cm-fine">Players see these notes as a briefing.</p><label class="st-sr" for="cmNotesText">Table notes</label>'
+   +'<textarea id="cmNotesText" rows="5" placeholder="Where the party is, what they are chasing, what happens next session." onchange="APP.campField(\'notes\',this.value)">'+esc(camp.notes||"")+'</textarea>';
+  else h+=camp.notes?'<p class="st-cm-brief">'+esc(camp.notes)+'</p>':'<p class="st-cm-fine">The GM has not written any notes yet.</p>';
+  h+='</section></div>';
+  // Side column
+  h+='<aside class="st-cm-side">';
+  if(cloud&&camp.invite_code){
+    // D-S1: members still see the code; only the GM can replace it.
+    h+='<section class="st-cm-panel" aria-labelledby="cmInvite"><h2 id="cmInvite">Invite players</h2><p class="st-cm-fine">Share the code or the link. Anyone with it can join.</p>'
+     +'<div class="st-cm-code"><code>'+esc(camp.invite_code)+'</code><button type="button" class="st-btn st-btn-sm" onclick="APP.copyInviteLink(\''+jsq(camp.invite_code)+'\',this)">'+campIcon('copy')+'Copy</button></div>'
+     +'<div class="st-cm-row"><button type="button" class="st-btn st-btn-primary" onclick="APP.copyInviteLink(\''+jsq(camp.invite_code)+'\',this)">Copy invite link</button>'
+     +(isDM?'<button type="button" class="st-btn" aria-expanded="false" aria-controls="cmNewCode" onclick="campToggleNewCode(this)">New code</button>':'')+'</div>'
+     +(isDM?'<div class="st-cm-confirm" id="cmNewCode" hidden><p>Replace the code? The old code and link stop working. Players already in the campaign stay.</p>'
+       +'<div class="st-cm-row"><button type="button" class="st-btn st-btn-sm st-btn-danger" onclick="stConfirmNext();APP.rotateInvite()">Replace code</button>'
+       +'<button type="button" class="st-btn st-btn-sm" onclick="campToggleNewCode(document.querySelector(\'[aria-controls=cmNewCode]\'))">Keep it</button></div></div>':'')
+     +'</section>';
+  }
   if(members.length){
     // D-S4: the GM can remove a player or hand the GM role to them.
-    const me=AUTH_USER&&AUTH_USER.id;
-    h+='<div class="card"><h3>Members ('+members.length+')</h3>'
+    h+='<section class="st-cm-panel" aria-labelledby="cmMembers"><h2 id="cmMembers">Members <small>'+members.length+'</small></h2><ul class="st-cm-members">'
      +members.map(m=>{
-       const other=cloudActive()&&isDM&&m.userId&&m.userId!==me&&m.role!=="dm";
-       return '<div class="skrow camp-member"><span>'+esc(m.name)+' <span class="note" style="text-transform:capitalize">'+esc(m.role==="dm"?"GM":m.role)+'</span></span>'
-        +(other?'<span><button class="chip sm" onclick="APP.transferGm(\''+jsq(m.userId)+'\')">Make GM</button> <button class="chip sm" onclick="APP.removeMember(\''+jsq(m.userId)+'\')">Remove</button></span>':'')
-        +'</div>';
-     }).join("")
-     +(cloudActive()&&isDM&&members.length>1?'<p class="note">Removing a player unassigns their characters here; the characters stay theirs. Making someone GM hands them the campaign, its tracker and notes; you stay on as a player.</p>':'')
-     +'</div>';
+       const other=cloud&&isDM&&m.userId&&m.userId!==me&&m.role!=="dm";
+       const n=chars.filter(c=>c.owner_id===m.userId).length;
+       return '<li class="st-cm-mem"><span class="st-cm-av" aria-hidden="true">'+esc(campInitial(m.name))+'</span>'
+        +'<span class="st-cm-mem-n"><b>'+esc(m.name)+(m.userId===me?' <span class="st-cm-dim">(you)</span>':'')+'</b><span>'+n+(n===1?' character':' characters')+'</span></span>'
+        +'<span class="st-tag'+(m.role==="dm"?' st-tag-gm':'')+'">'+(m.role==="dm"?'GM':'Player')+'</span>'
+        +(other?'<span class="st-cm-acts"><button type="button" class="st-btn st-btn-sm" onclick="if(stTwoTap(this,\'Confirm\'))APP.transferGm(\''+jsq(m.userId)+'\')">Make GM</button>'
+          +'<button type="button" class="st-btn st-btn-sm st-btn-danger" onclick="if(stTwoTap(this,\'Sure?\'))APP.removeMember(\''+jsq(m.userId)+'\')">Remove</button></span>':'')
+        +'</li>';
+     }).join('')+'</ul>'
+     +(cloud&&isDM&&members.length>1?'<p class="st-cm-fine">Removing a player unassigns their characters here; the characters stay theirs. Making someone GM hands them the campaign, its tracker and notes; you stay on as a player.</p>':'')
+     +'</section>';
   }
-  h+='<div class="card"><h3>Characters ('+chars.length+')</h3>';
-  if(!chars.length)h+='<p class="note">No characters linked yet.</p>';
-  h+=chars.map(c=>{
-    const mine=!cloudActive()||c.owner_id===(AUTH_USER&&AUTH_USER.id);
-    return '<div class="skrow"><span>'+esc(c.name)+' <span class="note">&mdash; '+esc([!mine?c.owner_name:null,c.tier!=="ordinary"?c.tier:null,c.culture,c.career].filter(Boolean).join(" · "))+'</span></span>'
-     +'<span>'+(mine?'<button class="chip" onclick="APP.openLibChar(\''+c.id+'\')">open</button> <button class="chip" onclick="APP.unassignChar(\''+c.id+'\')">unassign</button>'
-                    :(isDM?'<button class="chip" onclick="APP.dmUnassignChar(\''+c.id+'\')">unassign</button>':'<span class="note">view via Party Board</span>'))+'</span></div>';
-  }).join("");
-  h+='<p style="margin-top:12px"><button class="nav" onclick="APP.newCharacterForCampaign()">+ New Character for this Campaign</button></p>';
-  if(unassigned.length){
-    h+='<div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
-     +'<select id="assignPicker"><option value="">&mdash; assign one of your saved characters &mdash;</option>'
-     +unassigned.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+'</select>'
-     +'<button class="chip" onclick="APP.assignPicked()">assign</button></div>';
+  if(isDM){
+    h+='<details class="st-cm-panel st-cm-tools"><summary><h2>GM tools</h2>'+campIcon('chev')+'</summary><div class="st-cm-tools-in">'
+     +'<label class="st-cm-label" for="cmName">Campaign name</label><input id="cmName" type="text" value="'+esc(camp.name)+'" onchange="APP.campField(\'name\',this.value)">'
+     +'<button type="button" class="st-btn" onclick="APP.downloadCampaignBackup()">Download campaign backup</button>'
+     +'<p class="st-cm-fine">One file with the campaign, members, characters and homebrew, for safekeeping.</p>'
+     +'<p class="st-cm-fine">Created '+esc(new Date(camp.created_at).toLocaleString())+'</p>'
+     +'<div class="st-cm-danger"><button type="button" class="st-btn st-btn-danger" aria-expanded="false" aria-controls="cmDelete" onclick="campToggleDelete(this)">Delete campaign&hellip;</button>'
+     +'<div class="st-cm-confirm" id="cmDelete" hidden><p>Linked characters stay, just unassigned. Type <b>'+esc(camp.name)+'</b> to confirm.</p>'
+     +'<label class="st-sr" for="cmDeleteName">Campaign name</label><input id="cmDeleteName" type="text" autocomplete="off" oninput="campDeleteCheck(this)">'
+     +'<div class="st-cm-row"><button type="button" class="st-btn st-btn-sm st-btn-dangerfill" id="cmDeleteGo" disabled onclick="stConfirmNext();APP.deleteCampaign()">Delete forever</button></div></div></div>'
+     +'</div></details>';
+  }else{
+    h+='<p class="st-cm-fine">Created '+esc(new Date(camp.created_at).toLocaleString())+'</p>';
   }
-  h+='</div></div>';
+  h+='</aside></div></div>';
   return h;
+}
+let CAMP_NOTES_SAVED=false;
+// Two-tap confirm: the first tap turns the button into "Confirm" for 3.5s,
+// the second acts. stConfirmNext() tells the APP handler the person has
+// already confirmed on the page, so it skips its own confirm() box.
+let ST_CONFIRMED=false;
+function stConfirmNext(){ST_CONFIRMED=true;}
+function stTakeConfirmed(){const v=ST_CONFIRMED;ST_CONFIRMED=false;return v;}
+function stTwoTap(btn,label){
+ if(btn.dataset.armed){clearTimeout(Number(btn.dataset.armed));delete btn.dataset.armed;stConfirmNext();return true;}
+ const was=btn.textContent;btn.textContent=label||'Confirm';btn.classList.add('st-armed');
+ btn.dataset.armed=String(setTimeout(()=>{btn.textContent=was;btn.classList.remove('st-armed');delete btn.dataset.armed;},3500));
+ return false;
+}
+function campToggleNewCode(btn){
+ const box=document.getElementById('cmNewCode');if(!box)return;
+ box.hidden=!box.hidden;if(btn)btn.setAttribute('aria-expanded',String(!box.hidden));
+}
+function campToggleDelete(btn){
+ const box=document.getElementById('cmDelete');if(!box)return;
+ box.hidden=!box.hidden;btn.setAttribute('aria-expanded',String(!box.hidden));
+ if(!box.hidden)document.getElementById('cmDeleteName')?.focus();
+}
+function campDeleteCheck(input){
+ const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign,go=document.getElementById('cmDeleteGo');
+ if(go)go.disabled=!(camp&&input.value.trim()===String(camp.name).trim());
 }
 function renderCampaignView(){
   document.body.classList.remove("play-mode");

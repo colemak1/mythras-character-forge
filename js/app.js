@@ -1544,22 +1544,29 @@ window.APP={
    }catch(e){CAMP_MSG="Could not save campaign setup: "+(e?.message||"Unknown error");render();}
    finally{CAMPAIGN_SETUP_BUSY=false;if(APPVIEW==="campaign-setup")render();}
  },
- openCampaign(id){CURRENT_CAMPAIGN_ID=id;APPVIEW="campaign";CAMPAIGN_VIEW=null;CAMP_MSG=null;render();
+ openCampaign(id){CURRENT_CAMPAIGN_ID=id;APPVIEW="campaign";CAMPAIGN_VIEW=null;CAMP_MSG=null;CAMP_NOTES_SAVED=false;render();
    loadCampaignViewUnified(id);window.scrollTo(0,0);},
  campField(f,v){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
    camp[f]=v;render(); // optimistic — reflect the edit immediately
    const fn=f==="name"?renameCampaignUnified:noteCampaignUnified;
-   fn(camp.id,v).catch(e=>{CAMP_MSG="Could not save: "+e.message;render();});},
+   CAMP_NOTES_SAVED=false;
+   fn(camp.id,v).then(()=>{if(f==="notes"){CAMP_NOTES_SAVED=true;render();}})
+     .catch(e=>{CAMP_MSG="Could not save: "+e.message;render();});},
  deleteCampaign(){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
-   if(!confirm("Delete campaign \""+camp.name+"\"? Linked characters stay in place, just unassigned."))return;
+   if(!stTakeConfirmed()&&!confirm("Delete campaign \""+camp.name+"\"? Linked characters stay in place, just unassigned."))return;
    deleteCampaignUnified(camp.id).then(()=>{APPVIEW="campaigns";CAMP_CACHE=null;render();loadCampaignsUnified();})
      .catch(e=>{CAMP_MSG="Could not delete campaign: "+e.message;render();});},
  newCharacterForCampaign(){
    if(!AUTH_USER&&!MOCK_AUTH){CAMP_MSG="Sign in first — creating a character needs an account.";render();return;}
    if(hasUnsavedWork()&&!confirm("Start a new character for this campaign? This clears the one currently loaded (autosave and exports are unaffected until overwritten)."))return;
    const cid=CURRENT_CAMPAIGN_ID;S=freshState();S.campaignId=cid;APPVIEW="character";render();window.scrollTo(0,0);},
+ assignChar(id){
+   if(!id)return;
+   assignCharUnified(id,CURRENT_CAMPAIGN_ID)
+     .then(()=>loadCampaignViewUnified(CURRENT_CAMPAIGN_ID))
+     .catch(e=>{CAMP_MSG="Could not assign character: "+e.message;render();});},
  assignPicked(){
    const sel=$("#assignPicker");if(!sel||!sel.value)return;
    assignCharUnified(sel.value,CURRENT_CAMPAIGN_ID)
@@ -1582,21 +1589,21 @@ window.APP={
  // D-S1: replace the invite code; the old code and #/join/ link stop working.
  rotateInvite(){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
-   if(!confirm("Make a new invite code? The current code and invite link stop working at once. Players already in the campaign are not affected."))return;
+   if(!stTakeConfirmed()&&!confirm("Make a new invite code? The current code and invite link stop working at once. Players already in the campaign are not affected."))return;
    cloudRotateInvite(camp.id).then(code=>{camp.invite_code=code;CAMP_MSG="New invite code: "+code+". Send the new link to anyone still to join.";render();})
      .catch(e=>{CAMP_MSG="Could not change the invite code: "+campaignActionError(e);render();});},
  // D-S4: remove a member. Their characters are unassigned, never deleted.
  removeMember(userId){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
    const m=(CAMPAIGN_VIEW.members||[]).find(x=>x.userId===userId);const name=m?m.name:"this player";
-   if(!confirm("Remove "+name+" from \""+camp.name+"\"? Their characters are unassigned from this campaign but stay in their library. They can only rejoin with the invite code; make a new code to stop that."))return;
+   if(!stTakeConfirmed()&&!confirm("Remove "+name+" from \""+camp.name+"\"? Their characters are unassigned from this campaign but stay in their library. They can only rejoin with the invite code; make a new code to stop that."))return;
    cloudRemoveMember(camp.id,userId).then(()=>{CAMP_MSG=name+" was removed.";return loadCampaignViewUnified(camp.id);})
      .catch(e=>{CAMP_MSG="Could not remove member: "+campaignActionError(e);render();});},
  // D-S4: hand the GM role to another member; the old GM stays as a player.
  transferGm(userId){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
    const m=(CAMPAIGN_VIEW.members||[]).find(x=>x.userId===userId);const name=m?m.name:"this player";
-   if(!confirm("Make "+name+" the GM of \""+camp.name+"\"? They get the campaign settings, Combat Tracker and GM notes. You stay as a player and can't undo this yourself."))return;
+   if(!stTakeConfirmed()&&!confirm("Make "+name+" the GM of \""+camp.name+"\"? They get the campaign settings, Combat Tracker and GM notes. You stay as a player and can't undo this yourself."))return;
    cloudTransferCampaign(camp.id,userId).then(()=>{CAMP_MSG=name+" is now the GM.";CAMP_CACHE=null;return loadCampaignViewUnified(camp.id);})
      .catch(e=>{CAMP_MSG="Could not hand over the campaign: "+campaignActionError(e);render();});},
  // D-S4: the whole campaign as one backup file.

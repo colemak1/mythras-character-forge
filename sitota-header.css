@@ -1,0 +1,113 @@
+/* Site header, phone tab bar and More sheet (owner-approved v0 "Style A",
+   2026-11-09). Shared by index.html and The Pits fight page. Flat and ruled:
+   the active tab is a 2px gold line only, never a pill or a filled shape. */
+.sitota-header,.st-tabbar,.st-more{
+  --sh-bg:#171712;--sh-panel:#1f1f18;--sh-panel2:#26261e;--sh-line:#3a372d;--sh-line2:#555044;
+  --sh-ink:#eee6d7;--sh-muted:#b9ad98;--sh-faint:#8c8272;--sh-gold:#d7b884;--sh-gold-ink:#1c150b;
+  --sh-serif:"Cormorant Garamond",Georgia,serif;--sh-sans:"DM Sans",system-ui,sans-serif;
+}
+.sitota-header *,.st-tabbar *,.st-more *{box-sizing:border-box}
+.sitota-header svg.i,.st-tabbar svg.i,.st-more svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---- Top bar ---- */
+.sitota-header{position:sticky;top:0;z-index:40;background:rgba(23,23,18,.9);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--sh-line2);
+  color:var(--sh-ink);font:400 15px/1.5 var(--sh-sans)}
+.sitota-header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;pointer-events:none;opacity:.4;
+  background:linear-gradient(90deg,transparent,var(--sh-gold) 50%,transparent)}
+.sitota-header-inner{width:min(1360px,calc(100% - 32px));height:64px;margin:auto;display:flex;align-items:center;gap:16px}
+.sitota-brand{display:flex;align-items:center;gap:12px;min-width:0;color:var(--sh-ink);text-decoration:none}
+.sitota-logo{display:block;height:40px;width:auto;flex:none}
+.sitota-brand-text{font:500 24px/1 var(--sh-serif);letter-spacing:.01em;white-space:nowrap}
+.sitota-brand-text small{display:block;font:500 9.5px/1 var(--sh-sans);letter-spacing:.2em;text-transform:uppercase;
+  color:var(--sh-muted);margin-top:5px}
+.sitota-nav{display:none}
+.sitota-divider{display:none}
+#siteAccount{margin-left:auto;display:inline-flex;align-items:center;gap:10px;min-width:44px;min-height:44px;padding:0;
+  border:0;border-radius:3px;background:transparent;color:var(--sh-ink);text-decoration:none}
+.sh-av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--sh-panel2);
+  border:1px solid var(--sh-gold);color:var(--sh-gold);font:600 18px/1 var(--sh-serif)}
+.sh-av svg.i{width:20px;height:20px}
+.sh-acct-n{display:none;text-align:left;line-height:1.2;min-width:0}
+.sh-acct-n b{display:block;font-weight:500;font-size:13px;max-width:16ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sh-acct-n small{display:block;font-size:11px;color:var(--sh-muted)}
+#siteAccount[aria-current="page"] .sh-av{background:var(--sh-gold);color:var(--sh-gold-ink)}
+.sitota-header a:focus-visible{outline:2px solid var(--sh-gold);outline-offset:2px}
+
+@media(min-width:900px){
+  .sitota-header-inner{height:76px;gap:32px}
+  .sitota-logo{height:46px}
+  .sitota-brand-text{font-size:28px}
+  .sitota-brand-text small{font-size:10px}
+  .sitota-nav{display:flex;align-items:stretch;height:100%;margin-left:auto;gap:2px}
+  .sitota-nav a{position:relative;display:inline-flex;align-items:center;gap:8px;padding:0 14px;color:var(--sh-muted);
+    font:500 13px var(--sh-sans);text-decoration:none;white-space:nowrap;transition:color .15s,background-color .15s}
+  .sitota-nav a svg.i{width:16px;height:16px;opacity:.85}
+  .sitota-nav a:hover{color:var(--sh-ink);background:rgba(238,230,215,.05)}
+  .sitota-nav a::after{content:"";position:absolute;left:14px;right:14px;bottom:-1px;height:2px;background:var(--sh-gold);
+    transform:scaleX(0);transform-origin:center;transition:transform .2s}
+  .sitota-nav a[aria-current="page"]{color:var(--sh-ink)}
+  .sitota-nav a[aria-current="page"] svg.i{color:var(--sh-gold);opacity:1}
+  .sitota-nav a[aria-current="page"]::after{transform:scaleX(1)}
+  .sitota-divider{display:block;width:1px;height:28px;background:var(--sh-line2);margin:0 -8px}
+  #siteAccount{margin-left:0;padding:4px 14px 4px 4px;border:1px solid var(--sh-line2);background:var(--sh-panel)}
+  #siteAccount:hover{border-color:var(--sh-gold)}
+  .sh-acct-n{display:block}
+  .sh-av{width:34px;height:34px;font-size:16px}
+  .sh-av svg.i{width:18px;height:18px}
+}
+@media(min-width:900px) and (max-width:1180px){
+  .sitota-header-inner{gap:18px}
+  .sitota-nav a{padding:0 9px}
+  .sitota-nav a::after{left:9px;right:9px}
+  .sitota-nav a svg.i{display:none}
+  .sh-acct-n{display:none}
+  #siteAccount{padding:4px}
+}
+
+/* ---- Phone tab bar (below 900px) ---- */
+.st-tabbar,.st-more{display:none}
+@media(max-width:899px){
+  body[data-sitota-view="menu"] .st-tabbar,body[data-sitota-view="library"] .st-tabbar,body[data-sitota-view="campaigns"] .st-tabbar,
+  body[data-sitota-view="campaign"] .st-tabbar,body[data-sitota-view="pits"] .st-tabbar,body[data-sitota-view="wiki"] .st-tabbar,
+  body[data-sitota-view="world"] .st-tabbar,body[data-sitota-view="account"] .st-tabbar,body.pits-page .st-tabbar{display:grid}
+  .st-tabbar{position:fixed;left:0;right:0;bottom:0;z-index:60;grid-template-columns:repeat(5,1fr);
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:var(--sh-bg);border-top:1px solid var(--sh-line2)}
+  .st-tabbar a,.st-tabbar button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    min-height:56px;padding:0;background:transparent;border:0;border-radius:0;color:var(--sh-muted);
+    font:500 11.5px var(--sh-sans);letter-spacing:.01em;text-decoration:none;cursor:pointer;transition:color .15s}
+  .st-tabbar svg.i{width:22px;height:22px}
+  .st-tabbar a::before,.st-tabbar button::before{content:"";position:absolute;top:-7px;left:20%;right:20%;height:2px;
+    background:var(--sh-gold);transform:scaleX(0);transform-origin:center;transition:transform .2s}
+  .st-tabbar [aria-current="page"]{color:var(--sh-ink)}
+  .st-tabbar [aria-current="page"] svg.i{color:var(--sh-gold)}
+  .st-tabbar [aria-current="page"]::before{transform:scaleX(1)}
+  .st-tabbar a:focus-visible,.st-tabbar button:focus-visible{outline:2px solid var(--sh-gold);outline-offset:-2px}
+
+  /* More sheet */
+  .st-more:not([hidden]){display:block;position:fixed;inset:0;z-index:70}
+  .st-more-scrim{position:absolute;inset:0;width:100%;border:0;background:rgba(0,0,0,.55);cursor:pointer}
+  .st-more-panel{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:4px;
+    padding:10px 16px calc(16px + env(safe-area-inset-bottom));background:var(--sh-panel);border-top:1px solid var(--sh-line2);
+    border-radius:14px 14px 0 0;animation:stSheetUp .22s ease-out}
+  .st-more-grip{width:40px;height:4px;border-radius:4px;background:var(--sh-line2);margin:2px auto 10px}
+  .st-more-panel a{display:flex;align-items:center;gap:14px;min-height:60px;padding:6px 12px;border-radius:3px;
+    color:var(--sh-ink);text-decoration:none}
+  .st-more-panel a:hover{background:var(--sh-panel2)}
+  .st-more-ic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--sh-panel2);color:var(--sh-gold)}
+  .st-more-panel b{display:block;font:500 22px/1.1 var(--sh-serif)}
+  .st-more-panel small{display:block;font:400 13px var(--sh-sans);color:var(--sh-muted);margin-top:2px}
+  .st-more-panel a[aria-current="page"] b{color:var(--sh-gold)}
+  .st-more-panel a:focus-visible,.st-more-close:focus-visible{outline:2px solid var(--sh-gold);outline-offset:2px}
+  .st-more-close{margin-top:8px;min-height:48px;border:1px solid var(--sh-line2);border-radius:3px;background:transparent;
+    color:var(--sh-ink);font:500 15px var(--sh-sans);cursor:pointer}
+}
+@keyframes stSheetUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){
+  .sitota-nav a,.sitota-nav a::after,.st-tabbar a,.st-tabbar button,.st-tabbar a::before,.st-tabbar button::before{transition:none}
+  .st-more-panel{animation:none}
+}
+@media print{.sitota-header,.st-tabbar,.st-more{display:none}}
+/* Play Mode: the header scrolls away so the sheet can fill the screen. */
+body.play-mode .sitota-header{position:relative}
