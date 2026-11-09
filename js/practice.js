@@ -8,6 +8,7 @@ function practiceSnapshot(entry){
     S=Object.assign(freshState(),JSON.parse(JSON.stringify(entry.state)));
     S.campaignId=entry.campaignId||null;
     normalizeState();
+    if(S.species==="creature")throw Error("The Pits uses the human hit-location table, so a creature character can't fight here yet.");
     const chars=effectiveChars();
     if(!CHARS.every(k=>Number.isFinite(chars[k])&&chars[k]>0))throw Error("Finish this character's characteristics before practicing.");
     if(chars.STR+chars.SIZ>130)throw Error("This character's Damage Modifier is outside the arena's current supported range.");

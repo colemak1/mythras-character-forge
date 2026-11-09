@@ -161,8 +161,10 @@ function speciesCard(){
      '<button class="pick '+(cur===sp.key?"on":"")+'" onclick="APP.pickSpecies(\''+sp.key+'\')">'
      +'<span class="pn">'+esc(sp.label)+'</span>'
      +'<div class="pd">'+esc(sp.blurb)+'</div>'
-     +'<div class="pmeta">Move '+sp.move+'m &middot; '+esc(sp.lifespan)+'</div></button>').join("")+'</div>';
-  const sp=SPECIES_MAP[cur];
+     +'<div class="pmeta">Move '+sp.move+'m &middot; '+esc(sp.lifespan)+'</div></button>').join("")
+   +(cur==="creature"&&speciesDef()?'<button class="pick on" type="button" aria-pressed="true"><span class="pn">'+esc(speciesDef().label)+'</span><div class="pd">GM-approved creature'+(S.creaturePc.approvedOn?' (approved '+esc(S.creaturePc.approvedOn)+')':'')+'</div><div class="pmeta">Move '+speciesDef().move+'m</div></button>':'')
+   +'</div>';
+  const sp=speciesDef()||SPECIES_MAP.human;
   h+='<table class="rt speciestbl"><tr><th>&nbsp;</th>'+CHARS.map(c=>'<th class="num">'+c+'</th>').join("")+'</tr>'
    +'<tr><td>Dice</td>'+CHARS.map(c=>'<td class="num">'+esc(sp.dice[c])+'</td>').join("")+'</tr>'
    +'<tr><td>Range</td>'+CHARS.map(c=>'<td class="num">'+sp.bounds[c][0]+'&ndash;'+sp.bounds[c][1]+'</td>').join("")+'</tr>'
@@ -170,14 +172,41 @@ function speciesCard(){
   h+='<p class="note">Points Build pool for a '+esc(sp.label)+(S.archetype!=="ordinary"?" "+ARCHETYPES[S.archetype].label:"")+': <b>'+pbPool()+'</b> points.'
    +(sp.key==="human"
      ?' (Core rulebook&rsquo;s flat pool.)'
+     :sp.creature
+     ?' (Its average characteristics added up and rounded up; spend every point, each within its dice range, Core pp.8, 219'+(S.archetype!=="ordinary"?", + this tier&rsquo;s increment":"")+'. INT can&rsquo;t go below '+CREATURE_PC_MIN_INT+', p.218.)'
      :' (Racial averages '+sp.avgTotal+' + 6, per the species rules'+(S.archetype!=="ordinary"?", + this tier&rsquo;s increment":"")+'.)')+'</p>';
-  if(sp.traits.length){
+  if(sp.creature)h+=creatureAnatomyTableHTML(sp.locations)
+   +'<p class="note">Culture and career are chosen as normal (Core p.218). Play Mode and The Pits track the seven human hit locations, so track this body&rsquo;s locations with your GM.</p>';
+  if(sp.traits.length&&sp.creature){
+    h+='<div class="field"><label>Creature traits and abilities</label>'
+     +sp.traits.map(([n,d])=>'<p class="note"><b>'+esc(n)+'</b> &mdash; '+esc(d)+'</p>').join("")+'</div>';
+  }else if(sp.traits.length){
     h+='<div class="field"><label>Racial traits</label>'
      +sp.traits.map(([n,d])=>'<p class="note"><b>'+esc(n)+'</b> &mdash; '+esc(d)+'</p>').join("")
      +'<p class="note"><i>These are situational Grade shifts and narrative rules, so &mdash; exactly as with the Pulp/Paragon Grade-easier Advantages &mdash; they are recorded on your sheet rather than folded into a percentage. Characteristic dice and Movement Rate are applied automatically.</i></p></div>';
   }
+  h+=creaturePcPickerHTML();
   h+='<p class="note rulesrc">Default human characteristics and Movement: Mythras Core pp. 7&ndash;10. Existing non-human saves are legacy, non-Core content and require GM review.</p>';
   return h+'</div>';
+}
+// CRTR-B18 (Core pp.218–219): a sapient creature with INT 8+ that the GM
+// approved. The GM tracker's "Copy stat block for the player" gives the text.
+function creaturePcPickerHTML(){
+  const open=CREATURE_PC_DRAFT||CREATURE_PC_MSG.length;
+  return '<details class="lifeev"'+(open?' open':'')+'><summary>Play a creature your GM approved (Core pp.218&ndash;219)</summary>'
+   +'<p class="note">Any creature with INT '+CREATURE_PC_MIN_INT+' or more can be a character if the GM allows it. Paste its stat block (your GM can copy it from the Combat Tracker), with dice for all seven characteristics, its Move and its hit locations. An instinctive (INS) creature can&rsquo;t be a character.</p>'
+   +'<textarea id="creaturePcText" rows="7" aria-label="Creature stat block" placeholder="Name: ...\nSTR 2d6+6 13\n...\nINT 2d6+6 13\nCHA 3d6 11\nMove 6\n1-3 Right Leg 1/5\n..." onchange="APP.creaturePcDraft(this.value)">'+esc(CREATURE_PC_DRAFT)+'</textarea>'
+   +'<p><label><input type="checkbox" id="creaturePcApproved"> My GM approved this creature as my character</label></p>'
+   +(CREATURE_PC_MSG.length?'<ul class="warn" role="alert" style="padding-left:18px">'+CREATURE_PC_MSG.map(m=>'<li>'+esc(m)+'</li>').join("")+'</ul>':'')
+   +'<button class="chip actionchip" type="button" onclick="APP.useCreaturePc()">Use this creature</button></details>';
+}
+// A creature character's own hit-location table (d20, natural armour, HP
+// from its entry). Shared by the Concept step and the character sheet.
+function creatureAnatomyTableHTML(locs){
+  if(!Array.isArray(locs)||!locs.length)return "";
+  return '<table class="rt"><tr><th>d20</th><th>Location</th><th class="num">Natural armour</th><th class="num">HP (entry)</th></tr>'
+   +locs.map(l=>'<tr><td>'+(l.lo===l.hi?l.lo:l.lo+'&ndash;'+l.hi)+'</td><td>'+esc(l.name)+'</td><td class="num">'+(l.natural||0)+'</td><td class="num">'+l.hp+'</td></tr>').join("")
+   +'</table><p class="note">HP are the entry&rsquo;s figures; the GM confirms them for this character&rsquo;s CON and SIZ (Core p.219).</p>';
 }
 // Age band (Experience Table). Age used to be a free-text box with no
 // mechanical effect at all; the band now sets the Bonus Skill Points pool and
@@ -355,10 +384,10 @@ function stepChars(){
     // re-roll on each in case the GM allows it.
     const sp=speciesDef();
     body='<div class="card"><h3>Roll '+esc(sp.label)+' characteristics</h3>'
-    +'<div class="rulequote">&ldquo;Demi-human characters are created in almost the same way as humans. Characteristics are determined using the Characteristic dice for that species, which will result in different Characteristic values and ranges, but otherwise all the other elements: Attributes, Culture, Class and so on, are factored as normal.&rdquo;</div>'
+    +(sp.creature?'<p class="note">Roll each characteristic on the creature&rsquo;s own dice; culture, career and everything after are worked out as normal (Core p.218). INT can&rsquo;t go below '+CREATURE_PC_MIN_INT+'.</p>':'<div class="rulequote">&ldquo;Demi-human characters are created in almost the same way as humans. Characteristics are determined using the Characteristic dice for that species, which will result in different Characteristic values and ranges, but otherwise all the other elements: Attributes, Culture, Class and so on, are factored as normal.&rdquo;</div>')
     +(isOrd?"":'<p class="note">'+esc(ARCHETYPES[S.archetype].label)+': one extra die is rolled for each characteristic and the lowest discarded.</p>')
     +'<p><button class="chip actionchip" onclick="APP.rollSpeciesAll()" style="font-size:13.5px">Roll all seven</button> '
-    +'<button class="nav" onclick="APP.speciesAverages()" style="border:1px solid var(--line);border-radius:5px;padding:6px 14px">Use racial averages</button></p>'
+    +'<button class="nav" onclick="APP.speciesAverages()" style="border:1px solid var(--line);border-radius:5px;padding:6px 14px">'+(sp.creature?"Use the entry&rsquo;s values":"Use racial averages")+'</button></p>'
     +'<div class="charrow" style="margin-top:12px">'
     +CHARS.map(c=>'<div class="charbox"><div class="cname">'+c+'</div><div class="cval">'+(S.chars[c]??"&mdash;")+'</div>'
       +'<div class="cctl"><button class="chip actionchip" onclick="APP.rollSpeciesOne(\''+c+'\')">roll '+esc(sp.dice[c])+'</button></div>'
@@ -386,7 +415,7 @@ function stepChars(){
     const total=CHARS.reduce((a,c)=>a+(S.chars[c]||0),0);
     const pool=pbPool();
     body='<div class="card"><h3>Points build &mdash; '+pool+' points</h3>'
-    +'<div class="rulequote">'+(isOrd
+    +'<div class="rulequote">'+(speciesDef()&&speciesDef().creature?"Core pp.8, 219: the pool is this creature's average characteristics added up, rounded up"+(isOrd?"":", plus this tier's increment")+". Spend every point, keeping each characteristic within its dice range.":isOrd
       ?"Core points build: allocate all 80 points, staying within each characteristic's possible human range (p. 8)."
       :"&ldquo;If using the Points Build method, players build their character from a pre-set pool of "+pool+" points.&rdquo; &mdash; Mythras Companion")+'</div>'
     +'<div class="pool"><span>Points</span><span class="pv '+(total===pool?"ok":(total>pool?"bad":""))+'">'+total+' / '+pool+'</span>'

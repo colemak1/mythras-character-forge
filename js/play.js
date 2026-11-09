@@ -1011,7 +1011,7 @@ function pmInitiativeHTML(){
 // room for more later (owner, 2026-11-07).
 // Under the name: race, then culture and career. Not the campaign (owner, 2026-11-07).
 function pmCharSubtitle(){
-  const race=(SPECIES_MAP[S.species||"human"]||{label:"Human"}).label;
+  const race=(speciesDef()||{label:"Human"}).label;
   const archetype=S.archetype!=="ordinary"&&ARCHETYPES[S.archetype]?ARCHETYPES[S.archetype].label:null;
   const career=S.customCareer&&S.customCareer.isCustom?S.customCareer.name:S.career;
   return [race,archetype,S.culture,career].filter(Boolean).map(esc).join(" · ");
@@ -1307,6 +1307,7 @@ function pmBodyBoxHTML(){
   const worstTag={ok:"Unhurt",minor:"Minor Wound",serious:"Serious Wound",major:"Major Wound"}[v.worst];
   return '<div class="pm-box pmx-bodybox" id="pm-vitals"><h3>Body'+pmTip("health")+' <span class="pmx-health '+v.worst+'">'+worstTag+(v.worstLoc&&v.worst!=="ok"?' · '+esc(v.worstLoc.loc):'')+'</span></h3>'
    +'<div class="pm-vit-body">'+pmBodySvg()+'<div class="pm-loclist">'+PLAY_HP_LOCS.map(pmLocRow).join("")+'</div></div>'
+   +(speciesDef()&&speciesDef().creature?'<p class="pm-notes" role="note">'+esc(speciesDef().label)+' body: these are human locations. Track this creature&rsquo;s own locations (on the sheet) with your GM.</p>'+creatureAnatomyTableHTML(speciesDef().locations):'')
    +'</div>';
 }
 function pmRollLogHTML(){
@@ -2099,6 +2100,7 @@ function characterSheetBody(){
    +HIT_D20.map(([r,loc])=>{const base=loc.replace(/Right |Left /,"Each ");
      return '<tr><td>'+r+'</td><td>'+loc+'</td><td class="num">'+hpAt(loc)+'</td><td class="num">'+armorApAt(loc)+'</td></tr>';}).join("")
    +'</table>'+bodyDiagramSvg()+'</div></div>';
+  if(speciesDef()&&speciesDef().creature)h+='<div class="mbox"><div class="mbox-t">'+esc(speciesDef().label)+' hit locations</div>'+creatureAnatomyTableHTML(speciesDef().locations)+'</div>';
   h+='<div class="mbox"><div class="mbox-t">Difficulty Grades</div><table class="mtiny">'
    +GRADES.map(([k,l])=>'<tr><td>'+l+'</td><td class="num">'+(GRADE_MULT[k]==null?(k==="automatic"?"no roll":"can&rsquo;t attempt"):(k==="standard"?"&mdash;":"&times;"+GRADE_MULT[k]))+'</td></tr>').join("")
    +'</table><p class="note" style="margin-top:4px">Current: <b>'+GRADE_LABEL[ACTIVE_GRADE]+'</b> (set on the Sheet controls above)</p></div>';
