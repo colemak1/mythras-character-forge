@@ -166,7 +166,9 @@ test('Play Mode keeps the site header (owner, 2026-11-09); Rules reference and S
  assert.doesNotMatch(fs.readFileSync(path.join(root,'play-stone.css'),'utf8'),/body\.play-mode \.sitota-header\{display:none\}/);
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  for(const href of ['#/','#/my-characters','#/my-campaigns','#/the-pits','#/wiki','#/world/welcome','#/account'])assert(html.includes('href="'+href+'"'),'site nav: '+href);
- assert.match(fs.readFileSync(path.join(root,'play-clean.css'),'utf8'),/\.pmx-dash\{height:max\(620px,calc\(100dvh - 24px\)\)/,'the page can scroll a little past the sheet');
+ const clean=fs.readFileSync(path.join(root,'play-clean.css'),'utf8');
+ assert.match(clean,/\.pmx-dash\{height:max\(620px,100dvh\)/,'the sheet fills the screen once the header scrolls away');
+ assert.doesNotMatch(clean,/body\.pm-fit\{overflow:hidden\}/,'the page itself is not locked');
 });
 test('Special Effects are a tick list: tap to choose, tap again to remove',()=>{
  setup();run('S.rollLog=[{label:"Battleaxe",pct:60,roll:4,tier:"Critical",combat:true,combatKind:"style",combatRole:"attack",oppTier:"Failure",opponentAction:"rolled",weapon:"Battleaxe",effectsPicked:[]}];PM_EFFECT_ROLL_REF=S.rollLog[0];');

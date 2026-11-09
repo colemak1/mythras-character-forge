@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Fix: character sheet page scroll
+
+- An older rule still locked the page in Play Mode on desktop, so the page scroll from #231 did nothing. It is removed, and the sheet is now a full screen tall, so scrolling down moves the header fully out of view. Columns keep their own scroll.
+
 ## New site header and campaign manager (v0 handoff, 2026-11-09)
 
 - **Header (v0 "Style A"):** sticky 76px bar with line icons, a 2px gold underline for the active tab (no pills), and an account button showing your initial and name. Phones get a 64px bar, the five-tab bottom bar with a gold top line on the active tab, and a More sheet (Rules, World Guide, Account) with icons. Styles in the new `sitota-header.css`; the old per-page header overrides are removed.
