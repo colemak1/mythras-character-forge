@@ -5,6 +5,23 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Creature combat traits in the GM Combat Tracker (CRTR-B06–B14)
+
+ChatGPT's #223 review is merged (docs #224): Core p.214 confirms INS stands in for INT. Anatomy presets (pp.276–277) wait for verified tables. The stat-block box is a transcription format, one item per line.
+
+A creature card now shows controls for the combat traits it has (names as in its `Trait:` lines). Values specific to one creature (breath recovery, its poison, how an undead is destroyed) come from its entry via the GM.
+
+- **Flying (B06):** an Airborne switch; while airborne it defends with Fly (from its Skills line) instead of Evade.
+- **Leaper (B07):** record the opposed leap; only a win adds one natural-weapon hit.
+- **Grappler (B08):** a reminder that its natural hits bring the trait's grapple; no other creature gets one.
+- **Multi-headed (B09):** one extra action per working head (locations named "Head") beyond the first; a head at 0 HP or less removes its action, and the body is unaffected.
+- **Breathe Flame (B10):** breathing costs 1 AP and starts the entry's recovery, counted down on the creature's turns; it can't breathe again until then. The card reminds the GM it's a cone with Evade to halve.
+- **Trample (B11):** a target above half the creature's SIZ is refused; notes the doubled base Damage Modifier and stationary (AP) vs moving pass.
+- **Venomous (B12):** after "apply after armour", says whether the hit got through armour (Inject Venom possible) or not (no venom).
+- **Frenzy (B13):** a Frenzied switch; ending it reminds the GM to apply the trait's fatigue.
+- **Undead (B14):** wounds don't incapacitate or fatigue it; records its binding location and the entry's destroy condition.
+- New cases in `tests/creature-cases.cjs`.
+
 ## Creatures in the GM Combat Tracker (Subsystem 7, CRTR-B01–B05)
 
 - **Add a creature from its stat block (B02):** the Combat Tracker has a new "Add a creature from its stat block" box. The GM pastes or types the entry from their rulebook, one item per line: characteristics (with dice), INT or INS, Move, hit-location rows (`1-3 Right Hind Leg 2/5`, natural+worn as `2+1/4`), `Weapon:` lines (ending "natural" for natural weapons), `Trait:` lines, `Worn armour ENC:`, `Skills:` and `Notes:`. Missing or unreadable lines are listed and block adding; nothing is guessed or filled with human defaults. No bestiary data ships with the app.

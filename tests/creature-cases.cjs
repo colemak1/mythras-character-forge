@@ -90,4 +90,78 @@ test('CRTR-B02/B04 the GM tracker adds the creature with its own locations, HP a
  assert.equal(run('__camp.session_state.combatants[0].hp.Forequarters.cur'),2,'6 damage − 2 natural armour from 6 HP');
  run('Math.random=()=>0.95;APP.gmRollAllInit()');assert.equal(run('__camp.session_state.combatants[0].init'),25,'d10 (10) + Initiative bonus 15');
 });
+
+// ---------- CRTR-B06–B14: combat traits ----------
+const tracker=(over)=>{run('var __camp={id:"c1",session_state:null};CAMPAIGN_VIEW={campaign:__camp};sessionStateCampaignUnified=async()=>{};render=()=>{};'
+ +'var __el={};document.querySelector=sel=>__el[sel]||null;CREATURE_MSG={};CREATURE_HIT={};');
+ run('APP.gmCreatureDraft('+JSON.stringify(hound(over))+');APP.gmAddCreature()');
+ return run('__camp.session_state.combatants[0].id');};
+const cb=()=>JSON.parse(run('JSON.stringify(__camp.session_state.combatants[0])'));
+const card=()=>run('combatantCardHTML(__camp.session_state.combatants[0],false)');
+const note=id=>run('CREATURE_MSG["'+id+'"]');
+test('CRTR-B06 Fly replaces Evade only while airborne',()=>{
+ const id=tracker({trait:'Trait: Flying',skills:'Skills: Evade 40%, Fly 75%'});
+ assert.match(card(),/Defends with Evade 40%/);
+ run('APP.gmCreatureState("'+id+'","airborne",true)');assert.equal(cb().cs.airborne,true);assert.match(card(),/Defends with Fly 75%/);
+ tracker({skills:'Skills: Evade 40%, Fly 75%'});assert.equal(run('creatureDefence(__camp.session_state.combatants[0].creature,true).skill'),'Evade','no Flying trait, no substitution');
+});
+test('CRTR-B07 only a won leap adds one natural-weapon hit',()=>{
+ const id=tracker({trait:'Trait: Leaper'});
+ run('APP.gmCreatureLeap("'+id+'",true)');assert.match(note(id),/also lands one Bite hit \(1d8\)/);
+ run('APP.gmCreatureLeap("'+id+'",false)');assert.match(note(id),/no bonus hit/);
+ tracker({});assert.equal(run('creatureLeapBonus(__camp.session_state.combatants[0].creature,true)'),null,'no trait, no bonus');
+ assert.doesNotMatch(card(),/Leaper/);
+});
+test('CRTR-B08 the grapple note shows only for a Grappler',()=>{
+ tracker({trait:'Trait: Grappler'});assert.match(card(),/extra grapple follows/);
+ tracker({});assert.doesNotMatch(card(),/grapple/);
+});
+test('CRTR-B09 each working head beyond the first adds an action; losing one removes it',()=>{
+ const id=tracker({trait:'Trait: Multi-headed',locs:['1-6 Body 3/9','7-10 Tail 2/5','11-14 Left Head 2/4','15-17 Middle Head 2/4','18-20 Right Head 2/4'].join('\n')});
+ assert.equal(cb().ap.max,5,'3 AP + 2 extra heads');assert.match(card(),/Working heads 3 \/ 3/);
+ run('__el["#cbtdmg-'+id+'-Left_Head"]={value:"4"};APP.gmDamageLoc("'+id+'","Left Head","cbtdmg-'+id+'-Left_Head")');
+ assert.equal(cb().ap.max,4);assert.equal(cb().hp.Body.cur,9,'the body is untouched');
+ run('APP.gmApAdj("'+id+'",-4)');run('__el["#cbtdmg-'+id+'-Right_Head"]={value:"9"};APP.gmDamageLoc("'+id+'","Right Head","cbtdmg-'+id+'-Right_Head")');
+ assert.equal(cb().ap.max,3);assert.equal(cb().ap.used,3,'spent AP is capped at the new maximum');
+ tracker({locs:['1-10 Body 3/9','11-15 Left Head 2/4','16-20 Right Head 2/4'].join('\n')});assert.equal(cb().ap.max,3,'two heads without the trait add nothing');
+});
+test('CRTR-B10 breath costs 1 AP, needs the entry\'s recovery, and waits for it',()=>{
+ const id=tracker({trait:'Trait: Breathe Flame'});
+ run('APP.gmCreatureBreath("'+id+'")');assert.match(note(id),/Enter the breath recovery/);assert.equal(cb().ap.used,0);
+ run('APP.gmCreatureState("'+id+'","breathRecovery","2");APP.gmCreatureBreath("'+id+'")');
+ assert.equal(cb().ap.used,1);assert.match(note(id),/Evade to halve/);assert.match(card(),/Recovering: 2 turn/);
+ run('APP.gmCreatureBreath("'+id+'")');assert.match(note(id),/Still recovering/);assert.equal(cb().ap.used,1);
+ run('APP.gmAdvanceTurn();APP.gmAdvanceTurn()');assert.match(card(),/Breathe \(1 AP\)/,'recovered after its own turns');
+ run('__camp.session_state.combatants[0].ap.used=3;APP.gmCreatureBreath("'+id+'")');assert.match(note(id),/No Action Points/);
+});
+test('CRTR-B11 trample refuses a target above half its SIZ',()=>{
+ const id=tracker({trait:'Trait: Trample',siz:'SIZ 4d6+12 26'});
+ run('__el["#cbttrample-'+id+'"]={value:"14"};APP.gmCreatureTrample("'+id+'")');assert.match(note(id),/Too big to trample: SIZ 14 is more than half the creature's SIZ 26/);
+ run('__el["#cbttrample-'+id+'"]={value:"13"};APP.gmCreatureTrample("'+id+'")');assert.match(note(id),/Can trample SIZ 13/);
+ assert.match(card(),/doubles the base Damage Modifier/);
+ tracker({});assert.match(run('creatureTrampleCheck(__camp.session_state.combatants[0].creature,3)'),/doesn't have the Trample trait/);
+});
+test('CRTR-B12 venom is offered only when the hit gets through armour',()=>{
+ const id=tracker({trait:'Trait: Venomous'});
+ run('Math.random=()=>0.5;APP.gmCreatureRollLoc("'+id+'");__el["#cbtraw-'+id+'"]={value:"2"};APP.gmCreatureHit("'+id+'")');
+ assert.match(note(id),/0 damage after armour\. Nothing got through: no venom/);
+ run('APP.gmCreatureRollLoc("'+id+'");__el["#cbtraw-'+id+'"]={value:"5"};APP.gmCreatureHit("'+id+'")');
+ assert.match(note(id),/3 damage after armour\. Through armour: Inject Venom/);
+ tracker({});run('APP.gmCreatureRollLoc("'+cb().id+'");__el["#cbtraw-'+cb().id+'"]={value:"5"};APP.gmCreatureHit("'+cb().id+'")');
+ assert.doesNotMatch(note(cb().id),/venom/i);
+});
+test('CRTR-B13 frenzy is a state with an ending, not a permanent bonus',()=>{
+ const id=tracker({trait:'Trait: Frenzy'});
+ assert.match(card(),/Not a permanent bonus/);
+ run('APP.gmCreatureState("'+id+'","frenzied",true)');assert.match(card(),/pain and fatigue penalties the trait names are ignored/);
+ run('APP.gmCreatureState("'+id+'","frenzied",false)');assert.match(note(id),/Frenzy ended: apply the fatigue/);
+});
+test('CRTR-B14 undead: wounds don\'t incapacitate; binding location and destroy condition are recorded',()=>{
+ const id=tracker({trait:'Trait: Undead'});
+ assert.match(card(),/Serious and Major Wounds don&rsquo;t incapacitate or fatigue it/);
+ run('APP.gmCreatureState("'+id+'","bindingLoc","Head");APP.gmCreatureState("'+id+'","destroyWhen","its binding location is destroyed")');
+ assert.equal(cb().cs.bindingLoc,'Head');assert.equal(cb().cs.destroyWhen,'its binding location is destroyed');
+ run('APP.gmCreatureState("'+id+'","bindingLoc","Wing")');assert.equal(cb().cs.bindingLoc,'','not one of its locations');
+ run('APP.gmCreatureState("'+id+'","hp",1)');assert.equal(cb().cs.hp,undefined,'unknown state keys are ignored');
+});
 console.log('Creature case tests passed');
