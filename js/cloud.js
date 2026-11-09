@@ -1787,7 +1787,7 @@ function creatureImportHTML(){
    +'<p class="note">Paste or type it one item per line (Core pp.218–220). Use INS instead of INT for an animal (p.214). Location rows are d20 range, name, armour/HP; write natural+worn armour as 2+3/6. Natural weapons end with &ldquo;natural&rdquo;.</p>'
    +'<p class="note"><label for="gmCreatureAnatomy">Start the locations from a body plan (Core pp.276–277)</label> <select id="gmCreatureAnatomy" onchange="APP.gmCreatureAnatomy(this.value)"><option value="">Choose&hellip;</option>'
    +Object.keys(CREATURE_ANATOMY).map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("")+'</select> Then fill in each location&rsquo;s armour and HP.</p>'
-   +'<textarea id="gmCreatureText" rows="9" placeholder="Name: Hill Beast\nSTR 2d6+6 13\nCON 3d6 11\nSIZ 2d6+6 13\nDEX 2d6+6 13\nINS 2d6+6 13\nPOW 1d6+6 10\nMove 10\n1-3 Right Hind Leg 2/5\n...\nWeapon: Bite 1d8 natural\nTrait: Formidable Natural Weapons\nWorn armour ENC: 0\nSkills: Athletics 60%, Perception 70%" onchange="APP.gmCreatureDraft(this.value)">'+esc(CREATURE_DRAFT)+'</textarea>';
+   +'<textarea id="gmCreatureText" rows="9" placeholder="Name: Hill Beast\nSTR 2d6+6 13\nCON 3d6 11\nSIZ 2d6+6 13\nDEX 2d6+6 13\nINS 2d6+6 13\nPOW 1d6+6 10\nMove 10\n1-3 Right Hind Leg 2/5\n...\nWeapon: Bite 1d8 natural\nTrait: Formidable Natural Weapons\nWorn armour ENC: 0\nSkills: Athletics 60%, Perception 70%" oninput="CREATURE_DRAFT=this.value.slice(0,6000)" onchange="APP.gmCreatureDraft(this.value)">'+esc(CREATURE_DRAFT)+'</textarea>';
   if(parsed){
     if(parsed.errors.length)h+='<ul class="warn" style="padding-left:18px">'+parsed.errors.map(e=>'<li>'+esc(e)+'</li>').join("")+'</ul>';
     if(parsed.unread.length)h+='<p class="warn">Lines not understood (fix or move them into a Notes: line): '+parsed.unread.map(esc).join(" · ")+'</p>';
@@ -1983,7 +1983,38 @@ function renderBoardView(){
   document.body.classList.add("menu-mode");
   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;
   document.title=(camp?camp.name+" — ":"")+"Party Board — Mythras Character Forge";
+  const keep=boardFormSnapshot($("#main"));
   $("#main").innerHTML=boardHTML();
+  boardFormRestore($("#main"),keep);
+}
+// The board redraws on a timer and on every realtime update. Keep what the
+// GM is in the middle of: open sections, typed-but-unsaved fields and the
+// focused field with its cursor (live batch 2026-11-09: the creature form
+// collapsed and lost its text). A field is restored only when the server's
+// value for it hasn't changed, so real updates still win.
+function boardFormSnapshot(root){
+  const s={open:[],fields:{},focus:null};
+  if(!root||!root.querySelectorAll)return s;
+  root.querySelectorAll("details").forEach(d=>{const t=d.querySelector("summary");if(d.open&&t)s.open.push(t.textContent);});
+  root.querySelectorAll("input[id],textarea[id],select[id]").forEach(el=>{
+    if(el.type==="checkbox"||el.type==="radio"||el.tagName==="SELECT")return;
+    if(el.value!==el.defaultValue)s.fields[el.id]={value:el.value,base:el.defaultValue};
+  });
+  const a=typeof document!=="undefined"?document.activeElement:null;
+  if(a&&a.id&&root.contains&&root.contains(a))s.focus={id:a.id,start:a.selectionStart,end:a.selectionEnd};
+  return s;
+}
+function boardFormRestore(root,s){
+  if(!root||!s||!root.querySelectorAll)return;
+  root.querySelectorAll("details").forEach(d=>{const t=d.querySelector("summary");if(t&&s.open.includes(t.textContent))d.open=true;});
+  for(const [id,f] of Object.entries(s.fields)){
+    const el=root.querySelector("#"+CSS.escape(id));
+    if(el&&el.defaultValue===f.base)el.value=f.value;
+  }
+  if(s.focus){
+    const el=root.querySelector("#"+CSS.escape(s.focus.id));
+    if(el&&el.focus){try{el.focus({preventScroll:true});if(s.focus.start!=null&&el.setSelectionRange)el.setSelectionRange(s.focus.start,s.focus.end);}catch(e){}}
+  }
 }
 // Standalone printable Character Sheet view — reached from Play Mode, the
 // builder's Finish step, or a My Characters card (see APP.toSheet /
