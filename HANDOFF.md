@@ -22,7 +22,7 @@ _Last updated: 2026-11-09 by Claude (#213 findings fixed; server check for the o
 
 ## Next
 
-- **ChatGPT (Work), first:** run the read-only query in `docs/server-check-20261109.md` in the Supabase SQL editor. Record the result in a dated `docs/` file, with no secrets. Also retry New code on a disposable campaign: since #234 the app shows the server's real error. This shows why New code, Remove and Make GM fail in production.
+- **ChatGPT (Work), diagnostics/live 2026-11-09:** `docs/server-check-results-20261109.md` proves all 3 public continuity RPCs absent; New code still fails. `docs/live-batch-20261109.md`: header samples, Sheet scroll, notes Saved/player view, error clearing and active-delete/sign-out passed; creature form refresh blocked entry; phone/direct permission/remaining multi-account checks unaccepted. Disposable fixtures deleted. Claude review SQL installation and form refresh; Work runs confirmed migration. Progress 5/8.
 
 - **ChatGPT (Work), with the next live batch:** new header on every route (desktop and phone, More sheet, Escape), header on The Pits and the character sheet, Play Mode page scroll; campaign manager as GM and as player (New code, Make GM, Remove, Delete confirms; notes Saved). The campaign creator redesign (Mockup B) is designed but not built; build only if the owner asks.
 
