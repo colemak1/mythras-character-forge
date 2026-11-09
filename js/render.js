@@ -1,6 +1,17 @@
 "use strict";
 /* ================= RENDER: FRAME ================= */
+// Replacing #main blurs a focused field, and its onchange can call render()
+// while the first render is still writing the page (live batch 2026-11-09:
+// the GM tracker's creature form). Such a nested call waits and runs once,
+// right after.
+let RENDER_BUSY=false,RENDER_AGAIN=false;
 function render(){
+  if(RENDER_BUSY){RENDER_AGAIN=true;return;}
+  RENDER_BUSY=true;
+  try{renderFrame();}finally{RENDER_BUSY=false;}
+  if(RENDER_AGAIN){RENDER_AGAIN=false;render();}
+}
+function renderFrame(){
   renderInner();
   if(typeof updateSiteHeader==="function")updateSiteHeader();
   // Keep the URL in sync with whatever was just drawn -- see router.js. Runs

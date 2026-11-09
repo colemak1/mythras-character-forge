@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## GM tracker keeps your place; campaign migration hand-off (live batch 2026-11-09)
+
+- **Party Board redraws** (every 15 s and on each live update) no longer close the creature form or wipe what you typed. Open sections, typed-but-unsaved fields and the cursor are kept; a field the server actually changed shows the new value. A redraw can no longer start inside another redraw, which a field's change handler could trigger.
+- **Server:** production is missing the November campaign migration (Work's diagnostics). `docs/server-install-20261109.md` gives Work the confirmed file, a pre-check and verification steps.
+
 ## Folk Magic specialist starting spells (D-4)
 
 - The Folk Magic picker now shows a specialist career's starting spells, one tenth of the skill rounded up (e.g. 41% → 5). Before, it asked the GM to decide the rounding. Decided 2026-11-09 in `docs/decisions.md`, along with D-5 (interrupted casting, Core p.119), which is built in the first Magic batch.

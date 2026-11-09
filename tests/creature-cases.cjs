@@ -251,3 +251,23 @@ test('CRTR-B18 a GM-permitted creature PC uses the nonhuman Points Build: averag
  assert.match(card(),/Points Build: \d+ points, all spent, each within STR 5–15/);
 });
 console.log('Creature case tests passed');
+test('live batch 2026-11-09: a board redraw keeps open sections, unsaved typing and focus, but not over a server change',()=>{
+ run('globalThis.CSS=globalThis.CSS||{escape:s=>s};');
+ run(`var __o=(()=>{const det={open:true,querySelector:()=>({textContent:"Add a creature from its stat block"})};
+  const ta={id:"gmCreatureText",type:"textarea",tagName:"TEXTAREA",value:"Name: Wyrm",defaultValue:"",selectionStart:5,selectionEnd:5};
+  const raw={id:"cbtraw-x",type:"number",tagName:"INPUT",value:"7",defaultValue:"3"};
+  return {querySelectorAll:s=>s==="details"?[det]:[ta,raw],contains:()=>true};})();
+  document.activeElement={id:"gmCreatureText",selectionStart:5,selectionEnd:5};
+  var __snap=boardFormSnapshot(__o);
+  var __det={open:false,querySelector:()=>({textContent:"Add a creature from its stat block"})};
+  var __focused=null,__sel=null;
+  var __ta={id:"gmCreatureText",value:"",defaultValue:"",focus(){__focused="ta";},setSelectionRange(a,b){__sel=[a,b];}};
+  var __raw={id:"cbtraw-x",value:"9",defaultValue:"9"};
+  var __n={querySelectorAll:s=>s==="details"?[__det]:[__ta,__raw],querySelector:s=>s==="#gmCreatureText"?__ta:s==="#cbtraw-x"?__raw:null};
+  boardFormRestore(__n,__snap);`);
+ assert.equal(run('__det.open'),true,'the creature form stays open');
+ assert.equal(run('__ta.value'),'Name: Wyrm','typed text survives');
+ assert.equal(run('__focused'),'ta');assert.deepEqual(JSON.parse(run('JSON.stringify(__sel)')),[5,5]);
+ assert.equal(run('__raw.value'),'9','a field the server changed keeps the server value');
+});
+console.log('Board redraw test passed');
