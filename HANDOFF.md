@@ -19,7 +19,7 @@ _Last updated: 2026-11-09 by Claude (#213 findings fixed; server check for the o
 
 ## Next
 
-- **Owner (first):** run the read-only query in `docs/server-check-20261109.md` and paste the result to Claude. It shows why New code, Remove and Make GM fail in production. Or retry New code now: the app shows the server's real error.
+- **ChatGPT (Work), first:** run the read-only query in `docs/server-check-20261109.md` in the Supabase SQL editor. Record the result in a dated `docs/` file, with no secrets. Also retry New code on a disposable campaign: since #234 the app shows the server's real error. This shows why New code, Remove and Make GM fail in production.
 
 - **ChatGPT (Work), with the next live batch:** new header on every route (desktop and phone, More sheet, Escape), header on The Pits and the character sheet, Play Mode page scroll; campaign manager as GM and as player (New code, Make GM, Remove, Delete confirms; notes Saved). The campaign creator redesign (Mockup B) is designed but not built; build only if the owner asks.
 
