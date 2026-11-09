@@ -814,16 +814,20 @@ function magicPanel(){
   if(!all.length)return prep+'<p class="pm-empty">No magic known — pick some up on the Magic step in the Character Builder.</p>';
   let h='<div class="pm-magicpools">'
    +'<span>Magic Points <b>'+playCurMagic()+'</b>/'+playMaxMagic()+'</span>';
-  if(devotionalMax()>0){
-    h+='<span>Devotional Pool <b>'+devotionalCur()+'</b>/'+devotionalMax()+'</span>'
-     +'<span class="pm-devadj"><button class="pm-sbtn" onclick="APP.devotionalAdj(1)" aria-label="restore devotional point">+</button>'
-     +'<button class="pm-sbtn dmg" onclick="APP.devotionalAdj(-1)" aria-label="spend devotional point">&minus;</button>'
-     +'<button class="pm-btn sm" onclick="APP.devotionalReset()">refill</button></span>';
+  const pools=Array.from({length:devotionalPoolCount()},(_,p)=>p).filter(p=>devotionalMax(p)>0);
+  for(const p of pools){
+    const name=devotionalPoolCount()>1?devotionalPoolLabel(p):"Devotional Pool";
+    h+='<span>'+esc(name)+' <b>'+devotionalCur(p)+'</b>/'+devotionalMax(p)+'</span>'
+     +'<span class="pm-devadj"><button class="pm-sbtn" onclick="APP.devotionalAdj(1,'+p+')" aria-label="restore '+esc(name)+' point">+</button>'
+     +'<button class="pm-sbtn dmg" onclick="APP.devotionalAdj(-1,'+p+')" aria-label="spend '+esc(name)+' point">&minus;</button>'
+     +'<button class="pm-btn sm" onclick="APP.devotionalReset('+p+')">refill</button></span>';
   }
   h+='</div>'+prep;
-  if(devotionalMax()>0)h+='<details class="pm-fx-item"><summary>Donate personal Magic Points <span class="pm-fx-badge">Core p.180</span></summary><p>At a suitable holy place, confirm the donation with the GM. This uses the Core suggested rule: the pool becomes the donation amount if greater than the current pool, rather than adding the donation to it. Other sources and variants remain manual.</p><label>Points donated <input id="devDonation" type="number" min="1" step="1"></label> <label><input id="devDonationConfirmed" type="checkbox"> Holy place and donation confirmed</label> <button type="button" class="pm-btn sm" onclick="APP.devotionalDonate(document.getElementById(\'devDonation\').value,document.getElementById(\'devDonationConfirmed\').checked)">Donate</button><p>Manual +, − and refill controls above remain available for GM-directed adjustments.</p></details>';
-  const poolLimit=devotionalRankLimit();
-  if(Number.isInteger(poolLimit)&&devotionalMax()>poolLimit)h+='<p class="warn" role="alert">The recorded Devotional Pool exceeds the confirmed rank limit ('+poolLimit+'). Review it in the builder before casting; saved points are preserved.</p>';
+  if(pools.length)h+='<details class="pm-fx-item"><summary>Donate personal Magic Points <span class="pm-fx-badge">Core p.180</span></summary><p>At a suitable holy place, confirm the donation with the GM. This uses the Core suggested rule: the pool becomes the donation amount if greater than the current pool, rather than adding the donation to it. All pools together hold at most POW. Other sources and variants remain manual.</p>'
+    +(pools.length>1?'<label>Pool <select id="devDonationPool">'+pools.map(p=>'<option value="'+p+'">'+esc(devotionalPoolLabel(p))+'</option>').join("")+'</select></label> ':'')
+    +'<label>Points donated <input id="devDonation" type="number" min="1" step="1"></label> <label><input id="devDonationConfirmed" type="checkbox"> Holy place and donation confirmed</label> <button type="button" class="pm-btn sm" onclick="APP.devotionalDonate(document.getElementById(\'devDonation\').value,document.getElementById(\'devDonationConfirmed\').checked,'+(pools.length>1?'Number(document.getElementById(\'devDonationPool\').value)':pools[0])+')">Donate</button><p>Manual +, − and refill controls above remain available for GM-directed adjustments.</p></details>';
+  for(const p of pools){const poolLimit=devotionalRankLimit(p);
+    if(Number.isInteger(poolLimit)&&devotionalMax(p)>poolLimit)h+='<p class="warn" role="alert">The recorded '+esc(devotionalPoolLabel(p))+' exceeds the confirmed rank limit ('+poolLimit+'). Review it in the builder before casting; saved points are preserved.</p>';}
   MAGIC_TRADITIONS.forEach(t=>{
     const items=all.map((m,idx)=>({m,idx})).filter(x=>x.m.tradition===t.key);
     if(!items.length)return;
@@ -833,9 +837,9 @@ function magicPanel(){
     h+=items.map(({m,idx})=>{
       let meta="";
       if(t.key==="folk")meta="1 MP base · 1 Turn · Intensity 1 · Magnitude 1 · ranged "+folkMagicRangeMetres(key?finalPct(key):0)+" m"+(m.spell?.t?.length?" · "+m.spell.t.join(", "):"");
-      else if(t.key==="sorcery"){const c=sorceryCost(m);meta=c.mp+" MP · "+c.turns+" turn"+(c.turns>1?"s":"")+(c.shapings?" · "+Object.entries(sorceryLevels(m)).map(([k,v])=>k+" "+v).join(", "):" · unshaped")+(c.combinedSpells?" · +"+c.combinedSpells+" combined":"");}
+      else if(t.key==="sorcery"){const c=sorceryCost(m);meta=c.mp+" MP · "+c.turns+" turn"+(c.turns>1?"s":"")+(c.shapings?" · "+Object.entries(sorceryLevels(m)).map(([k,v])=>k+" "+v).join(", "):" · unshaped")+(c.combinedSpells?" · combined with "+(sorceryCombinedNames(m).join(", ")||"(choose in builder)"):"");}
       else if(t.key==="animism")meta="POW "+(m.pow||0)+" · CHA "+(m.cha||0)+" · Intensity "+(m.intensity||1)+" · "+(m.spiritStatus==="bound"?"BOUND":"UNBOUND")+(Number.isInteger(m.spiritMP)?" · spirit MP "+m.spiritMP:"");
-      else if(t.key==="theism"){const d=theismDetails(m);meta=d?d.cost+" from pool · "+d.turns+" turns":"Confirm miracle level in builder";}
+      else if(t.key==="theism"){const d=theismDetails(m),pi=theismPoolIndex(m);const ek=pi===null?null:exhortKeyForPool(pi);meta=(d?d.cost+" from "+(pi===null?"pool (choose a cult in builder)":devotionalPoolCount()>1?devotionalPoolLabel(pi):"pool")+" · "+d.turns+" turns":"Confirm miracle level in builder")+(ek&&exhortOptions().length>1?" · Exhort "+finalPct(ek)+"%":"");}
       else if(t.key==="mysticism"){const det=mysticismDetails(m);meta=(det?det.cost+" MP":"Confirm Talent category and Intensity")+" · Intensity "+(m.intensity||1)+(m.active?" · ACTIVE":"");}
       else meta=(m.cost||0)+(t.pool==="devotional"?" from pool":" MP")+" · Intensity "+(m.intensity||1)+(t.key==="mysticism"&&m.active?" · ACTIVE":"");
       const body=(t.key==="folk"&&m.spell)?m.spell.d:(m.notes||"");
@@ -969,13 +973,12 @@ const PM_PHONE_ICONS=Object.fromEntries(Object.entries({
 const PM_COLORWAYS=[["verdigris","Verdigris","Cool grey stone, verdigris green and bronze."],["ember","Basalt & Ember","Warm grey stone, forge orange and brass."],["indigo","Sandstone & Indigo","Warm sandstone, deep indigo and copper."],["moss","Moss & Gold","Lichen stone, moss green and old gold."],["basalt","Basalt (dark)","Dark basalt for dim tables."],["war-room","The War Room","Dark brown, aged copper and oxblood."],["night-watch","Night Watch","Midnight blue, muted steel and brass."],["ivory-ink","Ivory & Ink","Cream, deep navy and muted bronze."],["deep-cypress","Deep Cypress","Forest charcoal, sage and pale gold."]];
 function pmColorway(){let v=null;try{v=localStorage.getItem("pm-colorway");}catch(e){}return PM_COLORWAYS.some(c=>c[0]===v)?v:"verdigris";}
 function pmSetColorway(k){if(!PM_COLORWAYS.some(c=>c[0]===k))return;try{localStorage.setItem("pm-colorway",k);}catch(e){}render();}
-// Play Mode hides the site's top bar (owner, 2026-11-07); one menu button in
-// the character header opens the same links. Phones also get Home in the
-// bottom bar.
-const PM_SITE_LINKS=[["#/","Home"],["#/my-characters","Characters"],["#/my-campaigns","Campaign"],["#/the-pits","The Pits"],["#/wiki","Rules"],["#/world/welcome","World Guide"],["#/account","Account"]];
-function pmSiteMenuHTML(){
-  return '<details class="pmx-sitemenu"><summary aria-label="Site menu" title="Site menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>'
-   +'<nav class="pmx-sitemenu-list" aria-label="Site navigation">'+PM_SITE_LINKS.map(([href,l])=>'<a href="'+href+'">'+l+'</a>').join("")+'<button type="button" onclick="this.closest(\'details\').open=false;APP.pmPopup(\'ref\')">Rules reference</button><button type="button" class="pmx-sitemenu-plain" onclick="this.closest(\'details\').open=false;APP.pmModal(\'settings\')">Settings</button></nav></details>';
+// Play Mode shows the site header again (owner, 2026-11-09), so the old
+// site-menu dropdown is gone. Its two Play Mode items stay as header buttons.
+function pmHeadExtrasHTML(){
+  const ic=p=>'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+  return '<button type="button" class="pm-btn" onclick="APP.pmPopup(\'ref\')" aria-label="Rules reference">'+ic('<path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4z"/><path d="M5 16a4 4 0 0 1 4-4h10"/>')+'<span class="lbl">Rules reference</span></button>'
+   +'<button type="button" class="pm-btn" onclick="APP.pmModal(\'settings\')" aria-label="Settings">'+ic('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>')+'<span class="lbl">Settings</span></button>';
 }
 // Skill description in the side panel (owner, 2026-11-07): our short summary
 // of the Core text, the formula and current value, and a Roll button.
@@ -1432,11 +1435,11 @@ function renderPlayView(){
   const initials=name.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join("")||"?";
   const scroll=pmSaveScroll();
   let h='<div class="pm-wrap pmx pmx-dash" data-pm-style="stone" data-view="'+(PM_VIEW==="right"?"right":PM_VIEW)+'" data-tab="'+tab+'">';
-  h+='<header class="pmx-head">'+pmSiteMenuHTML()
+  h+='<header class="pmx-head">'
    +'<div class="pmx-avatar">'+(S.concept.portrait?'<img src="'+S.concept.portrait+'" alt="">':'<span>'+esc(initials)+'</span>')+'</div>'
    +'<div class="pmx-id"><button class="pmx-back" onclick="APP.backFromPlay()">'+backLabel+'</button>'
    +'<h1 class="pmx-name">'+esc(name)+'</h1>'+(sub?'<p class="pmx-sub">'+sub+'</p>':'')+'</div>'
-   +'<div class="pmx-headbtns">'
+   +'<div class="pmx-headbtns">'+pmHeadExtrasHTML()
    +'<button class="pm-btn" onclick="APP.pmPopup(\'log\')" aria-label="Roll log"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/></svg><span class="lbl">Roll log'+(S.rollLog.length?' <span class="pmx-dim">'+S.rollLog.length+'</span>':'')+'</span></button>'
    +(VIEW_ONLY?"":'<button class="pm-btn" onclick="APP.pmPopup(\'advance\')" aria-label="Advance time"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span class="lbl">Advance time</span></button>')
    +(VIEW_ONLY?"":'<button class="pm-btn pmx-pri" onclick="APP.openXP()" aria-label="Improve skills"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span class="lbl">Improve skills</span>'+(S.xp.pool?' <span class="pm-xpbadge">'+S.xp.pool+'</span>':'')+'</button>')
@@ -2127,7 +2130,7 @@ function characterSheetBody(){
   const magic=allMagic();
   if(magic.length){
     h+='<div class="mbox" style="margin-top:8px"><div class="mbox-t">Magic Known</div>';
-    if(devotionalMax()>0)h+=mkv("Devotional Pool",devotionalCur()+" / "+devotionalMax()+" MP");
+    for(let p=0;p<devotionalPoolCount();p++)if(devotionalMax(p)>0)h+=mkv(devotionalPoolCount()>1?devotionalPoolLabel(p):"Devotional Pool",devotionalCur(p)+" / "+devotionalMax(p)+" MP");
     h+='<table class="mtiny"><tr><th>Magic</th><th>Tradition</th><th>Cast with</th><th>Cost</th></tr>'
      +magic.map(m=>{const t=MAGIC_TRAD_MAP[m.tradition];
        const cost=m.tradition==="folk"?"1 MP (0 on a Critical)"

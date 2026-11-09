@@ -362,15 +362,7 @@ body.play-mode.pm-style-stone .app{background:transparent}
 }
 @media (max-width:560px){.pm-style-stone .pmx-char .k{letter-spacing:.06em}.pm-style-stone .pmx-char b{font-size:20px}}
 
-/* Site top bar hidden in Play Mode; one menu button in the character header */
-body.play-mode .sitota-header{display:none}
-.pmx-sitemenu{position:relative;flex:0 0 auto}
-.pmx-sitemenu>summary{list-style:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;cursor:pointer;color:var(--st-header-text,#fff);border:1px solid color-mix(in srgb,var(--st-header-text,#fff) 28%,transparent);border-radius:1px}
-.pmx-sitemenu>summary::-webkit-details-marker{display:none}
-.pmx-sitemenu>summary:hover,.pmx-sitemenu[open]>summary{background:color-mix(in srgb,var(--st-header-text,#fff) 12%,transparent)}
-.pmx-sitemenu-list{position:absolute;top:calc(100% + 8px);left:0;z-index:80;min-width:200px;display:flex;flex-direction:column;padding:6px 0;background:var(--st-header-bg,#232928);border:1px solid var(--st-header-line,#a06a28);box-shadow:0 12px 30px rgba(0,0,0,.35)}
-.pmx-sitemenu-list a{padding:11px 16px;color:var(--st-header-text,#fff);text-decoration:none;font:600 14px var(--st-body,system-ui)}
-.pmx-sitemenu-list a:hover,.pmx-sitemenu-list a:focus-visible{background:color-mix(in srgb,var(--st-header-text,#fff) 12%,transparent);color:var(--st-accent-2,#c99a54)}
+/* Play Mode keeps the site header (owner, 2026-11-09); the old menu button is gone. */
 @media (max-width:1100px){
   .pm-style-stone .pmx-phonebar .pmx-tab{text-decoration:none}
 }
@@ -424,8 +416,7 @@ body.play-mode .sitota-header{display:none}
 @media (max-width:560px){
   .pm-style-stone .pmx-head{gap:8px;padding:8px 10px}
   .pm-style-stone .pmx-avatar{display:none}
-  .pm-style-stone .pmx .pmx-headbtns .pm-btn,.pmx-sitemenu>summary{min-width:36px;width:36px;height:36px}
-  .pm-style-stone .pmx-headbtns{gap:4px}
+  .pm-style-stone .pmx .pmx-headbtns .pm-btn,  .pm-style-stone .pmx-headbtns{gap:4px}
   .pm-style-stone .pmx-name{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pm-style-stone .pmx-id{min-width:0}
 }
@@ -455,8 +446,6 @@ body.play-mode .sitota-header{display:none}
 .pmx-refitem{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;min-height:48px;border:1px solid var(--pmx-line);border-radius:2px;background:var(--pmx-sunk);color:var(--pmx-ink);font:inherit;cursor:pointer}
 .pmx-refitem:hover{border-color:var(--pmx-accent)}
 .pmx-refitem b{font-size:14px}.pmx-refitem span{font-size:12px;color:var(--pmx-muted)}
-.pmx-sitemenu-list button{padding:11px 16px;border:0;border-top:1px solid color-mix(in srgb,var(--st-header-text,#fff) 18%,transparent);margin-top:4px;background:none;text-align:left;color:var(--st-header-text,#fff);font:600 14px var(--st-body,system-ui);cursor:pointer}
-.pmx-sitemenu-list button:hover{background:color-mix(in srgb,var(--st-header-text,#fff) 12%,transparent);color:var(--st-accent-2,#c99a54)}
 
 /* Left column fits without scrolling at common desktop sizes */
 @media (min-width:1101px){
@@ -469,7 +458,6 @@ body.play-mode .sitota-header{display:none}
 /* Settings popup */
 .pmx-setth{margin:14px 0 6px!important}
 .pmx-setth:first-child{margin-top:0!important}
-.pmx-sitemenu-list .pmx-sitemenu-plain{border-top:0;margin-top:0}
 /* Phones: header buttons are icons only; the Experience Roll count is a small badge on the icon */
 @media (max-width:1100px){
   .pm-style-stone .pmx .pmx-headbtns .pm-btn{position:relative}

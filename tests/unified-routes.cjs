@@ -128,14 +128,14 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   run('APP.addFolkManual()');assert.equal(run('S.magic.folk.length'),1);ctx.document.getElementById=oldGet;
  });
  await test('Sorcery rechecks shaping and applies Combine difficulty to the final roll',async()=>{
-  run('S=freshState(); S.magic.known=[{tradition:"sorcery",name:"Ward",shapingLevels:{Combine:1},combineExtra:0}]; S.play.magic=20; APPVIEW="play"; allMagic=()=>S.magic.known; magicSkillKey=()=>"invocation"; magicSkillPct=()=>47; finalPct=()=>90; gradeForEntry=()=>"standard"; playCurMagic=()=>S.play.magic; Math.random=()=>0.49; viewOnlyBlock=()=>false; render=()=>{};');
+  run('S=freshState(); S.magic.known=[{tradition:"sorcery",name:"Ward",shapingLevels:{Combine:1},combineExtra:0,combinedSpells:["Shield","Light"],combineSharedTargets:true},{tradition:"sorcery",name:"Shield"},{tradition:"sorcery",name:"Light"}]; S.play.magic=20; APPVIEW="play"; allMagic=()=>S.magic.known; magicSkillKey=()=>"invocation"; magicSkillPct=()=>47; finalPct=()=>90; gradeForEntry=()=>"standard"; playCurMagic=()=>S.play.magic; Math.random=()=>0.49; viewOnlyBlock=()=>false; render=()=>{};');
   run('APP.castMagic(0)'); assert.equal(run('S.play.sorceryCasting.completed'),1);
   run('S.magic.known[0].shapingLevels.Combine=6;APP.castMagic(0)'); assert.match(run('PM_MSG'),/exceeds/);assert.equal(run('S.rollLog.length'),0);
   run('S.magic.known[0].shapingLevels.Combine=1;APP.castMagic(0)');assert.equal(run('S.rollLog[0].pct'),60);assert.equal(run('S.rollLog[0].tier'),'Success');assert.equal(run('S.play.sorceryCasting'),null);
   run('S.magic.known[0].shapingLevels={Combine:2};APP.castMagic(0);APP.castMagic(0)');assert.equal(run('S.rollLog[0].pct'),45);assert.equal(run('S.rollLog[0].tier'),'Failure');
  });
  await test('Mysticism checks limits and rolls only on the final preparation turn',async()=>{
-  run('S=freshState(); S.magic.known=[{tradition:"mysticism",name:"Focus",intensity:3,cost:3,talentCategory:"augment",active:false}];S.play.magic=20;APPVIEW="play";allMagic=()=>S.magic.known;magicSkillKey=()=>"mysticism";magicSkillPct=n=>n==="Mysticism"?80:30;finalPct=()=>80;gradeForEntry=()=>"standard";playCurMagic=()=>S.play.magic;Math.random=()=>0.49;viewOnlyBlock=()=>false;render=()=>{};');
+  run('S=freshState(); S.magic.known=[{tradition:"mysticism",name:"Focus",intensity:3,cost:3,talentCategory:"augment",active:false,talentLearned:true}];S.play.magic=20;APPVIEW="play";allMagic=()=>S.magic.known;magicSkillKey=()=>"mysticism";magicSkillPct=n=>n==="Mysticism"?80:30;finalPct=()=>80;gradeForEntry=()=>"standard";playCurMagic=()=>S.play.magic;Math.random=()=>0.49;viewOnlyBlock=()=>false;render=()=>{};');
   run('APP.castMagic(0)');assert.equal(run('S.play.mysticismCasting.completed'),1);assert.equal(run('S.rollLog.length'),0);assert.equal(run('S.play.magic'),20);
   const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
   run('APP.castMagic(0)');assert.equal(run('S.play.mysticismCasting.completed'),2);assert.equal(run('S.rollLog.length'),0);
@@ -148,7 +148,7 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   run('S.play.mysticismCasting={index:0,total:3,completed:3,signature:"bad"};normalizeState()');assert.equal(run('S.play.mysticismCasting'),null);
  });
  await test('Mysticism category review preserves old data and charges calculated cost',async()=>{
-  run('S=freshState();S.magic.known=[{tradition:"mysticism",name:"Focus",intensity:2,cost:9,active:false}];S.play.magic=20;APPVIEW="play";allMagic=()=>S.magic.known;magicSkillKey=()=>"mysticism";magicSkillPct=()=>80;finalPct=()=>80;gradeForEntry=()=>"standard";playCurMagic=()=>S.play.magic;Math.random=()=>0.49;viewOnlyBlock=()=>false;render=()=>{};');
+  run('S=freshState();S.magic.known=[{tradition:"mysticism",name:"Focus",intensity:2,cost:9,active:false,talentLearned:true}];S.play.magic=20;APPVIEW="play";allMagic=()=>S.magic.known;magicSkillKey=()=>"mysticism";magicSkillPct=()=>80;finalPct=()=>80;gradeForEntry=()=>"standard";playCurMagic=()=>S.play.magic;Math.random=()=>0.49;viewOnlyBlock=()=>false;render=()=>{};');
   run('normalizeState();APP.castMagic(0)');assert.match(run('PM_MSG'),/Confirm the Talent category/);assert.equal(run('S.magic.known[0].cost'),9);assert.equal(run('S.play.magic'),20);
   run('APP.talentCategory(0,"enhance");APP.castMagic(0);APP.castMagic(0)');
   assert.equal(run('S.play.magic'),14);assert.equal(run('S.magic.known[0].cost'),9);
@@ -159,7 +159,8 @@ let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS 
   run('S=freshState();S.magic.known=[{tradition:"theism",name:"Bless",cost:3}];S.magic.devotional=12;S.magic.devotionalUsed=0;S.play.magic=12;APPVIEW="play";allMagic=()=>S.magic.known;magicSkillKey=()=>"exhort";finalPct=()=>80;gradeForEntry=()=>"standard";playCurMagic=()=>S.play.magic;Math.random=()=>0.49;viewOnlyBlock=()=>false;render=()=>{};');
   run('APP.castMagic(0)');assert.match(run('PM_MSG'),/Confirm/);assert.equal(run('S.magic.known[0].cost'),3);assert.equal(run('S.rollLog.length'),0);
   run('S.chars.POW=12;S.magic.devotionalRank="initiate";APP.castMagic(0)');assert.match(run('PM_MSG'),/exceeds/);assert.equal(run('S.magic.devotional'),12);assert.equal(run('S.rollLog.length'),0);
-  run('S.magic.devotionalRank=""');
+  run('S.magic.devotionalRank=""');run('APP.miracleLevel(0,"2");APP.castMagic(0)');assert.match(run('PM_MSG'),/Confirm your rank/);assert.equal(run('S.play.theismCasting'),null);
+  run('S.magic.devotionalRank="highpriest"');
   run('APP.miracleLevel(0,"2");APP.castMagic(0)');assert.equal(run('S.play.theismCasting.completed'),1);assert.equal(run('S.magic.devotionalUsed'),0);
   const saved=run('JSON.stringify(S)');run(`S=JSON.parse(${JSON.stringify(saved)});normalizeState();`);
   run('APP.castMagic(0)');assert.equal(run('S.rollLog[0].tier'),"Success");assert.equal(run('S.magic.devotionalUsed'),2);assert.equal(run('S.play.theismCasting'),null);

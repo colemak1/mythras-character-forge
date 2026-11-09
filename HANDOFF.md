@@ -3,9 +3,9 @@
 Read `AGENTS.md`, then this, at the start of every session; update it before ending one. Keep it short: replace finished items, don't append history (history goes in `CHANGELOG.md`).
 
 **Owner kickoff line for a new Claude session** (paste as the first message):
-> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/happy-brahmagupta-votbg4.
+> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/gallant-hypatia-3el31w.
 
-_Last updated: 2026-11-08 by Claude (D-S3 implemented, DB permission tests, Pits strip fix; docs #210 #211 merged)_
+_Last updated: 2026-11-09 by Claude (header, campaign manager, creature body plans/Chaos/Points Build)_
 
 ## Where things stand
 
@@ -19,10 +19,14 @@ _Last updated: 2026-11-08 by Claude (D-S3 implemented, DB permission tests, Pits
 
 ## Next
 
-- **Owner (first):** run `supabase/migrations/20261108130000_display_names_signed_in_only.sql` once in the Supabase SQL editor (safe to re-run). It implements D-S3 option A: signed-in users read only display names; signed-out visitors read no profiles. (The D-S1/D-S2/D-S4 migration `20261108120000_…` is already run.)
-- **Owner:** the signed-in live checks need disposable accounts that Work can't create (its browser forbids automated sign-up). Either create 3–4 test accounts and give Work their sign-ins, or run steps 8–10 of the plan in `campaign-cases-batch-1.md` yourself with two browsers. The database side of steps 1–6, 8 and 10 and of D-S3 is now covered by `tests/db/permissions.cjs` (CI), against a stand-in schema.
+- **ChatGPT (Work), with the next live batch:** new header on every route (desktop and phone, More sheet, Escape), header on The Pits and the character sheet, Play Mode page scroll; campaign manager as GM and as player (New code, Make GM, Remove, Delete confirms; notes Saved). The campaign creator redesign (Mockup B) is designed but not built; build only if the owner asks.
+
+- **Owner (done 2026-11-09):** D-S3 migration run; test accounts created for Work.
+- **ChatGPT (Work), when accounts exist:** multi-account steps 1–10 plus D-S3 (as an outsider, other users' names show and nothing else); new-item pop-up; signed-in Play Mode item search and 26 Core traits; Undo delete and Join with a code. Signed out or standalone: The Pits terminal recap timing (play a bout to Victory/Defeat) and recheck the initiative strip, fixed in the D-S3 PR. Record in `docs/live-batch-pr209-20261107.md` or a new dated file. Real phone and audible sound stay blocked unless the owner can check them.
+- **ChatGPT (Chat):** review the B18/B19/anatomy section at the end of `docs/creature-cases-batch-1.md` once (Claude checked it against the owner's Core PDF).
+- **ChatGPT (Work), with the live batch:** Magic Audit fixture: Combine 1 asks for a second spell and shared targets; Talent blocked until "Learned" is ticked; add a second cult pool, check combined POW cap, that each miracle asks for its cult, that a miracle spends only its own pool, and that the wrong cult is rejected; a miracle above its pool rank, or with no confirmed rank, is refused; Animist rank (Follower…High Shaman) limits binding and needs a recorded bargain or Spirit Combat. GM tracker (signed in, own campaign): paste a creature stat block, check the listed errors, add it, roll a hit location and apply damage after armour; with traits (e.g. Flying, Breathe Flame, Multi-headed), check the card's trait controls.
+- **Claude, next code batch:** B18 builder path (a PC built from a creature, with its own culture and career; the INT 8+ floor), then B20 per-entry children. Magic P2 waits for owner priority and D-4/D-5. Pits Unarmed only if the owner asks.
 - **ChatGPT (Work), live batch 2026-11-08:** `docs/live-batch-pr212-20261108.md`: A/B/C/D signed in, joins/items/reload/Undo and sampled Pits victory timing passed; Red/Blue and saved fixture deleted. New code / Remove / Make GM FAIL with missing server-update message; Claude investigate RPC availability despite reported migration. D-S3 grants verified; direct permission matrix, conflicts/gifts/pop-up and full traits/backup checks remain unaccepted. Progress 5/8.
-- **Claude, next code batch (owner picks):** Subsystem 6 Magic MAG-N01–N05 (`docs/magic-prioritized-build-spec.md`), or Subsystem 7 Creatures B01–B05 (`docs/creature-cases-batch-1.md`). Pits Unarmed only if the owner asks. Split `experiments/practice-combat.html`'s very long lines when next touching it.
 - **Owner, later:** D-4 and D-5 (Magic, low priority). Settings → General → "Allow auto-merge" if not on yet.
 
 ## Notes

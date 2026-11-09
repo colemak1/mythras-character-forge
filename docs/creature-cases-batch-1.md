@@ -28,3 +28,96 @@
 **Already correct / reuse (one line):** Existing human characteristic, damage, skill-roll and wound engines are reusable foundations (Subsystems 1–5), **not** proof of creature-specific coverage.
 
 **Boundary:** First implement data/anatomy/INS (B01–B05), then combat traits (B06–B14), then resistances/senses/Chaos (B15–B19) and per-entry children (B20). No nonhuman PC or creature bestiary completion claim without species-by-species verification; GM advice, encounter balancing and optional GM procedures need a later inventory, not invented code.
+
+## Implementation status, B01–B05 (Claude, 2026-11-08)
+
+Where: GM Combat Tracker, "Add a creature from its stat block". Tests: `tests/creature-cases.cjs` (invented fixture, not Core data). Not live-checked. Progress stays **5/8**.
+
+- **B01:** implemented. INS replaces INT for Action Points, Initiative and INT-based skill bases; sapient creatures keep INT. The spec's wording "fixed INT plus 2d6 Instinct" is read as Core p.214's INS-instead-of-INT; ChatGPT please confirm.
+- **B02:** implemented as a pasted stat block (strict line formats; unreadable lines block adding). Keeps characteristic dice and values, Move, weapons, traits, skills and notes; recomputes AP, Initiative bonus, Damage Modifier, Healing Rate and MP from the actual characteristics. Location HP are taken as printed in the entry, not recomputed.
+- **B03:** implemented. Natural armour adds no Initiative penalty; worn ENC uses Core p.58. Damage applied after natural + worn armour.
+- **B04:** implemented with the creature's own d20 table (validated 1–20, no overlap or duplicate names). **Open:** the generic anatomy templates (pp.276–277) need their d20 ranges in this ledger or the rulebook uploaded before they can be offered as presets.
+- **B05:** implemented as a parry eligibility shown per natural weapon (trait name "Formidable Natural Weapons", case-insensitive). The tracker records no parry rolls, so this is display/eligibility only.
+
+## ChatGPT one-pass review of merged PR #223 (2026-11-08)
+
+**B01 ruling confirmed — Core printed p.214, “Intelligence and Instinct”:** an instinctive creature's **INS substitutes for INT** where the game uses that characteristic; it is not an extra INT added to a fixed INT score. Thus AP, Initiative and INT-based skill calculations use INS; sapient creatures retain INT. The earlier B01 example phrase “fixed INT plus 2d6 Instinct” should **not** be implemented as adding fixed INT to INS. The code's `creatureMind`, `creatureAttributes` and `creatureSkillBase` follow the substitution interpretation.
+
+**Scoped static review — no blocking discrepancy found** in the B01–B05 diff of merged PR #223 (`6fdc43e56c252b795356ea653dc1c0690f76a5d9`):
+- **B01:** mind substitution used for AP, Initiative and characteristic-based skill bases; tests include sapient INT and instinctive INS.
+- **B02:** line parser retains characteristic dice/values, locations, natural weapons, traits, skills, movement and notes; missing or unparsed lines block adding. Invented fixture, not a Core bestiary entry. The importer uses a **specific one-line-per-field transcription format**, not arbitrary OCR or automatic parsing of Core's printed multi-column layout; describe it as *manual transcription into a supported format*, not universal paste support.
+- **B03:** natural/worn armour combined per location for basic damage; only worn ENC contributes to Initiative penalty.
+- **B04:** d20 location table checked for complete, nonoverlapping coverage, and rolled against the imported creature table, not human locations. Generic anatomy **presets are not implemented**.
+- **B05:** natural-weapon parry eligibility reflects Formidable Natural Weapons; the GM tracker does **not** roll parries, so this is display/eligibility, not full creature combat automation.
+
+**Anatomy templates, Core printed pp.276–277:** optional future presets only. Exact ranges **not added here** because the rendered tables could not be reliably retrieved and verified in this review. Do not invent ranges from memory; verify rendered source pages before adding templates.
+
+**Review scope:** read PR diff and tests once; did not independently execute tests or perform deployed signed-in acceptance. Keep **5/8**, Creatures open; B06–B14 next if prioritized.
+
+## Implementation status, B06–B14 (Claude, 2026-11-09)
+
+GM-assisted controls on the creature card, shown only for traits the creature has (matched by name at the start of a `Trait:` entry, e.g. "Multi-headed (3)"). Tests: `tests/creature-cases.cjs`. Not live-checked. Progress stays **5/8**.
+
+- **B06:** Airborne switch; Fly replaces Evade only while airborne and only with the Flying trait. Manoeuvre rolls stay GM-called.
+- **B07:** won/lost leap; only a win adds one natural-weapon hit (the first natural weapon listed).
+- **B08:** guidance only (trait-specific grapple and parry restriction per entry).
+- **B09:** AP max = base AP + working heads − 1, recomputed when damage is applied; "head" = a location whose name contains "Head"; a head at 0 HP or below stops counting. **To confirm:** whether a head stops working at 0 HP or only when the location is disabled by a Serious/Major Wound.
+- **B10:** 1 AP per breath; recovery turns entered from the entry and counted down on the creature's turns; refused while recovering or without AP. Cone geometry, per-target locations and Evade halving stay GM-resolved (no halving arithmetic, avoiding an unruled rounding).
+- **B11:** target SIZ × 2 > creature SIZ → refused. Doubled base Damage Modifier and Size boost are shown, not computed into a damage roll.
+- **B12:** venom offered only when damage after armour > 0 (Inject Venom, p.97); the poison itself is GM-resolved. **To confirm:** that "got through armour" is the right delivery condition in general.
+- **B13:** Frenzied state; ending prompts the trait's fatigue. Willpower trigger and action limits are GM-resolved.
+- **B14:** binding location (one of its locations) and entry destroy condition recorded; card states wounds don't incapacitate or fatigue it. The tracker never marks a creature dead automatically.
+
+## ChatGPT one-pass rules review of PR #225 (2026-11-08)
+
+**Source:** private *Mythras Core Rulebook* (2e), printed **p.216** (Multi-Headed), **p.218** (Venomous and Inject Venom), with related combat/wound rules. The relevant text was verified from the uploaded Core PDF (parsed text decoded to check the exact clauses); no Core material is reproduced verbatim here. PR #225 was **open at review time**; this is one static diff-and-test review, not an independent test run or live acceptance.
+
+**B09 — correction required (Core p.216):** An extra head's Combat Action is lost when that individual head is **incapacitated or severed**. **HP reaching 0 alone is not the stated trigger.** A location at 0 HP has a Serious Wound, but its incapacitation must be resolved under the wound rules; a severed head is also disabled. Current `creatureHeads` automatically removes a head at `cur <= 0` and does not record an explicit incapacitated/severed state. **Claude fix:** track per-head incapacitation/severance or obtain GM confirmation and count functioning heads accordingly; test a 0-HP head still functional pending adjudication and an incapacitated/severed head losing its action. Keep the shared body unaffected while another head remains active.
+
+**B12 — correction required (Core p.218, Venomous / Inject Venom):** **“Damage got through armour” is not the general venom-delivery rule.** The book describes an ordinary venomous strike as not automatically injecting poison, and the **Inject Venom** Special Effect as deliberately finding a gap in protection **instead of inflicting attack damage**. Thus a zero-damage Inject Venom can deliver poison despite armour. The current `creatureVenomEligible(c,damageThrough)` predicate `damageThrough > 0` and the card's “Nothing got through: no venom” are incorrect when Inject Venom was selected. **Claude fix:** ask whether the eligible Inject Venom effect was selected/resolved, distinguish it from ordinary damaging attacks, and apply the creature's entry-specific poison with the GM. Do not infer that any positive-damage hit automatically delivers venom. Tests: zero-damage successful Inject Venom permitted; ordinary damaging hit without the effect not auto-injected; no eligible effect/failed attack does not inject.
+
+**Other B06–B14 controls:** Scoped GM-assisted controls and tests generally align with their stated limited scope (Flying substitution, won Leaper bonus, Grappler guidance, breath AP/recovery with cone GM-resolved, half-SIZ Trample check, Frenzy state, Undead notes). **Not a full automated trait implementation:** B07 does not resolve opposed leap, B08 is guidance only, B10 geometry and damage remain GM-resolved, B11 Athletics and damage are GM-resolved, B13 Willpower and action restrictions are GM-resolved, and B14 binding/destruction is recorded rather than enforced. Keep this boundary explicit; no full Core automation claim.
+
+**Chaos Feature d100 (Core pp.274–276) and anatomy d20 tables (pp.276–277):** exact tables **not added**. Their rendered page images were not reliably accessible during this review; table transcription from scrambled parsed PDF text is unsafe. Verify rendered tables before implementing or documenting ranges/results. Do not substitute invented entries.
+
+**Disposition:** **B09 and B12 require code/test corrections** before the scoped review can pass. **Progress stays 5/8**, Creatures open.
+
+## B09 / B12 corrections (Claude, 2026-11-09)
+
+Implemented ChatGPT's #225 corrections (p.216, pp.97/218); tests in `tests/creature-cases.cjs`:
+- **B09:** heads lose their action only when the GM marks them incapacitated or severed (`cs.headsOut`); a 0-HP head stays working and is flagged for wound resolution. Marks are reversible and limited to head locations.
+- **B12:** venom only via "Inject Venom chosen" (no damage, armour irrelevant); damaging ordinary hits never inject; no trait → nothing. The entry's poison stays GM-resolved.
+- Chaos Feature (pp.274–276) and anatomy (pp.276–277) tables: still waiting for verified page images. Progress stays **5/8**.
+
+## ChatGPT one-pass static review of merged PR #227 (2026-11-08)
+
+**Result: pass for both requested corrections**, against the private *Mythras Core Rulebook* (2e), printed **p.216** (Multi-Headed) and **pp.97, 218** (Inject Venom). Reviewed merged PR #227 diff and changed tests once; did not independently run tests or perform live acceptance.
+
+- **B09 — pass:** `creatureHeads` now counts heads until the GM explicitly marks them incapacitated or severed in `cs.headsOut`; a head at 0 HP remains active but triggers a wound-resolution warning. `creatureSyncAp` uses those marks; UI allows reversing a mark, and non-head locations are refused. Updated tests cover 0 HP, disabling and restoring a head.
+- **B12 — pass within GM-assisted scope:** an ordinary damaging hit no longer delivers venom; a separate `Inject Venom chosen` control explicitly represents choosing the Special Effect instead of inflicting attack damage, independent of armour. Creature-specific poison remains GM-resolved. Updated tests cover damaging ordinary hits, selected/unselected effect and absence of Venomous trait. **Scope limitation:** the control relies on the GM to confirm a successful attack and legitimate Special Effect; it is not an integrated combat-exchange validator.
+
+**B15–B19 source blocker:** Chaos Feature **d100 table (Core printed pp.274–276)** and optional generic anatomy **d20 tables (pp.276–277)** require verified rendered page images before transcription. This review attempted to access the existing uploaded Core PDF through Files, but page-image retrieval and raw-file materialization were unavailable. **Owner action:** upload clear screenshots or photos of printed pp.274–277 (including complete table headers and rows) to this chat; alternatively attach an accessible Core PDF to this conversation. Do not invent or decode tabular ranges from scrambled parsed text. B15–B18 can proceed without those tables; B19 and anatomy presets cannot be specified exactly yet.
+
+**Progress remains 5/8; Creatures stays open.**
+
+## Implementation status, B15–B18 (Claude, 2026-11-09)
+
+GM tracker creature card; tests in `tests/creature-cases.cjs`. Not live-checked. Progress stays **5/8**.
+
+- **B15:** source checked before armour. Immunity (listed source) → 0 damage; Vulnerable (listed source) → armour ignored, damage otherwise unchanged; Allergy → normal damage plus a GM note on contact and armour. Source matching is a whole word or the exact listed term ("silver sword" matches silver; "firearm" doesn't match fire). **To confirm:** whether Vulnerable does more than bypass armour (e.g. extra damage) in Core; nothing extra is applied now.
+- **B16:** guidance only for Camouflaged / Echolocation / Earth Sense: the sense, its range from the entry, no universal detection. No grade numbers are invented.
+- **B17:** per-target Willpower outcome (Critical: ignores for the encounter; Success: holds; Failure: falls back next round; Fumble: flees), kept until the GM ends the encounter. Any grade modifier on the Willpower roll stays with the GM. **To confirm:** this outcome table against Core p.216 (it matches the Intimidate text already used for formation traits in `js/data.js`).
+- **B18 (partial):** eligibility only: INS creatures refused; sapient INT creatures need the GM's permission. **Needs spec:** the Core alternate point-buy total, permitted minimums and how nonhuman anatomy enters the builder (pp.218–219), before a builder path is made. The existing builder species (Classic Fantasy Imperative SRD) are unchanged and are not Core creatures.
+- **B19 and anatomy presets:** see below.
+
+## Source check and B18/B19/anatomy, Claude, 2026-11-09
+
+Checked against the owner's Core PDF (printed pp.8, 216, 218–219, 274–277). Paraphrases only.
+
+- **B15 confirmed (p.218):** Vulnerable means protection can't reduce damage from the listed source. Nothing extra is added, which matches the build.
+- **B17 confirmed (p.216):** Willpower outcomes are Critical: ignores further intimidation that encounter; Success: holds; Failure: falls back next round; Fumble: flees. The effect lasts while the creature keeps acting threateningly. Matches the build.
+- **B18 (pp.8, 218–219):** any creature with INT 8+ may be a PC if the GM allows it. With Points Build, the pool is the species' average characteristics added up and rounded up. Each characteristic stays within its dice range (Core p.8 rule: no lower than the minimum, no higher than the maximum), and all points are spent. Implemented as `creaturePointsBuild` / `creaturePointsCheck` and shown on the GM tracker card. **Open:** a builder path that creates a PC from a creature (culture and career "as normal" per p.218) isn't built. The INT 8+ floor isn't enforced yet: eligibility needs INT and GM permission only.
+- **B19 (pp.274–276):** the 50-row d100 Chaos Feature table (pairs 01–02 … 99–00) is in `CHAOS_FEATURES`, with summaries in our own words. A creature with the Chaos Feature trait can roll on it. Results are kept on the combatant, and the GM applies each effect; none is automated.
+- **Anatomy presets (pp.276–277):** all 13 body plans (Arachnid, Centaurid, Draconic, Insect, Dorsal Finned Aquatic, Tailed Biped, Winged Quadruped, Pachyderm, Tailed Quadruped, Serpentine, Winged Biped, Tailed Arachnid, Winged Insect) are in `CREATURE_ANATOMY`, and each was checked to cover d20 1–20 exactly once. The import can start from a plan; each location's HP must be filled in before the creature can be added.
+
+Progress stays **5/8** until Subsystem 7 is audited live.

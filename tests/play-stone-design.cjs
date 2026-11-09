@@ -159,13 +159,16 @@ test('passions are tested, skills rolled',()=>{
  setup();run('S.passions=[{type:"loyalty",subject:"Clan",name:"Loyalty (Clan)",base:60}]');
  const h=run('pmSkillsPanelHTML()');assert.match(h,/>Test<\/button>/);assert.match(h,/>Roll<\/button>/);
 });
-test('the site top bar is hidden in Play Mode; a header menu holds the same links, and phones get Home',()=>{
- setup();const h=run('pmSiteMenuHTML()');
- for(const [href,l] of [['#/','Home'],['#/my-characters','Characters'],['#/my-campaigns','Campaign'],['#/wiki','Rules'],['#/world/welcome','World Guide'],['#/account','Account']])
-  assert.match(h,new RegExp('<a href="'+href.replace(/\//g,'\\/')+'">'+l+'</a>'));
+test('Play Mode keeps the site header (owner, 2026-11-09); Rules reference and Settings are header buttons',()=>{
+ setup();const h=run('pmHeadExtrasHTML()');
+ assert.match(h,/APP\.pmPopup\('ref'\)/);assert.match(h,/APP\.pmModal\('settings'\)/);
+ assert.equal(run('typeof pmSiteMenuHTML'),'undefined','the old site-menu dropdown is gone');
+ assert.doesNotMatch(fs.readFileSync(path.join(root,'play-stone.css'),'utf8'),/body\.play-mode \.sitota-header\{display:none\}/);
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
- for(const href of ['#/','#/my-characters','#/my-campaigns','#/wiki','#/world/welcome','#/account'])assert(html.includes('href="'+href+'"'),'menu matches the site nav: '+href);
- assert.match(fs.readFileSync(path.join(root,'play-stone.css'),'utf8'),/body\.play-mode \.sitota-header\{display:none\}/);
+ for(const href of ['#/','#/my-characters','#/my-campaigns','#/the-pits','#/wiki','#/world/welcome','#/account'])assert(html.includes('href="'+href+'"'),'site nav: '+href);
+ const clean=fs.readFileSync(path.join(root,'play-clean.css'),'utf8');
+ assert.match(clean,/\.pmx-dash\{height:max\(620px,100dvh\)/,'the sheet fills the screen once the header scrolls away');
+ assert.doesNotMatch(clean,/body\.pm-fit\{overflow:hidden\}/,'the page itself is not locked');
 });
 test('Special Effects are a tick list: tap to choose, tap again to remove',()=>{
  setup();run('S.rollLog=[{label:"Battleaxe",pct:60,roll:4,tier:"Critical",combat:true,combatKind:"style",combatRole:"attack",oppTier:"Failure",opponentAction:"rolled",weapon:"Battleaxe",effectsPicked:[]}];PM_EFFECT_ROLL_REF=S.rollLog[0];');
@@ -191,7 +194,7 @@ test('clicking a skill shows its description, formula, value and a Roll button i
  const missing=run('[...STD.map(s=>s[0]),...Object.keys(PROF)].filter(n=>!SKILL_INFO[n])');assert.deepEqual([...missing],[],'every skill has a description');
 });
 test('reference pages sit together under Rules reference in the ☰ menu',()=>{
- setup();assert.match(run('pmSiteMenuHTML()'),/APP\.pmPopup\('ref'\)">Rules reference/);
+ setup();assert.match(run('pmHeadExtrasHTML()'),/APP\.pmPopup\('ref'\)/);
  const h=run('pmRulesRefHTML()');for(const k of ['rules','actions','rulesref','fxref','hazards','casting'])assert.match(h,new RegExp("APP\\.pmPopup\\('"+k+"'\\)"));
  assert.match(run('PM_POPUP={k:"fxref"};pmPopupHTML()'),/id="pm-actions"/);
  const sheet=run('pmSkillsPanelHTML()+pmBodyBoxHTML()+pmCombatTabHTML()');assert.doesNotMatch(sheet,/pmPopup\('(rules|hazards|rulesref|actions)'\)/,'no reference links on the sheet itself');
@@ -212,7 +215,7 @@ test('under the name: race, culture and career, never the campaign',()=>{
  assert.doesNotMatch(fs.readFileSync(path.join(root,'js','play.js'),'utf8'),/pmCampaignLabel/);
 });
 test('Settings in the ☰ menu opens a centred window with the colour scheme and the dice option',()=>{
- setup();assert.match(run('pmSiteMenuHTML()'),/APP\.pmModal\('settings'\)">Settings/);
+ setup();assert.match(run('pmHeadExtrasHTML()'),/APP\.pmModal\('settings'\)/);
  assert.equal(run('pmModalHTML()'),'','closed by default');
  run('APP.pmModal("settings")');assert.equal(run('PM_POPUP'),null,'not the side panel');
  const h=run('pmModalHTML()');

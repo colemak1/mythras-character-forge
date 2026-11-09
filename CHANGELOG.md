@@ -5,6 +5,104 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Creatures: body plans, Chaos Features, nonhuman Points Build (CRTR-B04 option, B18, B19)
+
+Checked against the owner's Core PDF; see `docs/creature-cases-batch-1.md`.
+
+- **Body plans:** the GM tracker's creature import can start from any of the 13 Core nonhuman hit-location tables (pp.276–277). You fill in each location's armour and HP; a missing HP is reported by name.
+- **Chaos Features:** a creature with the trait can roll d100 on the Core table (pp.274–276). Each result is kept on the creature with a short summary of its effect, and can be removed. The GM applies the effects.
+- **Creature as a character:** once the GM permits it, the card shows the Points Build pool (the species' averages added up, rounded up) and each characteristic's allowed range (pp.8, 219). B15 Vulnerable and B17 Intimidate were confirmed against the book with no changes.
+
+## Fix: character sheet page scroll
+
+- An older rule still locked the page in Play Mode on desktop, so the page scroll from #231 did nothing. It is removed, and the sheet is now a full screen tall, so scrolling down moves the header fully out of view. Columns keep their own scroll.
+
+## New site header and campaign manager (v0 handoff, 2026-11-09)
+
+- **Header (v0 "Style A"):** sticky 76px bar with line icons, a 2px gold underline for the active tab (no pills), and an account button showing your initial and name. Phones get a 64px bar, the five-tab bottom bar with a gold top line on the active tab, and a More sheet (Rules, World Guide, Account) with icons. Styles in the new `sitota-header.css`; the old per-page header overrides are removed.
+- **Header on every page (owner):** The Pits fight page and the character sheet (Play Mode and the printable sheet) now show the site header. Play Mode's ☰ dropdown is gone; its Rules reference and Settings are header buttons. "Choose a character" and "Reset bout" sit under the header on The Pits. Printing still hides the header.
+- **Scrolling (owner):** Play Mode's columns keep their own scroll, but the page itself now scrolls a little: the header scrolls away so the sheet fills the screen, and a column hands the wheel back to the page at its ends.
+- **Campaign manager:** party cards first (sigil, tier and career, player, HP/AP/Luck, Open or View, Unassign), a New character card, your unassigned characters with Add to campaign, and table notes (GM edits with a Saved indicator; players read them). Side column: invite code with Copy and Copy invite link, New code with an inline confirm, members with two-tap Make GM / Remove, and collapsed GM tools (rename, backup, and Delete that needs the name typed). Rule settings show as chips. All existing handlers are reused.
+
+## Creature resistances, senses, Intimidate and PC eligibility (CRTR-B15–B18)
+
+ChatGPT's #227 review is merged (docs #228). The Chaos Feature table and anatomy presets wait for clear Core pp.274–277 page images from the owner.
+
+- **Resistances (B15):** traits written with their source in brackets, e.g. `Trait: Immunity (fire, poison)`, `Vulnerable (silver)`, `Allergy (iron)`, are kept whole (commas inside brackets no longer split the trait). When a hit is applied, a source box appears and the source is checked before armour: Immunity takes no damage, Vulnerable ignores armour, Allergy notes contact at that location and leaves the armour question and effect to the trait (GM).
+- **Senses (B16):** Camouflaged, Echolocation and Earth Sense show what they do and that they work only within their own sense and range, never as invisibility or detection of everything.
+- **Intimidate (B17):** record each target's Willpower: Critical ignores the creature for the encounter, Success holds, Failure falls back next round, Fumble flees. Results stay until "encounter over"; a target who ignored it can't be intimidated again that encounter.
+- **As a character (B18):** a sapient (INT) creature shows a GM-permission switch; an instinctive (INS) creature can't be a player character. Building one in the character builder needs the Core point-buy total and minimums (pp.218–219) first; not built yet.
+- New cases in `tests/creature-cases.cjs`.
+
+## Creature traits: head loss and Inject Venom corrected (fixes from the #225 review)
+
+ChatGPT's review of #225 (docs #226, merged with this change) found two rule errors, both fixed:
+
+- **Multi-headed (B09, Core p.216):** a head at 0 HP keeps its action. It loses it only when the GM ticks it **incapacitated or severed** (a tick per head on the card; it can be unticked). A head at 0 HP or less gets a prompt to resolve its wound.
+- **Venomous (B12, Core pp.97, 218):** an ordinary hit never injects venom, however much damage gets through. Poison comes from the **Inject Venom** special effect, chosen on a successful attack *instead of* damage, and it gets through whatever the armour. The card has an "Inject Venom chosen" button; the old "got through armour" check is gone.
+
+## Creature combat traits in the GM Combat Tracker (CRTR-B06–B14)
+
+ChatGPT's #223 review is merged (docs #224): Core p.214 confirms INS stands in for INT. Anatomy presets (pp.276–277) wait for verified tables. The stat-block box is a transcription format, one item per line.
+
+A creature card now shows controls for the combat traits it has (names as in its `Trait:` lines). Values specific to one creature (breath recovery, its poison, how an undead is destroyed) come from its entry via the GM.
+
+- **Flying (B06):** an Airborne switch; while airborne it defends with Fly (from its Skills line) instead of Evade.
+- **Leaper (B07):** record the opposed leap; only a win adds one natural-weapon hit.
+- **Grappler (B08):** a reminder that its natural hits bring the trait's grapple; no other creature gets one.
+- **Multi-headed (B09):** one extra action per working head (locations named "Head") beyond the first; a head at 0 HP or less removes its action, and the body is unaffected.
+- **Breathe Flame (B10):** breathing costs 1 AP and starts the entry's recovery, counted down on the creature's turns; it can't breathe again until then. The card reminds the GM it's a cone with Evade to halve.
+- **Trample (B11):** a target above half the creature's SIZ is refused; notes the doubled base Damage Modifier and stationary (AP) vs moving pass.
+- **Venomous (B12):** after "apply after armour", says whether the hit got through armour (Inject Venom possible) or not (no venom).
+- **Frenzy (B13):** a Frenzied switch; ending it reminds the GM to apply the trait's fatigue.
+- **Undead (B14):** wounds don't incapacitate or fatigue it; records its binding location and the entry's destroy condition.
+- New cases in `tests/creature-cases.cjs`.
+
+## Creatures in the GM Combat Tracker (Subsystem 7, CRTR-B01–B05)
+
+- **Add a creature from its stat block (B02):** the Combat Tracker has a new "Add a creature from its stat block" box. The GM pastes or types the entry from their rulebook, one item per line: characteristics (with dice), INT or INS, Move, hit-location rows (`1-3 Right Hind Leg 2/5`, natural+worn as `2+1/4`), `Weapon:` lines (ending "natural" for natural weapons), `Trait:` lines, `Worn armour ENC:`, `Skills:` and `Notes:`. Missing or unreadable lines are listed and block adding; nothing is guessed or filled with human defaults. No bestiary data ships with the app.
+- **Instinct (B01):** a creature with INS uses it wherever INT would be: Action Points, Initiative and INT-based skill bases. A sapient creature keeps INT.
+- **Armour (B03):** natural armour protects its location but adds no Initiative penalty; only worn armour ENC does (Core p.58). "Apply after armour" takes off natural plus worn armour at the location hit.
+- **Hit locations (B04):** the creature's own d20 table must cover 1–20 exactly once, with no repeated names. "Roll hit location" rolls on that table, never the human one, so a wing or a tail stays a wing or a tail. The generic anatomy tables (Core pp.276–277) aren't built in yet.
+- **Natural weapons (B05):** without the Formidable Natural Weapons trait, the card shows natural weapons can't parry (use Evade or armour).
+- "Roll initiative for everyone" now adds a creature's Initiative bonus.
+- New tests: `tests/creature-cases.cjs` (an invented test creature, not a Core entry).
+
+## Magic: confirmed cult rank required, Core animist rank names (fixes from the #219 review)
+
+ChatGPT's review of #219 is merged (docs #220).
+
+- **Miracles need a confirmed cult rank (MAG-N07):** until "Rank for this pool" is set, that cult's miracles can't be requested (Core pp.180–181). Saved pools and miracles are kept, and the builder says what to confirm.
+- **Animist ranks use the Core names (MAG-N09):** Follower (¼ CHA), Spirit Worshipper (½), Shaman (¾), High Shaman (all), from Core p.136. Saved characters keep their rank.
+- **Overflow is the GM's call:** Core says the strongest spirits break free but doesn't define "strongest". The builder now says the GM decides; the app's Intensity-then-POW list is shown only as a suggestion, and its button asks for GM confirmation. Commands stay blocked until the overflow is resolved.
+- **Rounding (MAG-N06):** an odd half cost on a critical still rounds up. Comments now call this app policy pending D-4, not a book rule (Core p.156 gives no direction).
+
+## Magic: miracle rank, bound-spirit slots, pending-cast checks (MAG-N06–N10)
+
+ChatGPT's #217 review is merged (docs #218): Core p.178 does not require a separate Exhort per cult, so a generic Exhort stays valid. Cult-specific miracle and pool links are kept. The Exhort choice per pool is now labelled as an app setting.
+
+- **Miracle rank (MAG-N07):** a miracle above its pool's confirmed rank can't be requested (Initiate → level 1, Acolyte → 2, Priest and High Priest → 3; a Lay Member none). The builder flags it. The cult and rank checks now come before the cost check, so the message names the real problem.
+- **Bound-spirit slots (MAG-N09):** new **Animist rank** (¼, ½, ¾ or all of CHA). A spirit can be marked bound only after its acquisition is recorded (a bargain or a Spirit Combat win, GM confirmed) and only into a free slot. A fractional limit isn't rounded: the GM enters it (floor or ceiling). With more spirits bound than the limit, commands stop and the builder names the strongest (highest Intensity, then POW) as escaping, with a button to mark them so. Spirits already bound stay bound.
+- **MAG-N06, N08, N10:** Mysticism and Exhort outcome costs, bound-spirit command results and pending-cast invalidation already worked. They now have their own tests: deleting an entry, or changing a miracle's pool or cult, mid-casting needs a cancel; a reload keeps the cast; it resolves and charges once; another character starts with none.
+- New tests: `tests/magic-build-n06-n10.cjs`.
+
+## Magic: each cult's miracles use that cult's Exhort; Sorcery source guard (MAG-N05 follow-up, MAG-N10 part)
+
+From ChatGPT's review of #215 (docs #216). Core p.165 confirmed the Combine cost already in the app (Combine 1 alone = 3 MP, 2 turns), so the formula is unchanged.
+
+- **Miracle cult (MAG-N05):** with more than one cult pool, each miracle names its cult (the builder's "Cult" choice). A miracle is rejected through another cult's pool, and renaming a pool's cult means its miracles must be confirmed again. Adding a second pool no longer moves existing miracles anywhere: each one asks for its cult. A theist with one cult casts as before.
+- **Exhort per cult:** each pool uses one Exhort skill. That is the pool's chosen Exhort, else an Exhort whose speciality names the cult, else the character's only Exhort. If the character has several Exhort skills and none matches, the builder asks for one; it never guesses. The pool row also shows its matching Devotion skill.
+- **Pending Sorcery (MAG-N10, part):** a casting in progress now also records every combined spell's Invocation source. Changing one mid-casting needs a cancel instead of silently rolling a different skill on the final turn.
+- New cases in `tests/magic-build-n01-n05.cjs`: two cults with different Exhort %, wrong-cult rejection, a renamed pool, Exhort choice, legacy single cult, the N10 source change.
+
+## Magic: Combine choices, learned Talents, one pool per cult (Subsystem 6, MAG-N01–N05)
+
+- **Sorcery Combine (MAG-N02):** each Combine point now asks which *different* recorded spell it joins, and for confirmation that the spells share target(s). Casting is blocked until that's done. A character with several Invocation skills picks each spell's source, and a combined casting rolls the lowest of them (one grade harder per extra spell, as before).
+- **Mysticism (MAG-N04):** a recorded Talent isn't usable until it's ticked **Learned / practised (GM confirmed)**. At most half POW distinct Talents can be learned (the same Talent at two Intensities counts once). Existing Talents start unticked, like unbound spirits. The 34% → Intensity 2 and Meditation/10 limits are unchanged.
+- **Theism (MAG-N05):** a theist can record one Devotional Pool per cult, each with its own cult name, rank limit and available points. All pools together hold at most POW. A miracle draws only on its own cult's pool; with several pools it must name one. Personal MP and other pools are never used instead. Play Mode shows each pool with its own +, − and refill, and donations go to the chosen pool. The first pool keeps the old save fields, so existing characters load unchanged.
+- **MAG-N01 and MAG-N03** were already built (Shaping 47% → 5 points, no Intensity shaping, cost and turns by modified component, critical/failure/fumble costs). They now have their own tests.
+- New tests: `tests/magic-build-n01-n05.cjs`. Existing Sorcery and Mysticism test fixtures gained the combined-spell and learned fields.
+
 ## Display names for signed-in users only; database permission tests; Pits strip fix
 
 - **D-S3 option A (owner):** any signed-in user can see other users' display names, and nothing else on a profile. Signed-out visitors can't read profiles at all. **Needs the new migration** `supabase/migrations/20261108130000_display_names_signed_in_only.sql` run once in the Supabase SQL editor (safe to re-run). The app already asks only for names, so nothing changes on screen.

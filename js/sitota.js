@@ -120,15 +120,33 @@ function updateSiteHeader(){
  const publicView=APPVIEW==='menu'||APPVIEW==='world';
  document.body.classList.toggle('sitota-public-view',publicView);
  const footer=document.getElementById('siteFooter');if(footer)footer.hidden=!publicView;
- const nav=document.querySelector('.sitota-header nav');
- if(!nav)return;
- const active=['play','sheet'].includes(APPVIEW)?'library':(['campaign','board'].includes(APPVIEW)?'campaigns':APPVIEW);
- nav.querySelectorAll('[data-site-view]').forEach(link=>{
+ const header=document.querySelector('.sitota-header');
+ if(!header)return;
+ const active=['play','sheet'].includes(APPVIEW)?'library':(['campaign','board','campaign-setup'].includes(APPVIEW)?'campaigns':APPVIEW);
+ header.querySelectorAll('[data-site-view]').forEach(link=>{
   if(link.dataset.siteView===active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
  });
  updateSiteTabbar(active);
- const account=document.getElementById('siteAccount');
- if(account)account.title=AUTH_PROFILE&&AUTH_PROFILE.display_name?'Account — '+AUTH_PROFILE.display_name:'Account and sign-in';
+ updateSiteAccount();
+}
+// Account button (v0 "Style A" header): the signed-in name and its initial,
+// or a person icon and "Sign in" when signed out.
+function siteAccountInfo(){
+ const signed=!!(AUTH_USER||MOCK_AUTH);
+ const name=signed?String((AUTH_PROFILE&&AUTH_PROFILE.display_name)||(MOCK_AUTH&&MOCK_AUTH.display_name)||(AUTH_USER&&AUTH_USER.email)||'Account').trim():'Account';
+ const sub=!signed?'Sign in':MOCK_AUTH&&!AUTH_USER?'Guest · On this device':'Signed in · Synced';
+ const m=signed&&name.match(/[A-Za-z0-9]/);
+ return {signed,name,sub,initial:m?m[0].toUpperCase():''};
+}
+function updateSiteAccount(){
+ const a=document.getElementById('siteAccount');if(!a)return;
+ const info=siteAccountInfo();
+ const av=document.getElementById('siteAccountAv'),nm=document.getElementById('siteAccountName'),sb=document.getElementById('siteAccountSub');
+ if(av){if(info.initial)av.textContent=info.initial;else if(!av.querySelector('svg'))av.innerHTML='<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2c0-5 3.5-7 8-7s8 2 8 7v2"/></svg>';}
+ if(nm)nm.textContent=info.name;
+ if(sb)sb.textContent=info.sub;
+ a.setAttribute('aria-label',info.signed?'Account — '+info.name:'Account and sign-in');
+ a.title=info.signed?'Account — '+info.name:'Account and sign-in';
 }
 
 /* ---- Shared interior page pattern (2026-11-07 menu redesign) ----

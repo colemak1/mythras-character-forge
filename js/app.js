@@ -106,7 +106,7 @@ window.APP={
  // and rebuilt this button) -- these sit right next to Miracle/spell name
  // and stat fields, so they're just as exposed to it.
  addMagic(tradition){debounceFire('addMagic',()=>{
-   S.magic.known.push({tradition,name:"",notes:"",cost:1,intensity:1,pow:0,cha:0,spiritStatus:"unbound",spiritContact:"unknown",spiritAttitude:"neutral",spiritMP:null,spiritCombatNote:"",bindingType:"none",shapings:[],shapingLevels:{},combineExtra:0,active:false,durationTurns:0,remainingTurns:0});
+   S.magic.known.push({tradition,name:"",notes:"",cost:1,intensity:1,pow:0,cha:0,spiritStatus:"unbound",spiritAcquired:"",spiritContact:"unknown",spiritAttitude:"neutral",spiritMP:null,spiritCombatNote:"",bindingType:"none",shapings:[],shapingLevels:{},combineExtra:0,combinedSpells:[],combineSharedTargets:false,talentLearned:false,active:false,durationTurns:0,remainingTurns:0});
    render();});},
  // Update 17: Spirit negotiation, ritual outcome and spirit-combat bookkeeping.
  // The GM confirms contact, bargains and bindings; these controls never invent a successful ritual.
@@ -130,7 +130,20 @@ window.APP={
  spiritCombatNote(i,v){if(viewOnlyBlock())return;const m=S.magic.known[i];if(m&&m.tradition==="animism"){m.spiritCombatNote=String(v).slice(0,800);render();}},
  spiritStatus(i,status){if(viewOnlyBlock())return;const m=S.magic.known[i];
    if(!m||m.tradition!=="animism"||!["bound","unbound"].includes(status))return;
+   if(status==="bound"&&m.spiritStatus!=="bound"){const err=spiritBindCheck(m);if(err){PM_MSG=err;render();return;}}
    m.spiritStatus=status;render();},
+ // MAG-N09: acquisition, animist rank and the GM-confirmed slot limit.
+ spiritAcquired(i,v){if(viewOnlyBlock())return;const m=S.magic.known[i];
+   if(!m||m.tradition!=="animism"||!["","bargain","combat"].includes(v))return;m.spiritAcquired=v;render();},
+ animistRank(v){if(viewOnlyBlock()||!(v===""||Object.hasOwn(ANIMIST_RANK_FRACTION,v)))return;S.magic.animistRank=v;delete S.magic.boundLimitGM;render();},
+ boundLimitGM(raw){if(viewOnlyBlock())return;const x=boundSpiritFormula(),str=String(raw).trim(),n=Number(str);
+   if(str===""){delete S.magic.boundLimitGM;render();return;}
+   if(x==null||Number.isInteger(x)||!Number.isSafeInteger(n)||n<Math.floor(x)||n>Math.ceil(x)){PM_MSG="The GM-confirmed limit must be "+(x==null?"set after the rank":Math.floor(x)+" or "+Math.ceil(x))+".";render();return;}
+   S.magic.boundLimitGM=n;render();},
+ releaseOverflowSpirits(){if(viewOnlyBlock())return;const out=boundSpiritOverflow();if(!out.length)return;
+   if(!confirm("Has your GM confirmed that "+out.map(m=>m.name||"unnamed spirit").join(", ")+" are the strongest and break free? They will be marked not bound."))return;
+   out.forEach(m=>{m.spiritStatus="unbound";});
+   PM_MSG="Broke free (GM confirmed): "+out.map(m=>m.name||"unnamed spirit").join(", ")+". Resolve what they do next with your GM (Core p.136).";render();},
  magicField(i,f,v){const m=S.magic.known[i];if(!m)return;
    if(f==="name"||f==="notes")m[f]=v;
    else {const raw=String(v).trim();const n=Number(raw);
@@ -172,6 +185,8 @@ window.APP={
    m.combineExtra=n;render();},
  toggleTalent(i){if(viewOnlyBlock())return;const m=S.magic.known[i];if(!m||m.tradition!=="mysticism")return;
    if(m.active){m.active=false;m.remainingTurns=0;render();return;}
+   const ready=mysticismTalentReady(S.magic.known,i,Number(effectiveChars().POW));
+   if(ready){PM_MSG=ready;render();return;}
    const limits=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
    const err=mysticismActivationCheck(S.magic.known,i,limits.individual,limits.combined);
    if(err){PM_MSG=err;render();return;}
@@ -180,30 +195,73 @@ window.APP={
  mysticismCancel(){if(viewOnlyBlock())return;S.play.mysticismCasting=null;PM_MSG="Talent preparation cancelled; no Mysticism roll was made.";render();},
  theismCancel(){if(viewOnlyBlock())return;S.play.theismCasting=null;PM_MSG="Miracle exhortation cancelled; no Exhort roll was made.";render();},
  delMagic(i){debounceFire('delMagic'+i,()=>{S.magic.known.splice(i,1);render();});},
- devotionalRank(v){if(viewOnlyBlock())return;
-   if(!["","lay","initiate","acolyte","priest","highpriest"].includes(v))return;
-   S.magic.devotionalRank=v;DEVOTIONAL_MSG="";render();},
- devotional(v){if(viewOnlyBlock())return;
-   const raw=String(v).trim(),n=Number(raw),limit=devotionalRankLimit(),old=devotionalMax();
+ devotionalRank(v,p=0){if(viewOnlyBlock())return;
+   if(!DEVOTIONAL_RANKS.includes(v)||!devotionalPool(p))return;
+   setDevotionalPool(p,{rank:v});DEVOTIONAL_MSG="";render();},
+ devotionalCult(p,v){if(viewOnlyBlock()||!devotionalPool(p))return;
+   setDevotionalPool(p,{cult:String(v||"").trim().slice(0,120)});render();},
+ devotional(v,p=0){if(viewOnlyBlock())return;const pool=devotionalPool(p);if(!pool)return;
+   const raw=String(v).trim(),n=Number(raw),limit=devotionalRankLimit(p),old=pool.max;
    if(!raw||!Number.isSafeInteger(n)||n<0){DEVOTIONAL_MSG="Enter a non-negative whole number.";render();return;}
    if(Number.isInteger(limit)&&n>limit&&n>old){DEVOTIONAL_MSG="This exceeds the confirmed rank limit of "+limit+"; reduce the amount or review the rank.";render();return;}
-   DEVOTIONAL_MSG="";S.magic.devotional=n;
-   S.magic.devotionalUsed=Math.min(S.magic.devotionalUsed,S.magic.devotional);render();},
- devotionalAdj(n){if(viewOnlyBlock())return;
-   S.magic.devotionalUsed=Math.max(0,Math.min(devotionalMax(),(S.magic.devotionalUsed||0)-n));render();},
- devotionalDonate(raw,confirmed){if(viewOnlyBlock())return;
-   const text=String(raw).trim(),n=Number(text),limit=devotionalRankLimit(),current=devotionalCur();
+   const used=Math.min(pool.used,n),held=devotionalHeldCheck(p,n-used);
+   if(held&&n>old){DEVOTIONAL_MSG=held;render();return;}
+   DEVOTIONAL_MSG="";setDevotionalPool(p,{max:n,used});render();},
+ devotionalAdj(n,p=0){if(viewOnlyBlock())return;const pool=devotionalPool(p);if(!pool)return;
+   const used=Math.max(0,Math.min(pool.max,pool.used-n));
+   if(n>0){const held=devotionalHeldCheck(p,pool.max-used);if(held){PM_MSG=held;render();return;}}
+   setDevotionalPool(p,{used});render();},
+ devotionalDonate(raw,confirmed,p=0){if(viewOnlyBlock())return;
+   const pool=devotionalPool(p);if(!pool)return;
+   const text=String(raw).trim(),n=Number(text),limit=devotionalRankLimit(p),current=devotionalCur(p);
    const fail=msg=>{PM_MSG=msg;render();};
    if(!confirmed)return fail("Confirm the holy place and donation with your GM.");
    if(!/^\d+$/.test(text)||!Number.isSafeInteger(n)||n<1)return fail("Enter a positive whole-number donation.");
    if(!Number.isInteger(limit))return fail("Confirm an unambiguous cult rank limit in the builder before transferring points.");
-   if(devotionalMax()>limit)return fail("Review the recorded pool above its rank limit before donating.");
+   if(pool.max>limit)return fail("Review the recorded pool above its rank limit before donating.");
    if(n>playCurMagic())return fail("Not enough personal Magic Points for that donation.");
-   if(n>devotionalMax())return fail("The donation exceeds the recorded Devotional Pool maximum.");
+   if(n>pool.max)return fail("The donation exceeds the recorded Devotional Pool maximum.");
    if(n<=current)return fail("Under the Core suggested donation rule, this donation would not increase the pool; consult your GM.");
-   S.play.magic=playCurMagic()-n;S.magic.devotionalUsed=devotionalMax()-n;
-   PM_MSG="Donated "+n+" personal Magic Points; the Devotional Pool now has "+n+" points (Core p.180).";render();},
- devotionalReset(){if(viewOnlyBlock())return;S.magic.devotionalUsed=0;render();},
+   const held=devotionalHeldCheck(p,n);if(held)return fail(held);
+   S.play.magic=playCurMagic()-n;setDevotionalPool(p,{used:pool.max-n});
+   PM_MSG="Donated "+n+" personal Magic Points; the "+devotionalPoolLabel(p)+" now has "+n+" points (Core p.180).";render();},
+ devotionalReset(p=0){if(viewOnlyBlock())return;const pool=devotionalPool(p);if(!pool)return;
+   const held=devotionalHeldCheck(p,pool.max);if(held){PM_MSG=held;render();return;}
+   setDevotionalPool(p,{used:0});render();},
+ // MAG-N05: another cult's separate pool. Every miracle then names its cult;
+ // none is reassigned silently.
+ addDevotionalPool(){if(viewOnlyBlock())return;
+   if(devotionalPoolCount()>=MAX_DEVOTIONAL_POOLS){DEVOTIONAL_MSG="At most "+MAX_DEVOTIONAL_POOLS+" cult pools can be recorded.";render();return;}
+   S.magic.extraPools.push({cult:"",rank:"",max:0,used:0});DEVOTIONAL_MSG="";render();},
+ removeDevotionalPool(p){if(viewOnlyBlock())return;
+   if(!Number.isInteger(p)||p<1||!devotionalPool(p))return;
+   if(devotionalMax(p)>0&&!confirm("Remove "+devotionalPoolLabel(p)+" and its "+devotionalCur(p)+" held points?"))return;
+   S.magic.extraPools.splice(p-1,1);
+   for(const m of S.magic.known)if(m.tradition==="theism"&&Number.isInteger(m.pool)){if(m.pool===p)delete m.pool;else if(m.pool>p)m.pool--;}
+   S.play.theismCasting=null;render();},
+ miraclePool(i,raw){const m=S.magic.known[i],n=Number(raw);if(!m||m.tradition!=="theism")return;
+   if(raw===""){delete m.pool;delete m.cult;render();return;}
+   if(!Number.isInteger(n)||!devotionalPool(n))return;m.pool=n;m.cult=devotionalPool(n).cult;render();},
+ poolExhort(p,key){if(viewOnlyBlock()||!devotionalPool(p))return;
+   if(key===""){if(p===0)delete S.magic.devotionalExhortKey;else delete S.magic.extraPools[p-1].exhortKey;render();return;}
+   if(exhortOptions().some(o=>o.key===key))setDevotionalPool(p,{exhortKey:key});render();},
+ // MAG-N02: the spells a Combine casting joins, the shared-target check and
+ // which Invocation skill the spell comes from.
+ combinedSpell(i,slot,name){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;
+   if(!Number.isInteger(slot)||slot<0||slot>19)return;
+   const list=Array.isArray(m.combinedSpells)?m.combinedSpells.slice():[];
+   while(list.length<=slot)list.push("");
+   list[slot]=String(name||"").slice(0,120);
+   while(list.length&&!list[list.length-1])list.pop();
+   m.combinedSpells=list;render();},
+ combineTargets(i,on){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;m.combineSharedTargets=!!on;render();},
+ invocationSource(i,key){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;
+   if(key==="")delete m.invocationKey;else if(invocationOptions().some(o=>o.key===key))m.invocationKey=key;render();},
+ talentLearned(i,on){if(viewOnlyBlock())return;const m=S.magic.known[i];if(!m||m.tradition!=="mysticism")return;
+   if(!on){m.talentLearned=false;m.active=false;m.remainingTurns=0;render();return;}
+   const err=mysticismLearnCheck(S.magic.known,i,Number(effectiveChars().POW));
+   if(err){PM_MSG=err;render();return;}
+   m.talentLearned=true;render();},
  // Core p.136: Calling upon a bound spirit is its own Binding action.
  // GM still adjudicates the spirit's action and possible
  // continued resistance. No generic spell or spirit combat automation.
@@ -252,6 +310,8 @@ window.APP={
      if(err){PM_MSG=err;render();return;}
      if(!magicSkillKey("Mysticism")){PM_MSG="Add the Mysticism skill before preparing a Talent.";render();return;}
      if(record.active){PM_MSG="This Talent is already marked active. End it before preparing it again.";render();return;}
+     const ready=mysticismTalentReady(S.magic.known,knownIndex,Number(effectiveChars().POW));
+     if(ready){PM_MSG=ready;render();return;}
      const limits=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
      const limitError=mysticismActivationCheck(S.magic.known,knownIndex,limits.individual,limits.combined);
      if(limitError){PM_MSG=limitError;render();return;}
@@ -264,13 +324,16 @@ window.APP={
      if(pending&&pending.completed+1<pending.total){pending.completed++;PM_MSG="Talent preparation turn "+pending.completed+" of "+pending.total+" recorded. No roll yet.";render();return;}
    }
    if(m.tradition==="theism"){
-     const poolLimit=devotionalRankLimit();
-     if(Number.isInteger(poolLimit)&&devotionalMax()>poolLimit){PM_MSG="The recorded Devotional Pool exceeds its confirmed rank limit ("+poolLimit+"). Review the pool in the builder before casting; saved points are unchanged.";render();return;}
-     const err=magicCastPreflight(m,playCurMagic(),devotionalCur());
+     const pi=theismPoolIndex(m),poolLimit=pi===null?null:devotionalRankLimit(pi);
+     if(Number.isInteger(poolLimit)&&devotionalMax(pi)>poolLimit){PM_MSG="The recorded "+devotionalPoolLabel(pi)+" exceeds its confirmed rank limit ("+poolLimit+"). Review the pool in the builder before casting; saved points are unchanged.";render();return;}
+     const pow=Number(effectiveChars().POW);
+     if(Number.isSafeInteger(pow)&&pow>=1&&devotionalHeldTotal()>pow){PM_MSG="Your Devotional Pools together hold "+devotionalHeldTotal()+" points, more than POW ("+pow+"). Review them in the builder before casting (Core p.180).";render();return;}
+     const assoc=theismDetails(m)?theismAssociationCheck(m):null;
+     if(assoc){PM_MSG=assoc;render();return;}
+     const err=magicCastPreflight(m,playCurMagic(),devotionalCur(pi??0));
      if(err){PM_MSG=err;render();return;}
-     if(!magicSkillKey("Exhort")){PM_MSG="Add the Exhort skill before requesting a miracle.";render();return;}
      const details=theismDetails(m),pending=S.play.theismCasting;
-     const signature=JSON.stringify([m.name,m.miracleLevel,m.miracleInstances]);
+     const signature=JSON.stringify([m.name,m.miracleLevel,m.miracleInstances,pi,magicNameKey(m.cult),exhortKeyForPool(pi)]);
      if(pending&&(pending.index!==idx||pending.signature!==signature||pending.total!==details.turns)){PM_MSG="A miracle is underway or its details changed. Cancel the exhortation before continuing.";render();return;}
      if(details.turns>1&&!pending){S.play.theismCasting={index:idx,total:details.turns,completed:1,signature};PM_MSG="Exhortation turn 1 of "+details.turns+" recorded. Roll on the final turn (Core p.181).";render();return;}
      if(pending&&pending.completed+1<pending.total){pending.completed++;PM_MSG="Exhortation turn "+pending.completed+" of "+pending.total+" recorded. No roll yet.";render();return;}
@@ -279,25 +342,27 @@ window.APP={
    // A Sorcery click starts/advances a tracker until that final turn. It does
    // not automatically spend action points or assume uninterrupted casting.
    if(m.tradition==="sorcery"){
-     const err=magicCastPreflight(m,playCurMagic(),devotionalCur());
+     const err=magicCastPreflight(m,playCurMagic(),0)||sorceryCombineCheck(m);
      if(err){PM_MSG=err;render();return;}
+     if(!sorceryRollKey(m)){PM_MSG=invocationOptions().length>1?"Choose which Invocation skill each spell in this casting comes from, in the builder.":"This character doesn't have the Invocation skill, so there's nothing to roll. Add it as a Professional Skill first.";render();return;}
      const total=sorceryCost(m).turns;
      const pending=S.play.sorceryCasting;
-     const shaping=JSON.stringify(sorceryLevels(m));
-     if(pending && (pending.index!==idx || pending.name!==m.name || pending.total!==total || pending.shaping!==shaping)){
+     const shaping=JSON.stringify(sorceryLevels(m)),combo=sorceryPendingCombo(m);
+     if(pending && (pending.index!==idx || pending.name!==m.name || pending.total!==total || pending.shaping!==shaping || (pending.combo!==undefined&&pending.combo!==combo))){
        PM_MSG="Another Sorcery invocation is underway. Cancel it before changing spells or shaping.";render();return;
      }
      if(total>1 && !pending){
-       S.play.sorceryCasting={index:idx,name:m.name,total,completed:1,shaping};
+       S.play.sorceryCasting={index:idx,name:m.name,total,completed:1,shaping,combo};
        PM_MSG="Sorcery casting turn 1 of "+total+" recorded. Advance on the next casting turn; roll Invocation only on the last turn (Core p.165).";render();return;
      }
      if(pending && pending.completed+1<pending.total){
        pending.completed++;PM_MSG="Sorcery casting turn "+pending.completed+" of "+pending.total+" recorded. No Invocation roll yet.";render();return;
      }
    }
-   const blocking=magicCastPreflight(m,playCurMagic(),devotionalCur());
+   const poolIdx=m.tradition==="theism"?theismPoolIndex(m):null;
+   const blocking=magicCastPreflight(m,playCurMagic(),devotionalCur(poolIdx??0))||(m.tradition==="sorcery"?sorceryCombineCheck(m):null);
    if(blocking){PM_MSG=blocking;render();return;}
-   const key=magicSkillKey(trad.castSkill);
+   const key=m.tradition==="sorcery"?sorceryRollKey(m):m.tradition==="theism"?exhortKeyForPool(poolIdx):magicSkillKey(trad.castSkill);
    if(!key){PM_MSG="This character doesn't have the "+trad.castSkill+" skill, so there's nothing to roll. Add it as a Professional Skill first.";render();return;}
    const base=finalPct(key);let g=gradedPct(key,base);
    if(m.tradition==="sorcery" && sorceryCost(m).combinedSpells)g=sorceryInvocationGrade(key,base,sorceryCost(m).combinedSpells);
@@ -322,9 +387,10 @@ window.APP={
        :m.tradition==="mysticism"?mysticismOutcomeCost(m,tier)
        :magicEntryCost(m);
      if(trad.pool==="devotional"){
-       if(cost>devotionalCur()){PM_MSG="Not enough left in the Devotional Pool ("+devotionalCur()+" of "+devotionalMax()+") to invoke that.";render();return;}
-       S.magic.devotionalUsed=(S.magic.devotionalUsed||0)+cost;
-       costTxt=cost+" from the Devotional Pool";
+       const pi=poolIdx??0;
+       if(cost>devotionalCur(pi)){PM_MSG="Not enough left in the "+devotionalPoolLabel(pi)+" ("+devotionalCur(pi)+" of "+devotionalMax(pi)+") to invoke that.";render();return;}
+       setDevotionalPool(pi,{used:devotionalPool(pi).used+cost});
+       costTxt=cost+" from the "+devotionalPoolLabel(pi);
      }else if(trad.pool==="mp"&&cost>0){
        S.play.magic=playCurMagic()-cost;
        costTxt=cost+" Magic Point"+(cost>1?"s":"");
@@ -1478,22 +1544,29 @@ window.APP={
    }catch(e){CAMP_MSG="Could not save campaign setup: "+(e?.message||"Unknown error");render();}
    finally{CAMPAIGN_SETUP_BUSY=false;if(APPVIEW==="campaign-setup")render();}
  },
- openCampaign(id){CURRENT_CAMPAIGN_ID=id;APPVIEW="campaign";CAMPAIGN_VIEW=null;CAMP_MSG=null;render();
+ openCampaign(id){CURRENT_CAMPAIGN_ID=id;APPVIEW="campaign";CAMPAIGN_VIEW=null;CAMP_MSG=null;CAMP_NOTES_SAVED=false;render();
    loadCampaignViewUnified(id);window.scrollTo(0,0);},
  campField(f,v){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
    camp[f]=v;render(); // optimistic — reflect the edit immediately
    const fn=f==="name"?renameCampaignUnified:noteCampaignUnified;
-   fn(camp.id,v).catch(e=>{CAMP_MSG="Could not save: "+e.message;render();});},
+   CAMP_NOTES_SAVED=false;
+   fn(camp.id,v).then(()=>{if(f==="notes"){CAMP_NOTES_SAVED=true;render();}})
+     .catch(e=>{CAMP_MSG="Could not save: "+e.message;render();});},
  deleteCampaign(){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
-   if(!confirm("Delete campaign \""+camp.name+"\"? Linked characters stay in place, just unassigned."))return;
+   if(!stTakeConfirmed()&&!confirm("Delete campaign \""+camp.name+"\"? Linked characters stay in place, just unassigned."))return;
    deleteCampaignUnified(camp.id).then(()=>{APPVIEW="campaigns";CAMP_CACHE=null;render();loadCampaignsUnified();})
      .catch(e=>{CAMP_MSG="Could not delete campaign: "+e.message;render();});},
  newCharacterForCampaign(){
    if(!AUTH_USER&&!MOCK_AUTH){CAMP_MSG="Sign in first — creating a character needs an account.";render();return;}
    if(hasUnsavedWork()&&!confirm("Start a new character for this campaign? This clears the one currently loaded (autosave and exports are unaffected until overwritten)."))return;
    const cid=CURRENT_CAMPAIGN_ID;S=freshState();S.campaignId=cid;APPVIEW="character";render();window.scrollTo(0,0);},
+ assignChar(id){
+   if(!id)return;
+   assignCharUnified(id,CURRENT_CAMPAIGN_ID)
+     .then(()=>loadCampaignViewUnified(CURRENT_CAMPAIGN_ID))
+     .catch(e=>{CAMP_MSG="Could not assign character: "+e.message;render();});},
  assignPicked(){
    const sel=$("#assignPicker");if(!sel||!sel.value)return;
    assignCharUnified(sel.value,CURRENT_CAMPAIGN_ID)
@@ -1516,21 +1589,21 @@ window.APP={
  // D-S1: replace the invite code; the old code and #/join/ link stop working.
  rotateInvite(){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
-   if(!confirm("Make a new invite code? The current code and invite link stop working at once. Players already in the campaign are not affected."))return;
+   if(!stTakeConfirmed()&&!confirm("Make a new invite code? The current code and invite link stop working at once. Players already in the campaign are not affected."))return;
    cloudRotateInvite(camp.id).then(code=>{camp.invite_code=code;CAMP_MSG="New invite code: "+code+". Send the new link to anyone still to join.";render();})
      .catch(e=>{CAMP_MSG="Could not change the invite code: "+campaignActionError(e);render();});},
  // D-S4: remove a member. Their characters are unassigned, never deleted.
  removeMember(userId){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
    const m=(CAMPAIGN_VIEW.members||[]).find(x=>x.userId===userId);const name=m?m.name:"this player";
-   if(!confirm("Remove "+name+" from \""+camp.name+"\"? Their characters are unassigned from this campaign but stay in their library. They can only rejoin with the invite code; make a new code to stop that."))return;
+   if(!stTakeConfirmed()&&!confirm("Remove "+name+" from \""+camp.name+"\"? Their characters are unassigned from this campaign but stay in their library. They can only rejoin with the invite code; make a new code to stop that."))return;
    cloudRemoveMember(camp.id,userId).then(()=>{CAMP_MSG=name+" was removed.";return loadCampaignViewUnified(camp.id);})
      .catch(e=>{CAMP_MSG="Could not remove member: "+campaignActionError(e);render();});},
  // D-S4: hand the GM role to another member; the old GM stays as a player.
  transferGm(userId){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
    const m=(CAMPAIGN_VIEW.members||[]).find(x=>x.userId===userId);const name=m?m.name:"this player";
-   if(!confirm("Make "+name+" the GM of \""+camp.name+"\"? They get the campaign settings, Combat Tracker and GM notes. You stay as a player and can't undo this yourself."))return;
+   if(!stTakeConfirmed()&&!confirm("Make "+name+" the GM of \""+camp.name+"\"? They get the campaign settings, Combat Tracker and GM notes. You stay as a player and can't undo this yourself."))return;
    cloudTransferCampaign(camp.id,userId).then(()=>{CAMP_MSG=name+" is now the GM.";CAMP_CACHE=null;return loadCampaignViewUnified(camp.id);})
      .catch(e=>{CAMP_MSG="Could not hand over the campaign: "+campaignActionError(e);render();});},
  // D-S4: the whole campaign as one backup file.
@@ -1598,6 +1671,96 @@ window.APP={
    if(!name)return;
    const init=(valEl&&parseInt(valEl.value,10))||0;
    APP.gmSessionMutate(st=>st.combatants.push(combatantFromNpc(name,init)));},
+ gmCreatureDraft(v){CREATURE_DRAFT=String(v||"").slice(0,6000);render();},
+ gmAddCreature(){
+   const el=$("#gmCreatureText");if(el)CREATURE_DRAFT=String(el.value||"").slice(0,6000);
+   const parsed=parseCreatureStatBlock(CREATURE_DRAFT);
+   if(parsed.errors.length||parsed.unread.length){render();return;}
+   APP.gmSessionMutate(st=>st.combatants.push(combatantFromCreature(parsed.creature,0)));
+   CREATURE_DRAFT="";render();},
+ // CRTR-B04: roll on the creature's own d20 table, never the human one.
+ gmCreatureRollLoc(id){
+   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
+   const c=sessionStateOf(camp).combatants.find(x=>x.id===id);if(!c||!c.creature)return;
+   const roll=d(20),l=creatureHitLocation(c.creature,roll);if(!l)return;
+   CREATURE_HIT[id]={roll,loc:l.name,armour:(l.natural||0)+(l.worn||0)};render();},
+ gmCreatureHit(id){
+   const hit=CREATURE_HIT[id],el=$("#cbtraw-"+id),raw=el?parseInt(el.value,10):NaN;
+   const srcEl=$("#cbtsrc-"+id),source=srcEl?String(srcEl.value||"").slice(0,60):"";
+   if(!hit||!Number.isFinite(raw)||raw<0)return;
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature||!c.hp[hit.loc])return;
+     const res=creatureResolveHit(c.creature,hit.loc,raw,source),dmg=res.damage;
+     c.hp[hit.loc].cur=Math.max(-c.hp[hit.loc].max,c.hp[hit.loc].cur-dmg);
+     creatureSyncAp(c);
+     CREATURE_MSG[id]=hit.loc+": "+dmg+" damage"+(res.note?". "+res.note:" after armour.")+(creatureTrait(c.creature,"Venomous")?" An ordinary hit injects no venom.":"");});
+   delete CREATURE_HIT[id];if(el)el.value="";render();},
+ // CRTR-B06–B14 trait state on a creature combatant.
+ gmCreatureState(id,key,v){
+   if(!["airborne","frenzied","bindingLoc","destroyWhen","breathRecovery","pcPermitted"].includes(key))return;
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;const cs=c.cs=c.cs||{};
+     if(key==="pcPermitted")cs.pcPermitted=v===true;
+     else if(key==="airborne"||key==="frenzied"){const was=!!cs[key];cs[key]=!!v;
+       if(key==="frenzied"&&was&&!v)CREATURE_MSG[id]="Frenzy ended: apply the fatigue the trait gives (Core p.216).";}
+     else if(key==="breathRecovery"){const n=parseInt(v,10);if(Number.isInteger(n)&&n>=1&&n<=99)cs.breathRecovery=n;else delete cs.breathRecovery;}
+     else if(key==="bindingLoc")cs.bindingLoc=(c.locations||[]).includes(v)?v:"";
+     else cs.destroyWhen=String(v||"").slice(0,200);});},
+ // B09: the GM marks a head incapacitated or severed; only that removes its action.
+ gmCreatureHead(id,name,out){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
+     if(!creatureHeads(c.creature,c.hp,[]).heads.includes(name))return;
+     const cs=c.cs=c.cs||{},set=new Set(cs.headsOut||[]);
+     if(out)set.add(name);else set.delete(name);
+     cs.headsOut=[...set];creatureSyncAp(c);});},
+ // B12: Inject Venom chosen on a successful attack delivers the poison in
+ // place of damage, armour or not.
+ gmCreatureVenom(id){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
+     if(!creatureVenomEligible(c.creature,true))return;
+     CREATURE_MSG[id]="Inject Venom: no attack damage; the poison is delivered whatever the armour. Resolve "+c.name+"'s own poison with the GM (Core pp.97, 218).";});},
+ // B17: one target's Willpower result against this creature's Intimidate.
+ // CRTR-B04 option: append a Core body plan's location rows to the draft.
+ gmCreatureAnatomy(name){
+   const lines=creatureAnatomyLines(name);if(!lines)return;
+   const el=$("#gmCreatureText");if(el)CREATURE_DRAFT=String(el.value||"");
+   CREATURE_DRAFT=(CREATURE_DRAFT.replace(/\s+$/,"")+(CREATURE_DRAFT.trim()?"\n":"")+lines).slice(0,6000);render();},
+ // CRTR-B19: roll a Chaos Feature and keep it with the creature.
+ gmCreatureChaos(id,rng){
+   const roll=Math.floor((rng||Math.random)()*100)+1,f=chaosFeatureFor(roll);if(!f)return;
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
+     if(!creatureTrait(c.creature,"Chaos Feature")&&!creatureTrait(c.creature,"Chaos Features"))return;
+     const cs=c.cs=c.cs||{};cs.chaos=(cs.chaos||[]).concat([{roll}]).slice(0,12);
+     CREATURE_MSG[id]="Chaos Feature "+f.range+": "+f.name+" (Core pp.274–276).";});},
+ gmCreatureChaosRemove(id,i){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature||!c.cs||!Array.isArray(c.cs.chaos))return;
+     c.cs.chaos.splice(Number(i),1);});},
+ gmCreatureIntimidate(id,tier){
+   const el=$("#cbtintim-"+id),target=el?String(el.value||"").trim().slice(0,60):"";
+   const out=intimidateOutcome(tier);if(!out)return;
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature||!creatureTrait(c.creature,"Intimidate"))return;
+     if(!target){CREATURE_MSG[id]="Name the target first.";return;}
+     const cs=c.cs=c.cs||{},log=cs.intimidated=cs.intimidated||{};
+     if(log[target]==="immune"){CREATURE_MSG[id]=target+" already ignores its intimidation this encounter.";return;}
+     log[target]=out.key;CREATURE_MSG[id]=target+" "+out.text+". The effect lasts while the creature keeps acting threateningly (Core p.216).";});
+   if(el)el.value="";},
+ gmCreatureIntimidateClear(id){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.cs)return;delete c.cs.intimidated;CREATURE_MSG[id]="Intimidation results cleared (encounter over).";});},
+ gmCreatureLeap(id,won){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
+     const w=creatureLeapBonus(c.creature,!!won);
+     CREATURE_MSG[id]=won?(w?"Leap won: it also lands one "+w.name+" hit ("+w.damage+").":"Leap won, but no natural weapon is recorded."):"Leap lost: no bonus hit.";});},
+ gmCreatureTrample(id){
+   const el=$("#cbttrample-"+id),t=el?parseInt(el.value,10):NaN;
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
+     const err=creatureTrampleCheck(c.creature,t);
+     CREATURE_MSG[id]=err||"Can trample SIZ "+t+": roll Athletics; damage uses the doubled base Damage Modifier.";});},
+ gmCreatureBreath(id){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;const cs=c.cs=c.cs||{};
+     if(!(c.creature.traits||[]).some(t=>/^breathe\b/i.test(t)))return;
+     if((c.effects||[]).some(e=>e.type==="breath"&&e.value>0)){CREATURE_MSG[id]="Still recovering its breath.";return;}
+     if(!Number.isInteger(cs.breathRecovery)){CREATURE_MSG[id]="Enter the breath recovery from the creature's entry first.";return;}
+     if(c.ap.max-c.ap.used<1){CREATURE_MSG[id]="No Action Points left to breathe.";return;}
+     c.ap.used++;(c.effects=c.effects||[]).push({id:genId(),type:"breath",loc:null,mode:"duration",value:cs.breathRecovery,unit:"turn"});
+     CREATURE_MSG[id]="Breath used (1 AP). Each target in the cone rolls Evade to halve the damage (Core p.215).";});},
  gmSetInit(id,val){
    const n=parseInt(val,10)||0;
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(c)c.init=n;});},
@@ -1612,7 +1775,7 @@ window.APP={
      st.combatants.forEach(c=>{
        const row=c.kind==="pc"?(BOARD_CHARS||[]).find(b=>b.id===c.ref):null;
        const pc=row&&row.state&&row.state.chars?effectiveChars(row.state):null;
-       const bonus=pc?initBonus(pc.INT,pc.DEX):0;
+       const bonus=pc?initBonus(pc.INT,pc.DEX):c.creature?creatureAttributes(c.creature).initBonus:0;
        c.init=d(10)+bonus;
      });
    });},
@@ -1651,7 +1814,7 @@ window.APP={
    const el=$("#"+inputId);const n=el?parseInt(el.value,10):NaN;
    if(!Number.isFinite(n)||n<=0)return;
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.hp[loc])return;
-     c.hp[loc].cur=Math.max(-c.hp[loc].max,c.hp[loc].cur-n);});
+     c.hp[loc].cur=Math.max(-c.hp[loc].max,c.hp[loc].cur-n);creatureSyncAp(c);});
    if(el)el.value="";},
  gmAddLoc(id){
    const nameEl=$("#cbtlocname-"+id),hpEl=$("#cbtlochp-"+id);
@@ -1879,7 +2042,7 @@ function buildMD(){
   md+=grp("Standard","Standard Skills")+grp("Professional","Professional Skills")+grp("Magic","Magic Skills")+grp("Combat Style","Combat Styles");
   const magicKnown=allMagic();
   if(magicKnown.length)md+="## Magic Known\n\n"
-    +(devotionalMax()?"Devotional Pool: "+devotionalCur()+" / "+devotionalMax()+" MP\n\n":"")
+    +Array.from({length:devotionalPoolCount()},(_,p)=>devotionalMax(p)?(devotionalPoolCount()>1?devotionalPoolLabel(p):"Devotional Pool")+": "+devotionalCur(p)+" / "+devotionalMax(p)+" MP\n\n":"").join("")
     +"| Magic | Tradition | Cast with | Cost |\n|---|---|---|---|\n"
     +magicKnown.map(m=>{const t=MAGIC_TRAD_MAP[m.tradition];
       const cost=m.tradition==="folk"?"1 MP (0 on a Critical)"

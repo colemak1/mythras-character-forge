@@ -291,7 +291,7 @@ function freshState(){return {
  // traditions whose content lives in the player's own rulebook. `devotional`
  // is the Magic Points a theist has invested in their Devotional Pool, and
  // `devotionalUsed` how much of it is currently spent.
- magic:{folk:[],known:[],devotional:0,devotionalUsed:0},
+ magic:{folk:[],known:[],devotional:0,devotionalUsed:0,devotionalCult:"",extraPools:[]},
  campaignId:null, _libId:null, _libLastSaved:null,
  // True whenever this character's data came from somewhere not yet
  // verified as belonging to whoever is currently signed in -- the autosave
@@ -427,8 +427,18 @@ function normalizeState(){
       if(!["none","fetish","location","creature"].includes(m.bindingType))m.bindingType="none";
       if(!Number.isSafeInteger(m.spiritMP)||m.spiritMP<0||m.spiritMP>999)m.spiritMP=null;
       m.spiritCombatNote=String(m.spiritCombatNote||"").slice(0,800);
+      if(!["bargain","combat"].includes(m.spiritAcquired))m.spiritAcquired="";
+    }
+    if(m.tradition==="sorcery"){
+      // MAG-N02: which other recorded spells a Combine casting joins, and the
+      // player's confirmation that they share target(s). Never inferred.
+      m.combinedSpells=Array.isArray(m.combinedSpells)?m.combinedSpells.map(x=>String(x||"").slice(0,120)).slice(0,20):[];
+      m.combineSharedTargets=m.combineSharedTargets===true;
+      if(m.invocationKey!=null&&typeof m.invocationKey!=="string")delete m.invocationKey;
     }
     if(m.tradition==="mysticism"){
+      // MAG-N04: a recorded Talent is not learned until the GM confirms it.
+      m.talentLearned=m.talentLearned===true;
       m.active=!!m.active;
       m.durationTurns=Number.isInteger(Number(m.durationTurns))&&Number(m.durationTurns)>=0?Number(m.durationTurns):0;
       m.remainingTurns=m.active&&Number.isInteger(Number(m.remainingTurns))&&Number(m.remainingTurns)>=0?Number(m.remainingTurns):0;
@@ -436,6 +446,9 @@ function normalizeState(){
   }
   if(typeof S.magic.devotional!=="number")S.magic.devotional=0;
   if(typeof S.magic.devotionalUsed!=="number")S.magic.devotionalUsed=0;
+  normalizeDevotionalPools();
+  if(!Object.hasOwn(ANIMIST_RANK_FRACTION,S.magic.animistRank))S.magic.animistRank="";
+  if(!Number.isSafeInteger(S.magic.boundLimitGM)||S.magic.boundLimitGM<0)delete S.magic.boundLimitGM;
   if(S.concept&&S.concept.heightM===undefined)S.concept.heightM="";
   if(S.concept&&S.concept.weightKg===undefined)S.concept.weightKg="";
   S.archAdvantages=S.archAdvantages||[];
@@ -836,6 +849,79 @@ function sorceryCost(entry){
   return {mp:1+categories+extra,turns:1+categories,shapings:categories,
     shapingPoints:points,combinedSpells:extra};
 }
+// MAG-N02 (Core p.162): each Combine point joins one more *different*
+// recorded spell. The spells share target(s); the player confirms that.
+function magicNameKey(v){return String(v||"").trim().toLowerCase();}
+// Only the first Combine-many choices count; lowering Combine keeps the rest
+// saved but unused.
+function sorceryCombinedNames(entry){
+  const n=sorceryLevels(entry).Combine||0;
+  return (Array.isArray(entry.combinedSpells)?entry.combinedSpells:[]).slice(0,n).map(x=>String(x||"").trim()).filter(Boolean);
+}
+function sorceryCombineCheck(entry,known){
+  const n=sorceryLevels(entry).Combine||0;if(!n)return null;
+  known=known||S.magic.known;
+  const names=sorceryCombinedNames(entry);
+  if(names.length!==n)return "Combine "+n+" joins "+n+" other spell"+(n>1?"s":"")+" to this one; choose "+(n>1?"them":"it")+" in the builder ("+names.length+" chosen, Core p.162).";
+  const seen=new Set([magicNameKey(entry.name)]);
+  for(const name of names){
+    const k=magicNameKey(name);
+    if(seen.has(k))return "Combined spells must be different spells; "+name+" appears twice (Core p.162).";
+    seen.add(k);
+    if(!known.some(m=>m.tradition==="sorcery"&&magicNameKey(m.name)===k))return name+" is not a recorded Sorcery spell.";
+  }
+  if(entry.combineSharedTargets!==true)return "Confirm that the combined spells share the same target(s) before casting (Core p.162).";
+  return null;
+}
+// Invocation skills are per school or grimoire. With several, a spell must
+// say which one it comes from; with one, that one is used.
+function invocationOptions(){return acquiredProfs().filter(p=>p.name==="Invocation");}
+function sorceryInvocationKeyFor(entry){
+  const opts=invocationOptions();
+  if(opts.length>1){const o=opts.find(x=>x.key===entry?.invocationKey);return o?o.key:null;}
+  return magicSkillKey("Invocation");
+}
+// MAG-N02: a combined casting rolls the lowest Invocation of the spells
+// involved when they come from different sources (Core p.162).
+function sorceryRollKey(entry,known){
+  known=known||S.magic.known;
+  const records=[entry].concat(sorceryCombinedNames(entry)
+    .map(name=>known.find(m=>m.tradition==="sorcery"&&magicNameKey(m.name)===magicNameKey(name))).filter(Boolean));
+  const keys=records.map(sorceryInvocationKeyFor);
+  if(keys.some(k=>!k))return null;
+  return keys.reduce((low,k)=>finalPct(k)<finalPct(low)?k:low);
+}
+// MAG-N10 guard: everything that decides a pending Sorcery roll. Changing a
+// combined spell, or any involved spell's Invocation source, mid-casting
+// needs a cancel rather than a silent switch at the final roll.
+function sorceryPendingCombo(entry,known){
+  known=known||S.magic.known;
+  const names=sorceryCombinedNames(entry);
+  const sources=[entry].concat(names.map(n=>known.find(m=>m.tradition==="sorcery"&&magicNameKey(m.name)===magicNameKey(n))||null))
+    .map(r=>r?sorceryInvocationKeyFor(r)||"":"missing");
+  return JSON.stringify([names,sources]);
+}
+// MAG-N04 (Core p.155): a mystic practises at most half their POW in distinct
+// Talents. Names are compared case-insensitively; one Talent recorded at two
+// Intensities counts once. Integer count against POW/2 needs no rounding.
+function mysticismLearnedNames(entries){
+  return new Set(entries.filter(m=>m.tradition==="mysticism"&&m.talentLearned===true&&String(m.name||"").trim()).map(m=>magicNameKey(m.name)));
+}
+function mysticismLearnCheck(entries,index,pow){
+  const m=entries[index];if(!m||m.tradition!=="mysticism")return "Not a Mysticism Talent.";
+  if(!String(m.name||"").trim())return "Name the Talent before marking it learned.";
+  if(!Number.isSafeInteger(pow)||pow<1)return "Confirm POW before marking Talents learned.";
+  const names=mysticismLearnedNames(entries);names.add(magicNameKey(m.name));
+  if(names.size*2>pow)return "A mystic can practise at most half their POW in distinct Talents ("+Math.floor(pow/2)+" at POW "+pow+", Core p.155).";
+  return null;
+}
+function mysticismTalentReady(entries,index,pow){
+  const m=entries[index];if(!m||m.tradition!=="mysticism")return "Not a Mysticism Talent.";
+  if(m.talentLearned!==true)return "Mark this Talent as learned (GM confirmed) first. A recorded or catalogue Talent is not automatically learned (Core p.155).";
+  const count=mysticismLearnedNames(entries).size;
+  if(Number.isSafeInteger(pow)&&pow>=1&&count*2>pow)return count+" learned Talents exceed half POW ("+Math.floor(pow/2)+" at POW "+pow+"). Review them in the builder before using any (Core p.155).";
+  return null;
+}
 function mysticismActiveTotal(entries){
   return entries.filter(m=>m.tradition==="mysticism"&&m.active)
     .reduce((total,m)=>total+Math.max(0,Math.floor(Number(m.intensity)||0)),0);
@@ -851,7 +937,8 @@ function mysticismActivationCheck(entries,index,individual,combined){
   return null;
 }
 // Core p.165 Invocation Costs: success/full, critical/half, failure/zero,
-// fumble/full. Half points are rounded up to a payable integer.
+// fumble/full. Core gives no rounding for an odd half: the app rounds up as
+// policy pending owner decision D-4, not as a book rule.
 function sorceryOutcomeCost(entry,tier){
   const full=sorceryCost(entry).mp;
   if(tier==="Failure")return 0;
@@ -882,6 +969,8 @@ function mysticismDetails(entry){
   if(entry.talentCategory==="invoke"&&intensity===1)return {cost:2};
   return null;
 }
+// Core p.156: a critical costs half. Odd halves round up as app policy
+// pending D-4; the book does not give a direction.
 function mysticismOutcomeCost(entry,tier){
   const full=mysticismDetails(entry)?.cost;
   if(full==null)return null;
@@ -913,8 +1002,48 @@ function spiritCommandPreflight(m,mp,bindingPct){
   if(!Number.isFinite(mp)||mp<1)return "You need at least 1 Magic Point available to attempt a bound-spirit command.";
   if(!Number.isFinite(bindingPct)||bindingPct<=0)return "Add the Binding skill before commanding a spirit.";
   if(!Number.isSafeInteger(Number(m.pow))||Number(m.pow)<1)return "Enter the spirit's POW before attempting a command; consult your GM if unknown.";
+  if(boundSpiritOverflow().length)return "More spirits are bound than your rank allows, so the strongest break free (Core p.136). Ask your GM which, mark them not bound in the builder, then command again.";
   const limit=3*Math.ceil(bindingPct/10);
   if(Number(m.pow)>limit)return "The spirit's POW exceeds your Binding limit ("+limit+"); the command fails (Core pp.131, 136).";
+  return null;
+}
+// MAG-N09 (Core pp.135–136): bound-spirit slots by animist rank are ¼, ½, ¾
+// or all of CHA (Follower, Spirit Worshipper, Shaman, High Shaman). The saved
+// keys stay r1–r4. A fractional result is not rounded by the app: the GM
+// confirms the whole-number limit (S.magic.boundLimitGM), which must lie
+// between the fraction's floor and ceiling.
+const ANIMIST_RANK_FRACTION={r1:0.25,r2:0.5,r3:0.75,r4:1};
+const ANIMIST_RANK_LABEL=[["","Not confirmed"],["r1","Follower: ¼ CHA"],["r2","Spirit Worshipper: ½ CHA"],["r3","Shaman: ¾ CHA"],["r4","High Shaman: all CHA"]];
+function boundSpiritFormula(){
+  const f=ANIMIST_RANK_FRACTION[S.magic.animistRank],cha=Number(effectiveChars().CHA);
+  if(f==null||!Number.isSafeInteger(cha)||cha<1)return null;
+  return cha*f;
+}
+function boundSpiritLimit(){
+  const x=boundSpiritFormula();if(x==null)return null;
+  if(Number.isInteger(x))return x;
+  const gm=S.magic.boundLimitGM;
+  return Number.isInteger(gm)&&gm>=Math.floor(x)&&gm<=Math.ceil(x)?gm:null;
+}
+function boundSpirits(){return S.magic.known.filter(m=>m.tradition==="animism"&&m.spiritStatus==="bound");}
+// Core p.136: over the limit, the strongest spirit(s) break free. Core doesn't
+// define "strongest", so this is only the app's suggestion for the GM
+// (highest Intensity, then POW). Commands stay blocked until the GM-chosen
+// spirits are marked free.
+function boundSpiritOverflow(){
+  const limit=boundSpiritLimit(),bound=boundSpirits();
+  if(limit==null||bound.length<=limit)return [];
+  return bound.slice().sort((a,b)=>(Number(b.intensity)||0)-(Number(a.intensity)||0)||(Number(b.pow)||0)-(Number(a.pow)||0)).slice(0,bound.length-limit);
+}
+// A spirit is bound only after a GM-confirmed bargain or Spirit Combat win,
+// and only into a free slot.
+function spiritBindCheck(m){
+  if(!m||m.tradition!=="animism")return "Select an Animism spirit.";
+  if(!["bargain","combat"].includes(m.spiritAcquired))return "Record how the spirit was acquired (a bargain, or winning Spirit Combat, GM confirmed) before binding it (Core pp.135–136).";
+  const formula=boundSpiritFormula(),limit=boundSpiritLimit();
+  if(formula==null)return "Confirm your animist rank and CHA before binding: they set how many spirits you can hold (Core p.136).";
+  if(limit==null)return "Your rank gives "+formula+" bound spirits. Enter the whole-number limit your GM confirms before binding.";
+  if(boundSpirits().filter(x=>x!==m).length>=limit)return "All "+limit+" bound-spirit slots are in use (Core p.136).";
   return null;
 }
 // Starting-magic review is an explicit snapshot, never inferred from old saves.
@@ -961,6 +1090,7 @@ function magicCastPreflight(entry, availableMP, availableDevotion){
   const t=MAGIC_TRAD_MAP[entry.tradition];
   if(entry.tradition==="mysticism"&&!mysticismDetails(entry))return "Confirm the Talent category and a valid Intensity before casting; invoked traits use Intensity 1 (Core p.156).";
   if(entry.tradition==="theism"&&!theismDetails(entry))return "Confirm this miracle's cult level and number of instances before casting (Core p.181).";
+  if(entry.tradition==="theism"&&theismPoolIndex(entry)===null)return theismAssociationCheck(entry);
   if(entry.tradition==="folk" && mp<1)return "Not enough Magic Points to attempt Folk Magic (minimum 1 MP).";
   const cost=magicEntryCost(entry);
   if(t.pool==="mp" && entry.tradition!=="folk" && (!Number.isInteger(cost)||cost<1))
@@ -971,15 +1101,105 @@ function magicCastPreflight(entry, availableMP, availableDevotion){
   if(t.pool==="devotional" && dp<cost)return "Not enough Devotional Pool points: need "+cost+", have "+dp+".";
   return null;
 }
-function devotionalMax(){return Math.max(0,parseInt(S.magic.devotional,10)||0);}
-function devotionalCur(){return Math.max(0,devotionalMax()-(S.magic.devotionalUsed||0));}
+// MAG-N05 (Core p.180): one Devotional Pool per cult. Pool 0 keeps the
+// original fields (devotional, devotionalUsed, devotionalRank, devotionalCult)
+// so older saves and builds still read it; further cults are in extraPools.
+const DEVOTIONAL_RANKS=["","lay","initiate","acolyte","priest","highpriest"];
+const MAX_DEVOTIONAL_POOLS=8;
+function normalizeDevotionalPools(){
+  S.magic.devotionalCult=String(S.magic.devotionalCult||"").slice(0,120);
+  if(!DEVOTIONAL_RANKS.includes(S.magic.devotionalRank||""))S.magic.devotionalRank="";
+  S.magic.extraPools=(Array.isArray(S.magic.extraPools)?S.magic.extraPools:[])
+    .filter(x=>x&&typeof x==="object"&&!Array.isArray(x)).slice(0,MAX_DEVOTIONAL_POOLS-1).map(x=>{
+      const max=Number.isSafeInteger(Number(x.max))&&Number(x.max)>=0?Number(x.max):0;
+      const used=Number.isSafeInteger(Number(x.used))&&Number(x.used)>=0?Math.min(max,Number(x.used)):0;
+      const out={cult:String(x.cult||"").slice(0,120),rank:DEVOTIONAL_RANKS.includes(x.rank)?x.rank:"",max,used};
+      if(typeof x.exhortKey==="string"&&x.exhortKey)out.exhortKey=x.exhortKey.slice(0,200);
+      return out;
+    });
+  if(typeof S.magic.devotionalExhortKey!=="string"||!S.magic.devotionalExhortKey)delete S.magic.devotionalExhortKey;
+  for(const m of S.magic.known)if(m.tradition==="theism"){if(m.cult!=null)m.cult=String(m.cult).slice(0,120);}
+  const count=devotionalPoolCount();
+  for(const m of S.magic.known)if(m.tradition==="theism"&&m.pool!=null&&!(Number.isInteger(m.pool)&&m.pool>=0&&m.pool<count))delete m.pool;
+}
+function devotionalPoolCount(){return 1+(Array.isArray(S.magic.extraPools)?S.magic.extraPools.length:0);}
+function devotionalPool(p=0){
+  if(p===0)return {cult:S.magic.devotionalCult||"",rank:S.magic.devotionalRank||"",exhortKey:S.magic.devotionalExhortKey||"",
+    max:Math.max(0,parseInt(S.magic.devotional,10)||0),used:Math.max(0,Number(S.magic.devotionalUsed)||0)};
+  const x=Number.isInteger(p)&&p>0?(S.magic.extraPools||[])[p-1]:null;
+  return x?{cult:x.cult||"",rank:x.rank||"",exhortKey:x.exhortKey||"",max:Math.max(0,parseInt(x.max,10)||0),used:Math.max(0,Number(x.used)||0)}:null;
+}
+function setDevotionalPool(p,patch){
+  if(p===0){
+    const map={cult:"devotionalCult",rank:"devotionalRank",max:"devotional",used:"devotionalUsed",exhortKey:"devotionalExhortKey"};
+    for(const [k,v] of Object.entries(patch))S.magic[map[k]]=v;
+    return;
+  }
+  const x=(S.magic.extraPools||[])[p-1];if(x)Object.assign(x,patch);
+}
+function devotionalMax(p=0){return devotionalPool(p)?.max||0;}
+function devotionalCur(p=0){const x=devotionalPool(p);return x?Math.max(0,x.max-x.used):0;}
 // Core p.180. Rank is confirmed for this pool, not inferred from the
 // character's general cult field. Fractional limits need GM interpretation.
-function devotionalRankLimit(){
+function devotionalRankLimit(p=0){
   const fractions={lay:0,initiate:0.25,acolyte:0.5,priest:0.75,highpriest:1};
-  const rank=S.magic.devotionalRank,pow=Number(effectiveChars().POW);
+  const rank=devotionalPool(p)?.rank,pow=Number(effectiveChars().POW);
   if(!Object.prototype.hasOwnProperty.call(fractions,rank)||!Number.isSafeInteger(pow)||pow<1)return null;
   return pow*fractions[rank];
+}
+// MAG-N05: the MP held across all of a theist's pools may not exceed POW.
+function devotionalHeldTotal(){let t=0;for(let p=0;p<devotionalPoolCount();p++)t+=devotionalCur(p);return t;}
+function devotionalHeldCheck(p,newHeld){
+  const pow=Number(effectiveChars().POW);if(!Number.isSafeInteger(pow)||pow<1)return null;
+  const total=devotionalHeldTotal()-devotionalCur(p)+newHeld;
+  return total>pow?"All Devotional Pools together may hold at most POW ("+pow+") Magic Points; this would make "+total+" (Core p.180).":null;
+}
+function devotionalPoolLabel(p){const x=devotionalPool(p);return x?(x.cult?x.cult:"Cult "+(p+1))+" pool":"pool";}
+// MAG-N05: a pool's Exhort skill. An explicit choice wins; otherwise an
+// Exhort whose speciality names the pool's cult; otherwise the character's
+// only Exhort. Several candidates and no choice = null (ask, never guess).
+function exhortOptions(){return acquiredProfs().filter(p=>p.name==="Exhort");}
+function exhortKeyForPool(p){
+  const pool=devotionalPool(p);if(!pool)return null;
+  const opts=exhortOptions();
+  if(!opts.length)return magicSkillKey("Exhort");
+  if(pool.exhortKey){const o=opts.find(x=>x.key===pool.exhortKey);return o?o.key:null;}
+  const match=opts.filter(x=>x.spec&&pool.cult&&magicNameKey(x.spec)===magicNameKey(pool.cult));
+  if(match.length===1)return match[0].key;
+  return opts.length===1?opts[0].key:null;
+}
+// MAG-N07 (Core pp.179–181): a miracle's level (1 Initiate, 2 Acolyte,
+// 3 Priest) must be within the confirmed rank of the pool it draws on. A Lay
+// Member has no pool. Until the rank is confirmed no miracle can be requested;
+// saved pool and miracle data are kept.
+const POOL_RANK_MIRACLE={lay:0,initiate:1,acolyte:2,priest:3,highpriest:3};
+function theismRankCheck(m,pi){
+  const rank=devotionalPool(pi)?.rank;
+  if(!Object.hasOwn(POOL_RANK_MIRACLE,rank))return "Confirm your rank in "+(devotionalPool(pi)?.cult||"this cult")+" (Rank for this pool, in the builder) before requesting miracles. Rank decides which miracles and how large a pool you have (Core pp.180–181).";
+  const level=Number(m.miracleLevel),max=POOL_RANK_MIRACLE[rank];
+  if(Number.isInteger(level)&&level>max)return (m.name||"This miracle")+" is a level "+level+" miracle; the "+devotionalPoolLabel(pi)+"'s confirmed rank allows up to level "+max+" (Core pp.179–181).";
+  return null;
+}
+// MAG-N05: a miracle belongs to one cult. With several pools it must name
+// that cult, and the pool it draws on must be the same cult's. Legacy
+// miracles are never reassigned silently.
+function theismAssociationCheck(m){
+  const n=devotionalPoolCount(),pi=theismPoolIndex(m);
+  if(pi===null)return "Choose which cult's Devotional Pool this miracle draws on. Pools are separate; personal Magic Points and other cults' pools are never used instead (Core pp.180–181).";
+  const pool=devotionalPool(pi);
+  if(n>1&&!pool.cult)return "Name the cult for "+devotionalPoolLabel(pi)+" in the builder before requesting its miracles.";
+  if(n>1&&!String(m.cult||"").trim())return "Confirm which cult "+(m.name||"this miracle")+" comes from in the builder (Core p.180).";
+  if(String(m.cult||"").trim()&&magicNameKey(m.cult)!==magicNameKey(pool.cult))return (m.name||"This miracle")+" belongs to "+m.cult+", not "+(pool.cult||"this pool")+". A cult's miracles are requested only through that cult (Core pp.180–181).";
+  const rankErr=theismRankCheck(m,pi);if(rankErr)return rankErr;
+  if(!exhortKeyForPool(pi))return exhortOptions().length>1?"Choose which Exhort skill the "+devotionalPoolLabel(pi)+" uses, in the builder.":"Add the Exhort skill before requesting a miracle.";
+  return null;
+}
+// A miracle draws only on its own cult's pool. With one pool, that pool;
+// with several, the miracle must name one. null = not confirmed.
+function theismPoolIndex(m){
+  const n=devotionalPoolCount();
+  if(m?.pool==null)return n===1?0:null;
+  return Number.isInteger(m.pool)&&m.pool>=0&&m.pool<n?m.pool:null;
 }
 // Every piece of magic the character knows, in one list, for the sheet and
 // Play Mode's Magic tab.
@@ -1251,3 +1471,327 @@ function creationReview(){
   return rows;
 }
 
+
+/* ================= CREATURES (Subsystem 7, CRTR-B01–B05) =================
+   A creature comes from its own stat block (Core pp.214–220): the GM pastes
+   it as text and the app keeps the actual values, its own d20 hit-location
+   table, natural weapons and traits, without human defaults. No bestiary
+   data is shipped (Core entries are the GM's rulebook content). Generic
+   anatomy tables (Core pp.276–277) are offered as presets below. */
+const CREATURE_CHARS=["STR","CON","SIZ","DEX","INT","INS","POW","CHA"];
+function parseCreatureStatBlock(text){
+  const c={name:"",chars:{},dice:{},move:"",locations:[],weapons:[],traits:[],wornEnc:0,skills:"",notes:""};
+  const errors=[],unread=[];
+  const lines=String(text||"").split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  for(const line of lines){
+    let m;
+    if((m=line.match(/^name\s*:\s*(.+)$/i))){c.name=m[1].trim().slice(0,80);continue;}
+    if((m=line.match(/^(STR|CON|SIZ|DEX|INT|INS|POW|CHA)\s*:?\s+(?:(\d*d\d+(?:\s*[+-]\s*\d+)?)\s+)?\(?(\d+)\)?$/i))){
+      const k=m[1].toUpperCase();
+      if(Object.hasOwn(c.chars,k))errors.push(k+" is given twice.");
+      c.chars[k]=Number(m[3]);if(m[2])c.dice[k]=m[2].replace(/\s+/g,"");continue;
+    }
+    if((m=line.match(/^(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?\s+(.+?)\s+(\d{1,2})(?:\s*\+\s*(\d{1,2}))?\s*\/\s*(\d{1,3})$/))){
+      c.locations.push({lo:Number(m[1]),hi:Number(m[2]||m[1]),name:m[3].trim().slice(0,40),natural:Number(m[4]),worn:Number(m[5]||0),hp:Number(m[6])});continue;
+    }
+    if((m=line.match(/^(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?\s+(.+?)\s+\d{1,2}(?:\s*\+\s*\d{1,2})?\s*\/\s*\?$/))){
+      errors.push("Give "+m[3].trim()+" its HP (replace the ? after the armour).");continue;
+    }
+    if((m=line.match(/^weapon\s*:\s*(.+?)\s+(\d*d\d+(?:\s*[+-]\s*\d*d?\d+)*)(\s+natural)?$/i))){
+      c.weapons.push({name:m[1].trim().slice(0,60),damage:m[2].replace(/\s+/g,""),natural:!!m[3]});continue;
+    }
+    if((m=line.match(/^traits?\s*:\s*(.+)$/i))){m[1].split(/[,;](?![^(]*\))/).map(t=>t.trim()).filter(Boolean).forEach(t=>c.traits.push(t.slice(0,60)));continue;}
+    if((m=line.match(/^move(?:ment)?\s*:?\s*(.+)$/i))){c.move=m[1].trim().slice(0,40);continue;}
+    if((m=line.match(/^worn armou?r enc\s*:?\s*(\d+)$/i))){c.wornEnc=Number(m[1]);continue;}
+    if((m=line.match(/^skills?\s*:\s*(.+)$/i))){c.skills=m[1].trim().slice(0,600);continue;}
+    if((m=line.match(/^notes?\s*:\s*(.+)$/i))){c.notes=(c.notes?c.notes+" ":"")+m[1].trim().slice(0,600);continue;}
+    unread.push(line.slice(0,120));
+  }
+  if(!c.name)errors.push("Add a Name: line.");
+  for(const k of ["STR","CON","SIZ","DEX","POW"])if(!Object.hasOwn(c.chars,k))errors.push(k+" is missing.");
+  if(Object.hasOwn(c.chars,"INT")&&Object.hasOwn(c.chars,"INS"))errors.push("Give INT (sapient) or INS (instinct), not both (Core p.214).");
+  if(!Object.hasOwn(c.chars,"INT")&&!Object.hasOwn(c.chars,"INS"))errors.push("Give INT or INS.");
+  const table=creatureLocationTableCheck(c.locations);if(table)errors.push(table);
+  return {creature:c,errors,unread};
+}
+// CRTR-B01 (Core p.214): an unintelligent creature has INS instead of INT, and
+// INS is used wherever INT would be. A sapient creature keeps INT.
+function creatureMind(c){
+  const key=Object.hasOwn(c.chars||{},"INS")?"INS":"INT";
+  return {key,value:Number(c.chars?.[key])||0};
+}
+// A skill's base from its characteristic formula ("INT+POW", "DEX×2"), with
+// INS standing in for INT on an instinctive creature.
+function creatureSkillBase(c,formula){
+  const val=k=>{k=k.trim().toUpperCase();if(k==="INT")k=creatureMind(c).key;return Number(c.chars?.[k])||0;};
+  const m=String(formula||"").match(/^\s*([A-Z]{3})\s*(?:([+x×])\s*([A-Z]{3}|2))?\s*$/i);
+  if(!m)return null;
+  if(!m[2])return val(m[1]);
+  return m[2]==="+"?val(m[1])+val(m[3]):val(m[1])*2;
+}
+// CRTR-B01/B03: attributes from the creature's own characteristics. Only worn
+// armour adds the Initiative penalty (Core p.58: total worn ENC / 5, round
+// up); natural armour never does (p.219).
+function creatureAttributes(c){
+  const ch=c.chars||{},mind=creatureMind(c),DEX=Number(ch.DEX)||0;
+  const penalty=Number(c.wornEnc)>0?Math.ceil(Number(c.wornEnc)/5):0;
+  return {mind,ap:apCalc(mind.value,DEX),initBonus:initBonus(mind.value,DEX)-penalty,armourPenalty:penalty,
+    damageMod:dmCalc(Number(ch.STR)||0,Number(ch.SIZ)||0),healingRate:healRate(Number(ch.CON)||0),mp:Number(ch.POW)||0};
+}
+// CRTR-B04: the creature's own d20 table must cover 1–20 once each.
+function creatureLocationTableCheck(locs){
+  if(!Array.isArray(locs)||!locs.length)return "Add the creature's hit-location rows (e.g. 1-3 Right Hind Leg 2/5).";
+  const seen=new Array(21).fill(null),names=new Set();
+  for(const l of locs){
+    if(!(Number.isInteger(l.lo)&&Number.isInteger(l.hi)&&l.lo>=1&&l.hi<=20&&l.lo<=l.hi))return "Location "+(l.name||"?")+" has an invalid d20 range.";
+    const key=String(l.name||"").toLowerCase();if(!key)return "Every location needs a name.";
+    if(names.has(key))return "Location "+l.name+" appears twice.";names.add(key);
+    for(let r=l.lo;r<=l.hi;r++){if(seen[r])return "d20 roll "+r+" is in both "+seen[r]+" and "+l.name+".";seen[r]=l.name;}
+  }
+  const missing=[];for(let r=1;r<=20;r++)if(!seen[r])missing.push(r);
+  return missing.length?"The d20 table doesn't cover roll"+(missing.length>1?"s ":" ")+missing.join(", ")+".":null;
+}
+function creatureHitLocation(c,roll){return (c.locations||[]).find(l=>roll>=l.lo&&roll<=l.hi)||null;}
+// CRTR-B03: damage through a location's natural plus worn armour.
+function creatureDamageAfterArmour(c,locName,raw){
+  const l=(c.locations||[]).find(x=>x.name===locName);if(!l)return null;
+  return Math.max(0,Math.floor(Number(raw)||0)-(l.natural||0)-(l.worn||0));
+}
+// CRTR-B05 (Core p.216): natural weapons can parry only with the Formidable
+// Natural Weapons trait; otherwise the creature relies on armour or Evade.
+function creatureHasTrait(c,name){return (c.traits||[]).some(t=>t.toLowerCase()===name.toLowerCase());}
+function creatureCanParry(c,w){
+  if(!w)return {ok:false,reason:"No weapon."};
+  if(!w.natural)return {ok:true,reason:""};
+  return creatureHasTrait(c,"Formidable Natural Weapons")?{ok:true,reason:"Formidable Natural Weapons"}
+    :{ok:false,reason:"Natural weapons can't parry without Formidable Natural Weapons; use Evade or natural armour (Core p.216)."};
+}
+function combatantFromCreature(c,init,id){
+  const hp={};c.locations.forEach(l=>{hp[l.name]={cur:l.hp,max:l.hp};});
+  return {id:id||genId(),kind:"npc",ref:null,name:c.name,init:init||0,ap:{max:creatureApMax(c,hp,[]),used:0},cs:{},
+    locations:c.locations.map(l=>l.name),hp,effects:[],stat1:c.skills||"",stat2:c.notes||"",creature:c};
+}
+
+/* ---- Creature combat traits (CRTR-B06–B14, Core pp.104, 215–218) ----
+   GM-assisted: the app tracks state the trait changes and refuses what the
+   rule forbids; values specific to one creature (breath recovery, poison,
+   the undead destroy condition) come from that creature's entry via the GM. */
+function creatureTrait(c,name){
+  const n=name.toLowerCase();
+  return (c.traits||[]).find(t=>{const x=t.toLowerCase();return x===n||x.startsWith(n+" ")||x.startsWith(n+"(");})||null;
+}
+// "Athletics 60%, Fly 75%" → 75 for "Fly". null if not listed.
+function creatureSkillPct(c,name){
+  const re=new RegExp("(?:^|[,;])\\s*"+name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\s+(\\d{1,3})%","i");
+  const m=String(c.skills||"").match(re);return m?Number(m[1]):null;
+}
+// B06: while airborne a Flying creature may defend with Fly instead of Evade.
+function creatureDefence(c,airborne){
+  if(airborne&&creatureTrait(c,"Flying")){const fly=creatureSkillPct(c,"Fly");if(fly!=null)return {skill:"Fly",pct:fly};}
+  return {skill:"Evade",pct:creatureSkillPct(c,"Evade")};
+}
+// B07: only a won opposed leap adds one natural-weapon hit.
+function creatureLeapBonus(c,won){
+  if(!creatureTrait(c,"Leaper")||!won)return null;
+  return (c.weapons||[]).find(w=>w.natural)||null;
+}
+// B09 (Core p.216): one extra combat action per functioning head beyond the
+// first. A head is a location whose name contains "head". It stops working
+// only when the GM marks it incapacitated or severed (`out`); reaching 0 HP
+// is a wound to resolve, not by itself the loss of the head's action.
+function creatureHeads(c,hp,out){
+  const heads=(c.locations||[]).filter(l=>/\bhead\b/i.test(l.name)).map(l=>l.name);
+  const lost=new Set(Array.isArray(out)?out:[]);
+  const working=heads.filter(n=>!lost.has(n));
+  const atZero=heads.filter(n=>!lost.has(n)&&hp&&hp[n]&&hp[n].cur<=0);
+  return {heads,working,atZero};
+}
+function creatureApMax(c,hp,out){
+  const base=creatureAttributes(c).ap;
+  if(!creatureTrait(c,"Multi-headed")&&!creatureTrait(c,"Multi-Headed"))return base;
+  return base+Math.max(0,creatureHeads(c,hp,out).working.length-1);
+}
+// B11: a target above half the trampler's SIZ can't be trampled.
+function creatureTrampleCheck(c,targetSiz){
+  const siz=Number(c.chars?.SIZ),t=Number(targetSiz);
+  if(!creatureTrait(c,"Trample"))return "This creature doesn't have the Trample trait.";
+  if(!Number.isFinite(t)||t<1)return "Enter the target's SIZ.";
+  if(t*2>siz)return "Too big to trample: SIZ "+t+" is more than half the creature's SIZ "+siz+" (Core p.218).";
+  return null;
+}
+// B12 (Core pp.97, 218): an ordinary venomous hit doesn't inject. Poison is
+// delivered when the Inject Venom special effect is chosen on a successful
+// attack: it finds a gap in the armour instead of doing the attack's damage,
+// so damage through armour is not required. The poison is the creature's own.
+function creatureVenomEligible(c,injectVenomChosen){return !!creatureTrait(c,"Venomous")&&injectVenomChosen===true;}
+// B09: keep a multi-headed creature's AP in step with its working heads.
+function creatureSyncAp(c){
+  if(!c||!c.creature)return;
+  const max=creatureApMax(c.creature,c.hp,c.cs&&c.cs.headsOut);
+  if(max!==c.ap.max){c.ap.max=max;c.ap.used=Math.min(c.ap.used,max);}
+}
+
+/* ---- Resistances, senses, Intimidate, PC eligibility (CRTR-B15–B18) ---- */
+// The sources named in a trait's brackets: "Immunity (fire, poison)".
+function creatureTraitSources(c,name){
+  const out=[];
+  for(const t of c.traits||[]){
+    const m=t.match(/^([^(]+)\(([^)]*)\)\s*$/);
+    if(m&&m[1].trim().toLowerCase()===name.toLowerCase())m[2].split(/,|\band\b|\//).map(x=>x.trim().toLowerCase()).filter(Boolean).forEach(x=>out.push(x));
+  }
+  return out;
+}
+function creatureSourceMatch(list,source){
+  const s=String(source||"").trim().toLowerCase();if(!s)return null;
+  return list.find(x=>x===s||s.split(/[\s,]+/).includes(x))||null;
+}
+// B15 (Core pp.215, 217–218): check the damage source before any armour.
+// Immunity ignores its listed source; Vulnerable bypasses armour against its
+// source; Allergy works by contact, and whether armour stops that contact is
+// the trait's call (GM).
+function creatureResolveHit(c,locName,raw,source){
+  const l=(c.locations||[]).find(x=>x.name===locName);if(!l)return null;
+  const r=Math.max(0,Math.floor(Number(raw)||0)),armour=(l.natural||0)+(l.worn||0);
+  const immune=creatureSourceMatch(creatureTraitSources(c,"Immunity"),source);
+  if(immune)return {damage:0,note:"Immune to "+immune+": no damage (Core p.217)."};
+  const vuln=creatureSourceMatch(creatureTraitSources(c,"Vulnerable"),source);
+  if(vuln)return {damage:r,note:"Vulnerable to "+vuln+": armour doesn't protect (Core p.218)."};
+  const allergy=creatureSourceMatch(creatureTraitSources(c,"Allergy"),source);
+  const damage=Math.max(0,r-armour);
+  if(allergy)return {damage,note:"Allergy ("+allergy+"): contact at "+locName+". Whether armour prevents contact, and the effect, follow the trait (GM, Core p.215)."};
+  return {damage,note:""};
+}
+// B16 (Core pp.215–216): senses work only within their own mode and range.
+const CREATURE_SENSES=[
+  ["Camouflaged","Harder to spot by Perception as its trait states, in its own surroundings. Not invisibility (Core p.215)."],
+  ["Echolocation","Senses by sound, within the range its entry gives; nothing beyond that range or outside that sense (Core p.215)."],
+  ["Earth Sense","Senses through the ground, within the range its entry gives; nothing beyond that range or outside that sense (Core p.215)."]
+];
+// B17 (Core p.216): each target's Willpower against Intimidate.
+function intimidateOutcome(tier){
+  return {Critical:{key:"immune",text:"ignores this creature's intimidation for the rest of the encounter"},
+    Success:{key:"holds",text:"holds their ground"},
+    Failure:{key:"retreats",text:"spends their next round putting distance between themselves and the creature"},
+    Fumble:{key:"flees",text:"flees at full speed"}}[tier]||null;
+}
+/* ---- Generic anatomy presets (CRTR-B04 option, Core printed pp.276–277) ----
+   d20 ranges and location names only. HP and armour come from the creature. */
+const CREATURE_ANATOMY={
+ "Arachnid":[[1,2,"Right Rear Leg"],[3,4,"Left Rear Leg"],[5,6,"Mid Right Leg"],[7,8,"Mid Left Leg"],[9,10,"Fore Right Leg"],[11,12,"Fore Left Leg"],[13,14,"Abdomen"],[15,16,"Front Right Leg"],[17,18,"Front Left Leg"],[19,20,"Cephalothorax"]],
+ "Centaurid":[[1,3,"Right Leg"],[4,6,"Left Leg"],[7,8,"Hindquarters"],[9,10,"Forequarters"],[11,12,"Right Front Leg"],[13,14,"Left Front Leg"],[15,16,"Chest"],[17,17,"Right Arm"],[18,18,"Left Arm"],[19,20,"Head"]],
+ "Draconic":[[1,2,"Tail"],[3,4,"Right Hind Leg"],[5,6,"Left Hind Leg"],[7,8,"Hindquarters"],[9,10,"Right Wing"],[11,12,"Left Wing"],[13,14,"Forequarters"],[15,16,"Right Front Leg"],[17,18,"Left Front Leg"],[19,20,"Head"]],
+ "Insect":[[1,1,"Right Rear Leg"],[2,2,"Left Rear Leg"],[3,3,"Right Middle Leg"],[4,4,"Left Middle Leg"],[5,9,"Abdomen"],[10,13,"Thorax"],[14,14,"Right Front Leg"],[15,15,"Left Front Leg"],[16,20,"Head"]],
+ "Dorsal Finned Aquatic":[[1,3,"Tail"],[4,6,"Dorsal Fin"],[7,10,"Hindquarters"],[11,14,"Forequarters"],[15,16,"Right Fin"],[17,18,"Left Fin"],[19,20,"Head"]],
+ "Tailed Biped":[[1,3,"Tail"],[4,5,"Right Leg"],[6,7,"Left Leg"],[8,10,"Abdomen"],[11,14,"Chest"],[15,16,"Right Arm"],[17,18,"Left Arm"],[19,20,"Head"]],
+ "Winged Quadruped":[[1,2,"Right Hind Leg"],[3,4,"Left Hind Leg"],[5,7,"Hindquarters"],[8,10,"Forequarters"],[11,12,"Right Wing"],[13,14,"Left Wing"],[15,16,"Right Front Leg"],[17,18,"Left Front Leg"],[19,20,"Head"]],
+ "Pachyderm":[[1,2,"Right Hind Leg"],[3,4,"Left Hind Leg"],[5,8,"Hindquarters"],[9,12,"Forequarters"],[13,14,"Right Front Leg"],[15,16,"Left Front Leg"],[17,17,"Trunk"],[18,20,"Head"]],
+ "Tailed Quadruped":[[1,3,"Tail"],[4,5,"Right Hind Leg"],[6,7,"Left Hind Leg"],[8,10,"Hindquarters"],[11,14,"Forequarters"],[15,16,"Right Front Leg"],[17,18,"Left Front Leg"],[19,20,"Head"]],
+ "Serpentine":[[1,3,"Tail Tip"],[4,5,"Mid End-length"],[6,7,"Fore End-length"],[8,9,"Rear Mid-length"],[10,12,"Mid Mid-length"],[13,14,"Fore Mid-length"],[15,16,"Rear Fore-length"],[17,18,"Mid Fore-length"],[19,20,"Head"]],
+ "Winged Biped":[[1,3,"Right Leg"],[4,6,"Left Leg"],[7,9,"Abdomen"],[10,10,"Chest"],[11,12,"Right Wing"],[13,14,"Left Wing"],[15,16,"Right Arm"],[17,18,"Left Arm"],[19,20,"Head"]],
+ "Tailed Arachnid":[[1,2,"Tail"],[3,3,"Right Rear Leg"],[4,4,"Left Rear Leg"],[5,5,"Mid Right Leg"],[6,6,"Mid Left Leg"],[7,7,"Fore Right Leg"],[8,8,"Fore Left Leg"],[9,12,"Thorax"],[13,15,"Right Pincer"],[16,18,"Left Pincer"],[19,20,"Cephalothorax"]],
+ "Winged Insect":[[1,1,"Right Rear Leg"],[2,2,"Left Rear Leg"],[3,4,"Metathorax"],[5,5,"Mid Right Leg"],[6,6,"Mid Left Leg"],[7,10,"Prothorax"],[11,12,"Right Wing"],[13,14,"Left Wing"],[15,16,"Right Forelimb"],[17,18,"Left Forelimb"],[19,20,"Head"]]
+};
+// Stat-block lines for a preset, with 0 armour and HP left for the GM ("?").
+function creatureAnatomyLines(name){
+ const t=CREATURE_ANATOMY[name];if(!t)return "";
+ return t.map(([lo,hi,n])=>(lo===hi?String(lo):lo+"-"+hi)+" "+n+" 0/?").join("\n");
+}
+
+/* ---- Chaos Features (CRTR-B19, Core printed pp.274–276) ----
+   d100 in pairs (01–02 … 99–00). Effects are our own short summaries; the
+   GM applies them. Dice in brackets are the Core values. */
+const CHAOS_FEATURES=[
+ ["Acidic","Its blood is acid that splashes whoever wounds it; roll 1d4 for strength (1d2, 1d4, 1d6 or 1d8 damage per wound)."],
+ ["Alluring","Gives off a lure: gains Seduction at POW×5%, resisted by Willpower."],
+ ["Asymmetric","One side is bigger: double the HP of that side's locations and halve the other side's."],
+ ["Boneless","Cartilage, not bone: squeezes through any gap and takes no falling damage."],
+ ["Brainless","Senses spread over the body; its brain sits in a random location, not the head."],
+ ["Burning","Gives off heat that hurts everyone within Short range each round (roll 1d4: 1d2, 1d4, 1d6 or 1d8)."],
+ ["Chameleon","Blends in: effective Stealth 100%+POW."],
+ ["Climbing","Gains the Adhering ability."],
+ ["Contagious","Carries a disease (delay 1d8 hours, potency CON×5%) that drains a random characteristic by 1d8."],
+ ["Corroding","Weapons that strike it lose 1d8 HP each time; weapon armour points don't help."],
+ ["Dampener","Magic within POW metres is reduced by 1d8 Magnitude; spells brought to 0 end unless permanent."],
+ ["Deathly","Everyone within Short range makes an unopposed Endurance roll each round or takes 1 damage to every location, ignoring armour."],
+ ["Disturbing","Covered in unsettling growths: viewers make an unopposed Willpower roll or stand helpless until they pass."],
+ ["Domineering","Gives mental commands; a target resists only with an unopposed Willpower success."],
+ ["Draining","Each successful strike drains 1d8 MP from its foe."],
+ ["Droning","A buzzing within POW×5 metres: unopposed Willpower or fall asleep for 1d8 minutes."],
+ ["Entangle","Those in melee range make an unopposed Brawn roll each round or are held helpless."],
+ ["Frightening","Viewers make an unopposed Willpower roll or flee at once."],
+ ["Icy","Freezing cold hurts everyone in melee range each round (roll 1d4: 1d2, 1d4, 1d6 or 1d8)."],
+ ["Intangible","Passes through solid objects; while intangible it can't be harmed and can't attack."],
+ ["Leaper","Jump range multiplied by 1d4+1."],
+ ["Levitating","Hovers: crosses any surface without sinking or leaving tracks."],
+ ["Mimic","Takes the shape of a creature it touches, keeping its own characteristics."],
+ ["Mournful","Looks pitiful: an observer needs an unopposed Willpower success before attacking it."],
+ ["Mutated","A random location is missing, yet it functions without it."],
+ ["Nerveless","Feels no pain; ignores Serious Wound effects."],
+ ["Neutralising","Spells cast at it are neutralised at once."],
+ ["Obfuscating","Shrouded: observers need an unopposed Perception roll each turn to see it."],
+ ["Oversized","One location is swollen: double its HP."],
+ ["Paralysing","Whoever it touches makes an unopposed Endurance roll or is paralysed for 1d8 minutes."],
+ ["Perceptive","An unusual main sense (roll 1d6: sonar, heat, minds, pain, souls, magic); may have no eyes."],
+ ["Poisonous","One unarmed attack is venomous (delay 1d8 rounds, potency CON×5%), causing a poison condition (Core p.75)."],
+ ["Polymorph","Changes form every round, keeping characteristics and damage; uses the new form's locations (GM prepares forms)."],
+ ["Projector","Anyone within POW metres feels the psychological effect of its wounds, not the physical."],
+ ["Quick","Movement multiplied by 1d4+1."],
+ ["Reflecting","Magic cast on it rebounds on the caster."],
+ ["Regenerating","Heals 1 HP per round in every location, except a location with a Major Wound."],
+ ["Roaring","A roar: listeners make an unopposed Endurance roll or are stunned for 1d3 turns."],
+ ["Scintillating","A shifting aura: all attacks against it are one grade harder."],
+ ["Shadowy","Total darkness around it, radius POW metres."],
+ ["Shocking","Shocks whoever hits it with metal or bare hands, or is hit by it (roll 1d4: 1d2, 1d4, 1d6 or 1d8 per blow)."],
+ ["Silent","Makes no sound, even when attacking."],
+ ["Slimy","Can't be grappled or gripped; leaves a sticky trail."],
+ ["Stench","Inhalers make an unopposed Endurance roll or vomit helplessly for 1d3 combat rounds."],
+ ["Sticky","Items stick to it: an unopposed Brawn roll and a Combat Action free one."],
+ ["Teleporter","Teleports once per round, up to POW×2 metres."],
+ ["Transmuter","Turns organic material it touches into another substance; a living victim resists with an unopposed Endurance roll."],
+ ["Vampiric","HP damage it deals heals its own wounds."],
+ ["Warded","Invulnerable to one kind of material (steel, wood, stone, flesh…)."],
+ ["Weakening","Each successful undefended hit lowers the victim's STR by 1d8 for a time."]
+];
+// d100 roll (1–100) → the feature; 01–02 is index 0, 99–00 (100) is index 49.
+function chaosFeatureFor(roll){
+ const r=Math.floor(Number(roll));if(!(r>=1&&r<=100))return null;
+ const i=Math.floor((r-1)/2),[name,effect]=CHAOS_FEATURES[i];
+ const lo=i*2+1,hi=i*2+2,pad=n=>n===100?"00":String(n).padStart(2,"0");
+ return {roll:r,range:pad(lo)+"–"+pad(hi),name,effect};
+}
+
+/* ---- Nonhuman Points Build (CRTR-B18, Core pp.8, 218–219) ----
+   The pool is the species' average characteristics added up (rounded up);
+   each characteristic stays inside its dice range and every point is spent. */
+function creatureDiceRange(expr){
+ const m=String(expr||"").replace(/\s+/g,"").match(/^(\d*)d(\d+)(?:([+-])(\d+))?$/i);if(!m)return null;
+ const n=Number(m[1]||1),d=Number(m[2]),k=(m[3]==="-"?-1:1)*Number(m[4]||0);
+ if(!(n>=1&&d>=1))return null;
+ return {min:n+k,max:n*d+k,avg:n*(d+1)/2+k};
+}
+function creaturePointsBuild(c){
+ const keys=CREATURE_CHARS.filter(k=>Object.hasOwn(c.chars||{},k)&&k!=="INS");
+ const ranges={};let total=0;
+ for(const k of keys){const r=creatureDiceRange(c.dice&&c.dice[k]);if(!r)return {ok:false,reason:"Add the characteristic dice for "+k+" (e.g. STR 2d6+6 13) to work out the Points Build pool."};ranges[k]=r;total+=r.avg;}
+ return {ok:true,pool:Math.ceil(total-1e-9),ranges};
+}
+function creaturePointsCheck(c,values){
+ const pb=creaturePointsBuild(c);if(!pb.ok)return [pb.reason];
+ const errors=[];let spent=0;
+ for(const [k,r] of Object.entries(pb.ranges)){
+  const v=Number(values&&values[k]);
+  if(!Number.isInteger(v)){errors.push(k+" needs a value.");continue;}
+  if(v<r.min)errors.push(k+" can't be below "+r.min+".");
+  if(v>r.max)errors.push(k+" can't be above "+r.max+".");
+  spent+=v;
+ }
+ if(!errors.length&&spent!==pb.pool)errors.push("Spend exactly "+pb.pool+" points ("+spent+" spent).");
+ return errors;
+}
+// B18 (Core pp.218–219): only a sapient creature (INT, not INS), and only
+// with the GM's permission, may be played as a character.
+function creaturePcEligibility(c,gmPermitted){
+  if(creatureMind(c).key!=="INT")return {ok:false,reason:"An instinctive (INS) creature can't be a player character (Core p.218)."};
+  if(gmPermitted!==true)return {ok:false,reason:"A sapient creature can be a player character only with the GM's permission (Core p.218)."};
+  return {ok:true,reason:"GM-permitted sapient creature: build with its own characteristic dice, the Core alternate point-buy total and minimums, and its own anatomy (Core pp.218–219)."};
+}

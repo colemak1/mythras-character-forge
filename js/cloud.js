@@ -129,7 +129,8 @@ const COMBAT_EFFECT_TYPES=[
   {key:"pressed",label:"Pressed",locHint:false,mode:"duration"},
   {key:"prone",label:"Prone",locHint:false,mode:"counter"},
   {key:"stunned",label:"Stunned location",locHint:true,mode:"duration"},
-  {key:"unconscious",label:"Unconscious",locHint:false,mode:"counter"}
+  {key:"unconscious",label:"Unconscious",locHint:false,mode:"counter"},
+  {key:"breath",label:"Breath recovering",locHint:false,mode:"duration"}
 ];
 const COMBAT_EFFECT_MAP=Object.fromEntries(COMBAT_EFFECT_TYPES.map(e=>[e.key,e]));
 // Ticks every combatant's active effects one step -- duration effects count
@@ -1365,69 +1366,162 @@ function campaignSetupHTML(){
 }
 function renderCampaignSetupView(){document.body.classList.remove("play-mode","sheet-mode");document.body.classList.add("menu-mode");document.title="Campaign setup — Mythras Character Forge";$("#main").innerHTML=campaignSetupHTML();}
 /* ---- single campaign ---- */
+/* ---- Campaign manager (v0 handoff, 2026-11-09) ----
+   Party first, then table notes; invite, members and GM tools in a side
+   column. Every action goes through the existing APP handlers. */
+const CAMP_ICON={
+ person:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 3.6-6 8-6s8 2 8 6"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ copy:'<rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/>',
+ back:'<path d="M15 6l-6 6 6 6"/>',
+ chev:'<path d="M6 9l6 6 6-6"/>'
+};
+function campIcon(k){return '<svg class="st-ic" viewBox="0 0 24 24" aria-hidden="true">'+CAMP_ICON[k]+'</svg>';}
+function campSigilColor(name){
+ const pal=['#e0b27a','#6dbfae','#e0826f','#b9a6d8','#9fc27a','#d9c46a','#7fb0d8'];
+ let h=0;for(const ch of String(name||''))h=(h*31+ch.charCodeAt(0))>>>0;return pal[h%pal.length];
+}
+function campInitial(name){const m=String(name||'').match(/[A-Za-z0-9]/);return m?m[0].toUpperCase():'?';}
+// HP, AP and Luck for a party card, worked out on a copy (never the open draft).
+const CAMP_CARD_STATS={};
+function campCardStats(c){
+ if(!c||!c.state||typeof freshState!=='function'||typeof charVitals!=='function')return null;
+ const key=c.id+'|'+(c.updated_at||'');if(key in CAMP_CARD_STATS)return CAMP_CARD_STATS[key];
+ const original=S;let out=null;
+ try{
+  S=Object.assign(freshState(),JSON.parse(JSON.stringify(c.state)));normalizeState();
+  const v=charVitals(S);
+  if(v)out={hp:v.hpCur+'/'+v.hpMax,ap:Number.isFinite(v.baseAP)?v.baseAP:null,luck:v.curLuck+'/'+v.maxLuck};
+ }catch(e){out=null;}finally{S=original;}
+ return CAMP_CARD_STATS[key]=out;
+}
+function campRuleChips(rules){
+ const chips=[];
+ if(rules?.characteristicImprovement==="permanent")chips.push(['opt','Permanent improvement']);
+ else if(rules?.characteristicImprovement==="training")chips.push(['core','Ongoing training']);
+ if(rules)chips.push(rules.skillImprovement==="d6"?['opt','Skills 1d6+1']:['core','Skills 1d4+1']);
+ if(rules?.books?.length)rules.books.forEach(b=>chips.push(['','+ '+b]));else chips.push(['','Core only']);
+ if(!rules)chips.unshift(['','Rules not set']);
+ return '<div class="st-cm-chips" aria-label="Campaign rules">'+chips.map(([k,t])=>'<span class="st-tag'+(k?' st-tag-'+k:'')+'">'+esc(t)+'</span>').join('')+'</div>';
+}
 function campaignDetailHTML(){
   if(CAMPAIGN_VIEW===null)return '<div class="menuwrap"><p class="note" style="text-align:center">Loading campaign&hellip;</p></div>';
   const {campaign:camp,members,chars,unassigned}=CAMPAIGN_VIEW;
   if(!camp)return '<div class="menuwrap"><p class="warn">Campaign not found.</p><p><button class="nav" onclick="APP.toCampaigns()">&#8592; Campaigns</button></p></div>';
-  const isDM=!cloudActive()||camp.dm_id===(AUTH_USER&&AUTH_USER.id);
-  let h='<div class="menuwrap">';
-  h+='<p><button class="nav" onclick="APP.toCampaigns()">&#8592; Campaigns</button></p>';
-  if(CAMP_MSG)h+='<p class="warn">'+esc(CAMP_MSG)+'</p>';
-  h+='<div class="card"><h3>Campaign'+(isDM?"":' <span class="note">(player view)</span>')+'</h3>';
-  if(isDM){
-    h+=fld("Name",'<input type="text" value="'+esc(camp.name)+'" onchange="APP.campField(\'name\',this.value)">')
-     +fld("Notes",'<textarea rows="4" onchange="APP.campField(\'notes\',this.value)">'+esc(camp.notes||"")+'</textarea>');
-  }else{
-    h+='<p style="font-family:\'Cinzel\',serif;font-size:19px;letter-spacing:.03em;color:#8a5a12;text-transform:uppercase">'+esc(camp.name)+'</p>'
-     +(camp.notes?'<p class="note" style="margin-top:6px">'+esc(camp.notes)+'</p>':"");
-  }
-  h+='<p class="note" style="margin-top:8px">Created '+new Date(camp.created_at).toLocaleString()+'</p>';
-  const campaignRules=normalizedCampaignRules(camp.rules_settings);
-  h+='<p class="note"><b>Characteristic improvement:</b> '+(campaignRules?.characteristicImprovement==="permanent"?'Permanent (optional)':campaignRules?.characteristicImprovement==="training"?'Ongoing training':'Not configured')+'. <b>Skill improvement:</b> '+(campaignRules?.skillImprovement==="d6"?'1d6+1 (optional)':'1d4+1')+'. <b>Additional books:</b> '+(campaignRules?.books?.length?campaignRules.books.map(esc).join(", "):"None recorded")+'.</p>'
-    +(isDM?'<button class="chip" onclick="APP.editCampaignRules()">Campaign rules &amp; books</button>':'');
-  // D-S1: members still see the code; only the GM can replace it.
-  if(cloudActive()&&camp.invite_code){
-    h+='<p class="note camp-invite" style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
-     +'invite code <b style="font-family:var(--mono)">'+esc(camp.invite_code)+'</b>'
-     +'<button class="chip sm" onclick="APP.copyInviteLink(\''+jsq(camp.invite_code)+'\',this)">Copy Invite Link</button>'
-     +(isDM?'<button class="chip sm" onclick="APP.rotateInvite()">New code</button>':'')
-     +'</p>'
-     +(isDM?'<p class="note">New code replaces this one: the old code and link stop working. Members already in the campaign stay.</p>':'');
-  }
-  h+='<p style="margin-top:12px"><button class="nav primary" onclick="APP.toBoard(\''+camp.id+'\')">Live Party Board &rarr;</button>'
-   +(isDM?' <button class="chip" onclick="APP.downloadCampaignBackup()">Download campaign backup</button>':'')
-   +(isDM?' <button class="chip" onclick="APP.deleteCampaign()">Delete campaign</button>':'')+'</p>';
+  const cloud=cloudActive(),me=AUTH_USER&&AUTH_USER.id;
+  const isDM=!cloud||camp.dm_id===me;
+  const rules=normalizedCampaignRules(camp.rules_settings);
+  let h='<div class="menuwrap st-page st-cm">';
+  h+='<button type="button" class="st-cm-back" onclick="APP.toCampaigns()">'+campIcon('back')+'Campaigns</button>';
+  h+='<header class="st-pagehead st-cm-head"><div class="st-pagehead-text"><p class="st-eyebrow">Campaign &middot; '+(isDM?'You are the GM':'Player view')+'</p>'
+   +'<h1>'+esc(camp.name)+'</h1>'+campRuleChips(rules)+'</div>'
+   +'<div class="st-pageaction">'+(isDM?'<button type="button" class="st-btn" onclick="APP.editCampaignRules()">Rules &amp; books</button>':'')
+   +'<button type="button" class="st-btn st-btn-primary" onclick="APP.toBoard(\''+jsq(camp.id)+'\')">Live Party Board &rarr;</button></div></header>';
+  if(CAMP_MSG)h+='<p class="st-cm-msg" role="status">'+esc(CAMP_MSG)+'</p>';
+  h+='<div class="st-cm-grid"><div class="st-cm-main">';
+  // Party
+  h+='<section aria-labelledby="cmParty"><div class="st-cm-sechead"><h2 id="cmParty">Party <small>'+chars.length+(chars.length===1?' character':' characters')+'</small></h2></div><div class="st-cm-party">';
+  h+=chars.map(c=>{
+    const mine=!cloud||c.owner_id===me;
+    const st=campCardStats(c);
+    const meta=[c.tier&&c.tier!=="ordinary"?c.tier[0].toUpperCase()+c.tier.slice(1):null,c.career||c.culture].filter(Boolean).join(' · ');
+    const unassign=mine?'APP.unassignChar(\''+jsq(c.id)+'\')':(isDM?'APP.dmUnassignChar(\''+jsq(c.id)+'\')':'');
+    return '<article class="st-cm-card"><div class="st-cm-card-top"><span class="st-cm-sigil" style="--c:'+campSigilColor(c.name)+'" aria-hidden="true">'+esc(campInitial(c.name))+'</span>'
+     +'<div class="st-cm-card-id"><h3>'+esc(c.name||'Unnamed')+'</h3>'+(meta?'<p class="st-cm-meta">'+esc(meta)+'</p>':'')
+     +(cloud&&c.owner_name?'<p class="st-cm-player">'+campIcon('person')+esc(c.owner_name)+'</p>':'')+'</div>'
+     +(cloud&&mine?'<span class="st-tag st-cm-you">You</span>':'')+'</div>'
+     +(st?'<div class="st-cm-stats"><span class="st-cm-stat">HP<b>'+esc(st.hp)+'</b></span>'+(st.ap!=null?'<span class="st-cm-stat">AP<b>'+st.ap+'</b></span>':'')+'<span class="st-cm-stat">Luck<b>'+esc(st.luck)+'</b></span></div>':'')
+     +'<div class="st-cm-card-foot">'+(mine?'<button type="button" class="st-btn st-btn-sm" onclick="APP.openLibChar(\''+jsq(c.id)+'\')">Open</button>'
+        :'<button type="button" class="st-btn st-btn-sm" onclick="APP.toBoard(\''+jsq(camp.id)+'\')">View</button>')
+     +'<span class="st-grow"></span>'+(unassign?'<button type="button" class="st-btn st-btn-sm st-btn-danger" onclick="'+unassign+'">Unassign</button>':'')+'</div></article>';
+  }).join('');
+  h+='<button type="button" class="st-cm-card st-cm-add" onclick="APP.newCharacterForCampaign()">'+campIcon('plus')+'<b>New character</b><span>Build one for this campaign</span></button>';
   h+='</div>';
+  if(unassigned.length){
+    h+='<p class="st-cm-subhead">Your characters not in a campaign</p>'
+     +unassigned.map(c=>'<div class="st-cm-claim"><span class="st-cm-sigil st-cm-sigil-sm" style="--c:'+campSigilColor(c.name)+'" aria-hidden="true">'+esc(campInitial(c.name))+'</span>'
+       +'<div class="st-cm-claim-t"><b>'+esc(c.name||'Unnamed')+'</b><span>'+esc([c.culture,c.career].filter(Boolean).join(' · ')||'Not in any campaign')+'</span></div>'
+       +'<button type="button" class="st-btn st-btn-sm" onclick="APP.assignChar(\''+jsq(c.id)+'\')">Add to campaign</button></div>').join('');
+  }
+  h+='</section>';
+  // Table notes
+  h+='<section class="st-cm-panel st-cm-notes" aria-labelledby="cmNotes"><div class="st-cm-sechead"><h2 id="cmNotes">Table notes</h2>'
+   +(isDM?'<span class="st-cm-saved'+(CAMP_NOTES_SAVED?' on':'')+'" aria-live="polite">'+(CAMP_NOTES_SAVED?'Saved':'')+'</span>':'')+'</div>';
+  if(isDM)h+='<p class="st-cm-fine">Players see these notes as a briefing.</p><label class="st-sr" for="cmNotesText">Table notes</label>'
+   +'<textarea id="cmNotesText" rows="5" placeholder="Where the party is, what they are chasing, what happens next session." onchange="APP.campField(\'notes\',this.value)">'+esc(camp.notes||"")+'</textarea>';
+  else h+=camp.notes?'<p class="st-cm-brief">'+esc(camp.notes)+'</p>':'<p class="st-cm-fine">The GM has not written any notes yet.</p>';
+  h+='</section></div>';
+  // Side column
+  h+='<aside class="st-cm-side">';
+  if(cloud&&camp.invite_code){
+    // D-S1: members still see the code; only the GM can replace it.
+    h+='<section class="st-cm-panel" aria-labelledby="cmInvite"><h2 id="cmInvite">Invite players</h2><p class="st-cm-fine">Share the code or the link. Anyone with it can join.</p>'
+     +'<div class="st-cm-code"><code>'+esc(camp.invite_code)+'</code><button type="button" class="st-btn st-btn-sm" onclick="APP.copyInviteLink(\''+jsq(camp.invite_code)+'\',this)">'+campIcon('copy')+'Copy</button></div>'
+     +'<div class="st-cm-row"><button type="button" class="st-btn st-btn-primary" onclick="APP.copyInviteLink(\''+jsq(camp.invite_code)+'\',this)">Copy invite link</button>'
+     +(isDM?'<button type="button" class="st-btn" aria-expanded="false" aria-controls="cmNewCode" onclick="campToggleNewCode(this)">New code</button>':'')+'</div>'
+     +(isDM?'<div class="st-cm-confirm" id="cmNewCode" hidden><p>Replace the code? The old code and link stop working. Players already in the campaign stay.</p>'
+       +'<div class="st-cm-row"><button type="button" class="st-btn st-btn-sm st-btn-danger" onclick="stConfirmNext();APP.rotateInvite()">Replace code</button>'
+       +'<button type="button" class="st-btn st-btn-sm" onclick="campToggleNewCode(document.querySelector(\'[aria-controls=cmNewCode]\'))">Keep it</button></div></div>':'')
+     +'</section>';
+  }
   if(members.length){
     // D-S4: the GM can remove a player or hand the GM role to them.
-    const me=AUTH_USER&&AUTH_USER.id;
-    h+='<div class="card"><h3>Members ('+members.length+')</h3>'
+    h+='<section class="st-cm-panel" aria-labelledby="cmMembers"><h2 id="cmMembers">Members <small>'+members.length+'</small></h2><ul class="st-cm-members">'
      +members.map(m=>{
-       const other=cloudActive()&&isDM&&m.userId&&m.userId!==me&&m.role!=="dm";
-       return '<div class="skrow camp-member"><span>'+esc(m.name)+' <span class="note" style="text-transform:capitalize">'+esc(m.role==="dm"?"GM":m.role)+'</span></span>'
-        +(other?'<span><button class="chip sm" onclick="APP.transferGm(\''+jsq(m.userId)+'\')">Make GM</button> <button class="chip sm" onclick="APP.removeMember(\''+jsq(m.userId)+'\')">Remove</button></span>':'')
-        +'</div>';
-     }).join("")
-     +(cloudActive()&&isDM&&members.length>1?'<p class="note">Removing a player unassigns their characters here; the characters stay theirs. Making someone GM hands them the campaign, its tracker and notes; you stay on as a player.</p>':'')
-     +'</div>';
+       const other=cloud&&isDM&&m.userId&&m.userId!==me&&m.role!=="dm";
+       const n=chars.filter(c=>c.owner_id===m.userId).length;
+       return '<li class="st-cm-mem"><span class="st-cm-av" aria-hidden="true">'+esc(campInitial(m.name))+'</span>'
+        +'<span class="st-cm-mem-n"><b>'+esc(m.name)+(m.userId===me?' <span class="st-cm-dim">(you)</span>':'')+'</b><span>'+n+(n===1?' character':' characters')+'</span></span>'
+        +'<span class="st-tag'+(m.role==="dm"?' st-tag-gm':'')+'">'+(m.role==="dm"?'GM':'Player')+'</span>'
+        +(other?'<span class="st-cm-acts"><button type="button" class="st-btn st-btn-sm" onclick="if(stTwoTap(this,\'Confirm\'))APP.transferGm(\''+jsq(m.userId)+'\')">Make GM</button>'
+          +'<button type="button" class="st-btn st-btn-sm st-btn-danger" onclick="if(stTwoTap(this,\'Sure?\'))APP.removeMember(\''+jsq(m.userId)+'\')">Remove</button></span>':'')
+        +'</li>';
+     }).join('')+'</ul>'
+     +(cloud&&isDM&&members.length>1?'<p class="st-cm-fine">Removing a player unassigns their characters here; the characters stay theirs. Making someone GM hands them the campaign, its tracker and notes; you stay on as a player.</p>':'')
+     +'</section>';
   }
-  h+='<div class="card"><h3>Characters ('+chars.length+')</h3>';
-  if(!chars.length)h+='<p class="note">No characters linked yet.</p>';
-  h+=chars.map(c=>{
-    const mine=!cloudActive()||c.owner_id===(AUTH_USER&&AUTH_USER.id);
-    return '<div class="skrow"><span>'+esc(c.name)+' <span class="note">&mdash; '+esc([!mine?c.owner_name:null,c.tier!=="ordinary"?c.tier:null,c.culture,c.career].filter(Boolean).join(" · "))+'</span></span>'
-     +'<span>'+(mine?'<button class="chip" onclick="APP.openLibChar(\''+c.id+'\')">open</button> <button class="chip" onclick="APP.unassignChar(\''+c.id+'\')">unassign</button>'
-                    :(isDM?'<button class="chip" onclick="APP.dmUnassignChar(\''+c.id+'\')">unassign</button>':'<span class="note">view via Party Board</span>'))+'</span></div>';
-  }).join("");
-  h+='<p style="margin-top:12px"><button class="nav" onclick="APP.newCharacterForCampaign()">+ New Character for this Campaign</button></p>';
-  if(unassigned.length){
-    h+='<div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
-     +'<select id="assignPicker"><option value="">&mdash; assign one of your saved characters &mdash;</option>'
-     +unassigned.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+'</select>'
-     +'<button class="chip" onclick="APP.assignPicked()">assign</button></div>';
+  if(isDM){
+    h+='<details class="st-cm-panel st-cm-tools"><summary><h2>GM tools</h2>'+campIcon('chev')+'</summary><div class="st-cm-tools-in">'
+     +'<label class="st-cm-label" for="cmName">Campaign name</label><input id="cmName" type="text" value="'+esc(camp.name)+'" onchange="APP.campField(\'name\',this.value)">'
+     +'<button type="button" class="st-btn" onclick="APP.downloadCampaignBackup()">Download campaign backup</button>'
+     +'<p class="st-cm-fine">One file with the campaign, members, characters and homebrew, for safekeeping.</p>'
+     +'<p class="st-cm-fine">Created '+esc(new Date(camp.created_at).toLocaleString())+'</p>'
+     +'<div class="st-cm-danger"><button type="button" class="st-btn st-btn-danger" aria-expanded="false" aria-controls="cmDelete" onclick="campToggleDelete(this)">Delete campaign&hellip;</button>'
+     +'<div class="st-cm-confirm" id="cmDelete" hidden><p>Linked characters stay, just unassigned. Type <b>'+esc(camp.name)+'</b> to confirm.</p>'
+     +'<label class="st-sr" for="cmDeleteName">Campaign name</label><input id="cmDeleteName" type="text" autocomplete="off" oninput="campDeleteCheck(this)">'
+     +'<div class="st-cm-row"><button type="button" class="st-btn st-btn-sm st-btn-dangerfill" id="cmDeleteGo" disabled onclick="stConfirmNext();APP.deleteCampaign()">Delete forever</button></div></div></div>'
+     +'</div></details>';
+  }else{
+    h+='<p class="st-cm-fine">Created '+esc(new Date(camp.created_at).toLocaleString())+'</p>';
   }
-  h+='</div></div>';
+  h+='</aside></div></div>';
   return h;
+}
+let CAMP_NOTES_SAVED=false;
+// Two-tap confirm: the first tap turns the button into "Confirm" for 3.5s,
+// the second acts. stConfirmNext() tells the APP handler the person has
+// already confirmed on the page, so it skips its own confirm() box.
+let ST_CONFIRMED=false;
+function stConfirmNext(){ST_CONFIRMED=true;}
+function stTakeConfirmed(){const v=ST_CONFIRMED;ST_CONFIRMED=false;return v;}
+function stTwoTap(btn,label){
+ if(btn.dataset.armed){clearTimeout(Number(btn.dataset.armed));delete btn.dataset.armed;stConfirmNext();return true;}
+ const was=btn.textContent;btn.textContent=label||'Confirm';btn.classList.add('st-armed');
+ btn.dataset.armed=String(setTimeout(()=>{btn.textContent=was;btn.classList.remove('st-armed');delete btn.dataset.armed;},3500));
+ return false;
+}
+function campToggleNewCode(btn){
+ const box=document.getElementById('cmNewCode');if(!box)return;
+ box.hidden=!box.hidden;if(btn)btn.setAttribute('aria-expanded',String(!box.hidden));
+}
+function campToggleDelete(btn){
+ const box=document.getElementById('cmDelete');if(!box)return;
+ box.hidden=!box.hidden;btn.setAttribute('aria-expanded',String(!box.hidden));
+ if(!box.hidden)document.getElementById('cmDeleteName')?.focus();
+}
+function campDeleteCheck(input){
+ const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign,go=document.getElementById('cmDeleteGo');
+ if(go)go.disabled=!(camp&&input.value.trim()===String(camp.name).trim());
 }
 function renderCampaignView(){
   document.body.classList.remove("play-mode");
@@ -1447,6 +1541,9 @@ function renderCampaignView(){
 let BOARD_CHARS=null;          // array of {id,name,tier,culture,career,owner_id,owner_name,campaign_id,state,updated_at}, or null while loading
 let BOARD_TAB="status";        // "status" (live character grid), "gm" (Combat Tracker, DM-only), or "homebrew" (custom content, DM-only)
 let GM_SESSION_ERROR=null;     // set when a GM-tools save fails, cleared on the next successful edit
+let CREATURE_DRAFT="";         // pasted creature stat block, before it joins the fight (CRTR-B02)
+let CREATURE_HIT={};           // last rolled hit location per creature combatant id
+let CREATURE_MSG={};           // last trait result per creature combatant id (leap, trample, venom, breath)
 let HB_ERROR=null;             // set when a homebrew add/delete fails, cleared on the next successful action
 // In-progress "new item" forms for the Homebrew tab -- one draft per type,
 // reset to freshHbDraft() after a successful add. Kept separate from the
@@ -1617,7 +1714,7 @@ function combatantCardHTML(c,isActive){
   const apRemain=Math.max(0,c.ap.max-c.ap.used);
   const locs=c.locations||[];
   return '<div class="cbt-card'+(isActive?" on":"")+'">'
-   +'<div class="cbt-head"><span class="cbt-name">'+esc(c.name||"Unnamed")+' <i>'+(isPc?"PC":"NPC")+'</i>'+(isActive?' <strong class="cbt-active">ACTING NOW</strong>':'')+'</span>'
+   +'<div class="cbt-head"><span class="cbt-name">'+esc(c.name||"Unnamed")+' <i>'+(isPc?"PC":c.creature?"Creature":"NPC")+'</i>'+(isActive?' <strong class="cbt-active">ACTING NOW</strong>':'')+'</span>'
    +'<input type="number" class="cbt-init" value="'+c.init+'" onchange="APP.gmSetInit(\''+c.id+'\',this.value)" aria-label="Initiative" title="Initiative">'
    +'<button class="chip sm" onclick="APP.gmRemoveCombatant(\''+c.id+'\')" aria-label="remove from combat">&times;</button></div>'
    +'<div class="cbt-ap"><span class="cbt-aplbl">AP</span>'
@@ -1625,6 +1722,7 @@ function combatantCardHTML(c,isActive){
    +'<span class="cbt-apval">'+apRemain+'</span>'
    +'<button class="chip sm" onclick="APP.gmApAdj(\''+c.id+'\',1)" '+(apRemain>=c.ap.max?"disabled":"")+' title="Restore 1 AP">+</button>'
    +'<span class="note">/ <input type="number" class="cbt-apmax" value="'+c.ap.max+'" onchange="APP.gmSetApMax(\''+c.id+'\',this.value)" aria-label="Max AP" title="Max AP"></span></div>'
+   +creatureBlockHTML(c)
    +'<div class="cbt-loclist">'+locs.map(loc=>{
      const hp=(c.hp&&c.hp[loc])||{cur:0,max:0};
      const idv="cbtdmg-"+c.id+"-"+loc.replace(/\s+/g,"_");
@@ -1650,6 +1748,81 @@ function combatantCardHTML(c,isActive){
    +'<input type="text" class="cbt-statnote" value="'+esc(c.stat2||"")+'" placeholder="special abilities, notes" onchange="APP.gmCombatantField(\''+c.id+'\',\'stat2\',this.value)">'
    +'</div>';
 }
+// CRTR-B02: paste a creature's stat block from your rulebook. Nothing is
+// guessed: missing or unreadable lines are listed before it can be added.
+function creatureImportHTML(){
+  const parsed=CREATURE_DRAFT.trim()?parseCreatureStatBlock(CREATURE_DRAFT):null;
+  let h='<details class="cbt-creature-import"'+(CREATURE_DRAFT?' open':'')+'><summary>Add a creature from its stat block</summary>'
+   +'<p class="note">Paste or type it one item per line (Core pp.218–220). Use INS instead of INT for an animal (p.214). Location rows are d20 range, name, armour/HP; write natural+worn armour as 2+3/6. Natural weapons end with &ldquo;natural&rdquo;.</p>'
+   +'<p class="note"><label for="gmCreatureAnatomy">Start the locations from a body plan (Core pp.276–277)</label> <select id="gmCreatureAnatomy" onchange="APP.gmCreatureAnatomy(this.value)"><option value="">Choose&hellip;</option>'
+   +Object.keys(CREATURE_ANATOMY).map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("")+'</select> Then fill in each location&rsquo;s armour and HP.</p>'
+   +'<textarea id="gmCreatureText" rows="9" placeholder="Name: Hill Beast\nSTR 2d6+6 13\nCON 3d6 11\nSIZ 2d6+6 13\nDEX 2d6+6 13\nINS 2d6+6 13\nPOW 1d6+6 10\nMove 10\n1-3 Right Hind Leg 2/5\n...\nWeapon: Bite 1d8 natural\nTrait: Formidable Natural Weapons\nWorn armour ENC: 0\nSkills: Athletics 60%, Perception 70%" onchange="APP.gmCreatureDraft(this.value)">'+esc(CREATURE_DRAFT)+'</textarea>';
+  if(parsed){
+    if(parsed.errors.length)h+='<ul class="warn" style="padding-left:18px">'+parsed.errors.map(e=>'<li>'+esc(e)+'</li>').join("")+'</ul>';
+    if(parsed.unread.length)h+='<p class="warn">Lines not understood (fix or move them into a Notes: line): '+parsed.unread.map(esc).join(" · ")+'</p>';
+    if(!parsed.errors.length){const a=creatureAttributes(parsed.creature);
+      h+='<p class="note">'+esc(parsed.creature.name)+': '+a.mind.key+' '+a.mind.value+' · Action Points '+a.ap+' · Initiative bonus '+a.initBonus+(a.armourPenalty?' (worn armour −'+a.armourPenalty+')':'')+' · Damage Modifier '+esc(a.damageMod)+' · '+parsed.creature.locations.length+' locations</p>';}
+  }
+  h+='<button class="chip" onclick="APP.gmAddCreature()" '+(parsed&&!parsed.errors.length&&!parsed.unread.length?'':'disabled')+'>Add creature to the fight</button></details>';
+  return h;
+}
+function creatureBlockHTML(c){
+  const cr=c.creature;if(!cr)return "";
+  const a=creatureAttributes(cr),hit=CREATURE_HIT[c.id];
+  const dice=k=>cr.dice&&cr.dice[k]?' <i>('+esc(cr.dice[k])+')</i>':'';
+  return '<div class="cbt-creature">'
+   +'<p class="note">'+CREATURE_CHARS.filter(k=>Object.hasOwn(cr.chars,k)).map(k=>k+' '+cr.chars[k]+dice(k)).join(' · ')+(cr.move?' · Move '+esc(cr.move):'')+'</p>'
+   +'<p class="note">Initiative bonus '+a.initBonus+(a.armourPenalty?' (worn armour −'+a.armourPenalty+'; natural armour adds none)':'')+' · Damage Modifier '+esc(a.damageMod)+' · MP '+a.mp+(a.mind.key==="INS"?' · uses INS for INT':'')+'</p>'
+   +(cr.weapons.length?'<p class="note">'+cr.weapons.map(w=>{const p=creatureCanParry(cr,w);return esc(w.name)+' '+esc(w.damage)+(w.natural?' (natural)':'')+' · '+(p.ok?'can parry':'<span title="'+esc(p.reason)+'">no parry: Evade or armour</span>');}).join(' | ')+'</p>':'')
+   +(cr.traits.length?'<p class="note">Traits: '+cr.traits.map(esc).join(', ')+'</p>':'')
+   +creatureTraitsHTML(c)
+   +'<div class="cbt-locadd"><button class="chip sm" onclick="APP.gmCreatureRollLoc(\''+c.id+'\')">Roll hit location (d20)</button>'
+   +(hit?'<span class="note"> d20 '+hit.roll+': <b>'+esc(hit.loc)+'</b>, armour '+hit.armour+'</span>'
+     +'<input type="number" id="cbtraw-'+c.id+'" placeholder="damage" min="0" style="width:84px" aria-label="Damage rolled, before armour">'
+     +(["Immunity","Vulnerable","Allergy"].some(n=>creatureTraitSources(cr,n).length)?'<input type="text" id="cbtsrc-'+c.id+'" placeholder="source, e.g. fire" maxlength="60" style="width:120px" aria-label="Damage source">':'')
+     +'<button class="chip sm" onclick="APP.gmCreatureHit(\''+c.id+'\')">apply after armour</button>':'')
+   +'</div></div>';
+}
+// CRTR-B06–B14: controls for the combat traits this creature has. Each one
+// states what the trait changes; entry-specific values come from the GM.
+function creatureTraitsHTML(c){
+  const cr=c.creature,cs=c.cs||{},id=c.id,q='\''+id+'\'';
+  const rows=[];
+  const tog=(key,on,label)=>'<label class="mnum"><input type="checkbox" '+(on?'checked':'')+' onchange="APP.gmCreatureState('+q+',\''+key+'\',this.checked)"> '+label+'</label>';
+  if(creatureTrait(cr,"Flying")){const d=creatureDefence(cr,!!cs.airborne);
+    rows.push('<b>Flying</b> '+tog("airborne",cs.airborne,"Airborne")+' Defends with '+d.skill+(d.pct!=null?' '+d.pct+'%':' (add it to Skills)')+'. Ordinary flight needs no roll; unusual manoeuvres need a Fly roll (Core p.216).');}
+  if(creatureTrait(cr,"Leaper"))rows.push('<b>Leaper</b> Opposed leap: <button class="chip sm" onclick="APP.gmCreatureLeap('+q+',true)">won</button> <button class="chip sm" onclick="APP.gmCreatureLeap('+q+',false)">lost</button> (Core pp.104, 216).');
+  if(creatureTrait(cr,"Grappler"))rows.push('<b>Grappler</b> When a natural attack hits, the trait&rsquo;s extra grapple follows, with its parry restriction, as the entry describes (Core p.216). Other creatures get no free grapple.');
+  if(creatureTrait(cr,"Multi-headed")||creatureTrait(cr,"Multi-Headed")){const out=cs.headsOut||[],h=creatureHeads(cr,c.hp,out);
+    rows.push('<b>Multi-headed</b> Working heads '+h.working.length+' / '+h.heads.length+': one extra action per working head beyond the first. A head loses its action only when incapacitated or severed; the body fights on (Core p.216). '
+     +h.heads.map(n=>'<label class="mnum"><input type="checkbox" '+(out.includes(n)?'checked':'')+' onchange="APP.gmCreatureHead('+q+',\''+jsq(n)+'\',this.checked)"> '+esc(n)+' incapacitated or severed</label>').join(" ")
+     +(h.atZero.length?' <span class="warn">'+esc(h.atZero.join(", "))+' at 0 HP or less: resolve the wound, then mark it if incapacitated or severed.</span>':''));}
+  const breath=(cr.traits||[]).find(t=>/^breathe\b/i.test(t));
+  if(breath){const cooling=(c.effects||[]).find(e=>e.type==="breath"&&e.value>0);
+    rows.push('<b>'+esc(breath)+'</b> Recovery from the entry <input type="number" min="1" max="99" style="width:56px" value="'+(Number(cs.breathRecovery)||'')+'" onchange="APP.gmCreatureState('+q+',\'breathRecovery\',this.value)" aria-label="Breath recovery turns"> turns. '
+     +(cooling?'Recovering: '+cooling.value+' turn(s) left.':'<button class="chip sm" onclick="APP.gmCreatureBreath('+q+')">Breathe (1 AP)</button>')
+     +' A cone, not a single hit: each target in it rolls Evade to halve the damage; check each target&rsquo;s locations (Core p.215).');}
+  if(creatureTrait(cr,"Trample"))rows.push('<b>Trample</b> Target SIZ <input type="number" id="cbttrample-'+id+'" min="1" style="width:56px" aria-label="Target SIZ"> <button class="chip sm" onclick="APP.gmCreatureTrample('+q+')">check</button> Athletics roll; the trait doubles the base Damage Modifier ('+esc(creatureAttributes(cr).damageMod)+') and boosts attack Size. Stationary trample costs AP; a moving pass is free (Core p.218).');
+  if(creatureTrait(cr,"Venomous"))rows.push('<b>Venomous</b> An ordinary hit injects no venom. On a successful attack it may choose the Inject Venom special effect instead of doing damage: the poison gets through a gap in the armour (Core pp.97, 218). <button class="chip sm" onclick="APP.gmCreatureVenom('+q+')">Inject Venom chosen</button>');
+  if(creatureTrait(cr,"Frenzy"))rows.push('<b>Frenzy</b> '+tog("frenzied",cs.frenzied,"Frenzied (after its Willpower roll, GM)")+(cs.frenzied?' Limited actions; pain and fatigue penalties the trait names are ignored.':' When it ends, apply the trait&rsquo;s fatigue (Core p.216). Not a permanent bonus.'));
+  if(creatureTrait(cr,"Undead"))rows.push('<b>Undead</b> Serious and Major Wounds don&rsquo;t incapacitate or fatigue it. Binding location <select onchange="APP.gmCreatureState('+q+',\'bindingLoc\',this.value)"><option value="">not recorded</option>'+(c.locations||[]).map(l=>'<option '+(cs.bindingLoc===l?'selected':'')+'>'+esc(l)+'</option>').join("")+'</select> Destroyed when <input type="text" maxlength="200" placeholder="condition from the entry" value="'+esc(cs.destroyWhen||"")+'" onchange="APP.gmCreatureState('+q+',\'destroyWhen\',this.value)"> (Core p.218).');
+  const resist=["Immunity","Vulnerable","Allergy"].map(n=>[n,creatureTraitSources(cr,n)]).filter(x=>x[1].length);
+  if(resist.length)rows.push('<b>'+resist.map(([n,l])=>esc(n)+' ('+esc(l.join(", "))+')').join(' · ')+'</b> Give the damage source with a hit (below); it is checked before armour (Core pp.215, 217–218).');
+  CREATURE_SENSES.forEach(([n,t])=>{if(creatureTrait(cr,n))rows.push('<b>'+esc(n)+'</b> '+esc(t));});
+  if(creatureTrait(cr,"Intimidate")){const log=cs.intimidated||{};
+    rows.push('<b>Intimidate</b> Each target rolls Willpower. Target <input type="text" id="cbtintim-'+id+'" maxlength="60" style="width:110px" aria-label="Intimidated target"> '
+     +["Critical","Success","Failure","Fumble"].map(t=>'<button class="chip sm" onclick="APP.gmCreatureIntimidate('+q+',\''+t+'\')">'+t+'</button>').join(" ")
+     +(Object.keys(log).length?' '+Object.entries(log).map(([n,k])=>esc(n)+': '+({immune:"ignores it",holds:"holds",retreats:"falls back",flees:"flees"}[k]||k)).join(", ")+' <button class="chip sm" onclick="APP.gmCreatureIntimidateClear('+q+')">encounter over</button>':'')
+     +' Not an automatic retreat on sight (Core p.216).');}
+  if(creatureTrait(cr,"Chaos Feature")||creatureTrait(cr,"Chaos Features")){const got=cs.chaos||[];
+    rows.push('<b>Chaos Feature</b> <button class="chip sm" onclick="APP.gmCreatureChaos('+q+')">Roll d100</button> Rolled on the Core table (pp.274–276) and kept with this creature; the GM applies each effect.'
+     +got.map((f,i)=>{const x=chaosFeatureFor(f.roll);return x?'<br><b>'+esc(x.range)+' '+esc(x.name)+'</b>: '+esc(x.effect)+' <button class="chip sm" onclick="APP.gmCreatureChaosRemove('+q+','+i+')" aria-label="Remove '+esc(x.name)+'">remove</button>':'';}).join(""));}
+  if(creatureMind(cr).key==="INT"){const e=creaturePcEligibility(cr,cs.pcPermitted===true);
+    rows.push('<b>As a character</b> '+'<label class="mnum"><input type="checkbox" '+(cs.pcPermitted?'checked':'')+' onchange="APP.gmCreatureState('+q+',\'pcPermitted\',this.checked)"> GM permits it as a player character</label> '+esc(e.reason)
+     +(e.ok?(()=>{const pb=creaturePointsBuild(cr);return pb.ok?' Points Build: '+pb.pool+' points, all spent, each within '+Object.entries(pb.ranges).map(([k,r])=>k+' '+r.min+'–'+r.max).join(', ')+' (Core pp.8, 219).':' '+esc(pb.reason);})():''));}
+  if(!rows.length&&!CREATURE_MSG[id])return "";
+  return '<div class="cbt-traits">'+rows.map(r=>'<p class="note">'+r+'</p>').join("")+(CREATURE_MSG[id]?'<p class="note" role="status"><b>'+esc(CREATURE_MSG[id])+'</b></p>':'')+'</div>';
+}
 function gmToolsHTML(camp){
   const st=sessionStateOf(camp);
   const order=st.combatants.slice().sort((a,b)=>b.init-a.init);
@@ -1671,6 +1844,7 @@ function gmToolsHTML(camp){
    +pcChoices.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join("")+'</select>'
    +'<button class="chip" onclick="APP.gmAddPcInit()" '+(pcChoices.length?"":"disabled")+'>add</button>'
    +(pcChoices.length>1?'<button class="chip" onclick="APP.gmAddAllPcs()" title="Add every remaining party member at once">add all</button>':'')+'</div>';
+  h+=creatureImportHTML();
   h+='<div class="pb-initadd">'
    +'<input type="text" id="gmNpcInitName" placeholder="NPC/monster name">'
    +'<input type="number" id="gmNpcInitVal" placeholder="Init" style="width:70px">'

@@ -397,3 +397,11 @@ body.pits-stone #root .setup td{border-color:var(--p-line)}
 body.pits-stone #root .setup input,body.pits-stone #root .setup select{background:var(--p-surface);color:var(--p-text);border:1px solid var(--p-line-strong)}
 body.pits-stone .mast p,body.pits-stone #root .mast p{color:var(--p-dim)}
 body.pits-stone #root .notechip{background:var(--p-surface);color:var(--p-dim);border:1px solid var(--p-line)}
+/* Site header on the fight page (owner, 2026-11-09): a slim row under it
+   keeps "Choose a character" and "Reset bout". */
+.pits-subbar{max-width:1840px;margin:0 auto;padding:10px clamp(18px,2.4vw,46px) 0;display:flex;gap:18px;flex-wrap:wrap;
+  font:500 14px "DM Sans",system-ui,sans-serif}
+.pits-subbar a{display:inline-flex;align-items:center;min-height:44px;color:var(--p-dim,#b9ad98);text-decoration:none}
+.pits-subbar a:hover{color:var(--p-accent,#d7b884)}
+.pits-subbar a:focus-visible{outline:2px solid #d7b884;outline-offset:2px}
+@media(max-width:899px){body.pits-page .main{padding-bottom:calc(96px + env(safe-area-inset-bottom))}}
