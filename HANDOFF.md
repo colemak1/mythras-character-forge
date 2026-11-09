@@ -9,6 +9,8 @@ _Last updated: 2026-11-09 by Claude (#213 findings fixed; server check for the o
 
 ## Where things stand
 
+- **Whole plan:** `docs/roadmap.md` (Phases 0–4, from 5/8 to finished, with the owner decisions each needs).
+
 - **Progress 5/8** (`docs/subsystem-plan.md`). Subsystems 1–5 closed; Main Play Mode Combat stays CLOSED. Next audits when the owner resumes them: 6 Magic (low priority), 7 Creatures, 8 Campaign/multi-account (D-S1–D-S4 implemented; DB permission tests in CI; signed-in live check remains).
 - **Play Mode:** v0 "Stone & Verdigris" look, nine colour schemes (`play-stone.css`), item search, Core-only traits. Nothing waiting on a live check.
 - **Home and menus:** owner's redesign handoff Part A done (#197–#201): shared page header, phone tab bar and More sheet, sign-in gates, Home Continue card and character cards, Characters search/sort/Undo delete, Campaign cards and Join with a code, The Pits lobby, Rules table of contents, World Guide chips, Account tabs and profile. Styles in `sitota-menus.css`; tests in `tests/site-menus.cjs`.
