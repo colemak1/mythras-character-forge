@@ -195,7 +195,7 @@ function creaturePcPickerHTML(){
   const open=CREATURE_PC_DRAFT||CREATURE_PC_MSG.length;
   return '<details class="lifeev"'+(open?' open':'')+'><summary>Play a creature your GM approved (Core pp.218&ndash;219)</summary>'
    +'<p class="note">Any creature with INT '+CREATURE_PC_MIN_INT+' or more can be a character if the GM allows it. Paste its stat block (your GM can copy it from the Combat Tracker), with dice for all seven characteristics, its Move and its hit locations. An instinctive (INS) creature can&rsquo;t be a character.</p>'
-   +'<textarea id="creaturePcText" rows="7" aria-label="Creature stat block" placeholder="Name: ...\nSTR 2d6+6 13\n...\nINT 2d6+6 13\nCHA 3d6 11\nMove 6\n1-3 Right Leg 1/5\n..." onchange="APP.creaturePcDraft(this.value)">'+esc(CREATURE_PC_DRAFT)+'</textarea>'
+   +'<textarea id="creaturePcText" rows="7" style="width:100%;box-sizing:border-box" aria-label="Creature stat block" placeholder="Name: ...\nSTR 2d6+6 13\n...\nINT 2d6+6 13\nCHA 3d6 11\nMove 6\n1-3 Right Leg 1/5\n..." onchange="APP.creaturePcDraft(this.value)">'+esc(CREATURE_PC_DRAFT)+'</textarea>'
    +'<p><label><input type="checkbox" id="creaturePcApproved"> My GM approved this creature as my character</label></p>'
    +(CREATURE_PC_MSG.length?'<ul class="warn" role="alert" style="padding-left:18px">'+CREATURE_PC_MSG.map(m=>'<li>'+esc(m)+'</li>').join("")+'</ul>':'')
    +'<button class="chip actionchip" type="button" onclick="APP.useCreaturePc()">Use this creature</button></details>';
