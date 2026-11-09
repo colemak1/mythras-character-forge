@@ -38,3 +38,18 @@ Where: GM Combat Tracker, "Add a creature from its stat block". Tests: `tests/cr
 - **B03:** implemented. Natural armour adds no Initiative penalty; worn ENC uses Core p.58. Damage applied after natural + worn armour.
 - **B04:** implemented with the creature's own d20 table (validated 1–20, no overlap or duplicate names). **Open:** the generic anatomy templates (pp.276–277) need their d20 ranges in this ledger or the rulebook uploaded before they can be offered as presets.
 - **B05:** implemented as a parry eligibility shown per natural weapon (trait name "Formidable Natural Weapons", case-insensitive). The tracker records no parry rolls, so this is display/eligibility only.
+
+## ChatGPT one-pass review of merged PR #223 (2026-11-08)
+
+**B01 ruling confirmed — Core printed p.214, “Intelligence and Instinct”:** an instinctive creature's **INS substitutes for INT** where the game uses that characteristic; it is not an extra INT added to a fixed INT score. Thus AP, Initiative and INT-based skill calculations use INS; sapient creatures retain INT. The earlier B01 example phrase “fixed INT plus 2d6 Instinct” should **not** be implemented as adding fixed INT to INS. The code's `creatureMind`, `creatureAttributes` and `creatureSkillBase` follow the substitution interpretation.
+
+**Scoped static review — no blocking discrepancy found** in the B01–B05 diff of merged PR #223 (`6fdc43e56c252b795356ea653dc1c0690f76a5d9`):
+- **B01:** mind substitution used for AP, Initiative and characteristic-based skill bases; tests include sapient INT and instinctive INS.
+- **B02:** line parser retains characteristic dice/values, locations, natural weapons, traits, skills, movement and notes; missing or unparsed lines block adding. Invented fixture, not a Core bestiary entry. The importer uses a **specific one-line-per-field transcription format**, not arbitrary OCR or automatic parsing of Core's printed multi-column layout; describe it as *manual transcription into a supported format*, not universal paste support.
+- **B03:** natural/worn armour combined per location for basic damage; only worn ENC contributes to Initiative penalty.
+- **B04:** d20 location table checked for complete, nonoverlapping coverage, and rolled against the imported creature table, not human locations. Generic anatomy **presets are not implemented**.
+- **B05:** natural-weapon parry eligibility reflects Formidable Natural Weapons; the GM tracker does **not** roll parries, so this is display/eligibility, not full creature combat automation.
+
+**Anatomy templates, Core printed pp.276–277:** optional future presets only. Exact ranges **not added here** because the rendered tables could not be reliably retrieved and verified in this review. Do not invent ranges from memory; verify rendered source pages before adding templates.
+
+**Review scope:** read PR diff and tests once; did not independently execute tests or perform deployed signed-in acceptance. Keep **5/8**, Creatures open; B06–B14 next if prioritized.
