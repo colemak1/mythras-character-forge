@@ -778,7 +778,9 @@ function stepMagic(){
 function folkMagicPicker(){
   const known=S.magic.folk;
   const pct=magicSkillPct("Folk Magic"),standard=pct==null?0:Math.ceil(Math.max(0,pct)/20);
-  let h='<p class="note">Core pp.118, 121: starting characters normally know one spell per 20% (or part) of Folk Magic: '+standard+' at '+(pct==null?'no acquired skill':pct+'%')+'. Folk Magic specialist careers may start with one tenth of their skill; confirm the career, rounding and allowance with the GM. Existing or later-learned spells are not removed.</p>'
+  // D-4 (decisions.md, 2026-11-09): a specialist's one tenth rounds up.
+  const specialist=pct==null?0:Math.ceil(Math.max(0,pct)/10);
+  let h='<p class="note">Core pp.118, 121: starting characters normally know one spell per 20% (or part) of Folk Magic: '+standard+' at '+(pct==null?'no acquired skill':pct+'%')+'. A Folk Magic specialist career may start with one tenth of the skill, rounded up: '+specialist+' (D-4). The GM confirms the career counts as a specialist. Existing or later-learned spells are not removed.</p>'
    +'<div class="field"><label for="folkManualName">Add a GM-approved spell name</label><input id="folkManualName" type="text" maxlength="120"><button class="chip actionchip" onclick="APP.addFolkManual()">Add spell</button></div>'
    +(known.length?' <button class="chip" onclick="APP.clearFolk()">clear all</button>':"");
   const allSpells=allFolkSpells();

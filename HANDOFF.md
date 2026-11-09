@@ -9,6 +9,7 @@ _Last updated: 2026-11-09 by Claude (#213 findings fixed; server check for the o
 
 ## Where things stand
 
+- **Owner, 2026-11-09:** Creatures before Magic. D-4 (round up) and D-5 (casting interruptions per Core p.119, GM-prompted) decided in `docs/decisions.md`.
 - **Whole plan:** `docs/roadmap.md` (Phases 0–4, from 5/8 to finished, with the owner decisions each needs).
 
 - **Progress 5/8** (`docs/subsystem-plan.md`). Subsystems 1–5 closed; Main Play Mode Combat stays CLOSED. Next audits when the owner resumes them: 6 Magic (low priority), 7 Creatures, 8 Campaign/multi-account (D-S1–D-S4 implemented; DB permission tests in CI; signed-in live check remains).
