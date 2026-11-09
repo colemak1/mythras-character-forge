@@ -99,3 +99,13 @@ Implemented ChatGPT's #225 corrections (p.216, pp.97/218); tests in `tests/creat
 **B15–B19 source blocker:** Chaos Feature **d100 table (Core printed pp.274–276)** and optional generic anatomy **d20 tables (pp.276–277)** require verified rendered page images before transcription. This review attempted to access the existing uploaded Core PDF through Files, but page-image retrieval and raw-file materialization were unavailable. **Owner action:** upload clear screenshots or photos of printed pp.274–277 (including complete table headers and rows) to this chat; alternatively attach an accessible Core PDF to this conversation. Do not invent or decode tabular ranges from scrambled parsed text. B15–B18 can proceed without those tables; B19 and anatomy presets cannot be specified exactly yet.
 
 **Progress remains 5/8; Creatures stays open.**
+
+## Implementation status, B15–B18 (Claude, 2026-11-09)
+
+GM tracker creature card; tests in `tests/creature-cases.cjs`. Not live-checked. Progress stays **5/8**.
+
+- **B15:** source checked before armour. Immunity (listed source) → 0 damage; Vulnerable (listed source) → armour ignored, damage otherwise unchanged; Allergy → normal damage plus a GM note on contact and armour. Source matching is a whole word or the exact listed term ("silver sword" matches silver; "firearm" doesn't match fire). **To confirm:** whether Vulnerable does more than bypass armour (e.g. extra damage) in Core; nothing extra is applied now.
+- **B16:** guidance only for Camouflaged / Echolocation / Earth Sense: the sense, its range from the entry, no universal detection. No grade numbers are invented.
+- **B17:** per-target Willpower outcome (Critical: ignores for the encounter; Success: holds; Failure: falls back next round; Fumble: flees), kept until the GM ends the encounter. Any grade modifier on the Willpower roll stays with the GM. **To confirm:** this outcome table against Core p.216 (it matches the Intimidate text already used for formation traits in `js/data.js`).
+- **B18 (partial):** eligibility only: INS creatures refused; sapient INT creatures need the GM's permission. **Needs spec:** the Core alternate point-buy total, permitted minimums and how nonhuman anatomy enters the builder (pp.218–219), before a builder path is made. The existing builder species (Classic Fantasy Imperative SRD) are unchanged and are not Core creatures.
+- **B19 and anatomy presets:** held for the owner's page images of pp.274–277.

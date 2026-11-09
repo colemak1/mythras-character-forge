@@ -1684,6 +1684,7 @@ function creatureBlockHTML(c){
    +'<div class="cbt-locadd"><button class="chip sm" onclick="APP.gmCreatureRollLoc(\''+c.id+'\')">Roll hit location (d20)</button>'
    +(hit?'<span class="note"> d20 '+hit.roll+': <b>'+esc(hit.loc)+'</b>, armour '+hit.armour+'</span>'
      +'<input type="number" id="cbtraw-'+c.id+'" placeholder="damage" min="0" style="width:84px" aria-label="Damage rolled, before armour">'
+     +(["Immunity","Vulnerable","Allergy"].some(n=>creatureTraitSources(cr,n).length)?'<input type="text" id="cbtsrc-'+c.id+'" placeholder="source, e.g. fire" maxlength="60" style="width:120px" aria-label="Damage source">':'')
      +'<button class="chip sm" onclick="APP.gmCreatureHit(\''+c.id+'\')">apply after armour</button>':'')
    +'</div></div>';
 }
@@ -1710,6 +1711,16 @@ function creatureTraitsHTML(c){
   if(creatureTrait(cr,"Venomous"))rows.push('<b>Venomous</b> An ordinary hit injects no venom. On a successful attack it may choose the Inject Venom special effect instead of doing damage: the poison gets through a gap in the armour (Core pp.97, 218). <button class="chip sm" onclick="APP.gmCreatureVenom('+q+')">Inject Venom chosen</button>');
   if(creatureTrait(cr,"Frenzy"))rows.push('<b>Frenzy</b> '+tog("frenzied",cs.frenzied,"Frenzied (after its Willpower roll, GM)")+(cs.frenzied?' Limited actions; pain and fatigue penalties the trait names are ignored.':' When it ends, apply the trait&rsquo;s fatigue (Core p.216). Not a permanent bonus.'));
   if(creatureTrait(cr,"Undead"))rows.push('<b>Undead</b> Serious and Major Wounds don&rsquo;t incapacitate or fatigue it. Binding location <select onchange="APP.gmCreatureState('+q+',\'bindingLoc\',this.value)"><option value="">not recorded</option>'+(c.locations||[]).map(l=>'<option '+(cs.bindingLoc===l?'selected':'')+'>'+esc(l)+'</option>').join("")+'</select> Destroyed when <input type="text" maxlength="200" placeholder="condition from the entry" value="'+esc(cs.destroyWhen||"")+'" onchange="APP.gmCreatureState('+q+',\'destroyWhen\',this.value)"> (Core p.218).');
+  const resist=["Immunity","Vulnerable","Allergy"].map(n=>[n,creatureTraitSources(cr,n)]).filter(x=>x[1].length);
+  if(resist.length)rows.push('<b>'+resist.map(([n,l])=>esc(n)+' ('+esc(l.join(", "))+')').join(' · ')+'</b> Give the damage source with a hit (below); it is checked before armour (Core pp.215, 217–218).');
+  CREATURE_SENSES.forEach(([n,t])=>{if(creatureTrait(cr,n))rows.push('<b>'+esc(n)+'</b> '+esc(t));});
+  if(creatureTrait(cr,"Intimidate")){const log=cs.intimidated||{};
+    rows.push('<b>Intimidate</b> Each target rolls Willpower. Target <input type="text" id="cbtintim-'+id+'" maxlength="60" style="width:110px" aria-label="Intimidated target"> '
+     +["Critical","Success","Failure","Fumble"].map(t=>'<button class="chip sm" onclick="APP.gmCreatureIntimidate('+q+',\''+t+'\')">'+t+'</button>').join(" ")
+     +(Object.keys(log).length?' '+Object.entries(log).map(([n,k])=>esc(n)+': '+({immune:"ignores it",holds:"holds",retreats:"falls back",flees:"flees"}[k]||k)).join(", ")+' <button class="chip sm" onclick="APP.gmCreatureIntimidateClear('+q+')">encounter over</button>':'')
+     +' Not an automatic retreat on sight (Core p.216).');}
+  if(creatureMind(cr).key==="INT"){const e=creaturePcEligibility(cr,cs.pcPermitted===true);
+    rows.push('<b>As a character</b> '+'<label class="mnum"><input type="checkbox" '+(cs.pcPermitted?'checked':'')+' onchange="APP.gmCreatureState('+q+',\'pcPermitted\',this.checked)"> GM permits it as a player character</label> '+esc(e.reason));}
   if(!rows.length&&!CREATURE_MSG[id])return "";
   return '<div class="cbt-traits">'+rows.map(r=>'<p class="note">'+r+'</p>').join("")+(CREATURE_MSG[id]?'<p class="note" role="status"><b>'+esc(CREATURE_MSG[id])+'</b></p>':'')+'</div>';
 }

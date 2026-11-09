@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Creature resistances, senses, Intimidate and PC eligibility (CRTR-B15–B18)
+
+ChatGPT's #227 review is merged (docs #228). The Chaos Feature table and anatomy presets wait for clear Core pp.274–277 page images from the owner.
+
+- **Resistances (B15):** traits written with their source in brackets, e.g. `Trait: Immunity (fire, poison)`, `Vulnerable (silver)`, `Allergy (iron)`, are kept whole (commas inside brackets no longer split the trait). When a hit is applied, a source box appears and the source is checked before armour: Immunity takes no damage, Vulnerable ignores armour, Allergy notes contact at that location and leaves the armour question and effect to the trait (GM).
+- **Senses (B16):** Camouflaged, Echolocation and Earth Sense show what they do and that they work only within their own sense and range, never as invisibility or detection of everything.
+- **Intimidate (B17):** record each target's Willpower: Critical ignores the creature for the encounter, Success holds, Failure falls back next round, Fumble flees. Results stay until "encounter over"; a target who ignored it can't be intimidated again that encounter.
+- **As a character (B18):** a sapient (INT) creature shows a GM-permission switch; an instinctive (INS) creature can't be a player character. Building one in the character builder needs the Core point-buy total and minimums (pp.218–219) first; not built yet.
+- New cases in `tests/creature-cases.cjs`.
+
 ## Creature traits: head loss and Inject Venom corrected (fixes from the #225 review)
 
 ChatGPT's review of #225 (docs #226, merged with this change) found two rule errors, both fixed:

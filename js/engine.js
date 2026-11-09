@@ -1497,7 +1497,7 @@ function parseCreatureStatBlock(text){
     if((m=line.match(/^weapon\s*:\s*(.+?)\s+(\d*d\d+(?:\s*[+-]\s*\d*d?\d+)*)(\s+natural)?$/i))){
       c.weapons.push({name:m[1].trim().slice(0,60),damage:m[2].replace(/\s+/g,""),natural:!!m[3]});continue;
     }
-    if((m=line.match(/^traits?\s*:\s*(.+)$/i))){m[1].split(/[,;]/).map(t=>t.trim()).filter(Boolean).forEach(t=>c.traits.push(t.slice(0,60)));continue;}
+    if((m=line.match(/^traits?\s*:\s*(.+)$/i))){m[1].split(/[,;](?![^(]*\))/).map(t=>t.trim()).filter(Boolean).forEach(t=>c.traits.push(t.slice(0,60)));continue;}
     if((m=line.match(/^move(?:ment)?\s*:?\s*(.+)$/i))){c.move=m[1].trim().slice(0,40);continue;}
     if((m=line.match(/^worn armou?r enc\s*:?\s*(\d+)$/i))){c.wornEnc=Number(m[1]);continue;}
     if((m=line.match(/^skills?\s*:\s*(.+)$/i))){c.skills=m[1].trim().slice(0,600);continue;}
@@ -1626,4 +1626,55 @@ function creatureSyncAp(c){
   if(!c||!c.creature)return;
   const max=creatureApMax(c.creature,c.hp,c.cs&&c.cs.headsOut);
   if(max!==c.ap.max){c.ap.max=max;c.ap.used=Math.min(c.ap.used,max);}
+}
+
+/* ---- Resistances, senses, Intimidate, PC eligibility (CRTR-B15–B18) ---- */
+// The sources named in a trait's brackets: "Immunity (fire, poison)".
+function creatureTraitSources(c,name){
+  const out=[];
+  for(const t of c.traits||[]){
+    const m=t.match(/^([^(]+)\(([^)]*)\)\s*$/);
+    if(m&&m[1].trim().toLowerCase()===name.toLowerCase())m[2].split(/,|\band\b|\//).map(x=>x.trim().toLowerCase()).filter(Boolean).forEach(x=>out.push(x));
+  }
+  return out;
+}
+function creatureSourceMatch(list,source){
+  const s=String(source||"").trim().toLowerCase();if(!s)return null;
+  return list.find(x=>x===s||s.split(/[\s,]+/).includes(x))||null;
+}
+// B15 (Core pp.215, 217–218): check the damage source before any armour.
+// Immunity ignores its listed source; Vulnerable bypasses armour against its
+// source; Allergy works by contact, and whether armour stops that contact is
+// the trait's call (GM).
+function creatureResolveHit(c,locName,raw,source){
+  const l=(c.locations||[]).find(x=>x.name===locName);if(!l)return null;
+  const r=Math.max(0,Math.floor(Number(raw)||0)),armour=(l.natural||0)+(l.worn||0);
+  const immune=creatureSourceMatch(creatureTraitSources(c,"Immunity"),source);
+  if(immune)return {damage:0,note:"Immune to "+immune+": no damage (Core p.217)."};
+  const vuln=creatureSourceMatch(creatureTraitSources(c,"Vulnerable"),source);
+  if(vuln)return {damage:r,note:"Vulnerable to "+vuln+": armour doesn't protect (Core p.218)."};
+  const allergy=creatureSourceMatch(creatureTraitSources(c,"Allergy"),source);
+  const damage=Math.max(0,r-armour);
+  if(allergy)return {damage,note:"Allergy ("+allergy+"): contact at "+locName+". Whether armour prevents contact, and the effect, follow the trait (GM, Core p.215)."};
+  return {damage,note:""};
+}
+// B16 (Core pp.215–216): senses work only within their own mode and range.
+const CREATURE_SENSES=[
+  ["Camouflaged","Harder to spot by Perception as its trait states, in its own surroundings. Not invisibility (Core p.215)."],
+  ["Echolocation","Senses by sound, within the range its entry gives; nothing beyond that range or outside that sense (Core p.215)."],
+  ["Earth Sense","Senses through the ground, within the range its entry gives; nothing beyond that range or outside that sense (Core p.215)."]
+];
+// B17 (Core p.216): each target's Willpower against Intimidate.
+function intimidateOutcome(tier){
+  return {Critical:{key:"immune",text:"ignores this creature's intimidation for the rest of the encounter"},
+    Success:{key:"holds",text:"holds their ground"},
+    Failure:{key:"retreats",text:"spends their next round putting distance between themselves and the creature"},
+    Fumble:{key:"flees",text:"flees at full speed"}}[tier]||null;
+}
+// B18 (Core pp.218–219): only a sapient creature (INT, not INS), and only
+// with the GM's permission, may be played as a character.
+function creaturePcEligibility(c,gmPermitted){
+  if(creatureMind(c).key!=="INT")return {ok:false,reason:"An instinctive (INS) creature can't be a player character (Core p.218)."};
+  if(gmPermitted!==true)return {ok:false,reason:"A sapient creature can be a player character only with the GM's permission (Core p.218)."};
+  return {ok:true,reason:"GM-permitted sapient creature: build with its own characteristic dice, the Core alternate point-buy total and minimums, and its own anatomy (Core pp.218–219)."};
 }
