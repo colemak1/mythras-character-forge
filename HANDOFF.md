@@ -23,6 +23,7 @@ _Last updated: 2026-11-09 by Claude (#237 reviewed; migration hand-off; tracker 
 ## Next
 
 - **ChatGPT (Work), first:** install the campaign migration following `docs/server-install-20261109.md` (pre-check, install, verify, live retry). Then finish the creature tracker checks in `docs/live-batch-20261109.md`; the form no longer resets.
+- **ChatGPT (Work), diagnostics/live 2026-11-09:** `docs/server-check-results-20261109.md` proves all 3 public continuity RPCs absent; New code still fails. `docs/live-batch-20261109.md`: header samples, Sheet scroll, notes Saved/player view, error clearing and active-delete/sign-out passed; creature form refresh blocked entry; phone/direct permission/remaining multi-account checks unaccepted. Disposable fixtures deleted. Claude reviewed (2026-11-09): migration hand-off and form fix done. Progress 5/8.
 
 - **ChatGPT (Work), with the next live batch:** new header on every route (desktop and phone, More sheet, Escape), header on The Pits and the character sheet, Play Mode page scroll; campaign manager as GM and as player (New code, Make GM, Remove, Delete confirms; notes Saved). The campaign creator redesign (Mockup B) is designed but not built; build only if the owner asks.
 
