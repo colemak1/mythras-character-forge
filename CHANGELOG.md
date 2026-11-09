@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Folk Magic specialist starting spells (D-4)
+
+- The Folk Magic picker now shows a specialist career's starting spells, one tenth of the skill rounded up (e.g. 41% → 5). Before, it asked the GM to decide the rounding. Decided 2026-11-09 in `docs/decisions.md`, along with D-5 (interrupted casting, Core p.119), which is built in the first Magic batch.
+
 ## Fixes from the live batch of 2026-11-08 (#213)
 
 - **Campaign server errors:** New code, Remove and Make GM now show the server's real error and code. Before, any "does not exist" error was reported as a missing server update, which hid the real cause. The campaign migration now asks the API to reload its function list. A read-only check for the owner is in `docs/server-check-20261109.md`.

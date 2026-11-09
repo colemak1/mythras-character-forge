@@ -35,7 +35,7 @@ Done: B01–B19 built, with the source checked today.
 
 The biggest group. Spec first, one tradition per batch.
 
-1. **Owner:** settle D-4 (rounding) and D-5 (casting interruptions) in `decisions.md`. Your rule "rounding should always be the same" (round up) probably settles D-4.
+1. D-4 and D-5 are decided (`decisions.md`, 2026-11-09). Claude builds D-5's "hurt while casting" choices in the first Magic batch.
 2. Batches, in order:
    - Folk Magic finish
    - Animism (spec exists: `magic-cases-batch-2-animism.md`)
@@ -71,5 +71,5 @@ Each needs a Work live pass, and Chat work in between, which costs no credits.
 ## Decisions waiting on the owner
 
 - **D-S5:** accept the database tests as evidence for direct-access permission steps (Phase 1).
-- **D-4, D-5:** Magic rounding and casting interruptions (Phase 3).
-- **Order of Phases 2 and 3**, if Magic matters more to your table than creatures.
+- ~~D-4, D-5~~: decided 2026-11-09 (owner delegated): round up; casting interruptions per Core p.119, GM-prompted. See `decisions.md`.
+- ~~Order of Phases 2 and 3~~: **Creatures first** (owner, 2026-11-09).
