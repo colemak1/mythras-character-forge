@@ -318,10 +318,13 @@ body.play-mode.pm-style-clean .app{background:var(--pmx-bg)}
 .pmx-dicetray-label{padding-right:72px}
 
 @media (min-width:1101px){
-  .pmx-dash{height:calc(100dvh - var(--pm-top,100px));display:flex;flex-direction:column;overflow:hidden}
+  /* The sheet fills the screen below the site header, which scrolls away:
+     the page scrolls a little as a whole and each column keeps its own
+     scroll, handing the wheel back to the page at its ends (owner, 2026-11-09). */
+  .pmx-dash{height:max(620px,calc(100dvh - 24px));display:flex;flex-direction:column;overflow:hidden}
   .pmx-head,.pm-viewonly-banner,.pmx-msg{flex:0 0 auto}
   .pmx-cols{flex:1;min-height:0}
-  .pmx-col-stats,.pmx-col-skills,.pmx-scroll{overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:2px}
+  .pmx-col-stats,.pmx-col-skills,.pmx-scroll{overflow-y:auto;scrollbar-gutter:stable;padding-right:2px}
   .pmx-col-skills .pm-skillsbox{min-height:100%}
 }
 @media (max-width:1100px){

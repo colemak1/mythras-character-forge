@@ -973,13 +973,12 @@ const PM_PHONE_ICONS=Object.fromEntries(Object.entries({
 const PM_COLORWAYS=[["verdigris","Verdigris","Cool grey stone, verdigris green and bronze."],["ember","Basalt & Ember","Warm grey stone, forge orange and brass."],["indigo","Sandstone & Indigo","Warm sandstone, deep indigo and copper."],["moss","Moss & Gold","Lichen stone, moss green and old gold."],["basalt","Basalt (dark)","Dark basalt for dim tables."],["war-room","The War Room","Dark brown, aged copper and oxblood."],["night-watch","Night Watch","Midnight blue, muted steel and brass."],["ivory-ink","Ivory & Ink","Cream, deep navy and muted bronze."],["deep-cypress","Deep Cypress","Forest charcoal, sage and pale gold."]];
 function pmColorway(){let v=null;try{v=localStorage.getItem("pm-colorway");}catch(e){}return PM_COLORWAYS.some(c=>c[0]===v)?v:"verdigris";}
 function pmSetColorway(k){if(!PM_COLORWAYS.some(c=>c[0]===k))return;try{localStorage.setItem("pm-colorway",k);}catch(e){}render();}
-// Play Mode hides the site's top bar (owner, 2026-11-07); one menu button in
-// the character header opens the same links. Phones also get Home in the
-// bottom bar.
-const PM_SITE_LINKS=[["#/","Home"],["#/my-characters","Characters"],["#/my-campaigns","Campaign"],["#/the-pits","The Pits"],["#/wiki","Rules"],["#/world/welcome","World Guide"],["#/account","Account"]];
-function pmSiteMenuHTML(){
-  return '<details class="pmx-sitemenu"><summary aria-label="Site menu" title="Site menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>'
-   +'<nav class="pmx-sitemenu-list" aria-label="Site navigation">'+PM_SITE_LINKS.map(([href,l])=>'<a href="'+href+'">'+l+'</a>').join("")+'<button type="button" onclick="this.closest(\'details\').open=false;APP.pmPopup(\'ref\')">Rules reference</button><button type="button" class="pmx-sitemenu-plain" onclick="this.closest(\'details\').open=false;APP.pmModal(\'settings\')">Settings</button></nav></details>';
+// Play Mode shows the site header again (owner, 2026-11-09), so the old
+// site-menu dropdown is gone. Its two Play Mode items stay as header buttons.
+function pmHeadExtrasHTML(){
+  const ic=p=>'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+  return '<button type="button" class="pm-btn" onclick="APP.pmPopup(\'ref\')" aria-label="Rules reference">'+ic('<path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4z"/><path d="M5 16a4 4 0 0 1 4-4h10"/>')+'<span class="lbl">Rules reference</span></button>'
+   +'<button type="button" class="pm-btn" onclick="APP.pmModal(\'settings\')" aria-label="Settings">'+ic('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>')+'<span class="lbl">Settings</span></button>';
 }
 // Skill description in the side panel (owner, 2026-11-07): our short summary
 // of the Core text, the formula and current value, and a Roll button.
@@ -1436,11 +1435,11 @@ function renderPlayView(){
   const initials=name.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join("")||"?";
   const scroll=pmSaveScroll();
   let h='<div class="pm-wrap pmx pmx-dash" data-pm-style="stone" data-view="'+(PM_VIEW==="right"?"right":PM_VIEW)+'" data-tab="'+tab+'">';
-  h+='<header class="pmx-head">'+pmSiteMenuHTML()
+  h+='<header class="pmx-head">'
    +'<div class="pmx-avatar">'+(S.concept.portrait?'<img src="'+S.concept.portrait+'" alt="">':'<span>'+esc(initials)+'</span>')+'</div>'
    +'<div class="pmx-id"><button class="pmx-back" onclick="APP.backFromPlay()">'+backLabel+'</button>'
    +'<h1 class="pmx-name">'+esc(name)+'</h1>'+(sub?'<p class="pmx-sub">'+sub+'</p>':'')+'</div>'
-   +'<div class="pmx-headbtns">'
+   +'<div class="pmx-headbtns">'+pmHeadExtrasHTML()
    +'<button class="pm-btn" onclick="APP.pmPopup(\'log\')" aria-label="Roll log"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/></svg><span class="lbl">Roll log'+(S.rollLog.length?' <span class="pmx-dim">'+S.rollLog.length+'</span>':'')+'</span></button>'
    +(VIEW_ONLY?"":'<button class="pm-btn" onclick="APP.pmPopup(\'advance\')" aria-label="Advance time"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span class="lbl">Advance time</span></button>')
    +(VIEW_ONLY?"":'<button class="pm-btn pmx-pri" onclick="APP.openXP()" aria-label="Improve skills"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span class="lbl">Improve skills</span>'+(S.xp.pool?' <span class="pm-xpbadge">'+S.xp.pool+'</span>':'')+'</button>')

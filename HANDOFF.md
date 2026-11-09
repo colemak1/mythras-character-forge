@@ -3,9 +3,9 @@
 Read `AGENTS.md`, then this, at the start of every session; update it before ending one. Keep it short: replace finished items, don't append history (history goes in `CHANGELOG.md`).
 
 **Owner kickoff line for a new Claude session** (paste as the first message):
-> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/happy-brahmagupta-votbg4.
+> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/gallant-hypatia-3el31w.
 
-_Last updated: 2026-11-09 by Claude (Creatures B15–B18; docs #228 merged)_
+_Last updated: 2026-11-09 by Claude (new header + campaign manager)_
 
 ## Where things stand
 
@@ -18,6 +18,8 @@ _Last updated: 2026-11-09 by Claude (Creatures B15–B18; docs #228 merged)_
   - **Melee only (owner, 2026-11-07).** All 35 Core melee weapons and 8 shields playable; saved characters can use any weapon their style trains, carried or not (#205). Ranged was built and removed (#206 reverted); its spec `docs/the-pits-ranged-cases.md` is shelved. Lance and Garrotte unsupported.
 
 ## Next
+
+- **ChatGPT (Work), with the next live batch:** new header on every route (desktop and phone, More sheet, Escape), header on The Pits and the character sheet, Play Mode page scroll; campaign manager as GM and as player (New code, Make GM, Remove, Delete confirms; notes Saved). The campaign creator redesign (Mockup B) is designed but not built; build only if the owner asks.
 
 - **Owner (first):** run `supabase/migrations/20261108130000_display_names_signed_in_only.sql` once in the Supabase SQL editor (safe to re-run). It implements D-S3 option A: signed-in users read only display names; signed-out visitors read no profiles. (The D-S1/D-S2/D-S4 migration `20261108120000_…` is already run.)
 - **Owner:** the signed-in live checks need disposable accounts that Work can't create (its browser forbids automated sign-up). Either create 3–4 test accounts and give Work their sign-ins, or run steps 8–10 of the plan in `campaign-cases-batch-1.md` yourself with two browsers. The database side of steps 1–6, 8 and 10 and of D-S3 is now covered by `tests/db/permissions.cjs` (CI), against a stand-in schema.

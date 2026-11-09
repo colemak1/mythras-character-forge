@@ -5,8 +5,9 @@
 <meta name="prototype-version" content="19"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The Pits — New Sit’ota</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../play-stone.css?v=b4948b6ec4">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@400;500;600&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../sitota-header.css?v=fae94549d1">
+<link rel="stylesheet" href="../play-stone.css?v=df37463f71">
 <style>
 :root{--ink:#231c15;--ink2:#372a20;--coal:#171916;--coal2:#232622;--paper:#e5d8bf;--paper2:#f5eddd;--line:#bbaa8b;--gold:#ad8246;--gold2:#d7b77e;--red:#a64b39;--green:#46765c;--muted:#766955}
 *{box-sizing:border-box}body{margin:0;color:var(--ink);font-family:Georgia,'Times New Roman',serif;background:#151714;background-image:radial-gradient(ellipse at top,#343026,#131512 70%);min-height:100vh}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.4}.topbar{height:68px;background:#141611;border-bottom:1px solid #69553b;color:#eee3d0;display:flex;justify-content:space-between;align-items:center;padding:0 30px}.brand{font-size:25px;letter-spacing:.035em;font-weight:bold}.brand small{display:block;font:10px system-ui,sans-serif;color:#c0a783;letter-spacing:.24em;text-transform:uppercase;margin-top:3px}.toplinks{display:flex;align-items:center;gap:22px;font:12px system-ui,sans-serif;color:#c2b5a1}.toplinks span:first-child{color:#e9c78d}.toplinks a{color:inherit;text-decoration:none}.main{max-width:1630px;margin:0 auto;padding:25px 26px 45px}.eyebrow{font:700 10px system-ui,sans-serif;letter-spacing:.21em;text-transform:uppercase;color:var(--gold2)}.mast{display:flex;gap:20px;align-items:flex-end;justify-content:space-between;margin-bottom:21px}.mast h1{color:#f1e5cc;font-size:39px;letter-spacing:.06em;font-weight:normal;text-transform:uppercase;margin:6px 0 4px}.mast p{color:#aea18c;margin:0;font-size:14px}.toolbutton{background:transparent;color:#e5d8bf;border:1px solid #8c7656;border-radius:3px;padding:10px 16px;font:700 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}.toolbutton:hover{background:#38352d}.header-actions{display:flex;gap:10px;align-items:center}.pill{font:700 10px system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;padding:7px 11px;background:rgba(171,126,59,.18);color:#e2c48d;border:1px solid #7e643b;border-radius:2px}
@@ -316,12 +317,40 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 .recovery-options{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 0 16px;border-bottom:1px solid #9d876145;margin-bottom:10px}.recovery-options button{padding:9px 13px;border:1px solid #af9972;border-radius:2px;background:transparent;color:inherit;cursor:pointer;font:600 12px system-ui}.recovery-options button:disabled{opacity:.45;cursor:not-allowed}.recovery-options small{font:11px/1.5 system-ui;color:#b6a48c;max-width:330px}
 
 </style>
-<link rel="stylesheet" href="pits-stone.css?v=1660eea8a0">
+<link rel="stylesheet" href="pits-stone.css?v=9e8ba6b318">
 <link rel="stylesheet" href="practice-combat-ux.css?v=bda12b759c">
 </head>
-<body>
-<header class="topbar"><div class="brand">New Sit’ota<small>MYTHRAS CHARACTER FORGE</small></div><div class="toplinks"><span>The Pits</span><a href="../index.html#/the-pits">Choose a character</a><a href="#" id="homeLink">Reset</a></div></header>
+<body class="pits-page">
+<header class="sitota-header"><div class="sitota-header-inner"><a class="sitota-brand" href="../index.html#/"><img class="sitota-logo" src="../icons/logo-light.png" alt="" width="20" height="46"><span class="sitota-brand-text">New Sit’ota<small>Valeshar Campaign</small></span></a>
+<nav class="sitota-nav" aria-label="Site navigation">
+<a href="../index.html#/" data-site-view="menu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>Home</a>
+<a href="../index.html#/my-characters" data-site-view="library"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3 2.8 3 6"/></svg>Characters</a>
+<a href="../index.html#/my-campaigns" data-site-view="campaigns"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V3M6 4h11l-2 4 2 4H6"/></svg>Campaign</a>
+<a href="../index.html#/the-pits" data-site-view="pits" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l10 10M14 14l-2 2 4 4 2-2zM20 4L10 14M10 14l2 2-4 4-2-2z"/></svg>The Pits</a>
+<a href="../index.html#/wiki" data-site-view="wiki"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4z"/><path d="M5 16a4 4 0 0 1 4-4h10"/></svg>Rules</a>
+<a href="../index.html#/world/welcome" data-site-view="world"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>World Guide</a>
+</nav><span class="sitota-divider" aria-hidden="true"></span>
+<a href="../index.html#/account" data-site-view="account" id="siteAccount" aria-label="Account"><span class="sh-av" id="siteAccountAv"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2c0-5 3.5-7 8-7s8 2 8 7v2"/></svg></span><span class="sh-acct-n"><b id="siteAccountName">Account</b><small id="siteAccountSub">Sign in</small></span></a>
+</div></header>
+<nav class="st-tabbar" id="stTabbar" aria-label="Main sections">
+<a href="../index.html#/" data-tab="menu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span>Home</span></a>
+<a href="../index.html#/my-characters" data-tab="library"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3 2.8 3 6"/></svg><span>Characters</span></a>
+<a href="../index.html#/my-campaigns" data-tab="campaigns"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V3M6 4h11l-2 4 2 4H6"/></svg><span>Campaign</span></a>
+<a href="../index.html#/the-pits" data-tab="pits" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l10 10M14 14l-2 2 4 4 2-2zM20 4L10 14M10 14l2 2-4 4-2-2z"/></svg><span>The Pits</span></a>
+<button type="button" data-tab="more" id="stMoreBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="stMoreSheet" onclick="stOpenMore()"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>More</span></button>
+</nav>
+<div class="st-more" id="stMoreSheet" hidden>
+<button type="button" class="st-more-scrim" aria-label="Close" onclick="stCloseMore()"></button>
+<div class="st-more-panel" role="dialog" aria-modal="true" aria-label="More">
+<div class="st-more-grip" aria-hidden="true"></div>
+<a href="../index.html#/wiki" data-site-view="wiki"><span class="st-more-ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4z"/><path d="M5 16a4 4 0 0 1 4-4h10"/></svg></span><span><b>Rules</b><small>Core chapter index</small></span></a>
+<a href="../index.html#/world/welcome" data-site-view="world"><span class="st-more-ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></span><span><b>World Guide</b><small>Places, peoples and history</small></span></a>
+<a href="../index.html#/account" data-site-view="account"><span class="st-more-ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2c0-5 3.5-7 8-7s8 2 8 7v2"/></svg></span><span><b>Account</b><small>Sign in, sync and backups</small></span></a>
+<button type="button" class="st-more-close" onclick="stCloseMore()">Close</button>
+</div></div>
+<div class="pits-subbar"><a href="../index.html#/the-pits">&larr; Choose a character</a><a href="#" id="homeLink">Reset bout</a></div>
 <main class="main" id="root"></main>
+
 <script src="../js/data.js?v=f2c6141fd4"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
 <script src="practice-guidance.js?v=3bb978cd88"></script>
@@ -3105,6 +3134,11 @@ $('#root').addEventListener('click',decoratedClick);$('#homeLink').addEventListe
 // Expose transparent inspection helpers for prototype debugging and automated tests.
 window.prototypeCombat={moveEngage,limbDisabled,damageModifierFor,armourInitiativePenalty,parryAbsorption,SHIELDS,pendingRoll:()=>R?({id:R.id,actor:R.actor,label:R.label,defs:R.defs}):null,state:()=>S,presentation:()=>V,skipPresentation,rollSkill,HIT_TABLE,zoneClass,engagementInfo,canAttackBody,canParryAtReach,proposedRange,beginChangeRange,rangeReact,availableEffects,effectCatalog:()=>SPECIAL_EFFECT_CATALOG,armourAt,guardWeapon,impaleGrade,effectiveSkill,roundBloodLoss,beginWithdrawImpale,finishWithdrawImpale,chooseImpaleDamage,refreshFighterAP,FATIGUE_NAMES,registerWound,fieldAidCandidates,beginFieldAid,reopenBandage,disadvantagedForSurrender};
 render();
+</script>
+<script>
+function stOpenMore(){var s=document.getElementById('stMoreSheet'),b=document.getElementById('stMoreBtn');if(!s)return;s.hidden=false;b&&b.setAttribute('aria-expanded','true');var f=s.querySelector('a,button.st-more-close');f&&f.focus();}
+function stCloseMore(){var s=document.getElementById('stMoreSheet'),b=document.getElementById('stMoreBtn');if(!s)return;s.hidden=true;b&&b.setAttribute('aria-expanded','false');}
+if(document.addEventListener)document.addEventListener('keydown',function(e){var s=document.getElementById('stMoreSheet');if(e.key==='Escape'&&s&&!s.hidden){stCloseMore();var b=document.getElementById('stMoreBtn');b&&b.focus();}});
 </script>
 </body>
 </html>

@@ -21,10 +21,13 @@ let passed=0;const test=async(n,f)=>{await f();passed++;console.log('PASS '+n);}
 (async()=>{
 await test('"The Pits" is a top-bar tab with its own route',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
- assert.match(html,/<a href="#\/the-pits" data-site-view="pits">The Pits<\/a>/);
+ assert.match(html,/<a href="#\/the-pits" data-site-view="pits"><svg[^>]*>.*?<\/svg>The Pits<\/a>/);
  assert.equal(run('parseRoute("#/the-pits").view'),'pits');
  run('AUTH_USER=null;MOCK_AUTH=null;render=()=>{};APP.toPits()');assert.equal(run('APPVIEW'),'pits');assert.equal(run('currentRoute()'),'/the-pits');
- assert.match(run('PM_SITE_LINKS.map(l=>l.join("|")).join(",")'),/#\/the-pits\|The Pits/,'Play Mode ☰ menu too');
+ const fight=fs.readFileSync(path.join(root,'experiments','practice-combat.html'),'utf8');
+ assert.match(fight,/<header class="sitota-header">/,'the fight page carries the site header (owner, 2026-11-09)');
+ assert.match(fight,/href="\.\.\/index\.html#\/the-pits" data-site-view="pits" aria-current="page"/,'with The Pits marked active');
+ assert.match(fight,/id="homeLink"/,'Reset bout is kept');
 });
 await test('character cards no longer carry their own Practice button',()=>{
  assert.doesNotMatch(fs.readFileSync(path.join(root,'js','cloud.js'),'utf8'),/openCharToPractice/);
@@ -45,7 +48,7 @@ await test('signed in: pick a character and enter; the chosen one is sent to the
 await test('the arena is named The Pits and links back to it',()=>{
  const page=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8');
  assert.match(page,/<title>The Pits — New Sit’ota<\/title>/);assert.match(page,/<h1>The Pits<\/h1>/);
- assert.doesNotMatch(page,/Practice Combat/);assert.doesNotMatch(page,/#\/my-characters/);
+ assert.doesNotMatch(page,/Practice Combat/);assert.doesNotMatch(page.match(/<div class="pits-subbar">[\s\S]*?<\/div>/)[0],/#\/my-characters/,"the back link goes to The Pits, not My Characters");
  assert.match(page,/href="\.\.\/index\.html#\/the-pits"/);
 });
 await test('any Core melee weapon a character carries goes to the arena, not just the original five',()=>{
