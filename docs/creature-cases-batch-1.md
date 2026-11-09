@@ -88,3 +88,14 @@ Implemented ChatGPT's #225 corrections (p.216, pp.97/218); tests in `tests/creat
 - **B09:** heads lose their action only when the GM marks them incapacitated or severed (`cs.headsOut`); a 0-HP head stays working and is flagged for wound resolution. Marks are reversible and limited to head locations.
 - **B12:** venom only via "Inject Venom chosen" (no damage, armour irrelevant); damaging ordinary hits never inject; no trait → nothing. The entry's poison stays GM-resolved.
 - Chaos Feature (pp.274–276) and anatomy (pp.276–277) tables: still waiting for verified page images. Progress stays **5/8**.
+
+## ChatGPT one-pass static review of merged PR #227 (2026-11-08)
+
+**Result: pass for both requested corrections**, against the private *Mythras Core Rulebook* (2e), printed **p.216** (Multi-Headed) and **pp.97, 218** (Inject Venom). Reviewed merged PR #227 diff and changed tests once; did not independently run tests or perform live acceptance.
+
+- **B09 — pass:** `creatureHeads` now counts heads until the GM explicitly marks them incapacitated or severed in `cs.headsOut`; a head at 0 HP remains active but triggers a wound-resolution warning. `creatureSyncAp` uses those marks; UI allows reversing a mark, and non-head locations are refused. Updated tests cover 0 HP, disabling and restoring a head.
+- **B12 — pass within GM-assisted scope:** an ordinary damaging hit no longer delivers venom; a separate `Inject Venom chosen` control explicitly represents choosing the Special Effect instead of inflicting attack damage, independent of armour. Creature-specific poison remains GM-resolved. Updated tests cover damaging ordinary hits, selected/unselected effect and absence of Venomous trait. **Scope limitation:** the control relies on the GM to confirm a successful attack and legitimate Special Effect; it is not an integrated combat-exchange validator.
+
+**B15–B19 source blocker:** Chaos Feature **d100 table (Core printed pp.274–276)** and optional generic anatomy **d20 tables (pp.276–277)** require verified rendered page images before transcription. This review attempted to access the existing uploaded Core PDF through Files, but page-image retrieval and raw-file materialization were unavailable. **Owner action:** upload clear screenshots or photos of printed pp.274–277 (including complete table headers and rows) to this chat; alternatively attach an accessible Core PDF to this conversation. Do not invent or decode tabular ranges from scrambled parsed text. B15–B18 can proceed without those tables; B19 and anatomy presets cannot be specified exactly yet.
+
+**Progress remains 5/8; Creatures stays open.**
