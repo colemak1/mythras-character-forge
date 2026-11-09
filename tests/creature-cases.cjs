@@ -116,13 +116,18 @@ test('CRTR-B08 the grapple note shows only for a Grappler',()=>{
  tracker({trait:'Trait: Grappler'});assert.match(card(),/extra grapple follows/);
  tracker({});assert.doesNotMatch(card(),/grapple/);
 });
-test('CRTR-B09 each working head beyond the first adds an action; losing one removes it',()=>{
+test('CRTR-B09 each working head beyond the first adds an action; only an incapacitated or severed head loses it',()=>{
  const id=tracker({trait:'Trait: Multi-headed',locs:['1-6 Body 3/9','7-10 Tail 2/5','11-14 Left Head 2/4','15-17 Middle Head 2/4','18-20 Right Head 2/4'].join('\n')});
  assert.equal(cb().ap.max,5,'3 AP + 2 extra heads');assert.match(card(),/Working heads 3 \/ 3/);
  run('__el["#cbtdmg-'+id+'-Left_Head"]={value:"4"};APP.gmDamageLoc("'+id+'","Left Head","cbtdmg-'+id+'-Left_Head")');
- assert.equal(cb().ap.max,4);assert.equal(cb().hp.Body.cur,9,'the body is untouched');
- run('APP.gmApAdj("'+id+'",-4)');run('__el["#cbtdmg-'+id+'-Right_Head"]={value:"9"};APP.gmDamageLoc("'+id+'","Right Head","cbtdmg-'+id+'-Right_Head")');
+ assert.equal(cb().hp['Left Head'].cur,0);assert.equal(cb().ap.max,5,'0 HP alone does not remove the action');
+ assert.match(card(),/Left Head at 0 HP or less: resolve the wound/);
+ run('APP.gmCreatureHead("'+id+'","Left Head",true)');assert.equal(cb().ap.max,4);assert.equal(cb().hp.Body.cur,9,'the body is untouched');
+ assert.doesNotMatch(card(),/at 0 HP or less/);
+ run('APP.gmApAdj("'+id+'",-4);APP.gmCreatureHead("'+id+'","Right Head",true)');
  assert.equal(cb().ap.max,3);assert.equal(cb().ap.used,3,'spent AP is capped at the new maximum');
+ run('APP.gmCreatureHead("'+id+'","Right Head",false)');assert.equal(cb().ap.max,4,'a head marked by mistake can be restored');
+ run('APP.gmCreatureHead("'+id+'","Body",true)');assert.deepEqual(cb().cs.headsOut,['Left Head'],'only head locations can be marked');
  tracker({locs:['1-10 Body 3/9','11-15 Left Head 2/4','16-20 Right Head 2/4'].join('\n')});assert.equal(cb().ap.max,3,'two heads without the trait add nothing');
 });
 test('CRTR-B10 breath costs 1 AP, needs the entry\'s recovery, and waits for it',()=>{
@@ -141,14 +146,16 @@ test('CRTR-B11 trample refuses a target above half its SIZ',()=>{
  assert.match(card(),/doubles the base Damage Modifier/);
  tracker({});assert.match(run('creatureTrampleCheck(__camp.session_state.combatants[0].creature,3)'),/doesn't have the Trample trait/);
 });
-test('CRTR-B12 venom is offered only when the hit gets through armour',()=>{
+test('CRTR-B12 venom comes only from Inject Venom, in place of damage and whatever the armour',()=>{
  const id=tracker({trait:'Trait: Venomous'});
- run('Math.random=()=>0.5;APP.gmCreatureRollLoc("'+id+'");__el["#cbtraw-'+id+'"]={value:"2"};APP.gmCreatureHit("'+id+'")');
- assert.match(note(id),/0 damage after armour\. Nothing got through: no venom/);
- run('APP.gmCreatureRollLoc("'+id+'");__el["#cbtraw-'+id+'"]={value:"5"};APP.gmCreatureHit("'+id+'")');
- assert.match(note(id),/3 damage after armour\. Through armour: Inject Venom/);
- tracker({});run('APP.gmCreatureRollLoc("'+cb().id+'");__el["#cbtraw-'+cb().id+'"]={value:"5"};APP.gmCreatureHit("'+cb().id+'")');
- assert.doesNotMatch(note(cb().id),/venom/i);
+ run('Math.random=()=>0.5;APP.gmCreatureRollLoc("'+id+'");__el["#cbtraw-'+id+'"]={value:"9"};APP.gmCreatureHit("'+id+'")');
+ assert.match(note(id),/7 damage after armour\. An ordinary hit injects no venom/,'a damaging hit does not auto-inject');
+ run('APP.gmCreatureVenom("'+id+'")');assert.match(note(id),/no attack damage; the poison is delivered whatever the armour/);
+ assert.equal(cb().hp.Forequarters.cur,-1,'Inject Venom itself does no further damage');
+ assert.equal(run('creatureVenomEligible(__camp.session_state.combatants[0].creature,true)'),true,'zero damage, armour irrelevant');
+ assert.equal(run('creatureVenomEligible(__camp.session_state.combatants[0].creature,false)'),false,'no effect chosen, no venom');
+ tracker({});assert.equal(run('creatureVenomEligible(__camp.session_state.combatants[0].creature,true)'),false,'no Venomous trait');
+ run('APP.gmCreatureVenom("'+cb().id+'")');assert.equal(note(cb().id),undefined);assert.doesNotMatch(card(),/Inject Venom/);
 });
 test('CRTR-B13 frenzy is a state with an ending, not a permanent bonus',()=>{
  const id=tracker({trait:'Trait: Frenzy'});

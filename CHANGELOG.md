@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Creature traits: head loss and Inject Venom corrected (fixes from the #225 review)
+
+ChatGPT's review of #225 (docs #226, merged with this change) found two rule errors, both fixed:
+
+- **Multi-headed (B09, Core p.216):** a head at 0 HP keeps its action. It loses it only when the GM ticks it **incapacitated or severed** (a tick per head on the card; it can be unticked). A head at 0 HP or less gets a prompt to resolve its wound.
+- **Venomous (B12, Core pp.97, 218):** an ordinary hit never injects venom, however much damage gets through. Poison comes from the **Inject Venom** special effect, chosen on a successful attack *instead of* damage, and it gets through whatever the armour. The card has an "Inject Venom chosen" button; the old "got through armour" check is gone.
+
 ## Creature combat traits in the GM Combat Tracker (CRTR-B06–B14)
 
 ChatGPT's #223 review is merged (docs #224): Core p.214 confirms INS stands in for INT. Anatomy presets (pp.276–277) wait for verified tables. The stat-block box is a transcription format, one item per line.
