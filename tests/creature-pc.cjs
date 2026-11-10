@@ -76,8 +76,25 @@ test('CRTR-B18 culture and career stay normal, and the sheet and Play Mode show 
  assert.ok(run('currentSteps().includes("Culture")&&currentSteps().includes("Career")'));
  run('S.charMode="pb";Object.assign(S.chars,{STR:11,CON:13,SIZ:13,DEX:11,INT:13,POW:11,CHA:6})');
  assert.match(run('pmCharSubtitle()'),/^Test Folk/);
- assert.match(run('pmBodyBoxHTML()'),/Test Folk body: these are human locations/);
+ assert.match(run('pmBodyBoxHTML()'),/Test Folk body: its own locations/);
  assert.match(run('creatureAnatomyTableHTML(speciesDef().locations)'),/1&ndash;3<\/td><td>Tail/);
+});
+test('CRTR-C03 Play Mode tracks a creature character\'s own locations, HP and natural armour (Core pp.218–219)',()=>{
+ use(folk(),true);
+ run('S.charMode="pb";Object.assign(S.chars,{STR:11,CON:13,SIZ:13,DEX:11,INT:13,POW:11,CHA:6});S.play=S.play||{};S.play.hp={};');
+ assert.deepEqual([...run('playHPLocs()')],['Tail','Right Leg','Left Leg','Abdomen','Chest','Right Arm','Left Arm','Head']);
+ const v=JSON.parse(run('JSON.stringify(charVitals().locs.map(l=>[l.loc,l.cur,l.max]))'));
+ assert.deepEqual(v.find(l=>l[0]==='Tail'),['Tail',5,5]);assert.deepEqual(v.find(l=>l[0]==='Chest'),['Chest',7,7]);
+ assert.equal(run('hitD20For("Tail")'),'1–3');assert.equal(run('hitD20For("Right Leg")'),'4–5');
+ assert.equal(run('playLocAP("Tail")'),2,'natural armour from the entry');
+ const box=run('pmBodyBoxHTML()');assert.match(box,/APP\.pmOpenLoc\('Tail'\)/);assert.doesNotMatch(box,/pmx-fig"/,'no human figure');
+ // Damage goes through natural armour and lands on the creature's own location.
+ run('VIEW_ONLY=false;viewOnlyBlock=()=>false;__el["#playdmg-Tail"]={value:"9"};APP.playApplyDamage("Tail")');
+ assert.equal(run('playCurHP("Tail")'),-2);assert.equal(run('playHPState("Tail").cls'),'serious');
+ assert.equal(run('S.play.hp["Tail"]'),-2,'stored under the creature\'s location name, so it saves and reloads');
+ assert.equal(run('CombatRules.isLimb("Right Leg")'),true);assert.equal(run('CombatRules.isLimb("Tail")'),false);
+ // A human character keeps the seven human boxes.
+ run('S=freshState();normalizeState();');assert.equal(run('playHPLocs().length'),7);
 });
 test('CRTR-B18 a saved creature character survives reload; a tampered one is refused',()=>{
  use(folk(),true);

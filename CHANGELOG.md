@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Creature characters track their own body; hurt while casting
+
+- **Creature characters in Play Mode (CRTR-C03):** a GM-approved creature character now has its own hit-location boxes: the entry's locations, d20 ranges, HP and natural armour, instead of the seven human ones. Damage goes through natural armour, wounds are tracked per location and saved, and the GM's combat tracker takes the same locations. A location ending in Arm or Leg counts as a limb for wound effects.
+- **Hurt while casting (D-5, Core p.119):** the Magic tab has a "Hurt while casting" choice. Minor Wound: roll Willpower, a failure makes the casting roll one grade harder. Serious Wound: one grade harder on a success, two on a failure. Major Wound or mental domination: the casting fails, with no roll. The app never guesses this from HP.
+
 ## Combat engine: Play Mode and The Pits now agree (D-CE1 to D-CE4)
 
 ChatGPT's rulings on the differences found when the combat engine was shared.

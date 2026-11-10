@@ -6,7 +6,7 @@
 |---|---|---|
 | CRTR-C01 | pp.214–215 | Creature with INS rather than INT and skill entries → use its creature competence/skill conventions in any generated opponent or imported combatant; do not quietly give human PC career percentages. Verify exact competence bands and skill formulas from Core before implementation. |
 | CRTR-C02 | pp.214–215 | Creature without a listed skill attempts a task → distinguish the creature's listed skills from the default characteristic-based chance and any species-specific competence; do not manufacture a generic fixed skill. Verify the precise default rule before coding. |
-| CRTR-C03 | pp.218–219 | GM-approved nonhuman character enters Play Mode → track damage and wounds against **its own anatomy and HP**, not the seven human location boxes; preserve hit locations on save/reload. |
+| CRTR-C03 | pp.218–219 | GM-approved nonhuman character enters Play Mode → track damage and wounds against **its own anatomy and HP**, not the seven human location boxes; preserve hit locations on save/reload. **Implemented 2026-11-10 (Claude)**, `tests/creature-pc.cjs`; the GM tracker takes the same locations when it adds the character. |
 | CRTR-C04 | pp.220–273 | Entry-specific creature ability requires resolution → build a child case and fixture for that exact ability only; retain GM-resolved text until verified. No blanket 'bestiary complete' claim. |
 
 ## Rabble / Underlings and GM procedures — verification gate

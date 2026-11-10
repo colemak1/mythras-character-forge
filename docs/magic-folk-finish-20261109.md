@@ -4,9 +4,9 @@
 
 | ID | Core page | Given → expected change |
 |---|---|---|
-| FM-F01 | p.121 | Specialist Folk Magic start with a fractional one-tenth skill allowance → round up per D-4 (35% → 4), persist through creation and reload. |
-| FM-F02 | pp.118–119 | Casting is interrupted by a Minor/Serious/Major Wound or mental domination → provide the GM-prompted interruption choices and apply D-5's Willpower/difficulty/failure results; never infer timing from HP alone. |
-| FM-F03 | pp.49–50, 118–119 | A casting grade changes a fractional skill threshold → use the same project-wide rounding decision as D-CE2 and test a boundary roll. |
+| FM-F01 | p.121 | Specialist Folk Magic start with a fractional one-tenth skill allowance → round up per D-4 (35% → 4), persist through creation and reload. **Already built (D-4).** |
+| FM-F02 | pp.118–119 | Casting is interrupted by a Minor/Serious/Major Wound or mental domination → provide the GM-prompted interruption choices and apply D-5's Willpower/difficulty/failure results; never infer timing from HP alone. **Implemented 2026-11-10 (Claude)**, `tests/magic-casting-hurt.cjs`. |
+| FM-F03 | pp.49–50, 118–119 | A casting grade changes a fractional skill threshold → use the same project-wide rounding decision as D-CE2 and test a boundary roll. **Implemented 2026-11-10 (Claude)** with D-CE2 (80% at Hard is 54). |
 
 **Intentionally excluded by owner:** automatic MP recovery (D-2), active Folk Magic spell-effect tracking (D-3), and inventing spell-specific automatic outcomes. The catalogue's 70 choices and Beastcall example already have scoped live evidence; do not rewrite them.
 

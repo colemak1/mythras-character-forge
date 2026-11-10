@@ -97,9 +97,11 @@ function combatantFromPc(charId,init,id){
   const row=(BOARD_CHARS||[]).find(c=>c.id===charId);
   const v=row?charVitals(row.state):null;
   const hp={};
-  COMBAT_DEFAULT_LOCS.forEach(loc=>{hp[loc]={cur:v?(v.locs.find(l=>l.loc===loc)?.cur??10):10,max:v?(v.locs.find(l=>l.loc===loc)?.max??10):10};});
+  // A creature character brings its own locations (CRTR-C03).
+  const locations=v?v.locs.map(l=>l.loc):COMBAT_DEFAULT_LOCS.slice();
+  locations.forEach(loc=>{hp[loc]={cur:v?(v.locs.find(l=>l.loc===loc)?.cur??10):10,max:v?(v.locs.find(l=>l.loc===loc)?.max??10):10};});
   return {id:id||genId(),kind:"pc",ref:charId,name:row?row.name:"(removed character)",init:init||0,
-    ap:{max:v?v.maxAP:2,used:v?v.apUsed:0},locations:COMBAT_DEFAULT_LOCS.slice(),hp,effects:[],stat1:"",stat2:""};
+    ap:{max:v?v.maxAP:2,used:v?v.apUsed:0},locations,hp,effects:[],stat1:"",stat2:""};
 }
 function combatantFromNpc(name,init,id){
   const hp={};

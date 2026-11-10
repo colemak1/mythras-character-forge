@@ -91,6 +91,17 @@ function hpLocsFinal(CON,SIZ){const base=hpLocs(CON,SIZ);if(!hasAdv("hp"))return
 function shiftGradeEasier(g,n){const i=GRADE_ORDER.indexOf(g);return i===0?g:GRADE_ORDER[Math.max(1,i-(n==null?1:n))];}
 // Shifting harder can reach Hopeless (the step past Herculean) but never
 // wraps round to Automatic, mirroring shiftGradeEasier's floor at Very Easy.
+// D-5, Core p.119: what being hurt while casting does to the casting roll.
+// Minor Wound: Willpower, failure one grade harder. Serious Wound: Willpower,
+// success one grade harder, failure two. Major Wound or mental domination:
+// the casting fails. Returns {fails}, {extra} or {pending} (no Willpower yet).
+function castingHurtEffect(hurt){
+  if(!hurt||!hurt.kind)return {extra:0};
+  if(hurt.kind==="major"||hurt.kind==="domination")return {fails:true};
+  if(hurt.willpower!=="success"&&hurt.willpower!=="failure")return {pending:true};
+  if(hurt.kind==="minor")return {extra:hurt.willpower==="failure"?1:0};
+  return {extra:hurt.willpower==="failure"?2:1};
+}
 function shiftGradeHarder(g,n){const i=GRADE_ORDER.indexOf(g);return GRADE_ORDER[Math.min(GRADE_ORDER.length-1,i+(n==null?1:n))];}
 const gradeHardness=g=>GRADE_ORDER.indexOf(g);
 
@@ -339,7 +350,7 @@ function freshState(){return {
  // start at null, meaning "at max" — they're only written once the player
  // actually spends/takes damage, so a freshly-finished character always
  // shows full without needing an extra initialization step.
- play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"skills",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null,initiative:null,surprised:false,pinned:[]},
+ play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"skills",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null,castingHurt:null,initiative:null,surprised:false,pinned:[]},
  // Experience Rolls (core rulebook pp.71-73, cross-checked against the
  // Mythras Core pp.71–72, checked against the uploaded rulebook — see audit for
  // citations). pool = banked, unspent Experience Rolls. fumbled = skill
@@ -481,6 +492,10 @@ function normalizeState(){
       S.play.sorceryCasting.completed<1 ||
       S.play.sorceryCasting.total<2 ||
       S.play.sorceryCasting.completed>=S.play.sorceryCasting.total))S.play.sorceryCasting=null;
+  // D-5: a "hurt while casting" mark is only kept in a valid shape.
+  const hc=S.play.castingHurt;
+  if(hc!=null&&!(hc&&typeof hc==="object"&&["minor","serious","major","domination"].includes(hc.kind)&&
+    [null,"success","failure"].includes(hc.willpower??null)))S.play.castingHurt=null;
   const mc=S.play.mysticismCasting;
   if(mc && (!Number.isInteger(mc.index)||mc.index<0||!Number.isInteger(mc.completed)||!Number.isInteger(mc.total)||mc.completed<1||mc.total<2||mc.completed>=mc.total||typeof mc.signature!=="string"))S.play.mysticismCasting=null;
   const tc=S.play.theismCasting;

@@ -294,6 +294,11 @@ window.APP={
  // point), Fumble costs 1d3. The other traditions use the entry's own
  // recorded cost where specific failure tables are unverified; Sorcery
  // specifically uses the Core Invocation cost table on p.165.
+ // D-5: mark (or clear) being hurt while a spell is being cast.
+ castingHurtSet(kind){if(viewOnlyBlock())return;
+   S.play.castingHurt=["minor","serious","major","domination"].includes(kind)?{kind,willpower:null}:null;render();},
+ castingHurtWillpower(result){if(viewOnlyBlock()||!S.play.castingHurt)return;
+   if(["minor","serious"].includes(S.play.castingHurt.kind))S.play.castingHurt.willpower=["success","failure"].includes(result)?result:null;render();},
  castMagic(idx){
    if(viewOnlyBlock())return;
    PM_MSG=null;
@@ -364,8 +369,21 @@ window.APP={
    if(blocking){PM_MSG=blocking;render();return;}
    const key=m.tradition==="sorcery"?sorceryRollKey(m):m.tradition==="theism"?exhortKeyForPool(poolIdx):magicSkillKey(trad.castSkill);
    if(!key){PM_MSG="This character doesn't have the "+trad.castSkill+" skill, so there's nothing to roll. Add it as a Professional Skill first.";render();return;}
-   const base=finalPct(key);let g=gradedPct(key,base);
-   if(m.tradition==="sorcery" && sorceryCost(m).combinedSpells)g=sorceryInvocationGrade(key,base,sorceryCost(m).combinedSpells);
+   // D-5 (Core p.119): hurt while casting, as marked by the player or GM.
+   const hurt=castingHurtEffect(S.play.castingHurt);
+   if(hurt.pending){PM_MSG="Hurt while casting: record the Willpower result before the casting roll (Core p.119).";render();return;}
+   if(hurt.fails){
+     const what=S.play.castingHurt.kind==="major"?"a Major Wound":"mental domination";
+     if(m.tradition==="sorcery")S.play.sorceryCasting=null;
+     if(m.tradition==="mysticism")S.play.mysticismCasting=null;
+     if(m.tradition==="theism")S.play.theismCasting=null;
+     S.play.castingHurt=null;
+     S.rollLog.unshift({label:magicLabel(m)+" — interrupted",pct:0,roll:"—",tier:"Failure",combat:false,oppTier:null,
+       magic:"failed: "+what+" while casting (Core p.119); no roll, nothing spent automatically"});
+     S.rollLog=S.rollLog.slice(0,8);PM_MSG="The casting fails because of "+what+" (Core p.119). Ask the GM about any cost.";render();return;
+   }
+   const extra=hurt.extra+(m.tradition==="sorcery"?(sorceryCost(m).combinedSpells||0):0);
+   const base=finalPct(key);let g=extra?sorceryInvocationGrade(key,base,extra):gradedPct(key,base);
    if(g.pct===null){PM_MSG=g.grade==="automatic"?"Automatic — the magic simply works.":"Hopeless — no casting can be attempted at this Grade.";render();return;}
    const r=d100();const tier=resolveRoll(r,g.pct);
    if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
@@ -400,6 +418,7 @@ window.APP={
    if(m.tradition==="sorcery")S.play.sorceryCasting=null;
    if(m.tradition==="mysticism")S.play.mysticismCasting=null;
    if(m.tradition==="theism")S.play.theismCasting=null;
+   S.play.castingHurt=null;
    S.rollLog.unshift({label:magicLabel(m)+" — "+trad.castSkill+tag,pct:g.pct,
      roll:r===100?"00":r,tier,combat:false,oppTier:null,
      magic:(worked?"cast":"failed")+", "+costTxt});
@@ -1171,7 +1190,7 @@ window.APP={
  // rather than just silently updating the HP number.
  playApplyDamage(loc){if(viewOnlyBlock())return;const el=$("#playdmg-"+loc.replace(/\s+/g,"_"));const raw=el?Number(el.value):NaN;
    if(!Number.isSafeInteger(raw)||raw<=0)return;
-   const ap=armorApAt(loc);
+   const ap=playLocAP(loc);
    const applied=Math.max(0,raw-ap);
    // Preserve all damage below the Major Wound threshold (Core p.110).
    S.play.hp[loc]=playCurHP(loc)-applied;
@@ -1205,19 +1224,19 @@ window.APP={
    S.play.hp[loc]=current+gain;
    PM_MSG="After one "+info.interval+", "+loc+" recovers "+gain+" HP. Recheck the wound before another interval.";render();},
  playFatigueCause(cause){if(viewOnlyBlock()||!["","exertion","blood","asphyxiation"].includes(cause))return;S.play.fatigueCause=cause;render();},
- playSetMaxHP(loc,raw,confirmed){if(viewOnlyBlock()||!confirmed||!PLAY_HP_LOCS.includes(loc))return;
+ playSetMaxHP(loc,raw,confirmed){if(viewOnlyBlock()||!confirmed||!playHPLocs().includes(loc))return;
    const text=String(raw).trim(),n=Number(text),base=playStateHPMax(S).find(x=>x[0]===(PLAY_LIMB_BASE[loc]||loc))?.[1];
    if(!/^\d+$/.test(text)||!Number.isSafeInteger(n)||n<1||n>base){PM_MSG="Enter a whole-number maximum between 1 and the calculated maximum ("+base+").";render();return;}
    S.play.hpMaxOverride=S.play.hpMaxOverride||{};S.play.hpMaxOverride[loc]=n;
    PM_MSG=loc+" maximum set to "+n+" HP. The original wound and incident records are preserved.";render();},
- playClearMaxHP(loc,confirmed){if(viewOnlyBlock()||!confirmed||!PLAY_HP_LOCS.includes(loc))return;
+ playClearMaxHP(loc,confirmed){if(viewOnlyBlock()||!confirmed||!playHPLocs().includes(loc))return;
    if(S.play.hpMaxOverride)delete S.play.hpMaxOverride[loc];PM_MSG=loc+" maximum restored to its calculated value.";render();},
  playSetHP(loc,v){if(viewOnlyBlock())return;S.play.hp[loc]=playValidHP(v,playMaxHP(loc));render();},
  // Fixed-amount direct HP adjustment (−1/−3), deliberately bypassing armour
  // entirely -- for damage that was never subject to AP in the first place
  // (poison, fire, GM fiat), not a shortcut for a
  // weapon hit. See the "Ignores armour" row in pmLocDetail.
- playQuickDamage(loc,n){if(viewOnlyBlock()||!PLAY_HP_LOCS.includes(loc)||!Number.isSafeInteger(n)||n<=0)return;S.play.hp[loc]=playCurHP(loc)-n;render();},
+ playQuickDamage(loc,n){if(viewOnlyBlock()||!playHPLocs().includes(loc)||!Number.isSafeInteger(n)||n<=0)return;S.play.hp[loc]=playCurHP(loc)-n;render();},
  // Selecting a location just opens the detail panel — read-only navigation,
  // always allowed even in a VIEW_ONLY session. Clears any damage-math note
  // left over from a different location so it can never show under the
@@ -1260,7 +1279,7 @@ window.APP={
      // Core p.80: natural healing restores the Healing Rate once per interval,
      // which is a day only for Minor Wounds; Serious takes a week, Major a month after treatment.
      const healed=[],waiting=[];
-     for(const loc of PLAY_HP_LOCS){const info=naturalRecoveryInfo(loc);if(!info)continue;
+     for(const loc of playHPLocs()){const info=naturalRecoveryInfo(loc);if(!info)continue;
        if(info.interval==="day"&&info.rate>0){const cur=playCurHP(loc),gain=Math.min(playMaxHP(loc)-cur,info.rate);S.play.hp[loc]=cur+gain;healed.push(loc+" +"+gain);}
        else waiting.push(loc+" ("+(info.cls==="serious"?"Serious: heals per week":"Major: needs treatment, then heals per month")+")");}
      PM_MSG=(healed.length?"One day of rest: "+healed.join(", ")+" HP.":"One day of rest: no Minor Wounds to heal.")+(waiting.length?" Not healed by a day: "+waiting.join("; ")+". Use the location panel for those.":"");
@@ -1320,7 +1339,7 @@ window.APP={
  pmSkillInfo(key){if(!allEntries().some(e=>e.key===key))return;PM_POPUP={k:"skill",key:String(key)};render();},
  pmPopup(k,i){PM_POPUP={k:String(k),i:Number.isInteger(i)?i:null};render();},
  pmPopupClose(){PM_POPUP=null;render();},
- pmOpenLoc(loc){if(!PLAY_HP_LOCS.includes(loc))return;S.play.selectedLoc=loc;PM_DMG_NOTE=null;PM_POPUP={k:"loc"};render();},
+ pmOpenLoc(loc){if(!playHPLocs().includes(loc))return;S.play.selectedLoc=loc;PM_DMG_NOTE=null;PM_POPUP={k:"loc"};render();},
  playTogglePin(key){if(viewOnlyBlock())return;if(typeof key!=="string"||!entryMap()[key])return;
    const p=S.play.pinned||(S.play.pinned=[]),i=p.indexOf(key);if(i>=0)p.splice(i,1);else if(p.length<30)p.push(key);render();},
  // Keep the next step of a combat roll visible after the sheet redraws.
