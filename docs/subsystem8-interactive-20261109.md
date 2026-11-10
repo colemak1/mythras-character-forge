@@ -19,3 +19,11 @@ D-S5: CI database permission tests are accepted evidence for direct-access steps
 | #259 site-admin default painting | BLOCKED — signed out | Admin types quote/attribution, selects Use the default painting, verifies draft retained, Saves and reloads to confirm persistence. |
 
 Result: 0 new live passes, 0 observed failures, 9 authentication blockers. Interactive browser capability is established; the earlier read-only limitation in PR #262 does not apply to this Work attempt. No app data, fixtures, site quote or painting changed. No secrets or emails recorded. Resume in this browser after sign-in; use disposable accounts/fixtures and remove fixtures after execution. Subsystem 8 remains OPEN; progress stays **5/8**.
+
+## Internal-browser continuation
+
+Owner requested the internal browser. Opened Forge in Work's cloud Chrome and used the secure credential form. Sign-in was submitted and fresh Account UI positively showed **Test Account D** and **Signed in and synced**. No credential values were exposed to the assistant or recorded here.
+
+Partial observations: D's Campaign page showed **No campaigns yet**, with New campaign and Join controls. D's Account page showed profile, settings and Advanced / Backup, with no site-admin panel. These do not establish full outsider privacy against a known campaign or the #259 admin regression.
+
+Signed D out to switch to the disposable GM account. The next secure credential request was declined; respected that response and stopped sign-in. Internal Account tab retained for continuation. No campaigns, characters, quote or painting changed. All nine requested scenarios remain BLOCKED/incomplete, with the partial signed-in observations above; no new full acceptance passes or observed app failures. Progress **5/8**.
