@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/roadmap-8of8.
 
-_Last updated: 2026-11-10 by Claude (#265 reviewed; Subsystem 8 recovery contract proposed, D-S6 open)_
+_Last updated: 2026-11-10 by Claude (#265 reviewed; Subsystem 8 recovery contract; owner chose D-S6 option B)_
 
 ## Where things stand
 
@@ -24,7 +24,7 @@ _Last updated: 2026-11-10 by Claude (#265 reviewed; Subsystem 8 recovery contrac
 
 ## Next
 
-- **Owner, decide D-S6 (Subsystem 8 recovery):** `docs/subsystem8-recovery-contract.md`. The campaign backup downloads, but nothing in the app restores it. A = archive only (plus pick-one-character import from it); **B = "Restore campaign from backup" creates a new campaign, never overwrites (Claude recommends)**; C = in-place rollback (not recommended). Then Claude builds it with a round-trip test, and Work runs one live round trip and reads (no changes) which Supabase backups the plan provides. Blockers unchanged: independent-account inventory races BLOCKED; profiles, phone/routes, other races and the full case reconciliation open. Progress 5/8.
+- **Claude (next, fresh session): build D-S6 option B** (owner, 2026-11-10; `docs/subsystem8-recovery-contract.md`): "Restore campaign from backup" makes a new campaign (never overwrites), with a preview and validation, and character import can pick one character from a campaign file; round-trip test. Then **ChatGPT (Work)**: one live round trip, and read (no changes) which Supabase backups the plan provides. Blockers unchanged: independent-account inventory races BLOCKED; profiles, phone/routes, other races and the full case reconciliation open. Progress 5/8.
 
 - **ChatGPT (Work), 2026-11-09 remainder:** `docs/subsystem8-remaining-live-20261109.md`: PASS app outsider board/editor/Play denial, populated GM-note/tracker persistence and visibility, populated GM transfer, non-Reveal notice/dismissal/reload, populated backup (private state + homebrew). Pages deployment 7674253474 succeeded at 0f83da745f026089406ec8106986a859414edf8b; live key asset stamps matched. Campaign restore control not found: recovery UNACCEPTED. Concurrent independent-account inventory races remain BLOCKED; profile/phone/routes/case reconciliation retain review limits. Fixtures cleaned, signed out, tests passed. Progress 5/8. **Next: ChatGPT (Chat)** reconcile new scoped evidence; Claude handles recovery contract/implementation.
 

@@ -17,6 +17,8 @@ So the backup is a complete **archive**, but there is no in-app way back from it
 
 ## Contract options (owner decision D-S6)
 
+**Owner decided 2026-11-10: option B.** Not yet built; acceptance needs Claude's round-trip test and one Work live round trip.
+
 **A. Archive only.** Document that the campaign backup is a read-only archive. Recovery means: players keep their own characters in their accounts; a lost character is rebuilt by importing a single-character file; campaign rules, GM notes, tracker and homebrew are re-entered by hand from the file. Small code change: character import accepts a campaign backup and lets you pick one character from it (fixes the wrong comment). Work then tests that pick-and-import round trip.
 
 **B. Restore as a new campaign (recommended).** Everything in A, plus a GM control "Restore campaign from backup":
