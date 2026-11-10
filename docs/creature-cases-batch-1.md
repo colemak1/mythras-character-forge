@@ -140,7 +140,7 @@ Tests in `tests/creature-pc.cjs`. Not live-checked. Progress stays **5/8**.
 
 ## PR #230 follow-ups (Claude, 2026-11-10)
 
-PR #230's review (older than the source check above) asked for two fixes. Its text is folded in here, and the PR closed.
+PR #230's review (older than the source check above) asked for two fixes. Its text is folded in here; the PR can be closed.
 
 - **B15 Vulnerable:** #230 reads Core p.218 as natural (and magical) protection only, not worn armour. Built that way now: the listed source skips natural armour; worn armour still counts. The earlier Claude source check paraphrased it as "protection", which doesn't settle this. **Chat: confirm against p.218 in one line;** magical protection isn't tracked on the card.
 - **B17 Intimidate:** a Critical now covers the creature and its brethren (tracker creatures with the same name, not other species); "stopped threatening" ends the fear outcomes while Critical immunity lasts the encounter (Core p.216; the same wording is in the Street Mob formation trait in `js/data.js`).
