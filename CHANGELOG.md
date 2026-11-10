@@ -5,6 +5,20 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Creature characters track their own body; hurt while casting
+
+- **Creature characters in Play Mode (CRTR-C03):** a GM-approved creature character now has its own hit-location boxes: the entry's locations, d20 ranges, HP and natural armour, instead of the seven human ones. Damage goes through natural armour, wounds are tracked per location and saved, and the GM's combat tracker takes the same locations. A location ending in Arm or Leg counts as a limb for wound effects.
+- **Hurt while casting (D-5, Core p.119):** the Magic tab has a "Hurt while casting" choice. Minor Wound: roll Willpower, a failure makes the casting roll one grade harder. Serious Wound: one grade harder on a success, two on a failure. Major Wound or mental domination: the casting fails, with no roll. The app never guesses this from HP.
+
+## Combat engine: Play Mode and The Pits now agree (D-CE1 to D-CE4)
+
+ChatGPT's rulings on the differences found when the combat engine was shared.
+
+- **Failure against Fumble wins one Special Effect** in Play Mode too, as it already did in The Pits (Core p.94). The contested roll calculator for non-combat contests is unchanged: two failed rolls gain nothing (Core p.51).
+- **Difficulty grades round up** in Play Mode, as in The Pits (D-4): 65% at Hard is 44%, 80% is 54%. This covers skill rolls, spell casting and unfamiliar weapons.
+- **Names:** The Pits says "Wearied" (the Fatigue table's name). Play Mode's effect is "Weapon Malfunction", still firearms only; older saved roll logs are renamed when loaded.
+- Bypass Armour stays as it was: stackable in Play Mode, once per exchange in The Pits (one armour layer).
+
 ## One shared combat rules engine
 
 Nothing you can see changes. The Pits and Play Mode now work their combat numbers out with the same code, so a rule fixed once is fixed in both.

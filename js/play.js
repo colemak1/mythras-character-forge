@@ -21,6 +21,30 @@ let PM_DMG_NOTE=null;
 // (hpLocsFinal/luckFinal/c.POW) so Play Mode can never drift from the
 // character-gen numbers — only S.play holds anything new.
 const PLAY_HP_LOCS=CombatRules.HUMAN_LOCATION_ORDER;
+// CRTR-C03 (Core pp.218–219): a GM-approved creature character tracks its own
+// locations, names and HP from its entry, instead of the seven human boxes.
+function playCreatureLocs(state){
+  const sp=speciesOf(state||S);
+  return sp&&sp.creature&&Array.isArray(sp.locations)&&sp.locations.length?sp.locations:null;
+}
+function playHPLocs(state){
+  const locs=playCreatureLocs(state);
+  return locs?[...new Set(locs.map(l=>l.name))]:PLAY_HP_LOCS;
+}
+// Armour on one of this character's locations. A creature has its entry's
+// natural armour, plus worn armour only on a location with a human name.
+function playLocAP(loc){
+  const locs=playCreatureLocs();
+  if(!locs)return armorApAt(loc);
+  const row=locs.find(l=>l.name===loc);
+  return (row?Number(row.natural)||0:0)+(PLAY_HP_LOCS.includes(loc)?armorApAt(loc):0);
+}
+function playLocArmourName(loc){
+  const locs=playCreatureLocs();
+  if(!locs||PLAY_HP_LOCS.includes(loc))return armorDisplayName(loc);
+  const row=locs.find(l=>l.name===loc);
+  return "Natural armour "+(row?Number(row.natural)||0:0);
+}
 // The core Hit Locations table (pp.9-10) gives one shared max-HP value for
 // "Each Arm" and "Each Leg" — both arms have the same max, both legs have
 // the same max. But current HP lost to a hit is per-side (a wound to the
@@ -39,7 +63,9 @@ const PLAY_LIMB_BASE={"Right Arm":"Each Arm","Left Arm":"Each Arm","Right Leg":"
 // not whichever character the GM currently has open in the editor.
 function playStateHasAdv(state,id){return state.archetype!=="ordinary"&&Array.isArray(state.archAdvantages)&&state.archAdvantages.includes(id);}
 function playStateHPMax(state){
-  const base=hpLocs(effectiveChars(state).CON,effectiveChars(state).SIZ);
+  const creature=playCreatureLocs(state);
+  const base=creature?playHPLocs(state).map(n=>[n,Math.max(1,Number(creature.find(l=>l.name===n).hp)||1)])
+    :hpLocs(effectiveChars(state).CON,effectiveChars(state).SIZ);
   return playStateHasAdv(state,"hp")?base.map(([name,hp])=>[name,hp+(state.archetype==="paragon"?2:1)]):base;
 }
 function playStateLuckMax(state){
@@ -61,7 +87,7 @@ const PLAY_WOUND_TAGS={ok:"OK",minor:"Minor Wound",serious:"Serious Wound",major
 function charVitals(state){
   state=state||S;
   const c=effectiveChars(state);
-  const locs=PLAY_HP_LOCS.map(loc=>{
+  const locs=playHPLocs(state).map(loc=>{
     const key=PLAY_LIMB_BASE[loc]||loc;
     const row=playStateHPMax(state).find(x=>x[0]===key);
     const baseMax=row?row[1]:0, recorded=state.play.hpMaxOverride?.[loc];
@@ -119,7 +145,7 @@ const PLAY_LIMB_LOCS=["Right Arm","Left Arm","Right Leg","Left Leg"];
 // never has to go dig through the rulebook mid-fight to know what a wound
 // tag actually does to them.
 function playWoundEffectText(loc,cls){
-  const isLimb=PLAY_LIMB_LOCS.includes(loc);
+  const isLimb=CombatRules.isLimb(loc);
   if(cls==="ok")return "Undamaged — no mechanical penalty.";
   if(cls==="minor")return "Minor Wound: no mechanical penalty, but the location is damaged — a follow-up hit here has less HP to work through before it becomes a Serious Wound.";
   if(cls==="serious"){
@@ -139,7 +165,7 @@ function playWoundEffectText(loc,cls){
 // These checks are *not* resolved by HP arithmetic; record the opposed
 // Endurance roll, incapacitation and first aid at the table.
 function playWoundActionText(loc,cls){
-  const limb=PLAY_LIMB_LOCS.includes(loc);
+  const limb=CombatRules.isLimb(loc);
   if(cls==="serious")return limb
     ? "GM check: Opposed Endurance versus the attack roll. On failure the limb becomes useless; for a leg fall prone, for an arm drop held items."
     : "GM check: Opposed Endurance versus the attack roll. On failure lose consciousness for minutes equal to the damage from this attack; no rejoining the fight until the location heals, even if revived.";
@@ -184,7 +210,10 @@ function naturalRecoveryInfo(loc){
   return {cls,interval:cls==="minor"?"day":cls==="serious"?"week":"month",rate:charsReady()?healRate(effectiveChars().CON):0};
 }
 function gradedPassivePct(key){const g=gradedPct(key,finalPct(key));return g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%";}
-function hitD20For(loc){const e=HIT_D20.find(x=>x[1]===loc);return e?e[0].replace("-","–"):"—";}
+function hitD20For(loc){
+  const locs=playCreatureLocs();
+  if(locs){const rows=locs.filter(l=>l.name===loc);return rows.length?rows.map(l=>l.lo===l.hi?String(l.lo):l.lo+"–"+l.hi).join(", "):"—";}
+  const e=HIT_D20.find(x=>x[1]===loc);return e?e[0].replace("-","–"):"—";}
 // ---- Vitals & Armour body diagram: colour ramp for the 7-zone figure and
 // per-location dot. Uses the SAME wound-tier boundaries as playHPState()
 // (>0 ok, <=0 & >-max serious, <=-max major) for the two "hurt" states that
@@ -257,14 +286,14 @@ function pmBodySvg(){
 }
 function pmLocRow(loc){
   const cur=playCurHP(loc),max=playMaxHP(loc),st=playHPState(loc).cls;
-  const ap=armorApAt(loc);
+  const ap=playLocAP(loc);
   const sel=S.play.selectedLoc===loc;
   return '<div class="pm-locrow st-'+st+(sel?' sel':'')+'" onclick="APP.pmOpenLoc(\''+loc+'\')" onkeydown="if(event.key===\'Enter\'){APP.pmOpenLoc(\''+loc+'\')}" role="button" tabindex="0" aria-label="'+loc+', '+cur+' of '+max+' hit points, armour '+ap+', '+PM_WOUND_WORD[st]+'">'
    +'<span class="nm">'+pmShortName(loc)+' <small>'+hitD20For(loc)+'</small></span>'
    +'<span class="pmx-wd '+st+'">'+PM_WOUND_WORD[st]+'</span>'
    +'<span class="pmx-hpline"><span class="pmx-hpbar" aria-hidden="true"><i style="width:'+(max>0?Math.max(0,Math.min(100,Math.round(cur/max*100))):0)+'%"></i></span>'
    +'<span class="hp">'+cur+'<span>/'+max+'</span></span></span>'
-   +'<span class="ap" title="AP '+ap+' — '+esc(armorDisplayName(loc))+'">'+PM_SHIELD_SVG+ap+'</span></div>';
+   +'<span class="ap" title="AP '+ap+' — '+esc(playLocArmourName(loc))+'">'+PM_SHIELD_SVG+ap+'</span></div>';
 }
 // Redesigned damage entry (was a flat row of −1/−3/amount-input/−dmg/+heal/
 // full buttons, all doing raw HP arithmetic with no armour involved at all
@@ -285,7 +314,7 @@ function pmWoundEvents(loc){
   const hr=charsReady()?healRate(effectiveChars().CON):0;
   return '<div class="pm-notes"><h4>Recorded wound incidents</h4><p>Resolve opposed rolls and timing at the table. Recording an incident does not apply conditions automatically.</p>'
    +events.map(({e,i})=>{
-     const limb=PLAY_LIMB_LOCS.includes(loc),serious=e.severity==="serious";
+     const limb=CombatRules.isLimb(loc),serious=e.severity==="serious";
      const consequence=serious?(limb?"On a failed check: limb unusable until HP is positive; legs cause a fall, arms drop held items unless strapped.":"On a failed check: unconscious for "+(Number.isSafeInteger(e.damage)?e.damage:"the attack’s damage")+" minutes."):(limb?"Incapacitated and prone; a failed check causes unconsciousness. For a severed, punctured or ripped-off limb, treatment is needed within "+(5*hr)+" minutes.":"Unconscious and incapacitated; a failed check causes death. If successful, treatment is needed within "+(2*hr)+" combat rounds.");
      return '<details class="pm-fx-item"><summary>'+esc(serious?"Serious":"Major")+' wound · '+esc(String(e.damage))+ ' damage · '+(e.resolved?'resolved':'open')+'</summary><p>'+esc(consequence)+'</p>'
       +'<label>Opposed Endurance outcome <select '+(e.resolved?'disabled':'')+' onchange="APP.woundEventUpdate('+i+',\'outcome\',this.value)">'+[["pending","Pending"],["success","Succeeded"],["failure","Failed"]].map(([v,label])=>'<option value="'+v+'" '+(e.outcome===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'
@@ -316,12 +345,12 @@ function pmLocDetail(){
   const loc=S.play.selectedLoc;
   if(!loc)return '<div class="pm-locdetail"><p class="pm-empty">Tap a location to record damage or healing.</p></div>';
   const cur=playCurHP(loc),max=playMaxHP(loc),st=playHPState(loc);
-  const armLoc=loc,ap=armorApAt(armLoc);
+  const armLoc=loc,ap=playLocAP(armLoc);
   const idv="playdmg-"+loc.replace(/\s+/g,"_");
   const note=PM_DMG_NOTE&&PM_DMG_NOTE.loc===loc?PM_DMG_NOTE:null, recovery=naturalRecoveryInfo(loc);
   return '<div class="pm-locdetail">'
    +'<div class="dt"><b>'+esc(loc)+'</b><span class="d20">d20: '+hitD20For(loc)+'</span></div>'
-   +'<div class="arm">'+esc(armorDisplayName(armLoc))+' &mdash; AP '+ap+'</div>'
+   +'<div class="arm">'+esc(playLocArmourName(armLoc))+' &mdash; AP '+ap+'</div>'
    +'<details class="pm-fx-item"><summary>Permanent injury: location maximum</summary><p>After GM adjudication, enter the location’s reduced maximum HP (Core p.80). Wound thresholds use the reduced maximum. This does not determine the injury, alter hit-location rolls, or automatically treat the wound.</p>'
    +(()=>{const base=playStateHPMax(S).find(x=>x[0]===(PLAY_LIMB_BASE[loc]||loc))?.[1];if(!base)return'';
      return '<p class="pm-notes">Permanent Injury table (1d3; HP lost rounded up): '+[1,2,3].map(r=>'<button type="button" class="pm-btn sm" onclick="document.getElementById(\'injuryMax\').value='+maimedMaxHP(base,r)+'">'+r+' → '+maimedMaxHP(base,r)+' HP</button>').join(' ')+' from '+base+' HP. Pick the result, then confirm and set.</p>';})()+'<label>Maximum HP <input type="number" id="injuryMax" min="1" value="'+max+'" style="width:65px"></label> <label><input type="checkbox" id="injuryConfirm"> GM confirms this adjustment</label> <button type="button" class="pm-btn sm" onclick="APP.playSetMaxHP(\''+loc+'\',document.getElementById(\'injuryMax\').value,document.getElementById(\'injuryConfirm\').checked)">Set maximum</button> <button type="button" class="pm-btn sm" onclick="APP.playClearMaxHP(\''+loc+'\',document.getElementById(\'injuryConfirm\').checked)">Restore calculated maximum</button></details>'
@@ -353,21 +382,21 @@ function pmLocDetail(){
 // wound on the sheet right now (or OK if nothing's hurt).
 function pmStandingText(){
   const worstRank={ok:0,minor:1,serious:2,major:3};
-  const worst=PLAY_HP_LOCS.reduce((w,l)=>{const st=playHPState(l).cls;return worstRank[st]>worstRank[w]?st:w;},"ok");
+  const worst=playHPLocs().reduce((w,l)=>{const st=playHPState(l).cls;return worstRank[st]>worstRank[w]?st:w;},"ok");
   if(worst==="ok")return "STANDING: OK";
-  const worstLoc=PLAY_HP_LOCS.find(l=>playHPState(l).cls===worst);
+  const worstLoc=playHPLocs().find(l=>playHPState(l).cls===worst);
   const label=worst==="major"?"MAJOR WOUND":worst==="serious"?"WOUNDED":"MINOR WOUND";
   return "STANDING: "+label+" &mdash; "+pmShortName(worstLoc).toUpperCase().replace(/\s+/g,"");
 }
 // A compact incident overview, derived only from saved events and explicit
 // outcomes. Timing and treatment remain player/GM decisions (Core p.110).
 function pmWoundOverview(){
-  const events=(S.play.woundEvents||[]).filter(e=>e&&!e.resolved&&PLAY_HP_LOCS.includes(e.loc));
+  const events=(S.play.woundEvents||[]).filter(e=>e&&!e.resolved&&playHPLocs().includes(e.loc));
   if(!events.length)return "";
   const hr=charsReady()?healRate(effectiveChars().CON):0;
   return '<div class="pm-fx-selection"><b>Wound watch · '+events.length+' open</b><span>Track turns and treatment at the table. Select a location to update an incident.</span>'
     +events.map(e=>{
-      const limb=PLAY_LIMB_LOCS.includes(e.loc),major=e.severity==="major";
+      const limb=CombatRules.isLimb(e.loc),major=e.severity==="major";
       const outcome=e.outcome==="success"?"Endurance succeeded":e.outcome==="failure"?"Endurance failed":"Endurance check pending";
       let reminder=major?(e.treated?"Treatment recorded; GM resolves recovery.":limb?"Treatment deadline may be "+(5*hr)+" minutes, depending on injury.":"If the check succeeds, treatment deadline is "+(2*hr)+" combat rounds.")
        :e.outcome==="failure"?(limb?(playCurHP(e.loc)>0?"Location now has positive HP; GM resolves limb status.":"Limb unusable until positive HP."):"Unconsciousness duration: "+e.damage+" minutes; GM tracks elapsed time."):"Check interruption and outcome.";
@@ -512,7 +541,7 @@ function contestedRollResult(skillA,rollA,skillB,rollB){
   else if(rank[tierA]!==rank[tierB])opposed=rank[tierA]>rank[tierB]?"First participant wins.":"Second participant wins.";
   else if(rollA===rollB)opposed="Equal successful rolls: ask the GM to adjudicate the tie.";
   else opposed=rollA>rollB?"First participant wins (higher successful roll).":"Second participant wins (higher successful roll).";
-  return {reduction,a,b,tierA,tierB,opposed,differential:playEffectsWon(tierA,tierB)};
+  return {reduction,a,b,tierA,tierB,opposed,differential:CombatRules.contestLevels(tierA,tierB)};
 }
 function pmCalculateContest(form){
   const values=["skillA","rollA","skillB","rollB"].map(n=>form.elements[n].value.trim());
@@ -577,7 +606,7 @@ function isFirearm(w){return !!w&&(w.firearm===true||/\b(arquebus|musket|pistol|
 function weaponAllowsEffect(effect,w){
   const req=effect&&effect[3];
   if(!req||!w)return true;
-  if(effect[0]==="Weapon Malfunction (Firearms)")return isFirearm(w);
+  if(effect[0]==="Weapon Malfunction")return isFirearm(w);
   if(WEAPON_LISTED_EFFECTS.has(effect[0]))return String(w.effects||"").split(/,\s*/).includes(effect[0]);
   if(req==="Ranged Weapons")return w.group==="Ranged";
   if(req==="Unarmed")return w.group==="Unarmed";
@@ -597,10 +626,10 @@ function familiarityPct(styleKey,fam){
   const row=WEAPON_FAMILIARITY.find(f=>f[0]===fam);if(!row)return null;
   const c=effectiveChars(),sit=styleKey?gradeForEntry(styleKey):ACTIVE_GRADE,sitMult=GRADE_MULT[sit];
   if(sitMult==null)return {pct:null,grade:sit};
-  const floor=Math.max(0,Math.round((c.STR+c.DEX)*sitMult));
+  const floor=gradePct(c.STR+c.DEX,sitMult);
   if(row[2]===null||!styleKey)return {pct:floor,grade:sit,floored:true};
   const g=shiftGradeHarder(sit,row[2]),m=GRADE_MULT[g];
-  const pct=m==null?0:Math.max(0,Math.round(finalPct(styleKey)*m));
+  const pct=m==null?0:gradePct(finalPct(styleKey),m);
   return pct<floor?{pct:floor,grade:g,floored:true}:{pct,grade:g,floored:false};
 }
 let PM_EFFECT_ROLL_REF=null;
@@ -670,7 +699,7 @@ const SPECIAL_EFFECTS=[
 ["Sunder",1,0,"Axes, Two Handed Weapons","",0,"The attacker may use a suitable weapon to damage the armour or natural protection of an opponent. Any weapon damage, after reductions for parrying or magic, is applied against the Armour Points value of the protection. Surplus damage in excess of the Armour Points is then used to reduce the AP value of that armoured location — ripping straps, bursting rings, creasing plates, or tearing away scales/chitin. If any damage remains after the protection has been reduced to zero AP, it carries over to the Hit Points of the location struck."],
 ["Take Weapon",1,1,"Unarmed","",0,"Allows an unarmed character to yank or twist an opponent's weapon out of their hand. The opponent must make an opposed roll of their Combat Style against the character's original Unarmed roll. If the target loses, their weapon is taken and from that moment on may be used by the character instead. Take Weapon differs from Disarm Opponent in that the Size of the weapon is largely irrelevant. However, the technique only works on creatures of up to twice the attacker's STR."],
 ["Trip Opponent",1,1,"","",0,"The character attempts to overbalance or throw their opponent to the ground. The opponent must make an opposed roll of their Brawn, Evade, or Acrobatics against the character's original roll. If the target fails, they fall prone. Quadrupeds (or creatures with even more legs) may substitute their Athletics skill for Evade, and treat the roll as one difficulty grade easier."],
-["Weapon Malfunction (Firearms)",1,0,"Ranged Weapons","Attacker Fumbles",0,"The attacker's weapon malfunctions in such a way that it is rendered useless until time can be spent repairing it. Core p.100 lists this as offensive and requiring the attacker to fumble; those conditions cannot produce a winning offensive effect in the standard differential table. Ask the GM to adjudicate and record the result manually."],
+["Weapon Malfunction",1,0,"Ranged Weapons","Attacker Fumbles",0,"Firearms only. The attacker's weapon malfunctions in such a way that it is rendered useless until time can be spent repairing it. Core p.100 lists this as offensive and requiring the attacker to fumble; those conditions cannot produce a winning offensive effect in the standard differential table. Ask the GM to adjudicate and record the result manually."],
 ["Withdraw",0,1,"","",0,"The defender may automatically withdraw out of reach, breaking off engagement with that particular opponent."]
 ];
 
@@ -692,7 +721,7 @@ const FX_GROUPS=[
   ["Stop them acting / force a bad turn",["Press Advantage","Pin Down","Force Failure","Overextend Opponent","Compel Surrender","Remise"]],
   ["Immobilise, trap, or knock down",["Bash","Entangle","Grip","Pin Weapon","Stun Location","Trip Opponent"]],
   ["Control range and positioning",["Close Range","Open Range","Circumvent Parry","Choose Location","Marksman","Withdraw"]],
-  ["Protect yourself / recover",["Enhance Parry","Stand Fast","Arise","Slip Free","Select Target","Blind Opponent","Accidental Injury","Prepare Counter","Weapon Malfunction (Firearms)"]],
+  ["Protect yourself / recover",["Enhance Parry","Stand Fast","Arise","Slip Free","Select Target","Blind Opponent","Accidental Injury","Prepare Counter","Weapon Malfunction"]],
   ["Follow-up attacks & tempo",["Flurry","Rapid Reload","Duck Back"]],
   ["Battlefield theatre",["Scar Foe"]]
 ];
@@ -795,12 +824,32 @@ function pmFxFilter(input){
 // through the same graded pipeline as any other roll and deducts the cost
 // from the right pool.
 function pmCastingNotesHTML(){
-  return '<p class="pm-empty">Sorcery and Mysticism use turn trackers; rolls occur on the final turn. AP and interruption are GM-managed. Mysticism activation and durations are manual; confirm each Talent category with the GM. Casting is blocked if you lack the minimum available points. Folk Magic, Sorcery, Mysticism, and Theism use distinct result-dependent costs (Core pp.122, 156, 165, 181). Animism has separate bound-spirit commands and manual tracking for spirit contact, binding vessel, and spirit-combat MP (Core pp.134–139); summoning, ritual Binding and spirit combat outcomes still require GM resolution. Consult Mythras Core and your GM for other requirements and effects.</p>';
+  return '<p class="pm-empty">Sorcery and Mysticism use turn trackers; rolls occur on the final turn. AP is GM-managed; mark a wound or domination during casting with &ldquo;Hurt while casting&rdquo;. Mysticism activation and durations are manual; confirm each Talent category with the GM. Casting is blocked if you lack the minimum available points. Folk Magic, Sorcery, Mysticism, and Theism use distinct result-dependent costs (Core pp.122, 156, 165, 181). Animism has separate bound-spirit commands and manual tracking for spirit contact, binding vessel, and spirit-combat MP (Core pp.134–139); summoning, ritual Binding and spirit combat outcomes still require GM resolution. Consult Mythras Core and your GM for other requirements and effects.</p>';
+}
+// D-5 (Core p.119): the GM or player marks a wound or domination that lands
+// while a spell is being cast; the next casting roll applies it. Nothing is
+// inferred from HP, because the timing is the table's call.
+function pmCastingHurtHTML(){
+  const h=S.play.castingHurt,kind=h?h.kind:"";
+  const opts=[["","Not hurt"],["minor","Minor Wound"],["serious","Serious Wound"],["major","Major Wound"],["domination","Mentally dominated"]];
+  let out='<div class="pm-fx-item pm-casthurt"><label>Hurt while casting <select aria-label="Hurt while casting" onchange="APP.castingHurtSet(this.value)">'
+   +opts.map(([v,l])=>'<option value="'+v+'"'+(v===kind?' selected':'')+'>'+l+'</option>').join("")+'</select></label>';
+  if(kind==="minor"||kind==="serious"){
+    out+=' <label>Willpower <select aria-label="Willpower result" onchange="APP.castingHurtWillpower(this.value)">'
+     +[["","Not rolled"],["success","Succeeded"],["failure","Failed"]].map(([v,l])=>'<option value="'+v+'"'+(v===(h.willpower||"")?' selected':'')+'>'+l+'</option>').join("")+'</select></label>';
+  }
+  const e=castingHurtEffect(h);
+  const note=!h?"If a wound or mental domination lands before the casting completes, mark it here (Core p.119)."
+   :e.fails?"The casting fails. The next cast click records the failure without a roll."
+   :e.pending?(kind==="minor"?"Roll Willpower: on a failure the casting roll is one grade harder.":"Roll Willpower: one grade harder on a success, two on a failure.")
+   :e.extra?"The casting roll will be "+e.extra+" grade"+(e.extra>1?"s":"")+" harder.":"No penalty: the casting roll is unchanged.";
+  return out+'<p class="pm-empty" role="status">'+note+' Parries and evades while casting may also make it harder, at the GM&rsquo;s call.</p></div>';
 }
 function magicPanel(){
   const all=allMagic();
-  const prep=(S.play.mysticismCasting?'<p class="pm-empty">Talent preparation: '+S.play.mysticismCasting.completed+' / '+S.play.mysticismCasting.total+' turns. <button class="pm-btn sm" onclick="APP.mysticismCancel()">Cancel preparation</button> Resolve interruption and other actions with your GM.</p>':'')
+  let prep=(S.play.mysticismCasting?'<p class="pm-empty">Talent preparation: '+S.play.mysticismCasting.completed+' / '+S.play.mysticismCasting.total+' turns. <button class="pm-btn sm" onclick="APP.mysticismCancel()">Cancel preparation</button> Resolve interruption and other actions with your GM.</p>':'')
    +(S.play.theismCasting?'<p class="pm-empty">Miracle exhortation: '+S.play.theismCasting.completed+' / '+S.play.theismCasting.total+' turns. <button class="pm-btn sm" onclick="APP.theismCancel()">Cancel exhortation</button> Resolve interruption with your GM.</p>':'');
+  if(all.length)prep+=pmCastingHurtHTML();
   if(!all.length)return prep+'<p class="pm-empty">No magic known — pick some up on the Magic step in the Character Builder.</p>';
   let h='<div class="pm-magicpools">'
    +'<span>Magic Points <b>'+playCurMagic()+'</b>/'+playMaxMagic()+'</span>';
@@ -1296,8 +1345,8 @@ function pmBodyBoxHTML(){
   const v=charVitals();
   const worstTag={ok:"Unhurt",minor:"Minor Wound",serious:"Serious Wound",major:"Major Wound"}[v.worst];
   return '<div class="pm-box pmx-bodybox" id="pm-vitals"><h3>Body'+pmTip("health")+' <span class="pmx-health '+v.worst+'">'+worstTag+(v.worstLoc&&v.worst!=="ok"?' · '+esc(v.worstLoc.loc):'')+'</span></h3>'
-   +'<div class="pm-vit-body">'+pmBodySvg()+'<div class="pm-loclist">'+PLAY_HP_LOCS.map(pmLocRow).join("")+'</div></div>'
-   +(speciesDef()&&speciesDef().creature?'<p class="pm-notes" role="note">'+esc(speciesDef().label)+' body: these are human locations. Track this creature&rsquo;s own locations (on the sheet) with your GM.</p>'+creatureAnatomyTableHTML(speciesDef().locations):'')
+   +'<div class="pm-vit-body">'+(playCreatureLocs()?'':pmBodySvg())+'<div class="pm-loclist">'+playHPLocs().map(pmLocRow).join("")+'</div></div>'
+   +(playCreatureLocs()?'<p class="pm-notes" role="note">'+esc(speciesDef().label)+' body: its own locations, HP and natural armour from its entry (Core pp.218–219). The GM confirms the HP for this character&rsquo;s CON and SIZ; a changed maximum is recorded per location. Serious and Major Wound effects treat a location named Arm or Leg as a limb.</p>':'')
    +'</div>';
 }
 function pmRollLogHTML(){
@@ -1349,7 +1398,7 @@ function pmCombatRulesRefHTML(){
 }
 function pmAdvanceTimeHTML(){
   const opt=(k,label,desc)=>'<div class="pmx-advopt"><button type="button" class="pm-btn pmx-pri" onclick="APP.advanceTime(\''+k+'\')">'+label+'</button><p>'+desc+'</p></div>';
-  const minor=PLAY_HP_LOCS.filter(l=>naturalRecoveryInfo(l)?.interval==="day").length;
+  const minor=playHPLocs().filter(l=>naturalRecoveryInfo(l)?.interval==="day").length;
   return opt("day","Rest one day","Each Minor Wound heals your Healing Rate ("+(charsReady()?healRate(effectiveChars().CON):0)+" HP). "+(minor?minor+" location"+(minor>1?"s":"")+" will heal.":"No Minor Wounds right now.")+" Serious and Major Wounds heal per week or month (Core p.80).")
    +opt("fatigue","Recover one Fatigue level","Now: "+esc(S.play.fatigue||"Fresh")+". How long that takes depends on the cause; your GM decides.")
    +opt("fight","End the fight","Clears initiative and Surprised, and restores all Action Points.")
@@ -2229,7 +2278,7 @@ function rulesNotes(){
   +'<li><b>Pulp Hero &amp; Paragon</b> (Mythras Companion, &ldquo;Pyramids, Pulp, &amp; Paragons&rdquo;, pp.54&ndash;55, verified against page scans): different characteristic dice/point pools, 2 or 3 non-stacking Advantages, and extra Bonus Skill Points at a higher per-skill cap (Pulp +50 pts/20% cap, Paragon +100 pts/40% cap). <b>Quirk:</b> the book&rsquo;s Paragon bonus-points line is literally labelled &ldquo;Heroic characters&rdquo; rather than &ldquo;Paragon characters&rdquo; &mdash; preserved as printed.</li>'
   +'<li>Grade-easier Advantages (Endurance/Stealth/Willpower) are flagged on the Attributes step rather than converted into a flat percentage, since Mythras Grades are a situational roll modifier, not a skill bonus &mdash; baking in a number would be a guess, not a rule.</li>'
   +'<li>The doubled Healing Rate for Pulp/Paragon (Minor or Serious Wounds only, Major Wounds unaffected) is noted next to Healing Rate rather than computed, since automatic recovery also requires knowing the treatment history.</li>'
-  +'<li><b>Difficulty Grade</b> (core rulebook, Skills chapter, p.38, confirmed against page image): Very Easy doubles the skill, Easy adds half again, Standard is unchanged, Hard cuts it by a third, Formidable halves it, Herculean drops it to a tenth; Automatic needs no roll and Hopeless allows none. The selector on the Sheet step applies this to every skill % and to the roll button. Rounding direction isn&rsquo;t specified in the book for this table, so results are rounded to the nearest whole percent.</li>'
+  +'<li><b>Difficulty Grade</b> (core rulebook, Skills chapter, p.38, confirmed against page image): Very Easy doubles the skill, Easy adds half again, Standard is unchanged, Hard cuts it by a third, Formidable halves it, Herculean drops it to a tenth; Automatic needs no roll and Hopeless allows none. The selector on the Sheet step applies this to every skill % and to the roll button. Fractions round up (rulings D-4 and D-CE2), the same as The Pits, so 65% at Hard is 44%.</li>'
   +'<li><b>Cult &amp; Community</b> (Cults &amp; Brotherhoods chapter, pp.196&ndash;200, confirmed against page images): the five organisation types (Theist Cult, Animist/Spirit Cult, Sorcery Order, Mystical Order, Brotherhood) and their rank titles &mdash; Common/Dedicated/Proven/Overseer/Leader &mdash; are the book&rsquo;s own, as are the per-rank Requirements (years of membership + a minimum number of cult skills at a minimum %) and Training Discount (0/25/50/75/100%). <b>Correction:</b> rank does not grant a flat skill % bonus &mdash; an earlier pass invented that mechanic; it has been removed. What stays intentionally setting-specific, per the book&rsquo;s own design (cults are meant to be campaign-defined), is which nine archetypes exist for Sit&#39;ota, their names/blurbs, and which skill each one teaches.</li>'
   +'<li><b>Encumbrance</b> (core rulebook, Encumbrance section, confirmed against page image): unencumbered up to STR&times;2. Over STR&times;2 (&ldquo;Burdened&rdquo;): STR/DEX-based skills, including Combat Styles, are one Grade harder, Movement &minus;2m, no sprinting. Over STR&times;3 (&ldquo;Overloaded&rdquo;): two Grades harder, Movement halved, walk-only. STR&times;4 is a hard cap &mdash; flagged but not blocked by this tool. Worn armour counts at half its packed ENC toward these totals; carried (unworn) armour counts full ENC. <b>These penalties are now applied, not just described:</b> a skill counts as STR/DEX-based if its base formula contains STR or DEX (which is every Combat Style), and the Grade shift feeds the same <code>gradeForEntry()</code> the skill list, sheet, Play Mode and every roll button already use. Until this pass the warning text promised a penalty that never reached a roll.</li>'
   +'<li><b>Fatigue</b> (Fatigue Levels table). Each level sets an <i>absolute</i> Skill Grade for all rolls (Winded/Tired Hard, Wearied/Exhausted Formidable, Debilitated/Incapacitated Herculean, Semi-Conscious and beyond Hopeless), plus Movement, Initiative and Action Point penalties, and a Recovery Period that is divided by the character&rsquo;s Healing Rate. All of it is applied automatically now; the track used to be a picker that stored a string and changed nothing. Because the table states a grade rather than a shift, Fatigue acts as a <i>floor</i> on difficulty and takes the harsher of itself and any Encumbrance shift, rather than stacking with it &mdash; the book gives no stacking rule, and summing them would be an invention. Table transcribed from the <a href="https://srd.mythras.net/" target="_blank" rel="noopener">Mythras Imperative SRD</a>, published by The Design Mechanism under the ORC License, which reproduces the core rulebook&rsquo;s own Fatigue table.</li>'

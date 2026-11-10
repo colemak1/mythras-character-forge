@@ -104,14 +104,17 @@ test('impaleGrades: bigger weapons in smaller victims cost more (Core p.97)',()=
 });
 
 /* ---------- Differential roll ---------- */
-test('effectsWon: the differential table (Core pp.94, 100)',()=>{
+test('effectsWon: the combat differential table, Failure beats Fumble by one (Core p.94, D-CE1)',()=>{
  const levels=['critical','success','failure','fumble'];
  const table=levels.map(m=>levels.map(t=>C.effectsWon(m,t)));
- assert.deepEqual(table,[[0,1,2,3],[-1,0,1,2],[-2,-1,0,0],[-3,-2,0,0]]);
+ assert.deepEqual(table,[[0,1,2,3],[-1,0,1,2],[-2,-1,0,1],[-3,-2,-1,0]]);
  assert.equal(C.effectsWon('Critical','Fumble'),3,'case does not matter');assert.equal(C.effectsWon('x','success'),0);
- assert.equal(C.effectsWon('failure','fumble',{failureBeatsFumble:true}),1,'arena option, pending ruling D-CE1');
- assert.equal(C.effectsWon('fumble','failure',{failureBeatsFumble:true}),-1);
- assert.equal(C.effectsWon('failure','failure',{failureBeatsFumble:true}),0);
+ assert.equal(C.effectsWon('failure','fumble',{failureBeatsFumble:true}),1,'old Pits option is harmless');
+ assert.equal(C.effectsWon('failure','failure'),0);assert.equal(C.effectsWon('fumble','fumble'),0);
+});
+test('contestLevels: general Differential Roll, two failed rolls gain nothing (Core p.51)',()=>{
+ const levels=['critical','success','failure','fumble'];
+ assert.deepEqual(levels.map(m=>levels.map(t=>C.contestLevels(m,t))),[[0,1,2,3],[-1,0,1,2],[-2,-1,0,0],[-3,-2,0,0]]);
 });
 
 /* ---------- Size, Reach, parry ---------- */
@@ -309,7 +312,7 @@ test('Play Mode\'s Special Effects table agrees with the shared table, row for r
  const rows=vm.runInNewContext(playSource.match(/const SPECIAL_EFFECTS=\[[\s\S]*?\n\];/)[0]+';SPECIAL_EFFECTS');
  assert.equal(rows.length,C.SPECIAL_EFFECTS.length);
  rows.forEach((row,i)=>{
-  const rule=C.SPECIAL_EFFECTS[i],name=rule.id==='malfunction'?'Weapon Malfunction (Firearms)':rule.name;
+  const rule=C.SPECIAL_EFFECTS[i],name=rule.name;
   assert.deepEqual([row[0],!!row[1],!!row[2],row[3],row[4]||'',!!row[5]],[name,rule.offensive,rule.defensive,rule.weapon,rule.requirement,rule.stackable],rule.id);
  });
 });

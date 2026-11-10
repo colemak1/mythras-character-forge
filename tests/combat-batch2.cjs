@@ -47,7 +47,7 @@ test('C5-B2-T01 Kill Silently needs a Combat Style with Assassination (Core pp.8
  assert.equal(run(`canPickEffectForRoll(${ks},Object.assign(${roll},{weapon:"Broadsword"}))`),false,'still a Small weapon only');
 });
 test('C5-B2-X15 Weapon Malfunction is offered only for firearms (Core p.101)',()=>{
- const wm='SPECIAL_EFFECTS.find(e=>e[0]==="Weapon Malfunction (Firearms)")';
+ const wm='SPECIAL_EFFECTS.find(e=>e[0]==="Weapon Malfunction")';
  assert.equal(run(`weaponAllowsEffect(${wm},weaponByName("Short bow"))`),false);
  assert.equal(run(`weaponAllowsEffect(${wm},{name:"Arquebus",group:"Ranged"})`),true);
  assert.equal(run(`weaponAllowsEffect(${wm},{name:"Flintlock",group:"Ranged",firearm:true})`),true);

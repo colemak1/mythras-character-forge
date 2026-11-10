@@ -540,7 +540,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 <div class="pits-subbar"><a href="../index.html#/the-pits">&larr; Choose a character</a><a href="#" id="homeLink">Reset bout</a></div>
 <main class="main" id="root"></main>
 
-<script src="../js/combat-rules.js?v=e6aaca4917"></script>
+<script src="../js/combat-rules.js?v=ae609fd04d"></script>
 <script src="../js/data.js?v=ce6802caa1"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
 <script src="practice-guidance.js?v=3bb978cd88"></script>
@@ -656,9 +656,9 @@ function ensureEffectState(f){
 // Core pp.78–79: combat is strenuous exertion; Endurance is tested after
 // CON seconds (rounded up to a combat round). Core p.79 governs recovery;
 // Core p.71 blood-loss Fatigue only recovers one grade per day, once stopped.
-// The Fatigue levels are the shared table in js/data.js (FATIGUE_TABLE). The
-// arena calls the fourth level "Weary" (the table says "Wearied").
-const FATIGUE_NAMES=FATIGUE_TABLE.map(f=>f.name==='Wearied'?'Weary':f.name);
+// The Fatigue levels are the shared table in js/data.js (FATIGUE_TABLE),
+// names included ("Wearied", D-CE4).
+const FATIGUE_NAMES=FATIGUE_TABLE.map(f=>f.name);
 const GRADE_STEPS_HARDER={hard:1,formidable:2,herculean:3,hopeless:4};
 const FATIGUE_GRADES=FATIGUE_TABLE.map(f=>GRADE_STEPS_HARDER[f.grade]||0);
 const fatigueRow=f=>FATIGUE_TABLE[Math.min(9,f.fatigue||0)];
@@ -2539,7 +2539,7 @@ function opposedBetter(x,y){return CombatRules.opposedWins(x,y);}
 // Core table gives none. Kept until ruled on (docs/decisions.md, D-CE1).
 const GRADE_NAMES=['fumble','failure','success','critical'];
 function effectsWonBy(mine,theirs){
- return CombatRules.effectsWon(GRADE_NAMES[mine],GRADE_NAMES[theirs],{failureBeatsFumble:true});
+ return CombatRules.effectsWon(GRADE_NAMES[mine],GRADE_NAMES[theirs]);
 }
 function weaponRoll(w,maxDie,cramped=false,forcedRolls=null){let v=cramped?{dice:[1,3],bonus:1}:arenaProfile(w);
  let arr=forcedRolls??Array.from({length:v.dice[0]},(_,i)=>i===0&&maxDie?v.dice[1]:die(v.dice[1]));

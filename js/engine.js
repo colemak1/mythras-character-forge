@@ -91,6 +91,17 @@ function hpLocsFinal(CON,SIZ){const base=hpLocs(CON,SIZ);if(!hasAdv("hp"))return
 function shiftGradeEasier(g,n){const i=GRADE_ORDER.indexOf(g);return i===0?g:GRADE_ORDER[Math.max(1,i-(n==null?1:n))];}
 // Shifting harder can reach Hopeless (the step past Herculean) but never
 // wraps round to Automatic, mirroring shiftGradeEasier's floor at Very Easy.
+// D-5, Core p.119: what being hurt while casting does to the casting roll.
+// Minor Wound: Willpower, failure one grade harder. Serious Wound: Willpower,
+// success one grade harder, failure two. Major Wound or mental domination:
+// the casting fails. Returns {fails}, {extra} or {pending} (no Willpower yet).
+function castingHurtEffect(hurt){
+  if(!hurt||!hurt.kind)return {extra:0};
+  if(hurt.kind==="major"||hurt.kind==="domination")return {fails:true};
+  if(hurt.willpower!=="success"&&hurt.willpower!=="failure")return {pending:true};
+  if(hurt.kind==="minor")return {extra:hurt.willpower==="failure"?1:0};
+  return {extra:hurt.willpower==="failure"?2:1};
+}
 function shiftGradeHarder(g,n){const i=GRADE_ORDER.indexOf(g);return GRADE_ORDER[Math.min(GRADE_ORDER.length-1,i+(n==null?1:n))];}
 const gradeHardness=g=>GRADE_ORDER.indexOf(g);
 
@@ -244,13 +255,16 @@ function mToFtIn(m){const totalIn=Math.round(m*39.3701);return Math.floor(totalI
 // stat a player thinks about in book units.
 function heightWeightText(){const hw=heightWeight();
   return hw?(hw.ft+" / "+hw.lb+" lb"):"—";}
+// A skill at a difficulty grade rounds up (D-CE2 and D-4, Core pp.49-50),
+// the same as CombatRules.skillAtGrade in The Pits.
+function gradePct(basePct,mult){return Math.max(0,Math.ceil(Math.round(basePct*mult*1e6)/1e6));}
 function gradedPct(key,basePct){
   const g=gradeForEntry(key);const mult=GRADE_MULT[g];
-  return mult==null?{pct:null,grade:g}:{pct:Math.max(0,Math.round(basePct*mult)),grade:g};
+  return mult==null?{pct:null,grade:g}:{pct:gradePct(basePct,mult),grade:g};
 }
 function sorceryInvocationGrade(key,basePct,extra){
   const grade=shiftGradeHarder(gradeForEntry(key),extra),mult=GRADE_MULT[grade];
-  return {grade,pct:mult==null?null:Math.max(0,Math.round(basePct*mult))};
+  return {grade,pct:mult==null?null:gradePct(basePct,mult)};
 }
 // Reference table for the on-demand Difficulty Grade popover in Play Mode —
 // every Grade's effect on one skill's % at a glance, independent of whatever
@@ -259,7 +273,7 @@ function gradeRefRows(key){
   const base=finalPct(key);
   return GRADES.map(([g,label])=>{
     const mult=GRADE_MULT[g];
-    const text=mult==null?(g==="automatic"?"no roll":"can't attempt"):(Math.max(0,Math.round(base*mult))+"%");
+    const text=mult==null?(g==="automatic"?"no roll":"can't attempt"):(gradePct(base,mult)+"%");
     return {g,label,text};
   });
 }
@@ -336,7 +350,7 @@ function freshState(){return {
  // start at null, meaning "at max" — they're only written once the player
  // actually spends/takes damage, so a freshly-finished character always
  // shows full without needing an extra initialization step.
- play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"skills",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null,initiative:null,surprised:false,pinned:[]},
+ play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"skills",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null,castingHurt:null,initiative:null,surprised:false,pinned:[]},
  // Experience Rolls (core rulebook pp.71-73, cross-checked against the
  // Mythras Core pp.71–72, checked against the uploaded rulebook — see audit for
  // citations). pool = banked, unspent Experience Rolls. fumbled = skill
@@ -364,6 +378,10 @@ function normalizeState(){
     Object.entries(old).forEach(([key,value])=>{const n=Number(key);if(Number.isInteger(n))S.overrides[n>=insertedAt?n+1:n]=value;});
     S._creationFlowVersion=2;
   }
+  // D-CE4: the effect is called "Weapon Malfunction" (Core pp.95-100);
+  // older roll logs saved it as "Weapon Malfunction (Firearms)".
+  if(Array.isArray(S.rollLog))S.rollLog.forEach(r=>{if(r&&Array.isArray(r.effectsPicked))
+    r.effectsPicked=r.effectsPicked.map(n=>n==="Weapon Malfunction (Firearms)"?"Weapon Malfunction":n);});
   S.community=S.community||{};
   for(const key of ["family","parents","siblings","reputation","partyTie","resources","household"]){
     if(typeof S.community[key]!=="string")S.community[key]="";
@@ -474,6 +492,10 @@ function normalizeState(){
       S.play.sorceryCasting.completed<1 ||
       S.play.sorceryCasting.total<2 ||
       S.play.sorceryCasting.completed>=S.play.sorceryCasting.total))S.play.sorceryCasting=null;
+  // D-5: a "hurt while casting" mark is only kept in a valid shape.
+  const hc=S.play.castingHurt;
+  if(hc!=null&&!(hc&&typeof hc==="object"&&["minor","serious","major","domination"].includes(hc.kind)&&
+    [null,"success","failure"].includes(hc.willpower??null)))S.play.castingHurt=null;
   const mc=S.play.mysticismCasting;
   if(mc && (!Number.isInteger(mc.index)||mc.index<0||!Number.isInteger(mc.completed)||!Number.isInteger(mc.total)||mc.completed<1||mc.total<2||mc.completed>=mc.total||typeof mc.signature!=="string"))S.play.mysticismCasting=null;
   const tc=S.play.theismCasting;
