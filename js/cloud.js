@@ -1805,7 +1805,7 @@ function combatantCardHTML(c,isActive){
    +'<button class="chip sm" onclick="APP.gmApAdj(\''+c.id+'\',1)" '+(apRemain>=c.ap.max?"disabled":"")+' title="Restore 1 AP">+</button>'
    +'<span class="note">/ <input type="number" class="cbt-apmax" value="'+c.ap.max+'" onchange="APP.gmSetApMax(\''+c.id+'\',this.value)" aria-label="Max AP" title="Max AP"></span></div>'
    +creatureBlockHTML(c)
-   +'<div class="cbt-loclist">'+locs.map(loc=>{
+   +(c.cs&&c.cs.minion?'':'<div class="cbt-loclist">'+locs.map(loc=>{
      const hp=(c.hp&&c.hp[loc])||{cur:0,max:0};
      const idv="cbtdmg-"+c.id+"-"+loc.replace(/\s+/g,"_");
      return '<div class="cbt-locrow"><span class="cbt-locname">'+esc(loc)+'</span>'
@@ -1817,7 +1817,7 @@ function combatantCardHTML(c,isActive){
    +'<div class="cbt-locadd">'
    +'<input type="text" id="cbtlocname-'+c.id+'" placeholder="add location, e.g. Wing">'
    +'<input type="number" id="cbtlochp-'+c.id+'" placeholder="max HP" style="width:64px">'
-   +'<button class="chip sm" onclick="APP.gmAddLoc(\''+c.id+'\')">+ location</button></div>'
+   +'<button class="chip sm" onclick="APP.gmAddLoc(\''+c.id+'\')">+ location</button></div>')
    +(c.effects&&c.effects.length?'<div class="cbt-fxlist">'+c.effects.map(e=>combatantEffectChipHTML(c.id,e)).join("")+'</div>':'')
    +'<div class="cbt-fxadd">'
    +'<select id="cbtfxtype-'+c.id+'">'+COMBAT_EFFECT_TYPES.map(t=>'<option value="'+t.key+'">'+esc(t.label)+'</option>').join("")+'</select>'
@@ -1845,6 +1845,7 @@ function creatureImportHTML(){
     if(!parsed.errors.length){const a=creatureAttributes(parsed.creature);
       h+='<p class="note">'+esc(parsed.creature.name)+': '+a.mind.key+' '+a.mind.value+' · Action Points '+a.ap+' · Initiative bonus '+a.initBonus+(a.armourPenalty?' (worn armour −'+a.armourPenalty+')':'')+' · Damage Modifier '+esc(a.damageMod)+' · '+parsed.creature.locations.length+' locations</p>';}
   }
+  h+='<label class="mnum">How many <input type="number" id="gmCreatureCount" min="1" max="20" value="1" style="width:56px"></label> ';
   h+='<button class="chip" onclick="APP.gmAddCreature()" '+(parsed&&!parsed.errors.length&&!parsed.unread.length?'':'disabled')+'>Add creature to the fight</button></details>';
   return h;
 }
@@ -1858,12 +1859,33 @@ function creatureBlockHTML(c){
    +(cr.weapons.length?'<p class="note">'+cr.weapons.map(w=>{const p=creatureCanParry(cr,w);return esc(w.name)+' '+esc(w.damage)+(w.natural?' (natural)':'')+' · '+(p.ok?'can parry':'<span title="'+esc(p.reason)+'">no parry: Evade or armour</span>');}).join(' | ')+'</p>':'')
    +(cr.traits.length?'<p class="note">Traits: '+cr.traits.map(esc).join(', ')+'</p>':'')
    +creatureTraitsHTML(c)
+   +minionHTML(c)
    +'<div class="cbt-locadd"><button class="chip sm" onclick="APP.gmCreatureRollLoc(\''+c.id+'\')">Roll hit location (d20)</button>'
    +(hit?'<span class="note"> d20 '+hit.roll+': <b>'+esc(hit.loc)+'</b>, armour '+hit.armour+'</span>'
      +'<input type="number" id="cbtraw-'+c.id+'" placeholder="damage" min="0" style="width:84px" aria-label="Damage rolled, before armour">'
      +(["Immunity","Vulnerable","Allergy"].some(n=>creatureTraitSources(cr,n).length)?'<input type="text" id="cbtsrc-'+c.id+'" placeholder="source, e.g. fire" maxlength="60" style="width:120px" aria-label="Damage source">':'')
      +'<button class="chip sm" onclick="APP.gmCreatureHit(\''+c.id+'\')">apply after armour</button>':'')
    +'</div></div>';
+}
+// CRTR-C21–C26 (Core p.111): optional Rabble/Underling mode for one creature.
+function minionGroupOf(c){
+  const mn=c.cs&&c.cs.minion,camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!mn||!camp)return null;
+  const all=sessionStateOf(camp).combatants.filter(m=>m.creature&&m.cs&&m.cs.minion&&m.cs.minion.mode===mn.mode&&m.creature.name===c.creature.name);
+  return minionGroupState(mn.mode,all.map(m=>({injuries:m.cs.minion.injuries.length,status:m.cs.minion.status})));
+}
+function minionHTML(c){
+  const mn=c.cs&&c.cs.minion,mode=mn&&MINION_MODES[mn.mode]?mn.mode:"",q='\''+c.id+'\'';
+  let h='<p class="note"><label>Fights as <select onchange="APP.gmCreatureMinion('+q+',this.value)" aria-label="Fights as">'
+   +[["","a normal creature"],["rabble","Rabble (optional)"],["underling","Underling (optional)"]].map(([v,l])=>'<option value="'+v+'"'+(v===mode?' selected':'')+'>'+l+'</option>').join("")
+   +'</select></label> Rabble and Underlings are optional rules for expendable foes (Core p.111).</p>';
+  if(!mode)return h;
+  const st={dead:"dead",collapsed:"collapsed",fled:"fled",withdrawn:"withdrawing",serious:"Serious Wound"}[mn.status]||"fighting";
+  const g=minionGroupOf(c);
+  h+='<p class="note"><b>'+MINION_MODES[mode]+'</b> HP '+mn.hp+' for every location; per-location HP isn&rsquo;t used. '
+   +(mode==="rabble"?'No Special Effects, offensive or defensive. Any injury ends its fight.':'Special Effects as normal. Two injuries and it withdraws.')
+   +' Status: <b>'+st+'</b>'+(mn.injuries.length?' · injuries: '+mn.injuries.map(x=>esc(x.loc)+' '+x.dmg).join(', '):'')+'.'
+   +(g&&g.n>1?' Group of '+g.n+' '+esc(c.creature.name)+': '+g.down+' down'+(g.broken?' — <b>the rest '+(mode==="rabble"?'flee':'withdraw')+'</b>':' ('+(mode==="rabble"?'a third':'half')+' down and the rest '+(mode==="rabble"?'flee':'withdraw')+')')+'.':'')+'</p>';
+  return h;
 }
 // CRTR-B06–B14: controls for the combat traits this creature has. Each one
 // states what the trait changes; entry-specific values come from the GM.
@@ -1894,7 +1916,7 @@ function creatureTraitsHTML(c){
   if(creatureTrait(cr,"Intimidate")){const log=cs.intimidated||{};
     rows.push('<b>Intimidate</b> Each target rolls Willpower. Target <input type="text" id="cbtintim-'+id+'" maxlength="60" style="width:110px" aria-label="Intimidated target"> '
      +["Critical","Success","Failure","Fumble"].map(t=>'<button class="chip sm" onclick="APP.gmCreatureIntimidate('+q+',\''+t+'\')">'+t+'</button>').join(" ")
-     +(Object.keys(log).length?' '+Object.entries(log).map(([n,k])=>esc(n)+': '+({immune:"ignores it",holds:"holds",retreats:"falls back",flees:"flees"}[k]||k)).join(", ")+' <button class="chip sm" onclick="APP.gmCreatureIntimidateClear('+q+')">encounter over</button>':'')
+     +(Object.keys(log).length?' '+Object.entries(log).map(([n,k])=>esc(n)+': '+({immune:"ignores it",holds:"holds",retreats:"falls back",flees:"flees"}[k]||k)).join(", ")+' <button class="chip sm" onclick="APP.gmCreatureThreatEnded('+q+')">stopped threatening</button> <button class="chip sm" onclick="APP.gmCreatureIntimidateClear('+q+')">encounter over</button>':'')
      +' Not an automatic retreat on sight (Core p.216).');}
   if(creatureTrait(cr,"Chaos Feature")||creatureTrait(cr,"Chaos Features")){const got=cs.chaos||[];
     rows.push('<b>Chaos Feature</b> <button class="chip sm" onclick="APP.gmCreatureChaos('+q+')">Roll d100</button> Rolled on the Core table (pp.274–276) and kept with this creature; the GM applies each effect.'

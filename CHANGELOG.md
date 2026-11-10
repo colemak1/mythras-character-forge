@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Creatures: Rabble and Underlings, Vulnerable and Intimidate fixes (Subsystem 7)
+
+- **Rabble and Underlings (optional, Core p.111, CRTR-C21–C26):** each creature card in the GM tracker has "Fights as": a normal creature (default, unchanged), Rabble or Underling. Either mode uses one HP figure for every location, one fifth of the average CON+SIZ (from the dice), rounded up; per-location HP is hidden. Rabble get no Special Effects and leave the fight at the first injury: below the HP they flee, at it they collapse, at double they die. Underlings keep Special Effects; at the HP they automatically fail Endurance and take the Serious Wound; double kills; a second injury makes them withdraw. Group morale counts creatures with the same name and mode: a third of Rabble down and the rest flee; half of Underlings and the rest withdraw (announced once, shown on each card).
+- **Add several at once:** "How many" (1–20) next to "Add creature to the fight"; copies are numbered.
+- **Vulnerable (B15, PR #230 reading of Core p.218):** the listed source now skips the creature's natural armour only; worn armour still counts. **For Chat to confirm** against p.218.
+- **Intimidate (B17, Core p.216):** a Critical now ignores the creature and its brethren (tracker creatures with the same name). New "stopped threatening" ends holding, falling back and fleeing; Critical immunity stays for the encounter.
+- CRTR-C03-W (wing/tail wound class) was already built and tested (`tests/creature-pc.cjs`). Tests in `tests/creature-cases.cjs`. Not live-checked; progress stays 5/8.
+
 ## Site home page keeps what you typed (#258)
 
 - **Account → Site home page:** "Use the default painting" or choosing a picture no longer clears the Quote, Said by and Picture credit you'd typed but not yet saved (found in Work's live check, `docs/site-admin-verification-20261109.md`). The typed text is kept until Save succeeds, and is cleared if a different account signs in. Test in `tests/site-admin.cjs`.

@@ -182,7 +182,7 @@ test('CRTR-B15 the damage source is checked before armour',()=>{
  const hit=(raw,src)=>{run('Math.random=()=>0.5;APP.gmCreatureRollLoc("'+id+'");__el["#cbtraw-'+id+'"]={value:"'+raw+'"};__el["#cbtsrc-'+id+'"]={value:'+JSON.stringify(src)+'};APP.gmCreatureHit("'+id+'")');return note(id);};
  assert.match(card(),/Immunity \(fire, poison\) · Vulnerable \(silver\) · Allergy \(iron\)/);run('Math.random=()=>0.5;APP.gmCreatureRollLoc("'+id+'")');assert.match(card(),/cbtsrc-/,'source box appears with a rolled hit');
  assert.match(hit(9,'fire'),/0 damage\. Immune to fire/);assert.equal(cb().hp.Forequarters.cur,6);
- assert.match(hit(4,'silver sword'),/4 damage\. Vulnerable to silver: armour doesn't protect/);assert.equal(cb().hp.Forequarters.cur,2);
+ assert.match(hit(4,'silver sword'),/4 damage\. Vulnerable to silver: natural armour doesn't protect/);assert.equal(cb().hp.Forequarters.cur,2);
  assert.match(hit(3,'iron'),/1 damage\. Allergy \(iron\): contact at Forequarters/);
  assert.match(hit(3,''),/1 damage after armour/,'no source: ordinary armour');
  assert.match(hit(3,'firearm'),/1 damage after armour/,'a different word is not the listed source');
@@ -205,6 +205,78 @@ test('CRTR-B17 Intimidate resolves each target\'s Willpower and lasts the encoun
  assert.match(card(),/Aria: holds, Bors: falls back, Cael: flees, Dena: ignores it/);
  run('APP.gmCreatureIntimidateClear("'+id+'")');assert.equal(cb().cs.intimidated,undefined);
  tracker({});run('__el["#cbtintim-'+cb().id+'"]={value:"X"};APP.gmCreatureIntimidate("'+cb().id+'","Fumble")');assert.equal(cb().cs.intimidated,undefined,'no trait, no intimidation');
+});
+
+// ---------- PR #230 follow-ups (B15 worn armour, B17 brethren and threat ending) ----------
+const nth=i=>JSON.parse(run('JSON.stringify(__camp.session_state.combatants['+i+'])'));
+const addMore=(over,n)=>{run('__el["#gmCreatureCount"]={value:"'+(n||1)+'"};APP.gmCreatureDraft('+JSON.stringify(hound(over))+');APP.gmAddCreature();delete __el["#gmCreatureCount"]');};
+test('CRTR-B15 Vulnerable skips natural armour but worn armour still counts (Core p.218, PR #230)',()=>{
+ const id=tracker({trait:'Trait: Vulnerable (silver)'});
+ assert.equal(run('(()=>{const l=__camp.session_state.combatants[0].creature.locations.find(x=>x.name==="Head");return l.natural+","+l.worn;})()'),'2,1');
+ run('Math.random=()=>0.97;APP.gmCreatureRollLoc("'+id+'");__el["#cbtraw-'+id+'"]={value:"4"};__el["#cbtsrc-'+id+'"]={value:"silver"};APP.gmCreatureHit("'+id+'")');
+ assert.match(note(id),/Head: 3 damage\. Vulnerable to silver: natural armour doesn't protect; worn armour \(1\) still counts/);assert.equal(cb().hp.Head.cur,1);
+ run('Math.random=()=>0.97;APP.gmCreatureRollLoc("'+id+'");__el["#cbtraw-'+id+'"]={value:"4"};__el["#cbtsrc-'+id+'"]={value:"bronze"};APP.gmCreatureHit("'+id+'")');
+ assert.match(note(id),/Head: 1 damage after armour/,'any other source: natural and worn armour');
+});
+test('CRTR-B17 a Critical ignores the creature and its brethren; the fear ends when the threat does (Core p.216)',()=>{
+ tracker({trait:'Trait: Intimidate'});addMore({trait:'Trait: Intimidate'},2);addMore({name:'Name: Other Beast',trait:'Trait: Intimidate'});
+ const id=nth(0).id,roll=(who,tier)=>{run('__el["#cbtintim-'+id+'"]={value:'+JSON.stringify(who)+'};APP.gmCreatureIntimidate("'+id+'","'+tier+'")');return note(id);};
+ assert.equal(nth(1).name,'Test Hound 1');assert.equal(nth(2).name,'Test Hound 2');
+ assert.match(roll('Dena','Critical'),/and its brethren/);
+ assert.equal(nth(1).cs.intimidated.Dena,'immune');assert.equal(nth(2).cs.intimidated.Dena,'immune');
+ assert.equal((nth(3).cs.intimidated||{}).Dena,undefined,'a different creature is not brethren');
+ roll('Aria','Success');roll('Bors','Fumble');assert.match(card(),/stopped threatening/);
+ run('APP.gmCreatureThreatEnded("'+id+'")');assert.deepEqual(nth(0).cs.intimidated,{Dena:'immune'});
+ assert.match(note(id),/Critical results still ignore it/);
+});
+
+// ---------- Rabble and Underlings (optional, CRTR-C21–C26, Core p.111) ----------
+test('CRTR-C21/C24 the simple HP is one fifth of average CON+SIZ, rounded up',()=>{
+ const t=o=>run('minionThreshold('+JSON.stringify(o)+')');
+ assert.equal(t(parse(hound()).creature),4,'3d6 (10.5) + 1d6+6 (9.5) = 20 → 4');
+ assert.equal(t(parse(hound({siz:'SIZ 2d6+6 13'})).creature),5,'10.5 + 13 = 23.5 → 4.7 → 5');
+ assert.equal(t({chars:{CON:11,SIZ:12},dice:{}}),5,'no dice: the listed values, 23 → 4.6 → 5');
+ assert.equal(t({chars:{CON:11},dice:{}}),null);
+});
+test('CRTR-C22/C25 one hit: Rabble leave at the first injury; Underlings fail Endurance at the threshold',()=>{
+ const h=(m,inj,dmg)=>JSON.parse(run('JSON.stringify(minionHit("'+m+'",4,'+inj+','+dmg+'))'));
+ assert.deepEqual([h('rabble',0,0).injured,h('rabble',0,0).status],[false,null]);
+ assert.equal(h('rabble',0,3).status,'fled');assert.equal(h('rabble',0,4).status,'collapsed');assert.equal(h('rabble',0,8).status,'dead');
+ assert.equal(h('underling',0,3).status,null,'below the threshold it fights on');assert.match(h('underling',0,3).text,/1 of 2/);
+ assert.equal(h('underling',0,4).status,'serious');assert.match(h('underling',0,4).text,/Automatically fails its Endurance roll/);
+ assert.equal(h('underling',1,1).status,'withdrawn','second injury');assert.equal(h('underling',0,8).status,'dead');
+ assert.equal(run('minionHit("normal",4,0,5)'),null,'no mode, no simple HP');
+});
+test('CRTR-C23/C26 a third of Rabble or half of Underlings down breaks the group, not before',()=>{
+ const g=(m,n,down)=>run('minionGroupState("'+m+'",'+JSON.stringify(Array.from({length:n},(_,i)=>({injuries:i<down?1:0})))+').broken');
+ assert.equal(g('rabble',3,1),true);assert.equal(g('rabble',6,1),false);assert.equal(g('rabble',6,2),true);
+ assert.equal(g('underling',4,1),false);assert.equal(g('underling',4,2),true);assert.equal(g('underling',3,1),false);
+ assert.equal(run('minionGroupState("rabble",[{injuries:0,status:"dead"},{injuries:0},{injuries:0}]).broken'),true,'dead counts');
+});
+test('CRTR-C21–C23 tracker: Rabble use one HP figure, flee when hurt, and the group routs at a third',()=>{
+ tracker({});addMore({},3);// 1 normal + 3 named 1..3
+ const ids=[1,2,3].map(i=>nth(i).id);ids.forEach(i=>run('APP.gmCreatureMinion("'+i+'","rabble")'));
+ assert.equal(nth(1).cs.minion.hp,4);
+ const card1=()=>run('combatantCardHTML(__camp.session_state.combatants[1],false)');
+ assert.match(card1(),/No Special Effects, offensive or defensive/);assert.doesNotMatch(card1(),/cbt-loclist/,'per-location HP hidden');
+ assert.match(card(),/Fights as/);assert.match(card(),/cbt-loclist/,'the normal creature keeps per-location HP');
+ run('Math.random=()=>0.5;APP.gmCreatureRollLoc("'+ids[0]+'");__el["#cbtraw-'+ids[0]+'"]={value:"5"};APP.gmCreatureHit("'+ids[0]+'")');
+ assert.match(note(ids[0]),/Forequarters: 3 damage after armour\. Hurt, so it flees/);
+ assert.match(note(ids[0]),/1 of 3 Test Hound Rabble are down: the rest flee/);
+ assert.equal(nth(1).hp.Forequarters.cur,6,'location HP untouched');assert.deepEqual(nth(1).cs.minion.injuries,[{loc:'Forequarters',dmg:3}]);
+ assert.match(card1(),/the rest flee/);
+ run('Math.random=()=>0.5;APP.gmCreatureRollLoc("'+ids[1]+'");__el["#cbtraw-'+ids[1]+'"]={value:"2"};APP.gmCreatureHit("'+ids[1]+'")');
+ assert.match(note(ids[1]),/No damage after armour: no effect/);assert.doesNotMatch(note(ids[1]),/are down/,'only announced once');
+ run('APP.gmCreatureMinion("'+ids[0]+'","")');assert.equal(nth(1).cs.minion,undefined,'back to normal');
+});
+test('CRTR-C24–C26 tracker: Underlings withdraw after two injuries; half the group down and the rest withdraw',()=>{
+ tracker({});addMore({},4);const ids=[1,2,3,4].map(i=>nth(i).id);ids.forEach(i=>run('APP.gmCreatureMinion("'+i+'","underling")'));
+ const hit=(i,raw)=>{run('Math.random=()=>0.5;APP.gmCreatureRollLoc("'+i+'");__el["#cbtraw-'+i+'"]={value:"'+raw+'"};APP.gmCreatureHit("'+i+'")');return note(i);};
+ assert.match(run('combatantCardHTML(__camp.session_state.combatants[1],false)'),/Special Effects as normal/);
+ assert.match(hit(ids[0],4),/Injured \(1 of 2\)/);assert.doesNotMatch(note(ids[0]),/are down/,'1 of 4 is not half');
+ assert.match(hit(ids[0],3),/Second injury: it stops fighting and withdraws/);assert.equal(nth(1).cs.minion.status,'withdrawn');
+ assert.match(hit(ids[1],6),/Automatically fails its Endurance roll: Serious Wound/);assert.match(note(ids[1]),/2 of 4 Test Hound Underling are down: the rest withdraw/);
+ assert.match(hit(ids[2],10),/Dies/);
 });
 test('CRTR-B18 only a sapient creature, with GM permission, can be a player character',()=>{
  const ins=JSON.stringify(parse(hound()).creature),sap=JSON.stringify(parse(hound({mind:'INT 12'})).creature);

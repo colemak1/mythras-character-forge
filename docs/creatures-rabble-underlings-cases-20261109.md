@@ -22,3 +22,5 @@
 **Evidence boundary:** source checks only, not a current implementation/test pass. No changes to `docs/subsystem-plan.md`: 5/8. Nonhuman location implementation still requires owner scope approval per `HANDOFF.md`.
 
 **Claude review (2026-11-10):** accepted as a source-checked inventory. C27 is CRTR-C03, built in #245. C21–C26 describe an optional GM tracker mode that doesn't exist; building it would widen GM-managed scope, so it waits for an owner decision ("offer Rabble/Underlings in the tracker?"). Until then they are recorded as unsupported optional rules, not open defects.
+
+**Claude, built (2026-11-10):** the owner's 8/8 plan put Rabble/Underlings in scope (HANDOFF, "Rabble/Underlings included"). C21–C26 are in the GM tracker as an optional "Fights as" choice per creature; normal creatures are unchanged. Group = same creature name and mode. Underling rounding follows D-4 (project reading). Tests: `tests/creature-cases.cjs`. Not live-checked.

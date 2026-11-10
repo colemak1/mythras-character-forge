@@ -1754,8 +1754,19 @@ window.APP={
    const el=$("#gmCreatureText");if(el)CREATURE_DRAFT=String(el.value||"").slice(0,6000);
    const parsed=parseCreatureStatBlock(CREATURE_DRAFT);
    if(parsed.errors.length||parsed.unread.length){render();return;}
-   APP.gmSessionMutate(st=>st.combatants.push(combatantFromCreature(parsed.creature,0)));
+   const cnt=$("#gmCreatureCount"),n=Math.min(20,Math.max(1,parseInt(cnt&&cnt.value,10)||1));
+   APP.gmSessionMutate(st=>{for(let i=1;i<=n;i++){let cid=genId();while(st.combatants.some(x=>x.id===cid))cid+=i;
+     const c=combatantFromCreature(JSON.parse(JSON.stringify(parsed.creature)),0,cid);
+     if(n>1)c.name=parsed.creature.name+" "+i;st.combatants.push(c);}});
    CREATURE_DRAFT="";render();},
+ // CRTR-C21/C24 (Core p.111, optional): the GM picks Rabble or Underling for
+ // one creature; choosing again (or Normal) starts its record afresh.
+ gmCreatureMinion(id,mode){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;const cs=c.cs=c.cs||{};
+     if(!MINION_MODES[mode]){delete cs.minion;CREATURE_MSG[id]="Fights as a normal creature, with per-location HP.";return;}
+     const thr=minionThreshold(c.creature);if(!thr){CREATURE_MSG[id]="Add CON and SIZ to use "+MINION_MODES[mode]+".";return;}
+     cs.minion={mode,hp:thr,injuries:[],status:null};
+     CREATURE_MSG[id]=MINION_MODES[mode]+": HP "+thr+" for every location (one fifth of average CON+SIZ, rounded up).";});},
  // CRTR-B04: roll on the creature's own d20 table, never the human one.
  gmCreatureRollLoc(id){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
@@ -1768,6 +1779,17 @@ window.APP={
    if(!hit||!Number.isFinite(raw)||raw<0)return;
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature||!c.hp[hit.loc])return;
      const res=creatureResolveHit(c.creature,hit.loc,raw,source),dmg=res.damage;
+     const mn=c.cs&&c.cs.minion;
+     if(mn&&MINION_MODES[mn.mode]){
+       if(mn.status==="dead"){CREATURE_MSG[id]="Already dead.";return;}
+       const key=m=>m.creature&&m.cs&&m.cs.minion&&m.cs.minion.mode===mn.mode&&m.creature.name===c.creature.name;
+       const grp=()=>minionGroupState(mn.mode,st.combatants.filter(key).map(m=>({injuries:m.cs.minion.injuries.length,status:m.cs.minion.status})));
+       const before=grp().broken,r=minionHit(mn.mode,mn.hp,mn.injuries.length,dmg);
+       if(r.injured){mn.injuries.push({loc:hit.loc,dmg});if(r.status&&mn.status!=="dead")mn.status=r.status;}
+       const g=grp();
+       CREATURE_MSG[id]=hit.loc+": "+dmg+" damage"+(res.note?". "+res.note:" after armour.")+" "+r.text
+         +(g.broken&&!before?" "+g.down+" of "+g.n+" "+c.creature.name+" "+MINION_MODES[mn.mode]+" are down: the rest "+(mn.mode==="rabble"?"flee":"withdraw")+" (Core p.111).":"");
+       return;}
      c.hp[hit.loc].cur=Math.max(-c.hp[hit.loc].max,c.hp[hit.loc].cur-dmg);
      creatureSyncAp(c);
      CREATURE_MSG[id]=hit.loc+": "+dmg+" damage"+(res.note?". "+res.note:" after armour.")+(creatureTrait(c.creature,"Venomous")?" An ordinary hit injects no venom.":"");});
@@ -1826,10 +1848,20 @@ window.APP={
      if(!target){CREATURE_MSG[id]="Name the target first.";return;}
      const cs=c.cs=c.cs||{},log=cs.intimidated=cs.intimidated||{};
      if(log[target]==="immune"){CREATURE_MSG[id]=target+" already ignores its intimidation this encounter.";return;}
-     log[target]=out.key;CREATURE_MSG[id]=target+" "+out.text+". The effect lasts while the creature keeps acting threateningly (Core p.216).";});
+     log[target]=out.key;
+     // Core p.216: a Critical ignores this creature and its brethren (same creature name).
+     if(out.key==="immune")st.combatants.forEach(o=>{if(o!==c&&o.creature&&o.creature.name===c.creature.name&&creatureTrait(o.creature,"Intimidate")){
+       const ocs=o.cs=o.cs||{};(ocs.intimidated=ocs.intimidated||{})[target]="immune";}});
+     CREATURE_MSG[id]=target+" "+out.text+(out.key==="immune"?" (and its brethren's)":"")+". The effect lasts while the creature keeps acting threateningly (Core p.216).";});
    if(el)el.value="";},
  gmCreatureIntimidateClear(id){
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.cs)return;delete c.cs.intimidated;CREATURE_MSG[id]="Intimidation results cleared (encounter over).";});},
+ // Core p.216: the fear lasts only while the creature keeps threatening; a
+ // Critical's immunity still lasts the encounter.
+ gmCreatureThreatEnded(id){
+   APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.cs||!c.cs.intimidated)return;const log=c.cs.intimidated;
+     Object.keys(log).forEach(k=>{if(log[k]!=="immune")delete log[k];});
+     CREATURE_MSG[id]="It stopped acting threateningly: holding, falling back and fleeing end. Critical results still ignore it this encounter.";});},
  gmCreatureLeap(id,won){
    APP.gmSessionMutate(st=>{const c=APP.gmFindCombatant(st,id);if(!c||!c.creature)return;
      const w=creatureLeapBonus(c.creature,!!won);

@@ -137,3 +137,10 @@ Tests in `tests/creature-pc.cjs`. Not live-checked. Progress stays **5/8**.
 **B20: scoped static review PASS** for *preservation and GM-resolved display*, not automated effects. Ability, Poison, Magic/Spells and weapon-matched Weapon effect entries are retained and displayed; unhandled traits remain GM-resolved. Per-entry mechanics still require separate Core cases before automation. The new regression tests were inspected but **not independently run**; live checks remain with ChatGPT (Work).
 
 **B19/anatomy:** Claude reports checking the source PDF and adding 50 Chaos Feature d100 entries and 13 d20 body plans. This review did **not** independently verify every table row against rendered Core pp.274–277; avoid claiming an independent table transcription audit. Progress remains **5/8**.
+
+## PR #230 follow-ups (Claude, 2026-11-10)
+
+PR #230's review (older than the source check above) asked for two fixes. Its text is folded in here, and the PR closed.
+
+- **B15 Vulnerable:** #230 reads Core p.218 as natural (and magical) protection only, not worn armour. Built that way now: the listed source skips natural armour; worn armour still counts. The earlier Claude source check paraphrased it as "protection", which doesn't settle this. **Chat: confirm against p.218 in one line;** magical protection isn't tracked on the card.
+- **B17 Intimidate:** a Critical now covers the creature and its brethren (tracker creatures with the same name, not other species); "stopped threatening" ends the fear outcomes while Critical immunity lasts the encounter (Core p.216; the same wording is in the Street Mob formation trait in `js/data.js`).

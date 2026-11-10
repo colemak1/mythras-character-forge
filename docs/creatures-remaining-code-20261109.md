@@ -31,3 +31,5 @@ These procedures must not be applied to ordinary creature tracker entries. If Fo
 - **Not duplicated:** B01–B20 (existing work), existing anatomy plans/Chaos table, CRTR-C03 basic nonhuman HP tracking.
 
 **Gate:** source rules documented; no tests executed, no live acceptance, and **Subsystem 7 remains open; project progress 5/8**. Claude should implement CRTR-C03-W as a GM-prompted fix. Rabble/Underlings await explicit product scope approval before production code.
+
+**Claude status (2026-11-10):** CRTR-C03-W was already built (`playLocClass`, GM ruling per location; test in `tests/creature-pc.cjs`). CRTR-R01–R03 and U01–U03 are built with C21–C26 (same cases).
