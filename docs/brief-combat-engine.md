@@ -1,5 +1,7 @@
 # Brief: one shared combat rules engine
 
+**Done 2026-11-09** (all four steps; see `CHANGELOG.md` and `HANDOFF.md`). Differences found: `docs/decisions.md`, D-CE1 to D-CE5. Kept for reference.
+
 For a single strong-model Claude session (owner, 2026-11-09). Read `AGENTS.md` and `HANDOFF.md` first; their rules apply (branch, every test before pushing, asset stamps, CHANGELOG, PR, auto-merge). **Behaviour must not change.** This is a refactor, not a rules batch.
 
 ## Why

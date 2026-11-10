@@ -137,7 +137,7 @@ const DIFFERENTIAL={
 // many). Two unsuccessful rolls win nothing (Core p.94).
 // options.failureBeatsFumble: The Pits counts a plain Failure against a
 // Fumble as one effect. That differs from the table above and is kept only
-// until it is ruled on (docs/decisions.md, combat engine differences).
+// until it is ruled on (docs/decisions.md, D-CE1).
 function effectsWon(mine,theirs,options){
   const m=String(mine).toLowerCase(),t=String(theirs).toLowerCase();
   if(options&&options.failureBeatsFumble){
