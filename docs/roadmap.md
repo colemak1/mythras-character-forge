@@ -9,7 +9,7 @@ A group counts as finished only with its case list, source checks, code or GM ha
 Order: **8 → 7 → 6.** Each Claude batch runs in a fresh session (AGENTS.md). Before building, check every case ID in its spec against the code and tests, because some spec rows are already built. Each batch ends with one PR and a paste-ready Work live list.
 
 1. **8, Campaign and live integration.** No code is known to be left. Needs:
-   - **Owner: decide D-S5.** Do the CI database permission tests count as the evidence for the direct-access steps?
+   - ~~Owner: decide D-S5~~: **accepted** (owner, 2026-11-10). The CI database permission tests are the evidence for the direct-access steps; Work checks the same rules through the app.
    - **Work:** the two-account matrix in `docs/subsystem-8-closeout-20261109.md` (New code, Remove, Make GM, save conflict, gifts and pop-up, outsider privacy, backup, header route matrix). This needs two separate signed-in accounts.
    - **Chat:** fill in that closeout. **Claude:** fix any failures, then mark 8 closed. → 6/8.
 2. **7, Creatures and GM procedures.** Specs: `creatures-remaining-code-20261109.md`, `creatures-rabble-underlings-cases-20261109.md` (Rabble/Underlings, CRTR-C21–C27), `creature-cases-batch-1.md`. Also review docs PR #230 (older; may be superseded by B18/B20). Claude builds the open cases, Work does one GM-tracker pass, Chat closes out. → 7/8.
@@ -88,6 +88,6 @@ Each needs a Work live pass, and Chat work in between, which costs no credits.
 
 ## Decisions waiting on the owner
 
-- **D-S5:** accept the database tests as evidence for direct-access permission steps (Phase 1).
+- ~~D-S5~~: accepted 2026-11-10 (owner). See `decisions.md`.
 - ~~D-4, D-5~~: decided 2026-11-09 (owner delegated): round up; casting interruptions per Core p.119, GM-prompted. See `decisions.md`.
 - ~~Order of Phases 2 and 3~~: **Creatures first** (owner, 2026-11-09).

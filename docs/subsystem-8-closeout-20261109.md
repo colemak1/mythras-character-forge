@@ -6,7 +6,7 @@
 |---|---|---|
 | Creation, join, invites | Automated permission tests; GM and player live join/reload; old code rejected after rotation | Join sampled live; **New code blocked** by absent production RPCs pending migration install and retry |
 | Roles and continuity | GM Remove / Make GM, character retained on removal, new GM Tools, old GM becomes player, Delete confirmations | **Blocked** in production pending continuity RPC migration and signed-in retest |
-| Character ownership and RLS | Direct A/B/C/D account matrix; outsider denied private data; GM scoped inventory only | Database permission tests reported in CI; full direct signed-in permission matrix **not accepted** |
+| Character ownership and RLS | Direct A/B/C/D account matrix; outsider denied private data; GM scoped inventory only | Database permission tests in CI. **D-S5 accepted (owner, 2026-11-10):** those tests are the evidence for the direct-access steps; the app-level outsider and A/B/C/D checks remain for Work |
 | Conflicting saves | Two sessions editing same character; stale save warns/reloads without overwriting | Implemented in code; two-account live conflict **unaccepted** |
 | GM gifts and inventory | Gift arrives, persists after reload, no unrelated edit permission | Earlier scoped item/reload acceptance; fresh two-account gifts and new-item pop-up **unaccepted** |
 | Display names (D-S3) | Signed-in outsider sees display name only; no email, membership, private fields | Migration/grants reported verified; full outsider privacy test **unaccepted** |
