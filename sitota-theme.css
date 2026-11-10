@@ -174,6 +174,19 @@ body[data-sitota-view="menu"] .sitota-header{background:color-mix(in srgb,var(--
 .st-settings h2{margin:0 0 4px;font:500 24px var(--font-display);color:var(--bone)}
 .st-settings p{margin:0 0 14px;color:var(--bone-dim);font-size:14px}
 
+/* ---- Site admin: Home quote and picture ---- */
+.st-bd-wait{visibility:hidden}
+.st-siteadmin .st-label{display:block;margin:14px 0 6px}
+.st-siteadmin .st-input{width:100%;box-sizing:border-box}
+.st-siteadmin .st-textarea{height:auto;min-height:84px;padding:10px 12px;font:inherit;resize:vertical}
+.st-siteadmin-pic{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.st-siteadmin-pic img{width:240px;max-width:100%;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--line);border-radius:2px;background:var(--ink-0)}
+.st-siteadmin-pic>div{display:flex;flex-direction:column;align-items:flex-start;gap:8px;flex:1;min-width:200px}
+.st-siteadmin-pic small{color:var(--bone-dim);font-size:13px;line-height:1.45}
+.st-siteadmin .st-row{margin-top:16px}
+.st-siteadmin h2 .st-tag{display:inline-block;font:600 11px/1.4 var(--font-ui);vertical-align:middle;margin-left:6px;padding:1px 8px;
+  background:transparent;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:999px;letter-spacing:0;text-transform:none}
+
 /* ---- Campaign manager: home page editor ---- */
 .st-cm-home label.st-cm-label{display:block;margin:12px 0 6px}
 .st-cm-home textarea,.st-cm-home input{width:100%;box-sizing:border-box}
