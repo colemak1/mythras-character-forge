@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Site admin: change the Home quote and picture from the site
+
+- **Account → Site home page** (site admins only): set the quote shown at the top of Home for everyone, signed in or not, and who said it. Upload a new Home picture or go back to the default painting, with a credit line for it. Pictures are resized in the browser to 1920px wide.
+- A campaign's own quote, set by its GM, still shows first for that campaign's players.
+- Admins are listed in the database only (`site_admins`); nobody can make themselves one from the site. New migration `20261110120000_site_admin_and_settings.sql`; setup steps for the owner's account are in `docs/site-admin-setup.md`. Until it runs, Home looks exactly as before.
+- Tests: `tests/site-admin.cjs` (page) and four new database permission tests (everyone reads, only admins write, only a JPEG picture, the admin list is private).
+
 ## The Pits header in sentence case
 
 - The Pits header now reads "Sit’ota · The Pits" and "The Pits" in normal case, matching the rest of the site. Before, both were in wide-tracked capitals (found in the live check of the Stone reskin, `docs/live-check-stone-20261110.md`).
