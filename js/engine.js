@@ -1705,8 +1705,9 @@ function creatureSourceMatch(list,source){
   return list.find(x=>x===s||s.split(/[\s,]+/).includes(x))||null;
 }
 // B15 (Core pp.215, 217–218): check the damage source before any armour.
-// Immunity ignores its listed source; Vulnerable bypasses armour against its
-// source; Allergy works by contact, and whether armour stops that contact is
+// Immunity ignores its listed source; Vulnerable bypasses the creature's own
+// natural armour against its source, but worn armour still counts (PR #230
+// reading of p.218); Allergy works by contact, and whether armour stops that contact is
 // the trait's call (GM).
 function creatureResolveHit(c,locName,raw,source){
   const l=(c.locations||[]).find(x=>x.name===locName);if(!l)return null;
@@ -1714,7 +1715,8 @@ function creatureResolveHit(c,locName,raw,source){
   const immune=creatureSourceMatch(creatureTraitSources(c,"Immunity"),source);
   if(immune)return {damage:0,note:"Immune to "+immune+": no damage (Core p.217)."};
   const vuln=creatureSourceMatch(creatureTraitSources(c,"Vulnerable"),source);
-  if(vuln)return {damage:r,note:"Vulnerable to "+vuln+": armour doesn't protect (Core p.218)."};
+  if(vuln){const w=l.worn||0;
+    return {damage:Math.max(0,r-w),note:"Vulnerable to "+vuln+": natural armour doesn't protect"+(w?"; worn armour ("+w+") still counts":"")+" (Core p.218)."};}
   const allergy=creatureSourceMatch(creatureTraitSources(c,"Allergy"),source);
   const damage=Math.max(0,r-armour);
   if(allergy)return {damage,note:"Allergy ("+allergy+"): contact at "+locName+". Whether armour prevents contact, and the effect, follow the trait (GM, Core p.215)."};
@@ -1732,6 +1734,42 @@ function intimidateOutcome(tier){
     Success:{key:"holds",text:"holds their ground"},
     Failure:{key:"retreats",text:"spends their next round putting distance between themselves and the creature"},
     Fumble:{key:"flees",text:"flees at full speed"}}[tier]||null;
+}
+/* ---- Rabble and Underlings (optional, CRTR-C21–C26, Core p.111) ----
+   Only when the GM picks the mode for a creature; normal creatures are never
+   converted. One simple HP figure replaces the per-location HP. */
+const MINION_MODES={rabble:"Rabble",underling:"Underling"};
+// One fifth of the species' average CON + SIZ, rounded up. The average comes
+// from the dice when given, else the stat block's listed value. Rabble's
+// rounding is Core's; Underling's uses D-4 (round up), a project reading.
+function minionThreshold(c){
+  const avg=k=>{const r=creatureDiceRange(c.dice&&c.dice[k]);if(r)return r.avg;const v=Number(c.chars&&c.chars[k]);return Number.isFinite(v)?v:null;};
+  const con=avg("CON"),siz=avg("SIZ");if(con===null||siz===null)return null;
+  return Math.max(1,Math.ceil((con+siz)/5-1e-9));
+}
+// One hit after armour. Rabble: any hurt ends its fight (flee, collapse, die).
+// Underling: at the threshold it fails its Endurance roll automatically and
+// takes the Serious Wound; double kills; a second injury makes it withdraw.
+function minionHit(mode,thr,injuries,dmg){
+  const d=Math.max(0,Math.floor(Number(dmg)||0)),n=Number(injuries)||0;
+  if(!MINION_MODES[mode]||!(thr>=1))return null;
+  if(d<=0)return {injured:false,status:null,text:"No damage after armour: no effect."};
+  if(d>=2*thr)return {injured:true,status:"dead",text:"Dies (damage at least twice its HP "+thr+", Core p.111)."};
+  if(mode==="rabble")return d>=thr
+    ?{injured:true,status:"collapsed",text:"Collapses (damage at least its HP "+thr+"); out of the fight (Core p.111)."}
+    :{injured:true,status:"fled",text:"Hurt, so it flees: Rabble leave the fight at the first injury (Core p.111)."};
+  const second=n+1>=2;
+  if(d>=thr)return {injured:true,status:second?"withdrawn":"serious",
+    text:"Automatically fails its Endurance roll: Serious Wound at the struck location (Core p.111)."+(second?" Second injury: it stops fighting and withdraws if it can.":"")};
+  return {injured:true,status:second?"withdrawn":null,
+    text:second?"Second injury: it stops fighting and withdraws if it can (Core p.111).":"Injured (1 of 2); it fights on below its HP "+thr+"."};
+}
+// Group morale: Rabble flee once a third are dead or wounded, Underlings
+// withdraw once half are. Members share the mode and the creature's name.
+function minionGroupState(mode,members){
+  const n=members.length,down=members.filter(m=>(m.injuries||0)>=1||m.status==="dead").length;
+  const broken=n>0&&(mode==="rabble"?down*3>=n:mode==="underling"?down*2>=n:false);
+  return {n,down,broken};
 }
 /* ---- Generic anatomy presets (CRTR-B04 option, Core printed pp.276–277) ----
    d20 ranges and location names only. HP and armour come from the creature. */
