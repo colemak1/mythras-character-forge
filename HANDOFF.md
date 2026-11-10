@@ -9,7 +9,7 @@ _Last updated: 2026-11-10 by Claude (new workflow: Session Zero, severity, one r
 
 ## Where things stand
 
-- **Session readiness 8 of 14. Feature completeness 7 of 8 built** (5 closed). Details: `docs/session-zero.md`.
+- **Session readiness 9 of 14. Feature completeness 7 of 8 built** (5 closed). Details: `docs/session-zero.md`.
 - **Workflow changed (owner, 2026-11-10):** see Priorities, When something is done, and Reviews in `AGENTS.md`. Earlier "Next" lists are retired; anything still useful from them is in `session-zero.md` under Not blocking.
 - **Backups:** Supabase Free plan, so no automatic server backups. The GM downloads a campaign backup after every session.
 - **Look:** Codex · Stone everywhere; tokens in `sitota-theme.css` (loaded last). Other stylesheets use the tokens only; no hex colours.
@@ -17,7 +17,7 @@ _Last updated: 2026-11-10 by Claude (new workflow: Session Zero, severity, one r
 
 ## Next
 
-1. **Owner:** say which magic traditions the first campaign starts with (item 6). Folk Magic is built; Claude builds only the others you name before Session Zero.
+1. **Owner (answered 2026-11-10):** the first campaign uses almost no magic; build every tradition anyway, after the Session Zero items. Session 1 is a few months out.
 2. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone.
 3. **ChatGPT (Work), one batch** (signed in, own campaign; one short dated report, pass/fail plus severity):
    - **Tracker (items 9, 10):** add a creature with How many 3, set all to Rabble, hit one below its HP: it flees and the card says the rest flee. Add 4 as Underling, hit one twice: it withdraws; hurt a second and the rest withdraw. Two creatures of the same name with Intimidate: a Critical on one shows on the other.
@@ -25,7 +25,7 @@ _Last updated: 2026-11-10 by Claude (new workflow: Session Zero, severity, one r
    - **Creature character (item 2):** as GM, add a sapient creature, tick "GM permits", copy its stat block; as player, Concept → "Play a creature your GM approved", build with Points Build, save, reload: species, ranges and hit locations persist. An INT 7 creature is refused.
    - Anything blocked: record it once and move on.
 4. **ChatGPT (Chat):** one line on Core p.218 Vulnerable (does worn armour still count?). Only if you have that page; otherwise say so.
-5. **Claude, after Work's report:** fix any Severity 1, then close Subsystems 7 and 8 under the new rule with their Known limits listed, and update the two numbers. Then build the magic named in step 1.
+5. **Claude, after Work's report:** fix any Severity 1, then close Subsystems 7 and 8 under the new rule with their Known limits listed, and update the two numbers. Then Subsystem 6, one tradition per batch in `roadmap.md` order (Animism first; Folk Magic is done).
 
 ## Notes
 

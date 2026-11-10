@@ -4,7 +4,7 @@ The plan from today to a finished site. It follows the 8 groups in `subsystem-pl
 
 A group counts as finished only with its case list, source checks, code or GM handling, tests and live acceptance (`subsystem-plan.md`).
 
-**Priority (owner, 2026-11-10, replaces "no side work until 8/8"):** Session Zero first (`session-zero.md`). The order below still holds for what's left after that, but Magic covers only the traditions the campaign uses before Session Zero; the rest come after it.
+**Priority (owner, 2026-11-10, replaces "no side work until 8/8"):** Session Zero first (`session-zero.md`). The order below still holds for what's left after that, and all of Magic (6) is still built: the first campaign uses almost none, so it follows the Session Zero items rather than blocking them.
 
 ## Path to 8/8
 

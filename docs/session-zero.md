@@ -8,7 +8,7 @@ Status words: **Ready** (built, tested in code, and used at least once on the li
 
 Two numbers, reported at the end of every batch instead of a long status:
 
-- **Session readiness:** Ready items in the checklist below, out of the total. Today: **8 of 14**.
+- **Session readiness:** Ready items in the checklist below, out of the total. Today: **9 of 14**.
 - **Feature completeness:** subsystems built (code done, whether or not closed) out of 8. Today: **7 of 8 built**, 5 closed. Magic (6) is the one still being built.
 
 The 5/8 close count in `subsystem-plan.md` stays, but it is no longer the headline.
@@ -24,7 +24,7 @@ The 5/8 close count in `subsystem-plan.md` stays, but it is no longer the headli
 | 3 | GM makes a campaign; players join with the code; New code, Remove and Make GM work | **Ready** | Passed live 2026-11-09 |
 | 4 | Starting gear and money, with costs and ENC added up | **Ready** | Subsystem 3 closed |
 | 5 | GM gives an item; the player sees it after reload | **Ready** | Passed live (one player at a time) |
-| 6 | Magic for the traditions this campaign starts with | **Owner** | Owner: say which traditions. Folk Magic is built; the rest of Subsystem 6 waits unless the campaign uses it |
+| 6 | Magic for the traditions this campaign starts with | **Ready** | Owner, 2026-11-10: the first campaign uses almost no magic. Folk Magic is built and used live. The other traditions are still built in full before Session 1, but after the items above |
 
 ### At the table
 
@@ -62,7 +62,7 @@ If anything is lost, that is a Severity 1 bug for Claude. If it works, item 11 i
 These stay open. None of them holds up the first campaign. They are kept here so nothing is forgotten.
 
 **Later features**
-- Magic traditions the campaign doesn't use yet, and Organisations (Subsystem 6 batches, in the order in `roadmap.md`)
+- All of Subsystem 6: Animism, Mysticism, Sorcery, Theism and cults, Organisations (owner, 2026-11-10: build them all "just in case", in the order in `roadmap.md`, once items 2, 9, 10, 11 and 14 are Ready). Session 1 is a few months away, so there is time.
 - Campaign creator redesign (Mockup B), player style picker
 - The Pits: ranged combat (shelved), unarmed
 - Owned or commissioned home painting (owner sends art)
