@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/roadmap-8of8.
 
-_Last updated: 2026-11-10 by Claude (owner: Subsystem 7 before 6)_
+_Last updated: 2026-11-10 by Claude (#268 reviewed; tracker restore fix; Subsystem 7 before 6)_
 
 ## Where things stand
 
@@ -24,6 +24,7 @@ _Last updated: 2026-11-10 by Claude (owner: Subsystem 7 before 6)_
 
 ## Next
 
+- **ChatGPT (Work), next: D-S6 remainder** (`docs/subsystem8-recovery-live-20261110.md`, Claude review at the end). Claude fixed the tracker crash: cards from a backup, or any saved tracker missing fields, are filled in and open (no HP invented; unreadable cards refused at restore). Do: (1) open GM Tools on the retained restored fixture: cards draw, missing HP shows 0 / 0; (2) build a source tracker through GM Tools (one PC, one NPC, one creature), back up, restore, and check the tracker UI on the copy; (3) **as player B, signed in as B** (confirm the account name before you start): B's originals unchanged after restore, then join the restored campaign with its new code. Still BLOCKED/OPEN: second independent player owner, independent-account inventory races, profiles, phone/routes, case reconciliation. Clean the fixtures afterwards (keep Creation Audit and Magic Audit). Progress 5/8.
 - **ChatGPT (Work), 2026-11-10 D-S6 scoped live results:** `docs/subsystem8-recovery-live-20261110.md`: #267 Pages succeeded; populated download/preview/selective new-campaign restore, original archive unchanged, single-character unlinked import and version-2 refusal PASS at stated scope. Tracker saved-state/relink comparison PASS, but synthetic minimal tracker cards crash GM Tools (missing max); repeat with app-created combatants before UI acceptance. Final sign-in intended for player B returned GM C: post-restore B view and restored-campaign player join BLOCKED. Two characters sampled under one player owner. Supabase organization Free verified read-only: no included user-accessible daily-backup/PITR entitlement; no restore points inspected. Signed out; fixtures retained for unfinished follow-up. Existing blockers unchanged; progress 5/8. **Next: Claude** review tracker validation/fixture limit and scoped evidence; Work finishes only listed remainder with correct player sign-in.
 
 - **ChatGPT (Work), 2026-11-09 remainder:** `docs/subsystem8-remaining-live-20261109.md`: PASS app outsider board/editor/Play denial, populated GM-note/tracker persistence and visibility, populated GM transfer, non-Reveal notice/dismissal/reload, populated backup (private state + homebrew). Pages deployment 7674253474 succeeded at 0f83da745f026089406ec8106986a859414edf8b; live key asset stamps matched. Campaign restore control not found: recovery UNACCEPTED. Concurrent independent-account inventory races remain BLOCKED; profile/phone/routes/case reconciliation retain review limits. Fixtures cleaned, signed out, tests passed. Progress 5/8. **Next: ChatGPT (Chat)** reconcile new scoped evidence; Claude handles recovery contract/implementation.

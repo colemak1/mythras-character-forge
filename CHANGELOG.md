@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## GM tracker: cards from a backup always open (Subsystem 8 recovery follow-up)
+
+- Work's live restore check (`docs/subsystem8-recovery-live-20261110.md`) found that a backup whose tracker cards lacked fields (here: no AP) restored fine but then broke GM Tools ("Cannot read properties of undefined (reading 'max')").
+- Tracker cards are now filled in when a backup is restored **and** whenever saved GM state is read, so a campaign already holding such cards opens too. Missing AP gets the new-card default (2). Saved HP is kept. A location with no HP shows 0 / 0 for the GM to fill in, and a card with no locations gets none; no HP is invented. Unreadable effects and entries are dropped.
+- Restore now refuses a file whose tracker isn't a list, has a card that isn't readable, or has an unreadable creature, before anything is written.
+- Tests: `tests/campaign-restore.cjs` (sparse cards restore and draw; a sparse saved tracker opens and is filled in place; three new refusals).
+
 ## Restore campaign from backup (Subsystem 8, D-S6 option B)
 
 - **Campaign page > Restore from backup:** choose a `.campaign.json` file. The file is checked first (format, version, 20 MB limit, every character, custom item and GM state), then a preview shows the campaign name, backup date and what it holds. Nothing is written until **Restore as a new campaign**.

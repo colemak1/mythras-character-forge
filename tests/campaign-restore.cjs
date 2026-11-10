@@ -97,6 +97,33 @@ await test('the GM chooses which characters to copy; unchosen tracker cards lose
  assert.equal(fresh.sessionState.combatants[1].name,'Brin','the card keeps its saved name');
 });
 
+await test('sparse tracker cards (live check 2026-11-10) restore to cards GM Tools can draw, with no invented HP',async()=>{
+ seedLocal();const json=await backupJson();
+ ctx.restoreFile=file(json);await run('APP.campaignRestoreFile({files:[restoreFile]})');await run('APP.confirmCampaignRestore()');
+ const fresh=run('loadCampaignsLocal()').find(c=>c.id!=='camp-old'),cards=fresh.sessionState.combatants;
+ assert.deepEqual(cards.map(c=>c.ap),[{max:2,used:0},{max:2,used:0},{max:2,used:0}],'missing AP gets the new-card default');
+ assert.deepEqual(cards[0].locations,['Head']);assert.deepEqual(cards[0].hp.Head,{cur:3,max:5},'saved HP kept');
+ assert.deepEqual(cards[1].locations,[],'no locations saved: none invented');assert.deepEqual(cards[1].effects,[]);
+ assert.equal(cards[2].kind,'npc');assert.equal(cards[2].ref,null);
+ run('CAMPAIGN_VIEW={campaign:{id:'+JSON.stringify(fresh.id)+',session_state:'+JSON.stringify(fresh.sessionState)+'},members:[],chars:[],unassigned:[]};BOARD_CHARS=[];');
+ const html=run('gmToolsHTML(CAMPAIGN_VIEW.campaign)');
+ assert.match(html,/Anath/);assert.match(html,/Brin/);assert.match(html,/Bandit/);assert.match(html,/3<span> \/ 5<\/span>/);
+});
+
+await test('a sparse tracker already saved (e.g. the live fixture) still opens, and is filled in place',()=>{
+ const camp={id:'c1',session_state:{combatants:[{id:'t1',kind:'pc',ref:'x',name:'Anath',init:12,hp:{Head:{cur:3}}},{name:'Brin'},null,
+  {id:'t3',kind:'npc',name:'Bandit',ap:{max:3},effects:[{id:'e1',type:'bleeding',value:'x'},{type:'stunned'}],locations:['Chest',7]}],round:'2'}};
+ run('BOARD_CHARS=[];var sparse='+JSON.stringify(camp)+';');
+ assert.doesNotThrow(()=>run('gmToolsHTML(sparse)'));
+ const live=run('sessionStateOf(sparse)'),st=JSON.parse(JSON.stringify(live));
+ assert.equal(st.combatants.length,3,'the unreadable entry is dropped');assert.equal(st.round,1);
+ assert.deepEqual(st.combatants[0].hp.Head,{cur:3,max:3});assert.equal(typeof st.combatants[1].id,'string');
+ assert.deepEqual(st.combatants[2].ap,{max:3,used:0});assert.deepEqual(st.combatants[2].locations,['Chest']);
+ assert.deepEqual(st.combatants[2].hp.Chest,{cur:0,max:0},'unknown HP shows 0 / 0 for the GM to fill in');
+ assert.deepEqual(st.combatants[2].effects.map(e=>[e.id,e.value,e.mode]),[['e1',1,'counter']]);
+ assert.equal(run('sessionStateOf(sparse)').combatants[0],live.combatants[0],'same objects: GM edits still save');
+});
+
 await test('bad files are refused before anything is written, with a reason',async()=>{
  seedLocal();const good=JSON.parse(await backupJson());
  const cases=[
@@ -105,7 +132,10 @@ await test('bad files are refused before anything is written, with a reason',asy
   [Object.assign(clone(good),{campaign:null}),/campaign details are missing/],
   [(()=>{const b=clone(good);b.characters[1].state={concept:null};return b;})(),/character 2 \(Brin\): missing character concept/],
   [(()=>{const b=clone(good);b.customContent.push({type:'vehicle',name:'Cart'});return b;})(),/custom item 3/],
-  [(()=>{const b=clone(good);b.gmSessionState=[1];return b;})(),/GM notes and tracker/]];
+  [(()=>{const b=clone(good);b.gmSessionState=[1];return b;})(),/GM notes and tracker/],
+  [(()=>{const b=clone(good);b.gmSessionState.combatants={a:1};return b;})(),/GM tracker is not readable/],
+  [(()=>{const b=clone(good);b.gmSessionState.combatants.push('Bandit');return b;})(),/tracker card 4 is not readable/],
+  [(()=>{const b=clone(good);b.gmSessionState.combatants[2].creature='Wolf';return b;})(),/tracker card 3 \(Bandit\) has an unreadable creature/]];
  function clone(v){return JSON.parse(JSON.stringify(v));}
  const camps=JSON.stringify(run('loadCampaignsLocal()'));
  for(const [bad,why] of cases){
