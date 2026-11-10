@@ -19,3 +19,17 @@
 3. **Separate substantial engine:** AN-F06–F07. Current `spiritCombatNote` and manually adjustable spirit MP are **bookkeeping**, not a Spirit Combat engine. Keep explicitly GM-managed rather than falsely advertising full simulation. Core p.139 offers **optional Tenacity and physical-damage substitutes**: neither is part of default Spirit Combat, and no code case for them is approved.
 
 **Existing and excluded:** correct bound command fees/outcomes and capacity guards; source-specific spirit abilities from pp.140–153 remain GM-resolved (no invented effect catalogue); Magic Point recovery manual (D-2), ongoing spell tracking excluded (D-3); serious/major interruption D-5 implemented in #245. The table on p.131 governs spirit damage and must be transcribed into code with source-table test coverage if AN-F06 is approved. **No tests run, no live acceptance, subsystem 6 open, progress 5/8.**
+
+## Core p.131 Trance table — ruling after PR #251
+
+| Purpose | Minimum rank | Preparation at each eligible rank |
+|---|---|---|
+| Converse with spirits | Spirit Worshipper | Spirit Worshipper **1 hour**; Shaman **1 minute**; High Shaman **1 round** |
+| Project Self onto the Spirit Plane / Draw Spirit to the material world | Shaman | Shaman **1 hour**; High Shaman **1 minute** |
+| Drag Souls onto the Spirit Plane | High Shaman | High Shaman **1 hour** |
+
+**1 MP on failure — PASS (Core p.131).** The 1-MP expenditure belongs to the Trance ritual/attempt, before the outcome is known; an ordinary failed Trance does not refund it. The Observe portion built in #251 therefore needs no refund code change. Keep critical preparation one time step quicker (minimum one Action) and fumble's one-day bar; the table above is the **remaining AN-F01 code-needed part**, with eligible purposes and per-rank timing. GM-resolved opposed Willpower for unwilling targets remains distinct.
+
+## MY-C03 review — Core pp.156–157 (Mysticism, Augmenting Skills)
+
+**Code-needed:** active Augment Skill Intensity must contribute **one easier difficulty grade per level** to the actual linked Play Mode skill roll. Calculate the *net* grade after situational penalties, then cap the final effective grade at **Very Easy**. Do **not** discard excess intensity when the pre-penalty grade reaches Very Easy: that unused boost offsets later harder grades. Example: Standard base + Intensity 3 + two grades harder → Easy final; Standard + Intensity 3 with no penalties → Very Easy final. The displayed chance, die-result comparison, and log must use the same resolved grade; don't change learned-Talent, MP, or active-state rules already implemented. This is the remaining MY-C03 integration, not a separate active-spell tracking feature.
