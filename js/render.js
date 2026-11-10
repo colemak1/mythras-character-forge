@@ -4,12 +4,73 @@
 // while the first render is still writing the page (live batch 2026-11-09:
 // the GM tracker's creature form). Such a nested call waits and runs once,
 // right after.
-let RENDER_BUSY=false,RENDER_AGAIN=false;
+let RENDER_BUSY=false,RENDER_AGAIN=false,RENDER_DEFERRED=false,POINTER_DOWN=null;
+// A typed field commits on blur, while focus is moving to the next field.
+// Rebuilding the page then replaces that next field, and whatever the player
+// types into it was lost (live batch 2026-11-10: culture points typed box by
+// box stuck at 50/100; with Tab, 10/100). So after such a render, focus goes
+// back to the matching field in the new page:
+// - with the mouse, the render waits until the click is over (a render
+//   between press and click lost the click), then focus moves to the new
+//   copy of the field that was pressed;
+// - with Tab or a script moving focus, the render waits until focus has
+//   landed, then moves it to the new copy of that field.
+function afterPointer(pd){
+  if(!pd||!pd.pending)return;
+  pd.pending=false;renderNow();refocus(pd.sig,false);
+}
+if(typeof document!=="undefined"&&typeof document.addEventListener==="function"){
+  document.addEventListener("mousedown",e=>{
+    let t=e.target&&e.target.closest?e.target.closest("input,textarea,select,button,a,label,[tabindex]"):null;
+    if(t&&t.tagName==="LABEL")t=t.control||null;
+    const pd=POINTER_DOWN={sig:focusSig(t),pending:false};
+    setTimeout(()=>{if(POINTER_DOWN===pd)POINTER_DOWN=null;afterPointer(pd);},2000);},true);
+  // The click follows mouseup in the same task, so this runs after it.
+  document.addEventListener("mouseup",()=>{const pd=POINTER_DOWN;POINTER_DOWN=null;
+    if(pd&&pd.pending)setTimeout(()=>afterPointer(pd),0);},true);
+}
+function typedChange(){
+  const ev=typeof window!=="undefined"?window.event:null,t=ev&&ev.target;
+  if(!ev||ev.type!=="change"||!t||!t.tagName)return false;
+  return t.tagName==="TEXTAREA"||(t.tagName==="INPUT"&&!/^(checkbox|radio|file|range|color|button|submit|reset)$/i.test(t.type||""));
+}
+const FOCUS_SIG_ATTRS=["id","data-fk","name","onchange","oninput","onclick","aria-label","placeholder"];
+function focusSig(el){
+  if(!el||!el.tagName||el===document.body||el===document.documentElement)return null;
+  const sig=FOCUS_SIG_ATTRS.map(k=>el.getAttribute(k)||"").join("\u0001");
+  if(!sig.replace(/\u0001/g,""))return null;
+  const same=n=>FOCUS_SIG_ATTRS.map(k=>n.getAttribute(k)||"").join("\u0001")===sig;
+  const index=[...document.querySelectorAll(el.tagName)].filter(same).indexOf(el);
+  let sel=null;try{if(typeof el.selectionStart==="number")sel=[el.selectionStart,el.selectionEnd];}catch(e){}
+  return {tag:el.tagName,same,index:Math.max(0,index),sel};
+}
+// Focus the new copy of a field, unless focus already sits somewhere live.
+function refocus(sig,keepSel){
+  const a=document.activeElement;
+  if(!sig||a&&a!==document.body&&a!==document.documentElement&&(!document.contains||document.contains(a)))return;
+  const n=[...document.querySelectorAll(sig.tag)].filter(sig.same)[sig.index];
+  if(!n||typeof n.focus!=="function")return;
+  n.focus();
+  try{
+    if(keepSel&&sig.sel)n.setSelectionRange(sig.sel[0],sig.sel[1]);
+    else if(n.tagName==="INPUT"&&n.type==="number")n.select();
+    else if(typeof n.value==="string"&&typeof n.setSelectionRange==="function")n.setSelectionRange(n.value.length,n.value.length);
+  }catch(e){}
+}
 function render(){
+  if(typedChange()){
+    if(POINTER_DOWN){POINTER_DOWN.pending=true;return;}
+    if(!RENDER_DEFERRED){RENDER_DEFERRED=true;
+      setTimeout(()=>{RENDER_DEFERRED=false;const sig=focusSig(document.activeElement);renderNow();refocus(sig,true);},0);}
+    return;
+  }
+  renderNow();
+}
+function renderNow(){
   if(RENDER_BUSY){RENDER_AGAIN=true;return;}
   RENDER_BUSY=true;
   try{renderFrame();}finally{RENDER_BUSY=false;}
-  if(RENDER_AGAIN){RENDER_AGAIN=false;render();}
+  if(RENDER_AGAIN){RENDER_AGAIN=false;renderNow();}
 }
 function renderFrame(){
   renderInner();
@@ -196,7 +257,7 @@ function creaturePcPickerHTML(){
   return '<details class="lifeev"'+(open?' open':'')+'><summary>Play a creature your GM approved (Core pp.218&ndash;219)</summary>'
    +'<p class="note">Any creature with INT '+CREATURE_PC_MIN_INT+' or more can be a character if the GM allows it. Paste its stat block (your GM can copy it from the Combat Tracker), with dice for all seven characteristics, its Move and its hit locations. An instinctive (INS) creature can&rsquo;t be a character.</p>'
    +'<textarea id="creaturePcText" rows="7" style="width:100%;box-sizing:border-box" aria-label="Creature stat block" placeholder="Name: ...\nSTR 2d6+6 13\n...\nINT 2d6+6 13\nCHA 3d6 11\nMove 6\n1-3 Right Leg 1/5\n..." onchange="APP.creaturePcDraft(this.value)">'+esc(CREATURE_PC_DRAFT)+'</textarea>'
-   +'<p><label><input type="checkbox" id="creaturePcApproved"> My GM approved this creature as my character</label></p>'
+   +'<p><label><input type="checkbox" id="creaturePcApproved" '+(CREATURE_PC_APPROVED?"checked":"")+' onchange="APP.creaturePcApproved(this.checked)"> My GM approved this creature as my character</label></p>'
    +(CREATURE_PC_MSG.length?'<ul class="warn" role="alert" style="padding-left:18px">'+CREATURE_PC_MSG.map(m=>'<li>'+esc(m)+'</li>').join("")+'</ul>':'')
    +'<button class="chip actionchip" type="button" onclick="APP.useCreaturePc()">Use this creature</button></details>';
 }

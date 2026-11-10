@@ -1800,6 +1800,7 @@ let CREATURE_HIT={};           // last rolled hit location per creature combatan
 let CREATURE_MSG={};           // last trait result per creature combatant id (leap, trample, venom, breath)
 let CREATURE_PC_DRAFT="";      // Concept step: a GM-approved creature stat block, before use (CRTR-B18)
 let CREATURE_PC_MSG=[];       // problems found when that stat block was used
+let CREATURE_PC_APPROVED=false; // its "My GM approved" tick, kept across re-renders
 let HB_ERROR=null;             // set when a homebrew add/delete fails, cleared on the next successful action
 // In-progress "new item" forms for the Homebrew tab -- one draft per type,
 // reset to freshHbDraft() after a successful add. Kept separate from the
