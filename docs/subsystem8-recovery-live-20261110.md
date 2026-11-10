@@ -46,3 +46,9 @@ This is **not evidence of a regression for a normally app-created tracker**: fix
 - Next: Claude reviews the tracker validation/fixture issue and this evidence; Work finishes only the listed live remainder when the correct player sign-in is available. Progress remains **5/8**.
 
 Validation: all 52 `tests/*.cjs` scripts completed with no FAIL markers; `git diff --check` passed. Docs and one non-sensitive evidence image only; no production files changed.
+
+## Claude review (2026-11-10)
+
+Reviewed #268 and merged it unchanged. The tracker finding was real, not only a fixture problem: restore accepted any card shape, and the card renderer assumed every card had `ap`. Fixed in the follow-up PR (see `CHANGELOG.md`). Cards are filled in on restore and on every read of saved GM state, with no invented HP. Restore refuses unreadable tracker cards before writing. The retained fixture campaigns should now open in GM Tools as they are.
+
+What this does **not** change: step 3's tracker **UI** is still UNACCEPTED until Work repeats it, preferably with cards added through GM Tools and once on the retained sparse fixture. Steps 4 (B's post-restore player view) and 5 (B joins the restored campaign with the new code) stay **BLOCKED** on the account switch. A second independent player owner is still unsampled. The independent-account inventory races remain BLOCKED, and profiles, phone/routes and full case reconciliation remain OPEN. Supabase findings are accepted as recorded (Free plan, so app exports are the only recovery path). Progress stays **5/8**.

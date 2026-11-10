@@ -72,12 +72,53 @@ function emptySessionState(){return {combatants:[],round:1,turnIdx:0,activeId:nu
 function sessionStateOf(camp){
   const raw=(camp&&camp.session_state)||null;
   if(!raw)return emptySessionState();
-  if(raw.combatants)return raw; // already current shape
+  if(raw.combatants)return normalizeSessionState(raw); // already current shape
   const combatants=(raw.initiative||[]).map(e=>{
     if(e.kind==="pc")return combatantFromPc(e.ref,e.init,e.id);
     return Object.assign(combatantFromNpc(e.name,e.init,e.id));
   });
   return {combatants,round:raw.round||1,turnIdx:raw.turnIdx||0,activeId:null,sessionNotes:raw.sessionNotes||""};
+}
+// A tracker card from a backup file (or an older save) may lack fields the
+// card needs (live check 2026-11-10: a card with no `ap` broke GM Tools).
+// Missing parts are filled in place, so callers that mutate the cards keep
+// working. Numbers that aren't there aren't invented: a location without
+// HP shows 0 / 0 for the GM to fill in, and a card with no locations gets
+// none (the GM adds them). AP falls back to the new-card default of 2.
+const finiteOr=(v,d)=>typeof v==="number"&&Number.isFinite(v)?v:d;
+function normalizeCombatant(c){
+  if(typeof c.id!=="string"||!c.id)c.id=genId();
+  if(c.kind!=="pc"&&c.kind!=="npc")c.kind="npc";
+  if(c.kind==="npc")c.ref=null;else if(typeof c.ref!=="string")c.ref=null;
+  if(typeof c.name!=="string")c.name="Unnamed";
+  c.init=finiteOr(c.init,0);
+  if(!isPlainObject(c.ap))c.ap={};
+  c.ap.max=Math.max(0,finiteOr(c.ap.max,2));c.ap.used=Math.max(0,finiteOr(c.ap.used,0));
+  if(!isPlainObject(c.hp))c.hp={};
+  if(!Array.isArray(c.locations))c.locations=Object.keys(c.hp);
+  c.locations=[...new Set(c.locations.filter(l=>typeof l==="string"&&l.trim()))];
+  c.locations.forEach(loc=>{
+    const h=isPlainObject(c.hp[loc])?c.hp[loc]:{};
+    const max=finiteOr(h.max,finiteOr(h.cur,0));
+    c.hp[loc]=Object.assign(h,{max,cur:finiteOr(h.cur,max)});
+  });
+  c.effects=Array.isArray(c.effects)?c.effects.filter(e=>isPlainObject(e)&&typeof e.id==="string"&&typeof e.type==="string"):[];
+  c.effects.forEach(e=>{if(e.mode!=="duration"&&e.mode!=="counter")e.mode="counter";e.value=finiteOr(e.value,1);});
+  if(typeof c.stat1!=="string")c.stat1="";
+  if(typeof c.stat2!=="string")c.stat2="";
+  if(c.creature!=null&&!isPlainObject(c.creature))delete c.creature;
+  if(c.cs!=null&&!isPlainObject(c.cs))delete c.cs;
+  return c;
+}
+function normalizeSessionState(s){
+  if(!Array.isArray(s.combatants))s.combatants=[];
+  if(s.combatants.some(c=>!isPlainObject(c)))s.combatants=s.combatants.filter(isPlainObject);
+  s.combatants.forEach(normalizeCombatant);
+  s.round=Math.max(1,Math.floor(finiteOr(s.round,1)));
+  s.turnIdx=Math.max(0,Math.floor(finiteOr(s.turnIdx,0)));
+  if(typeof s.activeId!=="string")s.activeId=null;
+  if(typeof s.sessionNotes!=="string")s.sessionNotes="";
+  return s;
 }
 // Default hit-location preset -- same seven locations (and the same
 // Right/Left Arm|Leg -> "Each Arm"/"Each Leg" HP-sharing convention) every
@@ -372,6 +413,14 @@ function campaignBackupProblem(b){
   if(b.campaign.rules_settings!=null&&!isPlainObject(b.campaign.rules_settings))return "the campaign rules are not readable";
   if(b.campaign.notes!=null&&typeof b.campaign.notes!=="string")return "the campaign briefing is not readable";
   if(b.gmSessionState!=null&&!isPlainObject(b.gmSessionState))return "the GM notes and tracker are not readable";
+  const gmCards=b.gmSessionState&&b.gmSessionState.combatants;
+  if(gmCards!=null&&!Array.isArray(gmCards))return "the GM tracker is not readable";
+  if(gmCards&&gmCards.length>200)return "the GM tracker holds more than 200 cards";
+  for(let i=0;gmCards&&i<gmCards.length;i++){
+    const c=gmCards[i];
+    if(!isPlainObject(c)||(c.name!=null&&typeof c.name!=="string"))return "tracker card "+(i+1)+" is not readable";
+    if(c.creature!=null&&!isPlainObject(c.creature))return "tracker card "+(i+1)+(c.name?" ("+c.name.slice(0,60)+")":"")+" has an unreadable creature";
+  }
   if(!Array.isArray(b.characters))return "the character list is missing";
   if(b.characters.length>100)return "it holds more than 100 characters";
   for(let i=0;i<b.characters.length;i++){
@@ -409,7 +458,10 @@ function restoredCampaignName(name){
 function remapRestoredTracker(state,idMap){
   if(!isPlainObject(state))return null;
   const out=JSON.parse(JSON.stringify(state));
-  if(Array.isArray(out.combatants))out.combatants.forEach(c=>{if(c&&c.kind==="pc")c.ref=idMap[c.ref]||null;});
+  if(Array.isArray(out.combatants)){
+    normalizeSessionState(out);
+    out.combatants.forEach(c=>{if(c.kind==="pc")c.ref=idMap[c.ref]||null;});
+  }
   if(Array.isArray(out.initiative))out.initiative.forEach(e=>{if(e&&e.kind==="pc")e.ref=idMap[e.ref]||null;});
   return out;
 }
