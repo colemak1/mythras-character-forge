@@ -779,8 +779,32 @@ async function loadCampaignRowUnified(id){
 }
 // Settings live on a separate campaign column; session tracker writes never overwrite it.
 const CAMPAIGN_BOOKS=["Mythras Companion","Classic Fantasy","Mythic Babylon","M-Space"];
-function normalizedCampaignRules(v){
+// The Home page quote and next session (owner, 2026-11-09) ride along in the
+// same GM-only column under "home", so no schema change is needed. They are
+// not rules: a column holding only "home" counts as "no rules set".
+function campaignRulesPart(v){
  if(!v||typeof v!=="object")return null;
+ const {home,...rest}=v;
+ return Object.keys(rest).length?rest:null;
+}
+function normalizedCampaignHome(v){
+ if(!v||typeof v!=="object")return null;
+ const t=(x,n)=>typeof x==="string"?x.replace(/\s+/g," ").trim().slice(0,n):"";
+ const out={quote:t(v.quote,400),cite:t(v.cite,120),nextTitle:t(v.nextTitle,120),
+  nextDate:typeof v.nextDate==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v.nextDate)?v.nextDate:"",nextWhere:t(v.nextWhere,160)};
+ return Object.values(out).some(Boolean)?out:null;
+}
+function campaignHomeOf(camp){return normalizedCampaignHome(camp&&camp.rules_settings&&camp.rules_settings.home);}
+// The whole column for a save: the rules part plus the home part (either may be absent).
+function campaignSettingsWith(current,{rules,home}={}){
+ const r=rules!==undefined?rules:campaignRulesPart(current);
+ const h=home!==undefined?normalizedCampaignHome(home):campaignHomeOf({rules_settings:current});
+ if(!r&&!h)return null;
+ return Object.assign({},r||{},h?{home:h}:{});
+}
+function normalizedCampaignRules(v){
+ v=campaignRulesPart(v);
+ if(!v)return null;
  const method=["training","permanent"].includes(v.characteristicImprovement)?v.characteristicImprovement:null;
  const books=Array.isArray(v.books)?v.books.filter(x=>typeof x==="string"&&x.trim()).map(x=>x.trim().slice(0,100)).slice(0,20):[];
  // Core p.72: the GM may raise skill improvement from 1d4+1 to 1d6+1 for the whole campaign.
@@ -801,7 +825,7 @@ async function refreshCharacterCampaignRules(id){
  const owner=AUTH_USER?.id||null;
  const row=await loadCampaignRowUnified(id);if(!row)throw Error("Campaign settings are unavailable. Try again or contact the GM.");
  const rules=normalizedCampaignRules(row.rules_settings);
- if(row.rules_settings!=null&&!rules?.characteristicImprovement)throw Error("The GM needs to review the campaign rules.");
+ if(campaignRulesPart(row.rules_settings)!=null&&!rules?.characteristicImprovement)throw Error("The GM needs to review the campaign rules.");
  if((AUTH_USER?.id||null)!==owner)throw Error("The account changed while loading campaign rules.");
  if(S.campaignId===id)CHARACTER_CAMPAIGN_RULES={id,status:"ready",rules};return rules;
 }
@@ -1260,6 +1284,9 @@ function accountHTML(){
    +'<li><b>Campaigns and the Party Board</b><span>Your GM sees every linked character.</span></li>'
    +'<li><b>The Pits</b><span>Bring your own characters into the arena.</span></li></ul></aside>';
   h+='</div>';
+  // Settings (owner, 2026-11-09): Light/Dark lives here, not in the top bar.
+  h+='<section class="mmenu-panel st-settings" aria-labelledby="stSettingsTitle"><h2 id="stSettingsTitle">Settings</h2>'
+   +'<p>Appearance on this device. Match device follows your phone or computer’s own setting.</p>'+siteModeHTML()+'</section>';
   if(AUTH_USER||MOCK_AUTH){
     const owner=AUTH_USER?AUTH_USER.id:"local", cache=ACCOUNT_BACKUPS&&ACCOUNT_BACKUPS.owner===owner?ACCOUNT_BACKUPS.rows:null;
     h+='<details class="mmenu-panel" style="margin-top:16px"'+(cache||ACCOUNT_BACKUP_MSG?' open':'')+'><summary>Advanced / Backup</summary><p class="note">Import a character as a new copy, or load your saved characters to download a backup.</p><button class="mmenu-cta-secondary" onclick="APP.chooseImport()">Import character backup</button> <button class="mmenu-cta-secondary" onclick="APP.loadAccountBackups()">Load saved characters</button>';
@@ -1278,7 +1305,7 @@ function renderAccountView(){
   document.title="Account — Mythras Character Forge";
   $("#main").innerHTML=accountHTML();
 }
-// Home is the New Sit’ota table; actions retain their existing APP handlers.
+// Home is the Sit’ota table; actions retain their existing APP handlers.
 function menuHTML(){return sitotaHomeHTML();}
 // Top-right sign-in affordance: reflects real Supabase auth if present,
 // otherwise a distinct "Test" indicator when a mock session is active, or a
@@ -1297,7 +1324,7 @@ function renderMenuView(){
   document.body.classList.remove("play-mode");
   document.body.classList.remove("sheet-mode");
   document.body.classList.add("menu-mode");
-  document.title="New Sit’ota";
+  document.title="Sit’ota";
   $("#main").innerHTML=menuHTML();
 }
 /* ---- campaign list ---- */
@@ -1483,7 +1510,9 @@ function campaignDetailHTML(){
   if(isDM)h+='<p class="st-cm-fine">Players see these notes as a briefing.</p><label class="st-sr" for="cmNotesText">Table notes</label>'
    +'<textarea id="cmNotesText" rows="5" placeholder="Where the party is, what they are chasing, what happens next session." onchange="APP.campField(\'notes\',this.value)">'+esc(camp.notes||"")+'</textarea>';
   else h+=camp.notes?'<p class="st-cm-brief">'+esc(camp.notes)+'</p>':'<p class="st-cm-fine">The GM has not written any notes yet.</p>';
-  h+='</section></div>';
+  h+='</section>';
+  if(isDM)h+=campHomeEditorHTML(camp);
+  h+='</div>';
   // Side column
   h+='<aside class="st-cm-side">';
   if(cloud&&camp.invite_code){
@@ -1530,7 +1559,23 @@ function campaignDetailHTML(){
   h+='</aside></div></div>';
   return h;
 }
-let CAMP_NOTES_SAVED=false;
+let CAMP_NOTES_SAVED=false,CAMP_HOME_SAVED=false;
+// GM only: the quote and next session shown on everyone's Home page
+// (owner, 2026-11-09). Home shows the newest campaign that has one.
+function campHomeEditorHTML(camp){
+ const hm=campaignHomeOf(camp)||{};
+ const field=(id,label,val,attrs)=>'<label class="st-cm-label" for="'+id+'">'+label+'</label><input id="'+id+'" class="st-input" '+attrs+' value="'+esc(val||'')+'" oninput="campHomeDirty()">';
+ return '<section class="st-cm-panel st-cm-home" aria-labelledby="cmHome"><div class="st-cm-sechead"><h2 id="cmHome">Home page</h2>'
+  +'<span class="st-cm-saved'+(CAMP_HOME_SAVED?' on':'')+'" id="cmHomeSaved" aria-live="polite">'+(CAMP_HOME_SAVED?'Saved':'')+'</span></div>'
+  +'<p class="st-cm-fine">The quote and next session your players see at the top of their Home page. Leave the quote empty to show the Sit’ota title instead.</p>'
+  +'<label class="st-cm-label" for="cmHomeQuote">Quote</label><textarea id="cmHomeQuote" rows="3" maxlength="400" placeholder="A line from the world: a saying, an oath, a rumour." oninput="campHomeDirty()">'+esc(hm.quote||'')+'</textarea>'
+  +field('cmHomeCite','Said by',hm.cite,'type="text" maxlength="120" placeholder="Who said it, or where it’s from"')
+  +field('cmHomeNextTitle','Next session',hm.nextTitle,'type="text" maxlength="120" placeholder="Session title"')
+  +field('cmHomeNextDate','Date',hm.nextDate,'type="date"')
+  +field('cmHomeNextWhere','Time and place',hm.nextWhere,'type="text" maxlength="160" placeholder="For example, 7pm at Sam’s"')
+  +'<div class="st-cm-row"><button type="button" class="st-btn st-btn-primary" onclick="APP.saveCampaignHome()">Save Home page</button></div></section>';
+}
+function campHomeDirty(){CAMP_HOME_SAVED=false;const el=document.getElementById('cmHomeSaved');if(el){el.textContent='';el.classList.remove('on');}}
 // Two-tap confirm: the first tap turns the button into "Confirm" for 3.5s,
 // the second acts. stConfirmNext() tells the APP handler the person has
 // already confirmed on the page, so it skips its own confirm() box.
@@ -1686,7 +1731,7 @@ function boardCardHTML(row){
   // here on the Party Board (body.menu-mode) resolved to nothing and left
   // this bar's coloured fill invisible. Matches .pb-condchip's own palette
   // for the same condition so the chip and the bar always agree.
-  const barColor=v.worst==="major"?"#a52d20":v.worst==="serious"?"#8a5a12":v.worst==="minor"?"#8a5a12":"#3c5936";
+  const barColor=v.worst==="major"?"var(--accent)":v.worst==="serious"?"color-mix(in srgb,var(--accent) 75%,var(--bone-dim))":v.worst==="minor"?"color-mix(in srgb,var(--accent) 45%,var(--bone-dim))":"var(--bone-dim)";
   const isMine=cloudActive()?row.owner_id===(AUTH_USER&&AUTH_USER.id):true;
   const fatTag=v.fatigue&&v.fatigue!=="Fresh"?'<span class="pb-fat">'+esc(v.fatigue)+'</span>':"";
   return '<div class="pb-card '+v.worst+'" onclick="APP.boardOpenChar(\''+row.id+'\',\''+jsq(row.owner_name||"")+'\')" role="button" tabindex="0">'
@@ -1710,7 +1755,7 @@ function boardHTML(){
   const isDM=!cloudActive()||!!(camp&&camp.dm_id===(AUTH_USER&&AUTH_USER.id));
   let h='<div class="menuwrap pb-wrap">';
   h+='<p><button class="nav" onclick="APP.openCampaign(\''+(CURRENT_CAMPAIGN_ID||"")+'\')">&#8592; '+(camp?esc(camp.name):"Campaign")+'</button> '
-   +'<button class="nav" onclick="APP.refreshBoard()">&#8635; Refresh</button>'
+   +'<button class="nav" onclick="APP.refreshBoard()">Refresh</button>'
    +(cloudActive()?'<span class="pb-livedot '+(BOARD_LIVE?"on":"off")+'" title="'+(BOARD_LIVE?"Live — updates arrive automatically":"Reconnecting…")+'">'+(BOARD_LIVE?"&#9679; Live":"&#9675; Connecting…")+'</span>':'')+'</p>';
   h+='<div class="menuhead"><h1>Party Board'+(camp?" — "+esc(camp.name):"")+'</h1><p>Live status for every character linked to this campaign. Click a card to open it in Play Mode.</p></div>';
   if(isDM&&camp){

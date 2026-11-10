@@ -5,6 +5,19 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Sit'ota "Codex · Stone" look, Light and Dark
+
+- **One look everywhere (owner's v0 handoff, 2026-11-09):** every page, including the Forge, Play Mode and The Pits, now uses one set of stone-grey colours with a single crimson accent, in Light (default) and Dark. Fonts are Fraunces for headings and numbers and Public Sans for everything else; the other seven fonts are gone. Cards have the double "bound journal" rule, buttons and fields have small square corners, and headings are in sentence case.
+- **Light / Dark** is in Settings on the Account page and in Play Mode's Settings: Light, Dark or Match device. It's remembered on this device and applied before the page draws, so there's no flash.
+- **Renamed:** "New Sit'ota" is now "Sit'ota" throughout.
+- **Home:** the painting fills the top of the page behind a see-through top bar. Over it: the campaign's quote and the next session. The GM sets both in the campaign manager's new **Home page** panel (stored with the campaign; no database change). With no quote set, Home shows the Sit'ota title. The hero's Continue card is gone; an unsaved character in progress now shows under Your characters instead.
+- **Character cards:** show race, then culture and career. The combat style and Action Point chips are removed.
+- **Top bar:** text links only, crimson underline on the current page, round account seal. The logo switches between its light and dark versions.
+- **Forge:** paper main column, every step shows its number (no tick glyphs), stat numbers in Fraunces.
+- **Play Mode:** the default colour scheme is now **Stone** (follows Light/Dark), replacing Verdigris; a saved Verdigris choice falls back to Stone. The other eight schemes stay. Primary buttons are inverted ink; crimson marks wounds and failures.
+- **Party Board:** the Refresh button is plain text (no broken icon box); its health bars use the new colours.
+- Not changed: routes, saved characters and campaigns, rules, sign-in and Supabase. The painting is still the existing art with its credit; swap in owned art when it's ready.
+
 ## Phone More menu, Pits display fixes, Animist Trance
 
 - **More menu (phone):** choosing Rules, World Guide or Account now closes the More sheet. Before, it stayed open over the new page (live batch 2026-11-09).

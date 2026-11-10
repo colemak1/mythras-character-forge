@@ -132,14 +132,15 @@ test('body figure: seven keyboard-reachable zones, labelled with HP, armour and 
  assert.match(h,/class="pmx-zone ok"[^>]*aria-label="Head, /);
  assert.doesNotMatch(h,/<text/,'no numbers on the figure');
 });
-test('colour schemes: Verdigris by default, chosen per device, unknown values ignored',()=>{
+test('colour schemes: Stone (the site theme) by default, chosen per device, unknown values ignored',()=>{
  setup();store.delete('pm-colorway');
- assert.equal(run('pmColorway()'),'verdigris');
+ assert.equal(run('pmColorway()'),'stone');
  run('pmSetColorway("basalt")');assert.equal(store.get('pm-colorway'),'basalt');assert.equal(run('pmColorway()'),'basalt');
  for(const key of ['war-room','night-watch','ivory-ink','deep-cypress']){run('pmSetColorway('+JSON.stringify(key)+')');assert.equal(run('pmColorway()'),key);}
  run('pmSetColorway("basalt")');
  run('pmSetColorway("neon")');assert.equal(store.get('pm-colorway'),'basalt');
- store.set('pm-colorway','bogus');assert.equal(run('pmColorway()'),'verdigris');
+ store.set('pm-colorway','bogus');assert.equal(run('pmColorway()'),'stone');
+ store.set('pm-colorway','verdigris');assert.equal(run('pmColorway()'),'stone','the retired Verdigris falls back to Stone');
  const h=run('pmStyleHTML()');assert.equal((h.match(/<button type="button" class="pmx-cw/g)||[]).length,9);
 });
 test('phone sections: Sheet, Body, Skills, Combat, More (Home is in the ☰ menu)',()=>{
