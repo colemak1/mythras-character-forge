@@ -382,6 +382,11 @@ let SITE_HOME=null;          // {home:{quote,cite,credit}, hero_image} once load
 let SITE_ADMIN=false,SITE_ADMIN_FOR=null;
 let SITE_HERO_DRAFT;         // undefined = unchanged, '' = back to the bundled painting, else a JPEG data URL
 let SITE_HOME_MSG=null;      // {text, ok}
+// Unsaved quote / said-by / credit, kept across re-renders (#258: choosing
+// the default painting re-rendered the form and dropped them). Cleared on save.
+let SITE_TEXT_DRAFT={};
+function siteTextDraft(el){if(el&&el.dataset&&el.dataset.siteField)SITE_TEXT_DRAFT[el.dataset.siteField]=String(el.value||'');}
+function siteTextValue(k,saved){return Object.prototype.hasOwnProperty.call(SITE_TEXT_DRAFT,k)?SITE_TEXT_DRAFT[k]:saved;}
 const SITE_JPEG=/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/;
 function siteHomeSettings(){
  const s=SITE_HOME||{},h=s.home&&typeof s.home==='object'?s.home:{};
@@ -405,6 +410,7 @@ async function loadSiteHome(){
 }
 async function refreshSiteAdmin(){
  const id=AUTH_USER&&AUTH_USER.id;
+ if(SITE_ADMIN_FOR!==(id||null)){SITE_TEXT_DRAFT={};SITE_HERO_DRAFT=undefined;SITE_HOME_MSG=null;}
  SITE_ADMIN=false;SITE_ADMIN_FOR=id||null;
  if(!id||!CLOUD_ENABLED)return;
  try{
@@ -418,19 +424,19 @@ function siteAdminPanelHTML(){
  if(!SITE_ADMIN||!AUTH_USER)return '';
  const s=siteHomeSettings();
  const preview=SITE_HERO_DRAFT===undefined?s.image:SITE_HERO_DRAFT;
- const field=(id,label,val,max,ph)=>'<label class="st-label" for="'+id+'">'+label+'</label><input id="'+id+'" class="st-input" type="text" maxlength="'+max+'" placeholder="'+ph+'" value="'+esc(val)+'">';
+ const field=(id,k,label,val,max,ph)=>'<label class="st-label" for="'+id+'">'+label+'</label><input id="'+id+'" data-site-field="'+k+'" oninput="siteTextDraft(this)" class="st-input" type="text" maxlength="'+max+'" placeholder="'+ph+'" value="'+esc(siteTextValue(k,val))+'">';
  return '<section class="mmenu-panel st-settings st-siteadmin" aria-labelledby="stSiteAdminTitle"><h2 id="stSiteAdminTitle">Site home page <span class="st-tag st-tag-gm">Admin</span></h2>'
   +'<p>What everyone sees at the top of Home, signed in or not. A campaign’s own quote, set by its GM, still shows first for that campaign’s players.</p>'
   +(SITE_HOME_MSG?'<p class="st-banner'+(SITE_HOME_MSG.ok?' st-banner-ok':'')+'" role="'+(SITE_HOME_MSG.ok?'status':'alert')+'">'+esc(SITE_HOME_MSG.text)+'</p>':'')
-  +'<label class="st-label" for="siteQuote">Quote</label><textarea id="siteQuote" class="st-input st-textarea" rows="3" maxlength="400" placeholder="Leave empty to show the Sit’ota title">'+esc(s.quote)+'</textarea>'
-  +field('siteCite','Said by',s.cite,120,'Who said it, or where it’s from')
+  +'<label class="st-label" for="siteQuote">Quote</label><textarea id="siteQuote" data-site-field="quote" oninput="siteTextDraft(this)" class="st-input st-textarea" rows="3" maxlength="400" placeholder="Leave empty to show the Sit’ota title">'+esc(siteTextValue('quote',s.quote))+'</textarea>'
+  +field('siteCite','cite','Said by',s.cite,120,'Who said it, or where it’s from')
   +'<label class="st-label">Picture</label><div class="st-siteadmin-pic">'
   +(preview?'<img src="'+esc(preview)+'" alt="New Home picture">':'<img src="assets/sitota-hero.webp" alt="Default Home picture">')
   +'<div><input id="siteHeroFile" type="file" accept="image/jpeg,image/png,image/webp" hidden onchange="siteHeroPick(this)">'
   +'<button type="button" class="st-btn st-btn-sm" onclick="document.getElementById(\'siteHeroFile\').click()">Choose a picture…</button>'
   +(preview?'<button type="button" class="st-btn st-btn-sm" onclick="siteHeroDefault()">Use the default painting</button>':'')
   +'<small>JPEG, PNG or WebP, up to 15 MB. It’s resized to 1920px wide. A wide landscape works best; the left side fades out behind the quote.</small></div></div>'
-  +(preview?field('siteCredit','Picture credit',s.credit,160,'For example, the artist’s name'):'')
+  +(preview?field('siteCredit','credit','Picture credit',s.credit,160,'For example, the artist’s name'):'')
   +'<div class="st-row"><button type="button" class="st-btn st-btn-primary" onclick="saveSiteHome()">Save home page</button></div></section>';
 }
 // Resize to a JPEG data URL small enough for the settings row.
@@ -458,16 +464,16 @@ async function siteHeroPick(input){
 function siteHeroDefault(){SITE_HERO_DRAFT='';SITE_HOME_MSG={text:'Save home page to switch back to the default painting.',ok:true};render();}
 async function saveSiteHome(){
   if(!SITE_ADMIN||!AUTH_USER||!CLOUD_ENABLED)return;
-  const v=id=>String(document.getElementById(id)?.value||'').replace(/\s+/g,' ').trim();
-  const home={quote:v('siteQuote').slice(0,400),cite:v('siteCite').slice(0,120),credit:v('siteCredit').slice(0,160)};
-  if(!document.getElementById('siteCredit'))home.credit=siteHomeSettings().credit;
+  for(const id of ['siteQuote','siteCite','siteCredit'])siteTextDraft(document.getElementById(id));
+  const saved=siteHomeSettings(),t=(k,n)=>String(siteTextValue(k,saved[k])||'').replace(/\s+/g,' ').trim().slice(0,n);
+  const home={quote:t('quote',400),cite:t('cite',120),credit:t('credit',160)};
   const patch={home,updated_at:new Date().toISOString(),updated_by:AUTH_USER.id};
   if(SITE_HERO_DRAFT!==undefined)patch.hero_image=SITE_HERO_DRAFT||null;
   try{
    const {data,error}=await sb.from('site_settings').update(patch).eq('id','home').select('home,hero_image').maybeSingle();
    if(error)throw error;
    if(!data)throw Error('Not saved. This account is not a site admin.');
-   SITE_HOME=data;SITE_HERO_DRAFT=undefined;SITE_HOME_MSG={text:'Saved. Home shows it for everyone now.',ok:true};
+   SITE_HOME=data;SITE_HERO_DRAFT=undefined;SITE_TEXT_DRAFT={};SITE_HOME_MSG={text:'Saved. Home shows it for everyone now.',ok:true};
   }catch(e){SITE_HOME_MSG={text:'Could not save: '+(e.message||'unknown error')};}
   render();
  }

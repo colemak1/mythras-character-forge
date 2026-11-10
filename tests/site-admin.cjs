@@ -58,4 +58,18 @@ test('while the settings load, the picture waits instead of flashing the old one
  if(run('CLOUD_ENABLED'))assert.match(run('sitotaHomeHTML()'),/st-bd-wait/);
  run('SITE_HOME={};');
 });
+test('unsaved quote, said-by and credit survive "Use the default painting" (#258)',()=>{
+ run('AUTH_USER={id:"u1",email:"x@example.test"};SITE_ADMIN=true;SITE_ADMIN_FOR="u1";SITE_TEXT_DRAFT={};SITE_HERO_DRAFT=undefined;render=()=>{};');
+ run('SITE_HOME={home:{quote:"Old",cite:"Old cite",credit:"Old credit"},hero_image:"'+JPEG+'"};');
+ // Typing fires siteTextDraft from each field's oninput.
+ run('siteTextDraft({dataset:{siteField:"quote"},value:"Typed quote"});siteTextDraft({dataset:{siteField:"cite"},value:"Typed cite"});siteTextDraft({dataset:{siteField:"credit"},value:""});');
+ run('siteHeroDefault();');
+ let h=run('siteAdminPanelHTML()');
+ assert.match(h,/>Typed quote<\/textarea>/);assert.match(h,/value="Typed cite"/);
+ assert.doesNotMatch(h,/Old cite/,'the typed value wins over the saved one');
+ // A different account never sees another's unsaved text.
+ run('AUTH_USER={id:"u2",email:"y@example.test"};');
+ run('refreshSiteAdmin();');assert.equal(run('JSON.stringify(SITE_TEXT_DRAFT)'),'{}');
+ run('AUTH_USER=null;SITE_ADMIN=false;');
+});
 console.log(passed+' site admin tests passed');
