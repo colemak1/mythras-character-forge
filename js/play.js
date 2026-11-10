@@ -1052,8 +1052,10 @@ const PM_PHONE_ICONS=Object.fromEntries(Object.entries({
 }).map(([k,d])=>[k,'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>']));
 // Colour schemes for the Stone style (v0 design). Per device, like the
 // animated-dice preference: it is a display choice, not character data.
-const PM_COLORWAYS=[["verdigris","Verdigris","Cool grey stone, verdigris green and bronze."],["ember","Basalt & Ember","Warm grey stone, forge orange and brass."],["indigo","Sandstone & Indigo","Warm sandstone, deep indigo and copper."],["moss","Moss & Gold","Lichen stone, moss green and old gold."],["basalt","Basalt (dark)","Dark basalt for dim tables."],["war-room","The War Room","Dark brown, aged copper and oxblood."],["night-watch","Night Watch","Midnight blue, muted steel and brass."],["ivory-ink","Ivory & Ink","Cream, deep navy and muted bronze."],["deep-cypress","Deep Cypress","Forest charcoal, sage and pale gold."]];
-function pmColorway(){let v=null;try{v=localStorage.getItem("pm-colorway");}catch(e){}return PM_COLORWAYS.some(c=>c[0]===v)?v:"verdigris";}
+// "Stone" (owner, 2026-11-09) is the site theme and follows Light/Dark; it
+// replaced Verdigris, so a saved "verdigris" falls back to it.
+const PM_COLORWAYS=[["stone","Stone","The site colours. Follows Light or Dark in Settings."],["ember","Basalt & Ember","Warm grey stone, forge orange and brass."],["indigo","Sandstone & Indigo","Warm sandstone, deep indigo and copper."],["moss","Moss & Gold","Lichen stone, moss green and old gold."],["basalt","Basalt (dark)","Dark basalt for dim tables."],["war-room","The War Room","Dark brown, aged copper and oxblood."],["night-watch","Night Watch","Midnight blue, muted steel and brass."],["ivory-ink","Ivory & Ink","Cream, deep navy and muted bronze."],["deep-cypress","Deep Cypress","Forest charcoal, sage and pale gold."]];
+function pmColorway(){let v=null;try{v=localStorage.getItem("pm-colorway");}catch(e){}return PM_COLORWAYS.some(c=>c[0]===v)?v:"stone";}
 function pmSetColorway(k){if(!PM_COLORWAYS.some(c=>c[0]===k))return;try{localStorage.setItem("pm-colorway",k);}catch(e){}render();}
 // Play Mode shows the site header again (owner, 2026-11-09), so the old
 // site-menu dropdown is gone. Its two Play Mode items stay as header buttons.
@@ -1105,7 +1107,7 @@ function pmModalHTML(){
    +'<div class="pmx-popbody">'+pmSettingsHTML()+'</div></div></div>';
 }
 function pmSettingsHTML(){
-  return '<h3 class="pmx-setth">Colour scheme</h3>'+pmStyleHTML()
+  return '<h3 class="pmx-setth">Appearance</h3>'+siteModeHTML()+'<h3 class="pmx-setth">Colour scheme</h3>'+pmStyleHTML()
    +'<h3 class="pmx-setth">Dice</h3><label class="pmx-opt"><input type="checkbox" '+(pmDiceAnimated()?'checked':'')+' onchange="pmToggleDice3d(this.checked)"> Animated dice</label>';
 }
 function pmStyleHTML(){

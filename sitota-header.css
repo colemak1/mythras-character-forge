@@ -2,16 +2,16 @@
    2026-11-09). Shared by index.html and The Pits fight page. Flat and ruled:
    the active tab is a 2px gold line only, never a pill or a filled shape. */
 .sitota-header,.st-tabbar,.st-more{
-  --sh-bg:#171712;--sh-panel:#1f1f18;--sh-panel2:#26261e;--sh-line:#3a372d;--sh-line2:#555044;
-  --sh-ink:#eee6d7;--sh-muted:#b9ad98;--sh-faint:#8c8272;--sh-gold:#d7b884;--sh-gold-ink:#1c150b;
-  --sh-serif:"Cormorant Garamond",Georgia,serif;--sh-sans:"DM Sans",system-ui,sans-serif;
+  --sh-bg:var(--ink-0);--sh-panel:var(--ink-1);--sh-panel2:var(--ink-1);--sh-line:var(--line);--sh-line2:var(--line);
+  --sh-ink:var(--bone);--sh-muted:var(--bone-dim);--sh-faint:var(--bone-dim);--sh-gold:var(--accent);--sh-gold-ink:var(--on-accent);
+  --sh-serif:"Fraunces",Georgia,serif;--sh-sans:"Public Sans",system-ui,sans-serif;
 }
 .sitota-header *,.st-tabbar *,.st-more *{box-sizing:border-box}
 .sitota-header svg.i,.st-tabbar svg.i,.st-more svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;
   stroke-linecap:round;stroke-linejoin:round;flex:none}
 
 /* ---- Top bar ---- */
-.sitota-header{position:sticky;top:0;z-index:40;background:rgba(23,23,18,.9);
+.sitota-header{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--ink-0) 90%,transparent);
   -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--sh-line2);
   color:var(--sh-ink);font:400 15px/1.5 var(--sh-sans)}
 .sitota-header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;pointer-events:none;opacity:.4;
@@ -44,7 +44,7 @@
   .sitota-nav a{position:relative;display:inline-flex;align-items:center;gap:8px;padding:0 14px;color:var(--sh-muted);
     font:500 13px var(--sh-sans);text-decoration:none;white-space:nowrap;transition:color .15s,background-color .15s}
   .sitota-nav a svg.i{width:16px;height:16px;opacity:.85}
-  .sitota-nav a:hover{color:var(--sh-ink);background:rgba(238,230,215,.05)}
+  .sitota-nav a:hover{color:var(--sh-ink);background:color-mix(in srgb,var(--bone) 5%,transparent)}
   .sitota-nav a::after{content:"";position:absolute;left:14px;right:14px;bottom:-1px;height:2px;background:var(--sh-gold);
     transform:scaleX(0);transform-origin:center;transition:transform .2s}
   .sitota-nav a[aria-current="page"]{color:var(--sh-ink)}
@@ -87,11 +87,11 @@
 
   /* More sheet */
   .st-more:not([hidden]){display:block;position:fixed;inset:0;z-index:70}
-  .st-more-scrim{position:absolute;inset:0;width:100%;border:0;background:rgba(0,0,0,.55);cursor:pointer}
+  .st-more-scrim{position:absolute;inset:0;width:100%;border:0;background:color-mix(in srgb,var(--ink-0) 55%,transparent);cursor:pointer}
   .st-more-panel{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:4px;
     padding:10px 16px calc(16px + env(safe-area-inset-bottom));background:var(--sh-panel);border-top:1px solid var(--sh-line2);
-    border-radius:14px 14px 0 0;animation:stSheetUp .22s ease-out}
-  .st-more-grip{width:40px;height:4px;border-radius:4px;background:var(--sh-line2);margin:2px auto 10px}
+    border-radius:4px 4px 0 0;animation:stSheetUp .22s ease-out}
+  .st-more-grip{width:40px;height:4px;border-radius:3px;background:var(--sh-line2);margin:2px auto 10px}
   .st-more-panel a{display:flex;align-items:center;gap:14px;min-height:60px;padding:6px 12px;border-radius:3px;
     color:var(--sh-ink);text-decoration:none}
   .st-more-panel a:hover{background:var(--sh-panel2)}

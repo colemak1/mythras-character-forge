@@ -43,35 +43,67 @@ function homeCharactersHTML(){
  if(HOME_CHARACTERS_OWNER!==owner||HOME_CHARACTERS===null&&!HOME_CHARACTERS_ERROR)h+='<p class="st-character-message" role="status">Loading your characters…</p>';
  else if(HOME_CHARACTERS_ERROR)h+='<p class="st-character-message" role="alert">'+esc(HOME_CHARACTERS_ERROR)+' <button type="button" class="st-btn st-btn-sm" onclick="loadHomeCharacters();render()">Retry</button></p>';
  const rows=(HOME_CHARACTERS_OWNER===owner&&!HOME_CHARACTERS_ERROR?HOME_CHARACTERS||[]:[]).filter(c=>!stHiddenByUndo(c)).slice(0,3);
- return h+'<div class="st-chars st-chars-home">'+rows.map(stCharCard).join('')+stNewCard()+'</div></div></section>';
+ return h+'<div class="st-chars st-chars-home">'+rows.map(stCharCard).join('')+homeDraftCard(rows)+stNewCard()+'</div></div></section>';
 }
-
-// Hero "Continue": the most recently saved character (primary), or the
-// in-progress draft when there are no saved ones yet; signed out, Sign in.
-function homeContinueHTML(){
- if(!homeCharacterOwner())return '<button type="button" class="st-btn st-btn-primary st-btn-tall" onclick="APP.toAccount()">Sign in to continue</button>';
- const c=(HOME_CHARACTERS||[]).find(x=>!stHiddenByUndo(x));
- if(c){
-  const st=stCharStats(c);
-  return '<a class="st-resume" href="#/character/'+esc(encodeURIComponent(c.id))+'/play" aria-label="Continue '+esc(c.name||'Unnamed Character')+'">'+stPortrait(c,'st-mono st-mono-sm')
-   +'<span class="st-resume-txt"><b>Continue</b><span>'+esc(c.name||'Unnamed Character')+'</span><small>Saved '+esc(stWhen(c.updated_at))+(st.style?' · '+esc(st.style.name)+' '+st.style.pct+'%':'')+'</small></span>'
-   +'<span class="st-go" aria-hidden="true">→</span></a>';
- }
+// An unsaved character in progress, when nothing is saved yet. This was the
+// hero's "Continue" card; the hero no longer has one (owner, 2026-11-09).
+function homeDraftCard(rows){
+ if(rows.length)return '';
  const auto=getAutosaveInfo();
- return auto?'<button type="button" class="st-resume" onclick="APP.fromMenuContinue()"><span class="st-resume-txt"><b>Continue</b><span>'+esc(auto.name)+'</span><small>Character in progress</small></span><span class="st-go" aria-hidden="true">→</span></button>':'';
+ return auto?'<button type="button" class="st-new-card st-draft-card" onclick="APP.fromMenuContinue()"><span class="st-plus" aria-hidden="true">→</span>Continue '+esc(auto.name)+'<small>Character in progress</small></button>':'';
 }
 
-/* This view follows the owner-approved 16:9 reference, polished per the
-   2026-11-07 menu redesign handoff. Other app views unchanged. */
+// Home hero (Codex · Stone, owner 2026-11-09): the painting behind the
+// translucent top bar, the campaign's quote and its next session. The GM
+// sets both in the campaign manager; they're stored with the campaign
+// (rules_settings.home, see campaignHomeOf). The old "Continue" card is gone.
+// Home loads the campaign list itself when nothing else has (at most once
+// every 10 seconds, so a failing load can't loop).
+let HOME_CAMPS_LOADING=false,HOME_CAMPS_AT=0;
+function homeCampaign(){
+ const owner=homeCharacterOwner();
+ if(!owner)return null;
+ if(!Array.isArray(CAMP_CACHE)){
+  if(!HOME_CAMPS_LOADING&&!CAMP_LOAD_ERROR&&Date.now()-HOME_CAMPS_AT>10000&&typeof loadCampaignsUnified==='function'){
+   HOME_CAMPS_LOADING=true;HOME_CAMPS_AT=Date.now();
+   setTimeout(()=>{
+    if(APPVIEW!=='menu'||Array.isArray(CAMP_CACHE)){HOME_CAMPS_LOADING=false;return;}
+    Promise.resolve(loadCampaignsUnified()).catch(()=>{}).finally(()=>{HOME_CAMPS_LOADING=false;});
+   },0);
+  }
+  return null;
+ }
+ const withHome=CAMP_CACHE.filter(c=>campaignHomeOf(c)).sort((x,y)=>new Date(y.created_at)-new Date(x.created_at));
+ return withHome[0]||null;
+}
+function homeNextSessionHTML(home){
+ if(!home||!(home.nextTitle||home.nextDate))return '';
+ const d=home.nextDate?new Date(home.nextDate+'T12:00:00'):null,ok=d&&!isNaN(d);
+ return '<div class="st-bd-next">'
+  +(ok?'<div class="st-bd-date" aria-hidden="true"><small>'+esc(d.toLocaleDateString(undefined,{month:'short'}))+'</small><b>'+d.getDate()+'</b></div>':'')
+  +'<div class="st-bd-next-t"><small>Next session'+(ok?' · '+esc(d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'})):'')+'</small>'
+  +'<b>'+esc(home.nextTitle||'Next session')+'</b>'+(home.nextWhere?'<span>'+esc(home.nextWhere)+'</span>':'')+'</div></div>';
+}
+function homeHeroHTML(){
+ const camp=homeCampaign(),home=camp?campaignHomeOf(camp):null;
+ const kicker=camp?'Sit’ota · '+esc(camp.name||'Campaign'):'Sit’ota · Valeshar Campaign';
+ const words=home&&home.quote
+  ?'<blockquote class="st-bd-quote"><p>'+esc(home.quote)+'</p>'+(home.cite?'<cite>'+esc(home.cite)+'</cite>':'')+'</blockquote>'
+  :'<h1 class="st-bd-title">Sit’ota</h1><p class="st-bd-lede">The world guide, characters, and everything we need for the campaign.</p>';
+ return '<section class="st-bd-hero">'
+  +'<picture><source srcset="assets/sitota-hero.avif" type="image/avif"><img class="st-bd-img" src="assets/sitota-hero.webp" alt=""></picture>'
+  +'<div class="st-frame st-bd-inner"><div class="st-bd-copy"><p class="st-bd-kicker">'+kicker+'</p>'+words+homeNextSessionHTML(home)
+  +'<div class="st-bd-links"><a class="st-bd-world" href="#/world/welcome">Explore Sit’ota <span aria-hidden="true">→</span></a></div>'
+  +'</div></div></section>';
+}
+
+/* Home page: backdrop hero, then the existing sections. */
 function sitotaHomeHTML(){
  const pits=stPitsLiveLine();
  const tile=(href,icon,title,text,live,cls)=>'<a class="st-dest'+(cls?' '+cls:'')+'" href="'+href+'"><span class="st-dest-arrow" aria-hidden="true">→</span>'+icon+'<h3>'+title+'</h3><p>'+text+'</p>'+(live?'<span class="st-live">'+live+'</span>':'')+'</a>';
  const svg=d=>'<svg class="st-dest-icon" viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>';
- return '<div class="sitota-public st-home st-home-16x9">'
- +'<section class="st-hero"><div class="st-hero-art" aria-hidden="true"></div><div class="st-frame st-hero-layout"><div class="st-hero-copy">'
- +'<div class="st-eyebrow">Valeshar Campaign</div><h1>New Sit’ota</h1><p class="st-lede">The world guide, characters, and everything<br class="st-desktop-break"> we need for the campaign.</p>'
- +'<div class="st-ctas">'+homeContinueHTML()+'<a class="st-world-link" href="#/world/welcome">Explore Sit’ota <span class="st-arrow" aria-hidden="true">→</span></a></div>'
- +'</div></div><span class="st-hero-credit">Art: Richard Wright · © Wizards of the Coast</span></section>'
+ return '<div class="sitota-public st-home st-stone-home">'
+ +homeHeroHTML()
  +(MENU_MSG?'<p class="st-frame st-message" role="status">'+esc(MENU_MSG)+'</p>':'')
  +(LOCAL_SAVE_ERROR?'<p class="st-frame st-message" role="alert">'+esc(LOCAL_SAVE_ERROR)+'</p>':'')
  +homeCharactersHTML()
@@ -81,7 +113,7 @@ function sitotaHomeHTML(){
  +tile('#/wiki',svg('<path d="M12 6C9 4 6 4 3 5v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1Zm0 0v14"/>'),'Rules','Search the Mythras rules by chapter.','')
  +tile('#/world/welcome',svg('<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14"/>'),'World Guide','People, places and history of Sit’ota.','')
  +'</div>'+(homeCharacterOwner()?'<div class="st-table-actions"><span>Starting a table?</span><button type="button" class="st-btn st-btn-sm" onclick="APP.newCampaign()">Create campaign</button><button type="button" class="st-btn st-btn-sm" onclick="APP.homeJoinCampaign()">Join a campaign</button></div>':'')+'</div></section>'
- +'<div class="st-frame st-orc"><p>Rules text is drawn from Mythras Imperative and Classic Fantasy Imperative by The Design Mechanism, used under the ORC licence. Mythras and Classic Fantasy are Reserved Material.</p></div>'
+ +'<div class="st-frame st-orc"><p>Art: Richard Wright · © Wizards of the Coast. Rules text is drawn from Mythras Imperative and Classic Fantasy Imperative by The Design Mechanism, used under the ORC licence. Mythras and Classic Fantasy are Reserved Material.</p></div>'
  +'</div>';
 }
 
@@ -223,14 +255,13 @@ const ST_CARD_STATS={};
 // Computed against a temporary copy of the character, never the open draft.
 function stCharStats(c){
  const key=c.id+'|'+c.updated_at;if(ST_CARD_STATS[key])return ST_CARD_STATS[key];
- const out={style:null,ap:null};
+ const out={race:null};
  if(c.state&&typeof freshState==='function'){
   const original=S;
   try{
    S=Object.assign(freshState(),JSON.parse(JSON.stringify(c.state)));normalizeState();
-   const best=stylesList().map(s=>({name:s.name,pct:finalPct(s.key)})).sort((a,b)=>b.pct-a.pct)[0];
-   if(best&&best.pct>0)out.style=best;
-   const v=charVitals(S);if(v&&Number.isFinite(v.baseAP))out.ap=v.baseAP;
+   const sp=typeof speciesOf==='function'?speciesOf(S):null;
+   out.race=sp&&sp.label?sp.label:'Human';
   }catch(e){}finally{S=original;}
  }
  const camp=c.campaign_id&&Array.isArray(CAMP_CACHE)?CAMP_CACHE.find(x=>x.id===c.campaign_id):null;
@@ -252,10 +283,10 @@ function stPortrait(c,cls){
 function stCharCard(c){
  const name=c.name||'Unnamed Character',id=jsq(c.id),st=stCharStats(c);
  const tier=c.tier&&c.tier!=='ordinary'&&typeof ARCHETYPES!=='undefined'&&ARCHETYPES[c.tier]?ARCHETYPES[c.tier].label:null;
- const meta=[c.culture,c.career,tier].filter(Boolean).map(esc).join(' · ')||'Character in progress';
- const chips=(st.style?'<span class="st-chip st-chip-g">'+esc(st.style.name)+' '+st.style.pct+'%</span>':'')
-  +(st.ap!=null?'<span class="st-chip">'+st.ap+' AP</span>':'')
-  +(st.campaign?'<span class="st-chip st-chip-t">'+esc(st.campaign)+'</span>':'');
+ // Race first, then culture, career and tier (owner, 2026-11-09). The
+ // combat-style and AP chips are gone; the campaign chip stays.
+ const meta=[st.race,c.culture,c.career,tier].filter(Boolean).map(esc).join(' · ')||'Character in progress';
+ const chips=st.campaign?'<span class="st-chip st-chip-t">'+esc(st.campaign)+'</span>':'';
  return '<article class="st-cc" data-char-id="'+esc(c.id)+'"><div class="st-cc-top">'+stPortrait(c,'st-mono')
   +'<div class="st-cc-text"><h3>'+esc(name)+'</h3><div class="st-cc-meta">'+meta+'</div>'+(chips?'<div class="st-cc-stats">'+chips+'</div>':'')+'</div></div>'
   +'<div class="st-cc-foot"><span class="st-cc-when">Saved '+esc(stWhen(c.updated_at))+'</span>'
@@ -310,4 +341,30 @@ function stPitsLiveLine(){
   const best=(Array.isArray(rows)?rows:[]).filter(r=>r&&r.wins>0).sort((a,b)=>b.wins-a.wins)[0];
   return best?'Best run: '+best.wins+' win'+(best.wins===1?'':'s')+(best.charname?' · '+esc(best.charname):''):'';
  }catch(e){return '';}
+}
+
+// ---- Light / Dark (owner, 2026-11-09: in Settings, not the top bar) ----
+// A per-device display choice, like the dice animation: "light", "dark" or
+// unset to follow the device. index.html applies it before first paint.
+function siteModePref(){let v=null;try{v=localStorage.getItem('sitota-mode');}catch(e){}return v==='light'||v==='dark'?v:'auto';}
+function siteModeApply(){
+ const p=siteModePref();
+ const dark=p==='dark'||(p==='auto'&&!!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches));
+ document.documentElement.setAttribute('data-mode',dark?'dark':'light');
+}
+function siteSetMode(v){
+ try{if(v==='light'||v==='dark')localStorage.setItem('sitota-mode',v);else localStorage.removeItem('sitota-mode');}catch(e){}
+ siteModeApply();
+ document.querySelectorAll('.st-mode button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===siteModePref())));
+}
+function siteModeHTML(){
+ const cur=siteModePref(),ic=d=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>';
+ const opt=(k,label,icon)=>'<button type="button" data-mode="'+k+'" aria-pressed="'+(cur===k)+'" onclick="siteSetMode(\''+k+'\')">'+icon+label+'</button>';
+ return '<div class="st-mode" role="group" aria-label="Appearance">'
+  +opt('light','Light',ic('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'))
+  +opt('dark','Dark',ic('<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>'))
+  +opt('auto','Match device',ic('<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>'))+'</div>';
+}
+if(typeof window!=='undefined'&&window.matchMedia){
+ try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(siteModePref()==='auto')siteModeApply();});}catch(e){}
 }

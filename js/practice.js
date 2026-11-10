@@ -62,7 +62,7 @@ APP.enterPits=function(){
 };
 function renderPitsView(){
   document.body.classList.remove("play-mode","sheet-mode");document.body.classList.add("menu-mode");
-  document.title="The Pits — New Sit’ota";
+  document.title="The Pits — Sit’ota";
   const signedIn=!!(AUTH_USER||MOCK_AUTH),chars=Array.isArray(LIB_CACHE)?LIB_CACHE:null;
   let h='<div class="menuwrap pits-page st-page">'+stPageHead({eyebrow:'Training arena',title:'The Pits',h1Class:'pits-title',
     sub:'Fight your character against escalating opponents to learn Mythras combat before the campaign.'});

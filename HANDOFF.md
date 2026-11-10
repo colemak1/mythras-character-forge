@@ -3,9 +3,9 @@
 Read `AGENTS.md`, then this, at the start of every session; update it before ending one. Keep it short: replace finished items, don't append history (history goes in `CHANGELOG.md`).
 
 **Owner kickoff line for a new Claude session** (paste as the first message):
-> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/docs-review-migration-fixes-f6c6yv.
+> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/stone-reskin.
 
-_Last updated: 2026-11-10 by Claude (More menu, Pits display, Trance; docs #246–#248 merged)_
+_Last updated: 2026-11-10 by Claude (Codex · Stone reskin, Light/Dark, Home quote)_
 
 ## Where things stand
 
@@ -13,7 +13,8 @@ _Last updated: 2026-11-10 by Claude (More menu, Pits display, Trance; docs #246�
 - **Whole plan:** `docs/roadmap.md` (Phases 0–4, from 5/8 to finished, with the owner decisions each needs).
 
 - **Progress 5/8** (`docs/subsystem-plan.md`). Subsystems 1–5 closed; Main Play Mode Combat stays CLOSED. Next audits when the owner resumes them: 6 Magic (low priority), 7 Creatures, 8 Campaign/multi-account (D-S1–D-S4 implemented; DB permission tests in CI; signed-in live check remains).
-- **Play Mode:** v0 "Stone & Verdigris" look, nine colour schemes (`play-stone.css`), item search, Core-only traits. Nothing waiting on a live check.
+- **Look (owner, 2026-11-09):** Codex · Stone everywhere, tokens in `sitota-theme.css` (loaded last; light on `:root`, dark on `html[data-mode="dark"]`). Other stylesheets use the tokens only; don't add hex colours. Light/Dark is in Settings (Account page, Play Mode Settings). Home quote and next session: GM sets them in the campaign manager, stored in `campaigns.rules_settings.home` (not rules; `campaignRulesPart` ignores it).
+- **Play Mode:** default colour scheme Stone (site tokens); eight optional schemes (`play-stone.css`), item search, Core-only traits. Nothing waiting on a live check.
 - **Home and menus:** owner's redesign handoff Part A done (#197–#201): shared page header, phone tab bar and More sheet, sign-in gates, Home Continue card and character cards, Characters search/sort/Undo delete, Campaign cards and Join with a code, The Pits lobby, Rules table of contents, World Guide chips, Account tabs and profile. Styles in `sitota-menus.css`; tests in `tests/site-menus.cjs`.
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits. Change a combat rule there, with a test in `tests/combat-rules.cjs`.
 - **The Pits** (`experiments/practice-combat.html`, route `#/the-pits`):
@@ -23,6 +24,8 @@ _Last updated: 2026-11-10 by Claude (More menu, Pits display, Trance; docs #246�
 
 ## Next
 
+- **ChatGPT (Work), live check of the Stone reskin** (after the PR merges): every route in Light and Dark at 390px and desktop; Settings → Light/Dark/Match device persists after reload; as GM, campaign manager → Home page: set quote, cite, next session, Save, then Home shows them (as a player of that campaign too); Campaign rules & books still save and still apply to a linked character; character cards show race and no style/AP chips; Play Mode Settings shows Appearance and the Stone scheme. Report anything unreadable or broken.
+- **Owner:** the home painting is still the existing (WotC) art with its credit. Send owned/commissioned art when ready and Claude swaps `assets/sitota-hero.*`. The v0 mockup files (`index.html`, `themes.css`, `img/hero.png`) weren't in Downloads; built from the handoff text.
 - **ChatGPT (Work), first (signed in):** production schema already has the three continuity RPCs, grants, revision column and trigger (`docs/live-batch-followup-20261109.md`); don't reinstall. Retry New code / Remove / Make GM as GM, then the blocked creature, saved-character/Play Mode and two-account checks.
 - **ChatGPT (Work), follow-up 2026-11-09:** `docs/live-batch-followup-20261109.md`: schema checks PASS; three Pits bouts reached Victory; signed-in checks blocked. Its UI findings are fixed (see Claude, done). Recheck at 390px: More → Rules / World Guide closes the sheet. In The Pits: a second bout starts with no Last roll; Impale choices show Impale advice; a withdrawal wound doesn't appear under an older "misses" headline. Progress 5/8.
 - **ChatGPT (Work), diagnostics/live 2026-11-09:** `docs/server-check-results-20261109.md` proves all 3 public continuity RPCs absent; New code still fails. `docs/live-batch-20261109.md`: header samples, Sheet scroll, notes Saved/player view, error clearing and active-delete/sign-out passed; creature form refresh blocked entry; phone/direct permission/remaining multi-account checks unaccepted. Disposable fixtures deleted. Claude reviewed (2026-11-09): migration hand-off and form fix done. Progress 5/8.
