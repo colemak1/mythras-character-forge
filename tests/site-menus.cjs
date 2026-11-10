@@ -72,6 +72,14 @@ await test('phone tab bar and More sheet exist with the five tabs',()=>{
  for(const t of ['menu','library','campaigns','pits','more'])assert.match(html,new RegExp('data-tab="'+t+'"'));
  assert.match(html,/id="stMoreSheet" hidden/);
 });
+await test('choosing a destination in the More sheet closes it (live batch 2026-11-09)',()=>{
+ run(`var __sheet={hidden:true,dataset:{},querySelector:()=>null},__btn={setAttribute(){},focus(){}};
+  var __bar={querySelectorAll:()=>[]};document.getElementById=id=>id==='stMoreSheet'?__sheet:id==='stMoreBtn'?__btn:id==='stTabbar'?__bar:null;`);
+ run('stOpenMore()');assert.equal(run('__sheet.hidden'),false);
+ run('updateSiteTabbar("wiki")');assert.equal(run('__sheet.hidden'),true,'the first route change after opening closes it');
+ run('stOpenMore();updateSiteTabbar("world")');assert.equal(run('__sheet.hidden'),true);
+ run('document.getElementById=()=>null;');
+});
 await test('Rules is a grouped table of contents with Core page numbers, search and group chips',()=>{
  run('WIKI_CHAPTER=null;WIKI_TOC_Q="";WIKI_TOC_GROUP="all";');
  let h=run('wikiHTML()');

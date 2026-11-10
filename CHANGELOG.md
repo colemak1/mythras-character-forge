@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Phone More menu, Pits display fixes, Animist Trance
+
+- **More menu (phone):** choosing Rules, World Guide or Account now closes the More sheet. Before, it stayed open over the new page (live batch 2026-11-09).
+- **The Pits:**
+  - A new bout starts with an empty "Last roll" instead of the previous fight's last roll.
+  - The Impale choices (pick damage, keep hold or let go, resist withdrawal) and trip resistance now show their own guidance instead of the generic Attack/Delay advice.
+  - The exchange recap stops where the next action or round begins, so a later wound isn't shown under an older "misses" headline.
+- **Trance (Animism, AN-C01, Core p.131):** a "Roll Trance" button on the Animism section of the Magic tab. It costs 1 MP and shows the time to Observe the Spirit Plane for the animist's rank: Follower 1 hour, Spirit Worshipper 1 minute, Shaman 1 round, High Shaman 1 Action. A critical saves one step. A fumble bars Trance until "Rest one day".
+
 ## Creature characters track their own body; hurt while casting
 
 - **Creature characters in Play Mode (CRTR-C03):** a GM-approved creature character now has its own hit-location boxes: the entry's locations, d20 ranges, HP and natural armour, instead of the seven human ones. Damage goes through natural armour, wounds are tracked per location and saved, and the GM's combat tracker takes the same locations. A location ending in Arm or Leg counts as a limb for wound effects.

@@ -189,22 +189,29 @@ function updateSiteTabbar(active){
   const on=t.dataset.tab===active||(t.dataset.tab==='more'&&more);
   if(on)t.setAttribute('aria-current','page');else t.removeAttribute('aria-current');
  });
+ // Any route change dismisses the More sheet (live batch 2026-11-09: it
+ // stayed open over Rules and World Guide after choosing them).
  const sheet=document.getElementById('stMoreSheet');
- if(sheet&&!sheet.hidden&&!sheet.dataset.keep)stCloseMore();
- if(sheet)delete sheet.dataset.keep;
+ if(sheet&&!sheet.hidden)stCloseMore();
  document.querySelectorAll('#stMoreSheet [data-site-view]').forEach(l=>{
   if(l.dataset.siteView===active)l.setAttribute('aria-current','page');else l.removeAttribute('aria-current');
  });
 }
 function stOpenMore(){
  const s=document.getElementById('stMoreSheet'),b=document.getElementById('stMoreBtn');if(!s)return;
- s.hidden=false;b&&b.setAttribute('aria-expanded','true');s.dataset.keep='1';
+ s.hidden=false;b&&b.setAttribute('aria-expanded','true');
  const first=s.querySelector('a,button');first&&first.focus();
 }
 function stCloseMore(){
  const s=document.getElementById('stMoreSheet'),b=document.getElementById('stMoreBtn');if(!s)return;
  s.hidden=true;b&&b.setAttribute('aria-expanded','false');
 }
+// Choosing a destination closes the sheet, even when it is the page already
+// shown (no route change follows then).
+if(typeof document!=='undefined'&&document.addEventListener)document.addEventListener('click',e=>{
+ const link=e.target&&e.target.closest&&e.target.closest('#stMoreSheet a[href]');
+ if(link)stCloseMore();
+});
 if(typeof document!=='undefined'&&document.addEventListener)document.addEventListener('keydown',e=>{
  const s=document.getElementById('stMoreSheet');
  if(e.key==='Escape'&&s&&!s.hidden){stCloseMore();document.getElementById('stMoreBtn')?.focus();}

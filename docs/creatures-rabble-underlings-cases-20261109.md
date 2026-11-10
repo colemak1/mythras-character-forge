@@ -10,7 +10,7 @@
 | CRTR-C24 | **p.111** | GM deliberately selects **Underling** → use the simplified one-fifth-of-average-CON+SIZ HP figure, retain normal Special Effect eligibility, and keep its **two-injury** withdrawal counter distinct from current HP. Unlike Rabble's text, the Underling line does not expressly state a rounding method: use project rounding decision D-4 and label this as interpretation. |
 | CRTR-C25 | **p.111** | Underling receives an injury reaching the HP threshold → automatically fails the applicable Serious Wound Endurance test; double threshold → death. After **two injuries**, cease fighting and withdraw if possible. Do not accidentally apply Rabble's first-hit flight rule. |
 | CRTR-C26 | **p.111** | Half a group of Underlings are dead or wounded → the rest withdraw. Track this separately from Rabble's one-third morale trigger. |
-| CRTR-C27 | **pp.218–219** | A GM-authorized creature PC with a nonhuman body plan is damaged in Play Mode → resolve and persist its **actual named hit locations, armour and per-location HP** rather than the seven human boxes. The Pits currently refuses creature PCs; do not silently admit them. |
+| CRTR-C27 (**already built as CRTR-C03, PR #245**) | **pp.218–219** | A GM-authorized creature PC with a nonhuman body plan is damaged in Play Mode → resolve and persist its **actual named hit locations, armour and per-location HP** rather than the seven human boxes. The Pits currently refuses creature PCs; do not silently admit them. |
 
 ## Creature competence and GM procedures — reconciliation
 
@@ -20,3 +20,5 @@
 - **B20 per-entry powers, Core pp.220–273:** preserved as GM-resolved until a particular mechanic is approved for automation; do not invent blanket automation for dozens of distinct abilities.
 
 **Evidence boundary:** source checks only, not a current implementation/test pass. No changes to `docs/subsystem-plan.md`: 5/8. Nonhuman location implementation still requires owner scope approval per `HANDOFF.md`.
+
+**Claude review (2026-11-10):** accepted as a source-checked inventory. C27 is CRTR-C03, built in #245. C21–C26 describe an optional GM tracker mode that doesn't exist; building it would widen GM-managed scope, so it waits for an owner decision ("offer Rabble/Underlings in the tracker?"). Until then they are recorded as unsupported optional rules, not open defects.
