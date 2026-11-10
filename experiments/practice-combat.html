@@ -510,7 +510,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 .recovery-options small{font:11px/1.5 system-ui;color:var(--accent);max-width:330px}
 
 </style>
-<link rel="stylesheet" href="pits-stone.css?v=2680c515f3">
+<link rel="stylesheet" href="pits-stone.css?v=f565ea1341">
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
 <link rel="stylesheet" href="../sitota-theme.css?v=87170da09c">
 </head>
@@ -1977,7 +1977,7 @@ function decoratePitsChoices(){
  });
 }
 function render(){if(V.capturing)return;applyPitsTheme();if(typeof pitsGameOnLogs==='function')pitsGameOnLogs();const setup=S.phase==='setup';
- $('#root').innerHTML=(`<section class="mast"><div><div class="eyebrow">SIT’OTA / THE PITS</div><h1>The Pits</h1>${setup?
+ $('#root').innerHTML=(`<section class="mast"><div><div class="eyebrow">Sit’ota · The Pits</div><h1>The Pits</h1>${setup?
  '<p>Test · Learn · Survive</p>':''}</div><div class="header-actions">${!setup?(`<span class="pill">${esc(modeName(
  S.mode))}</span>${guidanceToggleHtml()}<button class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" `
  +`aria-pressed="${V.quick}">${V.quick?'Quick pace':'Standard pace'}</button><button class="toolbutton" data-act="reset">Exit battle</button>`):

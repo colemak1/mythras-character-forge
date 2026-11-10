@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits header in sentence case
+
+- The Pits header now reads "Sit’ota · The Pits" and "The Pits" in normal case, matching the rest of the site. Before, both were in wide-tracked capitals (found in the live check of the Stone reskin, `docs/live-check-stone-20261110.md`).
+
 ## Sit'ota "Codex · Stone" look, Light and Dark
 
 - **One look everywhere (owner's v0 handoff, 2026-11-09):** every page, including the Forge, Play Mode and The Pits, now uses one set of stone-grey colours with a single crimson accent, in Light (default) and Dark. Fonts are Fraunces for headings and numbers and Public Sans for everything else; the other seven fonts are gone. Cards have the double "bound journal" rule, buttons and fields have small square corners, and headings are in sentence case.
