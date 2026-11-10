@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/roadmap-8of8.
 
-_Last updated: 2026-11-10 by Claude (D-S6 option B built: Restore campaign from backup)_
+_Last updated: 2026-11-10 by Claude (owner: Subsystem 7 before 6)_
 
 ## Where things stand
 
@@ -52,7 +52,7 @@ _Last updated: 2026-11-10 by Claude (D-S6 option B built: Restore campaign from 
 - **Claude, done 2026-11-10 (Subsystem 7 batch):** every case in the three creature specs checked against the code. CRTR-C03-W was already built. Built: Rabble/Underlings (C21–C26) as an optional "Fights as" choice on tracker creature cards, "How many" when adding, and #230's follow-ups (Vulnerable keeps worn armour; Intimidate Critical covers brethren; "stopped threatening"). #230's content is folded into `docs/creature-cases-batch-1.md`; **owner:** close #230 (Claude's close was blocked by a permission check). Progress 5/8.
 - **ChatGPT (Chat), next:** one line confirming Core p.218 Vulnerable (natural/magical protection only, or worn armour too?), then the Subsystem 7 closeout after Work's pass.
 - **ChatGPT (Work), Subsystem 7 GM-tracker pass (signed in, own campaign):** add a creature with How many 3, set all to Rabble, hit one for damage below its HP: it flees and the card says the rest flee. Add 4, set Underling, hit one twice: it withdraws; a second one hurt and the rest withdraw. A Vulnerable (silver) creature with worn armour on a location: a silver hit there still counts the worn armour. Two creatures of the same name with Intimidate: a Critical on one also shows on the other; "stopped threatening" clears everything but the Critical. Plus the creature-character checks listed below.
-- **Claude, next:** Subsystem 8 fixes if Work's two-account matrix finds any, then Subsystem 6 (Folk Magic finish first, `docs/roadmap.md`).
+- **Owner, 2026-11-10: finish Subsystem 7 before 6.** Claude checked: every Subsystem 7 code case is built (B01–B20, CRTR-C03/C03-W, C21–C26; C27 = C03). Order to close it: **Chat** the one-line Vulnerable confirmation (p.218), **Work** the GM-tracker pass below, **Chat** the closeout. **Claude, next:** fix whatever that pass finds and mark 7 closed (→ 6/8 or 7/8); Subsystem 8 fixes if Work's matrix finds any; Subsystem 6 only after 7 closes.
 - **Claude's machine note:** Windows checkout uses CRLF; asset stamps are hashes of the LF (committed) bytes, so run `tests/asset-versions.cjs` in an LF clone, not the working copy. Node is installed; Python isn't, so stamp with an equivalent Node script (hash each `?v=` file's LF bytes).
 - **ChatGPT (Work), live batch 2026-11-08:** `docs/live-batch-pr212-20261108.md`: A/B/C/D signed in, joins/items/reload/Undo and sampled Pits victory timing passed; Red/Blue and saved fixture deleted. New code / Remove / Make GM FAIL with missing server-update message; Claude investigate RPC availability despite reported migration. D-S3 grants verified; direct permission matrix, conflicts/gifts/pop-up and full traits/backup checks remain unaccepted. Progress 5/8.
 - **Owner, later:** Settings → General → "Allow auto-merge" if not on yet.
