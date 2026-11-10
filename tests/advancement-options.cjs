@@ -62,4 +62,18 @@ test('Passion shift rejects bad input and read-only views',()=>{
  run('VIEW_ONLY=true;APP.passionShift(0,"weak",1);VIEW_ONLY=false;');assert.equal(run('passionVal(S.passions[0])'),40);
  assert.match(run('xpModalHtml()'),/APP\.passionShift\(0,/);
 });
+// #255: the Improve skills help showed "+1d4+1%" for a 1d6+1 campaign. The die
+// only comes from skillImprovementDie(), so help and roll match once rules are
+// ready; before that the help guessed 1d4. It must never name a die it doesn't know.
+test('Improve skills help names the same die the roll uses, and never guesses 1d4 (#255)',()=>{
+ setup();run('S.campaignId="c1";S.xp.pool=1;CHARACTER_CAMPAIGN_RULES={id:"c1",status:"ready",rules:{characteristicImprovement:"training",skillImprovement:"d6",books:[]}};');
+ let h=run('xpModalHtml()');assert.match(h,/\+1d6\+1%/);assert.doesNotMatch(h,/\+1d4\+1%/);
+ run('CHARACTER_CAMPAIGN_RULES={id:"c1",status:"loading",rules:null};');
+ h=run('xpModalHtml()');assert.doesNotMatch(h,/\+1d4\+1%/,'loading: no guessed die');assert.match(h,/loading this campaign/);
+ run('CHARACTER_CAMPAIGN_RULES={id:"c1",status:"error",rules:null};');
+ h=run('xpModalHtml()');assert.doesNotMatch(h,/\+1d4\+1%/,'failed: no guessed die');assert.match(h,/could not be loaded/);assert.match(h,/APP\.openXP\(\)/,'offers Retry');
+ run('__alerts=[];');run(`APP.xpSpend("${A}")`);
+ assert.equal(run('S.xp.pool'),1,'nothing spent after a failed load');assert.match(run('__alerts[0]'),/could not be loaded/);
+ run('S.campaignId=null;');assert.match(run('xpModalHtml()'),/\+1d4\+1%/,'standalone: Core 1d4+1');
+});
 console.log(passed+' advancement option tests passed');

@@ -975,7 +975,7 @@ window.APP={
  openXP(){XP_LEARN_MSG="";XP_TRAIN_MSG="";XP_CHAR_MSG="";XP_OPEN=true;
    const current=S,id=S.campaignId;
    if(id){CHARACTER_CAMPAIGN_RULES={id,status:"loading",rules:null};render();
-     refreshCharacterCampaignRules(id).catch(()=>{if(S===current)CHARACTER_CAMPAIGN_RULES={id,status:"error",rules:null};}).finally(()=>{if(S===current&&XP_OPEN)render();});
+     refreshCharacterCampaignRules(id).catch(e=>{if(S===current)CHARACTER_CAMPAIGN_RULES={id,status:"error",rules:null,error:String(e&&e.message||e||"").slice(0,200)};}).finally(()=>{if(S===current&&XP_OPEN)render();});
    }else render();},
  closeXP(){XP_OPEN=false;render();},
  xpAward(v,applyModifier=false){if(VIEW_ONLY)return;const text=String(v).trim(),n=Number(text);if(!/^-?\d+$/.test(text)||!Number.isSafeInteger(n)||n===0)return;
@@ -1086,7 +1086,7 @@ window.APP={
  xpSpend(key){if(VIEW_ONLY||xpRollsAvailable()<=0)return;
    const e=entryMap()[key];if(!e)return;
    const die=skillImprovementDie();
-   if(!die){window.alert("Campaign rules are still loading. Try again in a moment; no Experience Roll was spent.");return;}
+   if(!die){window.alert(xpRulesWaitText());return;}
    // Resolve a free fumble improvement separately if it would consume the
    // last point of headroom; do not also spend a roll for a zero gain.
    if(literacyHeadroom(key)<=0){window.alert("Literacy is at its spoken language limit. Improve that language first; no Experience Roll was spent.");return;}
@@ -1119,7 +1119,7 @@ window.APP={
  xpSpendPassion(i){if(VIEW_ONLY||xpRollsAvailable()<=0||!Number.isInteger(i))return;
    const p=S.passions[i];if(!p)return;
    const target=passionVal(p);if(typeof target!=="number"||!Number.isFinite(target))return;
-   const die=skillImprovementDie();if(!die){window.alert("Campaign rules are still loading. Try again in a moment; no Experience Roll was spent.");return;}
+   const die=skillImprovementDie();if(!die){window.alert(xpRulesWaitText());return;}
    const r=d100(),total=r+effectiveChars().INT,success=total>=target,gain=success?(d(die)+1):1;
    p.xpBonus=(Number(p.xpBonus)||0)+gain;
    S.xp.pool=Math.max(0,S.xp.pool-1);
