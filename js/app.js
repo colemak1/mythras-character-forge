@@ -315,6 +315,8 @@ window.APP={
    S.play.magic=playCurMagic()-1;
    const prep=trancePrep(S.magic.animistRank,tier==="Critical");
    if(tier==="Fumble")S.play.tranceBarred=true;
+   // AN-F01: keep the outcome with the character (purpose, preparation).
+   S.play.trance=(tier==="Critical"||tier==="Success")?{purpose:"Observe",prep,critical:tier==="Critical"}:null;
    const out=tier==="Critical"?"Trance, quickened: Observe after "+prep
      :tier==="Success"?"Trance: Observe after "+prep
      :tier==="Fumble"?"Trance fumbled: no entry to the Spirit Plane for a day":"Trance failed";
@@ -1257,6 +1259,10 @@ window.APP={
  // entirely -- for damage that was never subject to AP in the first place
  // (poison, fire, GM fiat), not a shortcut for a
  // weapon hit. See the "Ignores armour" row in pmLocDetail.
+ // CRTR-C03-W: record the GM's ruling on a nonhuman location's wound class.
+ playSetLocClass(loc,v){if(viewOnlyBlock()||!playHPLocs().includes(loc))return;
+   S.play.locClass=S.play.locClass||{};
+   if(PLAY_LOC_CLASSES.includes(v))S.play.locClass[loc]=v;else delete S.play.locClass[loc];render();},
  playQuickDamage(loc,n){if(viewOnlyBlock()||!playHPLocs().includes(loc)||!Number.isSafeInteger(n)||n<=0)return;S.play.hp[loc]=playCurHP(loc)-n;render();},
  // Selecting a location just opens the detail panel — read-only navigation,
  // always allowed even in a VIEW_ONLY session. Clears any damage-math note
@@ -1298,6 +1304,7 @@ window.APP={
  advanceTime(kind){if(viewOnlyBlock())return;
    if(kind==="day"){
      if(S.play.tranceBarred){S.play.tranceBarred=false;}
+     S.play.trance=null;
      // Core p.80: natural healing restores the Healing Rate once per interval,
      // which is a day only for Minor Wounds; Serious takes a week, Major a month after treatment.
      const healed=[],waiting=[];

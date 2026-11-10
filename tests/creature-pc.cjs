@@ -96,6 +96,30 @@ test('CRTR-C03 Play Mode tracks a creature character\'s own locations, HP and na
  // A human character keeps the seven human boxes.
  run('S=freshState();normalizeState();');assert.equal(run('playHPLocs().length'),7);
 });
+test('CRTR-C03-W wing and tail wounds wait for the GM\'s ruling; arms, legs and head keep the human rules (Core p.110)',()=>{
+ use(folk({locs:['1-3 Tail 2/5','4-5 Right Leg 2/5','6-7 Left Leg 2/5','8-9 Abdomen 2/6','10-12 Chest 2/7','13-14 Right Wing 1/4','15-16 Right Arm 2/4','17-18 Left Arm 2/4','19-20 Head 2/5'].join('\n')}),true);
+ run('S.charMode="pb";Object.assign(S.chars,{STR:11,CON:13,SIZ:13,DEX:11,INT:13,POW:11,CHA:6});S.play.hp={};VIEW_ONLY=false;viewOnlyBlock=()=>false;');
+ const cls=l=>run(`playLocClass("${l}")`);
+ assert.equal(cls('Right Arm'),'humanLimb');assert.equal(cls('Left Leg'),'humanLimb');assert.equal(cls('Head'),'vital');assert.equal(cls('Chest'),'vital');
+ assert.equal(cls('Right Wing'),null,'not silently treated as head or body');assert.equal(cls('Tail'),null);
+ const fx=(l,c)=>run(`playWoundEffectText("${l}","${c}")`);
+ assert.match(fx('Right Wing','serious'),/ask the GM whether this location works like a limb/);
+ assert.match(run('playWoundActionText("Tail","major")'),/GM ruling needed/);
+ // The GM rules: the wing works like a limb (flight), the tail is not a limb.
+ run('APP.playSetLocClass("Right Wing","limb");APP.playSetLocClass("Tail","vital")');
+ assert.match(fx('Right Wing','serious'),/useless until healed above 0/);assert.doesNotMatch(fx('Right Wing','serious'),/drop whatever|drop prone/);
+ assert.match(fx('Right Wing','major'),/severed or ripped off/);
+ assert.match(fx('Tail','serious'),/knocked out/);
+ assert.match(fx('Right Arm','serious'),/arm: drop whatever it's holding/,'human arm unchanged');assert.match(fx('Head','major'),/instant, gruesome death/);
+ run('S.play.selectedLoc="Right Wing"');assert.match(run('pmLocDetail()'),/Wound class for Right Wing/);
+ run('S.play.selectedLoc="Right Arm"');assert.doesNotMatch(run('pmLocDetail()'),/Wound class for/);
+ // Saved with the character; junk is dropped on load; a ruling can be cleared.
+ run('S=JSON.parse(JSON.stringify(S));S.play.locClass.Bogus="maybe";normalizeState();');
+ assert.equal(run('S.play.locClass["Right Wing"]'),'limb');assert.equal(run('S.play.locClass.Bogus'),undefined);
+ run('APP.playSetLocClass("Tail","")');assert.equal(cls('Tail'),null);
+ // A human character is unaffected.
+ run('S=freshState();normalizeState();');assert.equal(run('playLocClass("Right Arm")'),'humanLimb');assert.equal(run('playLocClass("Abdomen")'),'vital');
+});
 test('CRTR-B18 a saved creature character survives reload; a tampered one is refused',()=>{
  use(folk(),true);
  run('var __saved=JSON.parse(JSON.stringify(S));S=Object.assign(freshState(),__saved);normalizeState()');
