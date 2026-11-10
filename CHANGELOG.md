@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Restore campaign from backup (Subsystem 8, D-S6 option B)
+
+- **Campaign page > Restore from backup:** choose a `.campaign.json` file. The file is checked first (format, version, 20 MB limit, every character, custom item and GM state), then a preview shows the campaign name, backup date and what it holds. Nothing is written until **Restore as a new campaign**.
+- It always makes a **new** campaign, "<name> (restored)", run by you: rules and home settings, briefing, GM notes and tracker, and custom content. You tick which characters to copy; each becomes a new character of yours in the new campaign, and tracker cards point at the copies. Nothing existing is overwritten; members aren't copied (players join with the new code). If a step fails, the message says what was already restored.
+- **Import character backup** now accepts a campaign backup and lets you pick one character from it (a new, unlinked character).
+- Fixed the `buildCampaignBackup` comment, which said its characters could already be re-imported. Tests: `tests/campaign-restore.cjs` (backup → restore round trip, local and signed in). Not live-checked; progress stays 5/8.
+
 ## Creatures: Rabble and Underlings, Vulnerable and Intimidate fixes (Subsystem 7)
 
 - **Rabble and Underlings (optional, Core p.111, CRTR-C21–C26):** each creature card in the GM tracker has "Fights as": a normal creature (default, unchanged), Rabble or Underling. Either mode uses one HP figure for every location, one fifth of the average CON+SIZ (from the dice), rounded up; per-location HP is hidden. Rabble get no Special Effects and leave the fight at the first injury: below the HP they flee, at it they collapse, at double they die. Underlings keep Special Effects; at the HP they automatically fail Endurance and take the Serious Wound; double kills; a second injury makes them withdraw. Group morale counts creatures with the same name and mode: a third of Rabble down and the rest flee; half of Underlings and the rest withdraw (announced once, shown on each card).

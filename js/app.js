@@ -7,6 +7,57 @@
 // this window.
 let _lastFireAt={};
 function debounceFire(key,fn){const now=Date.now();if(now-(_lastFireAt[key]||0)<400)return;_lastFireAt[key]=now;fn();}
+// Character import, shared by Import character backup, a pick from a
+// campaign file and campaign restore (D-S6). The import never reuses an id
+// from the file, so it can't overwrite another character.
+let CHAR_PICK=null,CAMP_RESTORE=null;
+function importErrorShower(){
+  const fromLibrary=APPVIEW==="library",fromAccount=APPVIEW==="account";
+  return msg=>{if(fromAccount)AUTH_MSG={level:"warn",text:msg};else if(fromLibrary)CAMP_MSG=msg;else MENU_MSG=msg;render();};
+}
+function importedCharacterState(imported,campaignId){
+  const blank=freshState(),restored=freshState();
+  for(const key of Object.keys(blank))if(Object.prototype.hasOwnProperty.call(imported,key)){
+    // Older exports may omit fields added in subsequent releases. Keep
+    // newer defaults without discarding values the player actually saved.
+    const incoming=imported[key],defaults=blank[key];
+    restored[key]=(incoming&&defaults&&typeof incoming==="object"&&typeof defaults==="object"&&!Array.isArray(incoming)&&!Array.isArray(defaults))
+      ?Object.assign({},defaults,incoming):incoming;
+  }
+  if(!Object.prototype.hasOwnProperty.call(imported,"_creationFlowVersion"))restored._creationFlowVersion=1;
+  // Never reuse an identity from the export: that could overwrite another
+  // character or make a browser guest appear to own a cloud row.
+  restored._libId=null;restored._ownerId=null;restored.campaignId=campaignId||null;
+  restored._libLastSaved=null;restored._pendingClaim=true;
+  const previous=S;
+  try{S=restored;normalizeState();return S;}finally{S=previous;}
+}
+// Saves a new character for the signed-in person and returns its new id.
+async function saveImportedCharacter(imported,campaignId){
+  const problem=characterImportProblem(imported);if(problem)throw new Error(problem);
+  const normalized=importedCharacterState(imported,campaignId);
+  if(cloudActive()){
+    const row=await cloudUpsertCharacter({name:normalized.concept.name||"Unnamed Character",tier:normalized.archetype,culture:normalized.culture||"",
+      career:(normalized.customCareer&&normalized.customCareer.isCustom?normalized.customCareer.name:normalized.career)||"",
+      campaignId:campaignId||null,state:JSON.parse(JSON.stringify(normalized))});
+    return row&&row.id;
+  }
+  const previous=S;S=normalized;
+  try{return saveCurrentToLibraryLocal().id;}finally{S=previous;}
+}
+async function importOneCharacter(imported,owner,showError){
+  const problem=characterImportProblem(imported);
+  if(problem){showError("Import failed: "+problem);return;}
+  try{
+    await saveImportedCharacter(imported,null);
+    if((AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null)!==owner)return;
+    ACCOUNT_BACKUPS=null;AUTH_MSG=null;MENU_MSG=null;CAMP_MSG=null;
+    APPVIEW="library";LIB_CACHE=null;render();await loadLibraryUnified();window.scrollTo(0,0);
+  }catch(e){
+    // Failed imports must preserve the character already open on screen.
+    showError("Import failed: the data was invalid or could not be saved. Your previous character was preserved.");
+  }
+}
 window.APP={
  go(i){if(i<0||i>=currentSteps().length)return;
    if(i>S.step){for(let s=S.step;s<i;s++){if(!stepPassed(s)){S.step=s;render();window.scrollTo(0,0);return;}}}
@@ -1415,38 +1466,70 @@ window.APP={
    if(!AUTH_USER&&!MOCK_AUTH){APP.toAccount();return;}
    const file=input&&input.files&&input.files[0];if(!file)return;
    const owner=AUTH_USER?AUTH_USER.id:"local";
-   const fromLibrary=APPVIEW==="library",fromAccount=APPVIEW==="account";
-   const showError=msg=>{if(fromAccount)AUTH_MSG={level:"warn",text:msg};else if(fromLibrary)CAMP_MSG=msg;else MENU_MSG=msg;render();};
-   if(file.size>2*1024*1024){showError("Import failed: file exceeds the 2 MB character limit.");return;}
+   const showError=importErrorShower();
+   // A campaign backup (D-S6) may be larger; a single character stays at 2 MB.
+   if(file.size>CAMPAIGN_BACKUP_MAX_BYTES){showError("Import failed: file exceeds the 2 MB character limit.");return;}
    let imported;
    try{imported=JSON.parse(await file.text());}catch(e){showError("Import failed: this is not valid JSON.");return;}
    if((AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null)!==owner)return;
-   const problem=characterImportProblem(imported);
-   if(problem){showError("Import failed: "+problem);return;}
-   const blank=freshState(),restored=freshState();
-   for(const key of Object.keys(blank))if(Object.prototype.hasOwnProperty.call(imported,key)){
-     // Older exports may omit fields added in subsequent releases. Keep
-     // newer defaults without discarding values the player actually saved.
-     const incoming=imported[key],defaults=blank[key];
-     restored[key]=(incoming&&defaults&&typeof incoming==="object"&&typeof defaults==="object"&&!Array.isArray(incoming)&&!Array.isArray(defaults))
-       ?Object.assign({},defaults,incoming):incoming;
+   if(isCampaignBackup(imported)){
+     const p=campaignBackupProblem(imported);
+     if(p){showError("Import failed: "+p+".");return;}
+     if(!imported.characters.length){showError("Import failed: this campaign backup holds no characters.");return;}
+     CHAR_PICK={owner,backup:imported};AUTH_MSG=null;MENU_MSG=null;CAMP_MSG=null;
+     APPVIEW="library";render();if(LIB_CACHE==null)loadLibraryUnified();window.scrollTo(0,0);return;
    }
-   if(!Object.prototype.hasOwnProperty.call(imported,"_creationFlowVersion"))restored._creationFlowVersion=1;
-   // Never reuse an identity from the export: that could overwrite another
-   // character or make a browser guest appear to own a cloud row.
-   restored._libId=null;restored._ownerId=null;restored.campaignId=null;
-   restored._libLastSaved=null;restored._pendingClaim=true;
-   const previous=S;let normalized;
+   if(file.size>2*1024*1024){showError("Import failed: file exceeds the 2 MB character limit.");return;}
+   await importOneCharacter(imported,owner,showError);
+ },
+ // Import character backup given a campaign file: the player picks one.
+ async importPickedCharacter(i){
+   const pick=CHAR_PICK;if(!pick)return;
+   const owner=AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null;
+   if(owner!==pick.owner){CHAR_PICK=null;render();return;}
+   const entry=pick.backup.characters[i];if(!entry)return;
+   CHAR_PICK=null;
+   await importOneCharacter(entry.state,owner,importErrorShower());
+ },
+ cancelCharacterPick(){CHAR_PICK=null;render();},
+ /* D-S6: Restore campaign from backup (a new campaign; never overwrites). */
+ chooseCampaignRestore(){if(!AUTH_USER&&!MOCK_AUTH){APP.toAccount();return;}const input=document.getElementById("campaignRestoreFile");if(input){input.value="";input.click();}},
+ async campaignRestoreFile(input){
+   if(!AUTH_USER&&!MOCK_AUTH){APP.toAccount();return;}
+   const file=input&&input.files&&input.files[0];if(!file)return;
+   const owner=AUTH_USER?AUTH_USER.id:"local";
+   const fail=msg=>{CAMP_RESTORE=null;CAMP_MSG="Restore failed: "+msg;APPVIEW="campaigns";render();};
+   if(file.size>CAMPAIGN_BACKUP_MAX_BYTES){fail("the file is larger than the 20 MB campaign backup limit.");return;}
+   let backup;
+   try{backup=JSON.parse(await file.text());}catch(e){fail("this is not valid JSON.");return;}
+   if((AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null)!==owner)return;
+   const problem=campaignBackupProblem(backup);
+   if(problem){fail(problem+". Nothing was restored.");return;}
+   CAMP_RESTORE={owner,backup,fileName:String(file.name||""),picks:backup.characters.map((_,i)=>i),busy:false};
+   CAMP_MSG=null;APPVIEW="campaigns";render();if(CAMP_CACHE==null)loadCampaignsUnified();window.scrollTo(0,0);
+ },
+ toggleRestorePick(i,on){
+   const r=CAMP_RESTORE;if(!r||r.busy)return;
+   const set=new Set(r.picks);if(on)set.add(i);else set.delete(i);
+   r.picks=[...set].sort((a,b)=>a-b);
+ },
+ cancelCampaignRestore(){CAMP_RESTORE=null;render();},
+ async confirmCampaignRestore(){
+   const r=CAMP_RESTORE;if(!r||r.busy)return;
+   const owner=AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null;
+   if(owner!==r.owner){CAMP_RESTORE=null;render();return;}
+   r.busy=true;render();
    try{
-     S=restored;try{normalizeState();normalized=S;}finally{S=previous;}
-     if(cloudActive())await cloudUpsertCharacter({name:normalized.concept.name||"Unnamed Character",tier:normalized.archetype,culture:normalized.culture||"",career:(normalized.customCareer&&normalized.customCareer.isCustom?normalized.customCareer.name:normalized.career)||"",campaignId:null,state:JSON.parse(JSON.stringify(normalized))});
-     else {S=normalized;try{saveCurrentToLibraryLocal();}finally{S=previous;}}
-     if((AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null)!==owner)return;
-     ACCOUNT_BACKUPS=null;AUTH_MSG=null;MENU_MSG=null;CAMP_MSG=null;
-     APPVIEW="library";LIB_CACHE=null;render();await loadLibraryUnified();window.scrollTo(0,0);
+     const out=await restoreCampaignFromBackup(r.backup,r.picks,saveImportedCharacter);
+     CAMP_RESTORE=null;CAMP_CACHE=null;LIB_CACHE=null;
+     CURRENT_CAMPAIGN_ID=out.campaign.id;APPVIEW="campaign";CAMPAIGN_VIEW=null;
+     CAMP_MSG="Restored as a new campaign: \""+out.campaign.name+"\" with "+out.characters+" character"+(out.characters===1?"":"s")+" (your copies) and "+out.customContent+" custom item"+(out.customContent===1?"":"s")+". Players rejoin with this campaign's invite code.";
+     render();await loadCampaignViewUnified(out.campaign.id);window.scrollTo(0,0);
    }catch(e){
-     // Failed imports must preserve the character already open on screen.
-     showError("Import failed: the data was invalid or could not be saved. Your previous character was preserved.");
+     CAMP_RESTORE=null;CAMP_CACHE=null;LIB_CACHE=null;
+     CAMP_MSG=String(e&&e.message||"Restore failed.");
+     if(e&&e.campaignId){CURRENT_CAMPAIGN_ID=e.campaignId;APPVIEW="campaign";CAMPAIGN_VIEW=null;render();await loadCampaignViewUnified(e.campaignId);}
+     else{CAMP_MSG="Restore failed: "+CAMP_MSG+" Nothing was restored.";APPVIEW="campaigns";render();loadCampaignsUnified();}
    }
  },
  chooseGuestBackupImport(){const input=document.getElementById("guestBackupImportFile");if(input){input.value="";input.click();}},

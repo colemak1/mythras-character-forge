@@ -365,3 +365,13 @@ body .menuwrap.st-cm.st-page textarea:focus,body .menuwrap.st-cm.st-page input[t
 .st-cm-danger{display:grid;gap:10px;margin-top:4px;padding-top:14px;border-top:1px solid var(--stm-line)}
 @media(max-width:560px){.st-cm-head .st-pageaction .st-btn{flex:1}.st-cm-panel{padding:16px}}
 @media(prefers-reduced-motion:reduce){.st-cm-saved,.st-cm-tools summary .st-ic{transition:none}}
+/* D-S6 Restore campaign from backup preview, and the character pick list */
+.st-restore{margin:0 0 18px}
+.st-restore h2{margin:0 0 8px;font:600 18px/1.3 var(--stm-sans)}
+.st-restore p{margin:4px 0}
+.st-restore-list{list-style:none;margin:10px 0;padding:0;display:grid;gap:6px;font:400 14px/1.45 var(--stm-sans)}
+.st-restore-list li{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.st-restore-chars{margin:12px 0 0;padding:10px 12px;border:1px solid var(--stm-line);border-radius:3px}
+.st-restore-chars legend{padding:0 4px;font:600 14px/1.3 var(--stm-sans)}
+.st-restore-char{display:flex;align-items:center;gap:8px;min-height:36px;font:400 14px/1.4 var(--stm-sans);overflow-wrap:anywhere}
+.st-restore-char input{width:18px;height:18px;flex:none}
