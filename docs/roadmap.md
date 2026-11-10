@@ -4,7 +4,9 @@ The plan from today to a finished site. It follows the 8 groups in `subsystem-pl
 
 A group counts as finished only with its case list, source checks, code or GM handling, tests and live acceptance (`subsystem-plan.md`).
 
-## Path to 8/8 (owner, 2026-11-10: no more side work until 8/8)
+**Priority (owner, 2026-11-10, replaces "no side work until 8/8"):** Session Zero first (`session-zero.md`). The order below still holds for what's left after that, but Magic covers only the traditions the campaign uses before Session Zero; the rest come after it.
+
+## Path to 8/8
 
 Order: **8 → 7 → 6.** Each Claude batch runs in a fresh session (AGENTS.md). Before building, check every case ID in its spec against the code and tests, because some spec rows are already built. Each batch ends with one PR and a paste-ready Work live list.
 
