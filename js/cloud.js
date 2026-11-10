@@ -325,8 +325,10 @@ function campaignActionError(e){
   return "The server refused it: "+msg+(e&&e.code?" (code "+e.code+")":"")+".";
 }
 // D-S4 whole-campaign backup: everything the GM can read about the campaign,
-// in one JSON file. Characters keep their full saved state, so any one of
-// them can be imported again through Account > Import character backup.
+// in one JSON file. Characters keep their full saved state. The file comes
+// back through "Restore campaign from backup" on the Campaign page (a new
+// campaign, D-S6), or one character at a time through Import character
+// backup, which offers a pick list when given a campaign file.
 async function buildCampaignBackup(campaignId){
   let campaign,gmState=null,members=[],characters=[],customContent=[];
   if(cloudActive()){
@@ -351,6 +353,88 @@ async function buildCampaignBackup(campaignId){
     campaign,gmSessionState:gmState,members,
     characters:characters.map(c=>({id:c.id,name:c.name,owner_id:c.owner_id,owner_name:c.owner_name,updated_at:c.updated_at,revision:c.revision,state:c.state})),
     customContent};
+}
+// D-S6 option B (owner, 2026-11-10; docs/subsystem8-recovery-contract.md):
+// a campaign backup is restored as a NEW campaign owned by the person
+// restoring. Nothing existing is overwritten; members are not recreated
+// (each player rejoins with the new code); chosen characters become new
+// copies owned by the restorer, linked to the new campaign.
+const CAMPAIGN_BACKUP_FORMAT="mythras-forge-campaign-backup";
+const CAMPAIGN_BACKUP_MAX_BYTES=20*1024*1024;
+const CUSTOM_CONTENT_TYPES=["weapon","armor","spell"];
+const isPlainObject=v=>!!v&&typeof v==="object"&&!Array.isArray(v);
+function isCampaignBackup(v){return isPlainObject(v)&&v.format===CAMPAIGN_BACKUP_FORMAT;}
+// Checked before anything is shown or written: one bad part refuses the file.
+function campaignBackupProblem(b){
+  if(!isCampaignBackup(b))return "this is not a Forge campaign backup";
+  if(b.version!==1)return "this backup was made by a newer version of the Forge (version "+String(b.version)+")";
+  if(!isPlainObject(b.campaign)||typeof b.campaign.name!=="string")return "the campaign details are missing";
+  if(b.campaign.rules_settings!=null&&!isPlainObject(b.campaign.rules_settings))return "the campaign rules are not readable";
+  if(b.campaign.notes!=null&&typeof b.campaign.notes!=="string")return "the campaign briefing is not readable";
+  if(b.gmSessionState!=null&&!isPlainObject(b.gmSessionState))return "the GM notes and tracker are not readable";
+  if(!Array.isArray(b.characters))return "the character list is missing";
+  if(b.characters.length>100)return "it holds more than 100 characters";
+  for(let i=0;i<b.characters.length;i++){
+    const c=b.characters[i];
+    const p=isPlainObject(c)?characterImportProblem(c.state):"expected a character entry";
+    if(p)return "character "+(i+1)+(isPlainObject(c)&&c.name?" ("+String(c.name).slice(0,60)+")":"")+": "+p;
+  }
+  if(b.customContent!=null&&!Array.isArray(b.customContent))return "the custom content list is not readable";
+  const cc=b.customContent||[];
+  if(cc.length>500)return "it holds more than 500 custom items";
+  for(let i=0;i<cc.length;i++){
+    const r=cc[i];
+    if(!isPlainObject(r)||!CUSTOM_CONTENT_TYPES.includes(r.type)||typeof r.name!=="string"||!r.name.trim()||(r.data!=null&&!isPlainObject(r.data)))
+      return "custom item "+(i+1)+" is not a weapon, armour or spell the Forge can read";
+  }
+  return null;
+}
+// What the preview shows before anything is written.
+function campaignBackupSummary(b){
+  const gm=b.gmSessionState||null;
+  return {name:b.campaign.name||"Untitled Campaign",exportedAt:typeof b.exportedAt==="string"?b.exportedAt:"",
+    characters:b.characters.map(c=>({name:String(c.name||c.state.concept.name||"Unnamed Character"),owner:String(c.owner_name||"")})),
+    customCount:(b.customContent||[]).length,members:Array.isArray(b.members)?b.members.length:0,
+    hasRules:!!campaignRulesPart(b.campaign.rules_settings),hasHome:!!campaignHomeOf(b.campaign),
+    hasBriefing:!!(b.campaign.notes&&b.campaign.notes.trim()),
+    hasGmNotes:!!(gm&&typeof gm.sessionNotes==="string"&&gm.sessionNotes.trim()),
+    trackerCount:gm&&Array.isArray(gm.combatants)?gm.combatants.length:0};
+}
+function restoredCampaignName(name){
+  const base=String(name||"Untitled Campaign").replace(/\s+/g," ").trim()||"Untitled Campaign";
+  return base.slice(0,100-" (restored)".length)+" (restored)";
+}
+// Tracker cards for restored characters point at the new copies; cards for
+// characters left out keep their saved name and numbers but no link.
+function remapRestoredTracker(state,idMap){
+  if(!isPlainObject(state))return null;
+  const out=JSON.parse(JSON.stringify(state));
+  if(Array.isArray(out.combatants))out.combatants.forEach(c=>{if(c&&c.kind==="pc")c.ref=idMap[c.ref]||null;});
+  if(Array.isArray(out.initiative))out.initiative.forEach(e=>{if(e&&e.kind==="pc")e.ref=idMap[e.ref]||null;});
+  return out;
+}
+// picks: indexes into b.characters. saveCharacter(state,campaignId) stores one
+// imported character and returns its new id (APP supplies the import path).
+// Steps run in order; a failure stops and says what was already restored.
+async function restoreCampaignFromBackup(b,picks,saveCharacter){
+  const problem=campaignBackupProblem(b);if(problem)throw new Error(problem);
+  const done=[];
+  const rs=b.campaign.rules_settings||null;
+  const settings=campaignSettingsWith(null,{rules:rs&&campaignRulesPart(rs)?normalizedCampaignRules(rs):null,home:rs&&rs.home});
+  const created=await createCampaignUnified(restoredCampaignName(b.campaign.name),settings);
+  const step=async(label,fn)=>{
+    try{await fn();done.push(label);}
+    catch(e){const err=new Error("Restore stopped while adding "+label+": "+(e&&e.message||"unknown error")+". The new campaign \""+created.name+"\" holds what was restored so far"+(done.length?" ("+done.join(", ")+")":"")+"; nothing else was changed.");err.campaignId=created.id;throw err;}
+  };
+  if(b.campaign.notes&&b.campaign.notes.trim())await step("the briefing",()=>noteCampaignUnified(created.id,b.campaign.notes.slice(0,20000)));
+  for(const r of b.customContent||[])await step("custom content",()=>createCustomContentUnified(created.id,r.type,r.name.trim().slice(0,100),r.data||{}));
+  const idMap={};let restoredChars=0;
+  for(const i of [...new Set(picks||[])].filter(i=>Number.isInteger(i)&&i>=0&&i<b.characters.length).sort((x,y)=>x-y)){
+    const c=b.characters[i];
+    await step("characters",async()=>{const id=await saveCharacter(c.state,created.id);if(c.id)idMap[c.id]=id;restoredChars++;});
+  }
+  if(b.gmSessionState)await step("the GM notes and tracker",()=>sessionStateCampaignUnified(created.id,remapRestoredTracker(b.gmSessionState,idMap)));
+  return {campaign:created,characters:restoredChars,customContent:(b.customContent||[]).length};
 }
 async function cloudJoinCampaign(code){
   const {data,error}=await sb.rpc("join_campaign",{p_code:code.trim().toUpperCase()});
@@ -456,6 +540,7 @@ function autosaveKey(){return AUTOSAVE_KEY+":"+(AUTH_USER?AUTH_USER.id:"local");
 function characterImportProblem(value){
   if(!value||typeof value!=="object"||Array.isArray(value))return "expected a character object";
   if(value.format==="mythras-forge-guest-backup")return "this is a library backup; use Import Guest Backup instead";
+  if(value.format==="mythras-forge-campaign-backup")return "this is a campaign backup; pick one character from it, or restore it from the Campaign page";
   if(!value.concept||typeof value.concept!=="object"||Array.isArray(value.concept))return "missing character concept";
   if(typeof value.concept.name!=="string")return "missing character name";
   if(value.chars&&(!value.chars||typeof value.chars!=="object"||Array.isArray(value.chars)))return "invalid characteristics";
@@ -1336,8 +1421,10 @@ function campaignsHTML(){
   if(CAMP_CACHE===null)return '<div class="menuwrap"><p class="note" style="text-align:center">Loading campaigns&hellip;</p></div>';
   const camps=CAMP_CACHE.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   let h='<div class="menuwrap st-page">'+stPageHead({title:'Campaign',sub:cloudActive()?"Synced to your account. GMs see every linked character.":"Local to this browser only.",
-    action:'<button type="button" class="st-btn st-btn-primary" onclick="APP.newCampaign()"><span aria-hidden="true">+</span> New campaign</button>'});
+    action:'<button type="button" class="st-btn" onclick="APP.chooseCampaignRestore()">Restore from backup</button>'
+      +'<button type="button" class="st-btn st-btn-primary" onclick="APP.newCampaign()"><span aria-hidden="true">+</span> New campaign</button>'});
   if(CAMP_MSG)h+='<p class="warn" style="margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
+  h+=campaignRestorePreviewHTML();
   // One card per campaign, with "Join with a code" beside them (desktop) or
   // below (phone). Owner menu redesign, 2026-11-07.
   const cards=camps.map(c=>{
@@ -1352,6 +1439,40 @@ function campaignsHTML(){
     +'<input id="stJoinCode" name="code" class="st-input" autocomplete="off" autocapitalize="characters" placeholder="Invite code"><button type="submit" class="st-btn">Join</button></form></aside>';
   h+='<div class="st-two"><div class="st-camps">'+(cards||'<div class="st-empty">No campaigns yet. Start one with New campaign, or join one with the code your GM sends you.</div>')+'</div>'+join+'</div></div>';
   return h;
+}
+// D-S6 preview: what the file holds and what will be created, before any write.
+function campaignRestorePreviewHTML(){
+  const r=typeof CAMP_RESTORE!=="undefined"?CAMP_RESTORE:null;
+  if(!r||r.owner!==(AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null))return '';
+  const sum=campaignBackupSummary(r.backup),when=sum.exportedAt?new Date(sum.exportedAt):null;
+  const yes=(on,label)=>'<li>'+(on?'&#10003; ':'&mdash; ')+label+'</li>';
+  let h='<section class="st-cm-panel st-restore" aria-labelledby="stRestoreTitle"><h2 id="stRestoreTitle">Restore campaign from backup</h2>'
+   +'<p><b>'+esc(sum.name)+'</b>'+(when&&!isNaN(when)?' · backed up '+esc(when.toLocaleString()):'')+(r.fileName?' · <span class="st-cm-dim">'+esc(r.fileName)+'</span>':'')+'</p>'
+   +'<p class="st-cm-fine">This makes a <b>new</b> campaign, &ldquo;'+esc(restoredCampaignName(sum.name))+'&rdquo;, run by you. Nothing that exists now is changed or replaced.</p>'
+   +'<ul class="st-restore-list">'+yes(sum.hasRules,'Campaign rules')+yes(sum.hasHome,'Home quote and next session')+yes(sum.hasBriefing,'Briefing for players')
+   +yes(sum.hasGmNotes||sum.trackerCount,'GM notes and tracker'+(sum.trackerCount?' ('+sum.trackerCount+' in the tracker)':''))
+   +yes(sum.customCount,sum.customCount+' custom item'+(sum.customCount===1?'':'s'))+'</ul>';
+  if(sum.characters.length){
+    h+='<fieldset class="st-restore-chars"><legend>Characters to copy into the new campaign ('+sum.characters.length+')</legend>'
+     +'<p class="st-cm-fine">Each one becomes a new copy that you own. The players&rsquo; own characters are not touched.</p>'
+     +sum.characters.map((c,i)=>'<label class="st-restore-char"><input type="checkbox"'+(r.picks.includes(i)?' checked':'')+(r.busy?' disabled':'')
+       +' onchange="APP.toggleRestorePick('+i+',this.checked)"> '+esc(c.name)+(c.owner?' <span class="st-cm-dim">('+esc(c.owner)+')</span>':'')+'</label>').join('')
+     +'</fieldset>';
+  }else h+='<p class="st-cm-fine">The backup holds no characters.</p>';
+  h+='<p class="st-cm-fine">'+(sum.members?sum.members+' member'+(sum.members===1?' was':'s were')+' in the campaign. ':'')+'Members are not copied: players join the new campaign with its invite code.</p>'
+   +'<div class="st-cm-row"><button type="button" class="st-btn st-btn-primary" onclick="APP.confirmCampaignRestore()"'+(r.busy?' disabled':'')+'>'+(r.busy?'Restoring&hellip;':'Restore as a new campaign')+'</button>'
+   +'<button type="button" class="st-btn" onclick="APP.cancelCampaignRestore()"'+(r.busy?' disabled':'')+'>Cancel</button></div></section>';
+  return h;
+}
+// Import character backup given a campaign file: pick one character.
+function characterPickHTML(){
+  const p=typeof CHAR_PICK!=="undefined"?CHAR_PICK:null;
+  if(!p||p.owner!==(AUTH_USER?AUTH_USER.id:MOCK_AUTH?"local":null))return '';
+  return '<section class="st-cm-panel st-restore" aria-labelledby="stPickTitle"><h2 id="stPickTitle">Import a character from &ldquo;'+esc(p.backup.campaign.name||"Untitled Campaign")+'&rdquo;</h2>'
+   +'<p class="st-cm-fine">This is a campaign backup. Choose one character; it is added as a new character of yours, not linked to any campaign.</p>'
+   +'<ul class="st-restore-list">'+p.backup.characters.map((c,i)=>'<li><button type="button" class="st-btn st-btn-sm" onclick="APP.importPickedCharacter('+i+')">Import</button> '
+     +esc(String(c.name||c.state.concept.name||"Unnamed Character"))+(c.owner_name?' <span class="st-cm-dim">('+esc(String(c.owner_name))+')</span>':'')+'</li>').join('')+'</ul>'
+   +'<div class="st-cm-row"><button type="button" class="st-btn" onclick="APP.cancelCharacterPick()">Cancel</button></div></section>';
 }
 function renderCampaignsView(){
   document.body.classList.remove("play-mode");
@@ -1368,6 +1489,7 @@ function libraryHTML(){
     sub:count==null?(cloudActive()?"Every character saved to your account.":"Every character autosaved in this browser."):count+' saved '+(cloudActive()?'to your account.':'in this browser.'),
     action:'<button type="button" class="st-btn st-btn-primary" onclick="APP.fromMenuNew()"><span aria-hidden="true">+</span> New character</button>'});
   if(CAMP_MSG)h+='<p class="warn" style="margin-bottom:12px">'+esc(CAMP_MSG)+'</p>';
+  h+=characterPickHTML();
   if(LIB_LOAD_ERROR){h+='<p class="warn" role="alert">'+esc(LIB_LOAD_ERROR)+'</p><button class="chip" onclick="loadLibraryUnified()">Retry loading characters</button></div>';return h;}
   if(LIB_CACHE===null){h+='<p class="note">Loading&hellip;</p></div>';return h;}
   if(!LIB_CACHE.length){
@@ -1548,7 +1670,7 @@ function campaignDetailHTML(){
     h+='<details class="st-cm-panel st-cm-tools"><summary><h2>GM tools</h2>'+campIcon('chev')+'</summary><div class="st-cm-tools-in">'
      +'<label class="st-cm-label" for="cmName">Campaign name</label><input id="cmName" type="text" value="'+esc(camp.name)+'" onchange="APP.campField(\'name\',this.value)">'
      +'<button type="button" class="st-btn" onclick="APP.downloadCampaignBackup()">Download campaign backup</button>'
-     +'<p class="st-cm-fine">One file with the campaign, members, characters and homebrew, for safekeeping.</p>'
+     +'<p class="st-cm-fine">One file with the campaign, members, characters and homebrew, for safekeeping. Campaign page <p class="st-cm-fine">One file with the campaign, members, characters and homebrew, for safekeeping.</p>gt; Restore from backup turns it into a new campaign.</p>'
      +'<p class="st-cm-fine">Created '+esc(new Date(camp.created_at).toLocaleString())+'</p>'
      +'<div class="st-cm-danger"><button type="button" class="st-btn st-btn-danger" aria-expanded="false" aria-controls="cmDelete" onclick="campToggleDelete(this)">Delete campaign&hellip;</button>'
      +'<div class="st-cm-confirm" id="cmDelete" hidden><p>Linked characters stay, just unassigned. Type <b>'+esc(camp.name)+'</b> to confirm.</p>'

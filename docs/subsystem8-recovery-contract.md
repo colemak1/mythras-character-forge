@@ -10,14 +10,14 @@ Claude, 2026-11-10, after ChatGPT's closeout review (#265) recorded campaign res
 | Conflicting saves (D-S2) | A save that would overwrite a newer server copy is stopped, with a warning and Reload. | `revision` column and trigger; live PASS in #265 |
 | Single character backup | Download one character as `.mythras.json`; Account > Import character backup creates a **new** character (never overwrites, never reuses an id, campaign link cleared). | `exportJSON`, `importCharacterFile`, `js/app.js` |
 | Campaign backup (D-S4) | GM downloads one `.campaign.json`: campaign row and rules, GM private state (notes, tracker), members, every character's full state, custom content. Live PASS with populated data in #265. | `buildCampaignBackup()`, `js/cloud.js` |
-| Campaign restore | **None.** No control reads a campaign backup. Character import **rejects** the campaign file ("missing character concept"), so the code comment saying its characters "can be imported again" is wrong today. | gap |
+| Campaign restore | Built 2026-11-10 (D-S6 B): Restore from backup makes a new campaign; Import character backup lets you pick one character from a campaign file. The wrong comment is fixed. Before this, nothing restored the file. | `restoreCampaignFromBackup()`, `js/cloud.js` |
 | Server-side recovery | Depends on the Supabase project's own backups (plan-dependent). Not verified. | Supabase dashboard |
 
 So the backup is a complete **archive**, but there is no in-app way back from it. C8-LIFE13 says not to promise rollback until it exists; nothing in the UI promises it, but nothing restores either.
 
 ## Contract options (owner decision D-S6)
 
-**Owner decided 2026-11-10: option B.** Not yet built; acceptance needs Claude's round-trip test and one Work live round trip.
+**Owner decided 2026-11-10: option B.** Built 2026-11-10 (Claude): Campaign page > **Restore from backup**, and Import character backup offers a pick list for a campaign file. Round-trip test: `tests/campaign-restore.cjs`. Acceptance still needs one Work live round trip (below).
 
 **A. Archive only.** Document that the campaign backup is a read-only archive. Recovery means: players keep their own characters in their accounts; a lost character is rebuilt by importing a single-character file; campaign rules, GM notes, tracker and homebrew are re-entered by hand from the file. Small code change: character import accepts a campaign backup and lets you pick one character from it (fixes the wrong comment). Work then tests that pick-and-import round trip.
 
@@ -40,3 +40,14 @@ So the backup is a complete **archive**, but there is no in-app way back from it
 - One-to-one reconciliation of every applicable case with dated evidence.
 - D-S5: CI database permission tests remain the direct-access evidence; UI samples are not RLS tests.
 - Progress stays **5/8**.
+
+## Live round trip for ChatGPT (Work)
+
+Signed in as a GM with a populated campaign (rules, home quote, briefing, GM notes, a tracker with a PC and an NPC, one custom item, two players' characters):
+1. GM tools > Download campaign backup.
+2. Campaign page > Restore from backup, choose the file. The preview lists the name, date, parts and characters; untick one character. Nothing new appears yet.
+3. Restore as a new campaign. Expect "<name> (restored)" with you as GM, the same rules and home settings, briefing, GM notes, tracker (the ticked PC card linked, the unticked one unlinked), custom item, and the ticked character as your copy.
+4. The original campaign, its members and the players' characters are unchanged (check as a player too).
+5. A player joins the new campaign with its invite code.
+6. Characters > Import character backup with the same campaign file: pick one character; it arrives unlinked.
+7. A broken file (edit `"version": 2`) is refused with a reason and nothing is created.
