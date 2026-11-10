@@ -3,7 +3,7 @@
 Read `AGENTS.md`, then this, at the start of every session; update it before ending one. Keep it short: replace finished items, don't append history (history goes in `CHANGELOG.md`).
 
 **Owner kickoff line for a new Claude session** (paste as the first message):
-> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/stone-reskin.
+> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/pits-caps-livecheck.
 
 _Last updated: 2026-11-10 by Claude (Codex · Stone reskin, Light/Dark, Home quote)_
 
@@ -24,7 +24,7 @@ _Last updated: 2026-11-10 by Claude (Codex · Stone reskin, Light/Dark, Home quo
 
 ## Next
 
-- **ChatGPT (Work), live check of the Stone reskin** (after the PR merges): every route in Light and Dark at 390px and desktop; Settings → Light/Dark/Match device persists after reload; as GM, campaign manager → Home page: set quote, cite, next session, Save, then Home shows them (as a player of that campaign too); Campaign rules & books still save and still apply to a linked character; character cards show race and no style/AP chips; Play Mode Settings shows Appearance and the Stone scheme. Report anything unreadable or broken.
+- **ChatGPT (Work), signed-in check of the Stone reskin (#253, live):** Claude did the signed-out part (`docs/live-check-stone-20261110.md`: all public routes pass in Light/Dark; the mode survives a reload). Still needed, signed in: as GM, campaign manager → Home page: set quote, cite, next session, Save, then Home shows them (as a player of that campaign too); Campaign rules & books still save and still apply to a linked character; character cards show race and no style/AP chips; Play Mode Settings shows Appearance and the Stone scheme. Report anything unreadable or broken.
 - **Owner:** the home painting is still the existing (WotC) art with its credit. Send owned/commissioned art when ready and Claude swaps `assets/sitota-hero.*`. The v0 mockup files (`index.html`, `themes.css`, `img/hero.png`) weren't in Downloads; built from the handoff text.
 - **ChatGPT (Work), first (signed in):** production schema already has the three continuity RPCs, grants, revision column and trigger (`docs/live-batch-followup-20261109.md`); don't reinstall. Retry New code / Remove / Make GM as GM, then the blocked creature, saved-character/Play Mode and two-account checks.
 - **ChatGPT (Work), follow-up 2026-11-09:** `docs/live-batch-followup-20261109.md`: schema checks PASS; three Pits bouts reached Victory; signed-in checks blocked. Its UI findings are fixed (see Claude, done). Recheck at 390px: More → Rules / World Guide closes the sheet. In The Pits: a second bout starts with no Last roll; Impale choices show Impale advice; a withdrawal wound doesn't appear under an older "misses" headline. Progress 5/8.
