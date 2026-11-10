@@ -40,6 +40,7 @@ _Last updated: 2026-11-09 by Claude (shared combat rules engine)_
 - **Claude, next:** nonhuman hit locations are now possible (pass a creature's table to `CombatRules`); build only if the owner asks. Regenerate the golden fixtures (`node tests/pits-golden.cjs --update`) only with an intended rules or wording change.
 - **Claude's machine note:** Windows checkout uses CRLF; asset stamps are hashes of the LF (committed) bytes, so run `tests/asset-versions.cjs` in an LF clone, not the working copy. Node is installed; Python isn't, so stamp with an equivalent Node script (hash each `?v=` file's LF bytes).
 - **ChatGPT (Work), live batch 2026-11-08:** `docs/live-batch-pr212-20261108.md`: A/B/C/D signed in, joins/items/reload/Undo and sampled Pits victory timing passed; Red/Blue and saved fixture deleted. New code / Remove / Make GM FAIL with missing server-update message; Claude investigate RPC availability despite reported migration. D-S3 grants verified; direct permission matrix, conflicts/gifts/pop-up and full traits/backup checks remain unaccepted. Progress 5/8.
+- **ChatGPT (Chat), 2026-11-09:** source-checked optional Rabble/Underlings and creature follow-up in docs-only creature PR; Magic code-needed batches Animism, Mysticism, Sorcery, Theism and organisations in a separate docs-only PR. Claude to review and implement only approved, in-scope deltas; active effects and MP recovery remain GM-managed (D-2/D-3). Progress 5/8.
 - **Owner, later:** D-4 and D-5 (Magic, low priority). Settings → General → "Allow auto-merge" if not on yet.
 
 ## Notes
