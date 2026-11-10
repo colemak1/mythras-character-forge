@@ -3,9 +3,9 @@
 Read `AGENTS.md`, then this, at the start of every session; update it before ending one. Keep it short: replace finished items, don't append history (history goes in `CHANGELOG.md`).
 
 **Owner kickoff line for a new Claude session** (paste as the first message):
-> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/xp-die-status.
+> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/site-admin-draft.
 
-_Last updated: 2026-11-10 by Claude (#255 reviewed and merged; Improve skills die help fixed)_
+_Last updated: 2026-11-10 by Claude (#258 merged; Site home page keeps unsaved text)_
 
 ## Where things stand
 
@@ -24,7 +24,7 @@ _Last updated: 2026-11-10 by Claude (#255 reviewed and merged; Improve skills di
 
 ## Next
 
-- **ChatGPT (Work), site admin setup complete:** `docs/site-admin-verification-20261109.md`: migration applied; exactly one Colemak profile matched and added; admin count 1, settings row home/default picture verified. Owner panel/save and signed-out quote after reload PASS; non-admin panel absent PASS. **Claude:** preserve unsaved quote/cite when Use the default painting re-renders the form. Site quote left saved, default painting retained. Progress 5/8.
+- **ChatGPT (Work), site admin setup complete:** `docs/site-admin-verification-20261109.md`: migration applied; exactly one Colemak profile matched and added; admin count 1, settings row home/default picture verified. Owner panel/save and signed-out quote after reload PASS; non-admin panel absent PASS. **Claude:** preserve unsaved quote/cite when Use the default painting re-renders the form. Site quote left saved, default painting retained. Progress 5/8. **Claude, done:** #258 reviewed and merged; the unsaved-text finding is fixed (typed Quote/Said by/credit survive the picture buttons). Advisor note reviewed: `is_site_admin()` callable by anon is intended (answers only for the caller; false when signed out). Next live batch: type a quote, press Use the default painting, confirm the text stays, then Save.
 - **ChatGPT (Work), Stone signed-in check (#255, merged):** `docs/live-check-stone-signed-in-20261109.md`. GM checks pass. **1d6+1 vs 1d4+1, Claude investigated:** help text only; the mechanics never differ (help and roll share `skillImprovementDie()`, and nothing is spent until the rules load). The help guessed 1d4 while the campaign rules were loading or failed. Fixed: it now says loading, or shows the load error with Retry. **Work, next live batch:** as GM of a 1d6+1 campaign, linked character → Play → Improve skills shows +1d6+1% (campaign option); spend one roll on a skill and confirm the gain is 1d6+1 (or +1 on a miss). If the help instead shows "could not be loaded", record the reason it gives. Still blocked: separate-player Home view and the exact 390px matrix. Progress 5/8.
 - **Owner:** the home painting is still the existing (WotC) art with its credit. Send owned/commissioned art when ready and Claude swaps `assets/sitota-hero.*`. The v0 mockup files (`index.html`, `themes.css`, `img/hero.png`) weren't in Downloads; built from the handoff text.
 - **ChatGPT (Work), first (signed in):** production schema already has the three continuity RPCs, grants, revision column and trigger (`docs/live-batch-followup-20261109.md`); don't reinstall. Retry New code / Remove / Make GM as GM, then the blocked creature, saved-character/Play Mode and two-account checks.

@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Site home page keeps what you typed (#258)
+
+- **Account → Site home page:** "Use the default painting" or choosing a picture no longer clears the Quote, Said by and Picture credit you'd typed but not yet saved (found in Work's live check, `docs/site-admin-verification-20261109.md`). The typed text is kept until Save succeeds, and is cleared if a different account signs in. Test in `tests/site-admin.cjs`.
+
 ## Improve skills: no guessed 1d4 while campaign rules load (#255)
 
 - **Finding (live check #255):** a 1d6+1 campaign's linked character showed "+1d4+1%" in the Improve skills help. The help and the roll both read the same `skillImprovementDie()`, so once the campaign's rules have loaded they always agree (1d6+1 under the option, Core p.72). The mismatch came from the help text guessing 1d4 while the rules were still loading or had failed to load. In that state no roll is ever spent: the Spend button is refused. **The mechanics never rolled the wrong die.**
