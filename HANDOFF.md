@@ -3,9 +3,9 @@
 Read `AGENTS.md`, then this, at the start of every session; update it before ending one. Keep it short: replace finished items, don't append history (history goes in `CHANGELOG.md`).
 
 **Owner kickoff line for a new Claude session** (paste as the first message):
-> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/pits-caps-livecheck.
+> Read AGENTS.md and HANDOFF.md, then continue with the next Claude item. Branch: claude/site-admin.
 
-_Last updated: 2026-11-10 by Claude (Codex · Stone reskin, Light/Dark, Home quote)_
+_Last updated: 2026-11-10 by Claude (site admin: Home quote and picture from the site)_
 
 ## Where things stand
 
@@ -24,6 +24,7 @@ _Last updated: 2026-11-10 by Claude (Codex · Stone reskin, Light/Dark, Home quo
 
 ## Next
 
+- **ChatGPT (Work), first:** follow `docs/site-admin-setup.md`: run migration `20261110120000_site_admin_and_settings.sql`, make the owner's "colemak" account a site admin, verify, then live-check Account → Site home page as that account (and that other accounts don't see it). Record results in a dated docs/ file.
 - **ChatGPT (Work), Stone signed-in check (#253/#254), PR #255:** `docs/live-check-stone-signed-in-20261109.md`: secure internal-browser GM check passes Home quote/session save/display, Rules & books save, race-first Home/Characters cards, Stone + Light/Dark reload persistence. Linked Play Mode opens without GM-review error but Improve Skills help says 1d4+1 despite campaign 1d6+1: **Claude investigate**. Player view and exact 390px remain blocked; desktop primary routes readable in Light/Dark. Disposable campaign/character deleted and empty lists verified. Progress 5/8.
 - **Owner:** the home painting is still the existing (WotC) art with its credit. Send owned/commissioned art when ready and Claude swaps `assets/sitota-hero.*`. The v0 mockup files (`index.html`, `themes.css`, `img/hero.png`) weren't in Downloads; built from the handoff text.
 - **ChatGPT (Work), first (signed in):** production schema already has the three continuity RPCs, grants, revision column and trigger (`docs/live-batch-followup-20261109.md`); don't reinstall. Retry New code / Remove / Make GM as GM, then the blocked creature, saved-character/Play Mode and two-account checks.

@@ -268,6 +268,7 @@ async function boot(){
   const initialHash=location.hash;
   const hadPendingJoin=!!localStorage.getItem(PENDING_JOIN_KEY);
   initAuth();
+  if(typeof loadSiteHome==="function")loadSiteHome(); // site-wide Home quote and picture, read by everyone
   if(CLOUD_ENABLED){
     try{
       const {data}=await sb.auth.getSession();

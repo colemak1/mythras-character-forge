@@ -190,7 +190,7 @@ async function initAuth(){
   sb.auth.onAuthStateChange(async(event,session)=>{
     if(event==="PASSWORD_RECOVERY"){AUTH_RECOVERY=true;APPVIEW="account";render();return;}
     if(session&&(!AUTH_USER||AUTH_USER.id!==session.user.id)){await onSignedIn(session.user);render();}
-    else if(!session&&AUTH_USER){AUTH_USER=null;AUTH_PROFILE=null;CAMP_CACHE=null;clearAccountMessages();render();}
+    else if(!session&&AUTH_USER){AUTH_USER=null;AUTH_PROFILE=null;CAMP_CACHE=null;if(typeof SITE_ADMIN!=="undefined")SITE_ADMIN=false;clearAccountMessages();render();}
   });
 }
 // Status messages belong to the account that caused them: clear them when
@@ -225,6 +225,7 @@ async function onSignedIn(user){
   const {data}=await sb.from("profiles").select("id,display_name").eq("id",user.id).maybeSingle();
   AUTH_PROFILE=data||null;
   CAMP_CACHE=null;
+  if(typeof refreshSiteAdmin==="function")refreshSiteAdmin(); // site admin? (owner, 2026-11-10)
   // A campaign invite link clicked while signed out stashes its code (see
   // stashPendingJoin in the invite-link section below) and parks the visitor
   // on the Account page instead of losing the code. The moment a session
@@ -1286,7 +1287,8 @@ function accountHTML(){
   h+='</div>';
   // Settings (owner, 2026-11-09): Light/Dark lives here, not in the top bar.
   h+='<section class="mmenu-panel st-settings" aria-labelledby="stSettingsTitle"><h2 id="stSettingsTitle">Settings</h2>'
-   +'<p>Appearance on this device. Match device follows your phone or computer’s own setting.</p>'+siteModeHTML()+'</section>';
+   +'<p>Appearance on this device. Match device follows your phone or computer’s own setting.</p>'+siteModeHTML()+'</section>'
+   +siteAdminPanelHTML();
   if(AUTH_USER||MOCK_AUTH){
     const owner=AUTH_USER?AUTH_USER.id:"local", cache=ACCOUNT_BACKUPS&&ACCOUNT_BACKUPS.owner===owner?ACCOUNT_BACKUPS.rows:null;
     h+='<details class="mmenu-panel" style="margin-top:16px"'+(cache||ACCOUNT_BACKUP_MSG?' open':'')+'><summary>Advanced / Backup</summary><p class="note">Import a character as a new copy, or load your saved characters to download a backup.</p><button class="mmenu-cta-secondary" onclick="APP.chooseImport()">Import character backup</button> <button class="mmenu-cta-secondary" onclick="APP.loadAccountBackups()">Load saved characters</button>';

@@ -84,14 +84,19 @@ function homeNextSessionHTML(home){
   +'<div class="st-bd-next-t"><small>Next session'+(ok?' · '+esc(d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'})):'')+'</small>'
   +'<b>'+esc(home.nextTitle||'Next session')+'</b>'+(home.nextWhere?'<span>'+esc(home.nextWhere)+'</span>':'')+'</div></div>';
 }
+// Quote: the campaign's (GM) first, then the site's (admin), then the title.
+// Picture: the site admin's upload, else the bundled painting.
 function homeHeroHTML(){
- const camp=homeCampaign(),home=camp?campaignHomeOf(camp):null;
+ const camp=homeCampaign(),home=camp?campaignHomeOf(camp):null,site=siteHomeSettings();
  const kicker=camp?'Sit’ota · '+esc(camp.name||'Campaign'):'Sit’ota · Valeshar Campaign';
- const words=home&&home.quote
-  ?'<blockquote class="st-bd-quote"><p>'+esc(home.quote)+'</p>'+(home.cite?'<cite>'+esc(home.cite)+'</cite>':'')+'</blockquote>'
+ const q=home&&home.quote?home:site.quote?site:null;
+ const words=q
+  ?'<blockquote class="st-bd-quote"><p>'+esc(q.quote)+'</p>'+(q.cite?'<cite>'+esc(q.cite)+'</cite>':'')+'</blockquote>'
   :'<h1 class="st-bd-title">Sit’ota</h1><p class="st-bd-lede">The world guide, characters, and everything we need for the campaign.</p>';
- return '<section class="st-bd-hero">'
-  +'<picture><source srcset="assets/sitota-hero.avif" type="image/avif"><img class="st-bd-img" src="assets/sitota-hero.webp" alt=""></picture>'
+ const img=SITE_HOME===null&&CLOUD_ENABLED?'<img class="st-bd-img st-bd-wait" alt="">'
+  :site.image?'<img class="st-bd-img" src="'+esc(site.image)+'" alt="">'
+  :'<picture><source srcset="assets/sitota-hero.avif" type="image/avif"><img class="st-bd-img" src="assets/sitota-hero.webp" alt=""></picture>';
+ return '<section class="st-bd-hero">'+img
   +'<div class="st-frame st-bd-inner"><div class="st-bd-copy"><p class="st-bd-kicker">'+kicker+'</p>'+words+homeNextSessionHTML(home)
   +'<div class="st-bd-links"><a class="st-bd-world" href="#/world/welcome">Explore Sit’ota <span aria-hidden="true">→</span></a></div>'
   +'</div></div></section>';
@@ -113,7 +118,7 @@ function sitotaHomeHTML(){
  +tile('#/wiki',svg('<path d="M12 6C9 4 6 4 3 5v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1Zm0 0v14"/>'),'Rules','Search the Mythras rules by chapter.','')
  +tile('#/world/welcome',svg('<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14"/>'),'World Guide','People, places and history of Sit’ota.','')
  +'</div>'+(homeCharacterOwner()?'<div class="st-table-actions"><span>Starting a table?</span><button type="button" class="st-btn st-btn-sm" onclick="APP.newCampaign()">Create campaign</button><button type="button" class="st-btn st-btn-sm" onclick="APP.homeJoinCampaign()">Join a campaign</button></div>':'')+'</div></section>'
- +'<div class="st-frame st-orc"><p>Art: Richard Wright · © Wizards of the Coast. Rules text is drawn from Mythras Imperative and Classic Fantasy Imperative by The Design Mechanism, used under the ORC licence. Mythras and Classic Fantasy are Reserved Material.</p></div>'
+ +'<div class="st-frame st-orc"><p>'+homeArtCreditHTML()+'Rules text is drawn from Mythras Imperative and Classic Fantasy Imperative by The Design Mechanism, used under the ORC licence. Mythras and Classic Fantasy are Reserved Material.</p></div>'
  +'</div>';
 }
 
@@ -368,3 +373,102 @@ function siteModeHTML(){
 if(typeof window!=='undefined'&&window.matchMedia){
  try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(siteModePref()==='auto')siteModeApply();});}catch(e){}
 }
+
+// ---- Site admin: the Home quote and picture for everyone (owner, 2026-11-10) ----
+// One row in site_settings that anyone can read; only accounts in
+// site_admins can change it (the database enforces that, see
+// supabase/migrations/20261110120000_site_admin_and_settings.sql).
+let SITE_HOME=null;          // {home:{quote,cite,credit}, hero_image} once loaded; {} if unavailable
+let SITE_ADMIN=false,SITE_ADMIN_FOR=null;
+let SITE_HERO_DRAFT;         // undefined = unchanged, '' = back to the bundled painting, else a JPEG data URL
+let SITE_HOME_MSG=null;      // {text, ok}
+const SITE_JPEG=/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/;
+function siteHomeSettings(){
+ const s=SITE_HOME||{},h=s.home&&typeof s.home==='object'?s.home:{};
+ const t=(x,n)=>typeof x==='string'?x.trim().slice(0,n):'';
+ return {quote:t(h.quote,400),cite:t(h.cite,120),credit:t(h.credit,160),
+  image:typeof s.hero_image==='string'&&s.hero_image.length<=1400000&&SITE_JPEG.test(s.hero_image)?s.hero_image:''};
+}
+function homeArtCreditHTML(){
+ const s=siteHomeSettings();
+ if(SITE_HOME===null&&CLOUD_ENABLED)return '';
+ if(s.image)return s.credit?'Art: '+esc(s.credit)+'. ':'';
+ return 'Art: Richard Wright · © Wizards of the Coast. ';
+}
+async function loadSiteHome(){
+ if(!CLOUD_ENABLED){SITE_HOME={};return;}
+ try{
+  const {data,error}=await sb.from('site_settings').select('home,hero_image').eq('id','home').maybeSingle();
+  SITE_HOME=error||!data?{}:data;   // before the migration runs the table is missing: show the defaults
+ }catch(e){SITE_HOME={};}
+ if(typeof APPVIEW!=='undefined'&&APPVIEW==='menu')render();
+}
+async function refreshSiteAdmin(){
+ const id=AUTH_USER&&AUTH_USER.id;
+ SITE_ADMIN=false;SITE_ADMIN_FOR=id||null;
+ if(!id||!CLOUD_ENABLED)return;
+ try{
+  const {data,error}=await sb.rpc('is_site_admin');
+  if(!error&&AUTH_USER&&AUTH_USER.id===id)SITE_ADMIN=data===true;
+ }catch(e){}
+ if(SITE_ADMIN&&typeof APPVIEW!=='undefined'&&APPVIEW==='account')render();
+}
+// Account page panel, admins only.
+function siteAdminPanelHTML(){
+ if(!SITE_ADMIN||!AUTH_USER)return '';
+ const s=siteHomeSettings();
+ const preview=SITE_HERO_DRAFT===undefined?s.image:SITE_HERO_DRAFT;
+ const field=(id,label,val,max,ph)=>'<label class="st-label" for="'+id+'">'+label+'</label><input id="'+id+'" class="st-input" type="text" maxlength="'+max+'" placeholder="'+ph+'" value="'+esc(val)+'">';
+ return '<section class="mmenu-panel st-settings st-siteadmin" aria-labelledby="stSiteAdminTitle"><h2 id="stSiteAdminTitle">Site home page <span class="st-tag st-tag-gm">Admin</span></h2>'
+  +'<p>What everyone sees at the top of Home, signed in or not. A campaign’s own quote, set by its GM, still shows first for that campaign’s players.</p>'
+  +(SITE_HOME_MSG?'<p class="st-banner'+(SITE_HOME_MSG.ok?' st-banner-ok':'')+'" role="'+(SITE_HOME_MSG.ok?'status':'alert')+'">'+esc(SITE_HOME_MSG.text)+'</p>':'')
+  +'<label class="st-label" for="siteQuote">Quote</label><textarea id="siteQuote" class="st-input st-textarea" rows="3" maxlength="400" placeholder="Leave empty to show the Sit’ota title">'+esc(s.quote)+'</textarea>'
+  +field('siteCite','Said by',s.cite,120,'Who said it, or where it’s from')
+  +'<label class="st-label">Picture</label><div class="st-siteadmin-pic">'
+  +(preview?'<img src="'+esc(preview)+'" alt="New Home picture">':'<img src="assets/sitota-hero.webp" alt="Default Home picture">')
+  +'<div><input id="siteHeroFile" type="file" accept="image/jpeg,image/png,image/webp" hidden onchange="siteHeroPick(this)">'
+  +'<button type="button" class="st-btn st-btn-sm" onclick="document.getElementById(\'siteHeroFile\').click()">Choose a picture…</button>'
+  +(preview?'<button type="button" class="st-btn st-btn-sm" onclick="siteHeroDefault()">Use the default painting</button>':'')
+  +'<small>JPEG, PNG or WebP, up to 15 MB. It’s resized to 1920px wide. A wide landscape works best; the left side fades out behind the quote.</small></div></div>'
+  +(preview?field('siteCredit','Picture credit',s.credit,160,'For example, the artist’s name'):'')
+  +'<div class="st-row"><button type="button" class="st-btn st-btn-primary" onclick="saveSiteHome()">Save home page</button></div></section>';
+}
+// Resize to a JPEG data URL small enough for the settings row.
+async function siteHeroJpeg(file){
+ const image=await createImageBitmap(file);
+ try{
+  for(const [w,q] of [[1920,.82],[1920,.72],[1600,.72],[1280,.7]]){
+   const scale=Math.min(1,w/image.width),c=document.createElement('canvas');
+   c.width=Math.max(1,Math.round(image.width*scale));c.height=Math.max(1,Math.round(image.height*scale));
+   const ctx=c.getContext('2d');ctx.drawImage(image,0,0,c.width,c.height);
+   const url=c.toDataURL('image/jpeg',q);
+   if(url.length<=1350000)return url;
+  }
+ }finally{image.close();}
+ throw Error('The picture is still too large after resizing. Try a smaller one.');
+}
+
+async function siteHeroPick(input){
+  const file=input.files&&input.files[0];if(!file)return;
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>15*1024*1024){SITE_HOME_MSG={text:'Choose a JPEG, PNG or WebP picture under 15 MB.'};render();return;}
+  try{SITE_HERO_DRAFT=await siteHeroJpeg(file);SITE_HOME_MSG={text:'Picture ready. Save home page to publish it.',ok:true};}
+  catch(e){SITE_HOME_MSG={text:e.message||'The picture could not be read.'};}
+  input.value='';render();
+}
+function siteHeroDefault(){SITE_HERO_DRAFT='';SITE_HOME_MSG={text:'Save home page to switch back to the default painting.',ok:true};render();}
+async function saveSiteHome(){
+  if(!SITE_ADMIN||!AUTH_USER||!CLOUD_ENABLED)return;
+  const v=id=>String(document.getElementById(id)?.value||'').replace(/\s+/g,' ').trim();
+  const home={quote:v('siteQuote').slice(0,400),cite:v('siteCite').slice(0,120),credit:v('siteCredit').slice(0,160)};
+  if(!document.getElementById('siteCredit'))home.credit=siteHomeSettings().credit;
+  const patch={home,updated_at:new Date().toISOString(),updated_by:AUTH_USER.id};
+  if(SITE_HERO_DRAFT!==undefined)patch.hero_image=SITE_HERO_DRAFT||null;
+  try{
+   const {data,error}=await sb.from('site_settings').update(patch).eq('id','home').select('home,hero_image').maybeSingle();
+   if(error)throw error;
+   if(!data)throw Error('Not saved. This account is not a site admin.');
+   SITE_HOME=data;SITE_HERO_DRAFT=undefined;SITE_HOME_MSG={text:'Saved. Home shows it for everyone now.',ok:true};
+  }catch(e){SITE_HOME_MSG={text:'Could not save: '+(e.message||'unknown error')};}
+  render();
+ }
+
