@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Improve skills: no guessed 1d4 while campaign rules load (#255)
+
+- **Finding (live check #255):** a 1d6+1 campaign's linked character showed "+1d4+1%" in the Improve skills help. The help and the roll both read the same `skillImprovementDie()`, so once the campaign's rules have loaded they always agree (1d6+1 under the option, Core p.72). The mismatch came from the help text guessing 1d4 while the rules were still loading or had failed to load. In that state no roll is ever spent: the Spend button is refused. **The mechanics never rolled the wrong die.**
+- **Fixed:** while loading, the help says the campaign's rules are loading. If they failed, it says so, shows the reason and offers **Retry**. Spending then explains that the rules didn't load instead of "still loading". Standalone characters still show Core 1d4+1.
+- Test added in `tests/advancement-options.cjs`.
+
 ## Site admin: change the Home quote and picture from the site
 
 - **Account → Site home page** (site admins only): set the quote shown at the top of Home for everyone, signed in or not, and who said it. Upload a new Home picture or go back to the default painting, with a credit line for it. Pictures are resized in the browser to 1920px wide.
