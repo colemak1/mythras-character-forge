@@ -52,11 +52,11 @@ test('C5-A01..A23 the action list follows Core pp.91-93 names and costs',()=>{
  for(const n of ['Delay','Assess Situation','Drop Weapon','Signal','Speak','Use Luck Point','Ward Location'])assert.match(src,new RegExp('\\["'+n+'"'),n+' is a free (0 AP) entry');
  assert.doesNotMatch(src,/Change Combat Stance|Shove \/ Grapple|Dodge \/ Evade/,'non-Core action labels are gone');
 });
-test('C5-P03..P10, E01, E02 Differential table (Core p.51)',()=>{
+test('C5-P03..P10, E01, E02 Differential table (Core pp.51, 94; D-CE1)',()=>{
  const t=(a,b)=>run(`playEffectsWon("${a}","${b}")`);
  assert.equal(t('Success','Failure'),1);assert.equal(t('Critical','Failure'),2);assert.equal(t('Success','Fumble'),2);assert.equal(t('Critical','Fumble'),3);
  assert.equal(t('Success','Success'),0);assert.equal(t('Critical','Critical'),0);assert.equal(t('Failure','Failure'),0);
- assert.equal(t('Failure','Fumble'),0);assert.equal(t('Fumble','Fumble'),0);assert.equal(t('Failure','Success'),-1);
+ assert.equal(t('Failure','Fumble'),1,'D-CE1 (Core p.94)');assert.equal(t('Fumble','Failure'),-1);assert.equal(t('Fumble','Fumble'),0);assert.equal(t('Failure','Success'),-1);
 });
 test('C5-P09 no parry counts as a failed defence',()=>{
  run('S=freshState();S.rollLog=[{label:"Sword",pct:60,roll:30,tier:"Success",combat:true,combatKind:"style",combatRole:"attack",oppTier:null}];APP.playNoParry(0);');
@@ -91,7 +91,7 @@ test('C5-E05, E06, E07, SE01..SE43 all 43 Special Effects match the Core p.100 s
  'Overextend Opponent':[0,1,'','',1],'Overpenetration':[1,0,'Ranged Weapons','Critical Only',0],'Pin Down':[1,0,'Ranged Weapons','',1],'Pin Weapon':[1,1,'','Critical Only',0],
  'Prepare Counter':[0,1,'','',1],'Press Advantage':[1,0,'','',0],'Rapid Reload':[1,0,'','',1],'Remise':[1,0,'Small Weapon Only','',0],'Scar Foe':[1,1,'','',0],
  'Select Target':[0,1,'','Attacker Fumbles',0],'Slip Free':[0,1,'','Defender Criticals',0],'Stand Fast':[0,1,'','',0],'Stun Location':[1,0,'Bludgeoning Weapons','',0],
- 'Sunder':[1,0,'Axes, Two Handed Weapons','',0],'Take Weapon':[1,1,'Unarmed','',0],'Trip Opponent':[1,1,'','',0],'Weapon Malfunction (Firearms)':[1,0,'Ranged Weapons','Attacker Fumbles',0],'Withdraw':[0,1,'','',0]};
+ 'Sunder':[1,0,'Axes, Two Handed Weapons','',0],'Take Weapon':[1,1,'Unarmed','',0],'Trip Opponent':[1,1,'','',0],'Weapon Malfunction':[1,0,'Ranged Weapons','Attacker Fumbles',0],'Withdraw':[0,1,'','',0]};
  const app=JSON.parse(run('JSON.stringify(SPECIAL_EFFECTS)'));assert.equal(app.length,43);
  for(const e of app){const b=book[e[0]];assert(b,e[0]+' is not in the Core summary');assert.deepEqual([+!!e[1],+!!e[2],e[3]||'',e[4]||'',+!!e[5]],b,e[0]);}
 });
@@ -138,11 +138,11 @@ test('rolling with a weapon records it; Unarmed rolls count as combat rolls',()=
 test('C5-ST03..ST08 unfamiliar weapons: grade steps, never below STR+DEX (Core p.88)',()=>{
  run('S=freshState();effectiveChars=()=>({STR:12,DEX:14,CON:10,SIZ:12,INT:12,POW:10,CHA:10});finalPct=()=>80;ACTIVE_GRADE="standard";gradeForEntry=()=>ACTIVE_GRADE;');
  const f=fam=>JSON.parse(run(`JSON.stringify(familiarityPct("style:x","${fam}"))`));
- assert.equal(f('similar').pct,80);assert.equal(f('broadly').pct,53);assert.equal(f('broadly').grade,'hard');
- assert.equal(f('reasonably').pct,40);assert.equal(f('combined').pct,53);assert.equal(f('substantially').pct,26);
+ assert.equal(f('similar').pct,80);assert.equal(f('broadly').pct,54,'two thirds of 80 rounds up (D-CE2)');assert.equal(f('broadly').grade,'hard');
+ assert.equal(f('reasonably').pct,40);assert.equal(f('combined').pct,54);assert.equal(f('substantially').pct,26);
  run('finalPct=()=>45;');assert.equal(f('reasonably').pct,26,'floor at STR+DEX 26');assert.equal(f('reasonably').floored,true);
- run('ACTIVE_GRADE="hard";');assert.equal(f('substantially').pct,17,'situational grade still applies to the base');
- assert.equal(JSON.parse(run('JSON.stringify(familiarityPct(null,"broadly"))')).pct,17,'no styles: base STR+DEX');
+ run('ACTIVE_GRADE="hard";');assert.equal(f('substantially').pct,18,'situational grade still applies to the base (26 x 2/3 rounds up)');
+ assert.equal(JSON.parse(run('JSON.stringify(familiarityPct(null,"broadly"))')).pct,18,'no styles: base STR+DEX');
 });
 test('C5-M22 surprise: initiative -10, no Attack, cleared by New Round (Core p.105)',()=>{
  run('S=freshState();effectiveChars=()=>({STR:12,DEX:14,CON:10,SIZ:12,INT:12,POW:10,CHA:10});armourPenaltyToInit=()=>0;fatigueRow=()=>({init:0});');
@@ -163,3 +163,15 @@ test('A4-H24..H27 maiming: one third, two thirds (HP lost rounded up), or 1 HP (
  assert.equal(m(2,1),1);assert.equal(m(1,2),1,'never below 1');assert.equal(m(6,4),null);
 });
 console.log('Combat case tests passed');
+test('D-CE2 Play Mode rounds a skill at a difficulty grade up, matching The Pits (Core pp.49–50, D-4)',()=>{
+ assert.deepEqual([65,10,1,33,30].map(p=>run(`gradePct(${p},GRADE_MULT.hard)`)),[44,7,1,22,20]);
+ assert.equal(run('gradePct(65,GRADE_MULT.formidable)'),33);assert.equal(run('gradePct(65,GRADE_MULT.herculean)'),7);
+ assert.equal(run('gradePct(30,GRADE_MULT.herculean)'),3,'no floating-point overshoot');
+ assert.equal(run('gradePct(65,GRADE_MULT.easy)'),98);
+ for(const p of [0,7,44,65,99,140])assert.equal(run(`gradePct(${p},GRADE_MULT.hard)`),run(`CombatRules.skillAtGrade(${p},1)`),'same as The Pits at '+p);
+});
+test('D-CE4 the effect is named "Weapon Malfunction"; old roll logs are renamed on load',()=>{
+ assert.ok(run('SPECIAL_EFFECTS.some(e=>e[0]==="Weapon Malfunction")'));
+ run('S=freshState();S.rollLog=[{label:"x",effectsPicked:["Trip Opponent","Weapon Malfunction (Firearms)"]},{label:"y"}];normalizeState();');
+ assert.deepEqual([...run('S.rollLog[0].effectsPicked')],['Trip Opponent','Weapon Malfunction']);
+});

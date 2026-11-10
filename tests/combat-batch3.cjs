@@ -50,7 +50,7 @@ test('C5-B3-WT18 a thrown javelin may Pin Weapon without a Critical only against
 test('Batch 2 prerequisites still hold (Kill Silently, Weapon Malfunction)',()=>{
  setup(["Dagger","Short bow"]);
  assert.equal(run(`canPickEffectForRoll(SPECIAL_EFFECTS.find(e=>e[0]==="Kill Silently"),${roll({weapon:"Dagger",tier:"Critical",styleKey:"style:none"})})`),false);
- assert.equal(run(`weaponAllowsEffect(SPECIAL_EFFECTS.find(e=>e[0]==="Weapon Malfunction (Firearms)"),weaponByName("Short bow"))`),false);
+ assert.equal(run(`weaponAllowsEffect(SPECIAL_EFFECTS.find(e=>e[0]==="Weapon Malfunction"),weaponByName("Short bow"))`),false);
 });
 test('C5-B3-WT06/WT11/WT13 weapon cards show Mount, Stealth and shield coverage',()=>{
  setup(["Lance","Garrotte","Buckler","Javelin","Atlatl"]);const h=run('pmWeaponCardsHTML()');

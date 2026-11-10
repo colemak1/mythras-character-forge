@@ -512,7 +512,7 @@ function contestedRollResult(skillA,rollA,skillB,rollB){
   else if(rank[tierA]!==rank[tierB])opposed=rank[tierA]>rank[tierB]?"First participant wins.":"Second participant wins.";
   else if(rollA===rollB)opposed="Equal successful rolls: ask the GM to adjudicate the tie.";
   else opposed=rollA>rollB?"First participant wins (higher successful roll).":"Second participant wins (higher successful roll).";
-  return {reduction,a,b,tierA,tierB,opposed,differential:playEffectsWon(tierA,tierB)};
+  return {reduction,a,b,tierA,tierB,opposed,differential:CombatRules.contestLevels(tierA,tierB)};
 }
 function pmCalculateContest(form){
   const values=["skillA","rollA","skillB","rollB"].map(n=>form.elements[n].value.trim());
@@ -577,7 +577,7 @@ function isFirearm(w){return !!w&&(w.firearm===true||/\b(arquebus|musket|pistol|
 function weaponAllowsEffect(effect,w){
   const req=effect&&effect[3];
   if(!req||!w)return true;
-  if(effect[0]==="Weapon Malfunction (Firearms)")return isFirearm(w);
+  if(effect[0]==="Weapon Malfunction")return isFirearm(w);
   if(WEAPON_LISTED_EFFECTS.has(effect[0]))return String(w.effects||"").split(/,\s*/).includes(effect[0]);
   if(req==="Ranged Weapons")return w.group==="Ranged";
   if(req==="Unarmed")return w.group==="Unarmed";
@@ -597,10 +597,10 @@ function familiarityPct(styleKey,fam){
   const row=WEAPON_FAMILIARITY.find(f=>f[0]===fam);if(!row)return null;
   const c=effectiveChars(),sit=styleKey?gradeForEntry(styleKey):ACTIVE_GRADE,sitMult=GRADE_MULT[sit];
   if(sitMult==null)return {pct:null,grade:sit};
-  const floor=Math.max(0,Math.round((c.STR+c.DEX)*sitMult));
+  const floor=gradePct(c.STR+c.DEX,sitMult);
   if(row[2]===null||!styleKey)return {pct:floor,grade:sit,floored:true};
   const g=shiftGradeHarder(sit,row[2]),m=GRADE_MULT[g];
-  const pct=m==null?0:Math.max(0,Math.round(finalPct(styleKey)*m));
+  const pct=m==null?0:gradePct(finalPct(styleKey),m);
   return pct<floor?{pct:floor,grade:g,floored:true}:{pct,grade:g,floored:false};
 }
 let PM_EFFECT_ROLL_REF=null;
@@ -670,7 +670,7 @@ const SPECIAL_EFFECTS=[
 ["Sunder",1,0,"Axes, Two Handed Weapons","",0,"The attacker may use a suitable weapon to damage the armour or natural protection of an opponent. Any weapon damage, after reductions for parrying or magic, is applied against the Armour Points value of the protection. Surplus damage in excess of the Armour Points is then used to reduce the AP value of that armoured location — ripping straps, bursting rings, creasing plates, or tearing away scales/chitin. If any damage remains after the protection has been reduced to zero AP, it carries over to the Hit Points of the location struck."],
 ["Take Weapon",1,1,"Unarmed","",0,"Allows an unarmed character to yank or twist an opponent's weapon out of their hand. The opponent must make an opposed roll of their Combat Style against the character's original Unarmed roll. If the target loses, their weapon is taken and from that moment on may be used by the character instead. Take Weapon differs from Disarm Opponent in that the Size of the weapon is largely irrelevant. However, the technique only works on creatures of up to twice the attacker's STR."],
 ["Trip Opponent",1,1,"","",0,"The character attempts to overbalance or throw their opponent to the ground. The opponent must make an opposed roll of their Brawn, Evade, or Acrobatics against the character's original roll. If the target fails, they fall prone. Quadrupeds (or creatures with even more legs) may substitute their Athletics skill for Evade, and treat the roll as one difficulty grade easier."],
-["Weapon Malfunction (Firearms)",1,0,"Ranged Weapons","Attacker Fumbles",0,"The attacker's weapon malfunctions in such a way that it is rendered useless until time can be spent repairing it. Core p.100 lists this as offensive and requiring the attacker to fumble; those conditions cannot produce a winning offensive effect in the standard differential table. Ask the GM to adjudicate and record the result manually."],
+["Weapon Malfunction",1,0,"Ranged Weapons","Attacker Fumbles",0,"Firearms only. The attacker's weapon malfunctions in such a way that it is rendered useless until time can be spent repairing it. Core p.100 lists this as offensive and requiring the attacker to fumble; those conditions cannot produce a winning offensive effect in the standard differential table. Ask the GM to adjudicate and record the result manually."],
 ["Withdraw",0,1,"","",0,"The defender may automatically withdraw out of reach, breaking off engagement with that particular opponent."]
 ];
 
@@ -692,7 +692,7 @@ const FX_GROUPS=[
   ["Stop them acting / force a bad turn",["Press Advantage","Pin Down","Force Failure","Overextend Opponent","Compel Surrender","Remise"]],
   ["Immobilise, trap, or knock down",["Bash","Entangle","Grip","Pin Weapon","Stun Location","Trip Opponent"]],
   ["Control range and positioning",["Close Range","Open Range","Circumvent Parry","Choose Location","Marksman","Withdraw"]],
-  ["Protect yourself / recover",["Enhance Parry","Stand Fast","Arise","Slip Free","Select Target","Blind Opponent","Accidental Injury","Prepare Counter","Weapon Malfunction (Firearms)"]],
+  ["Protect yourself / recover",["Enhance Parry","Stand Fast","Arise","Slip Free","Select Target","Blind Opponent","Accidental Injury","Prepare Counter","Weapon Malfunction"]],
   ["Follow-up attacks & tempo",["Flurry","Rapid Reload","Duck Back"]],
   ["Battlefield theatre",["Scar Foe"]]
 ];
@@ -2229,7 +2229,7 @@ function rulesNotes(){
   +'<li><b>Pulp Hero &amp; Paragon</b> (Mythras Companion, &ldquo;Pyramids, Pulp, &amp; Paragons&rdquo;, pp.54&ndash;55, verified against page scans): different characteristic dice/point pools, 2 or 3 non-stacking Advantages, and extra Bonus Skill Points at a higher per-skill cap (Pulp +50 pts/20% cap, Paragon +100 pts/40% cap). <b>Quirk:</b> the book&rsquo;s Paragon bonus-points line is literally labelled &ldquo;Heroic characters&rdquo; rather than &ldquo;Paragon characters&rdquo; &mdash; preserved as printed.</li>'
   +'<li>Grade-easier Advantages (Endurance/Stealth/Willpower) are flagged on the Attributes step rather than converted into a flat percentage, since Mythras Grades are a situational roll modifier, not a skill bonus &mdash; baking in a number would be a guess, not a rule.</li>'
   +'<li>The doubled Healing Rate for Pulp/Paragon (Minor or Serious Wounds only, Major Wounds unaffected) is noted next to Healing Rate rather than computed, since automatic recovery also requires knowing the treatment history.</li>'
-  +'<li><b>Difficulty Grade</b> (core rulebook, Skills chapter, p.38, confirmed against page image): Very Easy doubles the skill, Easy adds half again, Standard is unchanged, Hard cuts it by a third, Formidable halves it, Herculean drops it to a tenth; Automatic needs no roll and Hopeless allows none. The selector on the Sheet step applies this to every skill % and to the roll button. Rounding direction isn&rsquo;t specified in the book for this table, so results are rounded to the nearest whole percent.</li>'
+  +'<li><b>Difficulty Grade</b> (core rulebook, Skills chapter, p.38, confirmed against page image): Very Easy doubles the skill, Easy adds half again, Standard is unchanged, Hard cuts it by a third, Formidable halves it, Herculean drops it to a tenth; Automatic needs no roll and Hopeless allows none. The selector on the Sheet step applies this to every skill % and to the roll button. Fractions round up (rulings D-4 and D-CE2), the same as The Pits, so 65% at Hard is 44%.</li>'
   +'<li><b>Cult &amp; Community</b> (Cults &amp; Brotherhoods chapter, pp.196&ndash;200, confirmed against page images): the five organisation types (Theist Cult, Animist/Spirit Cult, Sorcery Order, Mystical Order, Brotherhood) and their rank titles &mdash; Common/Dedicated/Proven/Overseer/Leader &mdash; are the book&rsquo;s own, as are the per-rank Requirements (years of membership + a minimum number of cult skills at a minimum %) and Training Discount (0/25/50/75/100%). <b>Correction:</b> rank does not grant a flat skill % bonus &mdash; an earlier pass invented that mechanic; it has been removed. What stays intentionally setting-specific, per the book&rsquo;s own design (cults are meant to be campaign-defined), is which nine archetypes exist for Sit&#39;ota, their names/blurbs, and which skill each one teaches.</li>'
   +'<li><b>Encumbrance</b> (core rulebook, Encumbrance section, confirmed against page image): unencumbered up to STR&times;2. Over STR&times;2 (&ldquo;Burdened&rdquo;): STR/DEX-based skills, including Combat Styles, are one Grade harder, Movement &minus;2m, no sprinting. Over STR&times;3 (&ldquo;Overloaded&rdquo;): two Grades harder, Movement halved, walk-only. STR&times;4 is a hard cap &mdash; flagged but not blocked by this tool. Worn armour counts at half its packed ENC toward these totals; carried (unworn) armour counts full ENC. <b>These penalties are now applied, not just described:</b> a skill counts as STR/DEX-based if its base formula contains STR or DEX (which is every Combat Style), and the Grade shift feeds the same <code>gradeForEntry()</code> the skill list, sheet, Play Mode and every roll button already use. Until this pass the warning text promised a penalty that never reached a roll.</li>'
   +'<li><b>Fatigue</b> (Fatigue Levels table). Each level sets an <i>absolute</i> Skill Grade for all rolls (Winded/Tired Hard, Wearied/Exhausted Formidable, Debilitated/Incapacitated Herculean, Semi-Conscious and beyond Hopeless), plus Movement, Initiative and Action Point penalties, and a Recovery Period that is divided by the character&rsquo;s Healing Rate. All of it is applied automatically now; the track used to be a picker that stored a string and changed nothing. Because the table states a grade rather than a shift, Fatigue acts as a <i>floor</i> on difficulty and takes the harsher of itself and any Encumbrance shift, rather than stacking with it &mdash; the book gives no stacking rule, and summing them would be an invention. Table transcribed from the <a href="https://srd.mythras.net/" target="_blank" rel="noopener">Mythras Imperative SRD</a>, published by The Design Mechanism under the ORC License, which reproduces the core rulebook&rsquo;s own Fatigue table.</li>'

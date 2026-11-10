@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat engine: Play Mode and The Pits now agree (D-CE1 to D-CE4)
+
+ChatGPT's rulings on the differences found when the combat engine was shared.
+
+- **Failure against Fumble wins one Special Effect** in Play Mode too, as it already did in The Pits (Core p.94). The contested roll calculator for non-combat contests is unchanged: two failed rolls gain nothing (Core p.51).
+- **Difficulty grades round up** in Play Mode, as in The Pits (D-4): 65% at Hard is 44%, 80% is 54%. This covers skill rolls, spell casting and unfamiliar weapons.
+- **Names:** The Pits says "Wearied" (the Fatigue table's name). Play Mode's effect is "Weapon Malfunction", still firearms only; older saved roll logs are renamed when loaded.
+- Bypass Armour stays as it was: stackable in Play Mode, once per exchange in The Pits (one armour layer).
+
 ## One shared combat rules engine
 
 Nothing you can see changes. The Pits and Play Mode now work their combat numbers out with the same code, so a rule fixed once is fixed in both.

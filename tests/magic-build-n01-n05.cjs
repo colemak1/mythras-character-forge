@@ -67,13 +67,13 @@ test('MAG-N02 a valid Combine 1 rolls one grade harder and the Play card names t
  assert.match(run('magicPanel()'),/combined with Shield/);
  run('APP.castMagic(0)');assert.equal(run('S.play.sorceryCasting.completed'),1);
  dice([30]);run('APP.castMagic(0)');
- const log=run('S.rollLog[0]');assert.equal(log.pct,53,'80% at Hard');assert.match(log.label,/Hard/);assert.equal(log.tier,'Success');
+ const log=run('S.rollLog[0]');assert.equal(log.pct,54,'80% at Hard rounds up (D-CE2, FM-F03)');assert.match(log.label,/Hard/);assert.equal(log.tier,'Success');
 });
 test('MAG-N02 combined spells from different Invocation skills roll the lower one',()=>{
  const inv=[["inv:a","Fire School",80],["inv:b","Grimoire of Wards",50]];
  sorcery([ward({combinedSpells:["Shield"],combineSharedTargets:true,invocationKey:"inv:a"}),{tradition:"sorcery",name:"Shield",invocationKey:"inv:b"}],{inv});
  assert.equal(run('sorceryRollKey(S.magic.known[0])'),'inv:b');
- run('APP.castMagic(0)');dice([30]);run('APP.castMagic(0)');assert.equal(run('S.rollLog[0].pct'),33,'50% at Hard');
+ run('APP.castMagic(0)');dice([30]);run('APP.castMagic(0)');assert.equal(run('S.rollLog[0].pct'),34,'50% at Hard rounds up');
 });
 test('MAG-N02 with several Invocation skills a spell must name its source',()=>{
  const inv=[["inv:a","Fire School",80],["inv:b","Grimoire of Wards",50]];
@@ -225,6 +225,6 @@ test('MAG-N10 changing a combined spell\'s Invocation source mid-casting needs a
  run('APP.castMagic(0)');assert.equal(run('S.play.sorceryCasting.completed'),1);
  run('APP.invocationSource(1,"inv:a")');dice([]);run('APP.castMagic(0)');
  assert.match(msg(),/Cancel it/);assert.equal(run('S.rollLog.length'),0);assert.equal(run('S.play.magic'),20);
- run('APP.invocationSource(1,"inv:b")');dice([30]);run('APP.castMagic(0)');assert.equal(run('S.rollLog[0].pct'),33,'restored sources resolve on the final turn with the lower skill at Hard');
+ run('APP.invocationSource(1,"inv:b")');dice([30]);run('APP.castMagic(0)');assert.equal(run('S.rollLog[0].pct'),34,'restored sources resolve on the final turn with the lower skill at Hard');
 });
 console.log('Magic MAG-N01–N05 tests passed');

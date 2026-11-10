@@ -244,13 +244,16 @@ function mToFtIn(m){const totalIn=Math.round(m*39.3701);return Math.floor(totalI
 // stat a player thinks about in book units.
 function heightWeightText(){const hw=heightWeight();
   return hw?(hw.ft+" / "+hw.lb+" lb"):"—";}
+// A skill at a difficulty grade rounds up (D-CE2 and D-4, Core pp.49-50),
+// the same as CombatRules.skillAtGrade in The Pits.
+function gradePct(basePct,mult){return Math.max(0,Math.ceil(Math.round(basePct*mult*1e6)/1e6));}
 function gradedPct(key,basePct){
   const g=gradeForEntry(key);const mult=GRADE_MULT[g];
-  return mult==null?{pct:null,grade:g}:{pct:Math.max(0,Math.round(basePct*mult)),grade:g};
+  return mult==null?{pct:null,grade:g}:{pct:gradePct(basePct,mult),grade:g};
 }
 function sorceryInvocationGrade(key,basePct,extra){
   const grade=shiftGradeHarder(gradeForEntry(key),extra),mult=GRADE_MULT[grade];
-  return {grade,pct:mult==null?null:Math.max(0,Math.round(basePct*mult))};
+  return {grade,pct:mult==null?null:gradePct(basePct,mult)};
 }
 // Reference table for the on-demand Difficulty Grade popover in Play Mode —
 // every Grade's effect on one skill's % at a glance, independent of whatever
@@ -259,7 +262,7 @@ function gradeRefRows(key){
   const base=finalPct(key);
   return GRADES.map(([g,label])=>{
     const mult=GRADE_MULT[g];
-    const text=mult==null?(g==="automatic"?"no roll":"can't attempt"):(Math.max(0,Math.round(base*mult))+"%");
+    const text=mult==null?(g==="automatic"?"no roll":"can't attempt"):(gradePct(base,mult)+"%");
     return {g,label,text};
   });
 }
@@ -364,6 +367,10 @@ function normalizeState(){
     Object.entries(old).forEach(([key,value])=>{const n=Number(key);if(Number.isInteger(n))S.overrides[n>=insertedAt?n+1:n]=value;});
     S._creationFlowVersion=2;
   }
+  // D-CE4: the effect is called "Weapon Malfunction" (Core pp.95-100);
+  // older roll logs saved it as "Weapon Malfunction (Firearms)".
+  if(Array.isArray(S.rollLog))S.rollLog.forEach(r=>{if(r&&Array.isArray(r.effectsPicked))
+    r.effectsPicked=r.effectsPicked.map(n=>n==="Weapon Malfunction (Firearms)"?"Weapon Malfunction":n);});
   S.community=S.community||{};
   for(const key of ["family","parents","siblings","reputation","partyTie","resources","household"]){
     if(typeof S.community[key]!=="string")S.community[key]="";

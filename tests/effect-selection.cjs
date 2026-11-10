@@ -12,8 +12,8 @@ for(const name of ['combat-rules','data','engine','cloud','render','router','pla
  vm.runInContext(src,ctx,{filename:name+'.js'});
 }
 const run=s=>vm.runInContext(s,ctx);
-assert.match(run('SPECIAL_EFFECTS.find(e=>e[0]==="Weapon Malfunction (Firearms)")[6]'),/GM to adjudicate/);
-assert.equal(run('canPickEffectForRoll(SPECIAL_EFFECTS.find(e=>e[0]==="Weapon Malfunction (Firearms)"),{combatRole:"attack",tier:"Fumble",oppTier:"Success"})'),true);
+assert.match(run('SPECIAL_EFFECTS.find(e=>e[0]==="Weapon Malfunction")[6]'),/GM to adjudicate/);
+assert.equal(run('canPickEffectForRoll(SPECIAL_EFFECTS.find(e=>e[0]==="Weapon Malfunction"),{combatRole:"attack",tier:"Fumble",oppTier:"Success"})'),true);
 assert.equal(run('playEffectsWon("Fumble","Success")'),-2);
 // Core p.51 differential table, transcribed independently from rendered page.
 const tiers=['Critical','Success','Failure','Fumble'],rolls=[1,20,90,99];

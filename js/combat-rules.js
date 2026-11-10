@@ -130,21 +130,23 @@ function impaleGrades(siz,weaponSize){
 const DIFFERENTIAL={
   critical:{critical:0,success:1,failure:2,fumble:3},
   success:{critical:-1,success:0,failure:1,fumble:2},
-  failure:{critical:-2,success:-1,failure:0,fumble:0},
-  fumble:{critical:-3,success:-2,failure:0,fumble:0}
+  failure:{critical:-2,success:-1,failure:0,fumble:1},
+  fumble:{critical:-3,success:-2,failure:-1,fumble:0}
 };
 // Special Effects won by "mine" over "theirs" (negative: theirs wins that
-// many). Two unsuccessful rolls win nothing (Core p.94).
-// options.failureBeatsFumble: The Pits counts a plain Failure against a
-// Fumble as one effect. That differs from the table above and is kept only
-// until it is ruled on (docs/decisions.md, D-CE1).
-function effectsWon(mine,theirs,options){
+// many). In combat a Failure against a Fumble wins one (ruling D-CE1, Core
+// p.94); two Failures or two Fumbles win nothing. The old options argument
+// (failureBeatsFumble) is still accepted and no longer changes anything.
+function effectsWon(mine,theirs){
   const m=String(mine).toLowerCase(),t=String(theirs).toLowerCase();
-  if(options&&options.failureBeatsFumble){
-    if(m==="failure"&&t==="fumble")return 1;
-    if(m==="fumble"&&t==="failure")return -1;
-  }
   return DIFFERENTIAL[m]?.[t]??0;
+}
+// The general Differential Roll for non-combat contests (Core p.51): when
+// both sides fail, neither gains a level, Fumble or not.
+function contestLevels(mine,theirs){
+  const m=String(mine).toLowerCase(),t=String(theirs).toLowerCase();
+  if((m==="failure"||m==="fumble")&&(t==="failure"||t==="fumble"))return 0;
+  return effectsWon(m,t);
 }
 
 /* ---------- Weapon Size and Reach (Core pp.63–64, 94–95, 106) ---------- */
@@ -382,7 +384,7 @@ return {
   actionPoints,initiativeBonus,healingRate,locationHitPoints,
   DAMAGE_MODIFIER_STEPS,damageModifier,damageModifierValue,totalDamage,
   HUMAN_HIT_LOCATIONS,HUMAN_LOCATION_ORDER,hitLocation,hitLocationFaces,hitLocationRanges,hitPointsByLocation,isLimb,
-  GRADE_VALUE,gradeRoll,opposedWins,opposedTargets,skillAtGrade,impaleGrades,
+  GRADE_VALUE,gradeRoll,opposedWins,opposedTargets,skillAtGrade,contestLevels,impaleGrades,
   effectsWon,
   SIZE_STEP,SIZE_NAMES,REACH_STEP,REACH_NAMES,parryReduction,crampedSize,
   resolveBlow,woundLevel,woundOutcome,canBash,bashDistance,knockbackDistance,withdrawalDamage,strikeWeapon,
