@@ -62,3 +62,24 @@ test('the control shows on the Magic tab and an invalid saved mark is dropped on
  run('S.play.castingHurt={kind:"minor",willpower:"failure"};normalizeState();');assert.equal(run('S.play.castingHurt.kind'),'minor');
 });
 console.log('Casting interruption tests passed');
+// ---------- AN-C01 Trance (docs/magic-animism-code-cases-20261109.md, Core p.131) ----------
+const animist=(rank)=>run('S=freshState();S.chars.POW=12;S.play.magic=5;S.magic.animistRank='+JSON.stringify(rank)+';'+base
+ +'magicSkillKey=n=>n==="Trance"?"std:Trance":null;finalPct=k=>k==="std:Trance"?60:0;');
+test('AN-C01 Trance preparation by rank; a critical saves one step, never below an Action',()=>{
+ assert.deepEqual(['r1','r2','r3','r4'].map(r=>run(`trancePrep("${r}",false)`)),['1 hour','1 minute','1 round','1 Action']);
+ assert.deepEqual(['r1','r4'].map(r=>run(`trancePrep("${r}",true)`)),['1 minute','1 Action']);
+ assert.equal(run('trancePrep("",false)'),null);
+});
+test('AN-C01 Trance is its own roll: 1 MP, Observe time shown, rank required',()=>{
+ animist('');dice([]);run('APP.animistTrance()');assert.match(msg(),/Confirm the animist rank/);assert.equal(run('S.play.magic'),5);
+ animist('r2');dice([30]);run('APP.animistTrance()');
+ assert.equal(run('S.rollLog[0].label'),'Trance');assert.match(run('S.rollLog[0].magic'),/Observe after 1 minute, 1 MP/);assert.equal(run('S.play.magic'),4);
+ animist('r2');dice([3]);run('APP.animistTrance()');assert.match(run('S.rollLog[0].magic'),/quickened: Observe after 1 round/);
+ animist('r2');run('S.play.magic=0');dice([]);run('APP.animistTrance()');assert.match(msg(),/needs 1 Magic Point/);
+});
+test('AN-C01 a fumbled Trance bars the Spirit Plane until a day of rest',()=>{
+ animist('r3');dice([100]);run('APP.animistTrance()');assert.equal(run('S.rollLog[0].tier'),'Fumble');assert.equal(run('S.play.tranceBarred'),true);
+ dice([]);run('APP.animistTrance()');assert.match(msg(),/bars entering the Spirit Plane/);assert.match(run('pmTranceHTML()'),/barred for a day/);
+ run('APP.advanceTime("day")');assert.equal(run('S.play.tranceBarred'),false);
+});
+console.log('Trance tests passed');

@@ -464,6 +464,7 @@ function normalizeState(){
   if(typeof S.magic.devotionalUsed!=="number")S.magic.devotionalUsed=0;
   normalizeDevotionalPools();
   if(!Object.hasOwn(ANIMIST_RANK_FRACTION,S.magic.animistRank))S.magic.animistRank="";
+  if(S.play)S.play.tranceBarred=S.play.tranceBarred===true;
   if(!Number.isSafeInteger(S.magic.boundLimitGM)||S.magic.boundLimitGM<0)delete S.magic.boundLimitGM;
   if(S.concept&&S.concept.heightM===undefined)S.concept.heightM="";
   if(S.concept&&S.concept.weightKg===undefined)S.concept.weightKg="";
@@ -1040,6 +1041,14 @@ function spiritCommandPreflight(m,mp,bindingPct){
 // confirms the whole-number limit (S.magic.boundLimitGM), which must lie
 // between the fraction's floor and ceiling.
 const ANIMIST_RANK_FRACTION={r1:0.25,r2:0.5,r3:0.75,r4:1};
+// AN-C01, Core p.131: Trance preparation time to Observe the Spirit Plane by
+// animist rank. A critical shortens it one step, never below an Action.
+const TRANCE_PREP_STEPS=["1 Action","1 round","1 minute","1 hour"];
+const TRANCE_PREP_BY_RANK={r1:3,r2:2,r3:1,r4:0};
+function trancePrep(rank,critical){
+  const i=TRANCE_PREP_BY_RANK[rank];if(i===undefined)return null;
+  return TRANCE_PREP_STEPS[critical?Math.max(0,i-1):i];
+}
 const ANIMIST_RANK_LABEL=[["","Not confirmed"],["r1","Follower: ¼ CHA"],["r2","Spirit Worshipper: ½ CHA"],["r3","Shaman: ¾ CHA"],["r4","High Shaman: all CHA"]];
 function boundSpiritFormula(){
   const f=ANIMIST_RANK_FRACTION[S.magic.animistRank],cha=Number(effectiveChars().CHA);

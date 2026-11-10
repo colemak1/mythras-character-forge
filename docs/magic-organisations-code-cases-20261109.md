@@ -1,0 +1,11 @@
+# Magic batch 6 — Cults, orders and organisations: code-needed cases
+
+**Source:** *Mythras 2e Core*, printed pp.196–200 (comparative rank titles and rank requirements); indexed PDF p.197 checked. The repository's `CULT_ORG_TYPES`, `CULT_TIER_REQUIREMENTS`, and `CULT_TIER_TRAINING_DISCOUNT` in `js/data.js` already list five types, rank titles, requirements and training discounts. No flat skill bonus is a Core rank benefit.
+
+| ID | Core page | Required code delta and acceptance |
+|---|---|---|
+| OR-C01 | **pp.196–198** | If a character **promotes** within a cult/order/guild, validate the source's years-of-membership, cult-skill counts and thresholds appropriate to the new tier, then ask for **GM/organisation approval**. Numeric eligibility alone must never auto-promote. A veteran character may have an explicit GM-approved starting-rank override. |
+| OR-C02 | **pp.197–199** | The **training discount** associated with organisation rank is **0/25/50/75/100%** by tier. If Forge calculates or pays for actual training, apply the discount to qualifying training's **price**, never to skill percent or Experience Roll count. Test that rank changes do not directly alter skill values. |
+| OR-C03 | **pp.196–200** | When a member **leaves or changes organisations**, preserve historical learned skills and character data, but stop applying old organisation-specific permissions, current training discounts and miracle/source entitlements to new acquisitions until the GM approves the replacement. Do not delete already learned magic solely because of membership change. |
+
+**Boundary:** Organization templates and names are setting-defined; the Forge's Sit'ota archetypes are house content, not universal Core entries. Current UI is mostly informational and permits GM-directed rank selection. These requirements become code-needed when membership advancement/paid training/permission-gated ability acquisition is made interactive; don't manufacture automatic GM judgments. Progress 5/8.

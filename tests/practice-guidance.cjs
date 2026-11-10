@@ -89,4 +89,25 @@ check('A disabled attack names the actual restriction instead of a generic condi
  a.run('S.fighters.a.pressedTurns=1;render()');assert.match(a.html(),/Press Advantage prevents attacking/);
  a.run('S.fighters.a.pressedTurns=0;S.fighters.a.overextendedTurns=1;render()');assert.match(a.html(),/Overextend Opponent prevents attacking/);
 });
+check('Impale and trip choices get their own guidance, never the generic Attack/Delay advice (live batch 2026-11-09)',()=>{
+ const g=()=>JSON.parse(a.run('JSON.stringify(combatGuidance())'));
+ a.run(`S.pending={kind:'impalePick',owner:'a',impaleSelections:[5,7]};`);assert.match(g().heading,/Impale damage/);
+ a.run(`S.pending={kind:'impaleLeave',owner:'a'};`);assert.match(g().heading,/Keep hold or let go/);
+ a.run(`S.pending={kind:'impaleResist',actor:'b',target:'a'};`);assert.match(g().heading,/Resist the withdrawal/);
+ a.run(`S.pending={kind:'tripResistChoice',owner:'b',other:'a'};`);assert.match(g().heading,/Keep your feet/);
+ a.run(`S.pending={kind:'somethingNew'};`);assert.doesNotMatch(g().heading,/approach|Action Point/);
+ // Even when the fighter is cramped inside reach, the pending decision wins.
+ a.run(`isCrampedAtReach=()=>true;S.pending={kind:'impaleLeave',owner:'a'};`);assert.match(g().heading,/Keep hold/);
+});
+check('A new bout starts with no Last roll from the previous fight',()=>{
+ a.run(`V.lastSkillRoll={actor:'b',name:'Border Deserter',what:'Resist surrender',pct:51,roll:26,grade:2};startRun();`);
+ assert.equal(a.run('V.lastSkillRoll'),null);
+});
+check('The exchange recap stops where the next action begins',()=>{
+ a.run(`S.logs=[];log('Encounter 1 · Initiative','');log(S.fighters.b.name+' attacks','82 against 60% — FAILURE');
+  log(S.fighters.a.name+' does not defend','');log('No Damaging Hit','The attack misses.');
+  log('Withdraw Impale','pulls the weapon free');log('SERIOUS WOUND · Endurance','40 vs 50% — SUCCESS');`);
+ const m=JSON.parse(a.run('JSON.stringify(exchangeRecapModel())'));
+ assert.match(m.headline,/misses/);assert.doesNotMatch(JSON.stringify(m),/SERIOUS WOUND/);
+});
 console.log(passed+' tactical-guidance integration checks passed');

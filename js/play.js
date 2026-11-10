@@ -845,6 +845,17 @@ function pmCastingHurtHTML(){
    :e.extra?"The casting roll will be "+e.extra+" grade"+(e.extra>1?"s":"")+" harder.":"No penalty: the casting roll is unchanged.";
   return out+'<p class="pm-empty" role="status">'+note+' Parries and evades while casting may also make it harder, at the GM&rsquo;s call.</p></div>';
 }
+// AN-C01 (Core p.131): Trance to Observe the Spirit Plane, a separate action.
+function pmTranceHTML(){
+  const key=magicSkillKey("Trance");
+  if(!key)return '<p class="pm-empty">Trance: add the Trance skill to enter the Spirit Plane.</p>';
+  const g=gradedPct(key,finalPct(key)),prep=trancePrep(S.magic.animistRank,false);
+  return '<div class="pm-fx-item"><b>Trance</b> '+(g.pct===null?GRADE_LABEL[g.grade]:g.pct+'%')+' · 1 MP · '
+   +(prep?'Observe after '+prep+' (a critical saves one step)':'confirm the animist rank in the builder')
+   +(S.play.tranceBarred?' · <b>barred for a day</b> (fumble)':'')
+   +' <button class="pm-btn sm" onclick="APP.animistTrance()"'+(S.play.tranceBarred?' disabled':'')+'>Roll Trance</button>'
+   +'<p class="pm-empty">Core p.131. What the animist does in the Spirit Plane, and spirit combat, stay with the GM.</p></div>';
+}
 function magicPanel(){
   const all=allMagic();
   let prep=(S.play.mysticismCasting?'<p class="pm-empty">Talent preparation: '+S.play.mysticismCasting.completed+' / '+S.play.mysticismCasting.total+' turns. <button class="pm-btn sm" onclick="APP.mysticismCancel()">Cancel preparation</button> Resolve interruption and other actions with your GM.</p>':'')
@@ -873,6 +884,7 @@ function magicPanel(){
     const key=magicSkillKey(t.castSkill);
     const pctTxt=key?(()=>{const g=gradedPct(key,finalPct(key));return g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%";})():"no skill";
     h+='<div class="pm-skillgroup"><h4>'+esc(t.label)+' <span class="pm-empty">'+esc(t.castSkill)+' '+pctTxt+'</span></h4>';
+    if(t.key==="animism")h+=pmTranceHTML();
     h+=items.map(({m,idx})=>{
       let meta="";
       if(t.key==="folk")meta="1 MP base · 1 Turn · Intensity 1 · Magnitude 1 · ranged "+folkMagicRangeMetres(key?finalPct(key):0)+" m"+(m.spell?.t?.length?" · "+m.spell.t.join(", "):"");

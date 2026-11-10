@@ -299,6 +299,27 @@ window.APP={
    S.play.castingHurt=["minor","serious","major","domination"].includes(kind)?{kind,willpower:null}:null;render();},
  castingHurtWillpower(result){if(viewOnlyBlock()||!S.play.castingHurt)return;
    if(["minor","serious"].includes(S.play.castingHurt.kind))S.play.castingHurt.willpower=["success","failure"].includes(result)?result:null;render();},
+ // AN-C01 (Core p.131): Trance is its own action, not a spell or a bound-
+ // spirit command. 1 MP; a fumble bars entering the Spirit Plane for a day.
+ animistTrance(){if(viewOnlyBlock())return;
+   const key=magicSkillKey("Trance");
+   if(!key){PM_MSG="This character doesn't have the Trance skill.";render();return;}
+   if(S.play.tranceBarred){PM_MSG="A fumbled Trance bars entering the Spirit Plane for a day. Use “Rest one day” (Advance time) when it has.";render();return;}
+   if(!S.magic.animistRank){PM_MSG="Confirm the animist rank in the builder first: it sets how long the Trance takes (Core p.131).";render();return;}
+   if(playCurMagic()<1){PM_MSG="Trance needs 1 Magic Point.";render();return;}
+   const g=gradedPct(key,finalPct(key));
+   if(g.pct===null){PM_MSG=g.grade==="automatic"?"Automatic: the Trance simply works.":"Hopeless: no Trance can be attempted at this Grade.";render();return;}
+   const r=d100(),tier=resolveRoll(r,g.pct);
+   if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
+   if(tier==="Critical")APP.markChecked(key);
+   S.play.magic=playCurMagic()-1;
+   const prep=trancePrep(S.magic.animistRank,tier==="Critical");
+   if(tier==="Fumble")S.play.tranceBarred=true;
+   const out=tier==="Critical"?"Trance, quickened: Observe after "+prep
+     :tier==="Success"?"Trance: Observe after "+prep
+     :tier==="Fumble"?"Trance fumbled: no entry to the Spirit Plane for a day":"Trance failed";
+   S.rollLog.unshift({label:"Trance"+(g.grade!=="standard"?" ("+GRADE_LABEL[g.grade]+")":""),pct:g.pct,roll:r===100?"00":r,tier,combat:false,oppTier:null,magic:out+", 1 MP"});
+   S.rollLog=S.rollLog.slice(0,8);render();},
  castMagic(idx){
    if(viewOnlyBlock())return;
    PM_MSG=null;
@@ -1276,6 +1297,7 @@ window.APP={
  // nothing happens on a timer. MP recovery stays manual (D-2).
  advanceTime(kind){if(viewOnlyBlock())return;
    if(kind==="day"){
+     if(S.play.tranceBarred){S.play.tranceBarred=false;}
      // Core p.80: natural healing restores the Healing Rate once per interval,
      // which is a day only for Minor Wounds; Serious takes a week, Major a month after treatment.
      const healed=[],waiting=[];

@@ -543,7 +543,7 @@ body{background:radial-gradient(ellipse at 50% 5%,#2d2922,#111313 70%)}
 <script src="../js/combat-rules.js?v=ae609fd04d"></script>
 <script src="../js/data.js?v=ce6802caa1"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
-<script src="practice-guidance.js?v=3bb978cd88"></script>
+<script src="practice-guidance.js?v=da7f5133ea"></script>
 <script src="pits-view.js?v=766aacde41"></script>
 <script src="pits-game.js?v=1d86e29baf"></script>
 <script>
@@ -1241,6 +1241,8 @@ function outcomeStrip(info){
 
 /* UX pass 07: progressive summary built ONLY from revealed engine events.
    No additional dice rolls, results or Mythras rules are inferred here. */
+const EXCHANGE_BOUNDARY_TITLE=new RegExp('^(?:Round \\d+|Withdraw Impale|Ready Weapon|Regain Footing|Pick Up Weapon|Move to Weapon|'
+ +'Move to Engage|Dither|Delay|Brace|Ward Shield|Ward Cleared|Stunned turn|.+ changes range)$');
 function exchangeRecapModel(){
  const all=V.busy?(S.logs||[]).slice(0,V.visibleCount):(S.logs||[]);
  if(!all.length)return null;
@@ -1254,7 +1256,14 @@ function exchangeRecapModel(){
    if(/ attacks$/i.test(logs[i].title||'')){start=i;break;}
  }
  if(start<0)return null;
- const entries=logs.slice(start);
+ // The exchange ends where the next action or round begins, so a later wound
+ // (e.g. from pulling an impaled weapon free) isn't reported under an older
+ // exchange's headline (live batch 2026-11-09).
+ let end=logs.length;
+ for(let i=start+1;i<logs.length;i++){
+   if(EXCHANGE_BOUNDARY_TITLE.test(logs[i].title||'')){end=i;break;}
+ }
+ const entries=logs.slice(start,end);
  const attack=entries[0];
  const attacker=String(attack.title).replace(/ attacks$/i,'');
  const resultGrade=body=>(/\b(CRITICAL|SUCCESS|FAILURE|FUMBLE)\b/i.exec(String(body||''))||[])[1]||'';
@@ -2828,6 +2837,8 @@ function startRun(showIntro=false){if(!applyPracticeLoadout()){render();return;}
  if(showIntro&&['normal','hardcore'].includes(S.mode))prepareEncounter();else beginEncounter();}
 function beginEncounter(){
   let a=S.fighters.a,b=S.fighters.b;
+  // A new bout starts with an empty "Last roll" readout (live batch 2026-11-09).
+  V.lastSkillRoll=null;V.skillBefore=null;
   ensureEffectState(a);ensureEffectState(b);
   a.status='Ready';b.status='Ready';refreshFighterAP(a);refreshFighterAP(b);
   S.phase='fight';S.round=1;S.cycle=1;S.turnIndex=0;S.pending=null;S.roundProcessing=false;a.exertionRounds=0;b.exertionRounds=0;
