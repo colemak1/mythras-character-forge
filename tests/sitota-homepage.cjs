@@ -11,15 +11,18 @@ assert(publicViews.includes('href="#/character/new"'),'home retains the create c
 assert.equal((home.match(/<header\b/g)||[]).length,1);
 assert(!home.includes('forge.html'),'normal navigation must stay in the unified application');
 assert(!/Open (?:Mythras )?Forge/.test(home+publicViews),'no second landing-page destination');
-assert.match(publicViews,/st-home-16x9/);
+// Codex · Stone backdrop hero (owner, 2026-11-09).
+assert.match(publicViews,/st-stone-home/);
 assert.match(home,/js\/sitota\.js\?v=[0-9a-f]{10}/,'home renderer is version-stamped (freshness enforced by tests/asset-versions.cjs)');
-assert.match(home,/sitota-home-16x9\.css\?v=[0-9a-f]{10}/,'painted homepage CSS is version-stamped');
+assert.match(home,/sitota-theme\.css\?v=[0-9a-f]{10}/,'Stone theme CSS is version-stamped');
 assert.match(publicViews,/Art: Richard Wright/);
-assert.match(publicViews, /class="st-world-link" href="#\/world\/welcome"/, 'hero must use the quieter editorial link');
+assert.match(publicViews, /class="st-bd-world" href="#\/world\/welcome"/, 'hero must use the quieter editorial link');
 assert(!/class="st-button st-primary" href="#\/world\/welcome"/.test(publicViews),'remove ornate homepage CTA');
 for(const action of ['APP.newCampaign()','APP.homeJoinCampaign()','APP.fromMenuContinue()','APP.fromMenuNew()'])assert(publicViews.includes(action),action);
 assert(!/data:image\/(jpeg|png);base64/u.test(home+publicViews),'no inline AI or sample images');
-assert(home.includes('sitota-home-16x9.css'),'16:9 stylesheet missing');
+assert(home.indexOf('sitota-theme.css')>home.indexOf('sitota-menus.css'),'Stone theme loads last');
+assert(!home.includes('sitota-home-16x9.css'),'the old 16:9 home styles are retired');
+assert.match(publicViews,/assets\/sitota-hero\.avif/,'home hero uses the painted art');
 assert(fs.existsSync(path.join(root,'assets/sitota-hero.avif')),'original painted hero is missing');
 assert(fs.existsSync(path.join(root,'assets/sitota-hero.webp')),'fallback painted hero is missing');
 assert(!legacy.includes('<script src='),'legacy entry must redirect before starting a second runtime');

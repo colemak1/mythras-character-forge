@@ -975,7 +975,7 @@ window.APP={
  openXP(){XP_LEARN_MSG="";XP_TRAIN_MSG="";XP_CHAR_MSG="";XP_OPEN=true;
    const current=S,id=S.campaignId;
    if(id){CHARACTER_CAMPAIGN_RULES={id,status:"loading",rules:null};render();
-     refreshCharacterCampaignRules(id).catch(()=>{if(S===current)CHARACTER_CAMPAIGN_RULES={id,status:"error",rules:null};}).finally(()=>{if(S===current&&XP_OPEN)render();});
+     refreshCharacterCampaignRules(id).catch(e=>{if(S===current)CHARACTER_CAMPAIGN_RULES={id,status:"error",rules:null,error:String(e&&e.message||e||"").slice(0,200)};}).finally(()=>{if(S===current&&XP_OPEN)render();});
    }else render();},
  closeXP(){XP_OPEN=false;render();},
  xpAward(v,applyModifier=false){if(VIEW_ONLY)return;const text=String(v).trim(),n=Number(text);if(!/^-?\d+$/.test(text)||!Number.isSafeInteger(n)||n===0)return;
@@ -1086,7 +1086,7 @@ window.APP={
  xpSpend(key){if(VIEW_ONLY||xpRollsAvailable()<=0)return;
    const e=entryMap()[key];if(!e)return;
    const die=skillImprovementDie();
-   if(!die){window.alert("Campaign rules are still loading. Try again in a moment; no Experience Roll was spent.");return;}
+   if(!die){window.alert(xpRulesWaitText());return;}
    // Resolve a free fumble improvement separately if it would consume the
    // last point of headroom; do not also spend a roll for a zero gain.
    if(literacyHeadroom(key)<=0){window.alert("Literacy is at its spoken language limit. Improve that language first; no Experience Roll was spent.");return;}
@@ -1119,7 +1119,7 @@ window.APP={
  xpSpendPassion(i){if(VIEW_ONLY||xpRollsAvailable()<=0||!Number.isInteger(i))return;
    const p=S.passions[i];if(!p)return;
    const target=passionVal(p);if(typeof target!=="number"||!Number.isFinite(target))return;
-   const die=skillImprovementDie();if(!die){window.alert("Campaign rules are still loading. Try again in a moment; no Experience Roll was spent.");return;}
+   const die=skillImprovementDie();if(!die){window.alert(xpRulesWaitText());return;}
    const r=d100(),total=r+effectiveChars().INT,success=total>=target,gain=success?(d(die)+1):1;
    p.xpBonus=(Number(p.xpBonus)||0)+gain;
    S.xp.pool=Math.max(0,S.xp.pool-1);
@@ -1598,7 +1598,8 @@ window.APP={
    if(!name||name.length>100||!rules?.characteristicImprovement){CAMP_MSG="Enter a campaign name and choose a characteristic rule.";render();return;}
    CAMPAIGN_SETUP_BUSY=true;CAMP_MSG=null;render();
    try{
-     if(camp){const saved=await saveCampaignRulesUnified(camp,rules);camp.rules_settings=saved;CURRENT_CAMPAIGN_ID=camp.id;}
+     // Keep the Home page quote and next session saved alongside the rules.
+     if(camp){const saved=await saveCampaignRulesUnified(camp,campaignSettingsWith(camp.rules_settings,{rules}));camp.rules_settings=saved;CURRENT_CAMPAIGN_ID=camp.id;}
      else {const created=await createCampaignUnified(name,rules);CURRENT_CAMPAIGN_ID=created.id;}
      // A new or renamed campaign must show in the builder's "Assign to
      // campaign" picker (live check #174): drop the cached list.
@@ -1616,6 +1617,20 @@ window.APP={
    CAMP_NOTES_SAVED=false;
    fn(camp.id,v).then(()=>{if(f==="notes"){CAMP_NOTES_SAVED=true;render();}})
      .catch(e=>{CAMP_MSG="Could not save: "+e.message;render();});},
+ // Home page quote and next session (GM only, owner 2026-11-09).
+ async saveCampaignHome(){
+   const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
+   if(cloudActive()&&camp.dm_id!==AUTH_USER?.id){CAMP_MSG="Only the GM can change the Home page.";render();return;}
+   const val=id=>String(document.getElementById(id)?.value||"");
+   const home={quote:val("cmHomeQuote"),cite:val("cmHomeCite"),nextTitle:val("cmHomeNextTitle"),nextDate:val("cmHomeNextDate"),nextWhere:val("cmHomeNextWhere")};
+   const before=camp.rules_settings;
+   CAMP_HOME_SAVED=false;
+   try{
+     camp.rules_settings=await saveCampaignRulesUnified(camp,campaignSettingsWith(before,{home}));
+     CAMP_HOME_SAVED=true;
+     const listed=Array.isArray(CAMP_CACHE)&&CAMP_CACHE.find(c=>c.id===camp.id);if(listed)listed.rules_settings=camp.rules_settings;
+   }catch(e){camp.rules_settings=before;CAMP_MSG="Could not save the Home page: "+(e?.message||"Unknown error");}
+   render();},
  deleteCampaign(){
    const camp=CAMPAIGN_VIEW&&CAMPAIGN_VIEW.campaign;if(!camp)return;
    if(!stTakeConfirmed()&&!confirm("Delete campaign \""+camp.name+"\"? Linked characters stay in place, just unassigned."))return;

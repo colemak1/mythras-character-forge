@@ -833,6 +833,13 @@ function skillImprovementDie(){
   if(st.status!=="ready")return null;
   return st.rules?.skillImprovement==="d6"?6:4;
 }
+// Why no improvement die is known yet (#255): still loading, or the load failed.
+function xpRulesWaitText(){
+  const st=typeof rulesForOpenCharacter==="function"?rulesForOpenCharacter():{status:"loading"};
+  return st.status==="error"
+    ?"This campaign's rules could not be loaded, so the improvement die isn't known. Use Retry in Improve skills; no Experience Roll was spent."
+    :"Campaign rules are still loading. Try again in a moment; no Experience Roll was spent.";
+}
 function xpRollsAvailable(){return Math.max(0,S.xp.pool||0);}
 /* ================= MAGIC =================
    Which magic skills the character actually acquired, so the Magic step can

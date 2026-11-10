@@ -5,6 +5,40 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Site home page keeps what you typed (#258)
+
+- **Account → Site home page:** "Use the default painting" or choosing a picture no longer clears the Quote, Said by and Picture credit you'd typed but not yet saved (found in Work's live check, `docs/site-admin-verification-20261109.md`). The typed text is kept until Save succeeds, and is cleared if a different account signs in. Test in `tests/site-admin.cjs`.
+
+## Improve skills: no guessed 1d4 while campaign rules load (#255)
+
+- **Finding (live check #255):** a 1d6+1 campaign's linked character showed "+1d4+1%" in the Improve skills help. The help and the roll both read the same `skillImprovementDie()`, so once the campaign's rules have loaded they always agree (1d6+1 under the option, Core p.72). The mismatch came from the help text guessing 1d4 while the rules were still loading or had failed to load. In that state no roll is ever spent: the Spend button is refused. **The mechanics never rolled the wrong die.**
+- **Fixed:** while loading, the help says the campaign's rules are loading. If they failed, it says so, shows the reason and offers **Retry**. Spending then explains that the rules didn't load instead of "still loading". Standalone characters still show Core 1d4+1.
+- Test added in `tests/advancement-options.cjs`.
+
+## Site admin: change the Home quote and picture from the site
+
+- **Account → Site home page** (site admins only): set the quote shown at the top of Home for everyone, signed in or not, and who said it. Upload a new Home picture or go back to the default painting, with a credit line for it. Pictures are resized in the browser to 1920px wide.
+- A campaign's own quote, set by its GM, still shows first for that campaign's players.
+- Admins are listed in the database only (`site_admins`); nobody can make themselves one from the site. New migration `20261110120000_site_admin_and_settings.sql`; setup steps for the owner's account are in `docs/site-admin-setup.md`. Until it runs, Home looks exactly as before.
+- Tests: `tests/site-admin.cjs` (page) and four new database permission tests (everyone reads, only admins write, only a JPEG picture, the admin list is private).
+
+## The Pits header in sentence case
+
+- The Pits header now reads "Sit’ota · The Pits" and "The Pits" in normal case, matching the rest of the site. Before, both were in wide-tracked capitals (found in the live check of the Stone reskin, `docs/live-check-stone-20261110.md`).
+
+## Sit'ota "Codex · Stone" look, Light and Dark
+
+- **One look everywhere (owner's v0 handoff, 2026-11-09):** every page, including the Forge, Play Mode and The Pits, now uses one set of stone-grey colours with a single crimson accent, in Light (default) and Dark. Fonts are Fraunces for headings and numbers and Public Sans for everything else; the other seven fonts are gone. Cards have the double "bound journal" rule, buttons and fields have small square corners, and headings are in sentence case.
+- **Light / Dark** is in Settings on the Account page and in Play Mode's Settings: Light, Dark or Match device. It's remembered on this device and applied before the page draws, so there's no flash.
+- **Renamed:** "New Sit'ota" is now "Sit'ota" throughout.
+- **Home:** the painting fills the top of the page behind a see-through top bar. Over it: the campaign's quote and the next session. The GM sets both in the campaign manager's new **Home page** panel (stored with the campaign; no database change). With no quote set, Home shows the Sit'ota title. The hero's Continue card is gone; an unsaved character in progress now shows under Your characters instead.
+- **Character cards:** show race, then culture and career. The combat style and Action Point chips are removed.
+- **Top bar:** text links only, crimson underline on the current page, round account seal. The logo switches between its light and dark versions.
+- **Forge:** paper main column, every step shows its number (no tick glyphs), stat numbers in Fraunces.
+- **Play Mode:** the default colour scheme is now **Stone** (follows Light/Dark), replacing Verdigris; a saved Verdigris choice falls back to Stone. The other eight schemes stay. Primary buttons are inverted ink; crimson marks wounds and failures.
+- **Party Board:** the Refresh button is plain text (no broken icon box); its health bars use the new colours.
+- Not changed: routes, saved characters and campaigns, rules, sign-in and Supabase. The painting is still the existing art with its credit; swap in owned art when it's ready.
+
 ## Phone More menu, Pits display fixes, Animist Trance
 
 - **More menu (phone):** choosing Rules, World Guide or Account now closes the More sheet. Before, it stayed open over the new page (live batch 2026-11-09).

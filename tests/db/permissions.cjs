@@ -135,5 +135,33 @@ await test('S8 step 10 (D-S4): only the GM hands over the campaign, to a member;
  assert.match(denied(await as('A','select rotate_campaign_invite($1)',[RED])),/Only the GM/);
  assert.equal(ok(await as('A',"update campaigns set name='Mine' where id=$1 returning id",[RED])).length,0,'the old GM can no longer edit the campaign');
 });
+// Site admin and site-wide Home settings (owner, 2026-11-10). E is made an admin.
+await db.exec(`insert into site_admins(user_id) values ('${U.E}')`);
+await test('Site settings: everyone, signed out too, reads the Home row',async()=>{
+ for(const w of [null,'A','E'])assert.equal(ok(await as(w,"select id from site_settings")).length,1);
+});
+await test('Site settings: only an admin changes them, and only as themselves',async()=>{
+ for(const w of ['A','B','D']){
+  const r=await as(w,"update site_settings set home='{\"quote\":\"x\"}',updated_by=$1 where id='home' returning id",[U[w]]);
+  assert(r.error||r.rows.length===0,w+' must not change site settings');
+ }
+ denied(await as(null,"update site_settings set home='{\"quote\":\"x\"}' where id='home' returning id"));
+ denied(await as('E',"update site_settings set home='{\"quote\":\"x\"}',updated_by=$1 where id='home' returning id",[U.A]));
+ assert.equal(ok(await as('E',"update site_settings set home='{\"quote\":\"Hello\"}',updated_by=$1 where id='home' returning id",[U.E])).length,1);
+ assert.equal(ok(await as(null,"select home->>'quote' as q from site_settings"))[0].q,'Hello');
+});
+await test('Site settings: only a JPEG data URL is accepted as the picture; no new rows',async()=>{
+ denied(await as('E',"update site_settings set hero_image='https://example.test/x.png',updated_by=$1 where id='home' returning id",[U.E]));
+ assert.equal(ok(await as('E',"update site_settings set hero_image='data:image/jpeg;base64,AAAA',updated_by=$1 where id='home' returning id",[U.E])).length,1);
+ denied(await as('E',"insert into site_settings(id) values ('other')"));
+ denied(await as('E',"delete from site_settings"));
+});
+await test('Site admins: the list is unreadable and nobody joins it from the site; is_site_admin answers for yourself',async()=>{
+ for(const w of [null,'A','E'])denied(await as(w,'select * from site_admins'));
+ denied(await as('A',`insert into site_admins(user_id) values ('${U.A}')`));
+ assert.equal(ok(await as('E','select is_site_admin() as a'))[0].a,true);
+ assert.equal(ok(await as('A','select is_site_admin() as a'))[0].a,false);
+ assert.equal(ok(await as(null,'select is_site_admin() as a'))[0].a,false);
+});
 console.log(passed+' database permission tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

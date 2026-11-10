@@ -34,7 +34,7 @@ await test('interior pages share one header and no Main Menu button',()=>{
 await test('signed out, Characters and Campaign show a sign-in gate',()=>{
  run('MOCK_AUTH=null;AUTH_USER=null;');
  for(const html of ['libraryHTML()','campaignsHTML()']){const h=run(html);assert.match(h,/Sign in to see your/);assert.match(h,/APP\.toAccount\(\)/);}
- assert.match(run('sitotaHomeHTML()'),/Sign in to continue/);
+ assert.match(run('sitotaHomeHTML()'),/Your table is waiting/);assert.doesNotMatch(run('sitotaHomeHTML()'),/st-resume/,'the hero has no Continue card (owner, 2026-11-09)');
 });
 await test('character cards: real stats, Play and an Edit / Print / Delete menu',()=>{
  run('MOCK_AUTH={id:"guest-local"};LIB_CACHE='+chars+';LIB_QUERY="";LIB_SORT="recent";');

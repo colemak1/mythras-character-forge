@@ -1052,8 +1052,10 @@ const PM_PHONE_ICONS=Object.fromEntries(Object.entries({
 }).map(([k,d])=>[k,'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>']));
 // Colour schemes for the Stone style (v0 design). Per device, like the
 // animated-dice preference: it is a display choice, not character data.
-const PM_COLORWAYS=[["verdigris","Verdigris","Cool grey stone, verdigris green and bronze."],["ember","Basalt & Ember","Warm grey stone, forge orange and brass."],["indigo","Sandstone & Indigo","Warm sandstone, deep indigo and copper."],["moss","Moss & Gold","Lichen stone, moss green and old gold."],["basalt","Basalt (dark)","Dark basalt for dim tables."],["war-room","The War Room","Dark brown, aged copper and oxblood."],["night-watch","Night Watch","Midnight blue, muted steel and brass."],["ivory-ink","Ivory & Ink","Cream, deep navy and muted bronze."],["deep-cypress","Deep Cypress","Forest charcoal, sage and pale gold."]];
-function pmColorway(){let v=null;try{v=localStorage.getItem("pm-colorway");}catch(e){}return PM_COLORWAYS.some(c=>c[0]===v)?v:"verdigris";}
+// "Stone" (owner, 2026-11-09) is the site theme and follows Light/Dark; it
+// replaced Verdigris, so a saved "verdigris" falls back to it.
+const PM_COLORWAYS=[["stone","Stone","The site colours. Follows Light or Dark in Settings."],["ember","Basalt & Ember","Warm grey stone, forge orange and brass."],["indigo","Sandstone & Indigo","Warm sandstone, deep indigo and copper."],["moss","Moss & Gold","Lichen stone, moss green and old gold."],["basalt","Basalt (dark)","Dark basalt for dim tables."],["war-room","The War Room","Dark brown, aged copper and oxblood."],["night-watch","Night Watch","Midnight blue, muted steel and brass."],["ivory-ink","Ivory & Ink","Cream, deep navy and muted bronze."],["deep-cypress","Deep Cypress","Forest charcoal, sage and pale gold."]];
+function pmColorway(){let v=null;try{v=localStorage.getItem("pm-colorway");}catch(e){}return PM_COLORWAYS.some(c=>c[0]===v)?v:"stone";}
 function pmSetColorway(k){if(!PM_COLORWAYS.some(c=>c[0]===k))return;try{localStorage.setItem("pm-colorway",k);}catch(e){}render();}
 // Play Mode shows the site header again (owner, 2026-11-09), so the old
 // site-menu dropdown is gone. Its two Play Mode items stay as header buttons.
@@ -1105,7 +1107,7 @@ function pmModalHTML(){
    +'<div class="pmx-popbody">'+pmSettingsHTML()+'</div></div></div>';
 }
 function pmSettingsHTML(){
-  return '<h3 class="pmx-setth">Colour scheme</h3>'+pmStyleHTML()
+  return '<h3 class="pmx-setth">Appearance</h3>'+siteModeHTML()+'<h3 class="pmx-setth">Colour scheme</h3>'+pmStyleHTML()
    +'<h3 class="pmx-setth">Dice</h3><label class="pmx-opt"><input type="checkbox" '+(pmDiceAnimated()?'checked':'')+' onchange="pmToggleDice3d(this.checked)"> Animated dice</label>';
 }
 function pmStyleHTML(){
@@ -1970,6 +1972,15 @@ function pmDiceHide(){
 function pmToggleDice3d(on){try{localStorage.setItem("pm-dice-3d",on?"on":"off");}catch(e){}render();}
 // ---- Improve Skills modal (Experience Rolls, core rulebook pp.71-73) ----
 let XP_LEARN_MSG="", XP_TRAIN_MSG="", XP_CHAR_MSG="";
+// The improvement die as the help text shows it (#255): the campaign's die
+// once its rules have loaded, never a guessed 1d4 while they load or fail.
+function xpDieHelpHTML(){
+  const die=skillImprovementDie();
+  if(die)return '<b>+1d'+die+'+1%</b>'+(die===6?' <span class="pm-empty">(campaign option, Core p.72)</span>':'');
+  const st=rulesForOpenCharacter();
+  if(st.status==="error")return '<b>the campaign’s improvement die</b> <span class="pm-xpwarn" role="alert">(this campaign’s rules could not be loaded'+(st.error?': '+esc(st.error):'')+'. No roll can be spent yet. <button type="button" class="pm-btn sm" onclick="APP.openXP()">Retry</button>)</span>';
+  return '<b>the campaign’s improvement die</b> <span class="pm-empty">(loading this campaign’s rules…)</span>';
+}
 function xpModalHtml(){
   const es=allEntries();
   const grp=g=>es.filter(e=>e.grp===g).sort((a,b)=>a.label.localeCompare(b.label));
@@ -1998,7 +2009,7 @@ function xpModalHtml(){
    +'<div class="pm-xpaward">Award <input type="number" id="xpAwardN" value="3" min="1" style="width:52px"> '
    +'<button class="pm-btn sm" onclick="APP.xpAward(document.getElementById(\'xpAwardN\').value,document.getElementById(\'xpApplyModifier\').checked)">+ add to pool</button> '
    +'<span class="pm-empty">core book: 2&ndash;4 per sitting, GM discretion. The optional CHA adjustment applies once to a positive award when selected.</span></div></div>';
-  h+='<p class="pm-empty">Spend 1 roll on a skill: roll 1d100, add INT ('+effectiveChars().INT+'). Total meets or beats the skill&rsquo;s current % &rarr; <b>+1d'+(skillImprovementDie()||4)+'+1%</b>'+(skillImprovementDie()===6?' <span class="pm-empty">(campaign option, Core p.72)</span>':'')+'. Total falls short &rarr; still <b>+1%</b> (an Experience Roll never fails outright). A skill flagged &#9873; got a Fumble since the last sitting and gets a free <b>+1%</b> (applied before any roll spent on it, doesn&rsquo;t stack) &mdash; this flags automatically when you roll a Fumble in Play Mode, or click the flag by hand. A skill flagged &#10003; is marked for reference only; it does not grant a free Experience Roll. You may spend additional banked rolls on the same skill; each uses its updated percentage.</p>';
+  h+='<p class="pm-empty">Spend 1 roll on a skill: roll 1d100, add INT ('+effectiveChars().INT+'). Total meets or beats the skill&rsquo;s current % &rarr; '+xpDieHelpHTML()+'. Total falls short &rarr; still <b>+1%</b> (an Experience Roll never fails outright). A skill flagged &#9873; got a Fumble since the last sitting and gets a free <b>+1%</b> (applied before any roll spent on it, doesn&rsquo;t stack) &mdash; this flags automatically when you roll a Fumble in Play Mode, or click the flag by hand. A skill flagged &#10003; is marked for reference only; it does not grant a free Experience Roll. You may spend additional banked rolls on the same skill; each uses its updated percentage.</p>';
   const charAdv=S.xp.characteristics||{permanent:{},training:[]},training=characteristicTraining(S);
   const active=training.filter(t=>t.active).length;
   const campaignRuleState=rulesForOpenCharacter(),ruleMode=campaignRuleState.rules?.characteristicImprovement;

@@ -47,7 +47,7 @@ await test('signed in: pick a character and enter; the chosen one is sent to the
 });
 await test('the arena is named The Pits and links back to it',()=>{
  const page=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8');
- assert.match(page,/<title>The Pits — New Sit’ota<\/title>/);assert.match(page,/<h1>The Pits<\/h1>/);
+ assert.match(page,/<title>The Pits — Sit’ota<\/title>/);assert.match(page,/<h1>The Pits<\/h1>/);
  assert.doesNotMatch(page,/Practice Combat/);assert.doesNotMatch(page.match(/<div class="pits-subbar">[\s\S]*?<\/div>/)[0],/#\/my-characters/,"the back link goes to The Pits, not My Characters");
  assert.match(page,/href="\.\.\/index\.html#\/the-pits"/);
 });

@@ -62,7 +62,7 @@ function renderRail(){
    +currentSteps().map((s,i)=>{
     const cls=["railstep"];if(i===S.step)cls.push("active");
     if(i<S.step&&stepPassed(i))cls.push("done");
-    return '<button class="'+cls.join(" ")+'" onclick="APP.go('+i+')"><span class="n">'+(i<S.step&&stepPassed(i)?"&#10003;":i+1)+'</span><span class="lbl">'+s+'</span></button>';
+    return '<button class="'+cls.join(" ")+'" onclick="APP.go('+i+')"><span class="n">'+(i+1)+'</span><span class="lbl">'+s+'</span></button>';
   }).join("");
 }
 function renderLedger(){

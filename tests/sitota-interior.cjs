@@ -7,11 +7,11 @@ const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const sitota=fs.readFileSync(path.join(root,'js/sitota.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'sitota-interior.css'),'utf8');
-const homeCss=fs.readFileSync(path.join(root,'sitota-home-16x9.css'),'utf8');
+const homeCss=sitota; // the home hero art is referenced from the renderer since the Stone reskin
 // Cache freshness for every stamped asset is enforced by tests/asset-versions.cjs.
 assert(/sitota-interior\.css\?v=[0-9a-f]{10}/.test(html),'Interior theme must be linked with a version stamp');
 assert(/js\/sitota\.js\?v=[0-9a-f]{10}/.test(html),'Site script must be version-stamped');
-assert(html.indexOf('sitota-interior.css?v=')>html.indexOf('sitota-home-16x9.css?v='),'Interior theme should load after home styles');
+assert(html.indexOf('sitota-theme.css?v=')>html.indexOf('sitota-interior.css?v='),'Stone theme should load after the interior styles');
 assert.match(sitota,/document\.body\.dataset\.sitotaView\s*=\s*APPVIEW/,'Site view flag missing');
 new vm.Script(sitota,{filename:'js/sitota.js'});
 for (const view of ['account','library','campaigns','campaign','board','wiki','character','world']) {
@@ -25,7 +25,7 @@ for (const selector of [
  'body[data-sitota-view="character"] #main .modeseg button.on',
  'body[data-sitota-view="character"] .foot button.nav.primary'
 ]) assert(css.includes(selector),'missing builder control style: '+selector);
-assert(css.includes('border-bottom:2px solid #d1a36d'),'builder Next action must use line emphasis');
+assert(css.includes('border-bottom:2px solid var(--accent)'),'builder Next action must use line emphasis (Stone accent)');
 assert(css.includes('background:transparent;'),'builder buttons should have unfilled states');
 assert(!css.includes('body[data-sitota-view="play"]'),'builder restyle must not touch Play Mode');
 assert(!css.includes('body[data-sitota-view="play"]'),'Play Mode must not be restyled');

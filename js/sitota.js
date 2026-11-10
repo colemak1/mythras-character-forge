@@ -43,35 +43,72 @@ function homeCharactersHTML(){
  if(HOME_CHARACTERS_OWNER!==owner||HOME_CHARACTERS===null&&!HOME_CHARACTERS_ERROR)h+='<p class="st-character-message" role="status">Loading your characters…</p>';
  else if(HOME_CHARACTERS_ERROR)h+='<p class="st-character-message" role="alert">'+esc(HOME_CHARACTERS_ERROR)+' <button type="button" class="st-btn st-btn-sm" onclick="loadHomeCharacters();render()">Retry</button></p>';
  const rows=(HOME_CHARACTERS_OWNER===owner&&!HOME_CHARACTERS_ERROR?HOME_CHARACTERS||[]:[]).filter(c=>!stHiddenByUndo(c)).slice(0,3);
- return h+'<div class="st-chars st-chars-home">'+rows.map(stCharCard).join('')+stNewCard()+'</div></div></section>';
+ return h+'<div class="st-chars st-chars-home">'+rows.map(stCharCard).join('')+homeDraftCard(rows)+stNewCard()+'</div></div></section>';
 }
-
-// Hero "Continue": the most recently saved character (primary), or the
-// in-progress draft when there are no saved ones yet; signed out, Sign in.
-function homeContinueHTML(){
- if(!homeCharacterOwner())return '<button type="button" class="st-btn st-btn-primary st-btn-tall" onclick="APP.toAccount()">Sign in to continue</button>';
- const c=(HOME_CHARACTERS||[]).find(x=>!stHiddenByUndo(x));
- if(c){
-  const st=stCharStats(c);
-  return '<a class="st-resume" href="#/character/'+esc(encodeURIComponent(c.id))+'/play" aria-label="Continue '+esc(c.name||'Unnamed Character')+'">'+stPortrait(c,'st-mono st-mono-sm')
-   +'<span class="st-resume-txt"><b>Continue</b><span>'+esc(c.name||'Unnamed Character')+'</span><small>Saved '+esc(stWhen(c.updated_at))+(st.style?' · '+esc(st.style.name)+' '+st.style.pct+'%':'')+'</small></span>'
-   +'<span class="st-go" aria-hidden="true">→</span></a>';
- }
+// An unsaved character in progress, when nothing is saved yet. This was the
+// hero's "Continue" card; the hero no longer has one (owner, 2026-11-09).
+function homeDraftCard(rows){
+ if(rows.length)return '';
  const auto=getAutosaveInfo();
- return auto?'<button type="button" class="st-resume" onclick="APP.fromMenuContinue()"><span class="st-resume-txt"><b>Continue</b><span>'+esc(auto.name)+'</span><small>Character in progress</small></span><span class="st-go" aria-hidden="true">→</span></button>':'';
+ return auto?'<button type="button" class="st-new-card st-draft-card" onclick="APP.fromMenuContinue()"><span class="st-plus" aria-hidden="true">→</span>Continue '+esc(auto.name)+'<small>Character in progress</small></button>':'';
 }
 
-/* This view follows the owner-approved 16:9 reference, polished per the
-   2026-11-07 menu redesign handoff. Other app views unchanged. */
+// Home hero (Codex · Stone, owner 2026-11-09): the painting behind the
+// translucent top bar, the campaign's quote and its next session. The GM
+// sets both in the campaign manager; they're stored with the campaign
+// (rules_settings.home, see campaignHomeOf). The old "Continue" card is gone.
+// Home loads the campaign list itself when nothing else has (at most once
+// every 10 seconds, so a failing load can't loop).
+let HOME_CAMPS_LOADING=false,HOME_CAMPS_AT=0;
+function homeCampaign(){
+ const owner=homeCharacterOwner();
+ if(!owner)return null;
+ if(!Array.isArray(CAMP_CACHE)){
+  if(!HOME_CAMPS_LOADING&&!CAMP_LOAD_ERROR&&Date.now()-HOME_CAMPS_AT>10000&&typeof loadCampaignsUnified==='function'){
+   HOME_CAMPS_LOADING=true;HOME_CAMPS_AT=Date.now();
+   setTimeout(()=>{
+    if(APPVIEW!=='menu'||Array.isArray(CAMP_CACHE)){HOME_CAMPS_LOADING=false;return;}
+    Promise.resolve(loadCampaignsUnified()).catch(()=>{}).finally(()=>{HOME_CAMPS_LOADING=false;});
+   },0);
+  }
+  return null;
+ }
+ const withHome=CAMP_CACHE.filter(c=>campaignHomeOf(c)).sort((x,y)=>new Date(y.created_at)-new Date(x.created_at));
+ return withHome[0]||null;
+}
+function homeNextSessionHTML(home){
+ if(!home||!(home.nextTitle||home.nextDate))return '';
+ const d=home.nextDate?new Date(home.nextDate+'T12:00:00'):null,ok=d&&!isNaN(d);
+ return '<div class="st-bd-next">'
+  +(ok?'<div class="st-bd-date" aria-hidden="true"><small>'+esc(d.toLocaleDateString(undefined,{month:'short'}))+'</small><b>'+d.getDate()+'</b></div>':'')
+  +'<div class="st-bd-next-t"><small>Next session'+(ok?' · '+esc(d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'})):'')+'</small>'
+  +'<b>'+esc(home.nextTitle||'Next session')+'</b>'+(home.nextWhere?'<span>'+esc(home.nextWhere)+'</span>':'')+'</div></div>';
+}
+// Quote: the campaign's (GM) first, then the site's (admin), then the title.
+// Picture: the site admin's upload, else the bundled painting.
+function homeHeroHTML(){
+ const camp=homeCampaign(),home=camp?campaignHomeOf(camp):null,site=siteHomeSettings();
+ const kicker=camp?'Sit’ota · '+esc(camp.name||'Campaign'):'Sit’ota · Valeshar Campaign';
+ const q=home&&home.quote?home:site.quote?site:null;
+ const words=q
+  ?'<blockquote class="st-bd-quote"><p>'+esc(q.quote)+'</p>'+(q.cite?'<cite>'+esc(q.cite)+'</cite>':'')+'</blockquote>'
+  :'<h1 class="st-bd-title">Sit’ota</h1><p class="st-bd-lede">The world guide, characters, and everything we need for the campaign.</p>';
+ const img=SITE_HOME===null&&CLOUD_ENABLED?'<img class="st-bd-img st-bd-wait" alt="">'
+  :site.image?'<img class="st-bd-img" src="'+esc(site.image)+'" alt="">'
+  :'<picture><source srcset="assets/sitota-hero.avif" type="image/avif"><img class="st-bd-img" src="assets/sitota-hero.webp" alt=""></picture>';
+ return '<section class="st-bd-hero">'+img
+  +'<div class="st-frame st-bd-inner"><div class="st-bd-copy"><p class="st-bd-kicker">'+kicker+'</p>'+words+homeNextSessionHTML(home)
+  +'<div class="st-bd-links"><a class="st-bd-world" href="#/world/welcome">Explore Sit’ota <span aria-hidden="true">→</span></a></div>'
+  +'</div></div></section>';
+}
+
+/* Home page: backdrop hero, then the existing sections. */
 function sitotaHomeHTML(){
  const pits=stPitsLiveLine();
  const tile=(href,icon,title,text,live,cls)=>'<a class="st-dest'+(cls?' '+cls:'')+'" href="'+href+'"><span class="st-dest-arrow" aria-hidden="true">→</span>'+icon+'<h3>'+title+'</h3><p>'+text+'</p>'+(live?'<span class="st-live">'+live+'</span>':'')+'</a>';
  const svg=d=>'<svg class="st-dest-icon" viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>';
- return '<div class="sitota-public st-home st-home-16x9">'
- +'<section class="st-hero"><div class="st-hero-art" aria-hidden="true"></div><div class="st-frame st-hero-layout"><div class="st-hero-copy">'
- +'<div class="st-eyebrow">Valeshar Campaign</div><h1>New Sit’ota</h1><p class="st-lede">The world guide, characters, and everything<br class="st-desktop-break"> we need for the campaign.</p>'
- +'<div class="st-ctas">'+homeContinueHTML()+'<a class="st-world-link" href="#/world/welcome">Explore Sit’ota <span class="st-arrow" aria-hidden="true">→</span></a></div>'
- +'</div></div><span class="st-hero-credit">Art: Richard Wright · © Wizards of the Coast</span></section>'
+ return '<div class="sitota-public st-home st-stone-home">'
+ +homeHeroHTML()
  +(MENU_MSG?'<p class="st-frame st-message" role="status">'+esc(MENU_MSG)+'</p>':'')
  +(LOCAL_SAVE_ERROR?'<p class="st-frame st-message" role="alert">'+esc(LOCAL_SAVE_ERROR)+'</p>':'')
  +homeCharactersHTML()
@@ -81,7 +118,7 @@ function sitotaHomeHTML(){
  +tile('#/wiki',svg('<path d="M12 6C9 4 6 4 3 5v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1Zm0 0v14"/>'),'Rules','Search the Mythras rules by chapter.','')
  +tile('#/world/welcome',svg('<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14"/>'),'World Guide','People, places and history of Sit’ota.','')
  +'</div>'+(homeCharacterOwner()?'<div class="st-table-actions"><span>Starting a table?</span><button type="button" class="st-btn st-btn-sm" onclick="APP.newCampaign()">Create campaign</button><button type="button" class="st-btn st-btn-sm" onclick="APP.homeJoinCampaign()">Join a campaign</button></div>':'')+'</div></section>'
- +'<div class="st-frame st-orc"><p>Rules text is drawn from Mythras Imperative and Classic Fantasy Imperative by The Design Mechanism, used under the ORC licence. Mythras and Classic Fantasy are Reserved Material.</p></div>'
+ +'<div class="st-frame st-orc"><p>'+homeArtCreditHTML()+'Rules text is drawn from Mythras Imperative and Classic Fantasy Imperative by The Design Mechanism, used under the ORC licence. Mythras and Classic Fantasy are Reserved Material.</p></div>'
  +'</div>';
 }
 
@@ -223,14 +260,13 @@ const ST_CARD_STATS={};
 // Computed against a temporary copy of the character, never the open draft.
 function stCharStats(c){
  const key=c.id+'|'+c.updated_at;if(ST_CARD_STATS[key])return ST_CARD_STATS[key];
- const out={style:null,ap:null};
+ const out={race:null};
  if(c.state&&typeof freshState==='function'){
   const original=S;
   try{
    S=Object.assign(freshState(),JSON.parse(JSON.stringify(c.state)));normalizeState();
-   const best=stylesList().map(s=>({name:s.name,pct:finalPct(s.key)})).sort((a,b)=>b.pct-a.pct)[0];
-   if(best&&best.pct>0)out.style=best;
-   const v=charVitals(S);if(v&&Number.isFinite(v.baseAP))out.ap=v.baseAP;
+   const sp=typeof speciesOf==='function'?speciesOf(S):null;
+   out.race=sp&&sp.label?sp.label:'Human';
   }catch(e){}finally{S=original;}
  }
  const camp=c.campaign_id&&Array.isArray(CAMP_CACHE)?CAMP_CACHE.find(x=>x.id===c.campaign_id):null;
@@ -252,10 +288,10 @@ function stPortrait(c,cls){
 function stCharCard(c){
  const name=c.name||'Unnamed Character',id=jsq(c.id),st=stCharStats(c);
  const tier=c.tier&&c.tier!=='ordinary'&&typeof ARCHETYPES!=='undefined'&&ARCHETYPES[c.tier]?ARCHETYPES[c.tier].label:null;
- const meta=[c.culture,c.career,tier].filter(Boolean).map(esc).join(' · ')||'Character in progress';
- const chips=(st.style?'<span class="st-chip st-chip-g">'+esc(st.style.name)+' '+st.style.pct+'%</span>':'')
-  +(st.ap!=null?'<span class="st-chip">'+st.ap+' AP</span>':'')
-  +(st.campaign?'<span class="st-chip st-chip-t">'+esc(st.campaign)+'</span>':'');
+ // Race first, then culture, career and tier (owner, 2026-11-09). The
+ // combat-style and AP chips are gone; the campaign chip stays.
+ const meta=[st.race,c.culture,c.career,tier].filter(Boolean).map(esc).join(' · ')||'Character in progress';
+ const chips=st.campaign?'<span class="st-chip st-chip-t">'+esc(st.campaign)+'</span>':'';
  return '<article class="st-cc" data-char-id="'+esc(c.id)+'"><div class="st-cc-top">'+stPortrait(c,'st-mono')
   +'<div class="st-cc-text"><h3>'+esc(name)+'</h3><div class="st-cc-meta">'+meta+'</div>'+(chips?'<div class="st-cc-stats">'+chips+'</div>':'')+'</div></div>'
   +'<div class="st-cc-foot"><span class="st-cc-when">Saved '+esc(stWhen(c.updated_at))+'</span>'
@@ -311,3 +347,134 @@ function stPitsLiveLine(){
   return best?'Best run: '+best.wins+' win'+(best.wins===1?'':'s')+(best.charname?' · '+esc(best.charname):''):'';
  }catch(e){return '';}
 }
+
+// ---- Light / Dark (owner, 2026-11-09: in Settings, not the top bar) ----
+// A per-device display choice, like the dice animation: "light", "dark" or
+// unset to follow the device. index.html applies it before first paint.
+function siteModePref(){let v=null;try{v=localStorage.getItem('sitota-mode');}catch(e){}return v==='light'||v==='dark'?v:'auto';}
+function siteModeApply(){
+ const p=siteModePref();
+ const dark=p==='dark'||(p==='auto'&&!!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches));
+ document.documentElement.setAttribute('data-mode',dark?'dark':'light');
+}
+function siteSetMode(v){
+ try{if(v==='light'||v==='dark')localStorage.setItem('sitota-mode',v);else localStorage.removeItem('sitota-mode');}catch(e){}
+ siteModeApply();
+ document.querySelectorAll('.st-mode button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===siteModePref())));
+}
+function siteModeHTML(){
+ const cur=siteModePref(),ic=d=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>';
+ const opt=(k,label,icon)=>'<button type="button" data-mode="'+k+'" aria-pressed="'+(cur===k)+'" onclick="siteSetMode(\''+k+'\')">'+icon+label+'</button>';
+ return '<div class="st-mode" role="group" aria-label="Appearance">'
+  +opt('light','Light',ic('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'))
+  +opt('dark','Dark',ic('<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>'))
+  +opt('auto','Match device',ic('<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>'))+'</div>';
+}
+if(typeof window!=='undefined'&&window.matchMedia){
+ try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(siteModePref()==='auto')siteModeApply();});}catch(e){}
+}
+
+// ---- Site admin: the Home quote and picture for everyone (owner, 2026-11-10) ----
+// One row in site_settings that anyone can read; only accounts in
+// site_admins can change it (the database enforces that, see
+// supabase/migrations/20261110120000_site_admin_and_settings.sql).
+let SITE_HOME=null;          // {home:{quote,cite,credit}, hero_image} once loaded; {} if unavailable
+let SITE_ADMIN=false,SITE_ADMIN_FOR=null;
+let SITE_HERO_DRAFT;         // undefined = unchanged, '' = back to the bundled painting, else a JPEG data URL
+let SITE_HOME_MSG=null;      // {text, ok}
+// Unsaved quote / said-by / credit, kept across re-renders (#258: choosing
+// the default painting re-rendered the form and dropped them). Cleared on save.
+let SITE_TEXT_DRAFT={};
+function siteTextDraft(el){if(el&&el.dataset&&el.dataset.siteField)SITE_TEXT_DRAFT[el.dataset.siteField]=String(el.value||'');}
+function siteTextValue(k,saved){return Object.prototype.hasOwnProperty.call(SITE_TEXT_DRAFT,k)?SITE_TEXT_DRAFT[k]:saved;}
+const SITE_JPEG=/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/;
+function siteHomeSettings(){
+ const s=SITE_HOME||{},h=s.home&&typeof s.home==='object'?s.home:{};
+ const t=(x,n)=>typeof x==='string'?x.trim().slice(0,n):'';
+ return {quote:t(h.quote,400),cite:t(h.cite,120),credit:t(h.credit,160),
+  image:typeof s.hero_image==='string'&&s.hero_image.length<=1400000&&SITE_JPEG.test(s.hero_image)?s.hero_image:''};
+}
+function homeArtCreditHTML(){
+ const s=siteHomeSettings();
+ if(SITE_HOME===null&&CLOUD_ENABLED)return '';
+ if(s.image)return s.credit?'Art: '+esc(s.credit)+'. ':'';
+ return 'Art: Richard Wright · © Wizards of the Coast. ';
+}
+async function loadSiteHome(){
+ if(!CLOUD_ENABLED){SITE_HOME={};return;}
+ try{
+  const {data,error}=await sb.from('site_settings').select('home,hero_image').eq('id','home').maybeSingle();
+  SITE_HOME=error||!data?{}:data;   // before the migration runs the table is missing: show the defaults
+ }catch(e){SITE_HOME={};}
+ if(typeof APPVIEW!=='undefined'&&APPVIEW==='menu')render();
+}
+async function refreshSiteAdmin(){
+ const id=AUTH_USER&&AUTH_USER.id;
+ if(SITE_ADMIN_FOR!==(id||null)){SITE_TEXT_DRAFT={};SITE_HERO_DRAFT=undefined;SITE_HOME_MSG=null;}
+ SITE_ADMIN=false;SITE_ADMIN_FOR=id||null;
+ if(!id||!CLOUD_ENABLED)return;
+ try{
+  const {data,error}=await sb.rpc('is_site_admin');
+  if(!error&&AUTH_USER&&AUTH_USER.id===id)SITE_ADMIN=data===true;
+ }catch(e){}
+ if(SITE_ADMIN&&typeof APPVIEW!=='undefined'&&APPVIEW==='account')render();
+}
+// Account page panel, admins only.
+function siteAdminPanelHTML(){
+ if(!SITE_ADMIN||!AUTH_USER)return '';
+ const s=siteHomeSettings();
+ const preview=SITE_HERO_DRAFT===undefined?s.image:SITE_HERO_DRAFT;
+ const field=(id,k,label,val,max,ph)=>'<label class="st-label" for="'+id+'">'+label+'</label><input id="'+id+'" data-site-field="'+k+'" oninput="siteTextDraft(this)" class="st-input" type="text" maxlength="'+max+'" placeholder="'+ph+'" value="'+esc(siteTextValue(k,val))+'">';
+ return '<section class="mmenu-panel st-settings st-siteadmin" aria-labelledby="stSiteAdminTitle"><h2 id="stSiteAdminTitle">Site home page <span class="st-tag st-tag-gm">Admin</span></h2>'
+  +'<p>What everyone sees at the top of Home, signed in or not. A campaign’s own quote, set by its GM, still shows first for that campaign’s players.</p>'
+  +(SITE_HOME_MSG?'<p class="st-banner'+(SITE_HOME_MSG.ok?' st-banner-ok':'')+'" role="'+(SITE_HOME_MSG.ok?'status':'alert')+'">'+esc(SITE_HOME_MSG.text)+'</p>':'')
+  +'<label class="st-label" for="siteQuote">Quote</label><textarea id="siteQuote" data-site-field="quote" oninput="siteTextDraft(this)" class="st-input st-textarea" rows="3" maxlength="400" placeholder="Leave empty to show the Sit’ota title">'+esc(siteTextValue('quote',s.quote))+'</textarea>'
+  +field('siteCite','cite','Said by',s.cite,120,'Who said it, or where it’s from')
+  +'<label class="st-label">Picture</label><div class="st-siteadmin-pic">'
+  +(preview?'<img src="'+esc(preview)+'" alt="New Home picture">':'<img src="assets/sitota-hero.webp" alt="Default Home picture">')
+  +'<div><input id="siteHeroFile" type="file" accept="image/jpeg,image/png,image/webp" hidden onchange="siteHeroPick(this)">'
+  +'<button type="button" class="st-btn st-btn-sm" onclick="document.getElementById(\'siteHeroFile\').click()">Choose a picture…</button>'
+  +(preview?'<button type="button" class="st-btn st-btn-sm" onclick="siteHeroDefault()">Use the default painting</button>':'')
+  +'<small>JPEG, PNG or WebP, up to 15 MB. It’s resized to 1920px wide. A wide landscape works best; the left side fades out behind the quote.</small></div></div>'
+  +(preview?field('siteCredit','credit','Picture credit',s.credit,160,'For example, the artist’s name'):'')
+  +'<div class="st-row"><button type="button" class="st-btn st-btn-primary" onclick="saveSiteHome()">Save home page</button></div></section>';
+}
+// Resize to a JPEG data URL small enough for the settings row.
+async function siteHeroJpeg(file){
+ const image=await createImageBitmap(file);
+ try{
+  for(const [w,q] of [[1920,.82],[1920,.72],[1600,.72],[1280,.7]]){
+   const scale=Math.min(1,w/image.width),c=document.createElement('canvas');
+   c.width=Math.max(1,Math.round(image.width*scale));c.height=Math.max(1,Math.round(image.height*scale));
+   const ctx=c.getContext('2d');ctx.drawImage(image,0,0,c.width,c.height);
+   const url=c.toDataURL('image/jpeg',q);
+   if(url.length<=1350000)return url;
+  }
+ }finally{image.close();}
+ throw Error('The picture is still too large after resizing. Try a smaller one.');
+}
+
+async function siteHeroPick(input){
+  const file=input.files&&input.files[0];if(!file)return;
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>15*1024*1024){SITE_HOME_MSG={text:'Choose a JPEG, PNG or WebP picture under 15 MB.'};render();return;}
+  try{SITE_HERO_DRAFT=await siteHeroJpeg(file);SITE_HOME_MSG={text:'Picture ready. Save home page to publish it.',ok:true};}
+  catch(e){SITE_HOME_MSG={text:e.message||'The picture could not be read.'};}
+  input.value='';render();
+}
+function siteHeroDefault(){SITE_HERO_DRAFT='';SITE_HOME_MSG={text:'Save home page to switch back to the default painting.',ok:true};render();}
+async function saveSiteHome(){
+  if(!SITE_ADMIN||!AUTH_USER||!CLOUD_ENABLED)return;
+  for(const id of ['siteQuote','siteCite','siteCredit'])siteTextDraft(document.getElementById(id));
+  const saved=siteHomeSettings(),t=(k,n)=>String(siteTextValue(k,saved[k])||'').replace(/\s+/g,' ').trim().slice(0,n);
+  const home={quote:t('quote',400),cite:t('cite',120),credit:t('credit',160)};
+  const patch={home,updated_at:new Date().toISOString(),updated_by:AUTH_USER.id};
+  if(SITE_HERO_DRAFT!==undefined)patch.hero_image=SITE_HERO_DRAFT||null;
+  try{
+   const {data,error}=await sb.from('site_settings').update(patch).eq('id','home').select('home,hero_image').maybeSingle();
+   if(error)throw error;
+   if(!data)throw Error('Not saved. This account is not a site admin.');
+   SITE_HOME=data;SITE_HERO_DRAFT=undefined;SITE_TEXT_DRAFT={};SITE_HOME_MSG={text:'Saved. Home shows it for everyone now.',ok:true};
+  }catch(e){SITE_HOME_MSG={text:'Could not save: '+(e.message||'unknown error')};}
+  render();
+ }
+

@@ -16,7 +16,7 @@ body.pits-stone{
 }
 body.pits-stone *{scrollbar-width:thin;scrollbar-color:var(--p-line-strong) transparent}
 body.pits-stone ::-webkit-scrollbar{width:6px;height:6px}
-body.pits-stone ::-webkit-scrollbar-thumb{background:var(--p-line-strong);border-radius:6px}
+body.pits-stone ::-webkit-scrollbar-thumb{background:var(--p-line-strong);border-radius:4px}
 body.pits-stone ::-webkit-scrollbar-track{background:transparent}
 body.pits-stone button,body.pits-stone #root select,body.pits-stone #root input{font-family:var(--p-body)}
 body.pits-stone :focus-visible{outline:2px solid var(--p-accent);outline-offset:2px}
@@ -37,8 +37,8 @@ body.pits-stone .topbar .brand small{font:500 11px var(--p-body);letter-spacing:
 body.pits-stone .toplinks a,body.pits-stone .toplinks span{color:var(--p-head-text);font-family:var(--p-body)}
 body.pits-stone .toplinks span{color:var(--p-head-line)}
 body.pits-stone #root .mast{border:0;margin-bottom:14px}
-body.pits-stone #root .mast .eyebrow{font:500 11px/1.2 var(--p-display);letter-spacing:.22em;color:var(--p-accent)}
-body.pits-stone #root .mast h1{font:600 30px/1.1 var(--p-display);letter-spacing:.12em;text-transform:uppercase;color:var(--p-text)}
+body.pits-stone #root .mast .eyebrow{font:600 13px/1.2 var(--p-body);letter-spacing:0;text-transform:none;color:var(--p-accent)}
+body.pits-stone #root .mast h1{font:500 34px/1.1 var(--p-display);letter-spacing:-.02em;text-transform:none;color:var(--p-text)}
 body.pits-stone #root .mast p{color:var(--p-dim)}
 body.pits-stone #root .toolbutton,body.pits-stone #root .pill{background:var(--p-surface-2);color:var(--p-text);border:1px solid var(--p-line-strong);border-radius:1px;font:600 12.5px var(--p-body);letter-spacing:.04em;text-transform:none;min-height:40px}
 body.pits-stone #root .toolbutton:hover{border-color:var(--p-accent);color:var(--p-accent)}
@@ -104,7 +104,7 @@ body.pits-stone #root .loc-name{font:600 13px var(--p-body);color:var(--p-text);
 body.pits-stone #root .loc-rolls{font:500 11px var(--p-body);color:var(--p-dim)}
 body.pits-stone #root .loc-hp{grid-area:h;font:700 13px var(--p-body);color:var(--p-text);text-align:right;white-space:nowrap}
 body.pits-stone #root .loc-hp small{font:600 11.5px var(--p-body);color:var(--p-dim)}
-body.pits-stone #root .loc-gauge{grid-area:b;height:4px;border-radius:4px;background:var(--p-line);overflow:hidden;display:block}
+body.pits-stone #root .loc-gauge{grid-area:b;height:4px;border-radius:3px;background:var(--p-line);overflow:hidden;display:block}
 body.pits-stone #root .loc-gauge i{display:block;height:100%;background:var(--p-ok)}
 body.pits-stone #root .loc.minor .loc-gauge i{background:var(--p-minor)}body.pits-stone #root .loc.serious .loc-gauge i{background:var(--p-serious)}body.pits-stone #root .loc.major .loc-gauge i{background:var(--p-major)}
 body.pits-stone #root .wd{font:600 9.5px/1.5 var(--p-display);letter-spacing:.08em;text-transform:uppercase;padding:0 5px;border:1px solid currentColor;white-space:nowrap;background:color-mix(in srgb,currentColor 14%,transparent)}
@@ -400,8 +400,8 @@ body.pits-stone #root .notechip{background:var(--p-surface);color:var(--p-dim);b
 /* Site header on the fight page (owner, 2026-11-09): a slim row under it
    keeps "Choose a character" and "Reset bout". */
 .pits-subbar{max-width:1840px;margin:0 auto;padding:10px clamp(18px,2.4vw,46px) 0;display:flex;gap:18px;flex-wrap:wrap;
-  font:500 14px "DM Sans",system-ui,sans-serif}
-.pits-subbar a{display:inline-flex;align-items:center;min-height:44px;color:var(--p-dim,#b9ad98);text-decoration:none}
-.pits-subbar a:hover{color:var(--p-accent,#d7b884)}
-.pits-subbar a:focus-visible{outline:2px solid #d7b884;outline-offset:2px}
+  font:500 14px "Public Sans",system-ui,sans-serif}
+.pits-subbar a{display:inline-flex;align-items:center;min-height:44px;color:var(--p-dim,var(--bone-dim));text-decoration:none}
+.pits-subbar a:hover{color:var(--p-accent,var(--accent))}
+.pits-subbar a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media(max-width:899px){body.pits-page .main{padding-bottom:calc(96px + env(safe-area-inset-bottom))}}
