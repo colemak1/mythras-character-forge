@@ -39,6 +39,27 @@ function playLocAP(loc){
   const row=locs.find(l=>l.name===loc);
   return (row?Number(row.natural)||0:0)+(PLAY_HP_LOCS.includes(loc)?armorApAt(loc):0);
 }
+// CRTR-C03-W (Core p.110; pp.216, 218–219; docs/decisions.md): what a
+// location counts as for Serious and Major Wounds. Human arms and legs are
+// limbs; Head, Chest and Abdomen are vital. On a creature character any other
+// location (Wing, Tail, Tentacle...) waits for the GM's ruling, recorded per
+// location in S.play.locClass: "limb" (limb-equivalent) or "vital".
+const PLAY_LOC_CLASSES=["limb","vital"];
+function playLocClass(loc,state){
+  state=state||S;
+  if(/(Arm|Leg)$/.test(String(loc)))return "humanLimb";
+  if(/^(Head|Chest|Abdomen)$/.test(String(loc)))return "vital";
+  const set=state.play&&state.play.locClass&&state.play.locClass[loc];
+  if(!playCreatureLocs(state))return "vital";
+  return set==="limb"?"limb":set==="vital"?"vital":null;
+}
+function playLocClassHTML(loc){
+  if(!playCreatureLocs()||/(Arm|Leg)$/.test(loc)||/^(Head|Chest|Abdomen)$/.test(loc))return "";
+  const cur=(S.play.locClass||{})[loc]||"";
+  return '<p class="pm-notes"><label>For Serious and Major Wounds, the GM rules this location is <select aria-label="Wound class for '+esc(loc)+'" onchange="APP.playSetLocClass(\''+jsq(loc)+'\',this.value)">'
+   +[["","not ruled yet"],["limb","like a limb"],["vital","like the head or body"]].map(([v,l])=>'<option value="'+v+'"'+(v===cur?' selected':'')+'>'+l+'</option>').join("")
+   +'</select></label> Core p.110 covers human limbs; for a wing or tail the GM decides by what it does (a disabled wing grounds a flyer, Core p.216).</p>';
+}
 function playLocArmourName(loc){
   const locs=playCreatureLocs();
   if(!locs||PLAY_HP_LOCS.includes(loc))return armorDisplayName(loc);
@@ -145,7 +166,13 @@ const PLAY_LIMB_LOCS=["Right Arm","Left Arm","Right Leg","Left Leg"];
 // never has to go dig through the rulebook mid-fight to know what a wound
 // tag actually does to them.
 function playWoundEffectText(loc,cls){
-  const isLimb=CombatRules.isLimb(loc);
+  const kind=playLocClass(loc),isLimb=kind==="humanLimb";
+  if((cls==="serious"||cls==="major")&&kind!=="humanLimb"&&kind!=="vital"){
+    if(kind===null)return (cls==="serious"?"Serious":"Major")+" Wound: ask the GM whether this location works like a limb or like the head or body, and record it below; the effects differ (Core p.110).";
+    return cls==="serious"
+      ?"Serious Wound: permanently scarred; can't attack or start casting for 1d3 turns. Endurance test vs the attacker's roll or the location is useless until healed above 0. The GM says what that stops (a wing grounds a flyer); no item is dropped and no fall follows unless the GM rules so (Core p.110)."
+      :"Major Wound: immediately incapacitated. Endurance test vs the attack roll or you black out. If the location is severed or ripped off, it must be treated within 5× Healing Rate minutes or you die of blood loss (Core p.110).";
+  }
   if(cls==="ok")return "Undamaged — no mechanical penalty.";
   if(cls==="minor")return "Minor Wound: no mechanical penalty, but the location is damaged — a follow-up hit here has less HP to work through before it becomes a Serious Wound.";
   if(cls==="serious"){
@@ -165,7 +192,9 @@ function playWoundEffectText(loc,cls){
 // These checks are *not* resolved by HP arithmetic; record the opposed
 // Endurance roll, incapacitation and first aid at the table.
 function playWoundActionText(loc,cls){
-  const limb=CombatRules.isLimb(loc);
+  const kind=playLocClass(loc),limb=kind==="humanLimb"||kind==="limb";
+  if((cls==="serious"||cls==="major")&&kind===null)return "GM ruling needed: is this location like a limb, or like the head or body?";
+  if(cls==="serious"&&kind==="limb")return "GM check: Opposed Endurance versus the attack roll. On failure the location is useless until healed above 0; the GM says what that stops.";
   if(cls==="serious")return limb
     ? "GM check: Opposed Endurance versus the attack roll. On failure the limb becomes useless; for a leg fall prone, for an arm drop held items."
     : "GM check: Opposed Endurance versus the attack roll. On failure lose consciousness for minutes equal to the damage from this attack; no rejoining the fight until the location heals, even if revived.";
@@ -314,8 +343,9 @@ function pmWoundEvents(loc){
   const hr=charsReady()?healRate(effectiveChars().CON):0;
   return '<div class="pm-notes"><h4>Recorded wound incidents</h4><p>Resolve opposed rolls and timing at the table. Recording an incident does not apply conditions automatically.</p>'
    +events.map(({e,i})=>{
-     const limb=CombatRules.isLimb(loc),serious=e.severity==="serious";
-     const consequence=serious?(limb?"On a failed check: limb unusable until HP is positive; legs cause a fall, arms drop held items unless strapped.":"On a failed check: unconscious for "+(Number.isSafeInteger(e.damage)?e.damage:"the attack’s damage")+" minutes."):(limb?"Incapacitated and prone; a failed check causes unconsciousness. For a severed, punctured or ripped-off limb, treatment is needed within "+(5*hr)+" minutes.":"Unconscious and incapacitated; a failed check causes death. If successful, treatment is needed within "+(2*hr)+" combat rounds.");
+     const kind=playLocClass(loc),limb=kind==="humanLimb"||kind==="limb",serious=e.severity==="serious";
+     const consequence=kind===null?"Ask the GM whether this location is like a limb or like the head or body (set it above); the consequence depends on it."
+      :serious&&kind==="limb"?"On a failed check: the location is unusable until HP is positive; the GM says what that stops.":serious?(limb?"On a failed check: limb unusable until HP is positive; legs cause a fall, arms drop held items unless strapped.":"On a failed check: unconscious for "+(Number.isSafeInteger(e.damage)?e.damage:"the attack’s damage")+" minutes."):(limb?"Incapacitated and prone; a failed check causes unconsciousness. For a severed, punctured or ripped-off limb, treatment is needed within "+(5*hr)+" minutes.":"Unconscious and incapacitated; a failed check causes death. If successful, treatment is needed within "+(2*hr)+" combat rounds.");
      return '<details class="pm-fx-item"><summary>'+esc(serious?"Serious":"Major")+' wound · '+esc(String(e.damage))+ ' damage · '+(e.resolved?'resolved':'open')+'</summary><p>'+esc(consequence)+'</p>'
       +'<label>Opposed Endurance outcome <select '+(e.resolved?'disabled':'')+' onchange="APP.woundEventUpdate('+i+',\'outcome\',this.value)">'+[["pending","Pending"],["success","Succeeded"],["failure","Failed"]].map(([v,label])=>'<option value="'+v+'" '+(e.outcome===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'
       +(serious?' <label>Attack/casting interruption <select '+(e.resolved?'disabled':'')+' onchange="APP.woundEventUpdate('+i+',\'interruptionTurns\',this.value)"><option value="">Not recorded</option>'+[1,2,3].map(n=>'<option value="'+n+'" '+(e.interruptionTurns===n?'selected':'')+'>'+n+' turn'+(n===1?'':'s')+'</option>').join("")+'</select></label>':'')
@@ -350,7 +380,7 @@ function pmLocDetail(){
   const note=PM_DMG_NOTE&&PM_DMG_NOTE.loc===loc?PM_DMG_NOTE:null, recovery=naturalRecoveryInfo(loc);
   return '<div class="pm-locdetail">'
    +'<div class="dt"><b>'+esc(loc)+'</b><span class="d20">d20: '+hitD20For(loc)+'</span></div>'
-   +'<div class="arm">'+esc(playLocArmourName(armLoc))+' &mdash; AP '+ap+'</div>'
+   +'<div class="arm">'+esc(playLocArmourName(armLoc))+' &mdash; AP '+ap+'</div>'+playLocClassHTML(loc)
    +'<details class="pm-fx-item"><summary>Permanent injury: location maximum</summary><p>After GM adjudication, enter the location’s reduced maximum HP (Core p.80). Wound thresholds use the reduced maximum. This does not determine the injury, alter hit-location rolls, or automatically treat the wound.</p>'
    +(()=>{const base=playStateHPMax(S).find(x=>x[0]===(PLAY_LIMB_BASE[loc]||loc))?.[1];if(!base)return'';
      return '<p class="pm-notes">Permanent Injury table (1d3; HP lost rounded up): '+[1,2,3].map(r=>'<button type="button" class="pm-btn sm" onclick="document.getElementById(\'injuryMax\').value='+maimedMaxHP(base,r)+'">'+r+' → '+maimedMaxHP(base,r)+' HP</button>').join(' ')+' from '+base+' HP. Pick the result, then confirm and set.</p>';})()+'<label>Maximum HP <input type="number" id="injuryMax" min="1" value="'+max+'" style="width:65px"></label> <label><input type="checkbox" id="injuryConfirm"> GM confirms this adjustment</label> <button type="button" class="pm-btn sm" onclick="APP.playSetMaxHP(\''+loc+'\',document.getElementById(\'injuryMax\').value,document.getElementById(\'injuryConfirm\').checked)">Set maximum</button> <button type="button" class="pm-btn sm" onclick="APP.playClearMaxHP(\''+loc+'\',document.getElementById(\'injuryConfirm\').checked)">Restore calculated maximum</button></details>'
@@ -396,7 +426,7 @@ function pmWoundOverview(){
   const hr=charsReady()?healRate(effectiveChars().CON):0;
   return '<div class="pm-fx-selection"><b>Wound watch · '+events.length+' open</b><span>Track turns and treatment at the table. Select a location to update an incident.</span>'
     +events.map(e=>{
-      const limb=CombatRules.isLimb(e.loc),major=e.severity==="major";
+      const limb=["humanLimb","limb"].includes(playLocClass(e.loc)),major=e.severity==="major";
       const outcome=e.outcome==="success"?"Endurance succeeded":e.outcome==="failure"?"Endurance failed":"Endurance check pending";
       let reminder=major?(e.treated?"Treatment recorded; GM resolves recovery.":limb?"Treatment deadline may be "+(5*hr)+" minutes, depending on injury.":"If the check succeeds, treatment deadline is "+(2*hr)+" combat rounds.")
        :e.outcome==="failure"?(limb?(playCurHP(e.loc)>0?"Location now has positive HP; GM resolves limb status.":"Limb unusable until positive HP."):"Unconsciousness duration: "+e.damage+" minutes; GM tracks elapsed time."):"Check interruption and outcome.";
@@ -854,7 +884,8 @@ function pmTranceHTML(){
    +(prep?'Observe after '+prep+' (a critical saves one step)':'confirm the animist rank in the builder')
    +(S.play.tranceBarred?' · <b>barred for a day</b> (fumble)':'')
    +' <button class="pm-btn sm" onclick="APP.animistTrance()"'+(S.play.tranceBarred?' disabled':'')+'>Roll Trance</button>'
-   +'<p class="pm-empty">Core p.131. What the animist does in the Spirit Plane, and spirit combat, stay with the GM.</p></div>';
+   +(S.play.trance?'<p role="status">In Trance: Observe after '+esc(S.play.trance.prep)+(S.play.trance.critical?' (critical)':'')+'.</p>':'')
+   +'<p class="pm-empty">Core p.131. Only Observe is built so far. Other Trance uses, an unwilling target&rsquo;s opposed Willpower, and spirit combat stay with the GM.</p></div>';
 }
 function magicPanel(){
   const all=allMagic();
@@ -1358,7 +1389,7 @@ function pmBodyBoxHTML(){
   const worstTag={ok:"Unhurt",minor:"Minor Wound",serious:"Serious Wound",major:"Major Wound"}[v.worst];
   return '<div class="pm-box pmx-bodybox" id="pm-vitals"><h3>Body'+pmTip("health")+' <span class="pmx-health '+v.worst+'">'+worstTag+(v.worstLoc&&v.worst!=="ok"?' · '+esc(v.worstLoc.loc):'')+'</span></h3>'
    +'<div class="pm-vit-body">'+(playCreatureLocs()?'':pmBodySvg())+'<div class="pm-loclist">'+playHPLocs().map(pmLocRow).join("")+'</div></div>'
-   +(playCreatureLocs()?'<p class="pm-notes" role="note">'+esc(speciesDef().label)+' body: its own locations, HP and natural armour from its entry (Core pp.218–219). The GM confirms the HP for this character&rsquo;s CON and SIZ; a changed maximum is recorded per location. Serious and Major Wound effects treat a location named Arm or Leg as a limb.</p>':'')
+   +(playCreatureLocs()?'<p class="pm-notes" role="note">'+esc(speciesDef().label)+' body: its own locations, HP and natural armour from its entry (Core pp.218–219). The GM confirms the HP for this character&rsquo;s CON and SIZ; a changed maximum is recorded per location. For Serious and Major Wounds, Arm and Leg locations are limbs; the GM rules on others such as a wing or tail (open the location).</p>':'')
    +'</div>';
 }
 function pmRollLogHTML(){

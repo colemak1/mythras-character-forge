@@ -465,6 +465,11 @@ function normalizeState(){
   normalizeDevotionalPools();
   if(!Object.hasOwn(ANIMIST_RANK_FRACTION,S.magic.animistRank))S.magic.animistRank="";
   if(S.play)S.play.tranceBarred=S.play.tranceBarred===true;
+  if(S.play){const t=S.play.trance;S.play.trance=t&&t.purpose==="Observe"&&TRANCE_PREP_STEPS.includes(t.prep)?{purpose:"Observe",prep:t.prep,critical:!!t.critical}:null;}
+  // CRTR-C03-W: keep only valid GM rulings on nonhuman wound classes.
+  if(S.play){const lc=S.play.locClass,out={};
+    if(lc&&typeof lc==="object")for(const [k,v] of Object.entries(lc))if(typeof k==="string"&&k.length<=60&&(v==="limb"||v==="vital"))out[k]=v;
+    S.play.locClass=out;}
   if(!Number.isSafeInteger(S.magic.boundLimitGM)||S.magic.boundLimitGM<0)delete S.magic.boundLimitGM;
   if(S.concept&&S.concept.heightM===undefined)S.concept.heightM="";
   if(S.concept&&S.concept.weightKg===undefined)S.concept.weightKg="";

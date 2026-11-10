@@ -82,4 +82,12 @@ test('AN-C01 a fumbled Trance bars the Spirit Plane until a day of rest',()=>{
  dice([]);run('APP.animistTrance()');assert.match(msg(),/bars entering the Spirit Plane/);assert.match(run('pmTranceHTML()'),/barred for a day/);
  run('APP.advanceTime("day")');assert.equal(run('S.play.tranceBarred'),false);
 });
+test('AN-F01 a successful Trance is kept with the character (purpose and preparation)',()=>{
+ animist('r3');dice([30]);run('APP.animistTrance()');
+ assert.equal(run('S.play.trance.purpose'),'Observe');assert.equal(run('S.play.trance.prep'),'1 round');
+ assert.match(run('pmTranceHTML()'),/In Trance: Observe after 1 round/);
+ run('S=JSON.parse(JSON.stringify(S));normalizeState();'+base);assert.equal(run('S.play.trance.prep'),'1 round','survives save and reload');
+ run('S.play.trance={purpose:"Drag Souls",prep:"1 hour"};normalizeState();');assert.equal(run('S.play.trance'),null,'unbuilt purposes are not accepted');
+ animist('r3');run('S.play.trance={purpose:"Observe",prep:"1 round",critical:false}');dice([80]);run('APP.animistTrance()');assert.equal(run('S.play.trance'),null,'a failed new Trance replaces the old one');
+});
 console.log('Trance tests passed');
