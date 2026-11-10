@@ -607,18 +607,20 @@ window.APP={
  // CRTR-B18: play a creature the GM approved (Core pp.218–219). The player
  // pastes its stat block (the GM tracker can copy it) and confirms approval.
  creaturePcDraft(v){CREATURE_PC_DRAFT=String(v||"").slice(0,6000);CREATURE_PC_MSG=[];render();},
+ creaturePcApproved(v){CREATURE_PC_APPROVED=!!v;},
  useCreaturePc(){
    if(viewOnlyBlock())return;
    const el=$("#creaturePcText"),ok=$("#creaturePcApproved");
    if(el)CREATURE_PC_DRAFT=String(el.value||"").slice(0,6000);
    const p=parseCreatureStatBlock(CREATURE_PC_DRAFT);
    const problems=[...p.errors,...(p.unread.length?["Lines not understood: "+p.unread.join(" · ")]:[])];
-   if(!problems.length)problems.push(...creaturePcProblems(p.creature,!!(ok&&ok.checked)));
+   if(ok)CREATURE_PC_APPROVED=!!ok.checked;
+   if(!problems.length)problems.push(...creaturePcProblems(p.creature,CREATURE_PC_APPROVED));
    if(problems.length){CREATURE_PC_MSG=problems;render();return;}
    if(charsReady()&&!confirm("Playing this creature resets your characteristics — it rolls its own characteristic dice. Continue?"))return;
    S.species="creature";S.creaturePc={...p.creature,gmApproved:true,approvedOn:new Date().toISOString().slice(0,10)};
    CHARS.forEach(c=>S.chars[c]=null);S.poolA=[];S.poolB=[];S.assignA={};S.assignB={};
-   CREATURE_PC_DRAFT="";CREATURE_PC_MSG=[];render();},
+   CREATURE_PC_DRAFT="";CREATURE_PC_MSG=[];CREATURE_PC_APPROVED=false;render();},
  // Non-human characteristics are rolled per characteristic off that species'
  // own dice, not from the two shared human pools (a dwarf's STR 2d6+9 and DEX
  // 3d6 aren't interchangeable, so there is nothing to allocate between).

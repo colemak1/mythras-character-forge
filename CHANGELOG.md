@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Typed boxes keep every entry; Subsystems 7 and 8 closed
+
+- **Fix (every character, not only creatures):** typing a number into an allocation box and moving to the next one rebuilt the page under the next box, so its entry was lost. Culture points typed box by box stuck at 50/100 (Work, `docs/session-zero-live-20261110.md`); with Tab only every fifth box counted. Any text or number field that re-renders on change now waits until focus has moved (keyboard) or the click is over (mouse), then puts focus back on the new copy of the field. Checkboxes, selects and buttons render at once, as before.
+- **Fix:** on the Concept step, pasting a creature's stat block and then ticking "My GM approved" at normal click speed lost the tick, so "Use this creature" refused it. The tick is now kept in state.
+- Tests: `tests/render-focus.cjs`. Checked headless in Chromium: culture 100/100 by fill, click, slow click and Tab; a creature character completes Culture and Career.
+- **Subsystem 7 (Creatures) and 8 (Campaign) closed** under the revised close rule, with Known limits in `docs/subsystem-plan.md`. Session readiness 11 of 14 (items 9 and 10 Ready); 7 of 8 built, 7 closed.
+
 ## GM tracker: cards from a backup always open (Subsystem 8 recovery follow-up)
 
 - Work's live restore check (`docs/subsystem8-recovery-live-20261110.md`) found that a backup whose tracker cards lacked fields (here: no AP) restored fine but then broke GM Tools ("Cannot read properties of undefined (reading 'max')").

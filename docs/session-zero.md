@@ -8,10 +8,10 @@ Status words: **Ready** (built, tested in code, and used at least once on the li
 
 Two numbers, reported at the end of every batch instead of a long status:
 
-- **Session readiness:** Ready items in the checklist below, out of the total. Today: **9 of 14**.
-- **Feature completeness:** subsystems built (code done, whether or not closed) out of 8. Today: **7 of 8 built**, 5 closed. Magic (6) is the one still being built.
+- **Session readiness:** Ready items in the checklist below, out of the total. Today: **11 of 14** (2026-11-10: items 9 and 10 passed live).
+- **Feature completeness:** subsystems built (code done, whether or not closed) out of 8. Today: **7 of 8 built**, 7 closed (Subsystems 7 and 8 closed 2026-11-10 with Known limits). Magic (6) is the one still being built.
 
-The 5/8 close count in `subsystem-plan.md` stays, but it is no longer the headline.
+The close count in `subsystem-plan.md` (now 7/8) stays, but it is no longer the headline.
 
 ## The checklist
 
@@ -20,7 +20,7 @@ The 5/8 close count in `subsystem-plan.md` stays, but it is no longer the headli
 | # | What the GM and players need | Status | Left to do |
 |---|---|---|---|
 | 1 | Each player makes a human character on their own account, saves, and it reopens unchanged | **Ready** | Subsystem 1 closed |
-| 2 | A player can build a GM-approved creature character | **Built** | Work: one live build (see HANDOFF). Only blocks if a player wants one |
+| 2 | A player can build a GM-approved creature character | **Built** | GM approval, import, INT 7 refusal, Points Build and draft reload passed live 2026-11-10. The full build stopped at Culture points (50/100): an app bug (typed boxes lost entries), fixed 2026-11-10; a headless build now completes Culture and Career. Work: finish one build through Culture, Career and save. Only blocks if a player wants one |
 | 3 | GM makes a campaign; players join with the code; New code, Remove and Make GM work | **Ready** | Passed live 2026-11-09 |
 | 4 | Starting gear and money, with costs and ENC added up | **Ready** | Subsystem 3 closed |
 | 5 | GM gives an item; the player sees it after reload | **Ready** | Passed live (one player at a time) |
@@ -32,8 +32,8 @@ The 5/8 close count in `subsystem-plan.md` stays, but it is no longer the headli
 |---|---|---|---|
 | 7 | Skill rolls with difficulty, augmenting and opposed rolls in Play Mode | **Ready** | Subsystem 2 closed |
 | 8 | Melee combat: hit locations, armour, Special Effects, wounds | **Ready** | Subsystem 5 closed |
-| 9 | GM tracker with NPCs and creatures: add, roll location, damage after armour | **Built** | Work: the Subsystem 7 tracker pass (see HANDOFF) |
-| 10 | Rabble and Underlings, several creatures at once | **Built** | Same Work pass |
+| 9 | GM tracker with NPCs and creatures: add, roll location, damage after armour | **Ready** | Passed live 2026-11-10 (`session-zero-live-20261110.md`) |
+| 10 | Rabble and Underlings, several creatures at once | **Ready** | Passed live 2026-11-10 |
 | 11 | GM changes a player's item while that player is editing: nothing is lost | **Owner** | Stale-save warning is built and tested in code. Owner and one other person: 10 minutes on two devices (see below) |
 
 ### After the session
@@ -42,7 +42,7 @@ The 5/8 close count in `subsystem-plan.md` stays, but it is no longer the headli
 |---|---|---|---|
 | 12 | Experience rolls and skill improvement | **Ready** | Subsystem 4 closed |
 | 13 | GM downloads a campaign backup | **Ready** | Passed live 2026-11-10 |
-| 14 | Restore a backup as a new campaign; the tracker opens | **Built** | Data round trip passed live; the tracker crash is fixed in code. Work: open GM Tools on the restored copy (bundled with item 9) |
+| 14 | Restore a backup as a new campaign; the tracker opens | **Built** | Data round trip passed live; the tracker crash is fixed in code. The restored fixture was deleted in the #270 cleanup, so GM Tools on a restored copy is still unseen. Work: back up a campaign with tracker cards, restore it, open GM Tools |
 
 **Backups are manual.** The Supabase project is on the Free plan, which has no automatic backups the owner can restore from. Until that changes, the GM downloads a campaign backup after every session.
 
@@ -68,8 +68,8 @@ These stay open. None of them holds up the first campaign. They are kept here so
 - Owned or commissioned home painting (owner sends art)
 
 **Known limits (built and tested in code; extra live checks only)**
-- Subsystem 8: two independent player accounts racing on the same inventory; a second independent player owner; global profiles; the full phone route matrix; case-by-case reconciliation of `campaign-cases-batch-1.md`. Covered for now by item 11 and by the database permission tests in CI (D-S5).
-- Subsystem 7: Core p.218 Vulnerable reading (worn armour still counts) awaits one line from Chat.
+- Subsystem 8 (closed 2026-11-10): two independent player accounts racing on the same inventory; a second independent player owner; global profiles; the full phone route matrix; case-by-case reconciliation of `campaign-cases-batch-1.md`. Covered for now by item 11 and by the database permission tests in CI (D-S5).
+- Subsystem 7 (closed 2026-11-10; full list in `subsystem-plan.md`): Core p.218 Vulnerable reading (worn armour still counts) unconfirmed for lack of the page; Vulnerable with worn armour, Intimidate "stopped threatening" and nonhuman Play Mode wounds tested in code only; Chaos d100 and anatomy tables not row-audited by Chat; many traits GM-resolved by design; The Pits refuses creature characters.
 - Magic Audit fixture checks (combined POW cap, multiple cults, Animist rank limits): only when that tradition is in use.
 - Real-phone sound and touch: the owner notices these in real play.
 - Small live rechecks from earlier batches (1d6+1 improvement help text, home quote survives "Use the default painting", phone More sheet): fold into any Work batch that has room, never a batch of their own.

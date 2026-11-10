@@ -5,11 +5,11 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-10 by Claude (new workflow: Session Zero, severity, one review per milestone)_
+_Last updated: 2026-11-10 by Claude (Subsystems 7 and 8 closed; typed-box fix)_
 
 ## Where things stand
 
-- **Session readiness 9 of 14. Feature completeness 7 of 8 built** (5 closed). Details: `docs/session-zero.md`.
+- **Session readiness 11 of 14. Feature completeness 7 of 8 built, 7 closed** (Subsystems 7 and 8 closed 2026-11-10 with Known limits in `docs/subsystem-plan.md`). Details: `docs/session-zero.md`.
 - **Workflow changed (owner, 2026-11-10):** see Priorities, When something is done, and Reviews in `AGENTS.md`. Earlier "Next" lists are retired; anything still useful from them is in `session-zero.md` under Not blocking.
 - **Backups:** Supabase Free plan, so no automatic server backups. The GM downloads a campaign backup after every session.
 - **Look:** Codex · Stone everywhere; tokens in `sitota-theme.css` (loaded last). Other stylesheets use the tokens only; no hex colours.
@@ -17,15 +17,13 @@ _Last updated: 2026-11-10 by Claude (new workflow: Session Zero, severity, one r
 
 ## Next
 
-1. **Owner (answered 2026-11-10):** the first campaign uses almost no magic; build every tradition anyway, after the Session Zero items. Session 1 is a few months out.
-2. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone.
-3. **ChatGPT (Work), one batch** (signed in, own campaign; one short dated report, pass/fail plus severity):
-   - **Tracker (items 9, 10):** add a creature with How many 3, set all to Rabble, hit one below its HP: it flees and the card says the rest flee. Add 4 as Underling, hit one twice: it withdraws; hurt a second and the rest withdraw. Two creatures of the same name with Intimidate: a Critical on one shows on the other.
-   - **Restored copy (item 14):** open GM Tools on the retained restored fixture: cards draw, missing HP shows 0 / 0. Then clean up the fixtures (keep Creation Audit and Magic Audit).
-   - **Creature character (item 2):** as GM, add a sapient creature, tick "GM permits", copy its stat block; as player, Concept → "Play a creature your GM approved", build with Points Build, save, reload: species, ranges and hit locations persist. An INT 7 creature is refused.
-   - Anything blocked: record it once and move on.
-4. **ChatGPT (Chat):** one line on Core p.218 Vulnerable (does worn armour still count?). Only if you have that page; otherwise say so.
-5. **Claude, after Work's report:** fix any Severity 1, then close Subsystems 7 and 8 under the new rule with their Known limits listed, and update the two numbers. Then Subsystem 6, one tradition per batch in `roadmap.md` order (Animism first; Folk Magic is done).
+1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
+2. **ChatGPT (Work), one batch** (signed in, own campaign; one short dated report, pass/fail plus severity; anything blocked: record once, move on):
+   - **Typed boxes (fix, all characters):** on Culture, type a number into each points box one after another (click or Tab between them, no +/- buttons): the total reaches 100/100.
+   - **Creature character (item 2):** as GM, add a sapient creature, tick "GM permits", copy its stat block; as player, Concept → paste, tick "My GM approved", Use this creature; build with Points Build, then Culture, Career, Bonus Skills, money; save, reload: species, ranges and hit locations persist. (Import, INT 7 and draft reload already passed; don't repeat them.)
+   - **Restored copy (item 14):** add tracker cards (one NPC, one creature) to a disposable campaign, back it up, restore it as a new campaign, open GM Tools on the copy: cards draw. Then delete the fixtures (keep Creation Audit and Magic Audit).
+3. **ChatGPT (Chat):** one milestone review of the Subsystem 8 close (`subsystem-plan.md` item 8; Subsystem 7 was reviewed on #272). Core p.218 Vulnerable only if you are given the page.
+4. **Claude, after Work's report:** fix any failure; when items 2, 11 and 14 are Ready, Subsystem 6, one tradition per batch in `roadmap.md` order (Animism first; Folk Magic is done).
 
 ## Notes
 
