@@ -4,6 +4,24 @@ The plan from today to a finished site. It follows the 8 groups in `subsystem-pl
 
 A group counts as finished only with its case list, source checks, code or GM handling, tests and live acceptance (`subsystem-plan.md`).
 
+## Path to 8/8 (owner, 2026-11-10: no more side work until 8/8)
+
+Order: **8 → 7 → 6.** Each Claude batch runs in a fresh session (AGENTS.md). Before building, check every case ID in its spec against the code and tests, because some spec rows are already built. Each batch ends with one PR and a paste-ready Work live list.
+
+1. **8, Campaign and live integration.** No code is known to be left. Needs:
+   - **Owner: decide D-S5.** Do the CI database permission tests count as the evidence for the direct-access steps?
+   - **Work:** the two-account matrix in `docs/subsystem-8-closeout-20261109.md` (New code, Remove, Make GM, save conflict, gifts and pop-up, outsider privacy, backup, header route matrix). This needs two separate signed-in accounts.
+   - **Chat:** fill in that closeout. **Claude:** fix any failures, then mark 8 closed. → 6/8.
+2. **7, Creatures and GM procedures.** Specs: `creatures-remaining-code-20261109.md`, `creatures-rabble-underlings-cases-20261109.md` (Rabble/Underlings, CRTR-C21–C27), `creature-cases-batch-1.md`. Also review docs PR #230 (older; may be superseded by B18/B20). Claude builds the open cases, Work does one GM-tracker pass, Chat closes out. → 7/8.
+3. **6, Magic and organisations.** One batch each, in this order:
+   - Folk Magic finish (`magic-folk-finish-20261109.md`)
+   - Animism finish (`magic-animism-finish-20261109.md`, `magic-animism-code-cases-20261109.md`; AN-F01 Trance done)
+   - Mysticism (`magic-mysticism-code-cases-20261109.md`; MY-C03 reviewed in #252)
+   - Sorcery and Theism/cults (`magic-sorcery-code-cases-20261109.md`, `magic-theism-cults-code-cases-20261109.md`; SO-C01 and TH-C02 together)
+   - Organisations (`magic-organisations-code-cases-20261109.md`)
+
+   Then a Work live pass on the Magic Audit fixture, and Chat's closeout. → 8/8.
+
 ## Phase 0: settle what shipped today (in progress)
 
 - **Work:** run the Supabase server check (`server-check-20261109.md`), then the live batch for #231–#234: header, campaign manager, character sheet scroll, creature tools and the three #213 fixes.
