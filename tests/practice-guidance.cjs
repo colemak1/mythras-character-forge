@@ -11,6 +11,7 @@ function arena(){
   window:{matchMedia:()=>({matches:false}),requestAnimationFrame(){}},alert(){}};
  vm.createContext(context);
  const page=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8');
+ vm.runInContext(fs.readFileSync(path.join(root,'js/combat-rules.js'),'utf8'),context); // the shared combat rules
  vm.runInContext(fs.readFileSync(path.join(root,'js/data.js'),'utf8'),context); // the arena loads ../js/data.js first
  vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-guidance.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'experiments/pits-view.js'),'utf8')+'\n'+page.match(/<script>([\s\S]*?)<\/script>/)[1],context);
  const run=s=>vm.runInContext(s,context);

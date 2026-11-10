@@ -13,7 +13,7 @@ const ctx={console,URL,URLSearchParams,Date,Map,Set,WeakMap,JSON,setTimeout,clea
  supabase:{createClient:()=>({auth:{getSession:async()=>({data:{session:null}}),onAuthStateChange(){}}})},
  requestAnimationFrame(){},confirm:()=>true};
 ctx.window=ctx;ctx.scrollTo=()=>{};ctx.addEventListener=()=>{};vm.createContext(ctx);
-for(const name of ['data','engine','cloud','wiki-data','wiki','sitota','render','router','play','app']){
+for(const name of ['combat-rules','data','engine','cloud','wiki-data','wiki','sitota','render','router','play','app']){
  let src=fs.readFileSync(path.join(root,'js',name+'.js'),'utf8');
  if(name==='app')src=src.replace(/boot\(\);\s*$/,'');
  vm.runInContext(src,ctx,{filename:name+'.js'});

@@ -62,3 +62,17 @@ Standing rulings and product decisions. Add an entry whenever something is agree
 ### D-S3 — Display-name visibility (decided 2026-11-07, owner; implemented 2026-11-08, Claude, migration `20261108130000_…`; live check pending)
 
 **Decision: A — global display-name visibility.** Any authenticated user may read other users' **display names**, including users outside their campaigns. This is intentionally broader than campaign-only visibility and supports player discovery, at the cost of potential unwanted discovery and scraping by signed-in accounts. **Scope limit:** do not expose email addresses, private profile fields, character sheets, campaign membership, or other private data by implication. Claude should implement narrowly scoped read access for display-name fields only (including appropriate database/RLS or safe projection changes), preserve existing write permissions, and add signed-in nonmember, signed-out, and private-data-denial tests. Do not mark implemented until code, migration if needed, and live acceptance pass.
+
+## Combat engine: differences between The Pits and Play Mode (open)
+
+Found while moving both onto `js/combat-rules.js` (2026-11-09, Claude). The refactor changed no behaviour, so each difference below is still in place. **ChatGPT (Chat): give the Core reading for each, with the page; Claude then makes both sides follow it.**
+
+| Difference | Status | Today |
+|---|---|---|
+| D-CE1: Failure against Fumble | Open | Play Mode gives no Special Effect (differential table, Core p.94). The Pits gives the failing side one (`effectsWon` option `failureBeatsFumble`), for attacker or defender. |
+| D-CE2: rounding a skill at a difficulty grade | Open | The Pits rounds up (`CombatRules.skillAtGrade`). Play Mode rounds to nearest (`GRADE_MULT` with `Math.round` in `play.js` and `engine.js`). 65% at Hard is 44% in The Pits and 43% in Play Mode. |
+| D-CE3: Bypass Armour stacking | Open | Stackable in the shared table and Play Mode (Core p.100). The Pits offers it once per exchange because its fighters have one layer of armour. |
+| D-CE4: names | Open | The Pits says "Weary" where the Fatigue table says "Wearied", and "Weapon Malfunction" where Play Mode says "Weapon Malfunction (Firearms)". Play Mode's name is stored in saved roll logs, so changing it there needs a migration. |
+| D-CE5: armour Initiative penalty in The Pits | Arena convention | The Pits has one Armour Points number per fighter, so it estimates ENC from AP (`ARMOUR_ENC_BY_AP`). Play Mode uses the real armour worn. Saved characters sent to The Pits already bring their real penalty. |
+
+Also kept on purpose: Play Mode's `SPECIAL_EFFECTS` table in `play.js` still lists each effect's role, weapon restriction and roll requirement beside its rules text, because `tests/rules-smoke.cjs` reads that layout. `tests/combat-rules.cjs` fails if it and the shared table disagree.

@@ -5,6 +5,18 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## One shared combat rules engine
+
+Nothing you can see changes. The Pits and Play Mode now work their combat numbers out with the same code, so a rule fixed once is fixed in both.
+
+- **New `js/combat-rules.js`:** Action Points, Initiative Bonus, Healing Rate, Hit Points per location, Damage Modifier, the hit-location table, parry reduction, success levels, opposed rolls, Special Effects won and on offer, damage through parry and armour, wound levels and Serious/Major Wound outcomes, Bash, Knockback, Impale withdrawal, Damage Weapon and Disarm. Pure functions: no screen, no fight state, dice passed in.
+- **The hit-location table is data.** A creature's own table can be passed in later; nothing creature-specific is built yet.
+- **The Pits** keeps its prompts, narration, AI and screen and asks the shared rules for every result. Its Fatigue numbers now come from the site's Fatigue table.
+- **Play Mode** uses the same functions behind its existing helpers (`apCalc`, `dmCalc`, `hpLocs`, `resolveRoll`, `parryDamage`, the differential table, wound tags, effect eligibility).
+- **Proof it didn't change:** five complete seeded bouts (`tests/pits-golden.cjs`) recorded before the work play out identically after it, log line for log line. `tests/combat-rules.cjs` has a test for each rule with its Core page.
+- **Cheaper to read:** no line of The Pits' script is over 200 characters (the longest was 7,282).
+- **Differences found and left alone** for a ruling: `docs/decisions.md`, D-CE1 to D-CE5 (for example, The Pits gives a Special Effect for a Failure against a Fumble and Play Mode doesn't).
+
 ## Creature characters and entry abilities (CRTR-B18, B20)
 
 - **Play a creature your GM approved** (Concept step, Core pp.218–219): paste its stat block and tick "My GM approved". A sapient creature with INT 8+ then becomes your species: its own characteristic dice and ranges, its Points Build pool (its averages added up, rounded up), its Move and its hit-location table. Culture and career work as normal. Your INT can't go below 8. Instinctive (INS) creatures and INT below 8 are refused.

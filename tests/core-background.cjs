@@ -5,7 +5,7 @@ const ctx={console,setTimeout,clearTimeout,setInterval,clearInterval,URL,Date,Ma
  document:{getElementById:()=>null,querySelector:()=>null,addEventListener(){},removeEventListener(){}},
  location:{hash:'#/'},supabase:{createClient:()=>({auth:{signOut:async()=>({})}})},requestAnimationFrame(){},confirm:()=>true};
 ctx.window=ctx;ctx.addEventListener=()=>{};ctx.scrollTo=()=>{};vm.createContext(ctx);
-for(const name of ['data','engine','cloud','render','router','play','app']){
+for(const name of ['combat-rules','data','engine','cloud','render','router','play','app']){
  let src=fs.readFileSync(path.join(root,'js',name+'.js'),'utf8');if(name==='app')src=src.replace(/boot\(\);\s*$/,'');vm.runInContext(src,ctx,{filename:name+'.js'});
 }
 const run=s=>vm.runInContext(s,ctx),test=(name,fn)=>{fn();console.log('PASS',name)};
