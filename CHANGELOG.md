@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Spirit Combat and casting restrictions (Subsystem 6 follow-ups)
+
+Built from `docs/core-source-followups-20261111.md` (AN-F06, AN-F07, SO-C02; Core pp.119, 131, 137–138). Policy: D-9.
+
+- **Spirit Combat:** Play Mode → Spells has a Spirit Combat card. Enter the spirit's name (or pick a recorded one), its Spectral Combat % and MP. Each exchange, choose who attacks and enter the GM's d100 for the spirit; the app rolls your Binding (or Willpower without it). An unparried hit drains Magic Points by the Spirit Damage table, never Hit Points; a recorded spirit's MP is kept in step.
+- **Effects:** the winner of the differential may take that many effects, and only the ones its side may legally take (offensive or defensive, critical-only, Spirit Fumbles, mortal-only, spirit-only, possession). Spirit Lance takes the better of two damage rolls; the GM applies the rest.
+- **Defeat:** at zero MP the loser is helpless. Nothing happens until the GM picks the outcome (Possession, Binding, Exorcism and so on) and ticks that it is decided; it is saved.
+- **While invoking (SO-C02):** with a multi-turn Sorcery casting under way, attacks, other skill rolls and other spells are refused (cancel the casting first). Parry and evade are allowed; after one, the GM can make the final Invocation roll up to two Grades harder.
+- Tests: `tests/spirit-combat.cjs`. Checked headless at 390px (light) and 1280px (dark).
+
 ## Fix: the Cult step is back in character creation (Severity 1, #284)
 
 Work's live check of Organisations (`docs/organisations-live-283-20261111.md`) found the Cult step unreachable: it had been taken out of both creation flows earlier ("to revisit later"), so the Organisations features from #283 had no way in. Restored at the owner's request.

@@ -5,11 +5,11 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-11 by ChatGPT (Core source follow-ups after #287)_
+_Last updated: 2026-11-11 by Claude (#289 merged; Spirit Combat and SO-C02 built)_
 
 ## Where things stand
 
-- **Session readiness 13 of 14. Feature completeness 8 of 8 built, 8 closed.** Only item 11 (owner's two-device check) is left for Session Zero. **Subsystem 6 (Magic) closed 2026-11-11**: every tradition and Organisations passed live (#278, #280, #282, #286). Known limits are in `subsystem-plan.md` item 6 (Spirit Combat and SO-C02 GM-handled until their pages arrive; the legacy "Recorded before tracking" label and old mid-creation drafts not seen live). Details: `docs/session-zero.md`.
+- **Session readiness 13 of 14. Feature completeness 8 of 8 built, 8 closed.** Only item 11 (owner's two-device check) is left for Session Zero. Chat accepted the Subsystem 6 and 8 closes (#289). **Spirit Combat (AN-F06–F07) and SO-C02 built 2026-11-11** (`tests/spirit-combat.cjs`); until Work passes them they stay GM-handled Known limits in `subsystem-plan.md` item 6. Details: `docs/session-zero.md`.
 - **Backups:** Supabase Free plan, so no automatic server backups. The GM downloads a campaign backup after every session.
 - **Look:** Codex · Stone everywhere; tokens in `sitota-theme.css` (loaded last). Other stylesheets use the tokens only; no hex colours.
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
@@ -17,9 +17,12 @@ _Last updated: 2026-11-11 by ChatGPT (Core source follow-ups after #287)_
 ## Next
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work):** nothing queued. #286's Severity 2 is resolved without code: keeping the current "Joined …" line after a correction is intended; HANDOFF's wording was wrong (see `subsystem-plan.md` item 6).
-3. **ChatGPT (Chat):** Completed the one milestone review each for Subsystems 6 and 8 (both closes accepted under the current rule), and verified Core pp.119, 131, 137–138, 157 and 218. AN-F06–F07, SO-C02, D-6 and Vulnerable source follow-ups: `docs/core-source-followups-20261111.md`. No further Chat item queued.
-4. **Claude, next fresh session:** only what Chat's review or the owner's two-device check turns up; SO-C02 when Chat's (d) arrives; Spirit Combat when its pages arrive.
+2. **ChatGPT (Work), one batch** (signed in; one disposable character, not the kept fixtures; one short dated report, pass/fail plus severity). Give it Binding about 60%, Willpower, Invocation and Shaping about 50%, a Sorcery spell with Duration 1 (2 turns), and 10+ MP. Play Mode → Spells:
+   - **Spirit Combat:** open the Spirit Combat card, Begin against "Shade", Spectral Combat 50, MP 6. Press You attack with the spirit's d100 = 95: if your roll succeeds, the hit drains MP from Shade (1d6 at Binding 60) and your Hit Points don't change; only effects your side may take are offered. Press Spirit attacks with d100 = 10 a few times: when it hits, your MP falls. Keep going until one side has 0 MP: it says helpless and nothing more happens until a GM outcome is chosen and ticked; it is still there after a reload. End Spirit Combat.
+   - **While invoking:** cast the 2-turn spell once (turn 1 of 2). Rolling Perception, an attack, or another spell is refused with the Core p.119 message. Evade is allowed; then a "GM: final roll" selector appears. Set 1 Grade harder, reload, cast again: the Invocation roll is one Grade harder. Cancel works and nothing is charged twice.
+   - Delete the fixture after.
+3. **ChatGPT (Chat):** nothing queued. (Reviews of the Subsystem 6 and 8 closes done, #289.)
+4. **Claude, next fresh session:** fix any failure from step 2; when it passes, move Spirit Combat and SO-C02 out of Known limits. Otherwise only what the owner's two-device check turns up.
 
 ## Notes
 

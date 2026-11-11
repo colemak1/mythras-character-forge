@@ -879,7 +879,7 @@ function pmFxFilter(input){
 // through the same graded pipeline as any other roll and deducts the cost
 // from the right pool.
 function pmCastingNotesHTML(){
-  return '<p class="pm-empty">Sorcery and Mysticism use turn trackers; rolls occur on the final turn. AP is GM-managed; mark a wound or domination during casting with &ldquo;Hurt while casting&rdquo;. Mysticism activation and durations are manual; confirm each Talent category with the GM. Casting is blocked if you lack the minimum available points. Folk Magic, Sorcery, Mysticism, and Theism use distinct result-dependent costs (Core pp.122, 156, 165, 181). Animism has separate bound-spirit commands and manual tracking for spirit contact, binding vessel, and spirit-combat MP (Core pp.134–139); summoning, ritual Binding and spirit combat outcomes still require GM resolution. Consult Mythras Core and your GM for other requirements and effects.</p>';
+  return '<p class="pm-empty">Sorcery and Mysticism use turn trackers; rolls occur on the final turn. AP is GM-managed; mark a wound or domination during casting with &ldquo;Hurt while casting&rdquo;. Mysticism activation and durations are manual; confirm each Talent category with the GM. Casting is blocked if you lack the minimum available points. Folk Magic, Sorcery, Mysticism, and Theism use distinct result-dependent costs (Core pp.122, 156, 165, 181). Animism has separate bound-spirit commands and manual tracking for spirit contact, binding vessel, and spirit-combat MP (Core pp.134–139); summoning and ritual Binding still require GM resolution; Spirit Combat has its own card, and the GM applies its effects and what follows a defeat. Consult Mythras Core and your GM for other requirements and effects.</p>';
 }
 // D-5 (Core p.119): the GM or player marks a wound or domination that lands
 // while a spell is being cast; the next casting roll applies it. Nothing is
@@ -963,11 +963,54 @@ function pmTalentDisruptionHTML(){
   return '<div class="pm-fx-resolve">Active Talents: '+esc(active.map(m=>(m.name||"Talent")+" "+(m.intensity||1)).join(", "))
    +' <button class="pm-btn sm" onclick="APP.talentDisrupted()">Disrupted</button></div>';
 }
+// AN-F06/F07: Spirit Combat (Core pp.131, 137–138). The app rolls your side,
+// takes the GM's roll for the spirit, drains MP on an unparried hit and offers
+// only the p.138 effects the winner may take. The GM applies the effects.
+function pmSpiritCombatHTML(){
+  const c=S.play.spiritCombat,me=spiritCombatSkill(),ro=VIEW_ONLY?' disabled':'';
+  let h='<details class="pm-fx-item"'+(c?' open':'')+'><summary>Spirit Combat <span class="pm-fx-badge">Core pp.131, 137–138</span></summary>'
+   +'<p class="pm-empty">You fight with '+esc(me.label)+' '+me.pct+'% (psychic damage '+spiritDiceLabel(spiritDamageDice(me.pct))+'). Hits drain Magic Points, not Hit Points. An unparried hit does damage; the differential gives Spirit Combat effects, not physical Special Effects.</p>';
+  if(!c){
+    const spirits=allMagic().map((m,i)=>({m,i})).filter(x=>x.m.tradition==="animism");
+    return h+'<div class="pm-fx-resolve"><label>Spirit <input id="scName" type="text" maxlength="120" placeholder="name"></label>'
+     +(spirits.length?' <label>or recorded <select id="scIndex"><option value="">—</option>'+spirits.map(x=>'<option value="'+x.i+'">'+esc(x.m.name||"spirit")+'</option>').join("")+'</select></label>':'')
+     +' <label>Spectral Combat % <input id="scSkill" type="number" min="0" max="999" style="width:70px"></label>'
+     +' <label>MP <input id="scMP" type="number" min="1" max="999" style="width:60px"></label>'
+     +' <label><input id="scPossess" type="checkbox"> GM: this spirit can possess</label>'
+     +' <button class="pm-btn sm"'+ro+' onclick="APP.spiritCombatStart(document.getElementById(\'scName\').value,document.getElementById(\'scSkill\').value,document.getElementById(\'scMP\').value,document.getElementById(\'scIndex\')?.value,document.getElementById(\'scPossess\').checked)">Begin</button></div></details>';
+  }
+  h+='<div class="pm-fx-resolve"><b>'+esc(c.foe.name)+'</b> Spectral Combat '+c.foe.skill+'% · MP <b>'+c.foe.mp+'</b> · psychic damage '+spiritDiceLabel(spiritDamageDice(c.foe.skill))+' &nbsp;|&nbsp; You: MP <b>'+playCurMagic()+'</b></div>';
+  if(c.over){
+    h+='<div class="pm-fx-resolve" role="group" aria-label="Spirit Combat outcome"><b>'+(c.over.loser==="pc"?'You are':esc(c.foe.name)+' is')+' helpless</b> (no Magic Points). '
+     +(c.over.consequence?'GM ruled: <b>'+esc(c.over.consequence)+'</b>'+(c.over.note?' — '+esc(c.over.note):''):
+      '<label>GM rules <select id="scEnd"><option value="">Choose</option>'+SPIRIT_COMBAT_ENDINGS.map(x=>'<option>'+esc(x)+'</option>').join("")+'</select></label> <input id="scEndNote" type="text" maxlength="300" placeholder="note"> <label><input id="scEndOk" type="checkbox"> GM decided</label> <button class="pm-btn sm"'+ro+' onclick="APP.spiritCombatConsequence(document.getElementById(\'scEnd\').value,document.getElementById(\'scEndNote\').value,document.getElementById(\'scEndOk\').checked)">Record</button>')+'</div>';
+  }else if(c.pending){
+    const p=c.pending,opts=spiritCombatPendingOptions();
+    h+='<div class="pm-fx-resolve" role="group" aria-label="Spirit Combat exchange">'+(p.attacker==="pc"?'You attack':esc(c.foe.name)+' attacks')+': you <b>'+esc(p.pcTier)+'</b> ('+p.pcRoll+' vs '+p.pcPct+'%), '+esc(c.foe.name)+' <b>'+esc(p.foeTier)+'</b> ('+p.foeRoll+' vs '+c.foe.skill+'%). '
+     +(p.hit?'Unparried hit: '+spiritDiceLabel(spiritDamageDice(p.attacker==="pc"?spiritCombatSkill().pct:c.foe.skill))+' MP. ':'No damage. ')
+     +(p.winner&&p.effects?(p.winner==="pc"?'You win ':esc(c.foe.name)+' wins ')+p.effects+' effect'+(p.effects>1?'s':'')+(p.winner==="pc"?' — choose:':' (GM chooses):')
+       +opts.map(o=>'<label class="pm-empty" title="'+esc(SPIRIT_EFFECTS.find(x=>x[0]===o)[3])+'"><input type="checkbox" class="scFx" value="'+esc(o)+'"> '+esc(o)+'</label>').join(" "):'No effects.')
+     +' <button class="pm-btn sm"'+ro+' onclick="APP.spiritCombatApply([...document.querySelectorAll(\'.scFx:checked\')].map(x=>x.value))">Apply</button></div>';
+  }else{
+    h+='<div class="pm-fx-resolve"><label>Spirit&rsquo;s d100 (GM) <input id="scFoeRoll" type="number" min="1" max="100" style="width:60px"></label> '
+     +'<button class="pm-btn sm"'+ro+' onclick="APP.spiritCombatExchange(\'pc\',document.getElementById(\'scFoeRoll\').value)">You attack</button> '
+     +'<button class="pm-btn sm"'+ro+' onclick="APP.spiritCombatExchange(\'spirit\',document.getElementById(\'scFoeRoll\').value)">Spirit attacks</button></div>';
+  }
+  if(c.log.length)h+='<ol class="pm-empty">'+c.log.slice(-6).map(x=>'<li>'+esc(x)+'</li>').join("")+'</ol>';
+  return h+'<button class="pm-btn sm"'+ro+' onclick="APP.spiritCombatEnd()">End Spirit Combat</button></details>';
+}
+function pmSorceryReactionHTML(){
+  const p=S.play.sorceryCasting;if(!p)return "";
+  return '<p class="pm-empty">Invoking '+esc(p.name||"a spell")+': '+p.completed+' / '+p.total+' turns. While casting you may walk and take Free or Reactive Actions (parry, evade); attacks, other skills and other spells would break it (Core p.119).'
+   +(p.reacted?' <label>You reacted while casting. GM: final roll <select onchange="APP.sorceryGmHarder(this.value)">'+[0,1,2].map(n=>'<option value="'+n+'" '+((p.gmHarder||0)===n?'selected':'')+'>'+(n?n+' Grade'+(n>1?'s':'')+' harder':'unchanged')+'</option>').join("")+'</select></label>':'')+'</p>';
+}
 function magicPanel(){
   const all=allMagic();
   let prep=(S.play.mysticismCasting?'<p class="pm-empty">Talent preparation: '+S.play.mysticismCasting.completed+' / '+S.play.mysticismCasting.total+' turns. <button class="pm-btn sm" onclick="APP.mysticismCancel()">Cancel preparation</button> Resolve interruption and other actions with your GM.</p>':'')
    +(S.play.theismCasting?'<p class="pm-empty">Miracle exhortation: '+S.play.theismCasting.completed+' / '+S.play.theismCasting.total+' turns. <button class="pm-btn sm" onclick="APP.theismCancel()">Cancel exhortation</button> Resolve interruption with your GM.</p>':'');
+  prep+=pmSorceryReactionHTML();
   if(all.length)prep+=pmCastingHurtHTML();
+  prep+=pmSpiritCombatHTML();
   if(!all.length)return prep+'<p class="pm-empty">No magic known — pick some up on the Magic step in the Character Builder.</p>';
   let h='<div class="pm-magicpools">'
    +'<span>Magic Points <b>'+playCurMagic()+'</b>/'+playMaxMagic()+'</span>';
