@@ -174,14 +174,21 @@ function paModalHtml(){
   }
   return '';
 }
+// Write html into el, replacing only the top-level children whose markup changed. Rewriting everything on every
+// beat restarted CSS animations (chip pop, tray pulse) even when nothing in that element had changed.
+function paPatch(el,html){
+  const t=document.createElement('template');t.innerHTML=html;
+  const next=[...t.content.children],cur=[...el.children];
+  if(next.length!==cur.length||el.childNodes.length!==cur.length||t.content.childNodes.length!==next.length){el.innerHTML=html;return;}
+  next.forEach((n,i)=>{if(cur[i].outerHTML!==n.outerHTML)cur[i].replaceWith(n);});
+}
 function pitsArenaHud(){
   const hud=document.querySelector('#pitsStage .ps-hud'),bar=document.querySelector('#pitsStage .pa-bar');if(!hud)return;
   const on=paOn()&&['fight','between','over'].includes(S.phase);
   document.body.classList.toggle('pa-on',on);
-  if(!on){hud.innerHTML='';if(bar)bar.innerHTML='';return;}
-  if(bar)bar.innerHTML=pitsArenaBarHtml();
-  pitsArenaBarWire();
-  hud.innerHTML=paPlateHtml('a')+paPlateHtml('b')+paStripHtml()+paTrayHtml()+paModalHtml();
+  if(!on){hud.innerHTML='';if(bar){bar.innerHTML='';delete bar.dataset.html;}return;}
+  if(bar){const bh=pitsArenaBarHtml();if(bar.dataset.html!==bh){bar.innerHTML=bh;bar.dataset.html=bh;pitsArenaBarWire();}}
+  paPatch(hud,paPlateHtml('a')+paPlateHtml('b')+paStripHtml()+paTrayHtml()+paModalHtml());
   if(!PA.wired){
     PA.wired=true;const box=document.getElementById('pitsStage');
     box.addEventListener('click',e=>decoratedClick(e));
@@ -254,7 +261,7 @@ function pitsArenaDeckHtml(){
     <div class="acts" role="group" aria-label="Your actions">${paActionsHtml()}</div>
     <div class="mid">${paPromptHtml()}
       <div class="xchs" aria-live="polite">${paExchangeHtml(cur,'Current exchange',true)}${prev?paExchangeHtml(prev,'Previous exchange',false):''}</div></div>
-    <div class="chron pa-chron">${combatHistory()}</div></div>${resultModalHtml()}`;
+    <div class="chron pa-chron">${combatHistory({deck:true})}</div></div>${resultModalHtml()}`;
 }
 function pitsArenaBarHtml(){
   const bout=typeof pitsBoutBarHtml==='function'?pitsBoutBarHtml():'';

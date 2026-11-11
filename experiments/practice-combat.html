@@ -512,8 +512,8 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 </style>
 <link rel="stylesheet" href="pits-stone.css?v=f565ea1341">
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
-<link rel="stylesheet" href="pits-arena.css?v=1c55ef7c7e">
-<link rel="stylesheet" href="pits-stage.css?v=30943a4ac8">
+<link rel="stylesheet" href="pits-arena.css?v=1f471a3958">
+<link rel="stylesheet" href="pits-stage.css?v=ccb5857e29">
 <link rel="stylesheet" href="../sitota-theme.css?v=c8b123e401">
 </head>
 <body class="pits-page">
@@ -550,11 +550,11 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="../js/combat-rules.js?v=ae609fd04d"></script>
 <script src="../js/data.js?v=e863ceddbb"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
-<script src="practice-guidance.js?v=da7f5133ea"></script>
+<script src="practice-guidance.js?v=e041ed5995"></script>
 <script src="pits-view.js?v=766aacde41"></script>
 <script src="pits-game.js?v=1d86e29baf"></script>
-<script src="pits-arena.js?v=b5c6be4a03"></script>
-<script src="pits-stage.js?v=07fe1e4831"></script>
+<script src="pits-arena.js?v=9e045fabd2"></script>
+<script src="pits-stage.js?v=89ef37f477"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -1518,15 +1518,19 @@ function chronicleEntryHtml(entry){
    '<div class="chronicle-mechanics"><span class="chronicle-mechanics-label">Recorded result</span>'+
    '<p>'+esc(entry.body||'No additional calculation recorded.')+'</p>'+meta+'</div></details>';
 }
-function combatHistory(){
+function combatHistory(opts){
  // Do not reveal events before their presentation beat has finished.
+ // opts.deck: the one-screen Pits deck always lists everything (the panel scrolls), so there is no toggle.
+ const deck=!!(opts&&opts.deck);
  const logs=V.busy?S.logs.slice(0,V.visibleCount):S.logs;
- const shown=(V.showLog?logs:logs.slice(-3)).slice().reverse();
+ const full=deck||V.showLog;
+ const shown=(full?logs:logs.slice(-3)).slice().reverse();
  return '<section class="combat-history" aria-label="Combat chronicle">'+
    '<div class="history-header"><div><h3>Combat chronicle</h3><p class="history-intro">What happened, with the calculations one click away.</p></div>'+
-   '<button type="button" class="history-toggle" data-act="togglelog" aria-expanded="'+(V.showLog?'true':'false')+'">'+
-   (V.showLog?'Latest exchanges':'View full history')+' · '+logs.length+'</button></div>'+
-   '<div class="chronicle-list '+(V.showLog?'is-full':'is-recent')+'">'+
+   (deck?'<span class="history-count">'+logs.length+' '+(logs.length===1?'entry':'entries')+'</span>'
+     :'<button type="button" class="history-toggle" data-act="togglelog" aria-expanded="'+(V.showLog?'true':'false')+'">'+
+   (V.showLog?'Latest exchanges':'View full history')+' · '+logs.length+'</button>')+'</div>'+
+   '<div class="chronicle-list '+(full?'is-full':'is-recent')+'">'+
    (shown.length?shown.map(chronicleEntryHtml).join(''):'<div class="chronicle-empty">Your first exchange will appear here.</div>')+
    '</div></section>';
 }
@@ -1649,7 +1653,9 @@ function captureActionBoundary(actor){
 function pausePresentation(quickDelay){
   V.awaitingContinue=true;
   render();
+  // Continue only stops the flow when Guidance is on; otherwise the next automatic action follows after a short read.
   if(V.quick)V.timer=setTimeout(continuePresentation,quickDelay);
+  else if(!guidanceEnabled())V.timer=setTimeout(continuePresentation,500);
 }
 function continuePresentation(){
   if(!V.busy||!V.awaitingContinue)return;

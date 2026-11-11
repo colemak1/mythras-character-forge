@@ -85,7 +85,7 @@ function parryChoiceHelp(f,attacker,tool){
 }
 function reactionChoicesHtml(p){
  const f=S.fighters[p.def],attacker=S.fighters[p.atk];
- const button=(value,name,description,disabled=false)=>`<button class="choice" data-act="react" data-val="${value}" ${disabled?'disabled':''}><strong>${name}</strong><small>${esc(description)}</small></button>`;
+ const button=(value,name,description,disabled=false)=>`<button class="choice" data-act="react" data-val="${value}" ${disabled?'disabled':''} title="${esc(description)}"><strong>${name}</strong><small>${esc(description)}</small></button>`;
  const missed=p.attackRoll?.grade<2;
  return `<div class="turnline"><h3>Choose your defense</h3><span>${f.ap} AP available</span></div><div class="choicegrid reaction-choices">`+
   button('parry','Parry (Weapon) · 1 AP',parryChoiceHelp(f,attacker,'weapon'),f.ap<=0||!canParryAtReach(f.id))+

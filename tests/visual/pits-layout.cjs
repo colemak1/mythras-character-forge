@@ -64,6 +64,69 @@ const box=(page,sel)=>page.evaluate(s=>{const e=document.querySelector(s);if(!e)
       await page.close();
     });
   }
+  // ---- one screen: no page scroll, every action and every reaction choice reachable without scrolling ----
+  for(const vp of [{width:1280,height:720},{width:1366,height:768},{width:1440,height:900}]){
+    await T(`${vp.width}x${vp.height}: one screen, no page scroll; all actions and reaction choices visible`,async()=>{
+      const page=await boot(browser,vp,{10:[10,1],100:[20]});
+      const one=()=>page.evaluate(()=>({sh:document.documentElement.scrollHeight,ih:innerHeight}));
+      await until(page,s=>s.phase==='fight'&&!s.pend&&!s.hasR&&s.turn==='a',{name:'turn'});
+      let m=await one();assert.equal(m.sh,m.ih,`page height ${m.sh} equals window ${m.ih} (turn)`);
+      const acts=await page.evaluate(()=>[...document.querySelectorAll('#root .act')].map(e=>{const r=e.getBoundingClientRect();return {t:r.top,b:r.bottom,l:r.left,r:r.right};}));
+      assert(acts.length>0,'actions are drawn');
+      for(const a of acts)assert(a.t>=0&&a.b<=vp.height&&a.l>=0&&a.r<=vp.width,'every action inside the viewport');
+      const acl=await page.evaluate(()=>{const e=document.querySelector('#root .acts');return e.scrollHeight<=e.clientHeight+1;});
+      assert(acl,'the action list needs no scrolling');
+      await click(page,'attack');await until(page,s=>s.hasR,{name:'r',noRoll:true});await click(page,'roll');
+      await until(page,s=>s.pend==='reaction',{name:'reaction',noRoll:true});
+      m=await one();assert.equal(m.sh,m.ih,`page height ${m.sh} equals window ${m.ih} (reaction)`);
+      const pr=await page.evaluate(()=>{const p=document.querySelector('#root .prompt');const c=[...p.querySelectorAll('.choice')].map(e=>{const r=e.getBoundingClientRect();return {t:r.top,b:r.bottom};});
+        return {sh:p.scrollHeight,ch:p.clientHeight,c};});
+      assert(pr.c.length>=2,'reaction choices are drawn');
+      if(process.env.PITS_SHOT)await page.screenshot({path:path.join(OUT,`layout-${vp.width}x${vp.height}-reaction-onescreen.png`)});
+      for(const c of pr.c)assert(c.t>=0&&c.b<=vp.height,'every reaction choice inside the viewport');
+      assert(pr.sh<=pr.ch+1,`the prompt needs no scrolling (${pr.sh} > ${pr.ch})`);
+      assert.deepEqual(page.errors,[]);await page.close();
+    });
+  }
+  // ---- short windows: plates and the dice tray must not cover the fighters (items 2 and 6 of pits-one-screen-plan.md) ----
+  for(const vp of [{width:1280,height:640},{width:1280,height:720},{width:1366,height:768}]){
+    await T(`${vp.width}x${vp.height}: plates and dice tray stay clear of the fighters' heads and bodies`,async()=>{
+      const page=await boot(browser,vp,{10:[10,1],100:[20]});
+      await until(page,s=>s.phase==='fight'&&!s.pend&&!s.hasR&&s.turn==='a',{name:'turn'});
+      await click(page,'attack');await until(page,s=>s.hasR,{name:'r',noRoll:true});
+      const measure=()=>page.evaluate(()=>{const R=e=>{const r=e.getBoundingClientRect();return {l:r.left,t:r.top,r:r.right,b:r.bottom};};
+        const q=s=>document.querySelector(s);return {tray:R(q('#pitsStage .roll')),stage:R(q('#pitsStage .ps-stage')),plates:[R(q('.plate.you')),R(q('.plate.foe'))],
+        heads:[...document.querySelectorAll('#pitsStage .ps-head')].map(R)};});
+      const hit=(a,b)=>a.l<b.r&&a.r>b.l&&a.t<b.b&&a.b>b.t;
+      for(const [label,m] of [['awaiting the roll',await measure()],['after the roll',await(async()=>{await click(page,'roll');await until(page,s=>s.pend==='reaction',{name:'react',noRoll:true});return measure();})()]]){
+        for(const h of m.heads){assert(!hit(m.tray,h),`the dice tray ${label} does not cover a head`);for(const pl of m.plates)assert(!hit(pl,h),'a plate does not cover a head');}
+        for(const pl of m.plates)assert(pl.b<=m.stage.b-40,`plate ends at ${Math.round(pl.b)}, leaving the floor visible (stage ends ${Math.round(m.stage.b)})`);
+      }
+      assert.deepEqual(page.errors,[]);await page.close();
+    });
+  }
+  // ---- flow: no pointless stops, and the HUD is not rewritten when nothing in it changed (plan items 8 and 9) ----
+  await T('re-rendering an unchanged battle keeps the same plates, strip and tray (animations are not restarted)',async()=>{
+    const page=await boot(browser,{width:1280,height:800},{10:[10,1]});
+    await until(page,s=>s.phase==='fight'&&!s.pend&&!s.hasR&&s.turn==='a',{name:'turn'});
+    const same=await page.evaluate(()=>{const q=s=>document.querySelector('#pitsStage '+s);const keep=['.plate.you','.plate.foe','.strip','.roll'].map(q);
+      window.render();return ['.plate.you','.plate.foe','.strip','.roll'].map((s,i)=>q(s)===keep[i]);});
+    assert.deepEqual(same,[true,true,true,true],'unchanged elements were kept');
+    // and a real change is still written
+    const changed=await page.evaluate(()=>{const before=document.querySelector('#pitsStage .plate.you .p-name').textContent;
+      S.fighters.a.name='Renamed';window.render();return [before,document.querySelector('#pitsStage .plate.you .p-name').textContent];});
+    assert.notEqual(changed[0],changed[1]);assert(/Renamed/.test(changed[1]));
+    await page.close();
+  });
+  await T('the Continue checkpoint only waits when Guidance is on; otherwise the next action follows on its own',async()=>{
+    const page=await boot(browser,{width:1280,height:800},{10:[10,1]});
+    await until(page,s=>s.phase==='fight'&&!s.pend&&!s.hasR&&s.turn==='a',{name:'turn'});
+    const run=g=>page.evaluate(g=>{V.guidance=g;V.quick=false;V.busy=true;V.events=[{checkpoint:true,actor:'b'},{checkpoint:true,actor:'b'}];V.step=0;
+      clearTimeout(V.timer);V.timer=null;pausePresentation(130);const set=!!V.timer;clearTimeout(V.timer);V.timer=null;V.busy=false;V.awaitingContinue=false;return set;},g);
+    assert.equal(await run(true),false,'with Guidance on the player presses Continue');
+    assert.equal(await run(false),true,'with Guidance off the flow advances by itself');
+    await page.close();
+  });
   // ---- cancellation: Show results, a new bout and leaving must not leave old effects behind ----
   await T('Show results cuts the replay short and snaps to the real state (no old blood, banners or weapons)',async()=>{
     const page=await boot(browser,{width:1280,height:800},{10:[10,1],100:[2,95],20:[5],8:[5]});
