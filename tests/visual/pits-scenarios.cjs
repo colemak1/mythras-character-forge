@@ -104,7 +104,7 @@ async function drain(page,sc,r,h){
     if(st.phase!=='fight')return st;
     if(st.hasR){await clickSel(page,'roll');await sleep(60);continue;}
     if(st.pend){
-      const want=h[st.pend==='tripResistChoice'?'tripResist':st.pend==='impaleLeave'?'impaleLeave':st.pend]||h.any||(st.pend==='effect'?'skipEffect':undefined);
+      const want=h[st.pend==='tripResistChoice'?'tripResist':st.pend==='impaleLeave'?'impaleLeave':st.pend]||h.any||(st.pend==='effect'?'skipEffect':st.pend==='impalePick'?'impaleChoose:0':undefined);
       if(!want)throw new Error(`${sc.name}: no handler for pending ${st.pend}`);
       if(want==='skip'||want==='skipEffect'){await clickSel(page,st.pend==='effect'?'skipEffect':want);}
       else if(!await clickSel(page,want)){if(st.pend==='effect'&&h.effect&&!await clickSel(page,'skipEffect'))await sleep(60);else await sleep(60);}
