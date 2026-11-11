@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Sorcery and Theism: learning new spells and miracles, starting miracles (Subsystem 6)
+
+Built from `docs/magic-sorcery-code-cases-20261109.md` (SO-C01) and `docs/magic-theism-cults-code-cases-20261109.md` (TH-C01, TH-C02); Core pp.118, 161, 179–181.
+
+- **Acquired (SO-C01, TH-C02):** each Sorcery spell and miracle on the Magic step now records how it was acquired: Starting ability, Learned in play, or Reference only. A newly added one can't be cast or combined until this is chosen; a Reference entry is never castable and Play Mode tags it.
+- **Learn in play:** a Reference or new entry has a Learn button. It needs the source (grimoire, school or teacher; the cult for a miracle), the GM's tick for the month of study and approval, and 5 banked Experience Rolls, which it spends. A miracle also needs its level, its cult and a rank that grants it. The date and source are kept and shown, and the Experience Roll log lists it.
+- **Saved spells and miracles** from before this change are marked "Recorded before tracking": still castable, never charged.
+- **Starting miracles (TH-C01):** choosing Starting ability for a miracle checks its cult, its level against that cult's rank, and the count: one per 20% (or part) of that cult's Devotion, counted per cult. More needs the GM's approval, which is saved with the miracle.
+- Tests: `tests/magic-learning.cjs`. Checked headless at 390px (light) and 1280px (dark).
+
 ## Mysticism: Augment Skill on real rolls, concentration, switching Talents (Subsystem 6)
 
 Built from `docs/magic-mysticism-code-cases-20261109.md` and the MY-C03 ruling (Core pp.155–157).

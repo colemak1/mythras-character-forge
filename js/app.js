@@ -158,6 +158,8 @@ window.APP={
  // and stat fields, so they're just as exposed to it.
  addMagic(tradition){debounceFire('addMagic',()=>{
    S.magic.known.push({tradition,name:"",notes:"",cost:1,intensity:1,pow:0,cha:0,spiritStatus:"unbound",spiritAcquired:"",spiritContact:"unknown",spiritAttitude:"neutral",spiritMP:null,spiritCombatNote:"",bindingType:"none",shapings:[],shapingLevels:{},combineExtra:0,combinedSpells:[],combineSharedTargets:false,talentLearned:false,active:false,durationTurns:0,remainingTurns:0});
+   // SO-C01 / TH-C02: a new spell or miracle is not castable until its acquisition is recorded.
+   const added=S.magic.known[S.magic.known.length-1];if(magicTracksAcquisition(added))added.acquired="";
    render();});},
  // Update 17: Spirit negotiation, ritual outcome and spirit-combat bookkeeping.
  // The GM confirms contact, bargains and bindings; these controls never invent a successful ritual.
@@ -209,6 +211,25 @@ window.APP={
    S.magic.startingReviewMode=mode;S.magic.startingReviewSignature=null;render();},
  startingMagicConfirm(){if(viewOnlyBlock()||S.magic.startingReviewMode!=="new")return;
    S.magic.startingReviewSignature=startingMagicReviewSignature();render();},
+ // SO-C01 / TH-C02 (Core pp.118, 161, 179–181): starting or reference-only,
+ // set by hand; "learned" only through magicLearn, which spends the rolls.
+ magicAcquired(i,v){if(viewOnlyBlock())return;const m=S.magic.known[i];
+   if(!magicTracksAcquisition(m)||!["starting","reference"].includes(v))return;
+   if(m.acquired==="learned"){magicLearnMsg(i,"This was learned in play; its record is kept.");render();return;}
+   if(v==="starting"&&m.tradition==="theism"&&m.acquired!=="starting"){const c=theismStartingCheck(m);
+     if(c?.error){magicLearnMsg(i,c.error);render();return;}
+     if(c?.over){const ok=confirm("This would be starting miracle "+c.over.count+" for this cult; Devotion allows "+c.over.allowance+" (one per 20%, Core p.179). Has your GM approved the extra miracle?");
+       if(!ok){magicLearnMsg(i,"Not changed: Devotion allows "+c.over.allowance+" starting miracle"+(c.over.allowance===1?"":"s")+" for this cult. Learn more in play, or ask your GM.");render();return;}
+       m.startingGM=true;}}
+   m.acquired=v;if(v!=="starting")delete m.startingGM;magicLearnMsg(i,"");render();},
+ magicLearn(i,source,gmOk){if(viewOnlyBlock())return;const m=S.magic.known[i];
+   const err=magicLearnCheck(m,source,gmOk);if(err){magicLearnMsg(i,err);render();return;}
+   const src=String(source).trim().slice(0,160),name=String(m.name).trim();
+   S.xp.pool-=MAGIC_LEARN_COST;m.acquired="learned";
+   m.learning={date:new Date().toISOString().slice(0,10),source:src,cost:MAGIC_LEARN_COST};
+   S.xp.history.unshift({type:"magic-learn",label:(m.tradition==="theism"?"Miracle: ":"Sorcery spell: ")+name+" (from "+src+")",cost:MAGIC_LEARN_COST});
+   S.xp.history=S.xp.history.slice(0,25);
+   magicLearnMsg(i,"Learned "+name+" from "+src+". Spent "+MAGIC_LEARN_COST+" Experience Rolls.");render();},
  miracleLevel(i,raw){const m=S.magic.known[i],n=Number(raw);if(!m||m.tradition!=="theism"||![1,2,3].includes(n))return;
    m.miracleLevel=n;if(!Number.isInteger(m.miracleInstances)||m.miracleInstances<1)m.miracleInstances=1;render();},
  miracleInstances(i,raw){const m=S.magic.known[i],n=Number(raw);if(!m||m.tradition!=="theism"||!Number.isInteger(n)||n<1||n>100)return;
@@ -245,7 +266,7 @@ window.APP={
  sorceryCancel(){if(viewOnlyBlock())return;S.play.sorceryCasting=null;PM_MSG="Sorcery invocation cancelled; no Invocation roll was made.";render();},
  mysticismCancel(){if(viewOnlyBlock())return;S.play.mysticismCasting=null;PM_MSG="Talent preparation cancelled; no Mysticism roll was made.";render();},
  theismCancel(){if(viewOnlyBlock())return;S.play.theismCasting=null;PM_MSG="Miracle exhortation cancelled; no Exhort roll was made.";render();},
- delMagic(i){debounceFire('delMagic'+i,()=>{S.magic.known.splice(i,1);render();});},
+ delMagic(i){debounceFire('delMagic'+i,()=>{S.magic.known.splice(i,1);MAGIC_LEARN_MSG=null;render();});},
  devotionalRank(v,p=0){if(viewOnlyBlock())return;
    if(!DEVOTIONAL_RANKS.includes(v)||!devotionalPool(p))return;
    setDevotionalPool(p,{rank:v});DEVOTIONAL_MSG="";render();},

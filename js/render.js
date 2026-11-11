@@ -929,6 +929,35 @@ function sorceryCombineEditor(m,i){
   const err=sorceryCombineCheck(m);if(err)h+='<span class="warn">'+esc(err)+'</span>';
   return h;
 }
+// SO-C01 / TH-C02 (Core pp.118, 161, 179–181): starting, learned in play,
+// reference only, or recorded before tracking. Learning spends the rolls.
+function magicAcquisitionEditor(m,i){
+  const theism=m.tradition==="theism",noun=theism?"miracle":"spell",a=m.acquired;
+  let h='<div class="mshaping" role="group" aria-label="How this '+noun+' was acquired">';
+  if(a==="learned"){
+    const l=m.learning||{};
+    h+='<span class="note">Learned in play'+(l.date?' on '+esc(l.date):'')+(l.source?' from '+esc(l.source):'')+' for '+(l.cost||MAGIC_LEARN_COST)+' Experience Rolls (Core p.118).</span>';
+  }else{
+    h+='<label class="mnum">Acquired<select aria-label="How this '+noun+' was acquired" onchange="APP.magicAcquired('+i+',this.value)">'
+     +(a===""?'<option value="" selected>Choose</option>':'')
+     +(a==="recorded"?'<option value="recorded" selected>Recorded before tracking</option>':'')
+     +'<option value="starting" '+(a==="starting"?'selected':'')+'>Starting ability</option>'
+     +'<option value="reference" '+(a==="reference"?'selected':'')+'>Reference only (not castable)</option></select></label>';
+    if(a==="recorded")h+='<span class="note">Saved before learning was tracked: usable, nothing charged. Review with your GM.</span>';
+    if(theism&&a==="starting"&&m.startingGM)h+='<span class="note">Starting miracle beyond the Devotion allowance, GM approved (Core p.179).</span>';
+    if(theism&&a===""){const pi=theismPoolIndex(m),al=pi===null?null:theismStartingAllowance(pi);
+      if(al!=null)h+='<span class="note">Starting miracles for this cult: '+S.magic.known.filter(x=>x.tradition==="theism"&&x.acquired==="starting"&&theismPoolIndex(x)===pi).length+' / '+al+' (one per 20% Devotion, at a level your rank grants, Core p.179).</span>';}
+    if(a===""||a==="reference"){
+      const pi=theism?theismPoolIndex(m):null,cult=pi===null?"":devotionalPool(pi).cult||"";
+      h+='<span class="note">'+(a===""?'Choose Starting ability for a new character&rsquo;s starting '+noun+'s. ':'')+'Learning a new '+noun+' in play takes '+MAGIC_LEARN_COST+' Experience Rolls and a month of study, from '+(theism?'the cult, at a rank that grants it':'a grimoire, school or teacher')+', with GM approval (Core p.118'+(theism?', pp.179–181':', p.161')+'). You have '+xpRollsAvailable()+'.</span>'
+       +'<label class="mnum" style="flex:1 1 16em">'+(theism?'Taught by (cult or priest)':'Learned from (grimoire, school or teacher)')+'<input type="text" maxlength="160" style="width:100%;min-width:10em" id="magicLearnSrc'+i+'" value="'+esc(cult)+'"></label>'
+       +'<label class="mnum"><input type="checkbox" id="magicLearnOk'+i+'"> GM confirms the month of study and approves</label>'
+       +'<button type="button" class="chip" onclick="APP.magicLearn('+i+',document.getElementById(\'magicLearnSrc'+i+'\').value,document.getElementById(\'magicLearnOk'+i+'\').checked)">Learn ('+MAGIC_LEARN_COST+' Experience Rolls)</button>';
+    }
+  }
+  if(MAGIC_LEARN_MSG&&MAGIC_LEARN_MSG.index===i)h+='<span class="warn" role="status">'+esc(MAGIC_LEARN_MSG.text)+'</span>';
+  return h+'</div>';
+}
 function knownMagicEditor(t){
   const rows=S.magic.known.map((m,i)=>({m,i})).filter(x=>x.m.tradition===t.key);
   let h='<div class="reservednote">'+esc(t.contentNote)+'</div>';
@@ -1053,6 +1082,7 @@ function knownMagicEditor(t){
        +'<button class="chip '+(m.active?'on':'')+'" onclick="APP.toggleTalent('+i+')">'+(m.active?'Active — end Talent':'Mark active')+'</button>'
        +(m.active&&m.durationTurns>0?'<span class="mcost">'+(m.remainingTurns||0)+' turns left</span><button class="chip" onclick="APP.talentTurn('+i+')">Advance 1 turn</button>':'');
     }
+    if(magicTracksAcquisition(m))r+=magicAcquisitionEditor(m,i);
     r+='<button class="chip mdel" onpointerdown="APP.delMagic('+i+')" onclick="APP.delMagic('+i+')" aria-label="remove">&times;</button>'
      +'<textarea class="mnotes" rows="2" placeholder="effect / notes from your rulebook" onchange="APP.magicField('+i+',\'notes\',this.value)">'+esc(m.notes||"")+'</textarea>'
      +'</div>';

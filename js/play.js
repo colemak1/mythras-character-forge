@@ -10,6 +10,9 @@ let PM_MSG=null;
 // Mysticism messages shown on the builder's Magic step too (PM_MSG only shows
 // in Play Mode), and the Talent waiting for a practice switch (MY-C01).
 let MYSTIC_MSG="",TALENT_SWAP=null;
+// SO-C01 / TH-C02: the last learning message, shown on its own row.
+let MAGIC_LEARN_MSG=null;
+function magicLearnMsg(i,text){MAGIC_LEARN_MSG=text?{index:i,text}:null;PM_MSG=text||null;}
 function mysticMsg(text){MYSTIC_MSG=text||"";PM_MSG=text||null;}
 // Transient "here's the armour math that just happened" confirmation for
 // playApplyDamage() (see APP.playApplyDamage in app.js) -- {loc,raw,ap,
@@ -994,6 +997,7 @@ function magicPanel(){
       const castingKey={sorcery:"sorceryCasting",mysticism:"mysticismCasting",theism:"theismCasting"}[t.key];
       const casting=castingKey&&S.play[castingKey]?.index===idx?S.play[castingKey]:null;
       if(casting)meta+=" · CASTING "+casting.completed+"/"+casting.total;
+      if(magicAcquisitionBlock(m))meta+=m.acquired==="reference"?" · REFERENCE ONLY (learn in builder)":" · record how it was acquired in builder";
       if(t.key==="mysticism"&&m.active&&m.durationTurns>0)meta+=" · "+(m.remainingTurns||0)+" turns left";
       return '<details class="pm-fx-item"'+(casting?' open':'')+'><summary>'+esc(magicLabel(m))
        +' <span class="pm-fx-badge">'+esc(meta)+'</span>'
@@ -2112,6 +2116,7 @@ function xpLogRow(r){
   if(r.type==="training")return '<div class="pm-xplogrow">'+esc(r.label)+' — training <b>+'+r.gain+'%</b> &rarr; now <b>'+r.newPct+'%</b></div>';
   if(r.type==="learn")return '<div class="pm-xplogrow">'+esc(r.label)+' — learned for 3 Experience Rolls &rarr; starting at <b>'+r.newPct+'%</b></div>';
   if(r.type==="passion-adjustment")return '<div class="pm-xplogrow">'+esc(r.label)+' — manual change <b>'+(r.delta>0?"+":"")+r.delta+'%</b> &rarr; now <b>'+r.newPct+'%</b></div>';
+  if(r.type==="magic-learn")return '<div class="pm-xplogrow">'+esc(r.label)+' — learned for <b>'+r.cost+'</b> Experience Rolls and a month of study (Core p.118)</div>';
   if(r.type==="binding")return '<div class="pm-xplogrow">'+esc(r.label)+' — <b>'+r.cost+'</b> Experience Roll'+(r.cost===1?'':'s')+' spent (Core pp.135–136)</div>';
   if(r.type==="fumble")return '<div class="pm-xplogrow fumble">'+esc(r.label)+' — Fumble bonus <b>+1%</b> &rarr; now <b>'+r.newPct+'%</b></div>';
   return '<div class="pm-xplogrow'+(r.success?" ok":"")+'">'+esc(r.label)+' — d100 '+r.roll+' + INT '+r.int+' = <b>'+r.total+'</b> vs '+r.target+'% &rarr; '
