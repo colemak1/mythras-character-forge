@@ -9,7 +9,7 @@ Status words: **Ready** (built, tested in code, and used at least once on the li
 Two numbers, reported at the end of every batch instead of a long status:
 
 - **Session readiness:** Ready items in the checklist below, out of the total. Today: **13 of 14** (items 9, 10 and 14 passed live 2026-11-10; item 2 after the HP recheck, `creature-hp-live-275-20261110.md`). Only item 11, the owner's two-device check, is left.
-- **Feature completeness:** subsystems built (code done, whether or not closed) out of 8. Today: **8 of 8 built, 8 closed.** Subsystem 6 (Magic) closed 2026-11-11 after the Organisations re-check passed (`organisations-live-285-20261111.md`); Subsystem 7 reclosed 2026-11-11; Subsystem 8 closed 2026-11-10. GM-handled until pages arrive: Spirit Combat, SO-C02.
+- **Feature completeness:** subsystems built (code done, whether or not closed) out of 8. Today: **8 of 8 built, 8 closed.** Subsystem 6 (Magic) closed 2026-11-11 after the Organisations re-check passed (`organisations-live-285-20261111.md`); Subsystem 7 reclosed 2026-11-11; Subsystem 8 closed 2026-11-10. Spirit Combat and SO-C02 passed live 2026-11-11 (`spirit-combat-live-290-20261111.md`).
 
 The close count in `subsystem-plan.md` (now 8/8) stays, but it is no longer the headline.
 

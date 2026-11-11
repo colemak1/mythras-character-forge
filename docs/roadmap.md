@@ -17,7 +17,7 @@ Order: **8 → 7 → 6.** Each Claude batch runs in a fresh session (AGENTS.md).
 2. **7, Creatures and GM procedures.** Specs: `creatures-remaining-code-20261109.md`, `creatures-rabble-underlings-cases-20261109.md` (Rabble/Underlings, CRTR-C21–C27), `creature-cases-batch-1.md`. Also review docs PR #230 (older; may be superseded by B18/B20). Claude builds the open cases, Work does one GM-tracker pass, Chat closes out. → 7/8.
 3. **6, Magic and organisations.** One batch each, in this order:
    - Folk Magic finish (`magic-folk-finish-20261109.md`)
-   - Animism finish (`magic-animism-finish-20261109.md`, `magic-animism-code-cases-20261109.md`): **AN-F01–F05 built 2026-11-11**; Spirit Combat (F06–F07) waits for the p.131 and p.138 tables
+   - Animism finish (`magic-animism-finish-20261109.md`, `magic-animism-code-cases-20261109.md`): **AN-F01–F05 built 2026-11-11**; Spirit Combat (F06–F07) built 2026-11-11 and passed live (`spirit-combat-live-290-20261111.md`)
    - Mysticism (`magic-mysticism-code-cases-20261109.md`; MY-C03 reviewed in #252): **MY-C01–C03 built 2026-11-11**
    - Sorcery and Theism/cults (`magic-sorcery-code-cases-20261109.md`, `magic-theism-cults-code-cases-20261109.md`; SO-C01 and TH-C02 together)
    - Organisations (`magic-organisations-code-cases-20261109.md`)

@@ -5,11 +5,11 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-11 by Claude (#289 merged; Spirit Combat and SO-C02 built)_
+_Last updated: 2026-11-11 by Claude (#291 merged; Spirit Combat and SO-C02 passed live, out of Known limits)_
 
 ## Where things stand
 
-- **Session readiness 13 of 14. Feature completeness 8 of 8 built, 8 closed.** Only item 11 (owner's two-device check) is left for Session Zero. Chat accepted the Subsystem 6 and 8 closes (#289). **Spirit Combat (AN-F06–F07) and SO-C02 built 2026-11-11** (`tests/spirit-combat.cjs`); until Work passes them they stay GM-handled Known limits in `subsystem-plan.md` item 6. Details: `docs/session-zero.md`.
+- **Session readiness 13 of 14. Feature completeness 8 of 8 built, 8 closed.** Only item 11 (owner's two-device check) is left for Session Zero. Chat accepted the Subsystem 6 and 8 closes (#289). **Spirit Combat (AN-F06–F07) and SO-C02** built and passed live 2026-11-11 (`spirit-combat-live-290-20261111.md`); no longer Known limits. Details: `docs/session-zero.md`.
 - **Backups:** Supabase Free plan, so no automatic server backups. The GM downloads a campaign backup after every session.
 - **Look:** Codex · Stone everywhere; tokens in `sitota-theme.css` (loaded last). Other stylesheets use the tokens only; no hex colours.
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
@@ -17,9 +17,9 @@ _Last updated: 2026-11-11 by Claude (#289 merged; Spirit Combat and SO-C02 built
 ## Next
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work), completed 2026-11-11:** #290 batch PASS, no failures; `docs/spirit-combat-live-290-20261111.md`. Spirit Combat, GM outcome persistence, invoking refusals, Evade/Hard final roll persistence and cancel/MP checks passed. Disposable character deleted; account reloaded with 0 characters. **Next: Claude** merges the report after Tests and removes AN-F06/F07 and SO-C02 from Known limits.
-3. **ChatGPT (Chat):** nothing queued. (Reviews of the Subsystem 6 and 8 closes done, #289.)
-4. **Claude, next fresh session:** fix any failure from step 2; when it passes, move Spirit Combat and SO-C02 out of Known limits. Otherwise only what the owner's two-device check turns up.
+2. **ChatGPT (Work):** nothing queued.
+3. **ChatGPT (Chat):** nothing queued.
+4. **Claude, next fresh session:** only what the owner's two-device check turns up.
 
 ## Notes
 
