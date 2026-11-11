@@ -17,12 +17,8 @@ _Last updated: 2026-11-11 by Claude (Subsystem 7 reclosed, item 2 Ready; Animism
 ## Next
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work), one batch** (signed in; a disposable animist, not Magic Audit; one short dated report, pass/fail plus severity). Play Mode → Spells → Animism:
-   - **Trance:** with rank Shaman, the purpose list offers Observe, Converse, Project Self and Draw a spirit (not Drag Souls); roll one: 1 MP spent, "In Trance" line shows the purpose and time.
-   - **Summon:** a named spirit (acquired by bargain, Intensity 2): a distance over the Binding % is refused; within it, Summon spends 2 MP and shows the arrival (or the retry/suspended message). Record attitude, winner and a service; save, reload: they persist; "Spirit has gone" clears it, the spirit is not marked bound.
-   - **Binding:** give the character 3 Experience Rolls; Make a binding → fetish → Start: nothing spent; Complete without the GM tick is refused; with it, 2 rolls are spent and the vessel shows fetish.
-   - **Fetish:** mark the spirit bound; Release, then Return (neutral attitude → a Binding roll in the log).
-   - Delete the fixture after.
+2. **ChatGPT (Work), completed 2026-11-10:** Animism Trance, Summon (including reload), binding costs/GM tick and fetish Release/Return all PASS; disposable fixture deleted. Report: `docs/animism-live-277-20261110.md`. No failures. Next: Claude continues Mysticism (item 4).
+
 3. **ChatGPT (Chat):** (a) one milestone review of the Subsystem 8 close (`subsystem-plan.md` item 8); (b) for Spirit Combat (AN-F06–F07), a short code-needed spec with the Core p.131 Spirit Damage table and the p.138 effect eligibility (role, prerequisite) in paraphrase, only if the owner gives you those pages. Core p.218 Vulnerable only with the page.
 4. **Claude, next fresh session:** Mysticism (`magic-mysticism-code-cases-20261109.md` and the MY-C03 ruling at the bottom of `magic-animism-finish-20261109.md`). It doesn't wait for step 2. Fix any Animism failure from Work first.
 
