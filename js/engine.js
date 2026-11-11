@@ -479,6 +479,17 @@ function normalizeState(){
       m.combineSharedTargets=m.combineSharedTargets===true;
       if(m.invocationKey!=null&&typeof m.invocationKey!=="string")delete m.invocationKey;
     }
+    if(magicTracksAcquisition(m)){
+      // SO-C01 / TH-C02: entries saved before acquisition was tracked stay
+      // usable and are never charged retroactively.
+      if(m.acquired===undefined||m.acquired===null)m.acquired="recorded";
+      else if(!MAGIC_ACQUIRED.includes(m.acquired))m.acquired="";
+      const l=m.learning;
+      if(m.acquired==="learned"&&l&&typeof l==="object")m.learning={date:String(l.date||"").slice(0,40),source:String(l.source||"").slice(0,160),cost:Number.isSafeInteger(l.cost)?l.cost:MAGIC_LEARN_COST};
+      else delete m.learning;
+      // TH-C01: a starting miracle beyond the Devotion allowance, GM approved.
+      if(m.acquired==="starting"&&m.startingGM===true)m.startingGM=true;else delete m.startingGM;
+    }
     if(m.tradition==="mysticism"){
       // MAG-N04: a recorded Talent is not learned until the GM confirms it.
       m.talentLearned=m.talentLearned===true;
@@ -944,6 +955,7 @@ function sorceryCombineCheck(entry,known){
     if(seen.has(k))return "Combined spells must be different spells; "+name+" appears twice (Core p.162).";
     seen.add(k);
     if(!known.some(m=>m.tradition==="sorcery"&&magicNameKey(m.name)===k))return name+" is not a recorded Sorcery spell.";
+    if(!known.some(m=>m.tradition==="sorcery"&&magicNameKey(m.name)===k&&!magicAcquisitionBlock(m)))return name+" is not learned yet, so it can't be combined (Core p.118).";
   }
   if(entry.combineSharedTargets!==true)return "Confirm that the combined spells share the same target(s) before casting (Core p.162).";
   return null;
@@ -1227,9 +1239,67 @@ function magicEntryCost(entry){
 // requirement cannot be paid.  Only a known, named entry may be invoked.
 // This is a user-interface safety check, not an override of the GM's
 // judgement about ritual conditions, spirit powers, or spell availability.
+// SO-C01 / TH-C02 (Core pp.118, 161, 179–181): how a Sorcery spell or a
+// miracle was acquired. Recording a name is not learning it.
+//   ""          new entry, not chosen yet: not castable
+//   "starting"  a starting ability (reviewed with the GM at creation)
+//   "learned"   learned in play: 5 Experience Rolls, a month of study, a
+//               source or teacher, and GM approval (magicLearnCheck)
+//   "reference" recorded for reference only: not castable
+//   "recorded"  saved before this was tracked: castable, never charged
+const MAGIC_ACQUIRED=["","starting","learned","reference","recorded"];
+const MAGIC_LEARN_COST=5;
+function magicTracksAcquisition(m){return !!m&&(m.tradition==="sorcery"||m.tradition==="theism");}
+function magicAcquisitionBlock(m){
+  if(!magicTracksAcquisition(m))return null;
+  const what=String(m.name||"").trim()||(m.tradition==="theism"?"this miracle":"this spell");
+  if(m.acquired==="reference")return what+" is recorded for reference only. Learn it first: "+MAGIC_LEARN_COST+" Experience Rolls and a month of study (Core p.118).";
+  if(m.acquired==="")return "Record how "+what+" was acquired (a starting ability, or learned in play) before using it (Core p.118).";
+  return null;
+}
+function magicLearnCheck(m,source,gmOk){
+  if(!magicTracksAcquisition(m))return "Only Sorcery spells and miracles use this learning step.";
+  if(m.acquired==="learned")return "Already learned.";
+  if(!["","reference"].includes(m.acquired))return "This entry is already a starting or recorded ability; nothing to learn.";
+  if(!String(m.name||"").trim())return "Name the "+(m.tradition==="theism"?"miracle":"spell")+" before learning it.";
+  if(m.tradition==="theism"){
+    if(!theismDetails(m))return "Confirm the miracle's level before learning it (Core p.181).";
+    const pi=theismPoolIndex(m);
+    if(pi===null)return "Choose which cult teaches this miracle before learning it (Core p.180).";
+    const rankErr=theismRankCheck(m,pi);if(rankErr)return rankErr;
+  }
+  if(!String(source||"").trim())return m.tradition==="theism"?"Name the cult or priest teaching the miracle.":"Name the grimoire, school or teacher the spell is learned from.";
+  if(gmOk!==true)return "Confirm with your GM that the month of study is done and the "+(m.tradition==="theism"?"cult grants the miracle":"source is approved")+" (Core p.118).";
+  if(xpRollsAvailable()<MAGIC_LEARN_COST)return "Learning needs "+MAGIC_LEARN_COST+" Experience Rolls; you have "+xpRollsAvailable()+".";
+  return null;
+}
+// TH-C01 (Core pp.118, 179): a new theist's starting miracles come from
+// their cult, at a level their rank grants, one per 20% (or part) of that
+// cult's Devotion, the same rounding as the starting-magic note.
+function theismCultDevotion(pi){
+  const cult=magicNameKey(devotionalPool(pi)?.cult||"");
+  const devs=acquiredProfs().filter(x=>x.name==="Devotion");
+  const own=cult&&devs.find(x=>magicNameKey(x.spec||"")===cult);
+  if(own)return finalPct(own.key);
+  return devotionalPoolCount()===1&&devs.length===1?finalPct(devs[0].key):null;
+}
+function theismStartingAllowance(pi){const d=theismCultDevotion(pi);return d==null?null:Math.ceil(Math.max(0,d)/20);}
+// null = fine; {error} = refused; {over:{count,allowance}} = needs the GM.
+function theismStartingCheck(m,known){
+  known=known||S.magic.known;
+  if(!theismDetails(m))return {error:"Confirm the miracle's level before choosing it as a starting miracle (Core p.181)."};
+  const pi=theismPoolIndex(m);
+  if(pi===null)return {error:"Choose the miracle's cult before choosing it as a starting miracle: starting miracles come from your own cult (Core p.179)."};
+  const rankErr=theismRankCheck(m,pi);if(rankErr)return {error:rankErr};
+  const allowance=theismStartingAllowance(pi);
+  if(allowance==null)return {error:"Add the Devotion skill for "+(devotionalPool(pi).cult||"this cult")+" first: it sets how many starting miracles you get (Core p.179)."};
+  const count=known.filter(x=>x!==m&&x.tradition==="theism"&&x.acquired==="starting"&&theismPoolIndex(x)===pi).length+1;
+  return count>allowance?{over:{count,allowance}}:null;
+}
 function magicCastPreflight(entry, availableMP, availableDevotion){
   if(!entry || !MAGIC_TRAD_MAP[entry.tradition])return "Unknown magical tradition.";
   if(!String(entry.name||"").trim())return "Name this spell, spirit, miracle, or talent before using it.";
+  const acquisition=magicAcquisitionBlock(entry);if(acquisition)return acquisition;
   if(entry.tradition==="sorcery"){
     if(Number(entry.shapingLevels?.Intensity)>0 || entry.shapings?.includes("Intensity"))return "Legacy Intensity shaping needs review before casting.";
     if(Number(entry.combineExtra)>0)return "Review the legacy combined-spell count before casting.";

@@ -5,11 +5,11 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-11 by Claude (Mysticism built; Animism live-checked in #278)_
+_Last updated: 2026-11-11 by Claude (#280 merged; Sorcery/Theism learning built)_
 
 ## Where things stand
 
-- **Session readiness 13 of 14. Feature completeness 7 of 8 built, 7 closed.** Only item 11 (owner's two-device check) is left for Session Zero. Only Subsystem 6 (Magic) is open: Folk Magic done; Animism built and live-checked (#278); **Mysticism built 2026-11-11** (MY-C01–C03, `tests/magic-mysticism.cjs`), not yet live-checked. Details: `docs/session-zero.md`.
+- **Session readiness 13 of 14. Feature completeness 7 of 8 built, 7 closed.** Only item 11 (owner's two-device check) is left for Session Zero. Only Subsystem 6 (Magic) is open: Folk Magic done; Animism and Mysticism built and live-checked (#278, #280); **Sorcery and Theism learning built 2026-11-11** (SO-C01, TH-C01, TH-C02, `tests/magic-learning.cjs`), not yet live-checked. Organisations is the last part left to build. Details: `docs/session-zero.md`.
 - **Backups:** Supabase Free plan, so no automatic server backups. The GM downloads a campaign backup after every session.
 - **Look:** Codex · Stone everywhere; tokens in `sitota-theme.css` (loaded last). Other stylesheets use the tokens only; no hex colours.
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
@@ -17,10 +17,15 @@ _Last updated: 2026-11-11 by Claude (Mysticism built; Animism live-checked in #2
 ## Next
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work), completed 2026-11-10:** Mysticism Augment Skill (shown/real roll), per-Talent disruption with reload, and GM-confirmed switching with saved history all PASS. POW 4 disposable mystic deleted; report: `docs/mysticism-live-279-20261110.md`. No failures; report notes the Easy/Very Easy acceptance-wording mismatch. Next: Claude continues item 4.
+2. **ChatGPT (Work), one batch** (signed in; a disposable theist-sorcerer, not Magic Audit: Invocation and Shaping about 50%, Devotion (Sun) 30%, Exhort, cult Sun at rank Initiate with a pool of 3; GM-award 6 Experience Rolls; one short dated report, pass/fail plus severity):
+   - **Learn a spell:** Magic step → Sorcery → add spell "Wrack", Acquired = Reference only. Play Mode → Spells: it shows REFERENCE ONLY and won't cast. Back in the builder, Learn is refused with no source, then with no GM tick; with both it spends 5 (6 → 1) and shows "Learned in play on … from …". Reload: still learned, the Experience Roll log lists it. It now casts.
+   - **Starting miracles:** add three level-1 miracles and set each to Starting ability. Devotion 30% allows two: the first two need no prompt; the third asks for GM approval. Cancel: it stays unchosen. OK: it is kept, and shows "GM approved" after a reload. A level-2 miracle is refused at Initiate.
+   - **Old characters:** Magic Audit's existing spells or miracles (if any) still cast and show "Recorded before tracking" (look only; don't change it).
+   - Delete the fixture after.
+3. **ChatGPT (Chat):** (a) one milestone review of the Subsystem 8 close (`subsystem-plan.md` item 8); (b) for Spirit Combat (AN-F06–F07), a short code-needed spec with the Core p.131 Spirit Damage table and the p.138 effect eligibility (role, prerequisite) in paraphrase, only if the owner gives you those pages. Core p.218 Vulnerable only with the page. (c) If you have Core p.157: say in one line whether the app's D-6 policy (Augment offsets Encumbrance/Fatigue; Automatic/Hopeless unmoved) contradicts it. (d) SO-C02: with Core p.119, list in paraphrase which ordinary actions are incompatible with a multi-turn Invocation (D-5 already covers wounds and domination).
+4. **Claude, next fresh session:** Organisations (`magic-organisations-code-cases-20261109.md`). Fix any failure from step 2 first. SO-C02 when Chat's (d) arrives.
 
-3. **ChatGPT (Chat):** (a) one milestone review of the Subsystem 8 close (`subsystem-plan.md` item 8); (b) for Spirit Combat (AN-F06–F07), a short code-needed spec with the Core p.131 Spirit Damage table and the p.138 effect eligibility (role, prerequisite) in paraphrase, only if the owner gives you those pages. Core p.218 Vulnerable only with the page. (c) If you have Core p.157: say in one line whether the app's D-6 policy (Augment offsets Encumbrance/Fatigue; Automatic/Hopeless unmoved) contradicts it.
-4. **Claude, next fresh session:** Sorcery and Theism/cults together (`magic-sorcery-code-cases-20261109.md`, `magic-theism-cults-code-cases-20261109.md`; SO-C01 and TH-C02 together). It doesn't wait for step 2. Fix any Mysticism failure from Work first.
+**Correction (#280):** the Mysticism check wrote "two Grades easier (Easy at Standard)". Two Grades easier than Standard is **Very Easy**; Easy is one. Work observed Very Easy, which is correct (MY-C03). No code change.
 
 ## Notes
 
