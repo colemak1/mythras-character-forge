@@ -525,6 +525,7 @@ function normalizeState(){
   S.styleDefs=S.styleDefs||{};
   S.cultMembership=S.cultMembership||{archetype:null,name:"",rank:0};
   if(typeof S.cultMembership.rank!=="number")S.cultMembership.rank=0; // migrate old string ranks
+  normalizeCultMembership();
   if(S.money&&S.money.quickMult==null)S.money.quickMult=50;
   // Older applied wealth events could leave a negative spending balance.
   S.money.eventAdjustment??=0;
@@ -754,6 +755,8 @@ function acquiredProfs(){
     if(S.hobby&&S.hobby!=="__combat_style__")add(S.hobby,S.hobbySpec,"hobby");
   }
   const ca=cultArch();if(ca)add(ca.skill,S.cultMembership.name||ca.name,"cult");
+  // OR-C03: leaving keeps the skill the organisation taught.
+  (S.cultFormer||[]).forEach(f=>{const a=CULT_ARCHETYPES.find(x=>x.key===f.archetype);if(a)add(a.skill,f.name||a.name,"former cult");});
   (S.xp?.learnedProfs||[]).forEach(p=>{if(p&&Object.hasOwn(PROF,p.name)&&typeof p.spec==="string")add(p.name,p.spec,"learned");});
   return [...out.values()];
 }
@@ -1216,7 +1219,7 @@ function spiritBindCheck(m){
 }
 // Starting-magic review is an explicit snapshot, never inferred from old saves.
 function startingMagicReviewSignature(){
-  return JSON.stringify({folk:S.magic.folk,known:S.magic.known.map(m=>[m.tradition,m.name,m.miracleLevel]),rank:S.magic.devotionalRank,cult:S.cultMembership,culture:S.culture,career:S.career,skills:["Folk Magic","Binding","Mysticism","Invocation","Devotion"].map(magicSkillPct)});
+  return JSON.stringify({folk:S.magic.folk,known:S.magic.known.map(m=>[m.tradition,m.name,m.miracleLevel]),rank:S.magic.devotionalRank,cult:{archetype:S.cultMembership.archetype,name:S.cultMembership.name,rank:S.cultMembership.rank},culture:S.culture,career:S.career,skills:["Folk Magic","Binding","Mysticism","Invocation","Devotion"].map(magicSkillPct)});
 }
 // Core pp.122–123 (ChatGPT case FM-007, FM-013, FM-018): Folk Magic casts in
 // one Turn at Intensity 1 and Magnitude 1. Ranged spells reach the Folk Magic
@@ -1266,6 +1269,7 @@ function magicLearnCheck(m,source,gmOk){
     if(!theismDetails(m))return "Confirm the miracle's level before learning it (Core p.181).";
     const pi=theismPoolIndex(m);
     if(pi===null)return "Choose which cult teaches this miracle before learning it (Core p.180).";
+    const left=cultLeftBlock(devotionalPool(pi).cult);if(left)return left;
     const rankErr=theismRankCheck(m,pi);if(rankErr)return rankErr;
   }
   if(!String(source||"").trim())return m.tradition==="theism"?"Name the cult or priest teaching the miracle.":"Name the grimoire, school or teacher the spell is learned from.";
@@ -1291,10 +1295,46 @@ function theismStartingCheck(m,known){
   const pi=theismPoolIndex(m);
   if(pi===null)return {error:"Choose the miracle's cult before choosing it as a starting miracle: starting miracles come from your own cult (Core p.179)."};
   const rankErr=theismRankCheck(m,pi);if(rankErr)return {error:rankErr};
+  const left=cultLeftBlock(devotionalPool(pi).cult);if(left)return {error:left};
   const allowance=theismStartingAllowance(pi);
   if(allowance==null)return {error:"Add the Devotion skill for "+(devotionalPool(pi).cult||"this cult")+" first: it sets how many starting miracles you get (Core p.179)."};
   const count=known.filter(x=>x!==m&&x.tradition==="theism"&&x.acquired==="starting"&&theismPoolIndex(x)===pi).length+1;
   return count>allowance?{over:{count,allowance}}:null;
+}
+// ---- Organisations (docs/magic-organisations-code-cases-20261109.md) ----
+// OR-C01..C03, Core pp.196–200. Promotion is the organisation's decision:
+// the app checks the numbers, the GM approves. Leaving keeps history and
+// learned skills but ends the old organisation's discount and new magic.
+function normalizeCultMembership(){
+  const c=S.cultMembership;
+  c.rank=Number.isInteger(c.rank)&&c.rank>=0&&c.rank<CULT_TIERS.length?c.rank:0;
+  c.rankYears=Number.isSafeInteger(c.rankYears)&&c.rankYears>=0&&c.rankYears<=200?c.rankYears:0;
+  c.cultSkills=Array.isArray(c.cultSkills)?[...new Set(c.cultSkills.filter(k=>typeof k==="string"&&k).map(k=>k.slice(0,200)))].slice(0,40):[];
+  c.startingRankGM=c.startingRankGM===true&&c.rank>0;
+  c.history=Array.isArray(c.history)?c.history.filter(x=>x&&typeof x==="object").map(x=>({date:String(x.date||"").slice(0,40),text:String(x.text||"").slice(0,240)})).slice(-50):[];
+  S.cultFormer=Array.isArray(S.cultFormer)?S.cultFormer.filter(f=>f&&typeof f==="object"&&CULT_ARCHETYPES.some(a=>a.key===f.archetype))
+    .map(f=>({archetype:f.archetype,name:String(f.name||"").slice(0,160),rank:Number.isInteger(f.rank)&&f.rank>=0&&f.rank<CULT_TIERS.length?f.rank:0,left:String(f.left||"").slice(0,40)})).slice(-20):[];
+}
+function cultDisplayName(m){const a=CULT_ARCHETYPES.find(x=>x.key===m?.archetype);return String(m?.name||"").trim()||(a?a.name:"");}
+// Training discount: current membership only; never a skill or roll change.
+function cultTrainingDiscount(){return S.cultMembership?.archetype?CULT_TIER_TRAINING_DISCOUNT[S.cultMembership.rank||0]:0;}
+function cultPromotionCheck(){
+  const c=S.cultMembership,a=cultArch();if(!a)return null;
+  const next=(c.rank||0)+1,rule=CULT_TIER_RULES[next];if(!rule)return {next:null};
+  const keys=new Set(allEntries().map(e=>e.key));
+  const marked=(c.cultSkills||[]).filter(k=>keys.has(k));
+  const qualifying=marked.filter(k=>finalPct(k)>=rule.pct);
+  const missing=[];
+  if(qualifying.length<rule.skills)missing.push(qualifying.length+" of "+rule.skills+" cult skills at "+rule.pct+"% or better");
+  if((c.rankYears||0)<rule.years)missing.push((c.rankYears||0)+" of "+rule.years+" years at "+cultRankTitle(a,c.rank));
+  return {next,rule,qualifying,marked,missing,eligible:!missing.length};
+}
+// OR-C03: an organisation the character left; null when still (or again) a member.
+function cultLeftBlock(cultName){
+  const k=magicNameKey(cultName||"");if(!k)return null;
+  if(S.cultMembership?.archetype&&magicNameKey(cultDisplayName(S.cultMembership))===k)return null;
+  const f=(S.cultFormer||[]).find(x=>magicNameKey(cultDisplayName(x))===k);
+  return f?"This character left "+cultDisplayName(f)+". New miracles from it need the GM to approve rejoining it, or a replacement source (Core pp.196–200).":null;
 }
 function magicCastPreflight(entry, availableMP, availableDevotion){
   if(!entry || !MAGIC_TRAD_MAP[entry.tradition])return "Unknown magical tradition.";

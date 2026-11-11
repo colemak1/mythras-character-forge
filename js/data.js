@@ -616,6 +616,10 @@ const CULT_TIER_REQUIREMENTS=[
  "Proven member for a minimum of 5 years; know at least 3 cult skills at 90% or better.",
  "Overseer for a minimum of 10 years; know at least 2 cult skills at 110% or better; an invaluable service performed for the cult."
 ];
+// OR-C01 (Core pp.196–198): the numbers in CULT_TIER_REQUIREMENTS, per tier.
+// years = years at the previous rank; deed = a gift or service the GM judges.
+// Meeting them never promotes by itself: the organisation (GM) decides.
+const CULT_TIER_RULES=[null,{skills:5,pct:50,years:0},{skills:4,pct:70,years:3,deed:"a valuable gift or service to the organisation"},{skills:3,pct:90,years:5},{skills:2,pct:110,years:10,deed:"an invaluable service to the organisation"}];
 const CULT_TIER_TRAINING_DISCOUNT=[0,25,50,75,100]; // % off training costs, p.199 — not a skill bonus
 const CULT_ARCHETYPES=[
  {key:"warrior",org:"theist",name:"Warrior Cult",skill:"Devotion",passion:"Devotion to ",blurb:"A martial brotherhood sworn to a war god or ancestor-champion — combat rites and blood oaths."},

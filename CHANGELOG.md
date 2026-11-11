@@ -5,6 +5,17 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Organisations: promotion, training discount, leaving (Subsystem 6)
+
+Built from `docs/magic-organisations-code-cases-20261109.md` (OR-C01–C03; Core pp.196–200). Policy: D-8 in `docs/decisions.md`.
+
+- **Starting rank:** on the Cult step the rank picker is now the starting rank. Above Common asks for the GM's approval (a veteran character) and says so on the page. After a promotion it is locked.
+- **Promotion (OR-C01):** enter years at the current rank and mark which skills the GM counts as cult skills. The Promotion card shows each requirement for the next rank (skills at the threshold, years, and any gift or service for the GM to judge). Promote needs the GM's tick; meeting the numbers never promotes by itself. A GM override can promote without them and is logged.
+- **Training discount (OR-C02):** shown on the Cult step and in Improve Skills → Train with a mentor, as a guideline on the price of training from the organisation. It never changes skill % or Experience Rolls.
+- **Leaving or switching (OR-C03):** asks first, keeps the organisation's skill on the sheet and a dated record under Membership history, and ends its discount. A miracle from a cult the character left can't be learned or chosen as starting until they rejoin. A pick made today with nothing recorded is treated as a correction, not a departure.
+- Older saves keep their cult and rank, and their starting-magic review stays valid.
+- Tests: `tests/organisations.cjs`. Checked headless at 390px (light) and 1280px (dark).
+
 ## Sorcery and Theism: learning new spells and miracles, starting miracles (Subsystem 6)
 
 Built from `docs/magic-sorcery-code-cases-20261109.md` (SO-C01) and `docs/magic-theism-cults-code-cases-20261109.md` (TH-C01, TH-C02); Core pp.118, 161, 179–181.
