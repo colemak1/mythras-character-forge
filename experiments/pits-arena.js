@@ -1,0 +1,209 @@
+// The Pits arena screen (the-pits-mythras layout, adapted to the Forge engine,
+// owner request 2026-11-11). PRESENTATION ONLY: this file lays out what the
+// engine already knows (state S, the pending decision, the dice request R,
+// the replay V) as fighter plates, a round strip, a dice tray, a command deck
+// and two modals. Every button it draws carries the engine's own data-act and
+// data-val, so the engine's click handler does the work. No rules live here.
+// Opt back into the old layout with ?layout=classic.
+
+const PA_CLASSIC=(()=>{try{return /[?&]layout=classic\b/.test(location.search);}catch(e){return false;}})();
+const PA_ZONES={
+  Head:'<circle cx="60" cy="22" r="17"/>',Chest:'<rect x="38" y="44" width="44" height="42" rx="7"/>',
+  Abdomen:'<rect x="42" y="88" width="36" height="34" rx="7"/>',
+  'Right Arm':'<rect x="14" y="46" width="20" height="74" rx="9"/>','Left Arm':'<rect x="86" y="46" width="20" height="74" rx="9"/>',
+  'Right Leg':'<rect x="38" y="126" width="20" height="72" rx="9"/>','Left Leg':'<rect x="62" y="126" width="20" height="72" rx="9"/>'};
+const PA_ZT={Head:[60,26],Chest:[60,70],Abdomen:[60,110],'Right Arm':[24,88],'Left Arm':[96,88],'Right Leg':[48,166],'Left Leg':[72,166]};
+const PA_WOUND={ok:'',minor:' hurt',serious:' serious',major:' major'};
+const paOn=()=>!PA_CLASSIC&&typeof document!=='undefined';
+function pitsArenaOn(){return paOn();}
+const PA={auto:false,wired:false,autoTimer:0};
+const paHuman=id=>S.fighters?.[id]?.kind==='human';
+const paView=()=>(V.busy&&V.shown&&V.shown.a)?V.shown:S.fighters;
+
+// Body map: seven zones coloured by the engine's wound level, with HP and armour.
+// pick: draw each zone as a button that answers the engine's Choose Location.
+function paZonesSvg(f,pick){
+  return HIT_LOCS.map(loc=>{
+    const lvl=zoneClass(f,loc),hit=V.impact?.target===f.id&&V.impact.location===loc;
+    const name=pick?`data-act="pickloc" data-val="${esc(loc)}" role="button" tabindex="0" aria-label="Strike ${esc(loc)}, armour ${armourAt(f,loc)}"`
+      :`role="img" aria-label="${esc(loc)}: ${f.hp[loc]} of ${f.maxHp[loc]} hit points, armour ${armourAt(f,loc)}, ${lvl==='ok'?'unhurt':lvl}"`;
+    return `<g class="zone${PA_WOUND[lvl]||''}${hit?' pa-flash':''}" ${name}>${PA_ZONES[loc]}`
+      +`<text x="${PA_ZT[loc][0]}" y="${PA_ZT[loc][1]}">${f.hp[loc]}</text>`
+      +`<text class="a" x="${PA_ZT[loc][0]}" y="${PA_ZT[loc][1]+11}">A${armourAt(f,loc)}</text></g>`;
+  }).join('');
+}
+function paConditions(f){
+  const chips=[];
+  const add=(t,bad)=>chips.push(`<span class="chip${bad?'':' soft'}">${esc(t)}</span>`);
+  if(f.prone)add('Prone',1);
+  if(f.bleeding)add('Bleeding',1);
+  if(f.fatigue>0)add(FATIGUE_NAMES[f.fatigue]);
+  if(f.disarmed)add('Disarmed',1);
+  if(f.impaledWounds?.length)add('Impaled',1);
+  if(f.pinnedGear)add('Pinned '+f.pinnedGear,1);
+  if(entangledLoc(f))add('Entangled',1);
+  if(Object.keys(f.stunnedLocations||{}).length)add('Stunned',1);
+  if(f.blindedTurns)add('Blinded',1);
+  if(f.braced)add('Braced');
+  for(const loc of HIT_LOCS){const l=zoneClass(f,loc);if(l==='serious'||l==='major')add((l==='major'?'Major: ':'Serious: ')+loc,1);}
+  return chips.length?chips.join(''):'<span class="chip none">No conditions</span>';
+}
+function paPlateHtml(id){
+  const f=paView()[id],w=ARENA_WEAPONS[f.weapon]||{};
+  const total=HIT_LOCS.reduce((n,l)=>n+Math.max(0,f.hp[l]),0),max=HIT_LOCS.reduce((n,l)=>n+f.maxHp[l],0);
+  const acting=!V.busy&&S.order?.[S.turnIndex]===id&&S.phase==='fight';
+  const pips=Array.from({length:f.apMax},(_,i)=>`<span class="pip${i<f.ap?' on':''}"></span>`).join('');
+  const label=id==='a'?(S.mode==='pvp'?'Player one':'You'):(S.mode==='pvp'?'Player two':'Opponent');
+  return `<aside class="plate ${id==='a'?'you':'foe'}${acting?' acting':''}" aria-label="${esc(label)}: ${esc(f.name)}">
+    <div class="p-head"><div class="p-name"><i class="p-dot"></i>${esc(f.name)}</div>
+      <div class="p-wp">${esc(f.disarmed?'Unarmed':(w.name||f.weapon))}${f.shield!=='none'?' · '+esc(SHIELDS[f.shield].name):''} · Reach ${esc(reachName(f))}</div>
+      <div class="p-sk">Combat Style ${f.style}% · Evade ${f.evade}% · Init ${f.initiative??'—'}</div></div>
+    <div class="p-body"><svg class="body-svg" viewBox="0 0 120 200" role="group" aria-label="${esc(f.name)} hit locations">${paZonesSvg(f)}</svg>
+      <div class="p-r"><div class="row"><span class="lab">AP</span>${pips}</div>
+        <div class="chips" aria-label="Conditions">${paConditions(f)}</div>
+        <div class="tot"><b>${total}</b>/${max} HP total</div></div></div></aside>`;
+}
+function paStripHtml(){
+  const ph=pitsPhase(),pill=PITS_PHASE_PILL[ph]||'',foe=['opponent','resolving'].includes(ph);
+  const a=S.fighters.a,b=S.fighters.b;
+  const range=S.disengaged?'Apart'+(S.gapMetres?' · '+S.gapMetres+' m':''):engagementInfo().active?'Reach advantage':'Matched reach';
+  const init=a.initiative!=null&&b.initiative!=null?`Initiative: <b>${esc(a.name.split(' ')[0])}</b> ${a.initiative} · ${esc(b.name.split(' ')[0])} ${b.initiative}`:'';
+  return `<div class="strip" role="status" aria-live="polite"><span class="rd">Round <b>${S.round}</b></span><span class="sep"></span>
+    <span class="ph${foe?' foe':''}">${esc(pill)}</span><span class="sep"></span><span class="rg">${esc(range)}</span>${init?`<span class="sep io-sep"></span><span class="io">${init}</span>`:''}</div>`;
+}
+
+// Dice tray: the engine's own dice (inline 3D tray, or the Roll button for a manual roll).
+const paPct=label=>{const m=[...String(label||'').matchAll(/(\d{1,3})%/g)];return m.length?+m[m.length-1][1]:null;};
+function paTrayHtml(){
+  let title='Dice tray',sub='Rolls appear here',who='you',body='',bar='',res='',btn='',cls='';
+  const defsOf=r=>r.defs.map(d=>d.sides===100?'d100':'d'+d.sides).join(' + ');
+  if(V.busy&&V.roll){
+    const r=V.roll,pct=paPct(r.label);
+    title=rollHeading(r.label);who=paHuman(r.actor)?'you':'foe';sub=pct!=null?`Target <b>${pct}%</b>`:esc(defsOf(r));
+    body='<div data-inline-dice></div>';
+    if(pct!=null&&r.defs.length===1&&r.defs[0].sides===100)bar=pitsBandHtml(pct,r.settled?r.values[0]:null);
+    cls=' live';
+  }else if(R&&!V.busy){
+    const pct=paPct(R.label);
+    title=rollHeading(R.label);who=paHuman(R.actor)?'you':'foe';sub=pct!=null?`Target <b>${pct}%</b>${rollDifficultyHtml(R.actor)}`:esc(defsOf(R));
+    body='<div class="r-dice">'+R.defs.map(d=>d.sides===100?'<div class="die d10 lg"><span>00</span></div><div class="die d10 lg"><span>0</span></div>':`<div class="die d${d.sides}"><span>?</span></div>`).join('')+'</div>';
+    if(pct!=null&&R.defs.length===1&&R.defs[0].sides===100)bar=pitsBandHtml(pct,null);
+    btn=`<button type="button" class="rbtn" data-act="roll" aria-label="Roll ${esc(defsOf(R))} now"><span>Roll ${esc(defsOf(R))}</span><kbd>Space</kbd></button>`;
+    cls=' await';
+  }else{
+    const r=pitsShownSkillRoll();
+    if(r){
+      const kind=['fumble','failure','success','critical'][r.grade]||'failure';
+      title='Last roll';sub=`${esc(r.name)} · ${esc(r.what)}`;who=paHuman(r.actor)?'you':'foe';
+      bar=pitsBandHtml(r.pct,r.roll);res=`<span class="o-${kind}">${String(r.roll).padStart(2,'0')} against ${r.pct}% — ${PITS_ZONE_WORD[kind]}</span>`;
+    }
+  }
+  return `<div class="top"><section class="roll${cls}" data-who="${who}" aria-live="polite">
+    <div class="r-t">${esc(title)}</div><div class="r-s">${sub}</div>${body}${bar?`<div class="sbar">${bar}</div>`:''}
+    ${res?`<div class="r-res">${res}</div>`:''}${btn}</section></div>`;
+}
+
+// Modals: Special Effects and Choose Location, only when it is a person's decision.
+function paModalHtml(){
+  const p=S.pending;if(V.busy||!p||pitsPhase()!=='effects')return '';
+  if(p.kind==='effect'){
+    const owner=S.fighters[p.owner];
+    return `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="paModalT"><div class="mbox">
+      <h2 id="paModalT">${esc(owner.name)}: Special Effects</h2>
+      <p class="s">${p.effectsLeft} to choose. They are chosen before the hit location and damage are rolled.</p>${effectChoicesHtml(p)}</div></div>`;
+  }
+  if(p.kind==='location'){
+    const target=S.fighters[p.def];
+    return `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="paModalT"><div class="mbox narrow">
+      <h2 id="paModalT">Choose Location</h2><p class="s">Where does the blow land on ${esc(target.name)}? HP and armour shown.</p>
+      <div class="locbox"><svg viewBox="0 0 120 200" role="group" aria-label="Hit locations">${paZonesSvg(target,true)}</svg></div></div></div>`;
+  }
+  return '';
+}
+function pitsArenaHud(){
+  const hud=document.querySelector('#pitsStage .ps-hud'),bar=document.querySelector('#pitsStage .pa-bar');if(!hud)return;
+  const on=paOn()&&['fight','between','over'].includes(S.phase);
+  document.body.classList.toggle('pa-on',on);
+  if(!on){hud.innerHTML='';if(bar)bar.innerHTML='';return;}
+  if(bar)bar.innerHTML=pitsArenaBarHtml();
+  pitsArenaBarWire();
+  hud.innerHTML=paPlateHtml('a')+paPlateHtml('b')+paStripHtml()+paTrayHtml()+paModalHtml();
+  if(!PA.wired){
+    PA.wired=true;const box=document.getElementById('pitsStage');
+    box.addEventListener('click',e=>decoratedClick(e));
+    box.addEventListener('keydown',e=>{
+      const z=e.target.closest?.('g.zone[data-act]');
+      if(z&&(e.key==='Enter'||e.key===' ')){e.preventDefault();decoratedClick({target:z});}
+    });
+    document.addEventListener('keydown',e=>{
+      if(e.code!=='Space'||!R||V.busy||/^(BUTTON|INPUT|SELECT|TEXTAREA|A|SUMMARY)$/.test(e.target.tagName||''))return;
+      e.preventDefault();decoratedClick({target:document.querySelector('#pitsStage [data-act="roll"]')||document.body});
+    });
+  }
+  const dlg=hud.querySelector('.modal');
+  if(dlg&&!dlg.dataset.focused){dlg.dataset.focused='1';(dlg.querySelector('button,[tabindex]'))?.focus({preventScroll:true});}
+  paFocus();
+  // Auto-roll: press the Roll button for the player after a short beat.
+  clearTimeout(PA.autoTimer);
+  if(PA.auto&&R&&!V.busy)PA.autoTimer=setTimeout(()=>{if(PA.auto&&R&&!V.busy)decoratedClick({target:document.querySelector('#pitsStage [data-act="roll"]')||document.body});},350);
+}
+
+// Move focus (and, if needed, the page) to the decision only when it changes, as the engine does.
+let paFocusKey='';
+function paFocus(){
+  if(S.phase!=='fight'||V.busy)return;
+  const key=R?'roll:'+R.id:S.pending?'p:'+S.round+':'+S.cycle+':'+S.turnIndex+':'+S.pending.kind+':'+(S.pending.effectsLeft??''):'a:'+S.round+':'+S.cycle+':'+S.turnIndex;
+  if(key===paFocusKey)return;paFocusKey=key;
+  requestAnimationFrame(()=>{
+    if(S.phase!=='fight'||V.busy)return;
+    const modal=document.querySelector('#pitsStage .modal');
+    const target=modal?null:R?document.querySelector('#pitsStage [data-act="roll"]'):document.querySelector('#root .prompt .choice:not(:disabled), #root .act:not(:disabled)');
+    if(!target)return;
+    target.focus({preventScroll:true});
+    const box=(R?document.getElementById('pitsStage'):target).getBoundingClientRect();
+    if(box.top<0||box.bottom>innerHeight-60)target.scrollIntoView({block:R?'center':'nearest',behavior:V.reduced?'auto':'smooth'});
+  });
+}
+// Command deck (inside #root): actions, prompt and exchange breakdown, chronicle.
+const PA_ACT_SHORT={attack:'Attack',shieldAttack:'Shield Strike',changeRange:'Change Range',brace:'Brace',delay:'Delay',dither:'Dither',stand:'Regain Footing',yield:'Concede Bout'};
+function paActionsHtml(){
+  const phase=pitsPhase(),id=phase==='action'&&paHuman(S.order?.[S.turnIndex])?S.order[S.turnIndex]:'a';
+  const f=S.fighters[id],live=phase==='action',list=pitsLegalActions(id);
+  const pips=Array.from({length:f.apMax},(_,i)=>`<span class="pip${i<f.ap?' on':''}"></span>`).join('');
+  const rows=list.map(a=>{
+    const help=typeof actionChoiceHelp==='function'?actionChoiceHelp(a.act,f):'';
+    const on=live&&a.enabled;
+    return `<button type="button" class="act${a.act==='delay'?' hold':''}${a.act==='yield'?' danger':''}" data-act="${a.act}" ${on?'':'disabled'}>
+      <span><b>${esc(a.label)}</b><small>${esc(live&&!a.enabled&&a.reason?a.reason:help)}</small></span><span class="cst">${a.ap?a.ap+' AP':'free'}</span></button>`;
+  }).join('');
+  return `<h3><span>${live?(S.mode==='pvp'?esc(f.name)+': your turn':'Your turn'):'Actions'}</span><span class="pp">${pips}</span></h3>${rows}`;
+}
+function paPromptHtml(){
+  const phase=pitsPhase(),f=S.fighters[S.order?.[S.turnIndex]]||S.fighters.a;
+  if(S.phase==='between'||S.phase==='over')return `<div class="prompt end">${actionHtml()}</div>`;
+  if(V.busy)return `<div class="prompt"><h4>Resolving the exchange</h4>${presentationControlsHtml()}</div>`;
+  if(phase==='rolling')return `<div class="prompt"><h4>Roll the dice</h4><p>Press <b>Roll</b> in the dice tray (or Space). The target is shown there.</p></div>`;
+  if(phase==='action')return `<div class="prompt"><h4>${S.mode==='pvp'?esc(f.name)+', your move':'Your move'}</h4><p>You have <b>${f.ap} AP</b>. Attacks and reactions each cost 1 AP. Delay keeps your AP for reactions.</p>${combatGuideHtml()}</div>`;
+  if(phase==='opponent')return `<div class="prompt"><h4>${esc(f.name)} acts</h4><p>The opponent's dice resolve automatically; you will be asked to react when it matters.</p></div>`;
+  if(phase==='effects'&&['effect','location'].includes(S.pending?.kind))return `<div class="prompt"><h4>Choose in the window</h4><p>A decision is waiting in the window over the arena.</p></div>`;
+  return `<div class="prompt">${actionHtml()}</div>`;
+}
+function pitsArenaDeckHtml(){
+  const recap=typeof pitsRecapHtml==='function'?pitsRecapHtml():'';
+  return `${recap}<div class="deck" aria-label="Command deck">
+    <div class="acts" role="group" aria-label="Your actions">${paActionsHtml()}</div>
+    <div class="mid">${paPromptHtml()}<section class="why" aria-live="polite"><h4>Exchange breakdown</h4>${combatNarrationHtml()}${exchangeRecapHtml(currentExchange())}</section></div>
+    <div class="chron">${combatHistory()}</div></div>${resultModalHtml()}`;
+}
+function pitsArenaBarHtml(){
+  const bout=typeof pitsBoutBarHtml==='function'?pitsBoutBarHtml():'';
+  return `<div class="pa-title"><h1>The Pits</h1><span class="pill">${esc(modeName(S.mode))}</span></div>
+    <div class="pa-tools">${guidanceToggleHtml()}<button type="button" class="toolbutton" data-pa="auto" aria-pressed="${PA.auto}">Auto-roll ${PA.auto?'on':'off'}</button>
+    <button type="button" class="toolbutton" data-act="help">Rules</button>
+    <button type="button" class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Standard pace'}</button>
+    <button type="button" class="toolbutton" data-act="reset">Exit battle</button></div>${bout}`;
+}
+function pitsArenaBarWire(){
+  const b=document.querySelector('[data-pa="auto"]');
+  if(b&&!b.dataset.wired){b.dataset.wired='1';b.addEventListener('click',()=>{PA.auto=!PA.auto;render();});}
+}

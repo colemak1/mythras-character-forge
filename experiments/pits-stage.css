@@ -1,75 +1,79 @@
-/* The Pits stage preview (experiments/pits-stage.js). Visual only; colours come
-   from the site tokens, so Light and Dark follow the saved mode. */
+/* The Pits arena scene (experiments/pits-stage.js): stage, figures, effects.
+   Colours come from the site's Stone tokens, so Light and Dark follow the
+   saved mode. The fighters are neutral ink on purpose: red means injury. */
 .ps-wrap{
   --ps-ink:var(--st-text,var(--bone));
+  --ps-dim:var(--st-text-dim,var(--bone-dim));
   --ps-a:var(--st-text,var(--bone));
   --ps-b:var(--st-text-dim,var(--bone-dim));
   --ps-hurt:var(--accent);
   --ps-serious:var(--accent-deep);
-  --ps-major:color-mix(in srgb,var(--accent-deep) 60%,black);
-  --ps-steel:var(--st-text,var(--bone));
-  --ps-wood:var(--st-text-dim,var(--bone-dim));
-  max-width:1280px;margin:0 auto 12px;padding:0 12px;
-  position:sticky;top:0;z-index:30;
+  --ps-major:color-mix(in srgb,var(--accent-deep) 58%,black);
+  --ps-line:var(--st-line-strong,var(--line));
+  --ps-gold:var(--st-accent-2,var(--accent));
+  max-width:1360px;margin:0 auto 12px;padding:0 16px;
 }
 .ps-wrap[hidden]{display:none}
 .ps-stage{
-  position:relative;overflow:hidden;border:1px solid var(--st-line-strong,var(--line));border-radius:3px;
-  background:var(--st-surface,var(--paper));background-image:var(--st-noise,none);
+  position:relative;overflow:hidden;border:1px solid var(--ps-line);border-radius:3px;
+  height:clamp(520px,calc(100dvh - 330px),680px);
+  background:radial-gradient(ellipse 60% 80% at 50% 108%,color-mix(in srgb,var(--ps-ink) 9%,transparent) 0,transparent 70%),
+    var(--st-surface-2,var(--paper));
 }
-.ps-stage svg{display:block;width:100%;height:auto;max-height:30vh}
-.ps-floor{stroke:var(--st-line-strong,var(--line));stroke-width:2}
+.ps-stage::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+  repeating-linear-gradient(0deg,transparent 0 58px,color-mix(in srgb,var(--ps-ink) 4%,transparent) 58px 59px),
+  repeating-linear-gradient(90deg,transparent 0 118px,color-mix(in srgb,var(--ps-ink) 3%,transparent) 118px 119px)}
+.ps-scene{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.ps-floorfill{fill:color-mix(in srgb,var(--ps-ink) 7%,transparent)}
+.ps-floor{stroke:var(--ps-line);stroke-width:2}
+.ps-ring-line{fill:none;stroke:var(--ps-line);stroke-width:1.5;stroke-dasharray:6 8}
+.ps-rline{stroke:var(--ps-gold);stroke-width:2}.ps-rline.thick{stroke-width:3}
+.ps-rtext{font:600 11px var(--st-body,var(--font-ui));letter-spacing:.16em;fill:var(--ps-dim);text-anchor:middle}
 .ps-shadow{fill:var(--ps-ink)}
 .ps-left .ps-part{stroke:var(--ps-a)}
 .ps-right .ps-part{stroke:var(--ps-b)}
 .ps-part,.ps-head{stroke-linecap:round;stroke-linejoin:round;fill:none}
-.ps-head{fill:var(--st-surface,var(--paper))}
+.ps-head{fill:var(--st-surface-2,var(--paper))}
 .ps-back{opacity:.8}
 .ps-body{fill:none}
 .ps-fig .ps-part.ps-w-minor{stroke:var(--ps-hurt)}
 .ps-fig .ps-part.ps-w-serious{stroke:var(--ps-serious)}
 .ps-fig .ps-part.ps-w-major{stroke:var(--ps-major)}
-.ps-fig .ps-head.ps-w-minor,.ps-fig .ps-head.ps-w-serious,.ps-fig .ps-head.ps-w-major{fill:color-mix(in srgb,currentColor 0%,var(--st-surface,var(--paper)))}
-.ps-fig .ps-part.ps-flash{stroke:var(--ps-ink)}
-.ps-shaft{stroke:var(--ps-steel);stroke-linecap:round}
-.ps-shaft.ps-wood{stroke:var(--ps-wood)}
-.ps-guard{stroke:var(--ps-wood);stroke-linecap:round}
-.ps-head-blade{fill:var(--ps-steel);stroke:var(--ps-steel);stroke-width:1.5}
-.ps-dropped .ps-shaft,.ps-dropped .ps-guard{stroke-linecap:round}
+.ps-fig .ps-part.ps-flash{stroke:var(--st-surface,#fff)}
+.ps-shield{fill:color-mix(in srgb,var(--ps-ink) 14%,var(--st-surface-2,var(--paper)));stroke:var(--ps-ink);stroke-width:3}
+.ps-shaft{stroke:var(--ps-ink);stroke-linecap:round}
+.ps-shaft.ps-wood{stroke:var(--ps-dim)}
+.ps-guard{stroke:var(--ps-gold);stroke-linecap:round}
+.ps-knob{fill:var(--ps-dim);stroke:var(--ps-ink);stroke-width:2}
+.ps-head-blade{fill:var(--ps-ink);stroke:var(--ps-ink);stroke-width:1.5}
 .ps-trail{fill:none;stroke:var(--ps-ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .ps-blood{fill:var(--ps-hurt)}
-.ps-spark{fill:var(--ps-wood)}
-.ps-dust{fill:var(--st-text-dim,var(--bone-dim));opacity:.5}
+.ps-spark{fill:var(--ps-gold)}
+.ps-gray{fill:var(--ps-dim)}
+.ps-dust{fill:var(--ps-dim);opacity:.5}
 .ps-ring{fill:none;stroke:var(--ps-ink);stroke-width:3}
 .ps-reticle{fill:none;stroke:var(--ps-hurt);stroke-width:3}
-.ps-reticle line,.ps-reticle circle{vector-effect:non-scaling-stroke}
-.ps-nums{position:absolute;inset:0;pointer-events:none}
-.ps-num{position:absolute;transform:translate(-50%,-50%);font:700 22px var(--st-display,var(--font-display));color:var(--ps-ink);
-  text-shadow:0 1px 0 var(--st-surface,var(--paper));animation:ps-rise 1.2s ease-out forwards}
-.ps-num.dmg{color:var(--ps-hurt);font-size:30px}
-.ps-num.zero{color:var(--st-text-dim,var(--bone-dim))}
-@keyframes ps-rise{from{opacity:1;margin-top:0}to{opacity:0;margin-top:-46px}}
-.ps-banner{position:absolute;left:50%;top:10px;transform:translateX(-50%);padding:4px 14px;border:1px solid var(--st-line-strong,var(--line));
-  border-radius:3px;background:var(--st-surface-2,var(--paper));color:var(--ps-ink);font:600 13px var(--st-body,var(--font-ui));
-  letter-spacing:.06em;text-transform:uppercase;opacity:0;white-space:nowrap}
-.ps-banner.ps-go{animation:ps-banner 1.2s ease-out forwards}
-.ps-banner.crit{border-color:var(--ps-ink)}
-.ps-banner.hurt{border-color:var(--ps-hurt);color:var(--ps-hurt)}
-@keyframes ps-banner{0%{opacity:0;transform:translate(-50%,-6px)}15%{opacity:1;transform:translate(-50%,0)}80%{opacity:1}100%{opacity:0}}
-.ps-names{position:absolute;left:0;right:0;bottom:6px;display:flex;justify-content:space-between;padding:0 14px;pointer-events:none}
-.ps-nm{font:600 12px var(--st-body,var(--font-ui));letter-spacing:.06em;text-transform:uppercase;color:var(--st-text-dim,var(--bone-dim))}
-.ps-shake{animation:ps-shake .28s linear}
-@keyframes ps-shake{20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-3px,1px)}80%{transform:translate(2px,-1px)}}
-.ps-note{margin:0;padding:4px 2px 0;font-size:12px;color:var(--st-text-dim,var(--bone-dim));background:var(--st-bg,var(--ink-0))}
-.ps-note:empty{display:none}
+.ps-nums{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+.ps-num{position:absolute;white-space:nowrap;font:700 34px var(--st-display,var(--font-display));color:var(--ps-ink);
+  text-shadow:0 2px 0 var(--st-surface-2,var(--paper));animation:ps-rise 1.3s ease-out forwards}
+.ps-num.dmg{color:var(--ps-hurt)}
+.ps-num.blk{color:var(--ps-dim);font-size:24px}
+.ps-num.miss{color:var(--ps-dim);font-size:22px}
+.ps-num.fx{color:var(--ps-gold);font-size:24px;letter-spacing:.04em}
+@keyframes ps-rise{0%{opacity:0;transform:translate(-50%,0) scale(.6)}18%{opacity:1;transform:translate(-50%,-14px) scale(1.2)}100%{opacity:0;transform:translate(-50%,-72px) scale(1)}}
+.ps-banner{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;
+  font:700 clamp(30px,5vw,62px)/1 var(--st-display,var(--font-display));letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ps-ink);text-shadow:0 3px 0 var(--st-surface-2,var(--paper));opacity:0;white-space:nowrap}
+.ps-banner.ps-go{animation:ps-ban 1.2s cubic-bezier(.2,.9,.3,1) both}
+.ps-banner.crit{color:var(--ps-gold)}.ps-banner.bad,.ps-banner.red{color:var(--ps-hurt)}.ps-banner.vd{color:var(--ps-ink)}
+@keyframes ps-ban{0%{opacity:0;transform:translate(-50%,-50%) scale(2.1)}16%{opacity:1;transform:translate(-50%,-50%) scale(.96)}
+  26%{transform:translate(-50%,-50%) scale(1.04)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-70%) scale(1)}}
+.ps-shake{animation:ps-shk .32s linear}
+@keyframes ps-shk{20%{transform:translate(-6px,2px)}40%{transform:translate(5px,-2px)}60%{transform:translate(-3px,1px)}80%{transform:translate(2px,0)}}
 @media (max-width:900px){
   .ps-wrap{padding:0 8px}
-  .ps-stage svg{max-height:28vh}
-  .ps-banner{font-size:11px;padding:3px 10px}
-  .ps-note{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ps-nm{font-size:10px}
+  .ps-stage{height:max(560px,calc(100dvh - 210px))}
 }
 @media (prefers-reduced-motion:reduce){
-  .ps-shake,.ps-num,.ps-banner.ps-go{animation:none}
-  .ps-banner.ps-go{opacity:1}
+  .ps-shake,.ps-num,.ps-banner.ps-go{animation-duration:.01s}
 }

@@ -512,7 +512,8 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 </style>
 <link rel="stylesheet" href="pits-stone.css?v=f565ea1341">
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
-<link rel="stylesheet" href="pits-stage.css?v=cd8dbbea84">
+<link rel="stylesheet" href="pits-arena.css?v=fec84f280e">
+<link rel="stylesheet" href="pits-stage.css?v=716e1e0dc3">
 <link rel="stylesheet" href="../sitota-theme.css?v=c8b123e401">
 </head>
 <body class="pits-page">
@@ -552,7 +553,8 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="practice-guidance.js?v=da7f5133ea"></script>
 <script src="pits-view.js?v=766aacde41"></script>
 <script src="pits-game.js?v=1d86e29baf"></script>
-<script src="pits-stage.js?v=39572a9cba"></script>
+<script src="pits-arena.js?v=12973f03d3"></script>
+<script src="pits-stage.js?v=719c2ae689"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -1625,7 +1627,7 @@ function playBeat(){
   if(e.view)V.shown=clone(e.view);
   V.highlight=V.stage.target?{id:V.stage.target,loc:V.stage.loc}:null;
   // Real choices and manual Roll buttons already provide a reading pause.
-  schedulePresentation(900);
+  schedulePresentation(typeof pitsStageBeatDelay==='function'?pitsStageBeatDelay(e,900):900);
 }
 function schedulePresentation(delay){
   render();
@@ -1999,8 +2001,9 @@ function render(){if(V.capturing)return;applyPitsTheme();if(typeof pitsGameOnLog
  if(b){b.title=n.textContent;b.dataset.help=n.textContent;b.setAttribute('aria-label',
  (b.querySelector('strong')?.textContent||'')+' — '+n.textContent)}});let log=$('.log');if(log)log.scrollTop=log.scrollHeight;decoratePitsChoices();
  mountPitsOdds();if(typeof pitsGameAfterRender==='function')pitsGameAfterRender();
- V.chronicleSeen=Math.max(V.chronicleSeen||0,...(V.busy?S.logs.slice(0,V.visibleCount):S.logs).map(e=>Number(e.id)||0),0);mountDiceTray();focusActiveDecision();
- if(typeof pitsStageSync==='function')pitsStageSync();}}
+ V.chronicleSeen=Math.max(V.chronicleSeen||0,...(V.busy?S.logs.slice(0,V.visibleCount):S.logs).map(e=>Number(e.id)||0),0);
+ if(typeof pitsStageSync==='function'){pitsStageSync();if(typeof pitsArenaHud==='function')pitsArenaHud();}
+ mountDiceTray();focusActiveDecision();}}
 function modeName(m){return {tutorial:'Guided Tutorial',normal:'Normal Gauntlet',hardcore:'Hardcore Gauntlet',pvp:'Local PvP'}[m]||m}
 function setupHtml(){applyPracticeLoadout();let modes=[['tutorial','01','Guided Tutorial',
  'One beginner-friendly bout with reminders about Mythras decisions.'],['normal','02','Normal Gauntlet',
@@ -2308,6 +2311,7 @@ function pitsRangeTrackHtml(range){
   l])=>`<span class="${k===now?'on':''}">${l}</span>`).join('')}</span><span class="pits-range-note">${esc(range)}</span>`;
 }
 function arenaHtml(){
+ if(typeof pitsArenaOn==='function'&&pitsArenaOn())return pitsArenaDeckHtml();
  const a=V.busy&&V.shown?.a?V.shown.a:S.fighters.a,b=V.busy&&V.shown?.b?V.shown.b:S.fighters.b;
  const info=currentExchange();
  const range=S.disengaged?'Separated · '+S.gapMetres+' m':engagementInfo().active?'Reach advantage':'Matched reach';

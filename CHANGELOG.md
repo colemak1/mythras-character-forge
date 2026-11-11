@@ -5,18 +5,20 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
-## The Pits stage preview (optional, experimental)
+## The Pits arena redesign (animated stick-figure fight screen)
 
-An animated stick-figure view of the existing Pits fight, to judge whether the look is worth adopting. Nothing changes unless you open it with `?stage=1` on the arena page (or `?stage=duel` for a ready-made Sword v Spear fight, straight from the opponent intro). The normal Pits, the gauntlet and every rule are untouched.
+The fight screen in The Pits now follows the the-pits-mythras prototype, but runs on the Forge's own combat engine. Same rules, dice, Action Points, Special Effects and log; new look and flow.
 
-- **What it is:** `experiments/pits-stage.js` and `pits-stage.css`. It only reads the combat log and fighter state the arena already produces, and draws them. It never rolls dice, spends Action Points, changes HP or decides anything; a test runs the same seeded bouts with and without it and compares every log line, HP and AP.
-- **Animations follow real outcomes:** Attack (lunge on a success, whiff on a miss), Parry (blade meets blade, sparks), Evade (leap back), Choose Location and Hit Location (a target ring on the body part), a hit (blood, damage number, flinch), Trip Opponent (the target goes down, or stays up), Disarm Opponent (the weapon flies and stays on the floor until picked up) and Regain Footing.
-- **Injuries stay on the figures:** any body part that has lost HP turns red, darker at Serious and Major. A disabled weapon arm hangs limp, a disarmed fighter has no weapon, a prone fighter stays down.
-- **Same dice, log and rules:** the d100 tray, the combat log, Action Points and the Special Effects choices are the normal Pits ones, below the stage. The stage waits on the existing replay, so "Show results" and Quick pace work as before. Reduced-motion settings turn off the shake and bursts.
-- **Look:** drawn with the Stone tokens, so Light and Dark follow your saved mode; desktop and 390px layouts.
-- **Not drawn yet:** Impale (a lodged weapon), shields, entangling, range changes beyond spacing, and fighters other than Sword/Spear (other weapons draw as a sword).
-
----
+- **The arena:** two stick figures duel on a stage. Each fighter has a plate (name, weapon, Combat Style and Evade, a body map with HP and armour per location, AP pips and conditions). A strip shows the round, whose turn it is, the range and initiative.
+- **Dice tray at the top:** the player's roll waits for the Roll button (or Space), with the target and an odds band; computer rolls play automatically. New **Auto-roll** toggle presses Roll for you.
+- **Animations follow the real result:** lunge on a hit, parry sparks and "Parried", an evade that leaves a ghost, blood and a damage number where the blow lands (or "Armoured"), Trip Opponent (down, or "Stays up"), Disarm Opponent (the weapon flies and stays on the floor until picked up), Choose Location and Hit Location (a target ring), Critical hit / Fumble / Serious wound / Useless arm / Legs gone banners, and Victory or Defeat poses. Beats wait for their animation; Quick pace shortens them.
+- **Injuries stay on the figures:** any body part that has lost HP turns red, darker at Serious and Major. A disabled weapon arm hangs limp, a prone fighter stays down, a disarmed fighter has no weapon. Fighters draw their real weapon (sword, dagger, greatsword, mace, axe, spear) and shield.
+- **Command deck:** every action with its AP cost and, when it is not available, why; the current prompt (reactions, resist choices and so on, with the engine's own buttons); the exchange breakdown; the combat chronicle.
+- **Windows:** Special Effects and Choose Location open as windows over the arena, with the engine's own choices.
+- **Look:** Stone tokens, Light and Dark, desktop and 390px. Fighters are neutral ink, so red only ever means injury.
+- **Old layout:** `?layout=classic` on the arena page brings the previous fight screen back. `?stage=duel` opens a ready-made Sword v Spear fight at the opponent intro.
+- **Code:** `experiments/pits-stage.js` (scene and animation), `pits-arena.js` (screen layout), `pits-stage.css`, `pits-arena.css`; both only read engine state. `tests/pits-stage.cjs` and `tests/pits-arena.cjs` check cues, layout, that every button is one the engine handles, and that seeded bouts play out identically with and without them.
+- **Not drawn yet:** Impale (a lodged weapon is shown as an "Impaled" condition only), entangle, and fine range steps (the gap follows the engine's reach and separation).
 
 ## Spirit Combat and casting restrictions (Subsystem 6 follow-ups)
 

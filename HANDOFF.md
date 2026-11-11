@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-11 by Claude (The Pits stage preview built, optional `?stage=1` / `?stage=duel`; owner to judge)_
+_Last updated: 2026-11-11 by Claude (The Pits arena redesign: prototype layout and animations on our engine; owner to review)_
 
 ## Where things stand
 
@@ -16,7 +16,7 @@ _Last updated: 2026-11-11 by Claude (The Pits stage preview built, optional `?st
 
 ## Next
 
-0. **Owner (wish list):** try the Pits stage preview: `experiments/practice-combat.html?stage=duel` (Sword v Spear) or `?stage=1` on any fight. It is visual only (`experiments/pits-stage.js`, `pits-stage.css`, `tests/pits-stage.cjs`). Say whether it is worth adopting; if yes, Claude widens it (more weapons, Impale, shields, entangle) and can offer it as a Pits toggle. If not, delete those three files and the three hook lines in `practice-combat.html`.
+0. **Owner (wish list):** try the redesigned Pits fight screen (`experiments/practice-combat.html?stage=duel` for Sword v Spear, or start any Pits fight). It is the prototype's layout and animations on our engine; `?layout=classic` restores the old screen. Tell Claude what to change: look, pacing, anything missing (Impale lodge, entangle). Screens: `docs/pits-arena-screens/`. Code: `experiments/pits-stage.js`, `pits-arena.js`, their CSS, `tests/pits-stage.cjs`, `tests/pits-arena.cjs`.
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
 2. **ChatGPT (Work):** nothing queued.
