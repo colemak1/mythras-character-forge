@@ -115,4 +115,24 @@ test('OR-C03 an untouched same-day pick is a correction, not a departure',()=>{
  run('APP.pickCult("sea");S.cultMembership.history[0].date="2020-01-01";confirm=()=>true;APP.pickCult("craft")');
  assert.equal(run('S.cultFormer.length'),1,'an older membership is recorded');
 });
+// ---------- Route coverage (#284: the Cult step was not reachable) ----------
+test('the Cult step is in both creation flows, after Community, with its screen',()=>{
+ for(const mode of ['full','quick']){
+  run('allEntries=__allEntries;finalPct=__finalPct;S=freshState();S.creationMode="'+mode+'";normalizeState();');
+  assert.equal(run('currentSteps().length'),run('stepFns().length'),mode+': names and screens line up');
+  const i=run('currentSteps().indexOf("Cult")');
+  assert.equal(run('currentSteps()[' + i + '-1]'),'Community',mode);assert.equal(run('currentSteps()['+i+'+1]'),'Passions',mode);
+  assert.equal(run('stepFns()['+i+']===stepCult'),true,mode);
+  run('render=()=>{};viewOnlyBlock=()=>false;S.step='+(i-1)+';APP.go('+i+')');assert.equal(run('S.step'),i,mode+': Next from Community reaches it');
+  assert.match(run('stepFns()[S.step]()'),/APP\.pickCult\('sea'\)/,mode+': archetype picker shown');
+  assert.equal(run('validate('+i+').ok'),true,mode+': optional step');
+ }
+});
+test('a v2 save on Passions or later keeps its screen after the Cult step returns',()=>{
+ for(const [mode,step,name] of [['full',7,'Passions'],['full',9,'Money & Gear'],['quick',5,'Passions'],['full',6,'Community']]){
+  run('S=freshState();S.creationMode="'+mode+'";S._creationFlowVersion=2;S.step='+step+';S.overrides={"'+step+'":true};normalizeState();');
+  assert.equal(run('currentSteps()[S.step]'),name,mode+' '+step);assert.equal(run('S.overrides[S.step]'),true);
+  run('normalizeState()');assert.equal(run('currentSteps()[S.step]'),name,'migrates once');
+ }
+});
 console.log('organisations: all tests passed');

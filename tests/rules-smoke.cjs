@@ -206,16 +206,17 @@ test('Update 05: Community is included in full and quick flows',()=>{
  assert.equal(evalRule('currentSteps().indexOf("Community")'),4);
 });
 test('Update 05: old full-mode wizard position and overrides migrate once',()=>{
+ // v1 → v2 inserts Community, v2 → v3 inserts Cult (#284); the saved step keeps its meaning.
  evalRule('S=freshState();S._creationFlowVersion=1;S.step=6;S.overrides={"5":true,"6":true,"9":true};normalizeState();');
- assert.equal(evalRule('S.step'),7);
+ assert.equal(evalRule('S.step'),8);assert.equal(evalRule('currentSteps()[S.step]'),'Passions');
  assert.equal(evalRule('S.overrides[5]'),true);
- assert.equal(evalRule('S.overrides[7]'),true);
- assert.equal(evalRule('S.overrides[10]'),true);
- evalRule('normalizeState();');assert.equal(evalRule('S.step'),7);
+ assert.equal(evalRule('S.overrides[8]'),true);
+ assert.equal(evalRule('S.overrides[11]'),true);
+ evalRule('normalizeState();');assert.equal(evalRule('S.step'),8);
 });
 test('Update 05: old quick-mode wizard position migrates correctly',()=>{
  evalRule('S=freshState();S.creationMode="quick";S._creationFlowVersion=1;S.step=4;normalizeState();');
- assert.equal(evalRule('S.step'),5);
+ assert.equal(evalRule('S.step'),6);assert.equal(evalRule('currentSteps()[S.step]'),'Passions');
 });
 test('Update 05: empty Community can be skipped; invalid unnamed contact blocks progress',()=>{
  evalRule('S=freshState();');assert(evalRule('validate(currentSteps().indexOf("Community")).ok'));

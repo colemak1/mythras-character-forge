@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Fix: the Cult step is back in character creation (Severity 1, #284)
+
+Work's live check of Organisations (`docs/organisations-live-283-20261111.md`) found the Cult step unreachable: it had been taken out of both creation flows earlier ("to revisit later"), so the Organisations features from #283 had no way in. Restored at the owner's request.
+
+- **Cult** now sits between Community and Passions in quick and full creation.
+- Saved drafts keep the screen they were on: a step at or after Passions moves up by one, and GM overrides move with it (flow version 3). This runs once, after the older Community migration.
+- Tests: `tests/organisations.cjs` checks both flows (names and screens line up, Next from Community reaches Cult, the archetype picker shows, the step is optional) and the migration; `tests/rules-smoke.cjs` now checks that old saves land on the same screen through both migrations. Checked in a headless browser by clicking Next from Community in both modes.
+
 ## Organisations: promotion, training discount, leaving (Subsystem 6)
 
 Built from `docs/magic-organisations-code-cases-20261109.md` (OR-C01–C03; Core pp.196–200). Policy: D-8 in `docs/decisions.md`.
