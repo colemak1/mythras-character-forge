@@ -8,10 +8,10 @@ Status words: **Ready** (built, tested in code, and used at least once on the li
 
 Two numbers, reported at the end of every batch instead of a long status:
 
-- **Session readiness:** Ready items in the checklist below, out of the total. Today: **12 of 14** (2026-11-10: items 9, 10 and 14 passed live).
-- **Feature completeness:** subsystems built (code done, whether or not closed) out of 8. Today: **7 of 8 built**, 6 closed. Subsystem 8 closed 2026-11-10. Subsystem 7 reopened 2026-11-11 for a Severity 1 found live (a creature character's arms and legs showed 0 HP); it is fixed in code and closes again when Work's recheck passes. Magic (6) is the one still being built.
+- **Session readiness:** Ready items in the checklist below, out of the total. Today: **13 of 14** (items 9, 10 and 14 passed live 2026-11-10; item 2 after the HP recheck, `creature-hp-live-275-20261110.md`). Only item 11, the owner's two-device check, is left.
+- **Feature completeness:** subsystems built (code done, whether or not closed) out of 8. Today: **7 of 8 built**, 7 closed. Subsystem 7 reclosed 2026-11-11 after its limb HP fix passed live; Subsystem 8 closed 2026-11-10. Magic (6) is the one still being built: Folk Magic done, Animism built 2026-11-11 (Spirit Combat GM-managed).
 
-The close count in `subsystem-plan.md` (now 6/8) stays, but it is no longer the headline.
+The close count in `subsystem-plan.md` (now 7/8) stays, but it is no longer the headline.
 
 ## The checklist
 
@@ -20,7 +20,7 @@ The close count in `subsystem-plan.md` (now 6/8) stays, but it is no longer the 
 | # | What the GM and players need | Status | Left to do |
 |---|---|---|---|
 | 1 | Each player makes a human character on their own account, saves, and it reopens unchanged | **Ready** | Subsystem 1 closed |
-| 2 | A player can build a GM-approved creature character | **Built** | Full build passed live 2026-11-10 (`session-zero-live-273-20261110.md`): Points Build, Culture, Career, Bonus Skills, money, save and reload; species, ranges and locations persist. Failed: arms and legs showed 0/0 HP in Play Mode (Severity 1), fixed in code 2026-11-11 with a test. Work: recheck that one character's HP only. Only blocks if a player wants one |
+| 2 | A player can build a GM-approved creature character | **Ready** | Full build passed live 2026-11-10 (`session-zero-live-273-20261110.md`); the limb HP fix passed live (`creature-hp-live-275-20261110.md`) |
 | 3 | GM makes a campaign; players join with the code; New code, Remove and Make GM work | **Ready** | Passed live 2026-11-09 |
 | 4 | Starting gear and money, with costs and ENC added up | **Ready** | Subsystem 3 closed |
 | 5 | GM gives an item; the player sees it after reload | **Ready** | Passed live (one player at a time) |
@@ -62,14 +62,14 @@ If anything is lost, that is a Severity 1 bug for Claude. If it works, item 11 i
 These stay open. None of them holds up the first campaign. They are kept here so nothing is forgotten.
 
 **Later features**
-- All of Subsystem 6: Animism, Mysticism, Sorcery, Theism and cults, Organisations (owner, 2026-11-10: build them all "just in case", in the order in `roadmap.md`, once items 2 and 11 are Ready; 9, 10 and 14 are). Session 1 is a few months away, so there is time.
+- All of Subsystem 6: Animism, Mysticism, Sorcery, Theism and cults, Organisations (owner, 2026-11-10: build them all "just in case", in the order in `roadmap.md`, the owner started it 2026-11-11 while item 11 waits on the two-device check). Session 1 is a few months away, so there is time.
 - Campaign creator redesign (Mockup B), player style picker
 - The Pits: ranged combat (shelved), unarmed
 - Owned or commissioned home painting (owner sends art)
 
 **Known limits (built and tested in code; extra live checks only)**
 - Subsystem 8 (closed 2026-11-10): two independent player accounts racing on the same inventory; a second independent player owner; global profiles; the full phone route matrix; case-by-case reconciliation of `campaign-cases-batch-1.md`. Covered for now by item 11 and by the database permission tests in CI (D-S5).
-- Subsystem 7 (reopened 2026-11-11 for the limb HP fix; full list in `subsystem-plan.md`): Core p.218 Vulnerable reading (worn armour still counts) unconfirmed for lack of the page; Vulnerable with worn armour, Intimidate "stopped threatening" and nonhuman Play Mode wounds tested in code only; Chaos d100 and anatomy tables not row-audited by Chat; many traits GM-resolved by design; The Pits refuses creature characters.
+- Subsystem 7 (reclosed 2026-11-11 after the limb HP fix passed live; full list in `subsystem-plan.md`): Core p.218 Vulnerable reading (worn armour still counts) unconfirmed for lack of the page; Vulnerable with worn armour, Intimidate "stopped threatening" and nonhuman Play Mode wounds tested in code only; Chaos d100 and anatomy tables not row-audited by Chat; many traits GM-resolved by design; The Pits refuses creature characters.
 - Magic Audit fixture checks (combined POW cap, multiple cults, Animist rank limits): only when that tradition is in use.
 - Real-phone sound and touch: the owner notices these in real play.
 - Small live rechecks from earlier batches (1d6+1 improvement help text, home quote survives "Use the default painting", phone More sheet): fold into any Work batch that has room, never a batch of their own.

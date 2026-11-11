@@ -5,6 +5,21 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Animism: Trance purposes, summoning, bindings and fetishes (Subsystem 6)
+
+Built from `docs/magic-animism-finish-20261109.md` (Core pp.131–137). All in Play Mode → Spells → Animism.
+
+- **Trance (AN-F01):** choose what it's for. Each animist rank sees only the purposes the Core p.131 table allows (Converse from Spirit Worshipper, Project Self and Draw a Spirit from Shaman, Drag Souls for a High Shaman), each with its own preparation time. A critical still saves one step. A higher purpose reminds you that an unwilling target resists with opposed Willpower, which the GM calls.
+- **Summon (AN-F02, AN-F03):** each spirit has a Summon button. It needs a named spirit, a distance within your Binding % in kilometres and MP equal to the spirit's Intensity, which is spent on the attempt. A critical brings it in 1d3 rounds and a success in 1d4 minutes. A failure lets you retry the following day ("Rest one day" clears it). A fumble suspends the bond until the GM confirms amends. On arrival you record its attitude, who won its Willpower against your roll, and the service agreed; the GM applies the Core p.137 table. Summoning never marks a spirit bound.
+- **Make a binding (AN-F04):** for a spirit acquired by bargain or Spirit Combat, choose a fetish, location or creature. The Experience Roll cost (one per Intensity; an upgrade of the same vessel type costs the difference) is shown at the start and charged only when the GM confirms the work is complete. A binding made for someone else uses their spirit slot, not yours, and they command it.
+- **Fetish spirits (AN-F05):** Release is a Free Action and shows the spirit's range (its POW in metres). Return costs 1 Action Point in a fight and no MP; a neutral or hostile spirit makes you roll Binding.
+- **Not built:** Spirit Combat (AN-F06–F07) stays GM-managed until the p.131 Spirit Damage table and the p.138 effect list are transcribed.
+- Tests: `tests/magic-animism.cjs`. Checked headless at 390px (light) and 1280px (dark).
+
+## Subsystem 7 reclosed; item 2 Ready
+
+- Work's recheck after #275 passed all three creature HP checks (`docs/creature-hp-live-275-20261110.md`). Session Zero item 2 is Ready and Subsystem 7 is closed again. Session readiness 13 of 14; 7 of 8 built, 7 closed.
+
 ## Creature characters: arms and legs keep their HP (Severity 1)
 
 - **Fix:** a GM-approved creature character's Right/Left Arm and Leg showed 0/0 HP in Play Mode and after reload (Work, `docs/session-zero-live-273-20261110.md`). Play Mode looked their maximum up under the human "Each Arm"/"Each Leg" rows; a creature now uses its own entry's HP for every location. Damage, permanent-injury maximums and the party board use the same lookup. Human characters are unchanged.
