@@ -140,7 +140,7 @@ function renderLedger(){
       +led("Exp. Modifier",(xpMod(c.CHA)>=0?"+":"")+xpMod(c.CHA))
       +led("Movement",moveText()+(moveRate().m!==moveBase()?' <span class="note">(base '+moveBase()+'m)</span>':""))
       +led("Height / Weight",heightWeightText());
-    h+='<h3>Hit Points</h3><table class="ledhp">'+hpLocsFinal(c.CON,c.SIZ).map(([l,v])=>'<tr><td>'+l+'</td><td>'+v+'</td></tr>').join("")+'</table>';
+    h+='<h3>Hit Points</h3><table class="ledhp">'+(speciesDef()&&speciesDef().creature?playStateHPMax(S):hpLocsFinal(c.CON,c.SIZ)).map(([l,v])=>'<tr><td>'+l+'</td><td>'+v+'</td></tr>').join("")+'</table>';
   }
   const stepName=currentSteps()[S.step];
   const poolByName={"Culture":["culture",100,"Cultural"],"Career":["career",100,"Career"],
@@ -237,7 +237,7 @@ function speciesCard(){
      ?' (Its average characteristics added up and rounded up; spend every point, each within its dice range, Core pp.8, 219'+(S.archetype!=="ordinary"?", + this tier&rsquo;s increment":"")+'. INT can&rsquo;t go below '+CREATURE_PC_MIN_INT+', p.218.)'
      :' (Racial averages '+sp.avgTotal+' + 6, per the species rules'+(S.archetype!=="ordinary"?", + this tier&rsquo;s increment":"")+'.)')+'</p>';
   if(sp.creature)h+=creatureAnatomyTableHTML(sp.locations)
-   +'<p class="note">Culture and career are chosen as normal (Core p.218). Play Mode and The Pits track the seven human hit locations, so track this body&rsquo;s locations with your GM.</p>';
+   +'<p class="note">Culture and career are chosen as normal (Core p.218). Play Mode tracks this body&rsquo;s own locations with the entry HP above. The Pits uses the human hit-location table, so a creature character can&rsquo;t fight there yet.</p>';
   if(sp.traits.length&&sp.creature){
     h+='<div class="field"><label>Creature traits and abilities</label>'
      +sp.traits.map(([n,d])=>'<p class="note"><b>'+esc(n)+'</b> &mdash; '+esc(d)+'</p>').join("")+'</div>';
@@ -552,11 +552,9 @@ function stepAttrs(){
      +["endurance","stealth","willpower"].filter(hasAdv).map(k=>k[0].toUpperCase()+k.slice(1)).join(", ")
      +' rolls are one Grade easier for this character. Grades are a situational roll modifier in Mythras, not a skill bonus, so this isn&rsquo;t folded into the % shown below &mdash; apply it at the table when the roll comes up.</p></div>'
     :"")
-  +'<div class="card"><h3>Hit Points per Location</h3><p class="note">CON+SIZ = '+(c.CON+c.SIZ)+'. Locations rolled on 1d20 in play.'+(hasAdv("hp")?' Includes the Advantage bonus below.':"")+'</p>'
+  +'<div class="card"><h3>Hit Points per Location</h3><p class="note">'+(speciesDef()&&speciesDef().creature?esc(speciesDef().label)+' locations and HP from its entry (Core p.219).':'CON+SIZ = '+(c.CON+c.SIZ)+'.')+' Locations rolled on 1d20 in play.'+(hasAdv("hp")?' Includes the Advantage bonus below.':"")+'</p>'
   +'<table class="rt"><tr><th>d20</th><th>Location</th><th class="num">HP</th></tr>'
-  +HIT_D20.map(([r,loc])=>{const base=loc.replace(/Right |Left /,"").replace("Arm","Each Arm").replace("Leg","Each Leg");
-    const hp=[loc,playMaxHP(loc)];
-    return '<tr><td>'+r+'</td><td>'+loc+'</td><td class="num">'+(hp?hp[1]:"")+'</td></tr>';}).join("")
+  +playHitLocationRows().map(([r,loc,hp])=>'<tr><td>'+esc(r)+'</td><td>'+esc(loc)+'</td><td class="num">'+hp+'</td></tr>').join("")
   +'</table></div>';
 }
 /* ---- shared allocation table ---- */

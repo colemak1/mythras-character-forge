@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Creature characters: arms and legs keep their HP (Severity 1)
+
+- **Fix:** a GM-approved creature character's Right/Left Arm and Leg showed 0/0 HP in Play Mode and after reload (Work, `docs/session-zero-live-273-20261110.md`). Play Mode looked their maximum up under the human "Each Arm"/"Each Leg" rows; a creature now uses its own entry's HP for every location. Damage, permanent-injury maximums and the party board use the same lookup. Human characters are unchanged.
+- The Attributes step, character sheet and Markdown export now list a creature character's own locations, ranges and HP (and natural armour on the sheet and export) instead of the human seven.
+- The Concept note no longer says Play Mode tracks only human locations; The Pits still refuses creature characters.
+- Tests: `tests/creature-pc.cjs` (Work's winged fixture: every location, a wound surviving reload, party board, permanent injury, Attributes, sheet, Markdown; a human still shares Each Arm/Each Leg).
+- Status from Work's report: Session Zero item 14 (restored tracker opens) is Ready; item 2 waits on the HP recheck. Subsystem 7 reopened until that recheck passes. Session readiness 12 of 14; 7 of 8 built, 6 closed.
+
 ## Typed boxes keep every entry; Subsystems 7 and 8 closed
 
 - **Fix (every character, not only creatures):** typing a number into an allocation box and moving to the next one rebuilt the page under the next box, so its entry was lost. Culture points typed box by box stuck at 50/100 (Work, `docs/session-zero-live-20261110.md`); with Tab only every fifth box counted. Any text or number field that re-renders on change now waits until focus has moved (keyboard) or the click is over (mouse), then puts focus back on the new copy of the field. Checkboxes, selects and buttons render at once, as before.

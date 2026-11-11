@@ -73,6 +73,17 @@ function playLocArmourName(loc){
 // separate boxes while still deriving each one's max off the existing
 // shared "Each Arm"/"Each Leg" sheet numbers below.
 const PLAY_LIMB_BASE={"Right Arm":"Each Arm","Left Arm":"Each Arm","Right Leg":"Each Leg","Left Leg":"Each Leg"};
+// The playStateHPMax row a location's maximum comes from. A creature
+// character's rows are keyed by its own location names (its Right Arm has its
+// own entry HP), so only a human-table character shares "Each Arm"/"Each Leg".
+function playHPBaseKey(loc,state){return playCreatureLocs(state)?loc:(PLAY_LIMB_BASE[loc]||loc);}
+// Hit-location rows for sheets and exports: [d20 range, location, max HP].
+// A creature character lists its own entry ranges; everyone else the human table.
+function playHitLocationRows(state){
+  const locs=playCreatureLocs(state);
+  const rows=locs?locs.map(l=>[l.lo===l.hi?String(l.lo):l.lo+"-"+l.hi,l.name]):HIT_D20.map(([r,loc])=>[r,loc]);
+  return rows.map(([r,loc])=>[r,loc,playMaxHP(loc,state)]);
+}
 // charVitals(state): pure function computing every Play Mode / Party Board
 // number off an arbitrary character state object (defaults to the global S
 // being edited). This exists so the live Party Board can read another
@@ -109,8 +120,7 @@ function charVitals(state){
   state=state||S;
   const c=effectiveChars(state);
   const locs=playHPLocs(state).map(loc=>{
-    const key=PLAY_LIMB_BASE[loc]||loc;
-    const row=playStateHPMax(state).find(x=>x[0]===key);
+    const row=playStateHPMax(state).find(x=>x[0]===playHPBaseKey(loc,state));
     const baseMax=row?row[1]:0, recorded=state.play.hpMaxOverride?.[loc];
     const hasOverride=Number.isSafeInteger(recorded)&&recorded>=1&&recorded<=baseMax;
     const max=hasOverride?recorded:baseMax;
@@ -120,7 +130,7 @@ function charVitals(state){
       // as a single shared current-HP pool. If this specific side hasn't
       // taken damage yet under the new 7-box keys, inherit that old shared
       // value instead of silently snapping the limb back to full HP.
-      const legacyKey=PLAY_LIMB_BASE[loc];
+      const legacyKey=playCreatureLocs(state)?null:PLAY_LIMB_BASE[loc];
       if(legacyKey&&state.play.hp[legacyKey]!=null)v=state.play.hp[legacyKey];
     }
     // Preserve a pre-existing deeper wound when lowering a location maximum;
@@ -382,7 +392,7 @@ function pmLocDetail(){
    +'<div class="dt"><b>'+esc(loc)+'</b><span class="d20">d20: '+hitD20For(loc)+'</span></div>'
    +'<div class="arm">'+esc(playLocArmourName(armLoc))+' &mdash; AP '+ap+'</div>'+playLocClassHTML(loc)
    +'<details class="pm-fx-item"><summary>Permanent injury: location maximum</summary><p>After GM adjudication, enter the location’s reduced maximum HP (Core p.80). Wound thresholds use the reduced maximum. This does not determine the injury, alter hit-location rolls, or automatically treat the wound.</p>'
-   +(()=>{const base=playStateHPMax(S).find(x=>x[0]===(PLAY_LIMB_BASE[loc]||loc))?.[1];if(!base)return'';
+   +(()=>{const base=playStateHPMax(S).find(x=>x[0]===playHPBaseKey(loc))?.[1];if(!base)return'';
      return '<p class="pm-notes">Permanent Injury table (1d3; HP lost rounded up): '+[1,2,3].map(r=>'<button type="button" class="pm-btn sm" onclick="document.getElementById(\'injuryMax\').value='+maimedMaxHP(base,r)+'">'+r+' → '+maimedMaxHP(base,r)+' HP</button>').join(' ')+' from '+base+' HP. Pick the result, then confirm and set.</p>';})()+'<label>Maximum HP <input type="number" id="injuryMax" min="1" value="'+max+'" style="width:65px"></label> <label><input type="checkbox" id="injuryConfirm"> GM confirms this adjustment</label> <button type="button" class="pm-btn sm" onclick="APP.playSetMaxHP(\''+loc+'\',document.getElementById(\'injuryMax\').value,document.getElementById(\'injuryConfirm\').checked)">Set maximum</button> <button type="button" class="pm-btn sm" onclick="APP.playClearMaxHP(\''+loc+'\',document.getElementById(\'injuryConfirm\').checked)">Restore calculated maximum</button></details>'
    +'<div class="hpline">'+cur+' <span>/ '+max+' HP</span><span class="pm-woundtag '+st.cls+'">'+st.tag+'</span></div>'
    +'<div class="fx">'+esc(playWoundEffectText(loc,st.cls))+'</div>'
@@ -2124,7 +2134,6 @@ function characterSheetBody(){
   }
   const initPenalty=armourPenaltyToInit();
   const careerName=S.customCareer.isCustom?S.customCareer.name:S.career;
-  const hpAt=loc=>playMaxHP(loc);
   // ---- header band: player/character, background, title panel, contacts, equipment ----
   h+='<div class="mhead-grid">';
   h+='<div class="mbox"><div class="mbox-t">Player &amp; Character</div>'
@@ -2190,8 +2199,7 @@ function characterSheetBody(){
   h+='<div class="mcol">';
   h+='<div class="mbox"><div class="mbox-t">Hit Locations</div><div class="mhitloc-flex">'
    +'<table class="mtiny"><tr><th>d20</th><th>Loc</th><th class="num">HP</th><th class="num">AP</th></tr>'
-   +HIT_D20.map(([r,loc])=>{const base=loc.replace(/Right |Left /,"Each ");
-     return '<tr><td>'+r+'</td><td>'+loc+'</td><td class="num">'+hpAt(loc)+'</td><td class="num">'+armorApAt(loc)+'</td></tr>';}).join("")
+   +playHitLocationRows().map(([r,loc,hp])=>'<tr><td>'+esc(r)+'</td><td>'+esc(loc)+'</td><td class="num">'+hp+'</td><td class="num">'+playLocAP(loc)+'</td></tr>').join("")
    +'</table>'+bodyDiagramSvg()+'</div></div>';
   if(speciesDef()&&speciesDef().creature)h+='<div class="mbox"><div class="mbox-t">'+esc(speciesDef().label)+' hit locations</div>'+creatureAnatomyTableHTML(speciesDef().locations)+'</div>';
   h+='<div class="mbox"><div class="mbox-t">Difficulty Grades</div><table class="mtiny">'
