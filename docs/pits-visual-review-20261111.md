@@ -4,6 +4,8 @@ Scope: owner-requested comparison of the attached `the-pits-mythras(1).zip` (sin
 
 ## Recommendation
 
+Owner direction, 2026-11-11: make the battle screen full screen and remove the top Sit’ota/site navigation bar. Keep Exit Battle visible so the player can return to the site. Use the recovered height to show the active decision and fighters together.
+
 Keep Forge's combat engine and Stone theme. Use the prototype's spatial hierarchy: player left, foe right, dice top centre, fighters in the middle, concise commands and outcome below. Rebuild the animation choreography around resolved exchange data. Do not copy the prototype's combat rules: its own limitations explicitly admit missing size-based parries and unverified weapon/Impale rules.
 
 ## Live checks
