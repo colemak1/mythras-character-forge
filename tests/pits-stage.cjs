@@ -80,8 +80,75 @@ test('weapons draw as the right kind, from the engine weapon table',()=>{
  const k=(key,reach)=>JSON.parse(A.run(`JSON.stringify(pitsStageWeaponKind(${JSON.stringify(key)},${reach}))`));
  assert.equal(k('sword',2).kind,'blade');assert.equal(k('dagger',1).len<k('sword',2).len,true);
  assert.equal(k('greatsword',3).len>k('sword',2).len,true);assert.equal(k('spear',3).kind,'spear');
- assert.equal(k('mace',2).kind,'club');assert.equal(k('battleaxe',2).kind,'axe');
- assert.equal(k('quarterstaff',4).kind,'spear','any other long weapon draws as a haft');
+ assert.equal(k('mace',2).kind,'club');assert.equal(k('battleaxe',2).kind,'axe');assert.equal(k('hatchet',1).kind,'axe');
+ assert.equal(k('quarterstaff',4).kind,'staff');assert.equal(k('trident',3).kind,'trident');assert.equal(k('whip',4).kind,'whip');
+ assert.equal(k('net',3).kind,'net');assert.equal(k('flail',2).kind,'chain');assert.equal(k('halberd-poleaxe',4).kind,'polearm');
+ assert.equal(k('something-new',3).kind,'staff','an unknown key gets a plain haft, never a wrong blade');
+});
+const J=x=>JSON.parse(A.run(`JSON.stringify(${x})`));
+test('blow outcomes come from the engine facts: wound, partial and full parry, ward, armour, evade, miss',()=>{
+ const hit=(lost,px)=>J(`pitsStageOutcome({type:'hit',lost:${lost},px:${JSON.stringify(px)}})`);
+ assert.equal(hit(5,{blocked:0,afterParry:7,armour:2}),'wound');
+ assert.equal(hit(3,{blocked:2,blockedBy:'parry',afterParry:5,armour:2}),'partial-parry');
+ assert.equal(hit(2,{blocked:3,blockedBy:'ward',afterParry:4,armour:2}),'partial-ward');
+ assert.equal(hit(0,{blocked:6,blockedBy:'parry',afterParry:0,armour:0}),'full-parry');
+ assert.equal(hit(0,{blocked:6,blockedBy:'ward',afterParry:0,armour:0}),'full-ward');
+ assert.equal(hit(0,{blocked:0,afterParry:2,armour:2}),'armour','armour stopped it: not an injury, not a parry');
+ assert.equal(hit(0,{blocked:0,afterParry:0,armour:0}),'zero');
+ const miss=px=>J(`pitsStageOutcome({type:'deflect',px:${JSON.stringify(px)}})`);
+ assert.equal(miss({evaded:true}),'evaded');
+ assert.equal(miss({react:'parry',reactGrade:2,aGrade:1}),'parried');
+ assert.equal(miss({react:'parry',reactGrade:1,aGrade:1}),'miss','a failed parry is not a parry');
+ assert.equal(miss({react:'none',aGrade:0}),'fumble');
+ assert.equal(miss({react:'none',aGrade:1}),'miss');
+});
+test('a critical attack is named at the roll stage and the hit cue carries the engine facts',()=>{
+ const c=cue('Kethan attacks','03 against Combat Style 60% — CRITICAL.',{actor:'a',exid:7,tool:'weapon'});
+ assert.deepEqual([c.type,c.grade,c.exid],['attack','critical',7]);
+ const h=cue('Marek hits Left Leg','x',{actor:'b',impact:{target:'a',location:'Left Leg',hpLost:5},px:{exid:7,total:7,blocked:0,armour:2,wound:5,before:6,after:1}});
+ assert.equal(h.px.total,7);assert.equal(h.loc,'lleg');
+ const d=cue('No Damaging Hit',"Kethan's attack failed to connect.",{actor:'a',px:{evaded:false,react:'parry',reactGrade:3,aGrade:1}});
+ assert.equal(d.type,'deflect');assert.equal(d.px.reactGrade,3);
+});
+test('aim: the weapon tip ends on the struck body part, and head, torso and leg strikes sit at different heights',()=>{
+ const wk={kind:'blade',len:92},base=J('PS_POSE.lunge');
+ const parts={head:[170,-165],chest:[170,-105],abdomen:[170,-70],lleg:[170,-30]};
+ const tipY={},ang={};
+ for(const [loc,T] of Object.entries(parts)){
+  const r=J(`pitsStageAim(PS_POSE.lunge,${JSON.stringify(wk)},false,${JSON.stringify(T)},{})`);
+  assert.equal(r.ok,true,loc+' is reachable');
+  assert(Math.hypot(r.tip[0]-T[0],r.tip[1]-T[1])<=14,`${loc}: tip within 14 of the target, got ${r.tip}`);
+  tipY[loc]=r.tip[1];ang[loc]=r.angle;
+ }
+ assert(tipY.head<tipY.chest&&tipY.chest<tipY.abdomen&&tipY.abdomen<tipY.lleg,'contact height follows the location');
+ assert(ang.head>ang.chest&&ang.chest>ang.lleg,'the weapon points up at the head and down at the leg');
+ const sp=J(`pitsStageAim(PS_POSE.lunge,{kind:'spear',len:150},false,[200,-60],{})`);
+ assert.equal(sp.ok,true);assert(Math.hypot(sp.tip[0]-200,sp.tip[1]+60)<=14);
+ const far=J(`pitsStageAim(PS_POSE.lunge,${JSON.stringify(wk)},false,[600,-60],{maxDx:100})`);
+ assert.equal(far.ok,false,'out of reach is reported, not faked');
+});
+test('aim: a shield bash uses the off arm; a left-handed wielder keeps role-based arms',()=>{
+ const r=J(`pitsStageAim(PS_POSE.lunge,{kind:'blade',len:92},false,[110,-90],{arm:'off',shieldR:16,pen:0})`);
+ assert.equal(r.ok,true);assert.notEqual(r.pose.ba1,J('PS_POSE.lunge').ba1,'the off arm moved');assert.equal(r.pose.a1,J('PS_POSE.lunge').a1,'the weapon arm did not');
+ const l=J(`pitsStageLook({weapon:'sword',weaponHand:'Left Arm',hp:{'Right Arm':5,'Left Arm':0,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},maxHp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},shield:'none',siz:13})`);
+ assert.equal(l.swap,true);assert.equal(l.armed,false,'weapon arm (the left) is out of action');
+});
+test('lodged weapons and entanglement are read from engine state: held, abandoned, withdrawn',()=>{
+ const f=(a,b)=>JSON.stringify({a,b});
+ const wound={attacker:'b',loc:'Left Leg',weaponSize:2,weapon:'spear'};
+ const held=J(`pitsStageLodged(${f({impaledWounds:[wound]},{weapon:'spear',impaledWeapon:{target:'a',loc:'Left Leg',weapon:'spear'}})},'a')`);
+ assert.deepEqual(held,[{loc:'lleg',weapon:'spear',holder:'b',held:true}]);
+ const abandoned=J(`pitsStageLodged(${f({impaledWounds:[wound]},{weapon:'spear',impaledWeapon:null,disarmed:true})},'a')`);
+ assert.equal(abandoned[0].held,false);assert.equal(abandoned[0].weapon,'spear','the weapon that stays in the wound is still drawn');
+ const withdrawn=J(`pitsStageLodged(${f({impaledWounds:[]},{weapon:'spear',impaledWeapon:null})},'a')`);
+ assert.deepEqual(withdrawn,[],'withdrawn: nothing left in the wound');
+ assert.deepEqual(J(`pitsStageEntangle(${f({entangled:{loc:'Right Arm',by:'b'}},{})},'a')`),{loc:'rarm',by:'b'});
+ assert.equal(J(`pitsStageEntangle(${f({entangled:null},{})},'a')`),null);
+});
+test('the engine records the weapon in the wound it lodged, so an abandoned weapon can still be drawn',()=>{
+ const src=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8');
+ assert.match(src,/def\.impaledWounds\.push\(\{attacker:atk\.id,loc,weaponSize:aw\.size,weapon:akey\}\)/);
+ assert.match(src,/function hitPx\(/);assert.match(src,/function noHitPx\(/);
 });
 test('entries with no visual meaning are ignored',()=>{
  for(const t of ['Round 2','Encounter 1 · Initiative','Kethan does not defend','Brace','Sunder'])assert.equal(cue(t,'x',{actor:'a'}),null,t);
@@ -90,7 +157,7 @@ test('the look of a fighter follows the engine: wounds, prone, disarmed, arm dow
  const a=arena(true,2);a.run(`startRun();R=null;V.busy=false;`);
  const look=()=>JSON.parse(a.run(`JSON.stringify(pitsStageLook(S.fighters.a))`));
  let l=look();
- assert.equal(l.weapon,'sword');assert.equal(l.armed,true);assert.equal(l.prone,false);
+ assert.equal(l.weapon,'blade');assert.equal(l.armed,true);assert.equal(l.prone,false);
  assert(Object.values(l.parts).every(v=>v==='ok'),'unhurt: nothing red');
  a.run(`S.fighters.a.hp.Chest-=2;S.fighters.a.hp['Left Leg']=0;S.fighters.a.hp.Head=-20;`);
  l=look();

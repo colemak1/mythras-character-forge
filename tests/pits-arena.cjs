@@ -29,7 +29,7 @@ test('the deck offers exactly the actions the engine allows, with the engine\'s 
   assert(m,x.act+' is drawn');
   assert.equal(/\bdisabled\b/.test(m[0]),!x.enabled,`${x.act} enabled ${x.enabled}`);
  }
- assert.match(html,/Your turn/);assert.match(html,/Exchange breakdown/);assert.match(html,/Combat chronicle/);
+ assert.match(html,/Your turn/);assert.match(html,/Current exchange/);assert.match(html,/Combat chronicle/);
 });
 test('actions are locked while it is not the player\'s turn, and say why when they are short of AP',()=>{
  A.run(`S.turnIndex=1`);
@@ -49,7 +49,7 @@ test('plates show each fighter: HP and armour per body part, AP, conditions, and
 });
 test('the strip names the round, whose turn it is and the range',()=>{
  const html=A.run('paStripHtml()');
- assert.match(html,/Round <b>1<\/b>/);assert.match(html,/Your turn/);assert.match(html,/Matched reach/);
+ assert.match(html,/Round <b>1<\/b>/);assert.match(html,/Your turn/);assert.match(html,/Engaged/);assert.doesNotMatch(html,/Matched reach/);
 });
 test('the dice tray shows the manual roll with the Roll button, target and odds band',()=>{
  A.run(`R={id:1,actor:'a',defs:[{sides:100}],label:'Attack · Combat Style 60%',callback(){}}`);

@@ -66,10 +66,68 @@ function paPlateHtml(id){
 function paStripHtml(){
   const ph=pitsPhase(),pill=PITS_PHASE_PILL[ph]||'',foe=['opponent','resolving'].includes(ph);
   const a=S.fighters.a,b=S.fighters.b;
-  const range=S.disengaged?'Apart'+(S.gapMetres?' · '+S.gapMetres+' m':''):engagementInfo().active?'Reach advantage':'Matched reach';
-  const init=a.initiative!=null&&b.initiative!=null?`Initiative: <b>${esc(a.name.split(' ')[0])}</b> ${a.initiative} · ${esc(b.name.split(' ')[0])} ${b.initiative}`:'';
-  return `<div class="strip" role="status" aria-live="polite"><span class="rd">Round <b>${S.round}</b></span><span class="sep"></span>
-    <span class="ph${foe?' foe':''}">${esc(pill)}</span><span class="sep"></span><span class="rg">${esc(range)}</span>${init?`<span class="sep io-sep"></span><span class="io">${init}</span>`:''}</div>`;
+  // "Engaged" unless one weapon's longer reach is actually controlling the range
+  const range=S.disengaged?'Apart'+(S.gapMetres?' · '+S.gapMetres+' m':''):engagementInfo().active?'Reach advantage':'Engaged';
+  const init=a.initiative!=null&&b.initiative!=null?`<div class="io" title="Initiative">Initiative: <b>${esc(a.name)}</b> ${a.initiative} · <b>${esc(b.name)}</b> ${b.initiative}</div>`:'';
+  return `<div class="strip" role="status" aria-live="polite"><div class="row1"><span class="rd">Round <b>${S.round}</b></span><span class="sep"></span>
+    <span class="ph${foe?' foe':''}">${esc(pill)}</span><span class="sep"></span><span class="rg">${esc(range)}</span></div>${init}</div>`;
+}
+
+// ---- Exchanges, from the engine's log: the newest is "current", the one before "previous" ----
+const PA_BREAK=/^(Round |Encounter|Regain Footing|Brace|Delay|Dither|Stand Fast|Move to|Ready Weapon|Pick Up|Pin Weapon|Entangle|FIGHT)|changes range/;
+const paVisibleLogs=()=>V.busy?(S.logs||[]).slice(0,V.visibleCount):(S.logs||[]);
+function paExchanges(){
+  const out=[];let cur=null;
+  for(const l of paVisibleLogs()){
+    if(l.meta&&l.meta.exid&&/(?: attacks| makes a Remise attack| strikes with the shield)$/.test(l.title)){cur={exid:l.meta.exid,atk:l.meta.actor,entries:[l]};out.push(cur);}
+    else if(PA_BREAK.test(l.title))cur=null;
+    else if(cur)cur.entries.push(l);
+  }
+  return out;
+}
+const paSkillLine=l=>{
+  const m=/^(\d+) (?:against Combat Style|vs) (\d+)%[^A-Z]*(CRITICAL|SUCCESS|FAILURE|FUMBLE)/.exec(String(l.body||''));
+  return m?{roll:+m[1],pct:+m[2],grade:m[3].toLowerCase()}:null;
+};
+// Plain words and arithmetic for a resolved blow (from the engine's facts, never re-derived).
+function paBlowLine(l){
+  const px=l.meta&&l.meta.px;if(!px)return null;
+  if(l.title==='No Damaging Hit'){
+    const o=pitsStageOutcome({type:'deflect',px,evaded:px.evaded});
+    return {head:{evaded:'Evaded',parried:'Parried',fumble:'Fumbled attack',miss:'Missed'}[o]||'No damage',math:'No damage.',kind:o};
+  }
+  const o=pitsStageOutcome({type:'hit',lost:l.meta.impact?l.meta.impact.hpLost:px.wound,px});
+  const parts=[`${px.total} damage`];
+  if(px.blocked)parts.push(`− ${px.blocked} ${px.blockedBy==='ward'?'shield ward':'parry'}`);
+  if(px.armour)parts.push(`− ${px.armour} armour`);
+  const head={wound:'Wounded','partial-parry':'Wounded through a parry','partial-ward':'Wounded through a ward','full-parry':'Parried','full-ward':'Stopped by the shield ward',armour:'Armour held',zero:'No damage'}[o];
+  return {head:`${head} · ${px.loc}`,math:`${parts.join(' ')} = ${px.wound} HP lost${px.before!=null?` (${px.loc} ${px.before} → ${px.after})`:''}.`,kind:o};
+}
+function paExchangeResult(g){
+  for(let i=g.entries.length-1;i>=0;i--){const b=paBlowLine(g.entries[i]);if(b)return b;}
+  return null;
+}
+function paExchangeHtml(g,label,open){
+  if(!g)return `<section class="xch"><h4>${label}</h4><p class="none">Nothing yet. The first exchange appears here.</p></section>`;
+  const res=paExchangeResult(g),who=S.fighters[g.atk];
+  const rows=g.entries.map(l=>`<li><b>${esc(l.title)}</b> <span>${esc(String(l.body||'').replace(/\s+/g,' ').trim())}</span></li>`).join('');
+  return `<section class="xch ${open?'cur':'prev'}"><h4>${label} · ${esc(who?who.name:'')} attacks</h4>
+    <div class="res">${res?`<b>${esc(res.head)}</b><span>${esc(res.math)}</span>`:'<b>In progress</b><span>Rolls are being resolved.</span>'}</div>
+    <ul>${rows}</ul></section>`;
+}
+// The newest relevant result for the idle tray (never reverts to an earlier skill roll).
+function paResultCard(){
+  const logs=paVisibleLogs();
+  for(let i=logs.length-1;i>=0;i--){
+    const l=logs[i],b=paBlowLine(l);
+    if(b){const who=S.fighters[l.meta.actor];
+      return {title:'Result',sub:esc(b.head),who:paHuman(l.meta.actor)?'you':'foe',bar:'',res:`<span class="o-${b.kind==='wound'||/partial/.test(b.kind)?'fumble':'success'}">${esc(b.math)}</span>`};}
+    const sk=/(attacks|strikes with the shield|parries( with shield)?|evades)$/.test(l.title)?paSkillLine(l):null;
+    if(sk){const kind=sk.grade,mine=l.meta&&paHuman(l.meta.actor);
+      return {title:'Last roll',sub:esc(l.title),who:mine?'you':'foe',bar:pitsBandHtml(sk.pct,sk.roll),
+        res:`<span class="o-${kind}">${String(sk.roll).padStart(2,'0')} against ${sk.pct}% — ${PITS_ZONE_WORD[kind]}</span>`};}
+  }
+  return null;
 }
 
 // Dice tray: the engine's own dice (inline 3D tray, or the Roll button for a manual roll).
@@ -91,12 +149,8 @@ function paTrayHtml(){
     btn=`<button type="button" class="rbtn" data-act="roll" aria-label="Roll ${esc(defsOf(R))} now"><span>Roll ${esc(defsOf(R))}</span><kbd>Space</kbd></button>`;
     cls=' await';
   }else{
-    const r=pitsShownSkillRoll();
-    if(r){
-      const kind=['fumble','failure','success','critical'][r.grade]||'failure';
-      title='Last roll';sub=`${esc(r.name)} · ${esc(r.what)}`;who=paHuman(r.actor)?'you':'foe';
-      bar=pitsBandHtml(r.pct,r.roll);res=`<span class="o-${kind}">${String(r.roll).padStart(2,'0')} against ${r.pct}% — ${PITS_ZONE_WORD[kind]}</span>`;
-    }
+    const c=paResultCard();
+    if(c){title=c.title;sub=c.sub;who=c.who;bar=c.bar;res=c.res;}
   }
   return `<div class="top"><section class="roll${cls}" data-who="${who}" aria-live="polite">
     <div class="r-t">${esc(title)}</div><div class="r-s">${sub}</div>${body}${bar?`<div class="sbar">${bar}</div>`:''}
@@ -183,17 +237,24 @@ function paPromptHtml(){
   if(S.phase==='between'||S.phase==='over')return `<div class="prompt end">${actionHtml()}</div>`;
   if(V.busy)return `<div class="prompt"><h4>Resolving the exchange</h4>${presentationControlsHtml()}</div>`;
   if(phase==='rolling')return `<div class="prompt"><h4>Roll the dice</h4><p>Press <b>Roll</b> in the dice tray (or Space). The target is shown there.</p></div>`;
-  if(phase==='action')return `<div class="prompt"><h4>${S.mode==='pvp'?esc(f.name)+', your move':'Your move'}</h4><p>You have <b>${f.ap} AP</b>. Attacks and reactions each cost 1 AP. Delay keeps your AP for reactions.</p>${combatGuideHtml()}</div>`;
+  if(phase==='action')return `<div class="prompt"><h4>${S.mode==='pvp'?esc(f.name)+', your move':'Your move'}</h4><p>You have <b>${f.ap} AP</b>. Choose an action on the left.</p>${paHelp()}</div>`;
   if(phase==='opponent')return `<div class="prompt"><h4>${esc(f.name)} acts</h4><p>The opponent's dice resolve automatically; you will be asked to react when it matters.</p></div>`;
   if(phase==='effects'&&['effect','location'].includes(S.pending?.kind))return `<div class="prompt"><h4>Choose in the window</h4><p>A decision is waiting in the window over the arena.</p></div>`;
   return `<div class="prompt">${actionHtml()}</div>`;
 }
+// Optional help stays out of the way until asked for.
+function paHelp(){
+  const g=typeof combatGuideHtml==='function'?combatGuideHtml():'';
+  return g?`<details class="pa-help"><summary>How this turn works</summary>${g}</details>`:'';
+}
 function pitsArenaDeckHtml(){
   const recap=typeof pitsRecapHtml==='function'?pitsRecapHtml():'';
+  const ex=paExchanges(),cur=ex[ex.length-1],prev=ex[ex.length-2];
   return `${recap}<div class="deck" aria-label="Command deck">
     <div class="acts" role="group" aria-label="Your actions">${paActionsHtml()}</div>
-    <div class="mid">${paPromptHtml()}<section class="why" aria-live="polite"><h4>Exchange breakdown</h4>${combatNarrationHtml()}${exchangeRecapHtml(currentExchange())}</section></div>
-    <div class="chron">${combatHistory()}</div></div>${resultModalHtml()}`;
+    <div class="mid">${paPromptHtml()}</div>
+    <div class="xchs" aria-live="polite">${paExchangeHtml(cur,'Current exchange',true)}${prev?paExchangeHtml(prev,'Previous exchange',false):''}</div></div>
+    <div class="pa-chron">${combatHistory()}</div>${resultModalHtml()}`;
 }
 function pitsArenaBarHtml(){
   const bout=typeof pitsBoutBarHtml==='function'?pitsBoutBarHtml():'';

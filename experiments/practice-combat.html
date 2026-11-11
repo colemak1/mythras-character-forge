@@ -512,8 +512,8 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 </style>
 <link rel="stylesheet" href="pits-stone.css?v=f565ea1341">
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
-<link rel="stylesheet" href="pits-arena.css?v=fec84f280e">
-<link rel="stylesheet" href="pits-stage.css?v=716e1e0dc3">
+<link rel="stylesheet" href="pits-arena.css?v=95a6f4cd70">
+<link rel="stylesheet" href="pits-stage.css?v=30943a4ac8">
 <link rel="stylesheet" href="../sitota-theme.css?v=c8b123e401">
 </head>
 <body class="pits-page">
@@ -553,8 +553,8 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="practice-guidance.js?v=da7f5133ea"></script>
 <script src="pits-view.js?v=766aacde41"></script>
 <script src="pits-game.js?v=1d86e29baf"></script>
-<script src="pits-arena.js?v=12973f03d3"></script>
-<script src="pits-stage.js?v=719c2ae689"></script>
+<script src="pits-arena.js?v=46e7d4e62b"></script>
+<script src="pits-stage.js?v=c92500f5c6"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -902,7 +902,8 @@ const HIT_SPANS=Object.fromEntries(HIT_LOCS.map(loc=>{const rolls=HIT_TABLE.flat
 const ENEMY_NAMES=['Border Deserter','Arena Novice','Roadside Brigand','Mercenary Scout','Veteran Spearman','Pit Champion','Annunaki Rival',
  'Foreign Duelist','Armoured Marauder','Veteran Gladiator'];
 const $=sel=>document.querySelector(sel), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const die=n=>Math.floor(Math.random()*n)+1; const d100=()=>die(100);
+const die=n=>(window.__pitsDie?window.__pitsDie(n):Math.floor(Math.random()*n)+1); const d100=()=>die(100);
+let nextExId=0;
 const clone=x=>JSON.parse(JSON.stringify(x));
 let config={mode:'normal',username:'Guest',charname:'Kethan Voss',style:67,evade:46,armor:2,weapon:'sword',shield:'none',str:13,siz:13,con:13,dex:13,
  int:13,mixedArmour:false,armourByLocation:{},pvpName:'Second Player',pvpSkill:65,pvpEvade:50,pvpArmor:1,pvpWeapon:'dagger',pvpShield:'none',pvpStr:12,
@@ -3065,9 +3066,10 @@ function beginAttack(id,isRemise=false,tool='weapon'){
   const target=combatTarget(f,shieldStrike?'shield':'weapon');
   requestSkill(f.id,target,`${shieldStrike?'Shield strike':'Attack'} · Combat Style ${target}%`,at=>{
     S.pending={kind:'reaction',atk:id,def:t.id,attackTarget:target,attackRoll:at,reaction:'none',defenseRoll:null,owner:null,other:null,effectsLeft:0,
-     chosen:[],chosenLoc:null,maximize:0,evaded:false,isRemise,attackKey,vsWeapon:shieldStrike?false:mustTargetWeapon(id)};
+     chosen:[],chosenLoc:null,maximize:0,evaded:false,isRemise,attackKey,vsWeapon:shieldStrike?false:mustTargetWeapon(id),exid:++nextExId};
     log(`${f.name} ${isRemise?'makes a Remise attack':shieldStrike?'strikes with the shield':'attacks'}`,
-     `${at.roll} against Combat Style ${target}% — ${at.label}.`,'system',`${arenaProfile(attackKey).name}. ${f.ap} AP left.`,{actor:f.id,dice:d100Dice(at.roll)});
+     `${at.roll} against Combat Style ${target}% — ${at.label}.`,'system',`${arenaProfile(attackKey).name}. ${f.ap} AP left.`,
+     {actor:f.id,exid:S.pending.exid,tool:shieldStrike?'shield':'weapon',dice:d100Dice(at.roll)});
     if(t.kind==='ai'){
       const threat=at.grade>=2?60+(at.grade===3?18:0):at.grade===0?38:10;
       const parryValue=threat+(t.ap>1?12:-15)+(Object.values(t.hp).some(hp=>hp<=2)?12:0)+(AI_STYLES[t.tactic]?.defend??0)+Math.random()*12;
@@ -3109,7 +3111,7 @@ function react(action){
     const pct=action==='parry'?combatTarget(d,p.parryTool):evadeTarget(d);
     requestSkill(d.id,pct,`${action==='parry'?'Parry':'Evade'} · ${pct}%`,dr=>{
       log(`${d.name} ${action==='parry'?(p.parryTool==='shield'?'parries with shield':'parries'):'evades'}`,
-       `${dr.roll} vs ${pct}% — ${dr.label}. ${d.ap} AP remaining.`,'system','',{actor:d.id,dice:d100Dice(dr.roll)});
+       `${dr.roll} vs ${pct}% — ${dr.label}. ${d.ap} AP remaining.`,'system','',{actor:d.id,exid:p.exid,tool:p.parryTool,dice:d100Dice(dr.roll)});
       finalize(dr);
     });
   }else{
@@ -3370,6 +3372,16 @@ function endActionAfterCompel(){
 function finishOneEffect(){const p=S.pending;if(!p)return;p.effectsLeft--;if(p.effectsLeft>0){p.kind='effect';chooseAIEffectOrRender();}else resolveHit();}
 function chooseLocation(loc){const p=S.pending;if(!p||p.kind!=='location'||!HIT_LOCS.includes(loc))return;p.chosenLoc=loc;
  log('Choose Location',`${S.fighters[p.owner].name} selects ${loc} before damage is rolled.`,'hit','',{actor:p.owner,target:p.def,location:loc});finishOneEffect();}
+// Presentation facts about one resolved blow (read by the arena stage; no rules here).
+function hitPx(p,blow,dmg,before,after,loc){
+  return {exid:p.exid,tool:/^shield:/.test(p.attackKey)?'shield':'weapon',react:p.reaction,reactTool:p.parryTool||'weapon',
+   reactGrade:p.defenseRoll?p.defenseRoll.grade:null,aGrade:p.attackRoll.grade,total:dmg.total,blocked:blow.blocked,
+   blockedBy:blow.blockedBy||'',afterParry:blow.afterParry,armour:blow.absorbed,wound:blow.wound,before,after,loc};
+}
+function noHitPx(p){
+  return {exid:p.exid,tool:/^shield:/.test(p.attackKey)?'shield':'weapon',react:p.reaction,reactTool:p.parryTool||'weapon',
+   reactGrade:p.defenseRoll?p.defenseRoll.grade:null,aGrade:p.attackRoll.grade,evaded:!!p.evaded};
+}
 function resolveHit(){
   const p=S.pending;if(!p)return;
   const atk=S.fighters[p.atk],def=S.fighters[p.def];
@@ -3389,7 +3401,7 @@ function resolveHit(){
   }
   if(p.attackRoll.grade<2||p.evaded){
     log('No Damaging Hit',p.evaded?`${def.name} evades the incoming strike${p.rangeIntercept?' while changing range':', ending prone'}.`:
-     `${atk.name}'s attack failed to connect.`, 'system');endAction();return;
+     `${atk.name}'s attack failed to connect.`, 'system','',{actor:atk.id,px:noHitPx(p)});endAction();return;
   }
   const chooseDamage=(loc)=>{
     const akey=attackKeyOf(p),aw=arenaProfile(akey),cramped=!aw.shield&&isCrampedAtReach(atk.id),v=cramped?{dice:[1,3],bonus:1}:aw;
@@ -3430,7 +3442,7 @@ function resolveHit(){
         def.hp[loc]-=wound;const sourceWound=registerWound(def,loc,wound);def.lastDamage={loc,wound,attacker:atk.name,weapon:aw.name};
         log(`${atk.name} hits ${loc}`,`${weaponDmg.total} weapon (${weaponDmg.detail}) ${mod.label} (${dmValue>=0?'+':
          ''}${dmValue}) = ${dmg.total} total; ${parry} parry; ${Math.min(afterParry,armour)} armour; ${wound} HP lost.`,'hurt',
-         `${parryText} ${loc}: ${old} → ${def.hp[loc]} HP.`,{actor:atk.id,impact:{target:def.id,location:loc,hpLost:wound},dice:[...chosen.map((r,
+         `${parryText} ${loc}: ${old} → ${def.hp[loc]} HP.`,{actor:atk.id,impact:{target:def.id,location:loc,hpLost:wound},px:hitPx(p,blow,dmg,old,def.hp[loc],loc),dice:[...chosen.map((r,
          i)=>makeDie(dmg.sides,r,`Weapon ${i+1}`)),...dmDice.map((r,i)=>makeDie(Array.isArray(mod.sides)?mod.sides[i]:mod.sides,r,`Modifier ${i+1}`))]});
         if(p.bash){
           // Core p.96: 1m per two complete points of damage before parry and
@@ -3456,7 +3468,7 @@ function resolveHit(){
           if(wound>0){
             ensureEffectState(atk);ensureEffectState(def);
             atk.impaledWeapon={target:def.id,loc,weapon:akey};
-            def.impaledWounds.push({attacker:atk.id,loc,weaponSize:aw.size});
+            def.impaledWounds.push({attacker:atk.id,loc,weaponSize:aw.size,weapon:akey});
             p.impaleLeaveChoice=atk.kind==='human';
             log('Impaled Weapon',`${atk.name}'s ${aw.name} lodges in ${def.name}'s ${loc}. ${atk.kind==='human'?
              'Choose: keep hold and pull it free on a later turn, or leave it in the wound.':
