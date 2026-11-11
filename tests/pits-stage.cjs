@@ -69,12 +69,15 @@ test('wounds, disabled limbs and the end of the fight',()=>{
  assert.deepEqual(cue('FIGHT ENDS','Kethan wins. Marek is incapacitated.',{}),{type:'end',winner:'a'});
  assert.equal(cue('FIGHT ENDS','Marek wins. Kethan dies.',{}).winner,'b');
 });
-test('beats stay long enough for their animation, never shorter than the replay default',()=>{
+test('beats last as long as their own motion plus a short read; unknown beats use the replay default',()=>{
+ // the windup and guard are held through the dice, so the dice tray is the reading pause
  const hold=(t,b,m,f)=>A.run(`pitsStageHold(${JSON.stringify({title:t,body:b,meta:m})},${JSON.stringify(names)},${f})`);
- assert.equal(hold('Kethan attacks','42 against Combat Style 67% — SUCCESS.',{actor:'a'},900),900,'attack fits the default');
- assert(hold('Kethan hits Chest','x',{actor:'a',impact:{target:'b',location:'Chest',hpLost:3}},900)>900,'a hit holds longer');
- assert.equal(hold('Round 2','x',{},900),900);
- assert.equal(hold('Disarm Opponent','Marek drops the weapon at their feet.',{actor:'a',target:'b'},2000),2000,'never shortens a longer delay');
+ const atk=hold('Kethan attacks','42 against Combat Style 67% — SUCCESS.',{actor:'a'},900);
+ assert(atk>=300&&atk<=450,'an attack beat is short (about 350 ms), got '+atk);
+ const hit=hold('Kethan hits Chest','x',{actor:'a',impact:{target:'b',location:'Chest',hpLost:3}},900);
+ assert(hit>=1000&&hit<=1300,'a hit holds about 1.1 s, got '+hit);assert(hit>atk,'a hit holds longer than an attack');
+ assert.equal(hold('Round 2','x',{},900),900,'a beat with no cue uses the default');
+ assert.equal(hold('Disarm Opponent','Marek drops the weapon at their feet.',{actor:'a',target:'b'},2000)<=1000,true);
 });
 test('weapons draw as the right kind, from the engine weapon table',()=>{
  const k=(key,reach)=>JSON.parse(A.run(`JSON.stringify(pitsStageWeaponKind(${JSON.stringify(key)},${reach}))`));

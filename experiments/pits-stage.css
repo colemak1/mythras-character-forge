@@ -31,6 +31,9 @@
 .ps-rtext{font:600 11px var(--st-body,var(--font-ui));letter-spacing:.16em;fill:var(--ps-dim);text-anchor:middle}
 .ps-shadow{fill:var(--ps-ink)}
 .ps-left .ps-part{stroke:var(--ps-a)}
+/* a faint glow in each fighter's own ink, so the two read apart (prototype drop-shadow) */
+.ps-fig.ps-left{filter:drop-shadow(0 0 7px color-mix(in srgb,var(--ps-a) 38%,transparent))}
+.ps-fig.ps-right{filter:drop-shadow(0 0 7px color-mix(in srgb,var(--ps-b) 38%,transparent))}
 .ps-right .ps-part{stroke:var(--ps-b)}
 .ps-part,.ps-head{stroke-linecap:round;stroke-linejoin:round;fill:none}
 .ps-head{fill:var(--st-surface-2,var(--paper))}

@@ -5,6 +5,17 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: one-screen polish and faster, smoother exchanges
+
+- Reaction choices (Parry, Evade, Do Not Defend) sit side by side, and the prompt is capped so the exchange breakdown always keeps room. Every action and every choice is reachable without scrolling at 1280×720, 1366×768 and 1440×900.
+- Short windows: smaller plates, body diagrams and dice tray, so nothing covers the fighters' heads or the contact point.
+- The chronicle header is one row (title and entry count); the deck always lists everything and scrolls.
+- Timing: a beat now lasts about as long as its own motion (attack and parry about 0.35 s, hit about 1.1 s). The dice tray is the reading pause.
+- Fewer stops: the Continue checkpoint between automatic actions waits only when Guidance is on; otherwise play moves on after half a second.
+- The arena HUD (plates, strip, tray) is only rewritten when its content changes, so chip and tray animations no longer restart on every beat.
+- Fighters get a faint glow in their own ink, and a step with dust when the range changes.
+- Phone layout is untouched; the owner may drop the Pits from mobile. No rules or saved data changed.
+
 ## The Pits: one-screen battle shell and held exchange poses
 
 - On a desktop window the battle now fills exactly one screen and the page no longer scrolls: the arena takes the top, the command deck the bottom. The chronicle sits in the deck's third column and scrolls inside its panel; the exchange breakdown is under the prompt; the actions are a compact two-column list.

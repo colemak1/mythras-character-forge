@@ -60,9 +60,11 @@ function pitsStageOutcome(cue,ex){
   return (px.aGrade===0||(ex&&ex.aGrade===0))?'fumble':'miss';
 }
 // How long the replay should stay on a beat so its animation can finish (ms).
-const PSTAGE_HOLD={attack:700,parry:700,evade:800,hit:1700,deflect:1500,locate:850,trip:1300,disarm:1500,stand:800,wound:1000,limb:1000,lodge:900,end:1800};
+// Windup and guard are held through the dice (exPose), so a beat only needs its own motion plus a short read;
+// the dice tray is the reading pause. Targets follow the prototype: strike ~120ms, hit 100+170ms, recover ~250ms.
+const PSTAGE_HOLD={attack:350,parry:350,evade:650,hit:1100,deflect:1100,locate:500,trip:900,disarm:1000,stand:500,wound:600,limb:600,lodge:600,end:1800};
 function pitsStageHold(entry,names,fallback){
-  const c=pitsStageCue(entry,names);return c&&PSTAGE_HOLD[c.type]?Math.max(fallback,PSTAGE_HOLD[c.type]):fallback;
+  const c=pitsStageCue(entry,names);return c&&PSTAGE_HOLD[c.type]?PSTAGE_HOLD[c.type]:fallback;
 }
 // How a weapon (an engine ARENA_WEAPONS key) is drawn. Unknown keys get a
 // plain haft rather than a wrong blade.
@@ -202,6 +204,8 @@ const PS_POSE={
   brace:psP({t:4,a1:60,a2:30,w:150,l1:34,l2:-34,bl1:-26,bl2:12}),
   evade:psP({t:-24,hd:-10,a1:30,a2:40,w:112,l1:8,l2:-12,bl1:-40,bl2:20,dx:-80,lift:30}),
   hit:psP({t:-28,hd:-18,a1:20,a2:50,w:72,ba1:-60,ba2:-10,l1:14,l2:-8,bl1:-30,bl2:8,dx:-38}),
+  step1:psP({t:6,l1:36,l2:-22,bl1:-30,bl2:12}),
+  step2:psP({t:2,l1:-8,l2:-14,bl1:-54,bl2:6}),
   stagger:psP({t:-8,hd:-6,dx:-12}),
   recoil:psP({t:-14,hd:-6,a1:70,a2:50,w:150,ba1:-50,ba2:-10,dx:-30}),
   crouch:psP({t:-14,a1:30,a2:70,w:150,l1:60,l2:-98,bl1:-70,bl2:60,dx:-10}),
@@ -735,7 +739,10 @@ function psSetSpacing(snap){
   const key=psRangeKey(),d=PS_SPACING[key],tx={a:600-d/2,b:600+d/2};
   for(const id of ['a','b']){const f=PS.fig[id];
     if(f.tx!==tx[id]||snap){f.tx=tx[id];
-      if(snap||psReduced()){f.hx=tx[id];f.slide=null;}else f.slide={a:f.hx,b:tx[id],t0:performance.now(),d:460/psSpeed()};}}
+      if(snap||psReduced()){f.hx=tx[id];f.slide=null;}
+      else{f.slide={a:f.hx,b:tx[id],t0:performance.now(),d:460/psSpeed()};
+        // a step-in: alternate the legs while sliding, with dust at the push-off (prototype step1/step2)
+        if(!f.exPose&&!f.dropping){psDust(f);psPlay(f,[PS_POSE.step1,150],[PS_POSE.step2,150],[PS_POSE.idle,160]);}}}}
   psDrawRange(key);
 }
 // Called at the end of every render(): sync state, then play the current beat.

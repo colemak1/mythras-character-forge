@@ -16,9 +16,7 @@ _Last updated: 2026-11-11 by Claude (Pits one-screen shell and held poses laid d
 
 ## Next
 
-0. **Claude, done 2026-11-11:** the Pits visual review batch (`docs/pits-visual-review-20261111.md`, VIS-01 to VIS-08): full-screen battle, aimed strikes, truthful parry/armour/evade contact, lodged weapons, current/previous exchange, safe cancellation. Evidence and known limits: `docs/pits-visual-checks.md`; scripts `tests/visual/pits-scenarios.cjs` and `pits-layout.cjs` (run locally with Playwright; screenshots in `docs/pits-visual-checks/`).
-
-0a. **Claude, next fresh session (a smaller model is fine):** finish `docs/pits-one-screen-plan.md`, "Left to do", items 1 to 10 in order. The owner's brief: match the prototype's layout and animation, one screen, no page scroll; only rulings and theme differ. Foundation is in (shell CSS at the end of `pits-arena.css`, `exPose` in `pits-stage.js`). Item 5 (phone) needs the owner's answer first.
+0. **Claude, done 2026-11-11:** the Pits visual review batch (`docs/pits-visual-review-20261111.md`, VIS-01 to VIS-08) and `docs/pits-one-screen-plan.md` items 1 to 10 (one-screen layout checks, short windows, chronicle header, prompt cap, shorter beat timing, no Continue stop with Guidance off, HUD patching, glow and step-in). Item 5 (phone) skipped by the owner: phones are not a priority and the Pits may leave mobile. Item 11 (one timeline per exchange) waits for the owner to judge the feel. Scripts `tests/visual/pits-scenarios.cjs` and `pits-layout.cjs` (run locally with Playwright).
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
 2. **ChatGPT (Work), after 0a is merged:** live-check the redesigned Pits fight on the deployed site: full-screen layout, a full bout, and the paths listed under Known limits in `docs/pits-visual-checks.md` (Impale withdrawal, Entangle, Trip then stand, Disarm recovery, Defeat, phone).
