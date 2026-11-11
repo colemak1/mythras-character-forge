@@ -16,6 +16,8 @@ _Last updated: 2026-11-11 by Claude (Pits one-screen shell and held poses laid d
 
 ## Next
 
+0a. **Owner:** try the five bottom layouts in the Pits (top bar, **Bottom** list; or `?bottom=A` to `E`) and tell Claude which to keep. Claude then deletes the other four and the switcher. See `docs/pits-bottom-layouts.md`.
+
 0. **Claude, done 2026-11-11:** the Pits visual review batch (`docs/pits-visual-review-20261111.md`, VIS-01 to VIS-08) and `docs/pits-one-screen-plan.md` items 1 to 10 (one-screen layout checks, short windows, chronicle header, prompt cap, shorter beat timing, no Continue stop with Guidance off, HUD patching, glow and step-in). Item 5 (phone) skipped by the owner: phones are not a priority and the Pits may leave mobile. Item 11 (one timeline per exchange) waits for the owner to judge the feel. Scripts `tests/visual/pits-scenarios.cjs` and `pits-layout.cjs` (run locally with Playwright).
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.

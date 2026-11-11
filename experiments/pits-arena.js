@@ -186,6 +186,7 @@ function pitsArenaHud(){
   const hud=document.querySelector('#pitsStage .ps-hud'),bar=document.querySelector('#pitsStage .pa-bar');if(!hud)return;
   const on=paOn()&&['fight','between','over'].includes(S.phase);
   document.body.classList.toggle('pa-on',on);
+  document.body.dataset.bottom=typeof pitsBottomLayout==='function'?pitsBottomLayout():'current';
   if(!on){hud.innerHTML='';if(bar){bar.innerHTML='';delete bar.dataset.html;}return;}
   if(bar){const bh=pitsArenaBarHtml();if(bar.dataset.html!==bh){bar.innerHTML=bh;bar.dataset.html=bh;pitsArenaBarWire();}}
   paPatch(hud,paPlateHtml('a')+paPlateHtml('b')+paStripHtml()+paTrayHtml()+paModalHtml());
@@ -218,7 +219,8 @@ function paFocus(){
   requestAnimationFrame(()=>{
     if(S.phase!=='fight'||V.busy)return;
     const modal=document.querySelector('#pitsStage .modal');
-    const target=modal?null:R?document.querySelector('#pitsStage [data-act="roll"]'):document.querySelector('#root .prompt .choice:not(:disabled), #root .act:not(:disabled)');
+    const pick=['#root .prompt .choice:not(:disabled)','#root .act:not(:disabled)','#root .bact.primary:not(:disabled)','#root .bdk.big:not(:disabled)','#root .brow:not(:disabled)','#root .bact:not(:disabled)','#root .bdk:not(:disabled)'];
+    const target=modal?null:R?document.querySelector('#pitsStage [data-act="roll"]'):pick.map(q=>document.querySelector(q)).find(Boolean);
     if(!target)return;
     target.focus({preventScroll:true});
     const box=(R?document.getElementById('pitsStage'):target).getBoundingClientRect();
@@ -255,6 +257,9 @@ function paHelp(){
   return g?`<details class="pa-help"><summary>How this turn works</summary>${g}</details>`:'';
 }
 function pitsArenaDeckHtml(){
+  // an alternative bottom layout (pits-bottom.js), when one is chosen
+  const alt=typeof pitsBottomDeckHtml==='function'?pitsBottomDeckHtml():'';
+  if(alt)return alt;
   const recap=typeof pitsRecapHtml==='function'?pitsRecapHtml():'';
   const ex=paExchanges(),cur=ex[ex.length-1],prev=ex[ex.length-2];
   return `${recap}<div class="deck" aria-label="Command deck">
@@ -266,7 +271,7 @@ function pitsArenaDeckHtml(){
 function pitsArenaBarHtml(){
   const bout=typeof pitsBoutBarHtml==='function'?pitsBoutBarHtml():'';
   return `<div class="pa-title"><h1>The Pits</h1><span class="pill">${esc(modeName(S.mode))}</span></div>
-    <div class="pa-tools">${guidanceToggleHtml()}<button type="button" class="toolbutton" data-pa="auto" aria-pressed="${PA.auto}">Auto-roll ${PA.auto?'on':'off'}</button>
+    <div class="pa-tools">${typeof pitsBottomSelectHtml==='function'?pitsBottomSelectHtml():''}${guidanceToggleHtml()}<button type="button" class="toolbutton" data-pa="auto" aria-pressed="${PA.auto}">Auto-roll ${PA.auto?'on':'off'}</button>
     <button type="button" class="toolbutton" data-act="help">Rules</button>
     <button type="button" class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Standard pace'}</button>
     <button type="button" class="toolbutton" data-pa="fs" aria-pressed="${!!document.fullscreenElement}">Full screen</button>

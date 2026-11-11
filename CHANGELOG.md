@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: five bottom-third layouts to choose from
+
+- The bottom of the battle screen can be drawn five ways, picked from the new **Bottom** list in the top bar (also `?bottom=A` to `E`): **A** Command bar, **B** Duel table, **C** Ground dock, **D** Step flow, **E** Odds first. The current layout stays the default and the choice is remembered in the browser. The list is temporary: it goes once the owner picks one.
+- All five use the real game: the engine's own actions, costs and AP, the real target and odds, the reaction choices, and the last exchange read from the log (rolls, grades, result). The chronicle panel is gone from these layouts; **A**, **C** and **E** have a history button that opens the full list in a window.
+- **D** and **E** are select-then-confirm; number keys select (1 to 9) and Enter confirms. In **A**, **B** and **C** the number keys act at once.
+- **D** shows the opponent's body map with real hit points and armour for context only. The attacker does not choose a hit location before rolling in this ruleset, so nothing there is aimed. **E** shows your target, their Evade and their Parry, not a combined hit chance, which would be invented maths.
+- Desktop only: phones keep the current layout. No rules or saved data changed. Notes: `docs/pits-bottom-layouts.md`.
+
 ## The Pits: one-screen polish and faster, smoother exchanges
 
 - Reaction choices (Parry, Evade, Do Not Defend) sit side by side, and the prompt is capped so the exchange breakdown always keeps room. Every action and every choice is reachable without scrolling at 1280×720, 1366×768 and 1440×900.
