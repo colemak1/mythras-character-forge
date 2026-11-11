@@ -17,11 +17,8 @@ _Last updated: 2026-11-11 by Claude (#280 merged; Sorcery/Theism learning built)
 ## Next
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work), one batch** (signed in; a disposable theist-sorcerer, not Magic Audit: Invocation and Shaping about 50%, Devotion (Sun) 30%, Exhort, cult Sun at rank Initiate with a pool of 3; GM-award 6 Experience Rolls; one short dated report, pass/fail plus severity):
-   - **Learn a spell:** Magic step → Sorcery → add spell "Wrack", Acquired = Reference only. Play Mode → Spells: it shows REFERENCE ONLY and won't cast. Back in the builder, Learn is refused with no source, then with no GM tick; with both it spends 5 (6 → 1) and shows "Learned in play on … from …". Reload: still learned, the Experience Roll log lists it. It now casts.
-   - **Starting miracles:** add three level-1 miracles and set each to Starting ability. Devotion 30% allows two: the first two need no prompt; the third asks for GM approval. Cancel: it stays unchosen. OK: it is kept, and shows "GM approved" after a reload. A level-2 miracle is refused at Initiate.
-   - **Old characters:** Magic Audit's existing spells or miracles (if any) still cast and show "Recorded before tracking" (look only; don't change it).
-   - Delete the fixture after.
+2. **ChatGPT (Work), completed 2026-11-11:** #281 spell learning (guards, 6→1 rolls, reload/history, cast) and starting miracles (two allowed, third GM exception, rank refusal) PASS; disposable fixture deleted. Report: `docs/learning-live-281-20261111.md`. Legacy Magic Audit check BLOCKED, Severity 3 (fixture/account access; audit untouched). Next: Claude continues Organisations and records that limit.
+
 3. **ChatGPT (Chat):** (a) one milestone review of the Subsystem 8 close (`subsystem-plan.md` item 8); (b) for Spirit Combat (AN-F06–F07), a short code-needed spec with the Core p.131 Spirit Damage table and the p.138 effect eligibility (role, prerequisite) in paraphrase, only if the owner gives you those pages. Core p.218 Vulnerable only with the page. (c) If you have Core p.157: say in one line whether the app's D-6 policy (Augment offsets Encumbrance/Fatigue; Automatic/Hopeless unmoved) contradicts it. (d) SO-C02: with Core p.119, list in paraphrase which ordinary actions are incompatible with a multi-turn Invocation (D-5 already covers wounds and domination).
 4. **Claude, next fresh session:** Organisations (`magic-organisations-code-cases-20261109.md`). Fix any failure from step 2 first. SO-C02 when Chat's (d) arrives.
 
