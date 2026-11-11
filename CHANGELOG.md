@@ -5,6 +5,19 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits stage preview (optional, experimental)
+
+An animated stick-figure view of the existing Pits fight, to judge whether the look is worth adopting. Nothing changes unless you open it with `?stage=1` on the arena page (or `?stage=duel` for a ready-made Sword v Spear fight, straight from the opponent intro). The normal Pits, the gauntlet and every rule are untouched.
+
+- **What it is:** `experiments/pits-stage.js` and `pits-stage.css`. It only reads the combat log and fighter state the arena already produces, and draws them. It never rolls dice, spends Action Points, changes HP or decides anything; a test runs the same seeded bouts with and without it and compares every log line, HP and AP.
+- **Animations follow real outcomes:** Attack (lunge on a success, whiff on a miss), Parry (blade meets blade, sparks), Evade (leap back), Choose Location and Hit Location (a target ring on the body part), a hit (blood, damage number, flinch), Trip Opponent (the target goes down, or stays up), Disarm Opponent (the weapon flies and stays on the floor until picked up) and Regain Footing.
+- **Injuries stay on the figures:** any body part that has lost HP turns red, darker at Serious and Major. A disabled weapon arm hangs limp, a disarmed fighter has no weapon, a prone fighter stays down.
+- **Same dice, log and rules:** the d100 tray, the combat log, Action Points and the Special Effects choices are the normal Pits ones, below the stage. The stage waits on the existing replay, so "Show results" and Quick pace work as before. Reduced-motion settings turn off the shake and bursts.
+- **Look:** drawn with the Stone tokens, so Light and Dark follow your saved mode; desktop and 390px layouts.
+- **Not drawn yet:** Impale (a lodged weapon), shields, entangling, range changes beyond spacing, and fighters other than Sword/Spear (other weapons draw as a sword).
+
+---
+
 ## Spirit Combat and casting restrictions (Subsystem 6 follow-ups)
 
 Built from `docs/core-source-followups-20261111.md` (AN-F06, AN-F07, SO-C02; Core pp.119, 131, 137–138). Policy: D-9.
