@@ -243,3 +243,45 @@ body.pits-stone #root .pa-chron .combat-history{display:block;border:1px solid v
 
 /* the Pit Marks toast must never cover a fighter's name */
 .pits-toast{position:fixed!important;left:50%!important;right:auto!important;top:auto!important;bottom:14px!important;transform:translateX(-50%);z-index:80}
+
+/* ---- One-screen battle (desktop): an app shell, not a page ----
+   The window is split into two rows: the stage takes whatever is left, the command deck
+   has a fixed height. Nothing in battle scrolls the page; long content (chronicle, exchange
+   breakdown, a long action list) scrolls inside its own panel. Phones keep the tall layout. */
+@media (min-width:901px){
+  html:has(body.pa-on){height:100%;overflow:hidden}
+  body.pa-on{--pa-deck:clamp(250px,34vh,330px);height:100dvh;margin:0;overflow:hidden;display:grid;
+    grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) var(--pa-deck)}
+  body.pa-on>#pitsStage{grid-row:1;display:flex;flex-direction:column;min-height:0;width:100%;max-width:none;margin:0;padding:0 12px;box-sizing:border-box}
+  body.pa-on>#pitsStage .pa-bar{flex:none;flex-wrap:nowrap;white-space:nowrap}
+  body.pa-on>#pitsStage .pa-tools{flex-wrap:nowrap}
+  body.pa-on>#pitsStage .ps-stage{flex:1 1 0;height:auto;min-height:0}
+  body.pa-on>main#root{grid-row:2;display:flex;flex-direction:column;min-height:0;height:var(--pa-deck);width:100%;max-width:none;margin:0;
+    padding:8px 12px 10px;box-sizing:border-box;overflow:hidden}
+  body.pa-on #root>.effects-reference,body.pa-on #root>.footer-notes{display:none}
+  body.pa-on #root>.pits-recap{flex:none}
+  body.pa-on #root .deck{flex:1 1 0;min-height:0;height:auto;max-width:none;width:100%;margin:0;padding:0;gap:12px;box-sizing:border-box;
+    grid-template-columns:minmax(300px,380px) minmax(320px,1.2fr) minmax(260px,1fr);grid-template-rows:minmax(0,1fr)}
+  /* actions: two compact columns so the whole list is visible without scrolling */
+  body.pa-on .acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(40px,auto);align-content:start;gap:5px;overflow:auto}
+  body.pa-on .acts h3{grid-column:1/-1}
+  body.pa-on .act{min-height:0;padding:3px 8px;gap:6px}
+  body.pa-on .act>span:first-child{min-width:0}
+  body.pa-on .act b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.pa-on .act small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* middle: the decision first, the exchange breakdown in what is left */
+  body.pa-on .mid{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
+  body.pa-on .mid .prompt{flex:0 1 auto;min-height:0;max-height:none;overflow:auto}
+  body.pa-on .mid .xchs{flex:1 1 0;min-height:0;overflow:auto}
+  body.pa-on .mid .prompt .choicegrid{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+  /* right: the chronicle scrolls inside its panel */
+  body.pa-on .deck .pa-chron{max-width:none;margin:0;padding:0;overflow:hidden;display:flex;flex-direction:column}
+}
+@media (min-width:901px) and (max-width:1400px){
+  body.pa-on .pa-bar .toolbutton{padding:0 8px;font-size:12px}
+  body.pa-on .pa-bar{gap:6px 8px}body.pa-on .pa-bar .pits-bout{gap:8px;padding:2px 6px}
+}
+.pa-rules .mbox{text-align:left;max-height:calc(100dvh - 32px)}
+.pa-rules .mbox h3{margin:14px 0 6px;font:700 13px var(--st-body,var(--font-ui));letter-spacing:.14em;text-transform:uppercase}
+.pa-rules .mbox p{font-size:13px;line-height:1.5}
+.pa-rules .pa-rules-close{text-align:center;margin:16px 0 0}

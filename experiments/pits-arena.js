@@ -227,7 +227,7 @@ function paActionsHtml(){
   const rows=list.map(a=>{
     const help=typeof actionChoiceHelp==='function'?actionChoiceHelp(a.act,f):'';
     const on=live&&a.enabled;
-    return `<button type="button" class="act${a.act==='delay'?' hold':''}${a.act==='yield'?' danger':''}" data-act="${a.act}" ${on?'':'disabled'}>
+    return `<button type="button" class="act${a.act==='delay'?' hold':''}${a.act==='yield'?' danger':''}" data-act="${a.act}" title="${esc(live&&!a.enabled&&a.reason?a.reason:help)}" ${on?'':'disabled'}>
       <span><b>${esc(a.label)}</b><small>${esc(live&&!a.enabled&&a.reason?a.reason:help)}</small></span><span class="cst">${a.ap?a.ap+' AP':'free'}</span></button>`;
   }).join('');
   return `<h3><span>${live?(S.mode==='pvp'?esc(f.name)+': your turn':'Your turn'):'Actions'}</span><span class="pp">${pips}</span></h3>${rows}`;
@@ -252,9 +252,9 @@ function pitsArenaDeckHtml(){
   const ex=paExchanges(),cur=ex[ex.length-1],prev=ex[ex.length-2];
   return `${recap}<div class="deck" aria-label="Command deck">
     <div class="acts" role="group" aria-label="Your actions">${paActionsHtml()}</div>
-    <div class="mid">${paPromptHtml()}</div>
-    <div class="xchs" aria-live="polite">${paExchangeHtml(cur,'Current exchange',true)}${prev?paExchangeHtml(prev,'Previous exchange',false):''}</div></div>
-    <div class="pa-chron">${combatHistory()}</div>${resultModalHtml()}`;
+    <div class="mid">${paPromptHtml()}
+      <div class="xchs" aria-live="polite">${paExchangeHtml(cur,'Current exchange',true)}${prev?paExchangeHtml(prev,'Previous exchange',false):''}</div></div>
+    <div class="chron pa-chron">${combatHistory()}</div></div>${resultModalHtml()}`;
 }
 function pitsArenaBarHtml(){
   const bout=typeof pitsBoutBarHtml==='function'?pitsBoutBarHtml():'';
@@ -262,11 +262,32 @@ function pitsArenaBarHtml(){
     <div class="pa-tools">${guidanceToggleHtml()}<button type="button" class="toolbutton" data-pa="auto" aria-pressed="${PA.auto}">Auto-roll ${PA.auto?'on':'off'}</button>
     <button type="button" class="toolbutton" data-act="help">Rules</button>
     <button type="button" class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Standard pace'}</button>
+    <button type="button" class="toolbutton" data-pa="fs" aria-pressed="${!!document.fullscreenElement}">Full screen</button>
     <button type="button" class="toolbutton" data-act="reset">Exit battle</button></div>${bout}`;
 }
 function pitsArenaBarWire(){
   const b=document.querySelector('[data-pa="auto"]');
   if(b&&!b.dataset.wired){b.dataset.wired='1';b.addEventListener('click',()=>{PA.auto=!PA.auto;render();});}
+  const fs=document.querySelector('[data-pa="fs"]');
+  if(fs&&!fs.dataset.wired){fs.dataset.wired='1';fs.addEventListener('click',()=>{
+    try{const p=document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();if(p&&p.then)p.then(render,()=>{});}catch(e){}
+  });}
+}
+// The battle is one screen with no page scroll, so the rules notes and the Special Effects
+// catalogue (which sit below the fold outside a fight) open in a window instead.
+function pitsArenaRules(){
+  if(!document.body.classList.contains('pa-on'))return false;
+  document.getElementById('paRules')?.remove();
+  const notes=document.querySelector('#root .footer-notes'),fx=document.querySelector('#root .effects-reference');
+  const part=d=>d?`<h3>${esc(d.querySelector('summary')?.textContent||'')}</h3>${[...d.children].filter(c=>c.tagName!=='SUMMARY').map(c=>c.outerHTML).join('')}`:'';
+  const box=document.createElement('div');box.id='paRules';box.className='modal pa-rules';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
+  box.setAttribute('aria-label','Rules');
+  box.innerHTML=`<div class="mbox"><h2>Rules</h2>${part(notes)}${part(fx)}<p class="pa-rules-close"><button type="button" class="toolbutton" data-pa="rules-close">Close</button></p></div>`;
+  const close=()=>{box.remove();document.querySelector('[data-act="help"]')?.focus?.({preventScroll:true});};
+  box.addEventListener('click',e=>{if(e.target===box||e.target.closest('[data-pa="rules-close"]'))close();});
+  box.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+  document.body.append(box);box.querySelector('button').focus({preventScroll:true});
+  return true;
 }
 
 // Outside a fight (setup, opponent intro) the arena is hidden and the site navigation returns.

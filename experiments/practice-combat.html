@@ -512,7 +512,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 </style>
 <link rel="stylesheet" href="pits-stone.css?v=f565ea1341">
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
-<link rel="stylesheet" href="pits-arena.css?v=c22a0d1334">
+<link rel="stylesheet" href="pits-arena.css?v=1c55ef7c7e">
 <link rel="stylesheet" href="pits-stage.css?v=30943a4ac8">
 <link rel="stylesheet" href="../sitota-theme.css?v=c8b123e401">
 </head>
@@ -553,8 +553,8 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="practice-guidance.js?v=da7f5133ea"></script>
 <script src="pits-view.js?v=766aacde41"></script>
 <script src="pits-game.js?v=1d86e29baf"></script>
-<script src="pits-arena.js?v=88ef7a5c86"></script>
-<script src="pits-stage.js?v=fb5e946e37"></script>
+<script src="pits-arena.js?v=b5c6be4a03"></script>
+<script src="pits-stage.js?v=07fe1e4831"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -3819,6 +3819,7 @@ function decoratedClick(e){
   }
   if(act==='speed'){V.quick=!V.quick;if(V.busy&&V.quick)skipPresentation();else render();document.querySelector('.pacebutton')?.focus?.({preventScroll:true});return;}
   if(act==='help'){
+    if(typeof pitsArenaRules==='function'&&pitsArenaRules())return;
     const reference=document.querySelector('.footer-notes');
     if(reference){reference.open=true;reference.scrollIntoView?.({block:'start',behavior:'smooth'});}
     return;
