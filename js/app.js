@@ -263,6 +263,54 @@ window.APP={
    const err=mysticismActivationCheck(S.magic.known,i,limits.individual,limits.combined);
    if(err){mysticMsg(err);render();return;}
    m.active=true;m.remainingTurns=m.durationTurns||0;mysticMsg("");render();},
+ // SO-C02: after a parry or evade while casting, the GM may make the final roll harder.
+ sorceryGmHarder(raw){if(viewOnlyBlock())return;const p=S.play.sorceryCasting,n=Number(raw);if(!p||![0,1,2].includes(n))return;
+   p.gmHarder=n;PM_MSG=n?"The final Invocation roll will be "+n+" Grade"+(n>1?"s":"")+" harder (GM, Core p.119).":"No extra difficulty from the reaction.";render();},
+ // ---- Spirit Combat (AN-F06/F07, Core pp.131, 137–138) ----
+ spiritCombatStart(name,skill,mp,index,canPossess){if(viewOnlyBlock())return;
+   const s=Number(skill),p=Number(mp),i=index===""||index==null?null:Number(index);
+   if(!Number.isSafeInteger(s)||s<0||s>999||!Number.isSafeInteger(p)||p<1||p>999){PM_MSG="Enter the spirit's Spectral Combat % (0–999) and its Magic Points (1–999).";render();return;}
+   const m=i===null?null:allMagic()[i];
+   S.play.spiritCombat={foe:{name:String(name||m?.name||"Spirit").trim().slice(0,120)||"Spirit",skill:s,mp:p,index:m&&m.tradition==="animism"?i:null,canPossess:canPossess===true},log:[],pending:null,over:null};
+   PM_MSG="Spirit Combat begins. Each exchange: one side attacks, the other defends (Core p.137).";render();},
+ spiritCombatExchange(attacker,foeRollRaw){if(viewOnlyBlock())return;const c=S.play.spiritCombat;
+   if(!c||c.over||c.pending||!["pc","spirit"].includes(attacker))return;
+   const fr=Number(foeRollRaw);if(!Number.isInteger(fr)||fr<1||fr>100){PM_MSG="Enter the spirit's d100 roll (1–100; 00 is 100).";render();return;}
+   const me=spiritCombatSkill(),g=gradedPct(me.key,me.pct);
+   if(g.pct===null){PM_MSG="At this Grade the roll is "+(g.grade==="automatic"?"automatic":"hopeless")+"; settle the exchange with the GM.";render();return;}
+   const r=d100(),pcTier=resolveRoll(r,g.pct),foeTier=resolveRoll(fr,c.foe.skill);
+   const att=attacker==="pc"?pcTier:foeTier,def=attacker==="pc"?foeTier:pcTier;
+   const hit=/^(Critical|Success)$/.test(att)&&/^(Failure|Fumble)$/.test(def);
+   const won=CombatRules.effectsWon(att,def);
+   c.pending={attacker,pcRoll:r===100?"00":r,pcPct:g.pct,pcTier,foeRoll:fr,foeTier,hit,effects:Math.abs(won),winner:won>0?attacker:won<0?(attacker==="pc"?"spirit":"pc"):null};
+   PM_MSG=null;render();},
+ spiritCombatApply(picked){if(viewOnlyBlock())return;const c=S.play.spiritCombat,p=c?.pending;if(!p)return;
+   picked=Array.isArray(picked)?[...new Set(picked)]:[];
+   const opts=spiritCombatPendingOptions();
+   if(picked.length>p.effects||picked.some(x=>!opts.includes(x))){PM_MSG="Choose up to "+p.effects+" of the listed Spirit Combat effects.";render();return;}
+   const lines=[(p.attacker==="pc"?"You attack":c.foe.name+" attacks")+": you "+p.pcTier+" ("+p.pcRoll+" vs "+p.pcPct+"%), "+c.foe.name+" "+p.foeTier+" ("+p.foeRoll+" vs "+c.foe.skill+"%)."];
+   if(p.hit){
+     const pct=p.attacker==="pc"?spiritCombatSkill().pct:c.foe.skill,dice=spiritDamageDice(pct);
+     const roll=()=>dice?dice.reduce((t,s)=>t+d(s),0):0;
+     let dmg=roll();if(p.winner===p.attacker&&picked.includes("Spirit Lance"))dmg=Math.max(dmg,roll());
+     if(p.attacker==="pc"){c.foe.mp=Math.max(0,c.foe.mp-dmg);const m=c.foe.index===null?null:S.magic.known[c.foe.index-S.magic.folk.length];if(m&&m.tradition==="animism")m.spiritMP=c.foe.mp;}
+     else S.play.magic=Math.max(0,playCurMagic()-dmg);
+     lines.push("Unparried hit: "+spiritDiceLabel(dice)+" = "+dmg+" MP from "+(p.attacker==="pc"?c.foe.name+" (now "+c.foe.mp+")":"you (now "+playCurMagic()+")")+".");
+   }else lines.push("No psychic damage (parried or missed).");
+   if(picked.length)lines.push((p.winner==="pc"?"You":c.foe.name)+" chose: "+picked.join(", ")+(picked.some(x=>x!=="Spirit Lance")?" (the GM applies these)":"")+".");
+   c.log=c.log.concat(lines.join(" ")).slice(-40);c.pending=null;
+   if(c.foe.mp<=0||playCurMagic()<=0){c.over={loser:c.foe.mp<=0?"spirit":"pc",consequence:"",note:""};
+     PM_MSG=(c.over.loser==="pc"?"You have":c.foe.name+" has")+" no Magic Points left and is helpless. The GM decides what follows (Core p.138).";}
+   else PM_MSG=lines.join(" ");render();},
+ spiritCombatConsequence(choice,note,gmOk){if(viewOnlyBlock())return;const c=S.play.spiritCombat;if(!c?.over)return;
+   if(!SPIRIT_COMBAT_ENDINGS.includes(choice)){PM_MSG="Choose what the GM rules happens.";render();return;}
+   if(!gmOk){PM_MSG="Tick that the GM has decided the outcome.";render();return;}
+   c.over.consequence=choice;c.over.note=String(note||"").slice(0,300);
+   c.log=c.log.concat("Ended: "+(c.over.loser==="pc"?"you are":c.foe.name+" is")+" helpless. GM: "+choice+(c.over.note?" ("+c.over.note+")":"")+".").slice(-40);
+   PM_MSG="Recorded. Resolve "+choice+" with the GM.";render();},
+ spiritCombatEnd(){if(viewOnlyBlock()||!S.play.spiritCombat)return;
+   if(S.play.spiritCombat.over&&!S.play.spiritCombat.over.consequence&&!confirm("The GM hasn't recorded what follows the defeat. End the Spirit Combat anyway?"))return;
+   S.play.spiritCombat=null;PM_MSG="Spirit Combat closed.";render();},
  sorceryCancel(){if(viewOnlyBlock())return;S.play.sorceryCasting=null;PM_MSG="Sorcery invocation cancelled; no Invocation roll was made.";render();},
  mysticismCancel(){if(viewOnlyBlock())return;S.play.mysticismCasting=null;PM_MSG="Talent preparation cancelled; no Mysticism roll was made.";render();},
  theismCancel(){if(viewOnlyBlock())return;S.play.theismCasting=null;PM_MSG="Miracle exhortation cancelled; no Exhort roll was made.";render();},
@@ -529,6 +577,8 @@ window.APP={
    PM_MSG=null;
    const m=allMagic()[idx];if(!m)return;
    const trad=MAGIC_TRAD_MAP[m.tradition];if(!trad)return;
+   // SO-C02: only the Invocation under way may continue while it is pending.
+   if(S.play.sorceryCasting&&S.play.sorceryCasting.index!==idx){PM_MSG=sorceryCastingGuard("spell");render();return;}
    if(m.tradition==="animism"){
      PM_MSG="Animism requires a specific action: Trance, summoning (Core p.137), Binding, or spirit combat. Use the recorded spirit as a reference and resolve the action with your GM; generic spell casting is disabled to avoid inaccurate results.";
      render();return;
@@ -607,7 +657,7 @@ window.APP={
        magic:"failed: "+what+" while casting (Core p.119); no roll, nothing spent automatically"});
      S.rollLog=S.rollLog.slice(0,8);PM_MSG="The casting fails because of "+what+" (Core p.119). Ask the GM about any cost.";render();return;
    }
-   const extra=hurt.extra+(m.tradition==="sorcery"?(sorceryCost(m).combinedSpells||0):0);
+   const extra=hurt.extra+(m.tradition==="sorcery"?(sorceryCost(m).combinedSpells||0)+(S.play.sorceryCasting?.gmHarder||0):0);
    const base=finalPct(key);let g=extra?sorceryInvocationGrade(key,base,extra):gradedPct(key,base);
    if(g.pct===null){PM_MSG=g.grade==="automatic"?"Automatic — the magic simply works.":"Hopeless — no casting can be attempted at this Grade.";render();return;}
    const r=d100();const tier=resolveRoll(r,g.pct);
@@ -1146,6 +1196,9 @@ window.APP={
  /* roller */
  roll(key){const em=entryMap();const e=em[key];if(!e)return;
    if(fatigueNoActivity()){PM_MSG=fatigueNoActivity();render();return;}
+   // SO-C02 (Core p.119): an evade is a Reactive Action; other skills break an Invocation.
+   {const g=sorceryCastingGuard(key==="std:Evade"?"reactive":key.startsWith("style:")?"attack":"skill");if(g){PM_MSG=g;render();return;}
+    if(key==="std:Evade"&&S.play.sorceryCasting)S.play.sorceryCasting.reacted=true;}
    if(isSpokenLanguage(key)){PM_MSG="Spoken language measures fluency. Roll the relevant skill, capped by fluency if the GM calls for it.";render();return;}
    PM_MSG=null;
    const base=finalPct(key);const g=gradedPct(key,base);
@@ -1171,6 +1224,8 @@ window.APP={
  // recorded so weapon-specific Special Effects can be filtered.
  rollWithWeapon(weapon,key,fam,role){if(viewOnlyBlock())return;
    if(fatigueNoActivity()){PM_MSG=fatigueNoActivity();render();return;}
+   {const g=sorceryCastingGuard(role==="defence"?"reactive":"attack");if(g){PM_MSG=g;render();return;}
+    if(role==="defence"&&S.play.sorceryCasting)S.play.sorceryCasting.reacted=true;}
    if(weapon!=="Unarmed"&&!weaponByName(weapon))return;
    const em=entryMap(),e=key?em[key]:null;if(key&&!e)return;
    let g,label;

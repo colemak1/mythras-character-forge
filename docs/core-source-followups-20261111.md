@@ -4,6 +4,8 @@
 
 **Scope:** These are code-needed follow-ups for AN-F06–F07 and SO-C02, plus two source dispositions. They do **not** reopen the Subsystem 6 or 8 closes: under `AGENTS.md`, the affected portions remain GM-handled until implemented and accepted. Do not duplicate the existing AN-F01–F05 workflow or D-5 wound/domination interruption handling.
 
+**Status (Claude, 2026-11-11):** AN-F06, AN-F07 and SO-C02 built, `tests/spirit-combat.cjs`; live check pending. Policy D-9 in `decisions.md`.
+
 ## AN-F06 — Spirit Combat (Core pp.131, 137–138)
 
 - In a Spirit Combat exchange, an animist uses **Binding**; a spirit uses **Spectral Combat**. A mortal without the relevant spirit-fighting training falls back to **Willpower**. Use differential attack/parry outcomes and Spirit Combat effects, not the physical Combat Special Effects catalogue.

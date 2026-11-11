@@ -376,7 +376,7 @@ function freshState(){return {
  // start at null, meaning "at max" — they're only written once the player
  // actually spends/takes damage, so a freshly-finished character always
  // shows full without needing an extra initialization step.
- play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"skills",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,mysticismCasting:null,theismCasting:null,castingHurt:null,initiative:null,surprised:false,pinned:[]},
+ play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"skills",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,spiritCombat:null,mysticismCasting:null,theismCasting:null,castingHurt:null,initiative:null,surprised:false,pinned:[]},
  // Experience Rolls (core rulebook pp.71-73, cross-checked against the
  // Mythras Core pp.71–72, checked against the uploaded rulebook — see audit for
  // citations). pool = banked, unspent Experience Rolls. fumbled = skill
@@ -548,6 +548,9 @@ function normalizeState(){
   if(!S.play.hpMaxOverride||typeof S.play.hpMaxOverride!=="object"||Array.isArray(S.play.hpMaxOverride))S.play.hpMaxOverride={};
   if(!Array.isArray(S.play.woundEvents))S.play.woundEvents=[];
   // A multi-turn invocation is a manual tracker, never an automatic spell effect.
+  normalizeSpiritCombat();
+  // SO-C02: a GM-chosen extra difficulty after a reaction while casting.
+  if(S.play.sorceryCasting){const p=S.play.sorceryCasting;p.reacted=p.reacted===true;p.gmHarder=[0,1,2].includes(p.gmHarder)?p.gmHarder:0;}
   if(S.play.sorceryCasting && (!Number.isInteger(S.play.sorceryCasting.index) ||
       !Number.isInteger(S.play.sorceryCasting.completed) ||
       !Number.isInteger(S.play.sorceryCasting.total) ||
@@ -1343,6 +1346,76 @@ function cultLeftBlock(cultName){
   if(S.cultMembership?.archetype&&magicNameKey(cultDisplayName(S.cultMembership))===k)return null;
   const f=(S.cultFormer||[]).find(x=>magicNameKey(cultDisplayName(x))===k);
   return f?"This character left "+cultDisplayName(f)+". New miracles from it need the GM to approve rejoining it, or a replacement source (Core pp.196–200).":null;
+}
+// ---- Spirit Combat (docs/core-source-followups-20261111.md AN-F06/F07,
+// Core pp.131, 137–138). Psychic hits drain Magic Points, never location HP.
+// The p.139 optional Tenacity/physical-damage variants are not used.
+const SPIRIT_DAMAGE_TABLE=[[2],[4],[6],[8],[10],[6,6],[8,6],[8,8],[10,8]];
+// Dice sides for the attacker's skill %, or null at 0% or below.
+function spiritDamageDice(pct){
+  const p=Math.floor(Number(pct));if(!Number.isFinite(p)||p<1)return null;
+  const k=Math.ceil(p/20);
+  if(k<=9)return SPIRIT_DAMAGE_TABLE[k-1].slice();
+  // 181–200 is 2d10; each further 20% adds 1d2, 1d4, 1d6, 1d8, then another 1d10.
+  const tens=2+Math.floor((k-10)/5),rem=(k-10)%5;
+  return Array(tens).fill(10).concat(rem?[[2,4,6,8][rem-1]]:[]);
+}
+function spiritDiceLabel(sides){
+  if(!sides)return "none";const c={};sides.forEach(s=>{c[s]=(c[s]||0)+1;});
+  return Object.keys(c).map(Number).sort((a,b)=>b-a).map(s=>c[s]+"d"+s).join(" + ");
+}
+// p.138: which result (off/def) may take each effect, and any extra gate.
+const SPIRIT_EFFECTS=[
+ ["Bleed Essence",["off","def"],{critical:true},"The wound leaks 1 MP per cycle until the combat ends."],
+ ["Compel Bargain",["off"],{},"Opposed Willpower to compel a deed; success ends the combat."],
+ ["Drive Off",["off"],{actor:"mortal"},"The spirit resists with Willpower or withdraws from the combat."],
+ ["Leech Strength",["off"],{critical:true},"The attacker gains the MP this attack inflicted."],
+ ["Obscure",["def"],{critical:true},"The attacker loses track of the defender until it attacks again."],
+ ["Possess",["off"],{actor:"spirit",possess:true},"The opponent resists with Willpower; the GM resolves possession."],
+ ["Psychic Stun",["off","def"],{},"The opponent loses its next Turn."],
+ ["Restrain",["off","def"],{actor:"mortal"},"Stops the spirit fleeing or engaging anyone else."],
+ ["Spirit Lance",["off"],{},"Roll psychic damage twice and use the better result."],
+ ["Sunder Binding",["off","def"],{spiritFumble:true},"Breaks the fetter that confines the spirit."],
+ ["Suppress Ability",["off","def"],{actor:"mortal"},"Switches off one spirit ability that is active."],
+ ["Turn Back",["def"],{},"The attack turns on its maker, using the attacker's Spirit Damage."],
+ ["Withdraw",["def"],{},"The defender leaves the combat and returns to its place or body."]
+];
+// role "off"|"def"; actor "mortal"|"spirit"; critical = the winner's roll;
+// spiritFumbled = the spirit's roll was a Fumble; canPossess = GM-confirmed.
+function spiritEffectOptions({role,actor,critical=false,spiritFumbled=false,canPossess=false}){
+  return SPIRIT_EFFECTS.filter(([,roles,g])=>roles.includes(role)&&(!g.actor||g.actor===actor)&&(!g.critical||critical)
+    &&(!g.spiritFumble||spiritFumbled)&&(!g.possess||canPossess)).map(([name])=>name);
+}
+// The character's Spirit Combat skill: Binding if known, else Willpower (p.137).
+function spiritCombatSkill(){
+  const b=magicSkillKey("Binding");
+  return b?{key:b,label:"Binding",pct:finalPct(b)}:{key:"std:Willpower",label:"Willpower (no spirit training)",pct:finalPct("std:Willpower")};
+}
+function normalizeSpiritCombat(){
+  const c=S.play?.spiritCombat;if(!c||typeof c!=="object"||!c.foe){if(S.play)S.play.spiritCombat=null;return;}
+  const f=c.foe,n=(v,max)=>Number.isSafeInteger(v)&&v>=0&&v<=max?v:0;
+  c.foe={name:String(f.name||"Spirit").slice(0,120),skill:n(f.skill,999),mp:n(f.mp,999),index:Number.isInteger(f.index)&&f.index>=0?f.index:null,canPossess:f.canPossess===true};
+  c.log=Array.isArray(c.log)?c.log.filter(x=>typeof x==="string").map(x=>x.slice(0,300)).slice(-40):[];
+  if(c.pending&&(typeof c.pending!=="object"||!["pc","spirit"].includes(c.pending.attacker)))c.pending=null;
+  if(c.over&&(typeof c.over!=="object"||!["pc","spirit"].includes(c.over.loser)))c.over=null;
+  if(c.over){c.over.consequence=String(c.over.consequence||"").slice(0,60);c.over.note=String(c.over.note||"").slice(0,300);}
+}
+// What follows a defeat is always the GM's choice; nothing is preselected.
+const SPIRIT_COMBAT_ENDINGS=["Possession","Binding","Exorcism","Driven off","Spirit withdraws","Other (see note)"];
+function spiritCombatPendingOptions(){
+  const c=S.play?.spiritCombat,p=c?.pending;if(!p||!p.winner||!p.effects)return [];
+  const tier=p.winner==="pc"?p.pcTier:p.foeTier;
+  return spiritEffectOptions({role:p.winner===p.attacker?"off":"def",actor:p.winner==="pc"?"mortal":"spirit",
+    critical:tier==="Critical",spiritFumbled:p.foeTier==="Fumble",canPossess:c.foe.canPossess});
+}
+// ---- SO-C02 (Core p.119): what a sorcerer may do while an Invocation is
+// under way: walk, and Free or Reactive Actions (parry, evade). Attacks,
+// other skills and other spells would break it. Wounds stay with D-5.
+function sorceryCastingGuard(kind){
+  const p=S.play?.sorceryCasting;if(!p)return null;
+  if(kind==="reactive")return null;
+  return "You are invoking "+(p.name||"a spell")+" (turn "+p.completed+" of "+p.total+"). While casting you may only walk and take Free or Reactive Actions such as a parry or evade; "
+    +({attack:"an attack",skill:"another skill roll",spell:"another spell"}[kind]||"that action")+" would break it (Core p.119). Cancel the casting first if you mean to do it.";
 }
 function magicCastPreflight(entry, availableMP, availableDevotion){
   if(!entry || !MAGIC_TRAD_MAP[entry.tradition])return "Unknown magical tradition.";
