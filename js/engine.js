@@ -148,7 +148,32 @@ function rangeSizeSteps(distance,siz){
   return {steps:RANGE_DISTANCE_TABLE[last-(extra%2)][col]+Math.ceil(extra/2),extrapolated:true};
 }
 function fatigueGradeFloor(){const r=fatigueRow();return r&&r.grade?r.grade:null;}
-function gradeForEntry(key){
+// MY-C03 (Core pp.156–157): active Augment Skill Talents linked to this skill.
+// Only learned, active Talents with the augment category count.
+function mysticismAugmentTalents(key){
+  const known=(S.magic&&Array.isArray(S.magic.known))?S.magic.known:[];
+  return known.filter(m=>m&&m.tradition==="mysticism"&&m.talentCategory==="augment"&&m.active&&m.talentLearned===true
+    &&typeof m.augmentSkill==="string"&&m.augmentSkill===key&&Number.isInteger(Number(m.intensity))&&Number(m.intensity)>0);
+}
+function mysticismAugmentSteps(key){return mysticismAugmentTalents(key).reduce((t,m)=>t+Number(m.intensity),0);}
+// Net grade: each Augment Intensity level is one grade easier, set against
+// every harder shift first, and the result is capped at Very Easy, so excess
+// Intensity absorbs later penalties instead of being lost. Automatic and
+// Hopeless are not difficulty steps a Talent can move (app policy).
+function augmentedGrade(g,extraHarder,augment){
+  if(g==="automatic"||g==="hopeless"||!augment)return extraHarder?shiftGradeHarder(g,extraHarder):g;
+  const i=GRADE_ORDER.indexOf(g)+(extraHarder||0)-augment;
+  return GRADE_ORDER[Math.min(GRADE_ORDER.length-1,Math.max(1,i))];
+}
+// A roll's grade with extra harder steps of its own (Combine, hurt while
+// casting, weapon familiarity). With an Augment Talent on the skill the steps
+// are netted before the Very Easy cap; otherwise they shift the grade as before.
+function gradeWithExtra(key,extra){
+  const aug=mysticismAugmentSteps(key);
+  return aug?augmentedGrade(situationalGrade(key),extra,aug):shiftGradeHarder(gradeForEntry(key),extra);
+}
+function gradeForEntry(key){return augmentedGrade(situationalGrade(key),0,mysticismAugmentSteps(key));}
+function situationalGrade(key){
   let g=ACTIVE_GRADE;
   const advKey=GRADE_EASIER_ADV[key];
   if(advKey&&hasAdv(advKey))g=shiftGradeEasier(g);
@@ -170,6 +195,7 @@ function gradeReasons(key){
     out.push({dir:"harder",text:st.label+": "+steps+" Grade"+(steps>1?"s":"")+" harder (STR/DEX skill)"});}
   const floor=fatigueGradeFloor();
   if(floor)out.push({dir:"harder",text:"Fatigue ("+fatigueRow().name+"): rolls are "+GRADE_LABEL[floor]});
+  for(const m of mysticismAugmentTalents(key))out.push({dir:"easier",text:"Augment Skill Talent "+(m.name||"")+": "+m.intensity+" Grade"+(Number(m.intensity)>1?"s":"")+" easier, Very Easy at most (Core pp.156–157)"});
   return out;
 }
 
@@ -263,7 +289,7 @@ function gradedPct(key,basePct){
   return mult==null?{pct:null,grade:g}:{pct:gradePct(basePct,mult),grade:g};
 }
 function sorceryInvocationGrade(key,basePct,extra){
-  const grade=shiftGradeHarder(gradeForEntry(key),extra),mult=GRADE_MULT[grade];
+  const grade=gradeWithExtra(key,extra),mult=GRADE_MULT[grade];
   return {grade,pct:mult==null?null:gradePct(basePct,mult)};
 }
 // Reference table for the on-demand Difficulty Grade popover in Play Mode —
@@ -459,11 +485,19 @@ function normalizeState(){
       m.active=!!m.active;
       m.durationTurns=Number.isInteger(Number(m.durationTurns))&&Number(m.durationTurns)>=0?Number(m.durationTurns):0;
       m.remainingTurns=m.active&&Number.isInteger(Number(m.remainingTurns))&&Number(m.remainingTurns)>=0?Number(m.remainingTurns):0;
+      // MY-C03: the skill an Augment Talent is linked to (an entryMap key).
+      if(typeof m.augmentSkill!=="string"||!m.augmentSkill)delete m.augmentSkill;else m.augmentSkill=m.augmentSkill.slice(0,200);
     }
   }
   if(typeof S.magic.devotional!=="number")S.magic.devotional=0;
   if(typeof S.magic.devotionalUsed!=="number")S.magic.devotionalUsed=0;
   normalizeDevotionalPools();
+  // MY-C01: the record of GM-confirmed changes to the Talents in practice.
+  S.magic.talentSwaps=Array.isArray(S.magic.talentSwaps)?S.magic.talentSwaps.filter(x=>x&&typeof x==="object")
+    .map(x=>({date:String(x.date||"").slice(0,40),from:String(x.from||"").slice(0,120),to:String(x.to||"").slice(0,120)})).slice(-50):[];
+  // MY-C02: Talents still waiting on their concentration roll after a disruption.
+  if(S.play){const d=S.play.talentDisruption,list=d&&Array.isArray(d.talents)?d.talents.filter(t=>t&&Number.isInteger(t.index)&&t.index>=0&&typeof t.name==="string").map(t=>({index:t.index,name:t.name.slice(0,120)})).slice(0,50):[];
+    S.play.talentDisruption=list.length?{talents:list}:null;}
   if(!Object.hasOwn(ANIMIST_RANK_FRACTION,S.magic.animistRank))S.magic.animistRank="";
   if(S.play)S.play.tranceBarred=S.play.tranceBarred===true;
   if(S.play){const t=S.play.trance;S.play.trance=t&&TRANCE_PURPOSE_MAP[t.purpose]&&TRANCE_PREP_STEPS.includes(t.prep)?{purpose:t.purpose,prep:t.prep,critical:!!t.critical}:null;}
@@ -976,6 +1010,19 @@ function mysticismActivationCheck(entries,index,individual,combined){
   const other=mysticismActiveTotal(entries);
   if(other+intensity>combined)return "Active Talents would exceed the combined Intensity limit ("+combined+").";
   return null;
+}
+// MY-C01 (Core p.157): learning one more distinct Talent would pass the
+// half-POW limit, so it can only replace one already in practice.
+function mysticismAtPracticeCap(entries,index,pow){
+  const m=entries[index];if(!m||m.tradition!=="mysticism"||!String(m.name||"").trim()||!Number.isSafeInteger(pow)||pow<1)return false;
+  const names=mysticismLearnedNames(entries);if(names.has(magicNameKey(m.name)))return false;
+  names.add(magicNameKey(m.name));return names.size*2>pow;
+}
+// The distinct Talent names in practice, as first written.
+function mysticismPractisedNames(entries){
+  const seen=new Map();
+  for(const m of entries)if(m.tradition==="mysticism"&&m.talentLearned===true&&String(m.name||"").trim()&&!seen.has(magicNameKey(m.name)))seen.set(magicNameKey(m.name),String(m.name).trim());
+  return [...seen.values()];
 }
 // Core p.165 Invocation Costs: success/full, critical/half, failure/zero,
 // fumble/full. Core gives no rounding for an odd half: the app rounds up as

@@ -237,11 +237,11 @@ window.APP={
  toggleTalent(i){if(viewOnlyBlock())return;const m=S.magic.known[i];if(!m||m.tradition!=="mysticism")return;
    if(m.active){m.active=false;m.remainingTurns=0;render();return;}
    const ready=mysticismTalentReady(S.magic.known,i,Number(effectiveChars().POW));
-   if(ready){PM_MSG=ready;render();return;}
+   if(ready){mysticMsg(ready);render();return;}
    const limits=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
    const err=mysticismActivationCheck(S.magic.known,i,limits.individual,limits.combined);
-   if(err){PM_MSG=err;render();return;}
-   m.active=true;m.remainingTurns=m.durationTurns||0;render();},
+   if(err){mysticMsg(err);render();return;}
+   m.active=true;m.remainingTurns=m.durationTurns||0;mysticMsg("");render();},
  sorceryCancel(){if(viewOnlyBlock())return;S.play.sorceryCasting=null;PM_MSG="Sorcery invocation cancelled; no Invocation roll was made.";render();},
  mysticismCancel(){if(viewOnlyBlock())return;S.play.mysticismCasting=null;PM_MSG="Talent preparation cancelled; no Mysticism roll was made.";render();},
  theismCancel(){if(viewOnlyBlock())return;S.play.theismCasting=null;PM_MSG="Miracle exhortation cancelled; no Exhort roll was made.";render();},
@@ -308,11 +308,56 @@ window.APP={
  combineTargets(i,on){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;m.combineSharedTargets=!!on;render();},
  invocationSource(i,key){const m=S.magic.known[i];if(!m||m.tradition!=="sorcery")return;
    if(key==="")delete m.invocationKey;else if(invocationOptions().some(o=>o.key===key))m.invocationKey=key;render();},
+ // MY-C01 (Core p.157): changing which Talents are in regular practice is a
+ // GM-confirmed meditation and retraining, recorded in S.magic.talentSwaps.
+ // Stopping practice keeps the recorded Talent; nothing is deleted.
  talentLearned(i,on){if(viewOnlyBlock())return;const m=S.magic.known[i];if(!m||m.tradition!=="mysticism")return;
-   if(!on){m.talentLearned=false;m.active=false;m.remainingTurns=0;render();return;}
+   TALENT_SWAP=null;
+   if(!on){
+     if(m.talentLearned&&!confirm("Stop practising "+(m.name||"this Talent")+"? It stays recorded, and is ended if active. Taking up a different Talent in its place needs the meditation and retraining in Core p.157, confirmed with your GM."))return render();
+     const was=m.talentLearned;m.talentLearned=false;m.active=false;m.remainingTurns=0;
+     if(was&&String(m.name||"").trim()&&!mysticismLearnedNames(S.magic.known).has(magicNameKey(m.name)))
+       (S.magic.talentSwaps||(S.magic.talentSwaps=[])).push({date:new Date().toISOString().slice(0,10),from:String(m.name).trim().slice(0,120),to:""});
+     mysticMsg("");render();return;}
+   const pow=Number(effectiveChars().POW),err=mysticismLearnCheck(S.magic.known,i,pow);
+   if(err){mysticMsg(err+(mysticismAtPracticeCap(S.magic.known,i,pow)?" To take it up, choose the Talent it replaces below.":""));
+     if(mysticismAtPracticeCap(S.magic.known,i,pow))TALENT_SWAP=i;render();return;}
+   m.talentLearned=true;mysticMsg("");render();},
+ talentSwapCancel(){TALENT_SWAP=null;mysticMsg("");render();},
+ talentSwap(i,fromName,confirmed){if(viewOnlyBlock())return;const m=S.magic.known[i];
+   if(!m||m.tradition!=="mysticism"||m.talentLearned)return;
+   const from=magicNameKey(fromName||"");
+   if(!from||!mysticismLearnedNames(S.magic.known).has(from)){mysticMsg("Choose the practised Talent this one replaces.");render();return;}
+   if(!confirmed){mysticMsg("Confirm with your GM that the meditation and retraining in Core p.157 is done before switching Talents.");render();return;}
+   const dropped=S.magic.known.filter(x=>x.tradition==="mysticism"&&x.talentLearned===true&&magicNameKey(x.name)===from);
+   const fromLabel=String(dropped[0].name).trim();
+   for(const x of dropped){x.talentLearned=false;x.active=false;x.remainingTurns=0;}
    const err=mysticismLearnCheck(S.magic.known,i,Number(effectiveChars().POW));
-   if(err){PM_MSG=err;render();return;}
-   m.talentLearned=true;render();},
+   if(err){for(const x of dropped)x.talentLearned=true;mysticMsg(err);render();return;}
+   m.talentLearned=true;TALENT_SWAP=null;
+   (S.magic.talentSwaps||(S.magic.talentSwaps=[])).push({date:new Date().toISOString().slice(0,10),from:fromLabel.slice(0,120),to:String(m.name).trim().slice(0,120)});
+   mysticMsg(fromLabel+" is no longer in practice (still recorded); "+String(m.name).trim()+" now is. The switch is logged.");render();},
+ // MY-C02 (Core p.157): a disruption while Talents are active asks for an
+ // opposed Willpower roll for each one; only those that fail end.
+ talentDisrupted(){if(viewOnlyBlock())return;
+   const talents=S.magic.known.map((m,index)=>({m,index})).filter(x=>x.m.tradition==="mysticism"&&x.m.active).map(x=>({index:x.index,name:String(x.m.name||"")}));
+   if(!talents.length){PM_MSG="No Talent is active, so there is no concentration to test.";render();return;}
+   S.play.talentDisruption={talents};
+   PM_MSG="Disrupted: make an opposed Willpower roll for each active Talent separately; only those that lose end (Core p.157). The GM decides what counts as a disruption.";render();},
+ talentDisruptionRoll(pos){if(viewOnlyBlock())return;const t=S.play.talentDisruption?.talents?.[pos];if(!t)return;
+   if(!entryMap()["std:Willpower"]){PM_MSG="This character has no Willpower skill to roll.";render();return;}
+   const before=S.rollLog.length?S.rollLog[0]:null;APP.roll("std:Willpower");
+   if(S.rollLog[0]&&S.rollLog[0]!==before)S.rollLog[0].magic="concentration on "+(t.name||"Talent")+": compare with the opposing roll, then mark it held or lost";},
+ talentDisruptionResolve(pos,held){if(viewOnlyBlock())return;const d=S.play.talentDisruption,t=d?.talents?.[pos];if(!t)return;
+   const m=S.magic.known[t.index],same=m&&m.tradition==="mysticism"&&String(m.name||"")===t.name;
+   d.talents.splice(pos,1);
+   if(!held&&same&&m.active){m.active=false;m.remainingTurns=0;}
+   PM_MSG=(t.name||"Talent")+(held?" holds.":same?" ends; its Magic Points can begin to recover.":" was changed or removed; nothing ended.");
+   if(!d.talents.length)S.play.talentDisruption=null;render();},
+ talentDisruptionCancel(){if(viewOnlyBlock())return;S.play.talentDisruption=null;PM_MSG=null;render();},
+ talentAugmentSkill(i,key){if(viewOnlyBlock())return;const m=S.magic.known[i];if(!m||m.tradition!=="mysticism")return;
+   if(!key){delete m.augmentSkill;render();return;}
+   if(!entryMap()[key])return;m.augmentSkill=key;render();},
  // Core p.136: Calling upon a bound spirit is its own Binding action.
  // GM still adjudicates the spirit's action and possible
  // continued resistance. No generic spell or spirit combat automation.
