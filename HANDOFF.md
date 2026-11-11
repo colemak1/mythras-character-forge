@@ -17,10 +17,7 @@ _Last updated: 2026-11-11 by Claude (#289 merged; Spirit Combat and SO-C02 built
 ## Next
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work), one batch** (signed in; one disposable character, not the kept fixtures; one short dated report, pass/fail plus severity). Give it Binding about 60%, Willpower, Invocation and Shaping about 50%, a Sorcery spell with Duration 1 (2 turns), and 10+ MP. Play Mode → Spells:
-   - **Spirit Combat:** open the Spirit Combat card, Begin against "Shade", Spectral Combat 50, MP 6. Press You attack with the spirit's d100 = 95: if your roll succeeds, the hit drains MP from Shade (1d6 at Binding 60) and your Hit Points don't change; only effects your side may take are offered. Press Spirit attacks with d100 = 10 a few times: when it hits, your MP falls. Keep going until one side has 0 MP: it says helpless and nothing more happens until a GM outcome is chosen and ticked; it is still there after a reload. End Spirit Combat.
-   - **While invoking:** cast the 2-turn spell once (turn 1 of 2). Rolling Perception, an attack, or another spell is refused with the Core p.119 message. Evade is allowed; then a "GM: final roll" selector appears. Set 1 Grade harder, reload, cast again: the Invocation roll is one Grade harder. Cancel works and nothing is charged twice.
-   - Delete the fixture after.
+2. **ChatGPT (Work), completed 2026-11-11:** #290 batch PASS, no failures; `docs/spirit-combat-live-290-20261111.md`. Spirit Combat, GM outcome persistence, invoking refusals, Evade/Hard final roll persistence and cancel/MP checks passed. Disposable character deleted; account reloaded with 0 characters. **Next: Claude** merges the report after Tests and removes AN-F06/F07 and SO-C02 from Known limits.
 3. **ChatGPT (Chat):** nothing queued. (Reviews of the Subsystem 6 and 8 closes done, #289.)
 4. **Claude, next fresh session:** fix any failure from step 2; when it passes, move Spirit Combat and SO-C02 out of Known limits. Otherwise only what the owner's two-device check turns up.
 
