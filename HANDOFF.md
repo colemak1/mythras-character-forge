@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-11 by Claude (#291 merged; Spirit Combat and SO-C02 passed live, out of Known limits)_
+_Last updated: 2026-11-11 by Claude (The Pits stage preview built, optional `?stage=1` / `?stage=duel`; owner to judge)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-11 by Claude (#291 merged; Spirit Combat and SO-C02 passe
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+0. **Owner (wish list):** try the Pits stage preview: `experiments/practice-combat.html?stage=duel` (Sword v Spear) or `?stage=1` on any fight. It is visual only (`experiments/pits-stage.js`, `pits-stage.css`, `tests/pits-stage.cjs`). Say whether it is worth adopting; if yes, Claude widens it (more weapons, Impale, shields, entangle) and can offer it as a Pits toggle. If not, delete those three files and the three hook lines in `practice-combat.html`.
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
 2. **ChatGPT (Work):** nothing queued.
