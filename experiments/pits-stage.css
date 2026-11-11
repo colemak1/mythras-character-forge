@@ -48,7 +48,7 @@
 .ps-head-blade{fill:var(--ps-ink);stroke:var(--ps-ink);stroke-width:1.5}
 .ps-trail{fill:none;stroke:var(--ps-ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .ps-blood{fill:var(--ps-hurt)}
-.ps-spark{fill:var(--ps-gold)}
+.ps-spark{fill:var(--ps-ink)}
 .ps-gray{fill:var(--ps-dim)}
 .ps-dust{fill:var(--ps-dim);opacity:.5}
 .ps-ring{fill:none;stroke:var(--ps-ink);stroke-width:3}

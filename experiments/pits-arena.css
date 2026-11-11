@@ -154,7 +154,7 @@ body.pa-on .pits-subbar,body.pa-on #root .mast,body.pa-on #root>.pits-bout{displ
 .pa-bar .pits-b-item b{font-size:15px}
 .pa-bar .pits-b-ctl{margin:0}
 .act{flex:none}
-@media (min-width:901px){.deck{height:clamp(290px,34vh,360px)}}
+
 
 body.pits-stone #root .deck .chron .combat-history{display:flex;flex-direction:column;height:100%;border:0;box-shadow:none;background:transparent;padding:0}
 .chron .history-header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--st-line,var(--line))}
@@ -188,3 +188,58 @@ body.pits-stone #root .deck .chron .combat-history{display:flex;flex-direction:c
   background:var(--st-text,var(--bone));color:var(--pa-surface);padding:0 6px;min-width:22px;text-align:center}
 .roll .pits-mk[data-edge="l"] b{left:0;transform:none}.roll .pits-mk[data-edge="r"] b{left:auto;right:-2px;transform:none}
 .roll .r-res{margin-top:6px}
+
+/* ===== Full-screen battle (owner, 2026-11-11): no site navigation; Exit Battle stays in the bar ===== */
+body.pa-on{--pa-bar:50px;--pa-deck:clamp(214px,29vh,290px)}
+body.pa-on .sitota-header,body.pa-on .st-tabbar,body.pa-on .st-more,body.pa-on .pits-subbar{display:none!important}
+body.pa-on main#root{padding-top:0}
+body.pa-on .ps-wrap{margin-bottom:6px;padding:0 12px}
+.pa-bar{min-height:var(--pa-bar,50px);padding:4px 0}
+body.pa-on .ps-stage{height:clamp(330px,calc(100dvh - var(--pa-bar) - var(--pa-deck) - 22px),720px)}
+.deck{grid-template-columns:minmax(210px,250px) minmax(300px,1fr) minmax(320px,1.1fr);height:var(--pa-deck);padding:6px 12px 0;gap:12px}
+.mid{display:block;overflow:auto;min-height:0}
+.prompt{max-height:none;min-height:100%;overflow:auto;box-sizing:border-box}
+.prompt .choicegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.pa-help{font-size:12.5px;color:var(--st-text-dim,var(--bone-dim))}
+.pa-help summary{cursor:pointer;font-weight:600}
+.xchs{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:auto}
+.xch{border:1px solid var(--st-line,var(--line));background:var(--st-surface-2,var(--paper));padding:8px 12px 10px;color:var(--st-text,var(--bone))}
+.xch.prev{opacity:.78;font-size:12.5px}
+.xch h4{margin:0 0 4px;font:700 11px var(--st-body,var(--font-ui));letter-spacing:.14em;text-transform:uppercase;color:var(--st-accent-2,var(--accent))}
+.xch .res{display:flex;flex-direction:column;gap:1px;padding:4px 0 6px;border-bottom:1px dashed var(--st-line-strong,var(--line))}
+.xch .res b{font:700 16px var(--st-display,var(--font-display))}
+.xch .res span{font-size:13px;color:var(--st-text-dim,var(--bone-dim))}
+.xch ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:12.5px}
+.xch.prev ul{display:none}
+.xch li b{font-weight:700}.xch li span{color:var(--st-text-dim,var(--bone-dim))}
+.xch .none{margin:0;color:var(--st-text-dim,var(--bone-dim));font-size:13px}
+.pa-chron{max-width:1360px;margin:8px auto 0;padding:0 12px 24px}
+body.pits-stone #root .pa-chron .combat-history{display:block;border:1px solid var(--st-line,var(--line));background:var(--st-surface-2,var(--paper));padding:0;box-shadow:none}
+.pa-chron .history-header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--st-line,var(--line))}
+.pa-chron .history-header h3{margin:0;font:700 10.5px var(--st-body,var(--font-ui));letter-spacing:.16em;text-transform:uppercase;color:var(--st-text-dim,var(--bone-dim))}
+.pa-chron .history-intro{display:none}
+.pa-chron .chronicle-list{max-height:none}
+/* round strip: contained in its lane, initiative on a second row */
+.strip{flex-direction:column;align-items:stretch;gap:2px;padding:5px 14px;white-space:normal;max-width:calc(100% - 2*var(--pa-plate) - 24px);min-width:0;overflow:hidden}
+.strip .row1{display:flex;align-items:center;justify-content:center;gap:12px;white-space:nowrap}
+.strip .io{font-size:12px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--pa-dim)}
+.strip .io b{font-weight:600}
+@media (max-width:900px){
+  body.pa-on{--pa-deck:auto}
+  body.pa-on .ps-stage{height:max(470px,calc(100dvh - 130px))}
+  .deck{display:flex;flex-direction:column;height:auto}
+  .deck .mid{order:-1;overflow:visible}.xchs{overflow:visible}
+  .strip{top:auto;bottom:8px;max-width:calc(100% - 12px)}.strip .io{display:none}
+}
+/* compact dice tray: leaves the fighters' heads and weapons clear */
+.top{top:44px}
+.roll{padding:6px 12px 8px}
+.r-t{font-size:19px}.r-s{font-size:12px;min-height:16px}
+.r-dice{min-height:46px;margin:2px 0}
+.die{width:42px;height:42px}.die span{font-size:19px}
+.roll .pits-band-wrap{margin:20px 0 2px}
+.rbtn{min-height:38px;margin-top:6px}
+.roll [data-inline-dice]{min-height:44px}
+
+/* the Pit Marks toast must never cover a fighter's name */
+.pits-toast{position:fixed!important;left:50%!important;right:auto!important;top:auto!important;bottom:14px!important;transform:translateX(-50%);z-index:80}

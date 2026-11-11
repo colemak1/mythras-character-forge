@@ -153,7 +153,7 @@
    "10.3 | hurt | FIGHT ENDS | Asha wins. Borik dies immediately from a Major Wound to Abdomen. | "
   ],
   "decisions": "attack react:evade effect:scar stand footingSkill:brawn dither react:none recoverWeapon react:none brace dither react:none dither react:evade brace react:evade brace react:none recoverWeapon react:parry effect:disarm attack attack react:none attack effect:bleed attack effect:compel dither react:parry effect:trip dither footingDefend:athletics delay react:parry delay react:none attack effect:disarm dither attack attack attack attack effect:scar attack effect:choose pickloc:Abdomen",
-  "stateHash": "c944f5dab26d389b",
+  "stateHash": "d0cba2b67ae34ad4",
   "end": {
    "phase": "between",
    "winner": "Asha",
@@ -369,7 +369,7 @@
    "9.3 | hurt | FIGHT ENDS | Dessa wins. Cade has a Major Limb Wound to the Left Arm: incapacitated and prone. Falls unconscious from agony. If the GM rules the limb severed, punctured or ripped off, untreated blood loss becomes fatal after 15 minutes. | "
   ],
   "decisions": "attack react:parry effect:withdraw dither react:none react:none dither impaleResist:yes attack effect:trip attack effect:damageWeapon brace impaleResist:no attack effect:press attack impaleResist:no delay impaleResist:yes dither impaleResist:no attack impaleResist:no delay impaleResist:yes attack effect:impale impaleChoose:0 impaleLeave:hold delay impaleResist:no delay impaleResist:no withdrawImpale impaleResist:yes withdrawImpale impaleResist:no dither impaleResist:yes dither impaleResist:no delay impaleResist:yes dither impaleResist:yes withdrawImpale impaleResist:no dither impaleResist:no delay impaleResist:yes dither impaleResist:yes delay impaleResist:yes",
-  "stateHash": "97dc3b991264260a",
+  "stateHash": "9872d69cf7727acc",
   "end": {
    "phase": "over",
    "winner": "Dessa",
@@ -587,7 +587,7 @@
    "8.3 | hurt | FIGHT ENDS | Faro wins. Esme loses consciousness from a Serious Wound to Head. | "
   ],
   "decisions": "attack footingDefend:athletics attack effect:entangle attack effect:stun attack effect:damageWeapon attack react:none dither attack tripResist:evade brace footingDefend:athletics attack attack footingDefend:athletics attack effect:bash stand dither tripResist:acrobatics freeEntangle react:parry react:none attack footingDefend:athletics dither footingDefend:athletics attack attack footingDefend:athletics attack react:evade react:none stand footingSkill:brawn react:evade brace react:none react:none",
-  "stateHash": "3b9838b5e7fa5afd",
+  "stateHash": "9cc51cc13b75feaa",
   "end": {
    "phase": "over",
    "winner": "Faro",
@@ -753,7 +753,7 @@
    "7.1 | hurt | FIGHT ENDS | Hrolf wins. Gisla dies immediately from a Major Wound to Head. | "
   ],
   "decisions": "react:parry brace react:none react:none dither react:none attack effect:bypassArmour effect:trip footingDefend:athletics delay footingDefend:brawn changeRange footingDefend:athletics shieldAttack footingDefend:brawn attack footingDefend:brawn attack footingDefend:athletics shieldAttack react:shield attack effect:bash react:shield",
-  "stateHash": "9c963b9b04b6cde9",
+  "stateHash": "1243ccc4e24295eb",
   "end": {
    "phase": "over",
    "winner": "Hrolf",
@@ -988,7 +988,7 @@
    "8.1 | hurt | FIGHT ENDS | Ivo wins. Jarn surrenders under threat after failing Willpower. | "
   ],
   "decisions": "",
-  "stateHash": "8069458ad4c30454",
+  "stateHash": "2d23ca27685610b8",
   "end": {
    "phase": "between",
    "winner": "Ivo",

@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-11 by Claude (The Pits arena redesign: prototype layout and animations on our engine; owner to review)_
+_Last updated: 2026-11-11 by Claude (Pits visual review batch implemented; Work to live-check)_
 
 ## Where things stand
 
@@ -16,10 +16,10 @@ _Last updated: 2026-11-11 by Claude (The Pits arena redesign: prototype layout a
 
 ## Next
 
-0. **Owner (wish list):** try the redesigned Pits fight screen (`experiments/practice-combat.html?stage=duel` for Sword v Spear, or start any Pits fight). It is the prototype's layout and animations on our engine; `?layout=classic` restores the old screen. Tell Claude what to change: look, pacing, anything missing (Impale lodge, entangle). Screens: `docs/pits-arena-screens/`. Code: `experiments/pits-stage.js`, `pits-arena.js`, their CSS, `tests/pits-stage.cjs`, `tests/pits-arena.cjs`.
+0. **Claude, done 2026-11-11:** the Pits visual review batch (`docs/pits-visual-review-20261111.md`, VIS-01 to VIS-08): full-screen battle, aimed strikes, truthful parry/armour/evade contact, lodged weapons, current/previous exchange, safe cancellation. Evidence and known limits: `docs/pits-visual-checks.md`; scripts `tests/visual/pits-scenarios.cjs` and `pits-layout.cjs` (run locally with Playwright; screenshots in `docs/pits-visual-checks/`).
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work), 2026-11-11:** Pits visual review complete; next Claude implements `docs/pits-visual-review-20261111.md` (owner wants full-screen battle without top Sit’ota navigation). Live Forge Impale/leg-colouring/withdrawal and playable prototype Choose Location checked; eight presentation findings plus direct visual comparison (both versions misalign leg-hit contact). Then batch the changed live workflows.
+2. **ChatGPT (Work):** live-check the redesigned Pits fight on the deployed site: full-screen layout, a full bout, and the paths listed under Known limits in `docs/pits-visual-checks.md` (Impale withdrawal, Entangle, Trip then stand, Disarm recovery, Defeat, phone).
 3. **ChatGPT (Chat):** nothing queued.
 4. **Claude, next fresh session:** only what the owner's two-device check turns up.
 

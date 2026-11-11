@@ -29,7 +29,7 @@ test('the deck offers exactly the actions the engine allows, with the engine\'s 
   assert(m,x.act+' is drawn');
   assert.equal(/\bdisabled\b/.test(m[0]),!x.enabled,`${x.act} enabled ${x.enabled}`);
  }
- assert.match(html,/Your turn/);assert.match(html,/Exchange breakdown/);assert.match(html,/Combat chronicle/);
+ assert.match(html,/Your turn/);assert.match(html,/Current exchange/);assert.match(html,/Combat chronicle/);
 });
 test('actions are locked while it is not the player\'s turn, and say why when they are short of AP',()=>{
  A.run(`S.turnIndex=1`);
@@ -49,7 +49,7 @@ test('plates show each fighter: HP and armour per body part, AP, conditions, and
 });
 test('the strip names the round, whose turn it is and the range',()=>{
  const html=A.run('paStripHtml()');
- assert.match(html,/Round <b>1<\/b>/);assert.match(html,/Your turn/);assert.match(html,/Matched reach/);
+ assert.match(html,/Round <b>1<\/b>/);assert.match(html,/Your turn/);assert.match(html,/Engaged/);assert.doesNotMatch(html,/Matched reach/);
 });
 test('the dice tray shows the manual roll with the Roll button, target and odds band',()=>{
  A.run(`R={id:1,actor:'a',defs:[{sides:100}],label:'Attack · Combat Style 60%',callback(){}}`);
@@ -90,5 +90,40 @@ test('the arena reads only: it draws buttons for the engine and never rolls or e
  const before=A.run('JSON.stringify({f:S.fighters,p:S.pending,t:S.turnIndex})');
  A.run('pitsArenaDeckHtml();paPlateHtml("a");paPlateHtml("b");paStripHtml();paTrayHtml();paModalHtml()');
  assert.equal(A.run('JSON.stringify({f:S.fighters,p:S.pending,t:S.turnIndex})'),before);
+});
+test('the current exchange is separate from the previous one and clears at a new exchange boundary (VIS-07)',()=>{
+ const B=arena();
+ B.run(`S.logs=[];V.busy=false;nextLogId=1;
+  log('Kethan attacks','42 against Combat Style 60% — SUCCESS.','system','',{actor:'a',exid:1,tool:'weapon'});
+  log('Second does not defend','x','system');
+  log('Kethan hits Chest','7 total','hurt','',{actor:'a',impact:{target:'b',location:'Chest',hpLost:5},px:{exid:1,tool:'weapon',react:'none',aGrade:2,total:7,blocked:0,blockedBy:'',afterParry:7,armour:2,wound:5,before:7,after:2,loc:'Chest'}});`);
+ let ex=JSON.parse(B.run('JSON.stringify(paExchanges().map(g=>g.entries.length))'));assert.deepEqual(ex,[3]);
+ let html=B.run('pitsArenaDeckHtml()');
+ assert.match(html,/Current exchange · Kethan Voss attacks/);assert.match(html,/Wounded · Chest/);assert.match(html,/7 damage − 2 armour = 5 HP lost \(Chest 7 → 2\)/);
+ assert.doesNotMatch(html,/Previous exchange/);
+ // the foe's attack begins: the old result must not stay under "current"
+ B.run(`log('Second attacks','90 against Combat Style 60% — FAILURE.','system','',{actor:'b',exid:2,tool:'weapon'});`);
+ html=B.run('pitsArenaDeckHtml()');
+ assert.match(html,/Current exchange · [A-Z][^<]* attacks/);assert.doesNotMatch(html,/Current exchange · Kethan Voss attacks/);assert.match(html,/Previous exchange · Kethan Voss attacks/);
+ const cur=html.slice(html.indexOf('Current exchange'),html.indexOf('Previous exchange'));
+ assert.match(cur,/In progress/);assert.doesNotMatch(cur,/Wounded|5 HP lost/,'the new exchange starts empty of the old result');
+});
+test('the tray keeps the newest relevant result and never reverts to an earlier skill roll (VIS-07)',()=>{
+ const B=arena();
+ B.run(`S.logs=[];V.busy=false;nextLogId=1;R=null;
+  log('Second attacks','27 against Combat Style 46% — SUCCESS.','system','',{actor:'b',exid:5,tool:'weapon'});
+  log('Kethan parries','88 vs 67% — FAILURE. 1 AP remaining.','system','',{actor:'a',exid:5});
+  log('Second hits Left Leg','7 total','hurt','',{actor:'b',impact:{target:'a',location:'Left Leg',hpLost:5},px:{exid:5,tool:'weapon',react:'parry',reactGrade:1,aGrade:2,total:7,blocked:0,blockedBy:'',afterParry:7,armour:2,wound:5,before:6,after:1,loc:'Left Leg'}});
+  log('Impaled Weapon','lodges','hit');`);
+ const html=B.run('paTrayHtml()');
+ assert.match(html,/Result/);assert.match(html,/Wounded · Left Leg/);assert.match(html,/5 HP lost \(Left Leg 6 → 1\)/);
+ assert.doesNotMatch(html,/88 against 67%/,'not the earlier failed parry');
+});
+test('blocked and armoured blows are worded truthfully, never as an injury',()=>{
+ const B=arena();
+ const line=px=>JSON.parse(B.run(`JSON.stringify(paBlowLine({title:'Kethan hits Chest',meta:{impact:{hpLost:${px.wound}},px:${JSON.stringify(px)}}}))`));
+ assert.match(line({total:6,blocked:6,blockedBy:'parry',afterParry:0,armour:0,wound:0,before:7,after:7,loc:'Chest'}).head,/^Parried/);
+ assert.match(line({total:3,blocked:0,blockedBy:'',afterParry:3,armour:3,wound:0,before:7,after:7,loc:'Chest'}).head,/^Armour held/);
+ assert.match(line({total:9,blocked:4,blockedBy:'parry',afterParry:5,armour:2,wound:3,before:7,after:4,loc:'Chest'}).math,/9 damage − 4 parry − 2 armour = 3 HP lost/);
 });
 console.log(passed+' pits arena tests passed');
