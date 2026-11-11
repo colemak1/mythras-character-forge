@@ -14,7 +14,7 @@ Keep Forge's combat engine and Stone theme. Use the prototype's spatial hierarch
 - PASS: opponent attack 27/46 success; choose weapon parry, manually roll 88/67 failure; opponent selects Impale, rolls location and damage. Left Leg loses 5 HP: 7 damage minus 0 parry minus 2 armour. Location panel shows 1/6, figure's leg turns red, Impaled chip appears. This confirms agreement between displayed arithmetic, state and location colouring, not an independent sourcebook audit.
 - PASS: choose Allow withdrawal; opponent Brawn 57/49 fails and weapon remains lodged; player's next turn becomes available. No crash encountered on this path.
 - Automated: `node tests/pits-stage.cjs` 13/13 and `node tests/pits-arena.cjs` 9/9 pass. These establish model/cue mapping and engine independence; they do not establish believable contact geometry or browser animation timing.
-- BLOCKED (Severity 3): v0 shared chat opens, but App Preview says it is available to team members only. Attached HTML was inspected as source; its animation quality was not directly played in this browser. The chat also refers to a differently named earlier Yomi ZIP; do not assume every linked revision equals the attached file.
+- RESOLVED access limit: v0 shared chat's embedded preview requires team membership, but the owner subsequently supplied https://the-pits-mythras-duel-4ed5d786a7.vercel.app/ and its playable prototype was inspected directly. The chat refers to a differently named earlier Yomi ZIP; do not assume every linked revision equals the attachment.
 - Known limits (Severity 3): no full live bout, successful full/partial parry, Evade, human Special Effect picker, disarm, entangle, end-state, saved-character or phone acceptance in this focused run. No sourcebook supplied here; no new rules rulings. No saved characters/campaigns created.
 
 ## Findings and fixes
@@ -41,3 +41,16 @@ Keep Forge's combat engine and Stone theme. Use the prototype's spatial hierarch
 No Severity 1 established in this focused run. Session readiness remains 13/14; feature completeness 8/8 built, 8 closed. This batch identifies presentation fixes; it does not reopen closed rules audits.
 
 Next: Claude — implement this presentation batch and provide deterministic visual evidence before the next live check.
+
+## Playable prototype follow-up — 2026-11-11
+
+Owner supplied https://the-pits-mythras-duel-4ed5d786a7.vercel.app/ after the first report. Direct desktop visual check at about 1363×936:
+
+- PASS, layout reference: small fight-only toolbar, corner fighter plates, top-centre dice, centre stage and complete lower command deck all fit in one desktop viewport. This strengthens the full-screen recommendation. Recreate these proportions using Stone tokens; do not require the prototype's teal/orange theme. Reduce header/spacing overhead before shrinking the fighters.
+- PASS, interaction reference: switched from Sword v Spear to Spear v Sword, enabled auto-roll for this disposable prototype session, attacked, selected Choose Location, applied it, and picked left leg from the body map. Attack 44/66 succeeded; foe parry 91/64 failed. Damage 2+1 minus armour 2 = 1; leg 6→5. The leg changed red on both the map and the fighting figure. Special Effect cards and the target picker are clear visual references. This is presentation testing, not validation of the prototype's rules.
+- FAIL, Severity 2, directly observed in prototype too: the chosen left-leg hit uses a horizontal thrust at torso/hip height, while the target marker and red wound appear down on the leg. VIS-02 is shared by both versions. Preserve the readable staging and motion rhythm; rebuild contact geometry rather than copying animations unchanged.
+- FAIL, Severity 2, prototype identity: after switching to Spear v Sword, the opponent is still named “Marek the Long Spear” while carrying a longsword. Production opponent names/descriptions should agree with actual equipment.
+- Prototype layout choice: chronicle occupies the lower right column. The owner's earlier preference is full-width chronicle below; retain that requested arrangement while keeping current decisions/outcome compact and visible.
+- Limits: this follow-up exercised a targeted attack/Choose Location path, not a complete bout or all animation branches. Existing Forge-specific findings and untested paths remain as documented above.
+
+Claude: use this directly accessible prototype as the visual reference alongside the attachment. Preserve its viewport fit, restrained toolbar, clear Special Effect cards, body-map picker and concise arithmetic. Correct its targeting geometry and keep all production outcome decisions in the Forge engine.
