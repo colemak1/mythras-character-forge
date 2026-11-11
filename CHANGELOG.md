@@ -5,6 +5,24 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits arena: full-screen battle and truthful strikes (visual review batch)
+
+Built from `docs/pits-visual-review-20261111.md` (VIS-01 to VIS-08). Combat rules, dice, saved data and prompted rolls are unchanged; this is presentation only.
+
+- **Full-screen battle:** the Sit’ota navigation and the phone tab bar are gone while you fight; **Exit Battle** stays in the top bar and brings them back. At 1280×800 and 1440×900 the fighters, the dice (top centre) and your current decision are on screen together. The chronicle runs the full width below.
+- **Strikes aim at the struck place:** hand, weapon tip and lunge are solved for the location the engine resolved, so a head, torso and leg strike meet at different heights, and a thrust (spear, trident, whip) moves differently from a cut. The damage number and the blood appear at the point of contact. Left-handed wielders and shield bashes use the right arm.
+- **Parry and armour are drawn for what actually happened:** a full parry or ward stops the blow in front of the body, with weapon or shield contact and a recoil. A partial parry shows the deflection, then only the residual hit. Armour that absorbs a blow gives a neutral spark and "Armour −N", with no injury or flinch. An evade goes through empty air (and the evader goes prone, as the engine says). Misses and fumbles go wide. Sparks are never blood-red.
+- **Honest labels:** a critical attack roll says "Critical attack" at the roll stage; nothing is called a hit until the blow resolves. A successful defence roll alone no longer decides the picture.
+- **Lodged weapons and entanglement from engine state:** a weapon stuck in a limb is drawn in that limb while the engine says it is there. If the wielder still has hold, they stay reaching into the wound; if they let go, they are unarmed and the weapon stays; when withdrawn, it is back in hand. An entangling weapon is drawn as a line to the entangled limb.
+- **Current and previous exchange:** the deck shows the current exchange with its result in words and arithmetic (damage − parry − armour = HP lost, location before and after), and the one before it separately. The new exchange starts empty. The dice tray keeps the newest result instead of falling back to an older roll.
+- **Neutral range wording:** "Engaged" replaces "Matched reach" when no reach advantage applies. The round strip keeps initiative on its own row and stays inside its lane with long names.
+- **Safe cancellation:** Show results, a new bout, Exit Battle and Quick pace cancel running animation and snap to the engine's state, with no late blood, duplicate weapons or old banners.
+- **More weapons drawn:** dagger, falchion and sabre, rapier, greatsword, hatchet and axes, club and mace, pick, flails and chains, quarterstaff, trident, halberd, spears of each length, whip and net.
+- **Structured facts instead of parsing prose:** the engine now attaches the resolved facts of each blow (exchange id, tool, parry or evade result, damage, parry/ward/armour reductions, HP before and after) to its log entries as extra data; the log text is unchanged. The weapon lodged in a wound is recorded so an abandoned weapon can be drawn. `tests/fixtures/pits-golden.json` was regenerated: only the state hash changed (it covers that extra data); every log line, decision and final state is identical.
+- **Evidence:** `tests/visual/pits-scenarios.cjs` plays 18 scripted exchanges in a real browser (both fighters human, dice queued) and checks HP, AP, outcome and the exact contact geometry, with screenshots frozen at contact; `tests/visual/pits-layout.cjs` checks layout at both sizes and cancellation. Results and what is not covered: `docs/pits-visual-checks.md`. Unit tests: `tests/pits-stage.cjs`, `tests/pits-arena.cjs`.
+
+---
+
 ## The Pits arena redesign (animated stick-figure fight screen)
 
 The fight screen in The Pits now follows the the-pits-mythras prototype, but runs on the Forge's own combat engine. Same rules, dice, Action Points, Special Effects and log; new look and flow.

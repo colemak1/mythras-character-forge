@@ -268,3 +268,10 @@ function pitsArenaBarWire(){
   const b=document.querySelector('[data-pa="auto"]');
   if(b&&!b.dataset.wired){b.dataset.wired='1';b.addEventListener('click',()=>{PA.auto=!PA.auto;render();});}
 }
+
+// Outside a fight (setup, opponent intro) the arena is hidden and the site navigation returns.
+function pitsArenaIdle(){
+  if(typeof S==='undefined'||!S||['fight','between','over'].includes(S.phase))return;
+  if(document.body)document.body.classList.remove('pa-on');
+  if(typeof pitsStageSync==='function')pitsStageSync();
+}

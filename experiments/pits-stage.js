@@ -153,7 +153,7 @@ function pitsStagePart(g,loc){
 // tip goes into the target. Returns {pose, tip, reach, ok}.
 function pitsStageAim(base,wk,swap,target,opts){
   opts=opts||{};
-  const arm=opts.arm||'weapon',pen=opts.pen==null?6:opts.pen,minDx=opts.minDx==null?0:opts.minDx,maxDx=opts.maxDx==null?230:opts.maxDx;
+  const arm=opts.arm||'weapon',pen=opts.pen==null?6:opts.pen,minDx=opts.minDx==null?0:opts.minDx,maxDx=opts.maxDx==null?260:opts.maxDx;
   const g=pitsStageGeom({...base,dx:0},wk,swap);
   const WL=arm==='off'?(opts.shieldR||16):(wk?wk.len:92),R=PS_ARM[0]+PS_ARM[1]+WL;
   const want=Math.max(10,R-pen),vy=target[1]-g.Sh[1];
@@ -205,7 +205,7 @@ const PS_POSE={
   stagger:psP({t:-8,hd:-6,dx:-12}),
   recoil:psP({t:-14,hd:-6,a1:70,a2:50,w:150,ba1:-50,ba2:-10,dx:-30}),
   crouch:psP({t:-14,a1:30,a2:70,w:150,l1:60,l2:-98,bl1:-70,bl2:60,dx:-10}),
-  prone:psP({t:-90,hd:-12,a1:-104,a2:-8,w:-80,ba1:-120,ba2:-8,l1:86,l2:0,bl1:80,bl2:6,dx:-30}),
+  prone:psP({t:-90,hd:-12,a1:-104,a2:-8,w:-80,ba1:-120,ba2:-8,l1:86,l2:0,bl1:80,bl2:6,dx:-8}),
   trip:psP({t:-38,hd:-14,a1:168,a2:-12,w:200,ba1:120,ba2:30,l1:-64,l2:30,bl1:56,bl2:-40,dx:-34,lift:34}),
   flinch:psP({t:-14,hd:-10,a1:100,a2:-60,w:40,ba1:-60,ba2:-10,dx:-22}),
   ko:psP({t:-92,hd:-20,a1:-70,a2:-30,w:-40,ba1:-110,ba2:-20,l1:78,l2:10,bl1:70,bl2:16,dx:-50}),
@@ -223,8 +223,22 @@ const psSfx=k=>{try{if(typeof pitsSfx==='function')pitsSfx(k);}catch(e){}};
 const psLayer=c=>document.querySelector('#pitsStage .'+c);
 // Test and review hook: every stage event is recorded when a page asks for it.
 function psEmit(type,data){
-  try{if(window.__psRecord){window.__psRecord.push({t:Math.round(performance.now()),type,...data});}}catch(e){}
+  try{if(window.__psRecord){window.__psRecord.push({t:Math.round(performance.now()),type,...data});
+    // a review page may freeze the picture at the moment of contact (window.__psFreeze) and thaw it after the screenshot
+    if(type==='contact'&&window.__psFreeze)psFreeze();}}catch(e){}
 }
+const psFigs=()=>[PS.fig.a,PS.fig.b];
+function psFreeze(){
+  if(PS.freeze)return;PS.freeze=performance.now();
+  try{document.getAnimations().forEach(a=>a.pause());}catch(e){}
+  setTimeout(psThaw,2500);
+}
+function psThaw(){
+  if(!PS.freeze)return;const gap=performance.now()-PS.freeze;PS.freeze=0;
+  for(const f of psFigs()){if(f.anim)f.anim.t0+=gap;if(f.slide)f.slide.t0+=gap;}
+  try{document.getAnimations().forEach(a=>a.play());}catch(e){}
+}
+window.__psThaw=()=>psThaw();
 
 function psBuildFig(id,svg){
   const parent=svg.querySelector('.ps-figs');
@@ -338,6 +352,7 @@ function psPartRest(f,loc){
 }
 function psFrame(now){
   if(!PS.ready)return;
+  if(PS.freeze){PS.raf=requestAnimationFrame(psFrame);return;}
   for(const id of ['a','b']){
     const f=PS.fig[id];if(!f)continue;
     if(f.slide){const s=f.slide,p=Math.min(1,(now-s.t0)/s.d);f.hx=s.a+(s.b-s.a)*psEase(p);if(p>=1)f.slide=null;}
@@ -513,7 +528,6 @@ function psHoldLodged(){
 }
 
 // ---- One cue -> one scripted beat ----
-const psFigs=()=>[PS.fig.a,PS.fig.b];
 const psOther=f=>PS.fig[f.id==='a'?'b':'a'];
 // The target point of a strike in the attacker's frame, from the defender's body part.
 function psStrikeTarget(atk,def,loc){return psLocal(atk,psPartRest(def,loc||'chest'));}
@@ -607,6 +621,7 @@ async function psResolveBlow(cue){
   const ex=PS.ex||{},px=cue.px||{};
   const atkId=cue.actor||ex.atk||(cue.target?(cue.target==='a'?'b':'a'):null);
   const atk=PS.fig[atkId],def=atk&&psOther(atk);if(!atk||!def||!atk.pts||!def.pts)return;
+  if(!def.anim)def.cur={...psRest(def)};   // the defender is where the engine says they are before we aim at them
   const out=pitsStageOutcome(cue,ex),tool=(px.tool||(ex.shield?'shield':'weapon')),shield=tool==='shield'&&atk.look.shield;
   const loc=cue.loc||'chest',reactTool=px.reactTool||ex.reactTool||'weapon';
   const armKind=shield?'off':'weapon';

@@ -52,7 +52,7 @@ const SC=[
  {name:'14-trip-and-stand',cfg:base(),dice:{...INIT,100:[2,95,40,95],8:[]},turns:[
    {act:'attack',h:{reaction:'react:none',effect:'effect:trip',tripResist:'tripResist:brawn',location:'skip'}}],
   check:r=>{r.prone(B,true);r.event('contact','trip');}},
- {name:'15-disarm',cfg:base(),dice:{...INIT,100:[2,95],10:[],8:[]},turns:[{act:'attack',h:{reaction:'react:none',effect:'effect:disarm',location:'skip'}}],
+ {name:'15-disarm',cfg:base(),dice:{...INIT,100:[2,95],20:[11]},turns:[{act:'attack',h:{reaction:'react:none',effect:'effect:disarm',location:'skip'}}],
   check:r=>{r.event('contact','disarm');r.flag(B,'disarmed',true);}},
  {name:'16-impale-held',cfg:base({weapon:'spear'}),dice:{...INIT,100:[2],20:[5],6:[3,4]},turns:[{act:'attack',h:{reaction:'react:none',effect:'effect:impale',impaleLeave:'impaleLeave:hold'}}],
   check:r=>{r.lodged(B,true);r.flag(A,'hasImpaled',true);}},
@@ -67,7 +67,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function boot(browser,sc){
   const page=await browser.newPage({viewport:VIEW});
   page.errors=[];page.on('pageerror',e=>page.errors.push(e.message));
-  await page.addInitScript(()=>{window.__psRecord=[];window.__dq={};
+  await page.addInitScript(()=>{window.__psRecord=[];window.__psFreeze=true;window.__dq={};
     window.__pitsDie=n=>{const q=window.__dq[n];return q&&q.length?q.shift():Math.ceil(n/2);};});
   await page.goto(URL_);
   await page.evaluate(sc=>{window.__dq=sc.dice;Object.assign(config,sc.cfg.config);startRun(false);},{dice:sc.dice,cfg:sc.cfg});
@@ -91,7 +91,7 @@ async function shoot(page,sc,r){
   const rec=await page.evaluate(()=>window.__psRecord);
   for(let i=r.seen;i<rec.length;i++){
     if(rec[i].type==='contact'){const f=path.join(OUT,`${sc.name}-${rec[i].kind}.png`);
-      await (await page.$('#pitsStage .ps-stage')).screenshot({path:f});r.shots.push(path.basename(f));}
+      await (await page.$('#pitsStage .ps-stage')).screenshot({path:f});r.shots.push(path.basename(f));await page.evaluate(()=>window.__psThaw());}
   }
   r.seen=rec.length;
 }
@@ -177,7 +177,7 @@ function api(r,sc){
       const r=await runScenario(browser,sc);
       r.banners=await r.page.evaluate(()=>window.__psBanners||[]);
       assert.deepEqual(r.errors,[],'page errors');
-      try{sc.check(api(r,sc));}catch(e){e.state={logs:r.after.logs,rec:r.rec.map(x=>x.type+':'+(x.outcome||x.kind||'')).join(' ')};throw e;}
+      try{sc.check(api(r,sc));}catch(e){e.state={b:r.after.b,logs:r.after.logs,contact:r.rec.filter(x=>x.type==='contact'),rec:r.rec.map(x=>x.type+':'+(x.outcome||x.kind||'')).join(' ')};throw e;}
       console.log('PASS '+sc.name+'  ['+r.shots.join(', ')+']');pass++;await r.page.close();
     }catch(e){console.log('FAIL '+sc.name+': '+e.message.split('\n')[0]);if(process.env.PITS_DEBUG&&e.state)console.log(JSON.stringify(e.state));fail++;}
   }

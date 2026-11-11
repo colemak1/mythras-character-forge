@@ -240,3 +240,6 @@ body.pits-stone #root .pa-chron .combat-history{display:block;border:1px solid v
 .roll .pits-band-wrap{margin:20px 0 2px}
 .rbtn{min-height:38px;margin-top:6px}
 .roll [data-inline-dice]{min-height:44px}
+
+/* the Pit Marks toast must never cover a fighter's name */
+.pits-toast{position:fixed!important;left:50%!important;right:auto!important;top:auto!important;bottom:14px!important;transform:translateX(-50%);z-index:80}
