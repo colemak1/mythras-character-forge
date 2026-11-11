@@ -979,7 +979,12 @@ function knownMagicEditor(t){
   }
   if(t.key==="mysticism"){
     const lim=mysticismLimits(magicSkillPct("Mysticism"),magicSkillPct("Meditation"));
-    h+='<p class="note rulesrc">Core pp.155–157: One preparation turn per Intensity. Individual Intensity ceiling: '+lim.individual+'; combined active Intensity ceiling: '+lim.combined+'. The book confirms 34% permits Intensity 2; other rounding boundaries require GM confirmation. Currently active: '+mysticismActiveTotal(S.magic.known)+' / '+lim.combined+'. Activation is a tracking marker only; casting and effects still require normal resolution.</p>';
+    h+='<p class="note rulesrc">Core pp.155–157: One preparation turn per Intensity. Individual Intensity ceiling: '+lim.individual+'; combined active Intensity ceiling: '+lim.combined+'. The book confirms 34% permits Intensity 2; other rounding boundaries require GM confirmation. Currently active: '+mysticismActiveTotal(S.magic.known)+' / '+lim.combined+'. Activation is a tracking marker only; casting and effects still require normal resolution. An active, learned Augment Skill Talent linked to a skill makes that skill one Grade easier per Intensity, Very Easy at most, after any harder Grades (Core pp.156–157).</p>';
+    const pow=Number(effectiveChars().POW),practised=mysticismPractisedNames(S.magic.known);
+    h+='<p class="note">Talents in practice: '+practised.length+(Number.isSafeInteger(pow)&&pow>0?' / '+Math.floor(pow/2)+' (half POW)':'')+(practised.length?' &middot; '+esc(practised.join(", ")):'')+'. Switching one for another needs the meditation and retraining in Core p.157, confirmed with your GM.</p>';
+    if(MYSTIC_MSG)h+='<p class="warn" role="status">'+esc(MYSTIC_MSG)+'</p>';
+    if((S.magic.talentSwaps||[]).length)h+='<details class="note"><summary>Practice changes ('+S.magic.talentSwaps.length+')</summary><ul>'
+      +S.magic.talentSwaps.slice().reverse().map(x=>'<li>'+esc(x.date)+': '+(x.to?esc(x.from)+' &rarr; '+esc(x.to):'stopped practising '+esc(x.from))+'</li>').join("")+'</ul></details>';
   }
   h+=rows.map(({m,i})=>{
     let r='<div class="magicrow">'
@@ -1030,7 +1035,20 @@ function knownMagicEditor(t){
       r+='<label class="mnum">Talent category<select onchange="APP.talentCategory('+i+',this.value)"><option value="" '+(!m.talentCategory?'selected':'')+'>Confirm with GM</option>'
        +[["augment","Augment skill"],["invoke","Invoke trait"],["enhance","Enhance attribute"]].map(([v,label])=>'<option value="'+v+'" '+(m.talentCategory===v?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'
        +(details?'<span class="mcost">'+details.cost+' MP base cost</span>':'<span class="warn">Select a category and valid Intensity before casting. Invoke traits use Intensity 1. Previously recorded cost: '+esc(String(m.cost??"not recorded"))+'; preserved for review.</span>');
+      if(m.talentCategory==="augment"){
+        const opts=allEntries(),linked=m.augmentSkill,missing=linked&&!opts.some(e=>e.key===linked);
+        r+='<label class="mnum">Augments skill<select aria-label="Skill this Talent augments" onchange="APP.talentAugmentSkill('+i+',this.value)"><option value="">Not linked (GM applies it)</option>'
+         +opts.map(e=>'<option value="'+esc(e.key)+'" '+(linked===e.key?'selected':'')+'>'+esc(e.label)+'</option>').join("")
+         +(missing?'<option value="'+esc(linked)+'" selected>'+esc(linked)+' (skill not found)</option>':'')+'</select></label>';
+      }
       r+='<label class="mnum"><input type="checkbox" '+(m.talentLearned?'checked':'')+' onchange="APP.talentLearned('+i+',this.checked)"> Learned / practised (GM confirmed)</label>';
+      if(TALENT_SWAP===i&&!m.talentLearned){
+        r+='<div class="mshaping" role="group" aria-label="Switch Talents in practice"><span class="note">Core p.157: at the half-POW limit a new Talent can only replace one in practice, after the meditation and retraining the GM confirms. The replaced Talent stays recorded.</span>'
+         +'<label class="mnum">Replaces<select id="talentSwapFrom'+i+'"><option value="">Choose</option>'+mysticismPractisedNames(S.magic.known).map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("")+'</select></label>'
+         +'<label class="mnum"><input type="checkbox" id="talentSwapOk'+i+'"> GM confirms the retraining is done</label>'
+         +'<button type="button" class="chip" onclick="APP.talentSwap('+i+',document.getElementById(\'talentSwapFrom'+i+'\').value,document.getElementById(\'talentSwapOk'+i+'\').checked)">Switch Talents</button>'
+         +'<button type="button" class="chip" onclick="APP.talentSwapCancel()">Cancel</button></div>';
+      }
       r+='<label class="mnum">Duration (turns; 0 = GM)<input type="number" min="0" max="9999" value="'+(m.durationTurns||0)+'" onchange="APP.talentDuration('+i+',this.value)"></label>'
        +'<button class="chip '+(m.active?'on':'')+'" onclick="APP.toggleTalent('+i+')">'+(m.active?'Active — end Talent':'Mark active')+'</button>'
        +(m.active&&m.durationTurns>0?'<span class="mcost">'+(m.remainingTurns||0)+' turns left</span><button class="chip" onclick="APP.talentTurn('+i+')">Advance 1 turn</button>':'');

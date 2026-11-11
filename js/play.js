@@ -7,6 +7,10 @@
 // instead of a blocking alert(). Cleared at the top of each new roll/cast
 // attempt so it never lingers past whatever prompted it.
 let PM_MSG=null;
+// Mysticism messages shown on the builder's Magic step too (PM_MSG only shows
+// in Play Mode), and the Talent waiting for a practice switch (MY-C01).
+let MYSTIC_MSG="",TALENT_SWAP=null;
+function mysticMsg(text){MYSTIC_MSG=text||"";PM_MSG=text||null;}
 // Transient "here's the armour math that just happened" confirmation for
 // playApplyDamage() (see APP.playApplyDamage in app.js) -- {loc,raw,ap,
 // applied} for whichever location most recently had damage applied through
@@ -668,7 +672,7 @@ function familiarityPct(styleKey,fam){
   if(sitMult==null)return {pct:null,grade:sit};
   const floor=gradePct(c.STR+c.DEX,sitMult);
   if(row[2]===null||!styleKey)return {pct:floor,grade:sit,floored:true};
-  const g=shiftGradeHarder(sit,row[2]),m=GRADE_MULT[g];
+  const g=gradeWithExtra(styleKey,row[2]),m=GRADE_MULT[g];
   const pct=m==null?0:gradePct(finalPct(styleKey),m);
   return pct<floor?{pct:floor,grade:g,floored:true}:{pct,grade:g,floored:false};
 }
@@ -931,6 +935,23 @@ function pmSpiritActionsHTML(m,idx){
       :'inside <button class="pm-btn sm" onclick="APP.fetishRelease('+idx+')">Release (Free Action)</button>')+'</div>';
   return h;
 }
+// MY-C02 (Core p.157): one concentration roll per active Talent after a
+// disruption. The GM decides the disruption and the opposing roll.
+function pmTalentDisruptionHTML(){
+  const d=S.play.talentDisruption;
+  if(d&&d.talents.length){
+    const wp=entryMap()["std:Willpower"]?pmPctText("std:Willpower"):null;
+    return '<div class="pm-fx-resolve" role="group" aria-label="Talent concentration"><b>Disrupted</b>: roll opposed Willpower'+(wp?' ('+wp+')':'')+' for each active Talent; only those that lose end (Core p.157).'
+     +d.talents.map((t,pos)=>'<div>'+esc(t.name||"Talent")+' <button class="pm-btn sm" onclick="APP.talentDisruptionRoll('+pos+')">Roll Willpower</button>'
+       +' <button class="pm-btn sm" onclick="APP.talentDisruptionResolve('+pos+',true)">Held</button>'
+       +' <button class="pm-btn sm" onclick="APP.talentDisruptionResolve('+pos+',false)">Lost</button></div>').join("")
+     +'<button class="pm-btn sm" onclick="APP.talentDisruptionCancel()">Not a disruption</button></div>';
+  }
+  const active=S.magic.known.filter(m=>m.tradition==="mysticism"&&m.active);
+  if(!active.length)return "";
+  return '<div class="pm-fx-resolve">Active Talents: '+esc(active.map(m=>(m.name||"Talent")+" "+(m.intensity||1)).join(", "))
+   +' <button class="pm-btn sm" onclick="APP.talentDisrupted()">Disrupted</button></div>';
+}
 function magicPanel(){
   const all=allMagic();
   let prep=(S.play.mysticismCasting?'<p class="pm-empty">Talent preparation: '+S.play.mysticismCasting.completed+' / '+S.play.mysticismCasting.total+' turns. <button class="pm-btn sm" onclick="APP.mysticismCancel()">Cancel preparation</button> Resolve interruption and other actions with your GM.</p>':'')
@@ -960,13 +981,14 @@ function magicPanel(){
     const pctTxt=key?(()=>{const g=gradedPct(key,finalPct(key));return g.pct===null?GRADE_LABEL[g.grade]:g.pct+"%";})():"no skill";
     h+='<div class="pm-skillgroup"><h4>'+esc(t.label)+' <span class="pm-empty">'+esc(t.castSkill)+' '+pctTxt+'</span></h4>';
     if(t.key==="animism")h+=pmTranceHTML();
+    if(t.key==="mysticism")h+=pmTalentDisruptionHTML();
     h+=items.map(({m,idx})=>{
       let meta="";
       if(t.key==="folk")meta="1 MP base · 1 Turn · Intensity 1 · Magnitude 1 · ranged "+folkMagicRangeMetres(key?finalPct(key):0)+" m"+(m.spell?.t?.length?" · "+m.spell.t.join(", "):"");
       else if(t.key==="sorcery"){const c=sorceryCost(m);meta=c.mp+" MP · "+c.turns+" turn"+(c.turns>1?"s":"")+(c.shapings?" · "+Object.entries(sorceryLevels(m)).map(([k,v])=>k+" "+v).join(", "):" · unshaped")+(c.combinedSpells?" · combined with "+(sorceryCombinedNames(m).join(", ")||"(choose in builder)"):"");}
       else if(t.key==="animism")meta="POW "+(m.pow||0)+" · CHA "+(m.cha||0)+" · Intensity "+(m.intensity||1)+" · "+(m.spiritStatus==="bound"?"BOUND":"UNBOUND")+(Number.isInteger(m.spiritMP)?" · spirit MP "+m.spiritMP:"");
       else if(t.key==="theism"){const d=theismDetails(m),pi=theismPoolIndex(m);const ek=pi===null?null:exhortKeyForPool(pi);meta=(d?d.cost+" from "+(pi===null?"pool (choose a cult in builder)":devotionalPoolCount()>1?devotionalPoolLabel(pi):"pool")+" · "+d.turns+" turns":"Confirm miracle level in builder")+(ek&&exhortOptions().length>1?" · Exhort "+finalPct(ek)+"%":"");}
-      else if(t.key==="mysticism"){const det=mysticismDetails(m);meta=(det?det.cost+" MP":"Confirm Talent category and Intensity")+" · Intensity "+(m.intensity||1)+(m.active?" · ACTIVE":"");}
+      else if(t.key==="mysticism"){const det=mysticismDetails(m),aug=m.talentCategory==="augment"&&m.augmentSkill?entryMap()[m.augmentSkill]:null;meta=(det?det.cost+" MP":"Confirm Talent category and Intensity")+" · Intensity "+(m.intensity||1)+(aug?" · augments "+aug.label:"")+(m.active?" · ACTIVE":"");}
       else meta=(m.cost||0)+(t.pool==="devotional"?" from pool":" MP")+" · Intensity "+(m.intensity||1)+(t.key==="mysticism"&&m.active?" · ACTIVE":"");
       const body=(t.key==="folk"&&m.spell)?m.spell.d:(m.notes||"");
       const castingKey={sorcery:"sorceryCasting",mysticism:"mysticismCasting",theism:"theismCasting"}[t.key];
@@ -980,6 +1002,7 @@ function magicPanel(){
        +(t.key==="animism"?'<div class="pm-fx-resolve">Contact: '+esc(m.spiritContact||"unknown")+' · Attitude: '+esc(m.spiritAttitude||"neutral")+' · Vessel: '+esc(m.bindingType||"none")+(spiritGivenAway(m)?' · bound for '+esc(m.vessel.recipient):'')+'.</div>'+pmSpiritActionsHTML(m,idx)
         +'<div class="pm-fx-resolve">Spirit combat MP (manual): '+(Number.isInteger(m.spiritMP)?m.spiritMP:'not tracked')+' <button class="pm-btn sm" onclick="APP.spiritMPAdjust('+idx+',-1)">−1</button> <button class="pm-btn sm" onclick="APP.spiritMPAdjust('+idx+',1)">+1</button></div>'
         +(m.spiritCombatNote?'<p>'+esc(m.spiritCombatNote)+'</p>':''): '')
+       +(t.key==="mysticism"?'<button class="pm-btn sm" onclick="APP.toggleTalent('+(idx-S.magic.folk.length)+')">'+(m.active?'End Talent':'Mark active')+'</button> ':'')
        +(t.key==="mysticism"&&m.active&&m.durationTurns>0?'<button class="pm-btn sm" onclick="APP.talentTurn('+ (idx-S.magic.folk.length) +')">Advance Talent 1 turn</button>':'')
        +(body?'<p>'+esc(body)+'</p>':'<p class="pm-empty">No effect text recorded — add it on the Magic step.</p>')+'</details>';
     }).join("");

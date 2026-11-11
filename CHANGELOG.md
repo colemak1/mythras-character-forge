@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Mysticism: Augment Skill on real rolls, concentration, switching Talents (Subsystem 6)
+
+Built from `docs/magic-mysticism-code-cases-20261109.md` and the MY-C03 ruling (Core pp.155–157).
+
+- **Augment Skill (MY-C03):** an Augment Talent can be linked to a skill on the Magic step ("Augments skill"). While it is learned and active, that skill is one Grade easier per Intensity, after any harder Grades, and never easier than Very Easy, so extra Intensity soaks up later penalties. The shown %, the roll and the log all use the same Grade, and the Grade reasons list the Talent. Automatic and Hopeless are not moved.
+- **Disrupted (MY-C02):** with Talents active, Play Mode → Spells → Mysticism has a Disrupted button. It lists every active Talent with its own Roll Willpower, Held and Lost buttons; only the ones marked Lost end. The GM decides what counts as a disruption and the opposing roll.
+- **Switching Talents (MY-C01):** at the half-POW limit, ticking Learned on a new Talent opens a switch: choose the Talent it replaces and tick that the GM confirms the Core p.157 retraining. Stopping practice asks first and keeps the Talent recorded. Every change is logged under "Practice changes".
+- Play Mode now has Mark active / End Talent on each Talent, and builder messages for Talents show on the Magic step (they used to appear only in Play Mode).
+- Tests: `tests/magic-mysticism.cjs`. Checked headless at 390px (light) and 1280px (dark).
+
 ## Animism: Trance purposes, summoning, bindings and fetishes (Subsystem 6)
 
 Built from `docs/magic-animism-finish-20261109.md` (Core pp.131–137). All in Play Mode → Spells → Animism.
