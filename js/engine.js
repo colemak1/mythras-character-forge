@@ -358,7 +358,7 @@ function freshState(){return {
  hobby:null, hobbySpec:"",
  cultMembership:{archetype:null,name:"",rank:0},
  community:{family:"",parents:"",siblings:"",reputation:"",connections:[],partyTie:"",resources:"",rolls:{},household:""},
- _creationFlowVersion:2,
+ _creationFlowVersion:3,
  qProf:[null,null,null], qProfSpec:["","",""], qStyleOn:false, qStyleName:"",
  alloc:{culture:{},career:{},bonus:{},quick:{}},
  passions:[],
@@ -403,6 +403,15 @@ function normalizeState(){
     const old=S.overrides||{};S.overrides={};
     Object.entries(old).forEach(([key,value])=>{const n=Number(key);if(Number.isInteger(n))S.overrides[n>=insertedAt?n+1:n]=value;});
     S._creationFlowVersion=2;
+  }
+  // Organisations (OR-C01..C03): the Cult step returns between Community
+  // and Passions in both modes (owner, 2026-11-11, after #284).
+  if(S._creationFlowVersion<3){
+    const insertedAt=S.creationMode==="quick"?5:7;
+    if(Number.isInteger(S.step)&&S.step>=insertedAt)S.step++;
+    const old=S.overrides||{};S.overrides={};
+    Object.entries(old).forEach(([key,value])=>{const n=Number(key);if(Number.isInteger(n))S.overrides[n>=insertedAt?n+1:n]=value;});
+    S._creationFlowVersion=3;
   }
   // D-CE4: the effect is called "Weapon Malfunction" (Core pp.95-100);
   // older roll logs saved it as "Weapon Malfunction (Firearms)".
@@ -584,19 +593,18 @@ function normalizeState(){
   if(!adv.permanent||typeof adv.permanent!=="object"||Array.isArray(adv.permanent))adv.permanent={};
   if(!Array.isArray(adv.training))adv.training=[];
 }
-// Cult & Community is temporarily pulled out of the flow (user's own call,
-// to revisit later) — stepCult() and all its supporting data/functions are
-// left intact below, just not wired into currentSteps()/stepFns(), so it's
-// a one-line change in each array to bring back.
+// The Cult step (organisations, OR-C01..C03) sits after Community in both
+// modes; it was out of the flow until 2026-11-11 (#284). Keep the two arrays
+// in step: tests/organisations.cjs checks every name has its screen.
 function currentSteps(){
   return S.creationMode==="quick"
-   ?["Concept","Characteristics","Attributes","Quick Skills","Community","Passions","Magic","Money & Gear","Finish"]
-   :["Concept","Characteristics","Attributes","Culture","Career","Bonus Skills","Community","Passions","Magic","Money & Gear","Finish"];
+   ?["Concept","Characteristics","Attributes","Quick Skills","Community","Cult","Passions","Magic","Money & Gear","Finish"]
+   :["Concept","Characteristics","Attributes","Culture","Career","Bonus Skills","Community","Cult","Passions","Magic","Money & Gear","Finish"];
 }
 function stepFns(){
   return S.creationMode==="quick"
-   ?[stepConcept,stepChars,stepAttrs,stepQuickSkills,stepCommunity,stepPassions,stepMagic,stepMoney,stepFinish]
-   :[stepConcept,stepChars,stepAttrs,stepCulture,stepCareer,stepBonus,stepCommunity,stepPassions,stepMagic,stepMoney,stepFinish];
+   ?[stepConcept,stepChars,stepAttrs,stepQuickSkills,stepCommunity,stepCult,stepPassions,stepMagic,stepMoney,stepFinish]
+   :[stepConcept,stepChars,stepAttrs,stepCulture,stepCareer,stepBonus,stepCommunity,stepCult,stepPassions,stepMagic,stepMoney,stepFinish];
 }
 function ageBand(){return AGE_MAP[(S.age&&S.age.category)||"adult"]||AGE_MAP.adult;}
 // Core p.34 gives human age categories as dice expressions. Non-human
