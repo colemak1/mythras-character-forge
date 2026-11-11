@@ -9,7 +9,7 @@ Status words: **Ready** (built, tested in code, and used at least once on the li
 Two numbers, reported at the end of every batch instead of a long status:
 
 - **Session readiness:** Ready items in the checklist below, out of the total. Today: **13 of 14** (items 9, 10 and 14 passed live 2026-11-10; item 2 after the HP recheck, `creature-hp-live-275-20261110.md`). Only item 11, the owner's two-device check, is left.
-- **Feature completeness:** subsystems built (code done, whether or not closed) out of 8. Today: **7 of 8 built**, 7 closed. Subsystem 7 reclosed 2026-11-11 after its limb HP fix passed live; Subsystem 8 closed 2026-11-10. Magic (6) is the one still being built: Folk Magic done, Animism and Mysticism built and live-checked (Spirit Combat GM-managed); Sorcery and Theism learning (SO-C01, TH-C01, TH-C02) built 2026-11-11.
+- **Feature completeness:** subsystems built (code done, whether or not closed) out of 8. Today: **8 of 8 built**, 7 closed. Subsystem 7 reclosed 2026-11-11 after its limb HP fix passed live; Subsystem 8 closed 2026-11-10. Magic (6) is fully built as of 2026-11-11: Folk Magic, Animism, Mysticism and Sorcery/Theism learning passed live (Spirit Combat GM-managed); Organisations (OR-C01–C03) built, its live check is the last step before closing 6.
 
 The close count in `subsystem-plan.md` (now 7/8) stays, but it is no longer the headline.
 
@@ -71,5 +71,6 @@ These stay open. None of them holds up the first campaign. They are kept here so
 - Subsystem 8 (closed 2026-11-10): two independent player accounts racing on the same inventory; a second independent player owner; global profiles; the full phone route matrix; case-by-case reconciliation of `campaign-cases-batch-1.md`. Covered for now by item 11 and by the database permission tests in CI (D-S5).
 - Subsystem 7 (reclosed 2026-11-11 after the limb HP fix passed live; full list in `subsystem-plan.md`): Core p.218 Vulnerable reading (worn armour still counts) unconfirmed for lack of the page; Vulnerable with worn armour, Intimidate "stopped threatening" and nonhuman Play Mode wounds tested in code only; Chaos d100 and anatomy tables not row-audited by Chat; many traits GM-resolved by design; The Pits refuses creature characters.
 - Magic Audit fixture checks (combined POW cap, multiple cults, Animist rank limits): only when that tradition is in use.
+- Subsystem 6 (Severity 3): the "Recorded before tracking" label on a real pre-#281 character was blocked live (Magic Audit not on the test account, `learning-live-281-20261111.md`); tested in code. The owner can look on the account that holds Magic Audit.
 - Real-phone sound and touch: the owner notices these in real play.
 - Small live rechecks from earlier batches (1d6+1 improvement help text, home quote survives "Use the default painting", phone More sheet): fold into any Work batch that has room, never a batch of their own.

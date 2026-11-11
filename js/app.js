@@ -987,10 +987,50 @@ window.APP={
    render();
  },
  /* cult & community */
- pickCult(key){S.cultMembership.archetype=(S.cultMembership.archetype===key)?null:key;
-   if(S.cultMembership.archetype&&!S.cultMembership.rank)S.cultMembership.rank=0;render();},
- cultField(f,v){S.cultMembership[f]=(f==="rank")?(+v||0):v;render();},
- leaveCult(){S.cultMembership={archetype:null,name:"",rank:0};render();},
+ // Membership changes are logged on the Cult step.
+ // (cultLog/cultPromoted live in play.js beside CULT_MSG.)
+ // OR-C03: switching or leaving records the old membership; nothing learned is lost.
+ pickCult(key){if(viewOnlyBlock()||!CULT_ARCHETYPES.some(a=>a.key===key))return;
+   const cur=S.cultMembership.archetype;
+   if(cur===key){this.leaveCult();return;}
+   if(cur&&!this.leaveCult())return;
+   const rejoin=(S.cultFormer||[]).some(f=>f.archetype===key);
+   S.cultMembership={archetype:key,name:"",rank:0,rankYears:0,cultSkills:[],startingRankGM:false,history:S.cultMembership.history||[]};
+   cultLog("Joined "+cultDisplayName(S.cultMembership)+" at "+cultRankTitle(cultArch(),0)+(rejoin?" (rejoined)":""));
+   CULT_MSG=(S.cultFormer||[]).length?"Joined. Anything from former organisations stays recorded; their discounts and new miracles don't carry over unless the GM approves.":"";render();},
+ cultField(f,v){if(viewOnlyBlock()||!S.cultMembership.archetype)return;
+   if(f==="name"){S.cultMembership.name=String(v).slice(0,160);render();return;}
+   if(f!=="rank")return;
+   const n=Number(v);if(!Number.isInteger(n)||n<0||n>=CULT_TIERS.length)return;
+   // OR-C01: the picker sets a starting rank only; later ranks come by promotion.
+   if(cultPromoted()){CULT_MSG="Rank now changes by promotion only; the starting rank is fixed once promoted.";render();return;}
+   if(n>0&&!confirm("Start at "+cultRankTitle(cultArch(),n)+"? Above Common is for a veteran character, with the GM's approval (Core pp.196–198).")){CULT_MSG="Starting rank not changed.";render();return;}
+   S.cultMembership.rank=n;S.cultMembership.startingRankGM=n>0;CULT_MSG=n>0?"GM-approved starting rank recorded.":"";render();},
+ cultYears(v){if(viewOnlyBlock()||!S.cultMembership.archetype)return;const n=Number(String(v).trim());
+   if(!Number.isSafeInteger(n)||n<0||n>200){CULT_MSG="Years must be a whole number from 0 to 200.";render();return;}
+   S.cultMembership.rankYears=n;CULT_MSG="";render();},
+ cultSkill(key,on){if(viewOnlyBlock()||!S.cultMembership.archetype||typeof key!=="string")return;
+   const set=new Set(S.cultMembership.cultSkills||[]);if(on)set.add(key);else set.delete(key);
+   S.cultMembership.cultSkills=[...set].slice(0,40);render();},
+ cultPromote(gmOk,override){if(viewOnlyBlock())return;const c=cultPromotionCheck();
+   if(!c||!c.next){CULT_MSG="There is no higher rank.";render();return;}
+   if(!c.eligible&&!override){CULT_MSG="Not yet: "+c.missing.join("; ")+". Promotion stays the organisation's decision (Core pp.196–198).";render();return;}
+   if(!gmOk){CULT_MSG="Tick that the GM (for the organisation) approves the promotion"+(c.rule.deed?", including "+c.rule.deed:"")+".";render();return;}
+   const a=cultArch(),from=cultRankTitle(a,S.cultMembership.rank);
+   S.cultMembership.rank=c.next;S.cultMembership.rankYears=0;
+   cultLog("Promoted "+from+" → "+cultRankTitle(a,c.next)+(c.eligible?"":" (GM override: "+c.missing.join("; ")+")"));
+   CULT_MSG="Promoted to "+cultRankTitle(a,c.next)+". Years at rank reset to 0.";render();},
+ leaveCult(){if(viewOnlyBlock()||!S.cultMembership.archetype)return false;
+   const name=cultDisplayName(S.cultMembership);
+   // A same-day pick with nothing recorded since is a correction, not a departure.
+   if(cultUntouchedPick()){const h=S.cultMembership.history||[];h.pop();
+     S.cultMembership={archetype:null,name:"",rank:0,rankYears:0,cultSkills:[],startingRankGM:false,history:h};CULT_MSG="";render();return true;}
+   if(!confirm("Leave "+name+"? Its skill and your history stay; its training discount and new miracles stop (Core pp.196–200)."))return false;
+   const date=new Date().toISOString().slice(0,10);
+   S.cultFormer=(S.cultFormer||[]).concat([{archetype:S.cultMembership.archetype,name:S.cultMembership.name||"",rank:S.cultMembership.rank||0,left:date}]).slice(-20);
+   cultLog("Left "+name+" as "+cultRankTitle(cultArch(),S.cultMembership.rank||0));
+   S.cultMembership={archetype:null,name:"",rank:0,rankYears:0,cultSkills:[],startingRankGM:false,history:S.cultMembership.history};
+   CULT_MSG="Left "+name+". Its skill stays on the sheet.";render();return true;},
  /* passions */
  // Bound to both pointerdown and click in render.js (see the button markup
  // in stepPassions): a click immediately following an edit in another field

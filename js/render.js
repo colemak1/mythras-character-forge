@@ -1147,17 +1147,46 @@ function stepCult(){
   h+='<div class="pickgrid">'+CULT_ARCHETYPES.map(a=>'<button class="pick '+(S.cultMembership.archetype===a.key?"on":"")+'" onclick="APP.pickCult(\''+a.key+'\')"><span class="pn">'+esc(a.name)+'</span><div class="pd">'+esc(a.blurb)+' &mdash; '+esc(cultOrgType(a).label)+'</div></button>').join("")+'</div>';
   if(!S.cultMembership.archetype){
     h+='<p class="note">No affiliation selected &mdash; that&rsquo;s a fine choice for plenty of characters. Pick an archetype above only if it fits the concept.</p>';
-    return h;
+    return h+cultHistoryCard();
   }
-  const a=cultArch();const tier=S.cultMembership.rank||0;
+  const a=cultArch(),c=S.cultMembership,tier=c.rank||0,promoted=cultPromoted();
   h+='<div class="card"><h3>Details</h3>'
-   +fld("Name it for Sit&#39;ota (deity, order, town, clan &mdash; your call)",'<input type="text" value="'+esc(S.cultMembership.name)+'" placeholder="e.g. '+esc(a.name)+'" onchange="APP.cultField(\'name\',this.value)">')
-   +fld("Rank ("+esc(cultOrgType(a).label)+")",'<select onchange="APP.cultField(\'rank\',this.value)">'+CULT_TIERS.map((t,i)=>'<option value="'+i+'" '+(tier===i?"selected":"")+'>'+esc(cultRankTitle(a,i))+' ('+t+')</option>').join("")+'</select>')
-   +'<p class="note" style="margin-top:6px">Grants access to <b>'+esc(a.skill)+'</b> ('+esc(S.cultMembership.name||a.name)+'), shown on the Sheet step under Magic/Professional skills. Confirm access to training and rank-restricted magic with the GM. The Core training guideline for this rank is <b>'+CULT_TIER_TRAINING_DISCOUNT[tier]+'%</b> off training (p.199). Track actual prices at the table.</p>'
-   +'<p class="note" style="margin-top:6px"><b>Suggested requirements for '+esc(cultRankTitle(a,tier))+':</b> '+CULT_TIER_REQUIREMENTS[tier]+(tier>0?' &mdash; a starting character usually won&rsquo;t meet this yet; pick a higher rank only for a returning/veteran PC with your GM&rsquo;s sign-off.':"")+'</p>'
-   +'<p style="margin-top:8px"><button class="chip" onclick="APP.leaveCult()">Remove this affiliation</button></p>'
+   +fld("Name it for Sit&#39;ota (deity, order, town, clan &mdash; your call)",'<input type="text" value="'+esc(c.name)+'" placeholder="e.g. '+esc(a.name)+'" onchange="APP.cultField(\'name\',this.value)">')
+   +fld(promoted?"Rank ("+esc(cultOrgType(a).label)+")":"Starting rank ("+esc(cultOrgType(a).label)+"; above Common needs the GM)",'<select '+(promoted?'disabled ':'')+'onchange="APP.cultField(\'rank\',this.value)">'+CULT_TIERS.map((t,i)=>'<option value="'+i+'" '+(tier===i?"selected":"")+'>'+esc(cultRankTitle(a,i))+' ('+t+')</option>').join("")+'</select>')
+   +(c.startingRankGM&&!promoted?'<p class="note">GM-approved veteran starting rank.</p>':'')
+   +'<p class="note" style="margin-top:6px">Grants access to <b>'+esc(a.skill)+'</b> ('+esc(c.name||a.name)+'), shown on the Sheet step under Magic/Professional skills. Confirm access to training and rank-restricted magic with the GM. The Core training guideline for this rank is <b>'+CULT_TIER_TRAINING_DISCOUNT[tier]+'%</b> off the price of training from the organisation (p.199); it never changes skill % or Experience Rolls.</p>'
+   +'<p class="note" style="margin-top:6px"><b>Requirements for '+esc(cultRankTitle(a,tier))+':</b> '+CULT_TIER_REQUIREMENTS[tier]+'</p>'
+   +'<p style="margin-top:8px"><button class="chip" onclick="APP.leaveCult()">Leave this organisation</button></p>'
    +'</div>';
+  // OR-C01: promotion. The app checks the numbers; the GM decides.
+  const chk=cultPromotionCheck();
+  h+='<div class="card"><h3>Promotion</h3>'
+   +'<p class="note rulesrc">Core pp.196–198: each rank needs years at the rank below and cult skills at a set level, sometimes a gift or service. Meeting them never promotes by itself: the organisation decides. Mark which skills your GM counts as this organisation&rsquo;s cult skills.</p>'
+   +fld("Years at "+esc(cultRankTitle(a,tier)),'<input type="number" min="0" max="200" value="'+(c.rankYears||0)+'" onchange="APP.cultYears(this.value)">')
+   +'<details class="note"><summary>Cult skills ('+(c.cultSkills||[]).length+' marked)</summary>'
+   +'<div role="group" aria-label="Cult skills" class="pickgrid" style="grid-template-columns:repeat(auto-fill,minmax(13em,1fr))">'+allEntries().map(e=>'<label class="note"><input type="checkbox" '+((c.cultSkills||[]).includes(e.key)?'checked ':'')+'onchange="APP.cultSkill(\''+jsq(e.key)+'\',this.checked)"> '+esc(e.label)+' ('+finalPct(e.key)+'%)</label>').join("")+'</div></details>';
+  if(chk&&chk.next){
+    const r=chk.rule;
+    h+='<p class="note"><b>Next: '+esc(cultRankTitle(a,chk.next))+'.</b> '+(chk.qualifying.length>=r.skills?'&#10003;':'&#10007;')+' '+chk.qualifying.length+' / '+r.skills+' cult skills at '+r.pct+'%+'
+     +(r.years?' &middot; '+((c.rankYears||0)>=r.years?'&#10003;':'&#10007;')+' '+(c.rankYears||0)+' / '+r.years+' years':'')
+     +(r.deed?' &middot; GM judges '+esc(r.deed):'')+'</p>'
+     +'<label class="note"><input type="checkbox" id="cultPromoteOk"> The GM approves this promotion for the organisation</label> '
+     +(chk.eligible?'':'<label class="note"><input type="checkbox" id="cultPromoteOverride"> GM override: promote without the numbers</label> ')
+     +'<button type="button" class="chip" onclick="APP.cultPromote(document.getElementById(\'cultPromoteOk\').checked,!!document.getElementById(\'cultPromoteOverride\')?.checked)">Promote</button>';
+  }else h+='<p class="note">Highest rank reached.</p>';
+  if(CULT_MSG)h+='<p class="warn" role="status">'+esc(CULT_MSG)+'</p>';
+  h+='</div>';
+  h+=cultHistoryCard();
   return h;
+}
+// OR-C03: former organisations and the membership log.
+function cultHistoryCard(){
+  const former=S.cultFormer||[],log=S.cultMembership.history||[];
+  if(!former.length&&!log.length)return '';
+  let h='<div class="card"><h3>Membership history</h3>';
+  if(former.length)h+='<p class="note">Former: '+former.map(f=>{const a=CULT_ARCHETYPES.find(x=>x.key===f.archetype);return esc(cultDisplayName(f))+' ('+esc(cultRankTitle(a,f.rank))+(f.left?', left '+esc(f.left):'')+')';}).join("; ")+'. Skills learned there stay; their training discounts and new miracles don&rsquo;t apply unless the GM approves rejoining or a replacement (Core pp.196–200).</p>';
+  if(log.length)h+='<details class="note"><summary>Log ('+log.length+')</summary><ul>'+log.slice().reverse().map(x=>'<li>'+esc(x.date)+': '+esc(x.text)+'</li>').join("")+'</ul></details>';
+  return h+'</div>';
 }
 /* ---- step: passions ---- */
 function stepPassions(){
