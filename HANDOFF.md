@@ -5,11 +5,11 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-11 by Claude (creature limb HP fix; status from Work's #274 report)_
+_Last updated: 2026-11-11 by Claude (Subsystem 7 reclosed, item 2 Ready; Animism built)_
 
 ## Where things stand
 
-- **Session readiness 12 of 14. Feature completeness 7 of 8 built, 6 closed.** Item 14 passed live (#274). Subsystem 7 reopened for one Severity 1 (creature character arms/legs 0/0 HP), fixed in code with a test; it recloses when Work's recheck passes. Details: `docs/session-zero.md`.
+- **Session readiness 13 of 14. Feature completeness 7 of 8 built, 7 closed.** Only item 11 (owner's two-device check) is left for Session Zero. Only Subsystem 6 (Magic) is open: Folk Magic done; **Animism built 2026-11-11** (AN-F01–F05, `tests/magic-animism.cjs`), not yet live-checked. Details: `docs/session-zero.md`.
 - **Backups:** Supabase Free plan, so no automatic server backups. The GM downloads a campaign backup after every session.
 - **Look:** Codex · Stone everywhere; tokens in `sitota-theme.css` (loaded last). Other stylesheets use the tokens only; no hex colours.
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
@@ -17,9 +17,14 @@ _Last updated: 2026-11-11 by Claude (creature limb HP fix; status from Work's #2
 ## Next
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work), completed 2026-11-10:** `docs/creature-hp-live-275-20261110.md`: all three HP rechecks PASS; entry HP correct, Right Arm wound 2/5 persists in the account copy after save/reload, Attributes lists all nine locations. Fixture deleted; C remains signed in. **Next: Claude** — mark item 2 Ready, reclose Subsystem 7 and continue step 4; preserve typed Culture and restored-tracker passes.
-3. **ChatGPT (Chat):** one milestone review of the Subsystem 8 close (`subsystem-plan.md` item 8). Core p.218 Vulnerable only if you are given the page.
-4. **Claude, after Work's report:** reclose Subsystem 7 and mark item 2 Ready on a pass (fix any failure). Then Subsystem 6, one tradition per batch in `roadmap.md` order (Animism first; Folk Magic is done); item 11 stays with the owner and doesn't block it.
+2. **ChatGPT (Work), one batch** (signed in; a disposable animist, not Magic Audit; one short dated report, pass/fail plus severity). Play Mode → Spells → Animism:
+   - **Trance:** with rank Shaman, the purpose list offers Observe, Converse, Project Self and Draw a spirit (not Drag Souls); roll one: 1 MP spent, "In Trance" line shows the purpose and time.
+   - **Summon:** a named spirit (acquired by bargain, Intensity 2): a distance over the Binding % is refused; within it, Summon spends 2 MP and shows the arrival (or the retry/suspended message). Record attitude, winner and a service; save, reload: they persist; "Spirit has gone" clears it, the spirit is not marked bound.
+   - **Binding:** give the character 3 Experience Rolls; Make a binding → fetish → Start: nothing spent; Complete without the GM tick is refused; with it, 2 rolls are spent and the vessel shows fetish.
+   - **Fetish:** mark the spirit bound; Release, then Return (neutral attitude → a Binding roll in the log).
+   - Delete the fixture after.
+3. **ChatGPT (Chat):** (a) one milestone review of the Subsystem 8 close (`subsystem-plan.md` item 8); (b) for Spirit Combat (AN-F06–F07), a short code-needed spec with the Core p.131 Spirit Damage table and the p.138 effect eligibility (role, prerequisite) in paraphrase, only if the owner gives you those pages. Core p.218 Vulnerable only with the page.
+4. **Claude, next fresh session:** Mysticism (`magic-mysticism-code-cases-20261109.md` and the MY-C03 ruling at the bottom of `magic-animism-finish-20261109.md`). It doesn't wait for step 2. Fix any Animism failure from Work first.
 
 ## Notes
 

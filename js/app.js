@@ -322,6 +322,7 @@ window.APP={
    const m=spiritRecordByMagicIndex(idx);
    const key=magicSkillKey("Binding");
    if(!key){PM_MSG="Binding is not available on this character's sheet.";render();return;}
+   if(spiritGivenAway(m)){PM_MSG=m.name+" was bound for "+m.vessel.recipient+"; they command it.";render();return;}
    const err=spiritCommandPreflight(m,playCurMagic(),finalPct(key));
    if(err){PM_MSG=err;render();return;}
    const g=gradedPct(key,finalPct(key));
@@ -352,11 +353,14 @@ window.APP={
    if(["minor","serious"].includes(S.play.castingHurt.kind))S.play.castingHurt.willpower=["success","failure"].includes(result)?result:null;render();},
  // AN-C01 (Core p.131): Trance is its own action, not a spell or a bound-
  // spirit command. 1 MP; a fumble bars entering the Spirit Plane for a day.
- animistTrance(){if(viewOnlyBlock())return;
+ animistTrance(purpose){if(viewOnlyBlock())return;
+   purpose=purpose||"Observe";
+   if(!TRANCE_PURPOSE_MAP[purpose]){PM_MSG="Choose what the Trance is for.";render();return;}
    const key=magicSkillKey("Trance");
    if(!key){PM_MSG="This character doesn't have the Trance skill.";render();return;}
    if(S.play.tranceBarred){PM_MSG="A fumbled Trance bars entering the Spirit Plane for a day. Use “Rest one day” (Advance time) when it has.";render();return;}
    if(!S.magic.animistRank){PM_MSG="Confirm the animist rank in the builder first: it sets how long the Trance takes (Core p.131).";render();return;}
+   if(!trancePrep(S.magic.animistRank,false,purpose)){PM_MSG=TRANCE_PURPOSE_MAP[purpose].label+" needs a higher animist rank (Core p.131).";render();return;}
    if(playCurMagic()<1){PM_MSG="Trance needs 1 Magic Point.";render();return;}
    const g=gradedPct(key,finalPct(key));
    if(g.pct===null){PM_MSG=g.grade==="automatic"?"Automatic: the Trance simply works.":"Hopeless: no Trance can be attempted at this Grade.";render();return;}
@@ -364,15 +368,96 @@ window.APP={
    if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
    if(tier==="Critical")APP.markChecked(key);
    S.play.magic=playCurMagic()-1;
-   const prep=trancePrep(S.magic.animistRank,tier==="Critical");
+   const prep=trancePrep(S.magic.animistRank,tier==="Critical",purpose);
    if(tier==="Fumble")S.play.tranceBarred=true;
    // AN-F01: keep the outcome with the character (purpose, preparation).
-   S.play.trance=(tier==="Critical"||tier==="Success")?{purpose:"Observe",prep,critical:tier==="Critical"}:null;
-   const out=tier==="Critical"?"Trance, quickened: Observe after "+prep
-     :tier==="Success"?"Trance: Observe after "+prep
+   S.play.trance=(tier==="Critical"||tier==="Success")?{purpose,prep,critical:tier==="Critical"}:null;
+   const out=tier==="Critical"?"Trance, quickened: "+purpose+" after "+prep
+     :tier==="Success"?"Trance: "+purpose+" after "+prep
      :tier==="Fumble"?"Trance fumbled: no entry to the Spirit Plane for a day":"Trance failed";
    S.rollLog.unshift({label:"Trance"+(g.grade!=="standard"?" ("+GRADE_LABEL[g.grade]+")":""),pct:g.pct,roll:r===100?"00":r,tier,combat:false,oppTier:null,magic:out+", 1 MP"});
+   S.rollLog=S.rollLog.slice(0,8);
+   PM_MSG=purpose!=="Observe"&&(tier==="Critical"||tier==="Success")?"If the spirit or soul you reach is unwilling, the GM calls for opposed Willpower (Core p.131).":null;
+   render();},
+ // AN-F02 (Core pp.131, 134–135, 137): summon a known spirit. Intensity MP is
+ // spent on the attempt; the spirit is never marked bound by this.
+ summonSpirit(idx,distanceKm){if(viewOnlyBlock())return;PM_MSG=null;
+   const m=spiritRecordByMagicIndex(idx),key=magicSkillKey("Binding");
+   const err=spiritSummonPreflight(m,playCurMagic(),key?finalPct(key):0,distanceKm);
+   if(err){PM_MSG=err;render();return;}
+   const g=gradedPct(key,finalPct(key));
+   if(g.pct===null){PM_MSG="Resolve this summoning with your GM at the selected difficulty.";render();return;}
+   const r=d100(),tier=resolveRoll(r,g.pct),out=spiritSummonOutcome(tier),cost=Number(m.intensity)||1;
+   S.play.magic=playCurMagic()-cost;
+   if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
+   if(tier==="Critical")APP.markChecked(key);
+   let text;
+   if(out.arrives){const n=rollDice({n:1,sides:out.sides,mod:0}),arrival=n+" "+out.unit+(n>1?"s":"");
+     m.summon={tier,roll:r,arrival,attitude:"",winner:"",service:""};
+     text=m.name+" arrives in "+arrival;
+     PM_MSG=text+". When it arrives: record its attitude, then its Willpower opposed to this roll ("+(r===100?"00":r)+", "+tier+"), and apply Core p.137.";}
+   else if(out.retryTomorrow){m.summonRetryBarred=true;text="no answer; try again the following day";PM_MSG="The summoning fails: "+m.name+" doesn't come. Try again the following day.";}
+   else {m.bondSuspended=true;text="fumble: the bond is suspended until amends are made";PM_MSG="Fumble: "+m.name+"'s bond is suspended until you make amends, with the GM (Core p.137).";}
+   S.rollLog.unshift({label:"Summon "+m.name+" — Binding",pct:g.pct,roll:r===100?"00":r,tier,combat:false,oppTier:null,magic:text+", "+cost+" MP"});
    S.rollLog=S.rollLog.slice(0,8);render();},
+ // AN-F03 (Core pp.134, 137): the GM records the arrived spirit's attitude, who
+ // won the opposed roll and the service agreed. No effect is automated.
+ summonRecord(idx,field,value){if(viewOnlyBlock())return;const m=spiritRecordByMagicIndex(idx);
+   if(!m||!m.summon)return;
+   if(field==="attitude"&&(value===""||SPIRIT_ARRIVAL_ATTITUDES.includes(value)))m.summon.attitude=value;
+   else if(field==="winner"&&["","animist","spirit"].includes(value))m.summon.winner=value;
+   else if(field==="service")m.summon.service=String(value||"").slice(0,400);
+   else return;
+   render();},
+ summonEnd(idx){if(viewOnlyBlock())return;const m=spiritRecordByMagicIndex(idx);if(!m||!m.summon)return;
+   m.summon=null;PM_MSG=m.name+" has gone. Its binding status is unchanged.";render();},
+ spiritAmends(idx,confirmed){if(viewOnlyBlock())return;const m=spiritRecordByMagicIndex(idx);if(!m||!m.bondSuspended)return;
+   if(!confirmed){PM_MSG="Tick that the GM confirms the amends first.";render();return;}
+   m.bondSuspended=false;PM_MSG="Amends made: "+m.name+" can be summoned again.";render();},
+ // AN-F04 (Core pp.135–136): create or upgrade a binding. The Experience Roll
+ // cost is shown at the start and charged only when the GM confirms completion.
+ vesselStart(idx,type,recipient){if(viewOnlyBlock())return;const m=spiritRecordByMagicIndex(idx);
+   recipient=String(recipient||"").trim();
+   const err=bindingVesselPreflight(m,type,recipient);if(err){PM_MSG=err;render();return;}
+   const intensity=Number(m.intensity)||1,cost=bindingVesselCost(m,type,intensity);
+   m.vesselWork={type,intensity,cost,recipient};
+   PM_MSG="Binding "+m.name+" into a "+type+(recipient?" for "+recipient:"")+": "+cost+" Experience Roll"+(cost===1?"":"s")+" when complete, normally after a week of work.";render();},
+ vesselComplete(idx,confirmed){if(viewOnlyBlock())return;const m=spiritRecordByMagicIndex(idx);if(!m||!m.vesselWork)return;
+   if(!confirmed){PM_MSG="Tick that the GM confirms the binding is complete.";render();return;}
+   const w=m.vesselWork;
+   if(xpRollsAvailable()<w.cost){PM_MSG="Completing this binding needs "+w.cost+" Experience Roll"+(w.cost===1?"":"s")+"; you have "+xpRollsAvailable()+".";render();return;}
+   S.xp.pool-=w.cost;
+   m.vessel={type:w.type,intensity:w.intensity,recipient:w.recipient};m.bindingType=w.type;m.vesselWork=null;
+   if(w.type!=="fetish")m.manifested=false;
+   S.xp.history.unshift({type:"binding",label:"Binding: "+m.name+" ("+w.type+(w.recipient?", for "+w.recipient:"")+")",cost:w.cost});S.xp.history=S.xp.history.slice(0,25);
+   PM_MSG="Binding complete: "+m.name+" is held in a "+w.type+". Spent "+w.cost+" Experience Roll"+(w.cost===1?"":"s")+"."+(w.recipient?" It uses "+w.recipient+"'s spirit slot, not yours (Core p.136).":"");render();},
+ vesselCancel(idx){if(viewOnlyBlock())return;const m=spiritRecordByMagicIndex(idx);if(!m||!m.vesselWork)return;
+   m.vesselWork=null;PM_MSG="Binding work cancelled. No Experience Rolls spent.";render();},
+ // AN-F05 (Core p.136): a fetish-bound spirit is released as a Free Action and
+ // returned for one Action Point, with no MP. A neutral or hostile spirit
+ // resists: roll Binding.
+ fetishRelease(idx){if(viewOnlyBlock())return;const m=spiritRecordByMagicIndex(idx);
+   if(!m||m.bindingType!=="fetish"||m.spiritStatus!=="bound"||m.manifested)return;
+   m.manifested=true;PM_MSG=m.name+" is out of its fetish (Free Action). It can go up to "+(Number(m.pow)||0)+" m from the fetish (its POW).";render();},
+ fetishReturn(idx){if(viewOnlyBlock())return;const m=spiritRecordByMagicIndex(idx);
+   if(!m||!m.manifested)return;
+   const inFight=!!S.play.initiative;
+   if(inFight&&playMaxAP()-S.play.apUsed<1){PM_MSG="Returning a spirit to its fetish takes 1 Action Point; none left this round.";render();return;}
+   let ok=true,note="";
+   if(m.spiritAttitude!=="friendly"){
+     const key=magicSkillKey("Binding");
+     if(!key){PM_MSG="A "+m.spiritAttitude+" spirit resists: you need the Binding skill to return it.";render();return;}
+     const g=gradedPct(key,finalPct(key));
+     if(g.pct===null){PM_MSG="Resolve this Binding test with your GM at the selected difficulty.";render();return;}
+     const r=d100(),tier=resolveRoll(r,g.pct);ok=tier==="Critical"||tier==="Success";
+     if(tier==="Fumble"&&!S.xp.fumbled.includes(key))S.xp.fumbled.push(key);
+     if(tier==="Critical")APP.markChecked(key);
+     S.rollLog.unshift({label:"Return "+m.name+" — Binding",pct:g.pct,roll:r===100?"00":r,tier,combat:false,oppTier:null,magic:ok?"back in its fetish":"refuses to return"});
+     S.rollLog=S.rollLog.slice(0,8);note=ok?"":" It refuses; resolve with your GM.";
+   }
+   if(inFight)S.play.apUsed++;
+   if(ok)m.manifested=false;
+   PM_MSG=(ok?m.name+" is back in its fetish.":m.name+" stays out.")+(inFight?" 1 Action Point spent.":"")+note;render();},
  castMagic(idx){
    if(viewOnlyBlock())return;
    PM_MSG=null;
@@ -1358,6 +1443,7 @@ window.APP={
    if(kind==="day"){
      if(S.play.tranceBarred){S.play.tranceBarred=false;}
      S.play.trance=null;
+     for(const m of S.magic.known)if(m.tradition==="animism")m.summonRetryBarred=false;
      // Core p.80: natural healing restores the Healing Rate once per interval,
      // which is a day only for Minor Wounds; Serious takes a week, Major a month after treatment.
      const healed=[],waiting=[];

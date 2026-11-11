@@ -885,17 +885,51 @@ function pmCastingHurtHTML(){
    :e.extra?"The casting roll will be "+e.extra+" grade"+(e.extra>1?"s":"")+" harder.":"No penalty: the casting roll is unchanged.";
   return out+'<p class="pm-empty" role="status">'+note+' Parries and evades while casting may also make it harder, at the GM&rsquo;s call.</p></div>';
 }
-// AN-C01 (Core p.131): Trance to Observe the Spirit Plane, a separate action.
+// AN-C01/AN-F01 (Core p.131): Trance is a separate action. The purposes
+// offered are those the confirmed animist rank allows, each with its own
+// preparation time.
 function pmTranceHTML(){
   const key=magicSkillKey("Trance");
   if(!key)return '<p class="pm-empty">Trance: add the Trance skill to enter the Spirit Plane.</p>';
-  const g=gradedPct(key,finalPct(key)),prep=trancePrep(S.magic.animistRank,false);
-  return '<div class="pm-fx-item"><b>Trance</b> '+(g.pct===null?GRADE_LABEL[g.grade]:g.pct+'%')+' · 1 MP · '
-   +(prep?'Observe after '+prep+' (a critical saves one step)':'confirm the animist rank in the builder')
+  const g=gradedPct(key,finalPct(key)),rank=S.magic.animistRank,purposes=trancePurposesForRank(rank);
+  const opts=purposes.map(p=>'<option value="'+p.key+'">'+esc(p.label)+' ('+trancePrep(rank,false,p.key)+')</option>').join("");
+  return '<div class="pm-fx-item"><b>Trance</b> '+(g.pct===null?GRADE_LABEL[g.grade]:g.pct+'%')+' · 1 MP'
+   +(purposes.length?' <label>for <select id="trancePurpose" aria-label="Trance purpose">'+opts+'</select></label> (a critical saves one step)':' · confirm the animist rank in the builder')
    +(S.play.tranceBarred?' · <b>barred for a day</b> (fumble)':'')
-   +' <button class="pm-btn sm" onclick="APP.animistTrance()"'+(S.play.tranceBarred?' disabled':'')+'>Roll Trance</button>'
-   +(S.play.trance?'<p role="status">In Trance: Observe after '+esc(S.play.trance.prep)+(S.play.trance.critical?' (critical)':'')+'.</p>':'')
-   +'<p class="pm-empty">Core p.131. Only Observe is built so far. Other Trance uses, an unwilling target&rsquo;s opposed Willpower, and spirit combat stay with the GM.</p></div>';
+   +' <button class="pm-btn sm" onclick="APP.animistTrance((document.getElementById(\'trancePurpose\')||{}).value)"'+(S.play.tranceBarred?' disabled':'')+'>Roll Trance</button>'
+   +(S.play.trance?'<p role="status">In Trance: '+esc(S.play.trance.purpose)+' after '+esc(S.play.trance.prep)+(S.play.trance.critical?' (critical)':'')+'.</p>':'')
+   +'<p class="pm-empty">Core p.131. Higher purposes need a higher rank. An unwilling spirit or soul resists with opposed Willpower, called by the GM. Spirit combat stays with the GM.</p></div>';
+}
+// AN-F02–F05: summoning, the arrival record, making a binding and a fetish
+// spirit's release and return, for one recorded spirit (Core pp.131–137).
+function pmSpiritActionsHTML(m,idx){
+  const id=n=>'sp'+idx+n,val=n=>'document.getElementById(\''+id(n)+'\').value',chk=n=>'document.getElementById(\''+id(n)+'\').checked';
+  const bkey=magicSkillKey("Binding"),bpct=bkey?finalPct(bkey):0;
+  let h='<div class="pm-fx-resolve"><b>Summon</b> · '+(Number(m.intensity)||1)+' MP · within '+bpct+' km (Binding %)';
+  if(m.bondSuspended)h+=' · <b>bond suspended</b> (fumble). <label><input type="checkbox" id="'+id('am')+'"> GM confirms amends</label> <button class="pm-btn sm" onclick="APP.spiritAmends('+idx+','+chk('am')+')">Amends made</button>';
+  else if(m.summonRetryBarred)h+=' · failed: try again the following day';
+  else if(!m.summon)h+=' <label>Distance <input type="number" id="'+id('km')+'" min="0" step="1" style="width:70px"> km</label> <button class="pm-btn sm" onclick="APP.summonSpirit('+idx+','+val('km')+')">Summon</button>';
+  h+='</div>';
+  if(m.summon){const s=m.summon,sel=(f,opts)=>'<select aria-label="'+f+'" onchange="APP.summonRecord('+idx+',\''+f+'\',this.value)">'+opts.map(([v,l])=>'<option value="'+v+'"'+(s[f]===v?' selected':'')+'>'+l+'</option>').join("")+'</select>';
+    h+='<div class="pm-fx-resolve" role="status">Summoned ('+esc(s.tier)+', rolled '+(s.roll===100?'00':s.roll)+'): arrives in '+esc(s.arrival)+'. '
+     +'<label>Attitude '+sel("attitude",[["","not recorded"],["allied","allied"],["neutral","neutral"],["hostile","hostile"]])+'</label> '
+     +'<label>Spirit&rsquo;s Willpower vs this roll '+sel("winner",[["","not rolled"],["animist","animist wins"],["spirit","spirit wins"]])+'</label> '
+     +'<label>Service <input value="'+esc(s.service)+'" maxlength="400" onchange="APP.summonRecord('+idx+',\'service\',this.value)"></label> '
+     +'<button class="pm-btn sm" onclick="APP.summonEnd('+idx+')">Spirit has gone</button>'
+     +'<br>Apply Core p.137 &ldquo;Attitude of a Summoned Spirit&rdquo; for this attitude and winner. Summoning doesn&rsquo;t bind it.</div>';}
+  if(m.vesselWork){const w=m.vesselWork;
+    h+='<div class="pm-fx-resolve">Making a binding: '+esc(w.type)+(w.recipient?' for '+esc(w.recipient):'')+' · '+w.cost+' Experience Roll'+(w.cost===1?'':'s')+' on completion (normally a week). '
+     +'<label><input type="checkbox" id="'+id('vc')+'"> GM confirms it is complete</label> <button class="pm-btn sm" onclick="APP.vesselComplete('+idx+','+chk('vc')+')">Complete</button> <button class="pm-btn sm" onclick="APP.vesselCancel('+idx+')">Cancel</button></div>';}
+  else if(["bargain","combat"].includes(m.spiritAcquired)){
+    h+='<div class="pm-fx-resolve"><b>'+(m.vessel?'Upgrade or remake binding':'Make a binding')+'</b>'+(m.vessel?' (now: '+esc(m.vessel.type)+', Intensity '+m.vessel.intensity+(m.vessel.recipient?', for '+esc(m.vessel.recipient):'')+')':'')+' <select id="'+id('vt')+'" aria-label="Binding vessel">'
+     +BINDING_VESSELS.map(t=>'<option value="'+t+'">'+t+' &middot; '+bindingVesselCost(m,t,Number(m.intensity)||1)+' Exp. Rolls</option>').join("")+'</select> '
+     +'<label>For someone else <input id="'+id('vr')+'" maxlength="80" placeholder="leave empty for yourself" style="width:150px"></label> '
+     +'<button class="pm-btn sm" onclick="APP.vesselStart('+idx+','+val('vt')+','+val('vr')+')">Start</button>'
+     +'<br>Core pp.135–136: one Experience Roll per Intensity; an upgrade of the same vessel type costs the difference. A gift uses the recipient&rsquo;s slot.</div>';}
+  if(m.bindingType==="fetish"&&m.spiritStatus==="bound"&&!spiritGivenAway(m))
+    h+='<div class="pm-fx-resolve"><b>Fetish</b>: '+(m.manifested?'out, up to '+(Number(m.pow)||0)+' m from the fetish (POW) <button class="pm-btn sm" onclick="APP.fetishReturn('+idx+')">Return (1 AP'+(m.spiritAttitude!=="friendly"?', Binding test':'')+')</button>'
+      :'inside <button class="pm-btn sm" onclick="APP.fetishRelease('+idx+')">Release (Free Action)</button>')+'</div>';
+  return h;
 }
 function magicPanel(){
   const all=allMagic();
@@ -943,7 +977,7 @@ function magicPanel(){
        +' <span class="pm-fx-badge">'+esc(meta)+'</span>'
        +'<button class="pm-btn roll" onclick="event.preventDefault();event.stopPropagation();'+(t.key==="animism"?'APP.commandSpirit('+idx+')':'APP.castMagic('+idx+')')+'">'+(t.key==="animism"?"Command spirit":"cast")+'</button></summary>'
        +(casting?'<button class="pm-btn sm" onclick="APP.'+({sorcery:"sorceryCancel",mysticism:"mysticismCancel",theism:"theismCancel"}[t.key])+'()">Cancel casting</button>':'')
-       +(t.key==="animism"?'<div class="pm-fx-resolve">Contact: '+esc(m.spiritContact||"unknown")+' · Attitude: '+esc(m.spiritAttitude||"neutral")+' · Vessel: '+esc(m.bindingType||"none")+'. Summoning and ritual binding require GM resolution (Core pp.134–137).</div>'
+       +(t.key==="animism"?'<div class="pm-fx-resolve">Contact: '+esc(m.spiritContact||"unknown")+' · Attitude: '+esc(m.spiritAttitude||"neutral")+' · Vessel: '+esc(m.bindingType||"none")+(spiritGivenAway(m)?' · bound for '+esc(m.vessel.recipient):'')+'.</div>'+pmSpiritActionsHTML(m,idx)
         +'<div class="pm-fx-resolve">Spirit combat MP (manual): '+(Number.isInteger(m.spiritMP)?m.spiritMP:'not tracked')+' <button class="pm-btn sm" onclick="APP.spiritMPAdjust('+idx+',-1)">−1</button> <button class="pm-btn sm" onclick="APP.spiritMPAdjust('+idx+',1)">+1</button></div>'
         +(m.spiritCombatNote?'<p>'+esc(m.spiritCombatNote)+'</p>':''): '')
        +(t.key==="mysticism"&&m.active&&m.durationTurns>0?'<button class="pm-btn sm" onclick="APP.talentTurn('+ (idx-S.magic.folk.length) +')">Advance Talent 1 turn</button>':'')
@@ -2055,6 +2089,7 @@ function xpLogRow(r){
   if(r.type==="training")return '<div class="pm-xplogrow">'+esc(r.label)+' — training <b>+'+r.gain+'%</b> &rarr; now <b>'+r.newPct+'%</b></div>';
   if(r.type==="learn")return '<div class="pm-xplogrow">'+esc(r.label)+' — learned for 3 Experience Rolls &rarr; starting at <b>'+r.newPct+'%</b></div>';
   if(r.type==="passion-adjustment")return '<div class="pm-xplogrow">'+esc(r.label)+' — manual change <b>'+(r.delta>0?"+":"")+r.delta+'%</b> &rarr; now <b>'+r.newPct+'%</b></div>';
+  if(r.type==="binding")return '<div class="pm-xplogrow">'+esc(r.label)+' — <b>'+r.cost+'</b> Experience Roll'+(r.cost===1?'':'s')+' spent (Core pp.135–136)</div>';
   if(r.type==="fumble")return '<div class="pm-xplogrow fumble">'+esc(r.label)+' — Fumble bonus <b>+1%</b> &rarr; now <b>'+r.newPct+'%</b></div>';
   return '<div class="pm-xplogrow'+(r.success?" ok":"")+'">'+esc(r.label)+' — d100 '+r.roll+' + INT '+r.int+' = <b>'+r.total+'</b> vs '+r.target+'% &rarr; '
    +(r.success?"met/beat it":"fell short")+', <b>+'+r.gain+'%</b>'+(r.fumbleApplied?" (fumble +1% applied first)":"")+' &rarr; now <b>'+r.newPct+'%</b></div>';

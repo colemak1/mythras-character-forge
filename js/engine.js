@@ -444,6 +444,7 @@ function normalizeState(){
       if(!Number.isSafeInteger(m.spiritMP)||m.spiritMP<0||m.spiritMP>999)m.spiritMP=null;
       m.spiritCombatNote=String(m.spiritCombatNote||"").slice(0,800);
       if(!["bargain","combat"].includes(m.spiritAcquired))m.spiritAcquired="";
+      normalizeSpiritPlay(m);
     }
     if(m.tradition==="sorcery"){
       // MAG-N02: which other recorded spells a Combine casting joins, and the
@@ -465,7 +466,7 @@ function normalizeState(){
   normalizeDevotionalPools();
   if(!Object.hasOwn(ANIMIST_RANK_FRACTION,S.magic.animistRank))S.magic.animistRank="";
   if(S.play)S.play.tranceBarred=S.play.tranceBarred===true;
-  if(S.play){const t=S.play.trance;S.play.trance=t&&t.purpose==="Observe"&&TRANCE_PREP_STEPS.includes(t.prep)?{purpose:"Observe",prep:t.prep,critical:!!t.critical}:null;}
+  if(S.play){const t=S.play.trance;S.play.trance=t&&TRANCE_PURPOSE_MAP[t.purpose]&&TRANCE_PREP_STEPS.includes(t.prep)?{purpose:t.purpose,prep:t.prep,critical:!!t.critical}:null;}
   // CRTR-C03-W: keep only valid GM rulings on nonhuman wound classes.
   if(S.play){const lc=S.play.locClass,out={};
     if(lc&&typeof lc==="object")for(const [k,v] of Object.entries(lc))if(typeof k==="string"&&k.length<=60&&(v==="limb"||v==="vital"))out[k]=v;
@@ -1057,10 +1058,70 @@ const ANIMIST_RANK_FRACTION={r1:0.25,r2:0.5,r3:0.75,r4:1};
 // animist rank. A critical shortens it one step, never below an Action.
 const TRANCE_PREP_STEPS=["1 Action","1 round","1 minute","1 hour"];
 const TRANCE_PREP_BY_RANK={r1:3,r2:2,r3:1,r4:0};
-function trancePrep(rank,critical){
-  const i=TRANCE_PREP_BY_RANK[rank];if(i===undefined)return null;
+// AN-F01, Core p.131 Trance table (ruling after PR #251,
+// docs/magic-animism-finish-20261109.md): each purpose has a minimum rank and
+// its own preparation at each eligible rank (index into TRANCE_PREP_STEPS).
+const TRANCE_PURPOSES=[
+  {key:"Observe",label:"Observe the Spirit Plane",prep:TRANCE_PREP_BY_RANK},
+  {key:"Converse",label:"Converse with spirits",prep:{r2:3,r3:2,r4:1}},
+  {key:"Project",label:"Project Self onto the Spirit Plane",prep:{r3:3,r4:2}},
+  {key:"Draw",label:"Draw a spirit to the material world",prep:{r3:3,r4:2}},
+  {key:"Drag",label:"Drag Souls onto the Spirit Plane",prep:{r4:3}}];
+const TRANCE_PURPOSE_MAP=Object.fromEntries(TRANCE_PURPOSES.map(p=>[p.key,p]));
+function trancePrep(rank,critical,purpose){
+  const p=TRANCE_PURPOSE_MAP[purpose||"Observe"],i=p?p.prep[rank]:undefined;if(i===undefined)return null;
   return TRANCE_PREP_STEPS[critical?Math.max(0,i-1):i];
 }
+function trancePurposesForRank(rank){return TRANCE_PURPOSES.filter(p=>p.prep[rank]!==undefined);}
+// AN-F02 (Core pp.131, 134–135, 137): summoning a known spirit is its own
+// Binding action. The spirit's physical location must lie within Binding %
+// in kilometres, and the animist spends MP equal to its Intensity on the
+// attempt. Nothing here marks the spirit bound.
+function spiritSummonPreflight(m,mp,bindingPct,distanceKm){
+  if(!m||m.tradition!=="animism")return "Select an Animism spirit.";
+  if(!String(m.name||"").trim())return "Name the spirit before summoning it: only a known spirit can be summoned.";
+  if(m.bondSuspended)return "A fumbled summoning suspended this spirit's bond. Make amends with the GM, then clear it on the spirit (Core p.137).";
+  if(m.summonRetryBarred)return "A failed summoning can be tried again the following day. Use “Rest one day” (Advance time) when it has.";
+  if(m.summon)return "This spirit has already been summoned. Mark it as gone before summoning it again.";
+  if(!Number.isFinite(bindingPct)||bindingPct<=0)return "Add the Binding skill before summoning a spirit.";
+  const km=Number(String(distanceKm??"").trim()===""?NaN:distanceKm);
+  if(!Number.isFinite(km)||km<0)return "Enter how far away the spirit's physical location is, in kilometres (GM confirms).";
+  if(km>bindingPct)return "Too far: you can summon a spirit whose physical location is within "+bindingPct+" km (your Binding %, Core p.131).";
+  const need=Number(m.intensity)||1;
+  if(!Number.isFinite(mp)||mp<need)return "Summoning needs "+need+" Magic Point"+(need>1?"s":"")+" (the spirit's Intensity).";
+  return null;
+}
+// Core p.137: when the summoned spirit turns up. A failure allows a retry the
+// following day; a fumble suspends the bond until the animist makes amends.
+function spiritSummonOutcome(tier){
+  if(tier==="Critical")return {arrives:true,sides:3,unit:"round"};
+  if(tier==="Success")return {arrives:true,sides:4,unit:"minute"};
+  if(tier==="Failure")return {arrives:false,retryTomorrow:true};
+  if(tier==="Fumble")return {arrives:false,suspended:true};
+  return null;
+}
+const SPIRIT_ARRIVAL_ATTITUDES=["allied","neutral","hostile"];
+// AN-F04 (Core pp.135–136): Experience Rolls to create or upgrade a binding.
+// A new binding costs one roll per Intensity; upgrading an existing binding of
+// the same vessel type costs only the difference; same or lower Intensity
+// costs nothing. Charged only when the GM confirms the work is complete.
+const BINDING_VESSELS=["fetish","location","creature"];
+function bindingVesselCost(m,type,intensity){
+  const v=m&&m.vessel,prior=v&&v.type===type?Number(v.intensity)||0:0;
+  return Math.max(0,(Number(intensity)||0)-prior);
+}
+function bindingVesselPreflight(m,type,recipient){
+  if(!m||m.tradition!=="animism")return "Select an Animism spirit.";
+  if(!String(m.name||"").trim())return "Name the spirit first.";
+  if(!["bargain","combat"].includes(m.spiritAcquired))return "Record how the spirit was acquired (GM-confirmed bargain or Spirit Combat) before making its binding (Core pp.135–136).";
+  if(!BINDING_VESSELS.includes(type))return "Choose a fetish, a location or a creature to hold the spirit.";
+  if(String(recipient||"").length>80)return "Keep the recipient's name under 80 characters.";
+  if(m.vesselWork)return "A binding for this spirit is already being made. Complete or cancel it first.";
+  return null;
+}
+// A spirit given away (a binding made for someone else) uses the recipient's
+// slot, not the maker's (Core p.136).
+function spiritGivenAway(m){return !!(m&&m.vessel&&String(m.vessel.recipient||"").trim());}
 const ANIMIST_RANK_LABEL=[["","Not confirmed"],["r1","Follower: ¼ CHA"],["r2","Spirit Worshipper: ½ CHA"],["r3","Shaman: ¾ CHA"],["r4","High Shaman: all CHA"]];
 function boundSpiritFormula(){
   const f=ANIMIST_RANK_FRACTION[S.magic.animistRank],cha=Number(effectiveChars().CHA);
@@ -1073,7 +1134,7 @@ function boundSpiritLimit(){
   const gm=S.magic.boundLimitGM;
   return Number.isInteger(gm)&&gm>=Math.floor(x)&&gm<=Math.ceil(x)?gm:null;
 }
-function boundSpirits(){return S.magic.known.filter(m=>m.tradition==="animism"&&m.spiritStatus==="bound");}
+function boundSpirits(){return S.magic.known.filter(m=>m.tradition==="animism"&&m.spiritStatus==="bound"&&!spiritGivenAway(m));}
 // Core p.136: over the limit, the strongest spirit(s) break free. Core doesn't
 // define "strongest", so this is only the app's suggestion for the GM
 // (highest Intensity, then POW). Commands stay blocked until the GM-chosen
@@ -1255,6 +1316,20 @@ function allMagic(){
   const out=S.magic.folk.map(f=>({tradition:"folk",name:f.name,spec:f.spec||"",
     spell:folkSpellByName(f.name)||null}));
   return out.concat(S.magic.known.map(m=>Object.assign({},m)));
+}
+// AN-F02–F05 play state kept on each spirit record; anything malformed is dropped.
+function normalizeSpiritPlay(m){
+  const clip=(v,n)=>String(v||"").slice(0,n);
+  m.summonRetryBarred=m.summonRetryBarred===true;m.bondSuspended=m.bondSuspended===true;
+  const s=m.summon;
+  m.summon=s&&typeof s==="object"&&["Critical","Success"].includes(s.tier)?{tier:s.tier,roll:Number.isSafeInteger(s.roll)?s.roll:null,
+    arrival:clip(s.arrival,40),attitude:SPIRIT_ARRIVAL_ATTITUDES.includes(s.attitude)?s.attitude:"",
+    winner:["animist","spirit"].includes(s.winner)?s.winner:"",service:clip(s.service,400)}:null;
+  const v=m.vessel;
+  m.vessel=v&&BINDING_VESSELS.includes(v.type)&&Number.isSafeInteger(v.intensity)&&v.intensity>=1?{type:v.type,intensity:v.intensity,recipient:clip(v.recipient,80)}:null;
+  const w=m.vesselWork;
+  m.vesselWork=w&&BINDING_VESSELS.includes(w.type)&&Number.isSafeInteger(w.intensity)&&w.intensity>=1&&Number.isSafeInteger(w.cost)&&w.cost>=0?{type:w.type,intensity:w.intensity,cost:w.cost,recipient:clip(w.recipient,80)}:null;
+  m.manifested=m.manifested===true&&m.bindingType==="fetish"&&m.spiritStatus==="bound";
 }
 // allMagic returns presentation copies; mutations MUST use the saved record.
 function spiritRecordByMagicIndex(idx){
