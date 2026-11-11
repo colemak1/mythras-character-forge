@@ -18,7 +18,7 @@ _Last updated: 2026-11-10 by Claude (Subsystems 7 and 8 closed; typed-box fix)_
 ## Next
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work), one batch** (signed in, own campaign; one short dated report, pass/fail plus severity; anything blocked: record once, move on):
+2. **ChatGPT (Work), completed 2026-11-10:** `docs/session-zero-live-273-20261110.md`: typed Culture PASS; full creature build/save/reload FAIL (Severity 1: arms/legs 0/0 HP); restored GM Tools PASS. Fixtures deleted; C left signed in by owner request. **Next: Claude** — fix HP, record item 14 Ready and handle Subsystem 7 status; preserve these passes. The scope below is completed, not a request to repeat it:
    - **Typed boxes (fix, all characters):** on Culture, type a number into each points box one after another (click or Tab between them, no +/- buttons): the total reaches 100/100.
    - **Creature character (item 2):** as GM, add a sapient creature, tick "GM permits", copy its stat block; as player, Concept → paste, tick "My GM approved", Use this creature; build with Points Build, then Culture, Career, Bonus Skills, money; save, reload: species, ranges and hit locations persist. (Import, INT 7 and draft reload already passed; don't repeat them.)
    - **Restored copy (item 14):** add tracker cards (one NPC, one creature) to a disposable campaign, back it up, restore it as a new campaign, open GM Tools on the copy: cards draw. Then delete the fixtures (keep Creation Audit and Magic Audit).
