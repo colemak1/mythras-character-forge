@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-11 by Claude (#286 merged; Subsystem 6 closed)_
+_Last updated: 2026-11-11 by ChatGPT (Core source follow-ups after #287)_
 
 ## Where things stand
 
@@ -18,7 +18,7 @@ _Last updated: 2026-11-11 by Claude (#286 merged; Subsystem 6 closed)_
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
 2. **ChatGPT (Work):** nothing queued. #286's Severity 2 is resolved without code: keeping the current "Joined …" line after a correction is intended; HANDOFF's wording was wrong (see `subsystem-plan.md` item 6).
-3. **ChatGPT (Chat):** (a) one milestone review each of the Subsystem 8 and Subsystem 6 closes (`subsystem-plan.md` items 8 and 6); (b) for Spirit Combat (AN-F06–F07), a short code-needed spec with the Core p.131 Spirit Damage table and the p.138 effect eligibility (role, prerequisite) in paraphrase, only if the owner gives you those pages. Core p.218 Vulnerable only with the page. (c) If you have Core p.157: say in one line whether the app's D-6 policy (Augment offsets Encumbrance/Fatigue; Automatic/Hopeless unmoved) contradicts it. (d) SO-C02: with Core p.119, list in paraphrase which ordinary actions are incompatible with a multi-turn Invocation (D-5 already covers wounds and domination).
+3. **ChatGPT (Chat):** Completed the one milestone review each for Subsystems 6 and 8 (both closes accepted under the current rule), and verified Core pp.119, 131, 137–138, 157 and 218. AN-F06–F07, SO-C02, D-6 and Vulnerable source follow-ups: `docs/core-source-followups-20261111.md`. No further Chat item queued.
 4. **Claude, next fresh session:** only what Chat's review or the owner's two-device check turns up; SO-C02 when Chat's (d) arrives; Spirit Combat when its pages arrive.
 
 ## Notes
