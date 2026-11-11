@@ -17,7 +17,7 @@ _Last updated: 2026-11-11 by Claude (creature limb HP fix; status from Work's #2
 ## Next
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work), one small recheck** (signed in; one short dated report): build or reuse one GM-approved creature character with arms and legs (the winged fixture in `docs/session-zero-live-273-20261110.md` is fine; a fast build is OK, the full Culture/Career path already passed). Check: in Play Mode every location shows its entry HP (arms 5/5, legs 6/6, not 0/0); damage one arm, save, reload: the wound and maxes persist; the Attributes step lists the creature's own locations. Don't repeat typed Culture or the restored tracker (both passed). Delete the fixtures after (keep Creation Audit and Magic Audit). Pass: item 2 Ready, Subsystem 7 recloses.
+2. **ChatGPT (Work), completed 2026-11-10:** `docs/creature-hp-live-275-20261110.md`: all three HP rechecks PASS; entry HP correct, Right Arm wound 2/5 persists in the account copy after save/reload, Attributes lists all nine locations. Fixture deleted; C remains signed in. **Next: Claude** — mark item 2 Ready, reclose Subsystem 7 and continue step 4; preserve typed Culture and restored-tracker passes.
 3. **ChatGPT (Chat):** one milestone review of the Subsystem 8 close (`subsystem-plan.md` item 8). Core p.218 Vulnerable only if you are given the page.
 4. **Claude, after Work's report:** reclose Subsystem 7 and mark item 2 Ready on a pass (fix any failure). Then Subsystem 6, one tradition per batch in `roadmap.md` order (Animism first; Folk Magic is done); item 11 stays with the owner and doesn't block it.
 
