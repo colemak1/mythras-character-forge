@@ -267,7 +267,7 @@ function psBuildFig(id,svg){
 function psDraw(f,now){
   const L=f.look;if(!L)return;
   const c=f.cur,down=L.prone||f.end==='ko';
-  const br=!down&&!f.anim&&!f.holdPose?Math.sin(now/480+(f.id==='b'?1.7:0)):0;
+  const br=!down&&!f.anim&&!f.holdPose&&!f.exPose?Math.sin(now/480+(f.id==='b'?1.7:0)):0;
   const pose={...c,t:c.t+br*1.6,a1:c.a1+br*2,w:c.w+br*2};
   // anatomy: a disabled arm hangs limp (the engine says so)
   const wLimp=L.swap?L.limp.larm:L.limp.rarm,oLimp=L.swap?L.limp.rarm:L.limp.larm;
@@ -338,6 +338,7 @@ function psDraw(f,now){
 function psRest(f){
   if(f.end==='ko')return PS_POSE.ko;
   if(f.end==='win')return PS_POSE.win;
+  if(f.exPose)return f.exPose;         // mid-exchange: hold the windup or guard until the blow resolves
   if(f.holdPose)return f.holdPose;
   return f.look&&f.look.prone?PS_POSE.prone:PS_POSE.idle;
 }
@@ -449,11 +450,12 @@ function psClearEffects(){
   const st=psLayer('ps-stage');if(st)st.classList.remove('ps-shake');
 }
 // Snap everything to the authoritative state (no animation).
-function psSettle(){
-  PS.epoch++;PS.ex=null;
+// keepExchange: an exchange is waiting on a person, so clear the effects but keep the held windup and guard.
+function psSettle(keepExchange){
+  PS.epoch++;if(!keepExchange)PS.ex=null;
   for(const id of ['a','b']){const f=PS.fig[id];if(!f)continue;
     if(f.done){const r=f.done;f.done=null;r();}
-    f.anim=null;f.trailOn=false;f.trailPts=[];f.flash=null;f.dropping=false;f.slide=null;f.hx=f.tx;
+    f.anim=null;if(!keepExchange)f.exPose=null;f.trailOn=false;f.trailPts=[];f.flash=null;f.dropping=false;f.slide=null;f.hx=f.tx;
     if(f.dropEl&&f.look&&f.look.armed){f.dropEl.remove();f.dropEl=null;}
     f.cur={...psRest(f)};}
   psClearEffects();psEmit('settle',{});
@@ -527,6 +529,8 @@ function psHoldLodged(){
   }
 }
 
+function psReleaseExchange(){for(const f of psFigs())if(f)f.exPose=null;}
+const psExchangeHeld=()=>psFigs().some(f=>f&&f.exPose);
 // ---- One cue -> one scripted beat ----
 const psOther=f=>PS.fig[f.id==='a'?'b':'a'];
 // The target point of a strike in the attacker's frame, from the defender's body part.
@@ -557,27 +561,31 @@ const psWindupFor=wk=>psThrust(wk.kind)||wk.thin?PS_POSE.cock:PS_POSE.windup;
 
 async function psRunCue(cue){
   const me=PS.fig[cue.actor]||null,tgt=PS.fig[cue.target]||null;
+  // An exchange is one motion: the attacker stays wound up and the defender stays in guard
+  // (exPose) through the dice and choices, and the blow releases from there. Anything that
+  // is not part of that build-up lets go of the held poses.
+  if(cue.type==='attack'||!['parry','evade','locate','hit','deflect'].includes(cue.type))psReleaseExchange();
   try{
     if(cue.type==='attack'&&me){
       PS.ex={exid:cue.exid,atk:me.id,aGrade:cue.grade==='fumble'?0:cue.grade==='failure'?1:cue.grade==='success'?2:3,shield:cue.shield,react:'none',reactGrade:null,reactTool:'weapon'};
       const shield=cue.shield&&me.look.shield;
-      psPlay(me,[shield?PS_POSE.guard:psWindupFor(me.look.wk),230]);
+      me.exPose=shield?PS_POSE.guard:psWindupFor(me.look.wk);psPlay(me,[me.exPose,230]);
       // the roll stage: a critical here is a critical ATTACK, not yet a hit
       if(cue.grade==='critical')psBanner('Critical attack','crit');
       else if(cue.grade==='fumble')psBanner('Fumble','bad');
       psEmit('attack',{actor:me.id,grade:cue.grade});await psSleep(300);
     }else if(cue.type==='parry'&&me){
       if(PS.ex){PS.ex.react='parry';PS.ex.reactGrade=cue.grade==='fumble'?0:cue.grade==='failure'?1:cue.grade==='success'?2:3;PS.ex.reactTool=cue.shield?'shield':'weapon';}
-      psPlay(me,[PS_POSE.guard,200]);psEmit('guard',{actor:me.id,grade:cue.grade});await psSleep(260);
+      me.exPose=PS_POSE.guard;psPlay(me,[PS_POSE.guard,200]);psEmit('guard',{actor:me.id,grade:cue.grade});await psSleep(260);
     }else if(cue.type==='evade'&&me){
       if(PS.ex){PS.ex.react='evade';PS.ex.reactGrade=cue.grade==='fumble'?0:cue.grade==='failure'?1:cue.grade==='success'?2:3;}
-      psPlay(me,[PS_POSE.brace,200]);psEmit('brace',{actor:me.id,grade:cue.grade});await psSleep(260);
+      me.exPose=PS_POSE.brace;psPlay(me,[PS_POSE.brace,200]);psEmit('brace',{actor:me.id,grade:cue.grade});await psSleep(260);
     }else if(cue.type==='locate'&&tgt){
       const w=psBodyPt(tgt,cue.loc);psReticle(w);
       if(cue.chosen)psDom(psWorld(tgt,tgt.pts?tgt.pts.hd:[0,-120]),'Chosen: '+(PSTAGE_LOCNAME[cue.loc]||''),'fx');
       psEmit('locate',{target:tgt.id,loc:cue.loc,point:w.map(Math.round)});await psSleep(420);
     }else if(cue.type==='hit'||cue.type==='deflect'){
-      await psResolveBlow(cue);
+      await psResolveBlow(cue);psReleaseExchange();
     }else if(cue.type==='trip'&&tgt&&me){
       psDom(psWorld(me,me.pts?me.pts.Sh:[0,-60]),'Trip Opponent','fx');
       const aim=psStrikePose(me,psLocal(me,psPartRest(tgt,'rleg')),{});
@@ -621,6 +629,7 @@ async function psResolveBlow(cue){
   const ex=PS.ex||{},px=cue.px||{};
   const atkId=cue.actor||ex.atk||(cue.target?(cue.target==='a'?'b':'a'):null);
   const atk=PS.fig[atkId],def=atk&&psOther(atk);if(!atk||!def||!atk.pts||!def.pts)return;
+  atk.exPose=null;                          // the strike releases from the windup; the defender keeps their guard until it lands
   if(!def.anim)def.cur={...psRest(def)};   // the defender is where the engine says they are before we aim at them
   const out=pitsStageOutcome(cue,ex),tool=(px.tool||(ex.shield?'shield':'weapon')),shield=tool==='shield'&&atk.look.shield;
   const loc=cue.loc||'chest',reactTool=px.reactTool||ex.reactTool||'weapon';
@@ -758,7 +767,11 @@ function pitsStageSync(){
   if(over){PS.fig[S.winnerId].end='win';PS.fig[S.winnerId==='a'?'b':'a'].end='ko';}
   const firstTime=!PS.seeded;PS.seeded=true;psSetSpacing(firstTime);
   // The replay ended (normally, or cut short by Show results): snap to the real state.
-  if(PS.wasBusy&&!V.busy){psSettle();}
+  // ...unless an exchange is waiting on a person (a reaction, a Special Effect, a roll):
+  // then the fighters hold their windup and guard instead of snapping back to idle.
+  const waiting=!V.busy&&psExchangeHeld()&&S.phase==='fight'&&!!(S.pending||(typeof R!=='undefined'&&R));
+  if(!V.busy&&!waiting)psReleaseExchange();
+  if(PS.wasBusy&&!V.busy){psSettle(waiting);}
   PS.wasBusy=!!V.busy;
   psHoldLodged();
   if(V.busy){

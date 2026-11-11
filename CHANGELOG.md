@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: one-screen battle shell and held exchange poses
+
+- On a desktop window the battle now fills exactly one screen and the page no longer scrolls: the arena takes the top, the command deck the bottom. The chronicle sits in the deck's third column and scrolls inside its panel; the exchange breakdown is under the prompt; the actions are a compact two-column list.
+- Rules notes and the Special Effects catalogue open in a window from **Rules**. A **Full screen** button is in the top bar.
+- Animation: the attacker stays wound up and the defender stays in guard until the blow resolves, including while a person chooses a reaction or rolls. Before, both drifted back to a standing pose between steps.
+- What is left (layout polish, timing, phone) is listed in `docs/pits-one-screen-plan.md`. No rules or saved data changed.
+
+---
+
 ## The Pits arena: full-screen battle and truthful strikes (visual review batch)
 
 Built from `docs/pits-visual-review-20261111.md` (VIS-01 to VIS-08). Combat rules, dice, saved data and prompted rolls are unchanged; this is presentation only.

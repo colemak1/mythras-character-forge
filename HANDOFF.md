@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-11 by Claude (Pits visual review batch implemented; Work to live-check)_
+_Last updated: 2026-11-11 by Claude (Pits one-screen shell and held poses laid down; rest listed in `docs/pits-one-screen-plan.md`)_
 
 ## Where things stand
 
@@ -18,10 +18,12 @@ _Last updated: 2026-11-11 by Claude (Pits visual review batch implemented; Work 
 
 0. **Claude, done 2026-11-11:** the Pits visual review batch (`docs/pits-visual-review-20261111.md`, VIS-01 to VIS-08): full-screen battle, aimed strikes, truthful parry/armour/evade contact, lodged weapons, current/previous exchange, safe cancellation. Evidence and known limits: `docs/pits-visual-checks.md`; scripts `tests/visual/pits-scenarios.cjs` and `pits-layout.cjs` (run locally with Playwright; screenshots in `docs/pits-visual-checks/`).
 
+0a. **Claude, next fresh session (a smaller model is fine):** finish `docs/pits-one-screen-plan.md`, "Left to do", items 1 to 10 in order. The owner's brief: match the prototype's layout and animation, one screen, no page scroll; only rulings and theme differ. Foundation is in (shell CSS at the end of `pits-arena.css`, `exPose` in `pits-stage.js`). Item 5 (phone) needs the owner's answer first.
+
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work):** live-check the redesigned Pits fight on the deployed site: full-screen layout, a full bout, and the paths listed under Known limits in `docs/pits-visual-checks.md` (Impale withdrawal, Entangle, Trip then stand, Disarm recovery, Defeat, phone).
+2. **ChatGPT (Work), after 0a is merged:** live-check the redesigned Pits fight on the deployed site: full-screen layout, a full bout, and the paths listed under Known limits in `docs/pits-visual-checks.md` (Impale withdrawal, Entangle, Trip then stand, Disarm recovery, Defeat, phone).
 3. **ChatGPT (Chat):** nothing queued.
-4. **Claude, next fresh session:** only what the owner's two-device check turns up.
+4. **Claude, after 0a:** only what the owner's two-device check turns up.
 
 ## Notes
 
