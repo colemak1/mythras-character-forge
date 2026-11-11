@@ -110,7 +110,9 @@ test('old saves keep their cult and starting-magic review',()=>{
 test('OR-C03 an untouched same-day pick is a correction, not a departure',()=>{
  run('allEntries=__allEntries;finalPct=__finalPct;S=freshState();normalizeState();render=()=>{};viewOnlyBlock=()=>false;confirm=()=>{throw new Error("no prompt")};APP.pickCult("sea");APP.pickCult("craft")');
  assert.equal(run('S.cultMembership.archetype'),'craft');assert.equal(run('S.cultFormer.length'),0);
- assert.equal(run('S.cultMembership.history.length'),1);
+ // #286: the corrected pick leaves no trace; only the current membership's join is logged (intended).
+ assert.deepEqual(JSON.parse(run('JSON.stringify(S.cultMembership.history.map(h=>h.text))')),['Joined Craft / Smith Guild at Associate']);
+ assert.doesNotMatch(run('stepCult()'),/Sea \/ Storm Cult \(|Former:/);
  run('APP.pickCult("craft")');assert.equal(run('S.cultMembership.archetype'),null);assert.equal(run('S.cultMembership.history.length'),0);
  run('APP.pickCult("sea");S.cultMembership.history[0].date="2020-01-01";confirm=()=>true;APP.pickCult("craft")');
  assert.equal(run('S.cultFormer.length'),1,'an older membership is recorded');
