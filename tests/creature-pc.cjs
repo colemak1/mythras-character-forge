@@ -96,6 +96,41 @@ test('CRTR-C03 Play Mode tracks a creature character\'s own locations, HP and na
  // A human character keeps the seven human boxes.
  run('S=freshState();normalizeState();');assert.equal(run('playHPLocs().length'),7);
 });
+// Live batch 2026-11-10 (docs/session-zero-live-273-20261110.md), Severity 1:
+// a creature character's arms and legs showed 0/0 HP because Play Mode looked
+// their maximum up under the human "Each Arm"/"Each Leg" rows.
+test('CRTR-C03 a creature character\'s arms and legs keep their entry HP in Play Mode, after reload, on the sheet and in exports',()=>{
+ const winged=folk({str:'STR 3d6 11',con:'CON 3d6 11',siz:'SIZ 2d6+6 13',dex:'DEX 3d6 11',mind:'INT 2d6+6 13',pow:'POW 3d6 11',cha:'CHA 3d6 11',
+  locs:['1-3 Right Leg 0/6','4-6 Left Leg 0/6','7-9 Abdomen 0/7','10-12 Chest 0/8','13-14 Right Arm 0/5','15-16 Left Arm 0/5','17 Right Wing 0/5','18 Left Wing 0/5','19-20 Head 0/6'].join('\n')});
+ use(winged,true);
+ run('S.charMode="pb";Object.assign(S.chars,{STR:11,CON:11,SIZ:12,DEX:11,INT:12,POW:11,CHA:11});S.play=S.play||{};S.play.hp={};');
+ const want={'Right Leg':6,'Left Leg':6,'Abdomen':7,'Chest':8,'Right Arm':5,'Left Arm':5,'Right Wing':5,'Left Wing':5,'Head':6};
+ const vitals=()=>Object.fromEntries(JSON.parse(run('JSON.stringify(charVitals().locs.map(l=>[l.loc,[l.cur,l.max]]))')));
+ assert.deepEqual(vitals(),Object.fromEntries(Object.entries(want).map(([k,v])=>[k,[v,v]])));
+ // Save and reload keep the same numbers, including a wound on an arm.
+ run('VIEW_ONLY=false;viewOnlyBlock=()=>false;__el["#playdmg-Right_Arm"]={value:"3"};APP.playApplyDamage("Right Arm")');
+ assert.equal(run('playCurHP("Right Arm")'),2);assert.equal(run('playHPState("Right Arm").cls'),'minor');
+ run('var __w=JSON.parse(JSON.stringify(S));S=Object.assign(freshState(),__w);normalizeState()');
+ const after=vitals();assert.deepEqual(after['Right Arm'],[2,5]);assert.deepEqual(after['Left Leg'],[6,6]);
+ // The party board reads a saved state the same way.
+ assert.equal(run('charVitals(JSON.parse(JSON.stringify(S))).locs.find(l=>l.loc==="Right Leg").max'),6);
+ // Permanent injury uses the arm's own entry HP as the ceiling.
+ run('APP.playSetMaxHP("Left Arm","4",true)');assert.equal(run('playMaxHP("Left Arm")'),4);
+ run('APP.playSetMaxHP("Left Arm","6",true)');assert.match(run('PM_MSG'),/between 1 and the calculated maximum \(5\)/);
+ // Attributes step, sheet and Markdown export list the creature's own locations, not the human seven.
+ const attrs=run('stepAttrs()');
+ assert.match(attrs,/<td>13-14<\/td><td>Right Arm<\/td><td class="num">5<\/td>/);assert.match(attrs,/<td>17<\/td><td>Right Wing<\/td>/);
+ assert.doesNotMatch(attrs,/<td class="num">0<\/td>/);
+ const sheet=run('characterSheetBody()');assert.match(sheet,/<td>1-3<\/td><td>Right Leg<\/td><td class="num">6<\/td>/);
+ assert.match(run('buildMD()'),/\| 15-16 \| Left Arm \| 4 \| 0 \|/);
+ // The Concept note no longer says Play Mode only tracks human locations.
+ assert.doesNotMatch(run('speciesCard()'),/track the seven human hit locations/);
+ assert.match(run('speciesCard()'),/Play Mode tracks this body&rsquo;s own locations/);
+ // A human character still shares the Each Arm / Each Leg maximum.
+ run('S=freshState();normalizeState();S.charMode="pb";Object.assign(S.chars,{STR:11,CON:11,SIZ:12,DEX:11,INT:12,POW:11,CHA:11});S.play.hp={};');
+ const h=vitals();assert.equal(h['Right Arm'][1],run('hpLocs(11,12).find(r=>r[0]==="Each Arm")[1]'));assert.equal(h['Left Leg'][1],run('hpLocs(11,12).find(r=>r[0]==="Each Leg")[1]'));
+ assert.ok(h['Right Arm'][1]>0);
+});
 test('CRTR-C03-W wing and tail wounds wait for the GM\'s ruling; arms, legs and head keep the human rules (Core p.110)',()=>{
  use(folk({locs:['1-3 Tail 2/5','4-5 Right Leg 2/5','6-7 Left Leg 2/5','8-9 Abdomen 2/6','10-12 Chest 2/7','13-14 Right Wing 1/4','15-16 Right Arm 2/4','17-18 Left Arm 2/4','19-20 Head 2/5'].join('\n')}),true);
  run('S.charMode="pb";Object.assign(S.chars,{STR:11,CON:13,SIZ:13,DEX:11,INT:13,POW:11,CHA:6});S.play.hp={};VIEW_ONLY=false;viewOnlyBlock=()=>false;');

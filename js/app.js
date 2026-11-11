@@ -1301,7 +1301,7 @@ window.APP={
    PM_MSG="After one "+info.interval+", "+loc+" recovers "+gain+" HP. Recheck the wound before another interval.";render();},
  playFatigueCause(cause){if(viewOnlyBlock()||!["","exertion","blood","asphyxiation"].includes(cause))return;S.play.fatigueCause=cause;render();},
  playSetMaxHP(loc,raw,confirmed){if(viewOnlyBlock()||!confirmed||!playHPLocs().includes(loc))return;
-   const text=String(raw).trim(),n=Number(text),base=playStateHPMax(S).find(x=>x[0]===(PLAY_LIMB_BASE[loc]||loc))?.[1];
+   const text=String(raw).trim(),n=Number(text),base=playStateHPMax(S).find(x=>x[0]===playHPBaseKey(loc))?.[1];
    if(!/^\d+$/.test(text)||!Number.isSafeInteger(n)||n<1||n>base){PM_MSG="Enter a whole-number maximum between 1 and the calculated maximum ("+base+").";render();return;}
    S.play.hpMaxOverride=S.play.hpMaxOverride||{};S.play.hpMaxOverride[loc]=n;
    PM_MSG=loc+" maximum set to "+n+" HP. The original wound and incident records are preserved.";render();},
@@ -2236,8 +2236,7 @@ function buildMD(){
   if(charsReady()){
     md+="## Characteristics\n\n| "+CHARS.join(" | ")+" |\n|"+CHARS.map(()=>"---").join("|")+"|\n| "+CHARS.map(k=>c[k]).join(" | ")+" |\n\n";
     md+="## Hit Locations\n\n| d20 | Location | HP | AP |\n|---|---|---|---|\n"
-      +HIT_D20.map(([r,loc])=>{const base=loc.replace(/Right |Left /,"").replace("Arm","Each Arm").replace("Leg","Each Leg");
-        return "| "+r+" | "+loc+" | "+playMaxHP(loc)+" | "+armorApAt(loc)+" |";}).join("\n")+"\n\n";
+      +playHitLocationRows().map(([r,loc,hp])=>"| "+r+" | "+loc+" | "+hp+" | "+playLocAP(loc)+" |").join("\n")+"\n\n";
   }
   const grp=(g,t)=>{const list=es.filter(e=>e.grp===g).sort((a,b)=>a.label.localeCompare(b.label));
     if(!list.length)return "";

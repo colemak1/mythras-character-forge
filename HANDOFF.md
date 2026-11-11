@@ -5,12 +5,11 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-10 by Claude (Subsystems 7 and 8 closed; typed-box fix)_
+_Last updated: 2026-11-11 by Claude (creature limb HP fix; status from Work's #274 report)_
 
 ## Where things stand
 
-- **Session readiness 11 of 14. Feature completeness 7 of 8 built, 7 closed** (Subsystems 7 and 8 closed 2026-11-10 with Known limits in `docs/subsystem-plan.md`). Details: `docs/session-zero.md`.
-- **Workflow changed (owner, 2026-11-10):** see Priorities, When something is done, and Reviews in `AGENTS.md`. Earlier "Next" lists are retired; anything still useful from them is in `session-zero.md` under Not blocking.
+- **Session readiness 12 of 14. Feature completeness 7 of 8 built, 6 closed.** Item 14 passed live (#274). Subsystem 7 reopened for one Severity 1 (creature character arms/legs 0/0 HP), fixed in code with a test; it recloses when Work's recheck passes. Details: `docs/session-zero.md`.
 - **Backups:** Supabase Free plan, so no automatic server backups. The GM downloads a campaign backup after every session.
 - **Look:** Codex · Stone everywhere; tokens in `sitota-theme.css` (loaded last). Other stylesheets use the tokens only; no hex colours.
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
@@ -18,12 +17,9 @@ _Last updated: 2026-11-10 by Claude (Subsystems 7 and 8 closed; typed-box fix)_
 ## Next
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work), one batch** (signed in, own campaign; one short dated report, pass/fail plus severity; anything blocked: record once, move on):
-   - **Typed boxes (fix, all characters):** on Culture, type a number into each points box one after another (click or Tab between them, no +/- buttons): the total reaches 100/100.
-   - **Creature character (item 2):** as GM, add a sapient creature, tick "GM permits", copy its stat block; as player, Concept → paste, tick "My GM approved", Use this creature; build with Points Build, then Culture, Career, Bonus Skills, money; save, reload: species, ranges and hit locations persist. (Import, INT 7 and draft reload already passed; don't repeat them.)
-   - **Restored copy (item 14):** add tracker cards (one NPC, one creature) to a disposable campaign, back it up, restore it as a new campaign, open GM Tools on the copy: cards draw. Then delete the fixtures (keep Creation Audit and Magic Audit).
-3. **ChatGPT (Chat):** one milestone review of the Subsystem 8 close (`subsystem-plan.md` item 8; Subsystem 7 was reviewed on #272). Core p.218 Vulnerable only if you are given the page.
-4. **Claude, after Work's report:** fix any failure; when items 2, 11 and 14 are Ready, Subsystem 6, one tradition per batch in `roadmap.md` order (Animism first; Folk Magic is done).
+2. **ChatGPT (Work), one small recheck** (signed in; one short dated report): build or reuse one GM-approved creature character with arms and legs (the winged fixture in `docs/session-zero-live-273-20261110.md` is fine; a fast build is OK, the full Culture/Career path already passed). Check: in Play Mode every location shows its entry HP (arms 5/5, legs 6/6, not 0/0); damage one arm, save, reload: the wound and maxes persist; the Attributes step lists the creature's own locations. Don't repeat typed Culture or the restored tracker (both passed). Delete the fixtures after (keep Creation Audit and Magic Audit). Pass: item 2 Ready, Subsystem 7 recloses.
+3. **ChatGPT (Chat):** one milestone review of the Subsystem 8 close (`subsystem-plan.md` item 8). Core p.218 Vulnerable only if you are given the page.
+4. **Claude, after Work's report:** reclose Subsystem 7 and mark item 2 Ready on a pass (fix any failure). Then Subsystem 6, one tradition per batch in `roadmap.md` order (Animism first; Folk Magic is done); item 11 stays with the owner and doesn't block it.
 
 ## Notes
 
