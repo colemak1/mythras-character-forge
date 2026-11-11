@@ -11,7 +11,7 @@ function arena(withStage,seed,search=''){
   window:{matchMedia:()=>({matches:false}),requestAnimationFrame(){}}};
  vm.createContext(ctx);
  vm.runInContext('Math.random=__rnd',Object.assign(ctx,{__rnd:rnd}));
- const files=['js/combat-rules.js','js/data.js','experiments/practice-character.js','experiments/practice-guidance.js','experiments/pits-view.js',...(withStage?['experiments/pits-stage.js']:[])];
+ const files=['js/combat-rules.js','js/data.js','experiments/practice-character.js','experiments/practice-guidance.js','experiments/pits-view.js',...(withStage?['experiments/pits-stage.js','experiments/pits-arena.js']:[])];
  for(const f of files)vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx);
  vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1],ctx);
  return {run:x=>vm.runInContext(x,ctx),q};
@@ -60,6 +60,29 @@ test('Trip Opponent, Disarm Opponent and Regain Footing',()=>{
  assert.deepEqual([c.type,c.actor],['stand','a']);
  assert.equal(cue('Regain Footing','Kethan Brawn 90/50% versus Marek 20/50%. Remains prone.',{}),null);
 });
+test('wounds, disabled limbs and the end of the fight',()=>{
+ assert.deepEqual(cue('SERIOUS WOUND · Left Leg','Marek takes 3.',{}),{type:'wound',level:'serious',loc:'lleg'});
+ assert.equal(cue('MAJOR WOUND · Head','x',{}).level,'major');
+ assert.equal(cue('MINOR WOUND · Head','x',{}),null,'a minor wound needs no banner (the part just turns red)');
+ assert.equal(cue('Limb Disabled',"Marek's Right Leg becomes unusable until healed. They fall prone.",{}).leg,true);
+ assert.equal(cue('Limb Disabled',"Marek's Left Arm becomes unusable. They cannot use that arm.",{}).leg,false);
+ assert.deepEqual(cue('FIGHT ENDS','Kethan wins. Marek is incapacitated.',{}),{type:'end',winner:'a'});
+ assert.equal(cue('FIGHT ENDS','Marek wins. Kethan dies.',{}).winner,'b');
+});
+test('beats stay long enough for their animation, never shorter than the replay default',()=>{
+ const hold=(t,b,m,f)=>A.run(`pitsStageHold(${JSON.stringify({title:t,body:b,meta:m})},${JSON.stringify(names)},${f})`);
+ assert.equal(hold('Kethan attacks','42 against Combat Style 67% — SUCCESS.',{actor:'a'},900),900,'attack fits the default');
+ assert(hold('Kethan hits Chest','x',{actor:'a',impact:{target:'b',location:'Chest',hpLost:3}},900)>900,'a hit holds longer');
+ assert.equal(hold('Round 2','x',{},900),900);
+ assert.equal(hold('Disarm Opponent','Marek drops the weapon at their feet.',{actor:'a',target:'b'},2000),2000,'never shortens a longer delay');
+});
+test('weapons draw as the right kind, from the engine weapon table',()=>{
+ const k=(key,reach)=>JSON.parse(A.run(`JSON.stringify(pitsStageWeaponKind(${JSON.stringify(key)},${reach}))`));
+ assert.equal(k('sword',2).kind,'blade');assert.equal(k('dagger',1).len<k('sword',2).len,true);
+ assert.equal(k('greatsword',3).len>k('sword',2).len,true);assert.equal(k('spear',3).kind,'spear');
+ assert.equal(k('mace',2).kind,'club');assert.equal(k('battleaxe',2).kind,'axe');
+ assert.equal(k('quarterstaff',4).kind,'spear','any other long weapon draws as a haft');
+});
 test('entries with no visual meaning are ignored',()=>{
  for(const t of ['Round 2','Encounter 1 · Initiative','Kethan does not defend','Brace','Sunder'])assert.equal(cue(t,'x',{actor:'a'}),null,t);
 });
@@ -78,11 +101,11 @@ test('the look of a fighter follows the engine: wounds, prone, disarmed, arm dow
  assert.equal(l.armed,false,'weapon arm out of action');assert.equal(l.limp.rarm,true);
  a.run(`S.fighters.b.weapon='spear'`);assert.equal(JSON.parse(a.run(`JSON.stringify(pitsStageLook(S.fighters.b))`)).weapon,'spear');
 });
-test('?stage=duel is Sword v Spear; without it nothing changes',()=>{
+test('?stage=duel is Sword v Spear; without it the usual setup opens',()=>{
  const d=arena(true,3,'?stage=duel');
  assert.equal(d.run('S.fighters.a.weapon'),'sword');assert.equal(d.run('S.fighters.b.weapon'),'spear');
  assert.equal(d.run('S.phase'),'intro','opens at the opponent intro');
- const plain=arena(true,3);assert.equal(plain.run('PSTAGE_ON'),false);assert.equal(plain.run('S.phase'),'setup');
+ const plain=arena(true,3);assert.equal(plain.run('PSTAGE_DUEL'),false);assert.equal(plain.run('S.phase'),'setup');
 });
 test('every entry of whole seeded bouts maps to a sensible cue; hits match the engine impact',()=>{
  let hits=0,cues=0;
@@ -103,7 +126,7 @@ test('every entry of whole seeded bouts maps to a sensible cue; hits match the e
 });
 test('the stage never changes a fight: same seeded bouts with and without it',()=>{
  for(const seed of [7,42,1234,98765]){
-  const bout=withStage=>{const a=arena(withStage,seed,withStage?'?stage=1':'');
+  const bout=withStage=>{const a=arena(withStage,seed);
    a.run(`startRun();R=null;V.busy=false;for(const f of Object.values(S.fighters))f.kind='ai';beginEncounter();`);
    let n=0;while(a.q.length&&n++<5000){a.q.shift()();if(a.run("S.phase")!=='fight')break;a.run('render()');}
    return a.run('JSON.stringify({logs:S.logs.map(l=>l.title+"|"+l.body),hp:Object.values(S.fighters).map(f=>f.hp),ap:Object.values(S.fighters).map(f=>f.ap),phase:S.phase})');};
