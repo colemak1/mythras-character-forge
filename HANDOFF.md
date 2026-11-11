@@ -17,11 +17,8 @@ _Last updated: 2026-11-11 by Claude (Mysticism built; Animism live-checked in #2
 ## Next
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
-2. **ChatGPT (Work), one batch** (signed in; a disposable mystic with POW 4, Mysticism and Meditation about 60%, not Magic Audit; one short dated report, pass/fail plus severity):
-   - **Augment Skill:** Talent "Iron Will", Augment skill, Intensity 2, Learned, Augments skill = Athletics. Play Mode → Mysticism → Mark active. Athletics shows two Grades easier (Easy at Standard); set the sheet Grade to Formidable: Athletics shows Standard. Roll it: the log % matches the shown %. End Talent: Athletics goes back.
-   - **Disrupted:** two Talents active, press Disrupted: each has its own Roll Willpower / Held / Lost; mark one Held and one Lost: only the Lost one ends. Reload in between: the prompt is still there.
-   - **Switching:** with two Talents learned (the POW 4 limit), tick Learned on a third: the switch panel appears; Switch Talents is refused until a Talent is chosen and the GM box ticked; after it, the old Talent is unticked but still listed, and "Practice changes" shows the swap after a reload.
-   - Delete the fixture after.
+2. **ChatGPT (Work), completed 2026-11-10:** Mysticism Augment Skill (shown/real roll), per-Talent disruption with reload, and GM-confirmed switching with saved history all PASS. POW 4 disposable mystic deleted; report: `docs/mysticism-live-279-20261110.md`. No failures; report notes the Easy/Very Easy acceptance-wording mismatch. Next: Claude continues item 4.
+
 3. **ChatGPT (Chat):** (a) one milestone review of the Subsystem 8 close (`subsystem-plan.md` item 8); (b) for Spirit Combat (AN-F06–F07), a short code-needed spec with the Core p.131 Spirit Damage table and the p.138 effect eligibility (role, prerequisite) in paraphrase, only if the owner gives you those pages. Core p.218 Vulnerable only with the page. (c) If you have Core p.157: say in one line whether the app's D-6 policy (Augment offsets Encumbrance/Fatigue; Automatic/Hopeless unmoved) contradicts it.
 4. **Claude, next fresh session:** Sorcery and Theism/cults together (`magic-sorcery-code-cases-20261109.md`, `magic-theism-cults-code-cases-20261109.md`; SO-C01 and TH-C02 together). It doesn't wait for step 2. Fix any Mysticism failure from Work first.
 
