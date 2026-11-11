@@ -9,9 +9,9 @@ Status words: **Ready** (built, tested in code, and used at least once on the li
 Two numbers, reported at the end of every batch instead of a long status:
 
 - **Session readiness:** Ready items in the checklist below, out of the total. Today: **13 of 14** (items 9, 10 and 14 passed live 2026-11-10; item 2 after the HP recheck, `creature-hp-live-275-20261110.md`). Only item 11, the owner's two-device check, is left.
-- **Feature completeness:** subsystems built (code done, whether or not closed) out of 8. Today: **8 of 8 built**, 7 closed. Subsystem 7 reclosed 2026-11-11 after its limb HP fix passed live; Subsystem 8 closed 2026-11-10. Magic (6) is fully built as of 2026-11-11: Folk Magic, Animism, Mysticism and Sorcery/Theism learning passed live (Spirit Combat GM-managed); Organisations (OR-C01–C03) built; its first live check found the Cult step missing from the creation flow (Severity 1, fixed 2026-11-11), and the re-check is the last step before closing 6.
+- **Feature completeness:** subsystems built (code done, whether or not closed) out of 8. Today: **8 of 8 built, 8 closed.** Subsystem 6 (Magic) closed 2026-11-11 after the Organisations re-check passed (`organisations-live-285-20261111.md`); Subsystem 7 reclosed 2026-11-11; Subsystem 8 closed 2026-11-10. GM-handled until pages arrive: Spirit Combat, SO-C02.
 
-The close count in `subsystem-plan.md` (now 7/8) stays, but it is no longer the headline.
+The close count in `subsystem-plan.md` (now 8/8) stays, but it is no longer the headline.
 
 ## The checklist
 
