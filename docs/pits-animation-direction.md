@@ -2,7 +2,7 @@
 
 Goal (owner): keep the stick figures; make them fighters with balance, momentum and intent, so that a replay reads as one continuous fight. Decisions pause the scene; the resolved exchange then plays without interruption, and each movement starts where the last one ended.
 
-**Watch it:** `experiments/pits-choreography.html` (on the site after merge: `/experiments/pits-choreography.html`). Six sequences, broadsword against dagger (the first is three connected exchanges), with pause, frame step, quarter speed, a scrub bar, weapon paths and planted feet. A filmstrip of the reference sequence: `docs/pits-visual-checks/movement-study-exchange.png`.
+**Watch it:** `experiments/pits-choreography.html` (on the site after merge: `/experiments/pits-choreography.html`). One fight of five connected exchanges (plus Press Advantage), broadsword against dagger, with pause, frame step, quarter speed, a scrub bar, weapon paths and planted feet; a button starts from any exchange. A filmstrip of the fight: `docs/pits-visual-checks/movement-study-exchange.png`.
 
 ## Why the current movement looks wrong
 
@@ -20,13 +20,13 @@ These come from the approach, not from tuning: a library of whole-body poses, bl
 ## The movement language
 
 - **Stance and balance.** Knees bent, feet a stride apart, weight between them. Each weapon has its own guard (sword: side on, point at the face, empty hand back; dagger: lower and squarer, blade forward, empty hand up). Any pose the scene can pause on has both feet down and the weight between them.
-- **From the ground up.** A foot stays where it is until a step moves it. The pelvis carries the weight between the feet. The body can only be where the feet allow, so reach comes from footwork: the sword's attack is a short advance and a passing step, not a slide.
+- **From the ground up.** A foot stays where it is until a step moves it. The pelvis carries the weight between the feet. The body can only be where the feet allow, so reach comes from footwork: the sword's attack is one step of the front foot from a close measure, not a slide.
 - **Order of the body.** Legs and hips go first, the chest follows, then the hand, then the blade. In the cut the hips have done most of their travel while the blade is still behind the shoulder. On a parry the order reverses: the blade arrives first and the body settles under it.
 - **Weapon weight.** A cut has five parts: load (slow, weight back), drive (hips, blade left behind), strike (the fastest moment, into contact), contact (a short hold), and what the blade does next, which depends on what it met. Stopped by a parry it is turned down and falls short of the body. Missing, nothing stops it: it runs out low and short, the body is carried forward with it, and the point has to be lifted back up over the shoulder. Landing, it is drawn through. A thrust is different: a short gather, then a straight line, and it comes back out along the same line.
 - **The weapon is held.** The blade's angle is the forearm's angle plus the turn of the wrist, and a wrist only turns so far (about 12 degrees one way, 120 the other). To move the blade the arm has to move. A blow lands with the weapon in line with the arm; a parry holds it across. (Added after the owner's first viewing: the blade had been a free channel and turned in the hand like a hinge.)
 - **Interaction.** Both fighters are written against one contact moment. The parry is aimed at the point where the cut will be; the defender's knees and elbow give when it lands. The counter goes in while the attacker is still trying to get the sword back, which is why it lands.
 - **Continuity.** No phrase ends in the guard it began in. A hit fighter ends closed over the wound, the one who missed ends in a high guard, the winner of an exchange ends with the point in line. Recovery belongs to the start of the next movement: the pause comes at the end of the follow-through, and what happens next decides how the fighter gets out of it.
-- **Timing.** Load about 300 ms, drive 300, strike 175 with the blade's own snap in the last 60, impact hold 70 to 110 ms, follow-through 200, recovery 500 to 700. Slow, fast, still, slow. The impact hold is the only stillness, and nothing is hidden behind shake, flashes or particles (the study page draws one small mark at a contact and nothing else).
+- **Timing.** Load about 190 ms, drive 140, strike 150 with the blade's own snap in the last 60 (480 ms from stillness to contact), impact hold 70 to 110 ms, follow-through 200, recovery 500 to 700. Slow, fast, still, slow. The impact hold is the only stillness, and nothing is hidden behind shake, flashes or particles (the study page draws one small mark at a contact and nothing else).
 
 ## The structural changes (three)
 
@@ -38,54 +38,41 @@ All three are in `experiments/pits-motion.js` (pure, no page or rules access; te
 
 ## Demonstrated, and not
 
-**Demonstrated** (study page, broadsword against dagger, all starting from guard):
+**Demonstrated** (study page). The fight is one timeline: each exchange starts from the pose the last one ended in, and nobody returns to the opening guard between them.
 
-| Sequence | Shows |
-|---|---|
-| Attack, parry, counterattack, reaction, recovery | The reference. Includes the decision pause after the redirect (tick "Stop where a decision would be made"). |
-| A miss | The cut running out low and short, the body carried with it, and the point lifted back up. |
-| A damaging hit | A late parry beaten, the cut landing, the body's answer, the stance regathered. |
-| Press Advantage | The attacker stays on the blade with the point in the face; the defender stays covering; held, then released. No blow, no ground taken. |
-| A fight-ending injury | The fall comes straight out of the contact and stays down. The winner lowers the sword. Nothing is implied beyond "out of the fight". |
+| Exchange | Attacker | Shows |
+|---|---|---|
+| 1. Cut, parry, redirect | Sword | The compact cut on one step; the parry; the sword turned down beside its owner's front foot. **Decision pause.** |
+| 2. Counter over the lowered sword | Dagger | A short step in and a straight thrust above the sword hand; the hit reaction; both step out to new guards. |
+| 3. A cut that misses | Sword | Cut from the hurt guard; the defender gives a half step; the blade runs on and the rear foot comes through under the body. **Decision pause.** |
+| 4. A thrust beaten upward | Dagger | The sword comes up under the thrust, blade first; the same lift is the load of the next cut. |
+| 5. The cut that ends it | Sword | A riposte with no separate wind-up; the fall; the winner steps out and lowers the point. |
+| Press Advantage (separate tab) | Sword | The attacker stays on the blade with the point in the face; held, then released. |
 
-The tests hold these to the rules above: limbs never over-stretch, the blade never turns further than a wrist can, planted feet never slide, nothing jumps between moments, blades meet at the contact, a miss touches nothing, pause poses are balanced, fighters end back at measure, no phrase returns to its opening guard.
+**Refinements of 2026-11-12 (owner's five points),** each held by a test in `tests/pits-motion.cjs`:
+
+1. **Miss follow-through.** The hips never sink below a fighting stance; the rear foot steps through after the blade has passed; the pose ends on a base at least 55 units wide.
+2. **Empty hand.** On guard it is carried in front of the ribs; in a cut it swings down past the hip and trails long behind as a counterweight; after a hit it comes back in front. It is never folded up behind the shoulder.
+3. **Counter clearance.** The redirect drops the sword close to its owner; the dagger fighter's foot lands short of the point and the thrust goes in above the sword hand. Nothing of the dagger fighter comes within 25 units of the blade.
+4. **Attack preparation.** The fighters stand 200 units apart (was 300). The cut is one front-foot step of 34 units, the hilt loads beside the head with the blade near upright, and the order is hips, shoulders, arm, blade.
+5. **Collapse.** The blow takes the chest back past the feet with no catching step; the rear knee folds and the hips drop faster as they go; the front foot leaves the floor; seat, back, head land in turn. The dagger arm goes dead at the blow and is never raised; the empty hand lands last.
+
+**The decision pause** is the clock stopped at the end of a follow-through: both feet down, weight between them, the sword still spent low, nobody reset. The next exchange is written from that pose, so resuming continues from it.
 
 **Not demonstrated, still to be applied:**
 
-- **Nothing is wired into the Pits.** The live stage still uses the pose library. The stage's record of an exchange (`pitsStageBeat`, `pitsStageOutcome`) already carries what a phrase needs (who, tool, outcome, location, damage, consequences); it has to choose phrases instead of poses, call `pitsStageOnContact` at the contact time, and stop the clock at the pause key.
-- **Starting from an arbitrary pose.** The phrases read the current pose, but every demonstration starts from guard. Chaining many exchanges (and the whole-fight replay) from wherever the last one ended is untested, as is the dagger attacking first from measure.
-- **Other phrases:** thrusting and two-handed weapons, shields (parry and bash), other hit locations (the aim is general; the body reactions are written for the chest only), evade, trip, disarm, stand up, concede, a disabled limb, a dropped weapon, range changes, left-handed fighters, impaled and entangling weapons.
+- **Nothing is wired into the Pits.** The live stage still uses the pose library. The stage's record of an exchange (`pitsStageBeat`, `pitsStageOutcome`) already carries what a phrase needs; it has to choose phrases instead of poses, call `pitsStageOnContact` at the contact time, and stop the clock at the pause.
+- **Other phrases:** thrusting and two-handed weapons, shields, other hit locations (reactions are written for the chest only), evade, trip, disarm, stand up, concede, a disabled limb, a dropped weapon, range changes, left-handed fighters, impaled and entangling weapons, the dagger attacking first from measure.
 - **Judged from stills and filmstrips,** not watched at speed by a person. The owner's eye is the test.
-- **Known compromises.** At the current spacing (300 units) a sword needs an advance and a passing step to reach (the owner has since allowed closer spacing; see the order of work). The scene is flat, so when the dagger steps in past the lowered sword the leg crosses the blade.
 
-## Second pass (2026-11-12, after Work's review)
+**Remaining compromises:**
 
-The owner approved the direction (this is the movement for the Pits; the held sword reads right; the fighters may stand closer) and asked for these refinements on the study page before anything is wired in.
-
-| Asked | What changed |
-|---|---|
-| Miss: a cramped squat | The weight overruns the front foot and the rear foot steps up to catch it. Feet stay a stride apart and the hips stay up; then back out one foot at a time. |
-| Empty hand: a triangle behind the back | The sword fighter's free hand now has a job: low in front in guard, up in front as a counterweight while preparing, thrown back long and straight in the lunge, forward as a ward when hurt. |
-| Counter crosses the lowered sword | New staging. The parry keeps the sword high; the dagger fighter's empty hand goes up under the sword wrist and holds the blade overhead, the body steps in beneath it, and the dagger goes from the hip to the body under the sword arm. A test keeps the blade off the dagger fighter for the whole counter. |
-| Wind-up and advance exaggerated | The fighters stand closer (206 units, was 300), so the sword reaches with one lunge and the dagger has to step in first. The cut is from the shoulder: the hand never goes above the head, the hips go first, then shoulder, arm and blade. The advance and the passing step are gone. |
-| Collapse looks like sitting down | The arms go slack at the blow, the rear foot goes back to catch the weight, the leg does not hold, the hips drop behind the foot while the body is already toppling, and the arms land last. |
-| Three connected exchanges | New first sequence, "Three exchanges, one fight": the sword cuts and is parried; the dagger counters and wounds; the sword, hurt, comes again and lands. Two decision pauses, each in the middle of the action (blades crossed; the dagger still in close). Each exchange starts from the pose the last one left, and the recovery from one is the preparation for the next. |
-
-**Remaining compromises**
-
-- Still judged from filmstrips and stills, not watched at speed by a person.
-- Phrases expect the situation they follow (a cut expects the fighter roughly at its place; the counter expects the bind). They hold the pose they start from, but they are not yet general "from any pose" phrases.
-- In the counter the two figures overlap at the legs for a moment (the dagger fighter's front foot comes close to the sword fighter's). The blade is clear; the legs are not separated in depth.
-- After a landed cut the blade is drawn back but still points toward the struck fighter's legs for a few frames.
-- Only broadsword against dagger, chest and abdomen hits, and the dagger never parries low or evades.
-- The live Pits is unchanged. Its spacing is still 300; the closer measure exists only on the study page.
-
-**Next, when the owner is happy with this small sequence** (one PR per step):
-
-1. The stage draws with the new rig and the closer spacing; guards per weapon family.
-2. Exchanges choose phrases from the stage's record; `pitsStageOnContact` fires at the contact; a decision stops the clock at the pause key and the next playback starts from that pose.
-3. The remaining phrases, most common first: thrusting weapons, shield parry, other hit locations, evade, two-handed weapons, then trip, disarm, stand up, concede, disabled limb.
-4. Work live-checks a full bout and a whole-fight replay.
+- **The scene is flat.** "Down and away" can only be drawn as down and short: the redirected sword is pulled in beside its owner. In the last cut and in Press Advantage the sword passes in front of the dagger arm in the picture.
+- **The dagger stays in the hand** of the fallen fighter (the rig has no loose weapon); it lies flat along the floor.
+- **After the thrust is beaten up,** both blades are briefly upright at once, which can read as posed for a moment.
+- **The phrases are hand-keyed for this pair and these stances.** They start from the current feet, but the reach numbers are tuned to these five exchanges; another order of exchanges will need its own tuning or a reach solver.
+- **The miss shows the defender giving a half step.** The rules need no defender action for a miss; without it, at this measure, the cut would look parried.
+- **The page stops at a decision until Resume is pressed** (untick "Stop where a decision would be made" to watch straight through).
 
 ## For Sonnet: routine defects in the live stage
 

@@ -11,7 +11,7 @@
 //      follow, the hand come after and the blade last (and the blade can arrive
 //      first on a parry). Hands swing in arcs around the shoulder or travel in a
 //      straight line (a thrust).
-//   3. An exchange is one function of time. Both fighters are written against
+//   3. A fight is one function of time. Both fighters are written against
 //      the same contact moment, and every phrase starts from the pose the last
 //      one left. Any moment can be paused, stepped or replayed.
 //
@@ -73,7 +73,7 @@ function Track(start){
   for(const c of VEC)this.ch[c]=[{t:-1e9,v:start[c].slice(),e:'lin'}];
 }
 Track.prototype.set=function(c,t,v,e,arc){
-  const ks=this.ch[c],k={t,v:Array.isArray(v)?v.slice():v,e:e||'io',arc:arc||false};
+  const ks=this.ch[c],k={t,v:Array.isArray(v)?v.slice():v,e:e||'io',arc:!!arc};
   let i=ks.length;while(i>0&&ks[i-1].t>t)i--;
   if(i>0&&ks[i-1].t===t)ks[i-1]=k;else ks.splice(i,0,k);
 };
@@ -100,33 +100,43 @@ Track.prototype.pose=function(t){
 Track.prototype.end=function(){let m=0;for(const c in this.ch)for(const k of this.ch[c])if(k.t>m)m=k.t;return m;};
 
 // ----- a fighter being written: keys, steps and aiming -----
+// ox is where the fighter's stance is standing now (see rebase): phrases write floor positions from there,
+// so the same phrase works wherever the last one left the feet.
 function Fig(id,hx,face,weapon,start){
-  this.id=id;this.hx=hx;this.face=face;this.weapon=weapon;this.tr=new Track(start);this.notes=[];
+  this.id=id;this.hx=hx;this.face=face;this.weapon=weapon;this.tr=new Track(start);this.notes=[];this.ox=0;
 }
+const FLOORX=['px','ffx','bfx'];
 // key some parts at time t. vals may use p:[x,y], ff:[x,y], bf:[x,y] as short forms. opts.arc: the hands swing.
 Fig.prototype.k=function(t,vals,ease,opts){
-  const arc=opts&&opts.arc;
+  const arc=opts&&opts.arc,ox=this.ox;
   for(const c in vals){
     const v=vals[c];
-    if(c==='p'){this.tr.set('px',t,v[0],ease);this.tr.set('py',t,v[1],ease);}
-    else if(c==='ff'||c==='bf'){this.tr.set(c+'x',t,v[0],ease);this.tr.set(c+'y',t,v[1],ease);}
-    else this.tr.set(c,t,v,ease,VEC.includes(c)?arc:false);
+    if(c==='p'){this.tr.set('px',t,v[0]+ox,ease);this.tr.set('py',t,v[1],ease);}
+    else if(c==='ff'||c==='bf'){this.tr.set(c+'x',t,v[0]+ox,ease);this.tr.set(c+'y',t,v[1],ease);}
+    else this.tr.set(c,t,FLOORX.includes(c)?v+ox:v,ease,VEC.includes(c)?arc:false);
   }
   return this;
 };
 // keep parts exactly where they are until t (so the next key starts moving from t, not from the last key)
+const ALL=['p','lean','bend','head','h','w','o'];
 Fig.prototype.hold=function(t,chans){
-  for(const c of chans){
+  for(const c of chans||ALL){
     if(c==='p'){this.hold(t,['px','py']);continue;}
+    if(this.tr.ch[c].some(k=>k.t===t))continue;
     this.tr.set(c,t,this.tr.val(c,t),'lin');
   }
   return this;
 };
+// A phrase starts from the stance the fighter is in: measure the floor from the front foot (front is where the
+// front foot stands in the weapon's guard).
+Fig.prototype.rebase=function(t,front){this.ox=this.tr.val('ffx',t)-front;return this;};
+// the last moment anything was written for this fighter
+Fig.prototype.free=function(){return this.tr.end();};
 // A step: the foot leaves the floor at t0 and is planted at x by t1. Between steps a foot never moves.
 Fig.prototype.step=function(foot,t0,t1,x,lift){
   const tr=this.tr,cx=foot+'x',cy=foot+'y',tm=t0+(t1-t0)*.45;
   tr.set(cx,t0,tr.val(cx,t0),'lin');tr.set(cy,t0,0,'lin');
-  tr.set(cx,t1,x,'io');tr.set(cy,tm,lift==null?10:lift,'out');tr.set(cy,t1,0,'in');
+  tr.set(cx,t1,x+this.ox,'io');tr.set(cy,tm,lift==null?10:lift,'out');tr.set(cy,t1,0,'in');
   return this;
 };
 Fig.prototype.pose=function(t){return this.tr.pose(t);};
@@ -136,7 +146,10 @@ Fig.prototype.pose=function(t){return this.tr.pose(t);};
 Fig.prototype.grip=function(){
   const tr=this.tr,keys=tr.ch.w.map(k=>({t:k.t,e:k.e,w:k.v}));
   delete tr.ch.wr;
-  const out=keys.map(k=>{const t=Math.max(k.t,0),p=tr.pose(t);p.w=k.w;const j=solve(p,this.weapon.len);return {t:k.t,v:j.grip,e:k.e};});
+  const out=keys.map(k=>{
+    const t=Math.max(k.t,0),p=tr.pose(t);p.w=k.w;
+    return {t:k.t,v:solve(p,this.weapon.len).grip,e:k.e};
+  });
   tr.ch.wr=out;
 };
 Fig.prototype.joints=function(t){return solve(this.tr.pose(t),this.weapon.len);};
@@ -171,8 +184,7 @@ Fig.prototype.aimGrip=function(t,world,r,along,ease,opts){
     if(!best||err<best.err)best={err,w,h};
   }
   if(!best){this.notes.push({t,what:'reach',short:1});return this.aim(t,world,w0,along,ease,opts);}
-  const w=best.w,h=best.h;
-  this.k(t,{h},ease,opts);this.tr.set('w',t,w,(opts&&opts.wease)||ease);return this;
+  this.k(t,{h:best.h},ease,opts);this.tr.set('w',t,best.w,(opts&&opts.wease)||ease);return this;
 };
 // the off hand toward a world point (as far as the arm goes)
 Fig.prototype.reach=function(t,world,ease,opts){
@@ -192,146 +204,251 @@ Fig.prototype.at=function(t,name,along){
 };
 
 // ----- stances: how each weapon stands when nothing is happening -----
-// Sword: side on, knees bent, weight a little back, the point up at the opponent's face, the empty hand low in front.
-const SWORD_GUARD={ffx:30,ffy:0,bfx:-34,bfy:0,px:-4,py:79,lean:5,bend:4,head:-6,h:[27,-31],w:44,o:[15,-42]};
+// Sword: side on, knees bent, weight a little back, the point up at the opponent's face. The empty hand is carried in
+// front of the body at the bottom of the ribs: a second guard, and the counterweight when the sword arm goes out.
+const SWORD_GUARD={ffx:30,ffy:0,bfx:-34,bfy:0,px:-4,py:80,lean:5,bend:4,head:-6,h:[27,-31],w:44,o:[18,-27]};
 // Dagger: lower and more square, blade forward at chest height, the empty hand up as a second guard.
 const DAGGER_GUARD={ffx:26,ffy:0,bfx:-30,bfy:0,px:-3,py:73,lean:11,bend:9,head:-14,h:[35,-13],w:34,o:[19,-25]};
 const WEAPONS={sword:{key:'sword',len:92,name:'Broadsword'},dagger:{key:'dagger',len:50,name:'Dagger'}};
-// The measure: a sword reaches with one lunge; a dagger has to step in first.
-const SPACING=206,CENTRE=600;
-const ALL=['p','lean','bend','head','h','w','o'];
+// The fighters stand close enough that the sword reaches with one step of the front foot (owner, 2026-11-12).
+const SPACING=200,CENTRE=600,FRONT={sword:30,dagger:26};
 function pair(){
   return {a:new Fig('a',CENTRE-SPACING/2,1,WEAPONS.sword,SWORD_GUARD),b:new Fig('b',CENTRE+SPACING/2,-1,WEAPONS.dagger,DAGGER_GUARD)};
 }
-// How each fighter stands after an exchange. Never the guard it began in: a fight does not pass through one neutral pose.
-const SWORD_HURT={ffx:30,ffy:0,bfx:-34,bfy:0,px:-3,py:74,lean:6,bend:13,head:-12,h:[21,-27],w:60,o:[30,-25]};
-const SWORD_POINT={ffx:30,ffy:0,bfx:-34,bfy:0,px:-5,py:81,lean:3,bend:3,head:-4,h:[36,-21],w:17,o:[13,-44]};
-const SWORD_SHOULDER={ffx:30,ffy:0,bfx:-34,bfy:0,px:-5,py:80,lean:3,bend:1,head:-3,h:[24,8],w:108,o:[24,-30]};
-const SWORD_LOW={ffx:30,ffy:0,bfx:-34,bfy:0,px:-4,py:85,lean:2,bend:2,head:-10,h:[14,-52],w:-47,o:[6,-50]};
-const DAGGER_OUT={ffx:27,ffy:0,bfx:-30,bfy:0,px:-1,py:74,lean:9,bend:8,head:-12,h:[22,-27],w:27,o:[37,-7]};
-const DAGGER_HURT={ffx:26,ffy:0,bfx:-32,bfy:0,px:-5,py:71,lean:12,bend:15,head:-17,h:[28,-23],w:41,o:[26,-30]};
+const ARC={arc:true};
 
 // ===========================================================================
-// Phrases. Each one writes keys relative to a contact time, starting from the
-// pose the fighter is in (its first keys hold that pose).
+// Phrases. Each one writes keys for one fighter, relative to a contact time tc.
+// They start from whatever pose and stance the fighter is in.
 // ===========================================================================
 
-// A cut from the shoulder with a lunge. No big wind-up: the hand comes up beside the shoulder, the hips go, and the
-// blade is the last thing to arrive.
-//   prepare  tc-520 .. tc-300   weight settles back, the hand rises to the shoulder, the empty hand comes up in front
-//   drive    tc-300 .. tc-70    the front foot steps out and the hips follow it; the chest is still turned back
-//   strike   tc-150 .. tc       shoulder, then arm, then blade; the empty arm is thrown back as a counterweight
-// The caller writes where the blade is at tc (it depends on what the cut meets). short: the lunge falls short.
+// A descending cut on one step of the front foot. 480 ms from stillness to contact.
+//   load    tc-480 .. tc-290   the weight settles back, the hilt comes up beside the head, the blade tips back over
+//                              the shoulder; the empty hand comes forward as the shoulders turn
+//   drive   tc-290 .. tc-150   the front foot leaves, the hips go; the chest is still open and the blade is left behind
+//   strike  tc-150 .. tc       the shoulders come round, the arm goes out, the foot lands, and the blade arrives last
+// The caller writes where the blade is at tc (it depends on what the cut meets).
+// opt.stride: how far the front foot goes (34 from measure). opt.load false: the blade is already up (a riposte).
 function swordCut(A,tc,opt){
-  const d=-((opt&&opt.short)||0);
-  A.hold(tc-520,ALL);
-  A.k(tc-300,{p:[-10,76],lean:1,bend:-4,head:0},'io');
-  A.kg(tc-300,[24,8],20,'io',{arc:true}).k(tc-300,{o:[27,-23]},'io',{arc:true});
-  A.step('ff',tc-290,tc-85,78+d,8);
-  A.k(tc-180,{p:[11+d*.3,74]},'in').k(tc-70,{p:[28+d*.8,65]},'lin').k(tc-10,{p:[31+d,62]},'out');
-  A.k(tc-150,{lean:7,bend:-7,head:-4},'io').k(tc-10,{lean:20,bend:6,head:-19},'io');
-  // the hand stays by the shoulder while the hips go, and the wrist cocks: the blade is left behind
-  A.kg(tc-150,[21,12],34,'io',{arc:true});
-  A.k(tc-150,{o:[23,-27]},'io',{arc:true}).k(tc,{o:[-27,-45]},'in',{arc:true});
+  const o=opt||{},stride=o.stride==null?34:o.stride,f=stride/34,t1=tc-290;
+  if(o.load===false)A.hold(t1).rebase(t1,FRONT.sword);
+  else{
+    A.hold(tc-480).rebase(tc-480,FRONT.sword);
+    A.k(t1,{p:[-8,78],lean:2,bend:-3,head:1},'io').kg(t1,[15,29],-6,'io',ARC);
+    A.k(t1,{o:[25,-13]},'io',ARC);
+  }
+  const p0=A.tr.val('px',t1)-A.ox,p1=p0+4+30*f,y1=80-13*f;
+  if(stride>3)A.step('ff',tc-275,tc-65,30+stride,6);
+  A.k(tc-150,{p:[p0+(p1-p0)*.66,(78+y1)/2+1],lean:7,bend:-5,head:0},'io');
+  A.k(tc,{p:[p1,y1],lean:17,bend:8,head:-15},'io');
+  A.kg(tc-150,[10,31],3,'io',ARC);
+  // the empty arm goes the other way: forward while the blade is back, then down past the hip and out behind
+  A.k(tc-150,{o:[23,-9]},'io',ARC).k(tc,{o:[-40,-44]},'in',ARC);
+  return tc;
 }
-// The lunge is taken back: the front foot returns and the weight settles into a guard. Returns when it is done.
-function swordRecover(A,t0,guard){
-  A.hold(t0,['p','lean','bend','head']);A.step('ff',t0,t0+210,guard.ffx,6);
-  A.k(t0+230,{p:[guard.px+4,guard.py-3]},'io').k(t0+340,{p:[guard.px,guard.py],lean:guard.lean,bend:guard.bend,head:guard.head},'io');
-  return t0+340;
-}
-// The dagger reads the cut and meets it in front of the head. Returns the meeting point.
+// The dagger reads the cut and meets it. Shared by every sequence where the cut is parried. Returns the meeting point.
 function daggerParry(A,B,tc){
-  B.hold(tc-330,ALL);
-  B.k(tc-190,{p:[-8,70],lean:13,bend:10},'io').k(tc-190,{h:[29,-17],w:48,o:[21,-20]},'io',{arc:true});
-  B.k(tc-25,{p:[3,76],lean:5,bend:1,head:-4},'out').k(tc-25,{o:[22,-2]},'out',{arc:true});
-  const hd=B.at(tc-25,'Hd'),C=[hd[0]-48,hd[1]+14];
-  B.hold(tc-170,['h','w']);B.aim(tc-25,C,104,15,'out3',{arc:true});
-  A.aimGrip(tc,C,10,60,'in',{arc:true,wease:'in3'});
-  B.hold(tc,['p','lean','bend','head','h','w']);
+  B.hold(tc-330).rebase(tc-330,FRONT.dagger);
+  B.k(tc-200,{p:[-7,70],lean:13,bend:10},'io').k(tc-200,{h:[29,-17],w:48,o:[21,-20]},'io',ARC);
+  B.k(tc-25,{p:[2,76],lean:4,bend:1,head:-4},'out').k(tc-25,{o:[14,-22]},'out',ARC);
+  // where the blades meet: in front of and above B's head, on the line of the cut
+  const hd=B.at(tc-25,'Hd'),C=[hd[0]-50,hd[1]+6];
+  B.hold(tc-170,['h','w']);B.aim(tc-25,C,104,15,'out3',ARC);
+  A.aimGrip(tc,C,8,62,'in',{arc:true,wease:'in3'});
+  // contact: the cut is stopped; its weight goes into B's arm and knees
+  B.hold(tc);B.k(tc+70,{p:[0,71],lean:7,bend:3},'out');
   return C;
 }
-// The cut is parried: both arrive at the meeting point and the weight of the blow is taken. Ends in the bind.
-function cutParried(A,B,tc){
-  swordCut(A,tc);
+// A dagger thrust on a short step: gather, then a straight line. The caller aims the blade at t2.
+//   t0 .. t0+130   the front foot goes in, the hand is drawn back to the hip
+//   t0+130 .. t2   the body goes in behind the point; the rear foot closes up if follow is set
+function daggerLunge(B,t0,t2,front,follow){
+  B.hold(t0);
+  B.step('ff',t0+10,t0+150,front,7);
+  B.k(t0+125,{p:[front-33,71],lean:16,bend:6},'in').k(t0+125,{h:[8,-30],w:12},'io',ARC);
+  if(follow!=null)B.step('bf',t0+165,t2-15,follow,5);
+  B.k(t2,{p:[front-25,69],lean:25,bend:3,head:-20},'out');
+  B.hold(t0+130,['h','w']);
+}
+
+// ===========================================================================
+// Exchanges. Each one starts from the pose the last one ended in, at time t0, and returns when it is over.
+// S collects what the page and the tests need to know: contacts, pauses, wounds, captions.
+// ===========================================================================
+function newSeq(id,title){return {id,title,stops:[],pauses:[],fx:[],wounds:[],checks:[],marks:[],exchanges:[]};}
+const mark=(S,t,who,label)=>S.marks.push({t,who,label});
+function cutMarks(S,tc,loaded){
+  if(!loaded)mark(S,tc-480,'a','Load: the weight settles back, the hilt comes up beside the head, the empty hand comes forward');
+  mark(S,tc-290,'a','Drive: the front foot goes and the hips with it; the chest is still open and the blade is left behind');
+  mark(S,tc-150,'a','Strike: shoulders, then the arm, then the blade; the foot lands as it arrives');
+}
+
+// Sword cuts; the dagger parries and turns the cut down and short. Ends at the decision pause.
+function exCutParried(S,F,t0){
+  const A=F.a,B=F.b,tc=t0+480;
+  S.exchanges.push({t:t0,attacker:'a',label:'Cut, parry, redirect'});
+  swordCut(A,tc);cutMarks(S,tc);
   const C=daggerParry(A,B,tc);
-  B.k(tc+90,{p:[0,71],lean:8,bend:4,head:-8},'out');
-  A.k(tc+90,{p:[32,62],lean:22,bend:7,head:-20},'out');A.hold(tc+90,['h','w','o']);
-  return {C,te:tc+90};
+  // the redirect: B turns the cut down and away for a moment; from there the sword's own weight carries it down.
+  // It falls close to A's own front foot, hand low, so the line to A's chest is open above it.
+  const hc=A.tr.val('h',tc),hb=B.tr.val('h',tc);
+  A.hold(tc).kg(tc+60,[hc[0]-34,hc[1]-12],0,'lin',ARC).kg(tc+130,[hc[0]-43,hc[1]-44],-10,'out',ARC);
+  B.k(tc+110,{h:[hb[0]+3,hb[1]-28],w:38},'out',ARC);
+  A.k(tc+220,{p:[29,66],lean:20,bend:8,head:-19},'out').kg(tc+220,[5,-43],-11,'out',ARC);
+  A.k(tc+220,{o:[-46,-38]},'out',ARC);
+  B.k(tc+220,{p:[3,72],lean:10,bend:5,head:-10},'io').k(tc+220,{h:[30,-8],w:50},'io',ARC);
+  B.k(tc+220,{o:[27,-12]},'io',ARC);
+  S.stops.push({t:tc,d:70});S.fx.push({t:tc,kind:'clash',at:C});
+  S.checks.push({t:tc,who:'a',along:62,at:C},{t:tc,who:'b',along:15,at:C});
+  mark(S,tc,'b','Contact: the dagger stops the cut; knees and elbow take its weight');
+  mark(S,tc+1,'b','Redirect: turned down and away, the sword drops beside its owner\'s front foot');
+  S.pauses.push({t:tc+230,label:'The attack is resolved: the sword is down and its owner is committed. '
+    +'The dagger fighter chooses what to do with the opening.'});
+  return tc+230;
 }
-// From the bind: the empty hand goes up under the sword wrist and keeps the blade overhead, the body steps in beneath
-// it, the dagger drops to the hip and goes straight to the body. The route is under the sword arm and clear.
-function daggerCounter(A,B,t0){
-  const t1=t0+200,t2=t0+330;
-  A.hold(t0,ALL);B.hold(t0,ALL);
-  const wrist=t=>{const j=A.joints(t),w=[j.Hn[0]+(j.E[0]-j.Hn[0])*.3,j.Hn[1]+(j.E[1]-j.Hn[1])*.3-5];return A.W(w);};
-  B.step('ff',t0+20,t0+170,56,6);
-  B.k(t1,{p:[28,65],lean:25,bend:10,head:-25},'io');
-  // A is still pressing down; the wrist is caught and lifted
-  const hA=A.tr.val('h',t0);
-  A.k(t1,{p:[33,63],lean:19,bend:5,head:-17},'io').kg(t1,[hA[0]-5,hA[1]+8],12,'io',{arc:true});
-  B.reach(t1,wrist(t1),'io',{arc:true});
-  B.kg(t1,[5,-35],18,'io',{arc:true});
-  B.step('bf',t0+175,t0+300,-4,4);
-  A.k(t2,{p:[33,63],lean:18,bend:5,head:-16},'lin');A.hold(t2,['h','w']);
-  B.k(t2,{p:[37,64],lean:30,bend:6,head:-28},'out');B.reach(t2,wrist(t2),'lin');
-  const ab=A.at(t2,'abdomen'),T=[ab[0]+4,ab[1]+3];
+
+// Dagger counters over the lowered sword and wounds; both step out. The attacker has changed.
+function exCounter(S,F,t0){
+  const A=F.a,B=F.b,t2=t0+300;
+  S.exchanges.push({t:t0,attacker:'b',label:'Counter over the lowered sword'});
+  daggerLunge(B,t0,t2,44,-16);
+  // A is trying to get the sword back and has not
+  A.hold(t0).k(t2,{p:[27,67],lean:19,bend:6,head:-15},'io').kg(t2,[1,-40],-11,'io',ARC);
+  A.k(t2,{o:[-34,-36]},'io',ARC);
+  // the empty hand goes out low over the sword: if the sword comes up, it comes up into that
+  B.k(t0+125,{o:[35,-20]},'io',ARC).k(t2,{o:[30,-31]},'io',ARC);
+  const chest=A.at(t2,'chest'),T=[chest[0]+5,chest[1]+3];
   B.aimGrip(t2,T,0,50,'in');
-  return {t2,T};
+  // A is struck: the chest goes back first, the head and hips follow, and the front foot comes back to catch the weight
+  A.k(t2+110,{lean:-5,bend:-8,head:15},'out3').k(t2+90,{p:[21,70]},'out');
+  A.kg(t2+140,[10,-45],-6,'out',ARC).k(t2+150,{o:[16,-49]},'out',ARC);
+  A.step('ff',t2+90,t2+330,36,8);
+  A.k(t2+340,{p:[4,74],lean:4,bend:12,head:-4},'io').k(t2+540,{p:[2,76],lean:9,bend:11,head:-13},'io');
+  // recovery: the point comes back up, the body stays closed over the wound, the empty hand comes back in front
+  A.k(t2+540,{h:SWORD_HURT.h,w:SWORD_HURT.w},'io',ARC).k(t2+540,{o:SWORD_HURT.o},'io',ARC);
+  // B takes the dagger back out along the line it went in, then steps out behind the empty hand
+  B.k(t2+90,{p:[20,68]},'out').k(t2+270,{h:[15,-30],w:22},'io').k(t2+270,{lean:18,bend:6,head:-16},'io');
+  B.step('bf',t2+210,t2+380,-30,6);B.step('ff',t2+410,t2+590,26,7);
+  B.k(t2+390,{p:[10,70]},'io').k(t2+640,{p:[-1,74],lean:9,bend:8,head:-12},'io');
+  B.k(t2+640,{h:DAGGER_OUT.h,w:DAGGER_OUT.w},'io',ARC).k(t2+290,{o:[30,-14]},'io',ARC).k(t2+640,{o:DAGGER_OUT.o},'io',ARC);
+  S.stops.push({t:t2,d:80});S.fx.push({t:t2,kind:'wound',at:T});
+  S.checks.push({t:t2,who:'b',along:50,at:T});S.wounds.push({t:t2,who:'a',part:'chest',level:'minor'});
+  mark(S,t0,'b','Counter: a short step in; the hand is drawn back, the empty hand goes out over the sword hand');
+  mark(S,t0+130,'b','Thrust: a straight line over the lowered sword to the chest');
+  mark(S,t2,'a','Reaction: the chest goes back first, then head and hips; the front foot comes back to catch the weight');
+  mark(S,t2+340,'both','Both step out. Nobody returns to the guard they started in');
+  return t2+560;
 }
-// Stabbed in the body: the middle folds over the wound, the lunge is snatched back, the sword arm tears free and is
-// carried up and back with the body. The dagger comes out along the line it went in. Ends with both still close.
-function stabReaction(A,B,t2){
-  A.k(t2+110,{lean:7,bend:23,head:5},'out3').k(t2+110,{p:[23,64]},'out');
-  A.step('ff',t2+90,t2+300,30,6);
-  A.k(t2+320,{p:[-6,71],lean:3,bend:17,head:-9},'io');
-  A.kg(t2+150,[22,15],26,'out',{arc:true}).kg(t2+320,[24,6],22,'io',{arc:true});
-  A.k(t2+140,{o:[22,-36]},'out',{arc:true}).k(t2+320,{o:[30,-26]},'io',{arc:true});
-  B.k(t2+80,{p:[38,63]},'out');
-  B.kg(t2+260,[13,-31],16,'io').k(t2+260,{p:[30,67],lean:19,bend:7,head:-17},'io');
-  B.k(t2+130,{o:[30,-2]},'io',{arc:true}).k(t2+280,{o:[36,-8]},'io',{arc:true});
-  return t2+330;
+
+// Sword cuts again from the hurt guard and misses; the momentum is carried through a step. Ends at a decision pause.
+function exCutMisses(S,F,t0){
+  const A=F.a,B=F.b,tc=t0+480;
+  S.exchanges.push({t:t0,attacker:'a',label:'A cut that misses'});
+  swordCut(A,tc,{stride:26});cutMarks(S,tc);
+  // B gives a half step and the cut passes in front
+  B.hold(tc-240).rebase(tc-240,FRONT.dagger);
+  B.step('bf',tc-220,tc-80,-52,5);
+  B.k(tc-60,{p:[-20,72],lean:3,bend:7,head:-8},'io').k(tc-60,{h:[5,-22],w:96},'io',ARC);
+  B.k(tc-60,{o:[13,-21]},'io',ARC);
+  B.step('ff',tc-40,tc+120,6,5);
+  B.k(tc+150,{p:[-25,72],lean:8,bend:8,head:-12},'io');
+  B.k(tc+340,{h:[13,-25],w:26},'io',ARC).k(tc+340,{o:[24,-22],lean:12},'io',ARC);
+  // nothing stops the blade: it runs on down, the chest follows it, and the rear foot has to come through to
+  // put a base back under the body
+  A.kg(tc,[30,7],2,'in',{arc:true,wease:'in3'});
+  A.kg(tc+110,[26,-20],0,'lin',ARC).kg(tc+250,[17,-42],-3,'out',ARC);
+  A.step('bf',tc+40,tc+290,-6,7);
+  A.k(tc+170,{p:[27,70],lean:25,bend:10,head:-24},'io').k(tc+340,{p:[29,76],lean:15,bend:8,head:-15},'io');
+  A.k(tc+190,{o:[-43,-22]},'out',ARC).k(tc+340,{o:[-24,-46]},'io',ARC);
+  mark(S,tc,'a','Miss: the dagger fighter gives a half step and the cut passes in front; nothing stops it');
+  mark(S,tc+40,'a','Follow-through: the blade runs on down, the chest goes with it, and the rear foot comes through under the body');
+  S.pauses.push({t:tc+350,label:'The miss is resolved: the sword is spent low and the two are a step closer. '
+    +'The dagger fighter chooses.'});
+  return tc+350;
 }
-// The dagger steps back out to the measure behind the empty hand.
-function daggerOut(B,t0){
-  B.hold(t0,ALL);
-  B.step('bf',t0+10,t0+170,DAGGER_OUT.bfx,5);B.step('ff',t0+185,t0+360,DAGGER_OUT.ffx,6);
-  B.k(t0+180,{p:[16,70]},'io').k(t0+380,{p:[DAGGER_OUT.px,DAGGER_OUT.py],lean:9,bend:8,head:-12},'io');
-  B.k(t0+380,{h:DAGGER_OUT.h,w:DAGGER_OUT.w,o:DAGGER_OUT.o},'io',{arc:true});
-  return t0+380;
+
+// Dagger thrusts at the spent sword fighter; the sword comes up under it and carries it over. Ends with the sword high.
+function exThrustBeaten(S,F,t0){
+  const A=F.a,B=F.b,t4=t0+310;
+  S.exchanges.push({t:t0,attacker:'b',label:'A thrust beaten upward'});
+  B.rebase(t0,FRONT.dagger);daggerLunge(B,t0,t4,50,null);
+  B.k(t4,{o:[22,-20]},'io',ARC);
+  // the parry: the blade first, the body under it afterwards. The weight goes back onto the rear foot.
+  A.hold(t0+30).rebase(t0+30,FRONT.sword);
+  A.k(t0+130,{p:[-3,76],lean:11,bend:6,head:-11},'io').kg(t0+130,[13,-36],52,'io',ARC);
+  A.k(t4-20,{p:[-5,77],lean:8,bend:4,head:-8},'out').kg(t4-20,[33,-21],54,'out',ARC);
+  A.k(t4-20,{o:[4,-50]},'io',ARC);
+  const C=A.at(t4-20,'blade',30);
+  A.hold(t4);B.aim(t4,C,19,35,'in');B.hold(t4);
+  // carried up and over: the same lift that clears the dagger loads the next cut
+  A.k(t4+170,{p:[-7,78],lean:3,bend:-3,head:0},'io').kg(t4+170,[15,29],-6,'io',ARC);
+  A.k(t4+170,{o:[24,-14]},'io',ARC);
+  B.k(t4+150,{p:[17,69],lean:17,bend:0,head:-13},'out').k(t4+90,{h:[36,25],w:102},'out',ARC);
+  B.k(t4+150,{o:[25,-18]},'out',ARC);
+  A.hold(t4+170);B.hold(t4+170,['p','lean','bend','head','o']);
+  S.stops.push({t:t4,d:60});S.fx.push({t:t4,kind:'clash',at:C});
+  S.checks.push({t:t4,who:'a',along:30,at:C},{t:t4,who:'b',along:35,at:C});
+  mark(S,t0,'b','Thrust: the dagger goes in at the spent sword fighter');
+  mark(S,t0+30,'a','Parry: the blade comes up first, across the line; the weight goes back under it');
+  mark(S,t4,'a','The dagger is carried up and over. The lift that clears it is the load for the next cut');
+  return t4+170;
 }
-// The cut lands: a parry that starts late and is beaten. Returns the struck point.
-function cutLands(A,B,tc){
-  swordCut(A,tc);
-  B.hold(tc-200,ALL);
-  B.k(tc,{p:[0,73],lean:9,bend:5,head:-8},'io');
-  B.hold(tc-140,['h','w','o']);B.k(tc,{h:[30,-2],w:80,o:[23,-6]},'out',{arc:true});
+
+// Sword cuts down from the lift and ends the fight; the dagger fighter's legs go and it falls.
+function exCutEnds(S,F,t0){
+  const A=F.a,B=F.b,tc=t0+290;
+  S.exchanges.push({t:t0,attacker:'a',label:'The cut that ends it'});
+  // B has been lifted open and is trying to get back out: the weight is going onto the rear leg when the cut lands
+  B.hold(t0).step('ff',t0+40,t0+230,30,6);
+  B.k(tc,{p:[4,72],lean:8,bend:2,head:-8},'io').k(tc,{h:[30,1],w:58},'io',ARC);
+  B.k(tc,{o:[27,-12]},'io',ARC);
+  swordCut(A,tc,{stride:30,load:false});cutMarks(S,tc,true);
   const ch=B.at(tc,'chest'),T=[ch[0]-2,ch[1]+9];
-  A.aimGrip(tc,T,4,88,'in',{arc:true,wease:'in3'});
-  // the cut is drawn down and through, not stopped dead
-  A.k(tc+170,{p:[32,62],lean:24,bend:8,head:-22},'out').kg(tc+170,[13,-37],8,'out',{arc:true});
-  A.k(tc+170,{o:[-22,-48]},'out',{arc:true});
-  return T;
+  A.aimGrip(tc,T,10,82,'in',{arc:true,wease:'in3'});
+  // the cut is drawn down and through, then the winner steps back out and lowers the point. Watching, not celebrating.
+  const pa=A.tr.val('px',tc)-A.ox;
+  A.k(tc+170,{p:[pa+2,71],lean:22,bend:8,head:-21},'out').kg(tc+170,[9,-44],-10,'out',ARC);
+  A.step('ff',tc+210,tc+420,10,7);
+  A.k(tc+440,{p:[-10,78],lean:7,bend:4,head:-12},'io');
+  A.step('bf',tc+460,tc+660,-50,6);
+  A.k(tc+700,{p:[-21,83],lean:3,bend:3,head:-14},'io');
+  A.hold(tc+210,['h','w']).k(tc+700,{h:SWORD_LOW.h,w:SWORD_LOW.w},'io',ARC);
+  A.hold(tc+200,['o']).k(tc+700,{o:SWORD_LOW.o},'io',ARC);
+  collapseBack(B,tc);
+  S.stops.push({t:tc,d:110});S.fx.push({t:tc,kind:'wound',at:T});
+  S.checks.push({t:tc,who:'a',along:82,at:T});S.wounds.push({t:tc,who:'b',part:'chest',level:'major'});
+  mark(S,tc,'b','Contact: the cut lands');
+  mark(S,tc+1,'b','Collapse: the chest goes back past the feet, the knee folds, the front foot comes off the floor');
+  mark(S,tc+380,'b','Down: seat, back, head; the empty arm arrives last. The winner steps out and lowers the point');
+  return tc+900;
 }
-// Cut across the chest and still standing: the chest is driven back and down, the head follows late, the rear foot
-// catches the weight, and the stance is gathered again, closed over the hurt.
-function hitReaction(B,tc){
-  B.k(tc+110,{lean:-11,bend:17,head:19},'out3').k(tc+130,{p:[-15,66]},'out3');
-  B.kg(tc+130,[30,-30],20,'out',{arc:true}).k(tc+130,{o:[27,-22]},'out',{arc:true});
-  B.step('bf',tc+70,tc+250,-58,5);
-  B.k(tc+290,{p:[-24,65],lean:-3,bend:21,head:4},'io').k(tc+330,{o:[22,-34]},'io',{arc:true});
-  B.step('bf',tc+470,tc+690,DAGGER_HURT.bfx,5);
-  B.k(tc+720,{p:[DAGGER_HURT.px,DAGGER_HURT.py],lean:12,bend:15,head:-17},'io');
-  B.k(tc+720,{h:DAGGER_HURT.h,w:DAGGER_HURT.w},'io',{arc:true}).k(tc+720,{o:DAGGER_HURT.o},'io',{arc:true});
-  return tc+720;
+// Balance and support giving way. The blow takes the chest back past the feet; there is no step to catch it. The rear
+// knee folds and the hips drop behind the heel, faster and faster; the front foot is pulled off the floor; seat, back
+// and head land in turn. The dagger arm goes dead at the blow and hangs; the empty hand goes to the wound and lands
+// last. Nothing is held up.
+function collapseBack(B,tc){
+  B.hold(tc);
+  B.k(tc+90,{lean:-14,bend:12,head:20},'out3').k(tc+100,{p:[-2,70]},'out3');
+  B.k(tc+220,{p:[-19,54],lean:-34,bend:12,head:16},'in');
+  B.k(tc+380,{p:[-46,14],lean:-58,bend:12,head:4},'lin').k(tc+440,{p:[-50,10]},'out');
+  B.k(tc+500,{p:[-51,12]},'out').k(tc+570,{p:[-52,10]},'in');
+  B.k(tc+520,{lean:-86,bend:4,head:-8},'in').k(tc+590,{lean:-82,bend:5,head:-3},'out').k(tc+690,{lean:-86,bend:3,head:-3},'io');
+  // the front foot comes off the floor as the weight goes back, lands again, and the leg lets go
+  B.hold(tc+190,['ffx','ffy']).k(tc+380,{ff:[36,26]},'io').k(tc+580,{ff:[38,0]},'in');
+  B.hold(tc+620,['ffx']).k(tc+800,{ffx:33},'io');
+  B.hold(tc+470,['bfx']).k(tc+760,{bfx:-13},'io');
+  // the dagger arm: dropped, hanging, dragged, then along the floor
+  B.kg(tc+140,[9,-51],-9,'out',ARC).kg(tc+270,[20,-47],12,'io',ARC).kg(tc+380,[34,-34],38,'io',ARC);
+  B.kg(tc+450,[48,-24],30,'io',ARC).kg(tc+520,[60,-7],4,'lin',ARC);
+  // the empty hand: to the wound, away as the body goes over, down last
+  B.k(tc+120,{o:[19,-22]},'out',ARC).k(tc+230,{o:[18,-19]},'io',ARC).k(tc+400,{o:[28,22]},'io',ARC);
+  B.k(tc+660,{o:[-51,-5]},'in',ARC).k(tc+720,{o:[-51,-1]},'out').k(tc+790,{o:[-51,-6]},'in');
 }
-// After a landed cut the sword is taken back with the lunge and carried to a guard.
-function swordAway(A,t0,guard){
-  A.hold(t0,['h','w','o']);
-  const tr=swordRecover(A,t0,guard);
-  A.k(tr,{h:guard.h,w:guard.w},'io',{arc:true}).k(tr,{o:guard.o},'io',{arc:true});
-  return tr;
-}
+// How each fighter stands after an exchange. Never the guard it began in: a fight does not pass through one neutral pose.
+const SWORD_HURT={h:[23,-35],w:52,o:[13,-30]};
+const SWORD_POINT={h:[36,-21],w:17,o:[15,-31]};
+const SWORD_LOW={h:[2,-57],w:-62,o:[11,-47]};
+const DAGGER_OUT={h:[22,-27],w:27,o:[34,-8]};
 
 // ===========================================================================
 // Sequences
@@ -339,174 +456,65 @@ function swordAway(A,t0,guard){
 function finish(seq,F){
   F.a.grip();F.b.grip();
   seq.fighters={a:F.a,b:F.b};
+  seq.marks.sort((x,y)=>x.t-y.t);
   seq.dur=Math.max(F.a.tr.end(),F.b.tr.end())+(seq.tail==null?400:seq.tail);
   seq.notes=[...F.a.notes.map(n=>({who:'a',...n})),...F.b.notes.map(n=>({who:'b',...n}))];
-  seq.exchanges=seq.exchanges||[];
   return seq;
 }
-const CUT_MARKS=(tc,first)=>[
-  ...(first?[{t:0,who:'both',label:'On guard'}]:[]),
-  {t:tc-520,who:'a',label:'Prepare: the weight settles back and the hand comes up to the shoulder'},
-  {t:tc-300,who:'a',label:'Drive: the front foot steps out and the hips follow; the blade is left behind'},
-  {t:tc-150,who:'a',label:'Strike: shoulder, then arm, then blade'}];
-const PARRY_MARKS=tc=>[{t:tc,who:'b',label:'Contact: the dagger stops the cut; knees and elbow take its weight'}];
-const COUNTER_MARKS=(t0,t2)=>[
-  {t:t0+1,who:'b',label:'Counter: the empty hand goes up under the sword wrist and the body steps in beneath the blade'},
-  {t:t0+200,who:'b',label:'Thrust: from the hip in a straight line, under the sword arm'},
-  {t:t2,who:'a',label:'Reaction: the middle folds over the wound, the lunge is snatched back, the sword arm tears free'}];
 
-// 1. Three exchanges that run into each other, with the attacker changing and two decision pauses.
-function seqBout(){
-  const F=pair(),A=F.a,B=F.b,tc=640;
-  const one=cutParried(A,B,tc);                       // exchange 1: the sword attacks, the dagger parries
-  const two=daggerCounter(A,B,one.te),te2=stabReaction(A,B,two.t2);   // exchange 2: the dagger attacks and lands
-  const tb=daggerOut(B,te2),tc3=te2+60+520;           // exchange 3: the dagger steps out as the sword comes again
-  const T=cutLands(A,B,tc3);hitReaction(B,tc3);swordAway(A,tc3+330,SWORD_POINT);
-  return finish({id:'bout',title:'Three exchanges, one fight',
-    stops:[{t:tc,d:70},{t:two.t2,d:80},{t:tc3,d:90}],
-    exchanges:[{t0:0,t1:one.te,attacker:'a',result:'parried'},{t0:one.te,t1:te2,attacker:'b',result:'hit'},{t0:te2,t1:tc3+1060,attacker:'a',result:'hit'}],
-    pauses:[{t:one.te,label:'The sword\'s attack is resolved: parried. The dagger\'s player now decides what to do, with the blades still crossed.'},
-      {t:te2,label:'The dagger\'s attack is resolved: a wound. The sword\'s player decides next. Nobody has gone back to a guard.'}],
-    fx:[{t:tc,kind:'clash',at:one.C},{t:two.t2,kind:'wound',at:two.T},{t:tc3,kind:'wound',at:T}],
-    checks:[{t:tc,who:'a',along:60,at:one.C},{t:tc,who:'b',along:15,at:one.C},{t:two.t2,who:'b',along:50,at:two.T},{t:tc3,who:'a',along:88,at:T}],
-    clear:[{t0:one.te,t1:two.t2+200}],
-    wounds:[{t:two.t2,who:'a',part:'abdomen',level:'minor'},{t:tc3,who:'b',part:'chest',level:'serious'}],
-    marks:[...CUT_MARKS(tc,true),...PARRY_MARKS(tc),...COUNTER_MARKS(one.te,two.t2),
-      {t:te2+1,who:'b',label:'The dagger steps back out to measure while the sword, hurt, is already coming again'},
-      ...CUT_MARKS(tc3).slice(1),
-      {t:tc3,who:'b',label:'Contact: the cut comes over a late parry and lands'},
-      {t:tc3+1,who:'b',label:'Reaction: chest back and down, the rear foot catching the weight'},
-      {t:tc3+330,who:'both',label:'Recovery: the lunge is taken back; the wounded fighter regathers'}]},F);
+// 1. Five connected exchanges. Each begins from the pose the last one ended in; the attacker changes three times;
+//    the scene stops for a decision twice.
+function seqFight(){
+  const F=pair(),S=newSeq('fight','A fight in five exchanges');
+  mark(S,0,'both','On guard, close enough that one step reaches');
+  let t=150;
+  t=exCutParried(S,F,t);
+  t=exCounter(S,F,t);
+  t=exCutMisses(S,F,t);
+  t=exThrustBeaten(S,F,t);
+  exCutEnds(S,F,t);
+  return finish(S,F);
 }
 
-// 2. Attack, parry, counterattack, reaction, recovery.
-function seqExchange(){
-  const F=pair(),A=F.a,B=F.b,tc=640;
-  const one=cutParried(A,B,tc),two=daggerCounter(A,B,one.te),te=stabReaction(A,B,two.t2);
-  daggerOut(B,te);
-  A.hold(te,ALL);A.k(te+380,{p:[SWORD_HURT.px,SWORD_HURT.py],lean:6,bend:13,head:-12},'io');
-  A.k(te+380,{h:SWORD_HURT.h,w:SWORD_HURT.w,o:SWORD_HURT.o},'io',{arc:true});
-  return finish({id:'exchange',title:'Attack, parry, counterattack, reaction, recovery',
-    stops:[{t:tc,d:70},{t:two.t2,d:80}],
-    pauses:[{t:one.te,label:'The attack is resolved. The next decision is made here, with the blades still crossed.'}],
-    fx:[{t:tc,kind:'clash',at:one.C},{t:two.t2,kind:'wound',at:two.T}],
-    checks:[{t:tc,who:'a',along:60,at:one.C},{t:tc,who:'b',along:15,at:one.C},{t:two.t2,who:'b',along:50,at:two.T}],
-    clear:[{t0:one.te,t1:two.t2+200}],
-    wounds:[{t:two.t2,who:'a',part:'abdomen',level:'minor'}],
-    marks:[...CUT_MARKS(tc,true),...PARRY_MARKS(tc),...COUNTER_MARKS(one.te,two.t2),
-      {t:te,who:'both',label:'Recovery: the dagger steps out to measure; the sword settles, closed over the wound'}]},F);
-}
-
-// 3. A miss: nothing stops the blade, so the body has to catch itself with a step.
-function seqMiss(){
-  const F=pair(),A=F.a,B=F.b,tc=640;
-  swordCut(A,tc,{short:44});
-  A.kg(tc,[53,4],2,'in',{arc:true,wease:'in3'});
-  // follow-through: the cut runs on down in front; the weight overruns the front foot and the rear foot comes up to catch it
-  A.kg(tc+110,[40,-29],-2,'lin',{arc:true}).kg(tc+230,[27,-41],-8,'out',{arc:true});
-  A.k(tc+110,{p:[-3,66],lean:25,bend:10,head:-26},'out');
-  A.step('bf',tc+60,tc+240,-27,5);
-  A.k(tc+250,{p:[4,72],lean:17,bend:8,head:-18},'io');
-  A.k(tc+230,{o:[-20,-50]},'io',{arc:true});
-  // recovery: back out one foot at a time, the point lifted to the shoulder
-  A.step('bf',tc+340,tc+520,SWORD_SHOULDER.bfx,5);A.step('ff',tc+540,tc+730,SWORD_SHOULDER.ffx,6);
-  A.hold(tc+340,['p']);A.k(tc+530,{p:[-2,75]},'io').k(tc+760,{p:[SWORD_SHOULDER.px,SWORD_SHOULDER.py],lean:3,bend:1,head:-3},'io');
-  A.hold(tc+340,['h','w','o']);A.kg(tc+560,[30,-12],30,'io',{arc:true}).kg(tc+760,SWORD_SHOULDER.h,20,'io',{arc:true});
-  A.k(tc+760,{o:SWORD_SHOULDER.o},'io',{arc:true});
-  // B: no parry was needed. The guard tightens and the weight settles back; no step, no dodge.
-  B.hold(tc-330,ALL);
-  B.k(tc-150,{p:[-8,70],lean:10,bend:9},'io').k(tc-150,{h:[23,-13],w:62,o:[19,-8]},'io',{arc:true});
-  B.k(tc,{p:[-17,70],lean:2,bend:8,head:-8},'io');
-  B.k(tc+520,{p:[DAGGER_OUT.px,DAGGER_OUT.py],lean:9,bend:8,head:-12},'io');
-  B.k(tc+300,{h:[23,-13],w:62,o:[19,-8]},'lin').k(tc+620,{h:DAGGER_OUT.h,w:DAGGER_OUT.w,o:DAGGER_OUT.o},'io',{arc:true});
-  return finish({id:'miss',title:'A miss with its follow-through',
-    stops:[],pauses:[{t:tc+255,label:'The miss is resolved. The sword is spent low; the rear foot has come up under the body.'}],
-    fx:[],wounds:[],checks:[],
-    marks:[...CUT_MARKS(tc,true),
-      {t:tc,who:'a',label:'Miss: the cut falls short and nothing stops it'},
-      {t:tc+1,who:'a',label:'Follow-through: the weight overruns the front foot and the rear foot steps up to catch it'},
-      {t:tc+340,who:'a',label:'Recovery: back out one foot at a time, the point lifted to the shoulder'}]},F);
-}
-
-// 4. A damaging hit and the body's answer to it.
-function seqHit(){
-  const F=pair(),A=F.a,B=F.b,tc=640;
-  const T=cutLands(A,B,tc);hitReaction(B,tc);swordAway(A,tc+330,SWORD_POINT);
-  return finish({id:'hit',title:'A damaging hit and the reaction to it',
-    stops:[{t:tc,d:90}],pauses:[],
-    fx:[{t:tc,kind:'wound',at:T}],wounds:[{t:tc,who:'b',part:'chest',level:'serious'}],checks:[{t:tc,who:'a',along:88,at:T}],
-    marks:[...CUT_MARKS(tc,true),
-      {t:tc,who:'b',label:'Contact: the cut comes over a late parry and lands'},
-      {t:tc+1,who:'b',label:'Reaction: chest back and down, the head a beat behind, the rear foot catching the weight'},
-      {t:tc+330,who:'both',label:'Recovery: the lunge is taken back to a point guard; the wounded fighter regathers, closed over the hurt'}]},F);
-}
-
-// 5. Press Advantage: the cut is parried, but the attacker stays on the blade and keeps the point in the face.
+// 2. Press Advantage: the cut is parried, but the attacker stays on the blade and keeps the point in the face.
 function seqPress(){
-  const F=pair(),A=F.a,B=F.b,tc=640,th=tc+320,beat=430,n=2,tr0=th+n*beat+80;
-  const one=cutParried(A,B,tc);
-  // A does not let the blade go: the rear foot comes up under the body and the point goes over the dagger to the face
-  A.step('bf',tc+100,tc+280,6,5);
+  const F=pair(),A=F.a,B=F.b,S=newSeq('press','Press Advantage'),tc=630,th=tc+290,beat=430,n=2,tr0=th+n*beat+80;
+  mark(S,0,'both','On guard');
+  swordCut(A,tc);cutMarks(S,tc);
+  const C=daggerParry(A,B,tc);
+  // A does not let the blade fall: the rear foot comes up under the body and the point goes over the dagger to the face
+  A.hold(tc).step('bf',tc+50,tc+230,4,5);
   const press=(t,push,ease)=>{
-    A.k(t,{p:[45+push,72],lean:12+push*.4,bend:4,head:-13},ease);
-    B.k(t,{p:[-8-push*.5,70],lean:1-push*.5,bend:7,head:-4},ease);
-    A.kg(t,[44+push*.6,-5],2,ease,{arc:true});
-    B.aim(t,A.at(t,'blade',84),101,13,ease);B.k(t,{o:[17,9]},ease,{arc:true});
-    A.k(t,{o:[-8,-52]},ease,{arc:true});
+    A.k(t,{p:[36+push,73],lean:11+push*.4,bend:4,head:-11},ease);
+    B.k(t,{p:[-11-push*.5,69],lean:-1-push*.5,bend:7,head:-3},ease);
+    // the arm is long and the blade in line with it, the point at the face
+    A.kg(t,[45+push*.5,-15],3,ease,ARC);
+    B.aim(t,A.at(t,'blade',66),101,13,ease);B.k(t,{o:[17,7]},ease,ARC);
+    A.k(t,{o:[-34,-47]},ease,ARC);
   };
   press(th,0,'io');
+  // held: the point keeps darting at the face and the dagger keeps answering it. No blow, no ground taken.
   for(let i=0;i<n;i++){press(th+i*beat+150,10,'out');press(th+i*beat+beat,0,'io');}
-  // released when the effect ends: the rear foot goes back, the lunge is taken back, both return to measure
-  A.step('bf',tr0,tr0+190,SWORD_POINT.bfx,5);A.k(tr0+200,{p:[32,64],lean:17},'io');
-  swordAway(A,tr0+210,SWORD_POINT);
-  B.hold(tr0+60,ALL);
-  B.k(tr0+520,{p:[DAGGER_OUT.px,DAGGER_OUT.py],lean:9,bend:8,head:-12},'io');
-  B.k(tr0+520,{h:DAGGER_OUT.h,w:DAGGER_OUT.w,o:DAGGER_OUT.o},'io',{arc:true});
-  return finish({id:'press',title:'Press Advantage',
-    stops:[{t:tc,d:70}],
-    pauses:[{t:th,label:'Press Advantage is in force. While the engine says the defender cannot attack, the pair stays like this.'}],
-    fx:[{t:tc,kind:'clash',at:one.C}],wounds:[],checks:[{t:tc,who:'a',along:60,at:one.C},{t:tc,who:'b',along:15,at:one.C}],
-    marks:[...CUT_MARKS(tc,true),...PARRY_MARKS(tc),
-      {t:tc+90,who:'a',label:'Press: the rear foot comes up and the point goes over the dagger to the face'},
-      {t:th,who:'both',label:'Held: the point keeps threatening, the defender stays busy covering (no blow, no ground taken)'},
-      {t:tr0,who:'both',label:'Released: when the effect ends, both go back to measure'}]},F);
+  // released when the effect ends: A steps back out, B comes forward into guard again
+  A.step('bf',tr0,tr0+190,-34,5);
+  A.k(tr0+200,{p:[20,72],lean:12},'io');
+  A.step('ff',tr0+220,tr0+430,30,6);
+  A.k(tr0+470,{p:[-5,81],lean:3,bend:3,head:-4},'io');
+  A.hold(tr0,['h','w','o']).k(tr0+470,{h:SWORD_POINT.h,w:SWORD_POINT.w},'io',ARC).k(tr0+470,{o:SWORD_POINT.o},'io',ARC);
+  B.hold(tr0+60);
+  B.k(tr0+520,{p:[-1,74],lean:9,bend:8,head:-12},'io').k(tr0+520,{h:DAGGER_OUT.h,w:DAGGER_OUT.w,o:DAGGER_OUT.o},'io',ARC);
+  S.stops.push({t:tc,d:70});S.fx.push({t:tc,kind:'clash',at:C});
+  S.checks.push({t:tc,who:'a',along:62,at:C},{t:tc,who:'b',along:15,at:C});
+  S.pauses.push({t:th,label:'Press Advantage is in force. While the engine says the defender cannot attack, the pair stays like this.'});
+  mark(S,tc,'b','Contact: the dagger stops the cut');
+  mark(S,tc+70,'a','Press: the rear foot comes up and the point goes over the dagger to the face');
+  mark(S,th,'both','Held: the point keeps threatening, the defender stays busy covering (no blow, no ground taken)');
+  mark(S,tr0,'both','Released: when the effect ends, the sword fighter steps back out');
+  S.exchanges.push({t:0,attacker:'a',label:'Press Advantage'});
+  return finish(S,F);
 }
 
-// 6. A fight-ending injury: the same cut, and this time nothing holds the fighter up.
-function seqFinish(){
-  const F=pair(),A=F.a,B=F.b,tc=640;
-  const T=cutLands(A,B,tc);
-  // the chest goes back; the arms go slack at once
-  B.k(tc+110,{lean:-12,bend:14,head:18},'out3').k(tc+120,{p:[-14,67]},'out3');
-  B.kg(tc+170,[9,-54],6,'out',{arc:true}).k(tc+170,{o:[-2,-55]},'out',{arc:true});
-  // the rear foot goes back to catch the weight ...
-  B.step('bf',tc+80,tc+250,-62,5);
-  B.k(tc+280,{p:[-36,61],lean:-7,bend:18,head:7},'io');
-  // ... and the leg does not hold: the knee folds, the hips drop behind the foot and the front foot is dragged after them
-  B.k(tc+450,{p:[-60,27],lean:-40,bend:16,head:16},'in');
-  B.step('ff',tc+330,tc+470,0,3);
-  B.kg(tc+300,[4,-56],6,'io',{arc:true}).k(tc+300,{o:[-8,-54]},'io',{arc:true});
-  B.kg(tc+450,[36,-40],4,'in',{arc:true}).k(tc+450,{o:[28,-44]},'in',{arc:true});
-  // seat, then back, then head; the arms land last
-  B.kg(tc+560,[52,-25],4,'lin',{arc:true}).k(tc+560,{o:[50,-27]},'lin',{arc:true});
-  B.k(tc+560,{p:[-72,9],lean:-66,bend:10,head:8},'lin').k(tc+620,{p:[-73,12]},'out').k(tc+700,{p:[-74,9]},'in');
-  B.k(tc+760,{lean:-87,bend:3,head:-6},'in').k(tc+820,{lean:-85,bend:3},'out').k(tc+900,{lean:-87,bend:3,head:-3},'io');
-  B.kg(tc+800,[59,3],4,'in',{arc:true}).k(tc+780,{o:[-58,3]},'in',{arc:'long'});
-  B.hold(tc+700,['bfx']);B.k(tc+950,{bfx:-40},'io');
-  // A: the lunge is taken back and the sword lowered. Watching, not celebrating.
-  swordAway(A,tc+300,SWORD_LOW);
-  return finish({id:'finish',title:'A fight-ending injury',
-    stops:[{t:tc,d:110}],pauses:[],
-    fx:[{t:tc,kind:'wound',at:T}],wounds:[{t:tc,who:'b',part:'chest',level:'major'}],checks:[{t:tc,who:'a',along:88,at:T}],
-    marks:[...CUT_MARKS(tc,true),
-      {t:tc,who:'b',label:'Contact: the cut lands'},
-      {t:tc+1,who:'b',label:'The arms go slack; the rear foot goes back to catch the weight'},
-      {t:tc+280,who:'b',label:'Collapse: the leg does not hold. The knee folds and the hips drop behind the foot'},
-      {t:tc+560,who:'b',label:'Down: seat, back, head, and the arms last'},
-      {t:tc+300,who:'a',label:'The winner takes the lunge back and lowers the sword (out of the fight is all the engine says)'}]},F);
-}
-
-const SEQUENCES={bout:seqBout,exchange:seqExchange,miss:seqMiss,hit:seqHit,press:seqPress,finish:seqFinish};
+const SEQUENCES={fight:seqFight,press:seqPress};
 
 // ----- drawing: the same strokes and classes as the stage (pits-stage.css), as SVG markup -----
 const GROUND=450;
@@ -542,7 +550,7 @@ const api={DIM,EASE,ik,solve,torso,Track,Fig,GRIP,SWORD_GUARD,DAGGER_GUARD,WEAPO
   // sequence time -> display time (a pause point or a mark on the scrubber)
   shownAt(seq,t){let td=t;for(const s of seq.stops||[])if(t>s.t)td+=s.d;return td;},
   GROUND,figureSvg,frame,
-  build(id){return (SEQUENCES[id]||SEQUENCES.bout)();}
+  build(id){return (SEQUENCES[id]||SEQUENCES.fight)();}
 };
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 root.PitsMotion=api;
