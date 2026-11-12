@@ -1,22 +1,39 @@
-// Exchange study page: plays the spring-driven exchange from pits-spring.js. Presentation only.
+// Study pages for the spring-driven movement (pits-spring.js): the short exchange (pits-exchange-study.html) and the
+// ten-beat fight (pits-fight-study.html, data-seq="fight"). Presentation only.
 // The picture is a function of the time on the bar, so any moment can be stopped on, stepped through and replayed.
 (function(){
 const PS=window.PitsSpring,$=id=>document.getElementById(id),G=PS.GROUND,FRAME=1000/60;
-const seq=PS.build(),total=PS.shownDur(seq);
+const seq=PS.build(document.body.dataset.seq),total=PS.shownDur(seq);
 const st={td:0,playing:false,last:0,held:null,passed:{}};
 const reduced=()=>typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 const Y=y=>G-y,dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 
-// the nearest any part of the dagger fighter (body, arms, dagger) comes to the sword blade at time t
+// every contact, as a list: the short exchange keeps its own fields, the fight lists them
+const CL=seq.contactList||[{t:seq.contacts.parry.t,kind:'parry',at:seq.contacts.parry.at,hold:90,
+  a:{who:'a',along:seq.contacts.parry.alongA},b:{who:'b',along:seq.contacts.parry.alongB}},{t:seq.tk,kind:'wound',hold:60}];
+const NAMES=seq.id==='spring'?'sword and dagger':'the two blades';
+// the nearest any part of one fighter (body, arms, weapon) comes to the other's blade at time t
 const B_PARTS=['Hd','S','M','P','K','F','bK','bF','E','Hn','oE','oHn','tip'];
 function toSeg(p,a,b){const vx=b[0]-a[0],vy=b[1]-a[1],u=Math.max(0,Math.min(1,((p[0]-a[0])*vx+(p[1]-a[1])*vy)/(vx*vx+vy*vy||1)));
   return [a[0]+vx*u,a[1]+vy*u];}
 function clearance(t){
-  const h=PS.world(seq,'a',t,'Hn'),tip=PS.world(seq,'a',t,'tip');let best=null;
-  for(const n of B_PARTS){const p=PS.world(seq,'b',t,n),q=toSeg(p,h,tip),d=dist(p,q);if(!best||d<best.d)best={d,p,q,n};}
+  let best=null;
+  for(const [w,o] of seq.id==='spring'?[['a','b']]:[['a','b'],['b','a']]){
+    const h=PS.world(seq,w,t,'Hn'),tip=PS.world(seq,w,t,'tip');
+    for(const n of B_PARTS){const p=PS.world(seq,o,t,n),q=toSeg(p,h,tip),d=dist(p,q);if(!best||d<best.d)best={d,p,q,n,o};}
+  }
   return best;
 }
-const inContact=t=>{const c=seq.contacts;return Math.abs(t-c.parry.t)<=90||(t>=seq.tk&&t<=seq.tk+60)||(seq.grips||[]).some(g=>t>=g.t0-40&&t<=g.t1+30);};
+const inContact=t=>CL.some(c=>t>=c.t-90&&t<=c.t+(c.hold||0)+90)||(seq.grips||[]).some(g=>t>=g.t0-40&&t<=g.t1+30);
+// smears: where a fast blade has been in the last few hundredths of a second, as one filled shape (a layer that can be off)
+function smear(id,t){
+  // only the outer half of the blade, and only when the tip is really fast (over about 2 units a millisecond)
+  const L=seq.fighters[id].weapon.len;
+  const pts=[0,10,20,30].map(d=>({h:PS.world(seq,id,Math.max(0,t-d),'blade',L*.5),p:PS.world(seq,id,Math.max(0,t-d),'tip')}));
+  const sp=dist(pts[0].p,pts[3].p);if(sp<60)return '';
+  const poly=[...pts.map(x=>x.p),...pts.slice().reverse().map(x=>x.h)].map(p=>p[0].toFixed(1)+','+Y(p[1]).toFixed(1)).join(' ');
+  return '<polygon class="pc-smear" style="opacity:'+Math.min(.45,(sp-60)/120+.15).toFixed(2)+'" points="'+poly+'"/>';
+}
 
 function overlays(t){
   let s='';
@@ -41,23 +58,24 @@ function overlays(t){
     const c=clearance(t);
     s+='<line class="pc-gap" x1="'+c.p[0]+'" y1="'+Y(c.p[1])+'" x2="'+c.q[0]+'" y2="'+Y(c.q[1])+'"/>';
   }
-  // the parry's one contact point, from the moment it is met until the bind lets go
-  const pc=seq.contacts.parry;
-  if(t>=pc.t-1&&t<=pc.t+90)s+='<circle class="pc-contact" cx="'+pc.at[0]+'" cy="'+Y(pc.at[1])+'" r="6"/>';
+  // each contact point, from the moment it is met until it lets go
+  for(const c of CL)if(c.at&&t>=c.t-1&&t<=c.t+Math.max(90,c.hold||0))s+='<circle class="pc-contact" cx="'+c.at[0]+'" cy="'+Y(c.at[1])+'" r="6"/>';
   // the grip on the sword arm, while it is held: a small ring where the hand closes on the forearm
   for(const g of seq.grips||[])if(t>=g.t0&&t<=g.t1){const p=PS.world(seq,g.who,t,'oHn');
     s+='<circle class="pc-grip" cx="'+p[0]+'" cy="'+Y(p[1])+'" r="7"/>';}
   return s;
 }
 function readout(t){
-  const c=clearance(t),pc=seq.contacts.parry;
+  const c=clearance(t),pc=CL.find(k=>k.at&&k.a&&k.b&&Math.abs(t-k.t)<1);
   let s='t = '+Math.round(t)+' ms';
-  if(Math.abs(t-pc.t)<1){
-    const a=PS.world(seq,'a',t,'blade',pc.alongA),b=PS.world(seq,'b',t,'blade',pc.alongB);
-    s+=' · parry: sword and dagger '+dist(a,pc.at).toFixed(1)+' and '+dist(b,pc.at).toFixed(1)+' units from the contact point';
+  if(pc){
+    const a=PS.world(seq,pc.a.who,t,'blade',pc.a.along),b=PS.world(seq,pc.b.who,t,'blade',pc.b.along);
+    s+=' · '+pc.kind+': '+NAMES+' '+dist(a,pc.at).toFixed(1)+' and '+dist(b,pc.at).toFixed(1)+' units from the contact point';
+  }else if(CL.some(k=>k.at&&k.part&&Math.abs(t-k.t)<1)){const k=CL.find(k=>k.at&&k.part&&Math.abs(t-k.t)<1),a=PS.world(seq,k.a.who,t,'blade',k.a.along);
+    s+=' · the blade is '+dist(a,k.at).toFixed(1)+' units from the '+k.part;
   }else if((seq.grips||[]).some(g=>t>=g.t0&&t<=g.t1))s+=' · the sword arm is held at the wrist';
   else if(inContact(t))s+=' · in contact';
-  else s+=' · nearest the dagger fighter comes to the sword blade: '+c.d.toFixed(0)+' units ('+c.n+')';
+  else s+=' · nearest '+(seq.id==='spring'?'the dagger fighter comes to the sword blade':'either fighter comes to the other\'s blade')+': '+c.d.toFixed(0)+' units ('+c.n+')';
   $('pcReadout').textContent=s;
 }
 function caption(t){
@@ -75,7 +93,11 @@ function draw(){
   const t=PS.seqTime(seq,st.td),f=PS.frame(seq,t);
   $('pcFigs').innerHTML=f.a.svg+f.b.svg;
   let fx='';
-  for(const e of seq.fx){const dt=st.td-PS.shownAt(seq,e.t);if(dt>=0&&dt<170)fx+=star(e.at,e.kind==='clash'?'pc-clash':'pc-woundfx',10+dt*.08);}
+  if($('pcSmear').checked){
+    for(const id of ['a','b'])fx+=smear(id,t);
+    // the impact flash: a star that opens out over 170 ms at each contact
+    for(const e of seq.fx){const dt=st.td-PS.shownAt(seq,e.t);if(dt>=0&&dt<170)fx+=star(e.at,e.kind==='clash'?'pc-clash':'pc-woundfx',10+dt*.08);}
+  }
   $('pcFx').innerHTML=fx;
   $('pcInspect').innerHTML=overlays(t);
   $('pcScrub').value=Math.round(st.td);
@@ -109,8 +131,12 @@ const nudge=d=>seek(st.td+d*FRAME);
 $('pcScrub').max=Math.round(total);
 for(const m of seq.marks){const i=document.createElement('i');i.style.left=(PS.shownAt(seq,m.t)/total*100)+'%';$('pcMarks').appendChild(i);}
 for(const p of seq.pauses){const i=document.createElement('i');i.className='stop';i.style.left=(PS.shownAt(seq,p.t)/total*100)+'%';$('pcMarks').appendChild(i);}
+// beats: a numbered mark on the bar, and a button for each
+for(const b of seq.beats||[]){const i=document.createElement('i');i.className='beat';i.dataset.n=b.n;i.title=b.n+'. '+b.label;
+  i.style.left=(PS.shownAt(seq,b.t)/total*100)+'%';$('pcMarks').appendChild(i);}
 const GRIP=(seq.grips||[])[0];
-const JUMPS=[['Parry contact',seq.contacts.parry.t],['Held for the decision',seq.P1],['Sword arm caught',GRIP.t0],['Counter lands',seq.tk],
+const JUMPS=seq.beats?seq.beats.map(b=>[b.n+'. '+b.short,b.t]).concat([['End',seq.end]]):
+  [['Parry contact',seq.contacts.parry.t],['Held for the decision',seq.P1],['Sword arm caught',GRIP.t0],['Counter lands',seq.tk],
   ['Arm let go',GRIP.t1+40],['Wound reaction',seq.tk+160],['Sword recovers',seq.tk+300],['End pose',seq.end]];
 for(const [label,t] of JUMPS){const b=document.createElement('button');b.type='button';b.textContent=label;
   b.addEventListener('click',()=>seek(PS.shownAt(seq,t)));$('pcJumps').appendChild(b);}
@@ -118,7 +144,9 @@ for(const [label,t] of JUMPS){const b=document.createElement('button');b.type='b
 $('pcPlay').addEventListener('click',play);
 $('pcBack').addEventListener('click',()=>nudge(-1));$('pcFwd').addEventListener('click',()=>nudge(1));
 $('pcScrub').addEventListener('input',e=>seek(+e.target.value));
-for(const id of ['pcFeet','pcPath','pcClear'])$(id).addEventListener('change',draw);
+for(const id of ['pcFeet','pcPath','pcClear','pcSmear'])$(id).addEventListener('change',draw);
+// the fight opens with decision stops off, to judge the flow of the whole fight
+if(document.body.dataset.decide==='off')$('pcDecide').checked=false;
 document.addEventListener('keydown',e=>{
   if(/^(INPUT|SELECT|BUTTON)$/.test(e.target.tagName)&&e.key===' ')return;
   if(e.key===' '){e.preventDefault();play();}

@@ -8,7 +8,7 @@ Run after changing any JS or CSS file that an HTML page loads with ?v=:
 tests/asset-versions.cjs fails if a stamp no longer matches its file."""
 import hashlib, pathlib, re, sys
 root = pathlib.Path(__file__).resolve().parent.parent
-PAGES = ["index.html", "experiments/practice-combat.html", "experiments/pits-choreography.html", "experiments/pits-exchange-study.html"]
+PAGES = ["index.html", "experiments/practice-combat.html", "experiments/pits-choreography.html", "experiments/pits-exchange-study.html", "experiments/pits-fight-study.html"]
 REF = re.compile(r'((?:src|href)=")([^"?#]+)\?v=[^"]*(")')
 
 def digest(path):

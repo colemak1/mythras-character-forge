@@ -145,6 +145,63 @@ Checked from stills at 50 ms intervals through the counter and recovery, and fro
 
 **Still weak after this pass.** For about 180 ms of the push-off out of the lunge, the dagger fighter's centre of mass is about 28 units ahead of the rear foot. The body is moving back, but the frame is less settled than a slow step. The sword holds upright in front of the chest for about 250 ms while the dagger fighter steps out, which may read as a pause.
 
+## Ten-beat fight study (2026-11-12)
+
+**Watch it:** `experiments/pits-fight-study.html`. Contact sheet: `docs/pits-visual-checks/fight-study.png`. Code: `experiments/pits-fight.js`, on the spring movement in `pits-spring.js`. Tests: `tests/pits-fight.cjs`, `tests/visual/pits-fight-page.cjs`. The outcomes are scripted animation fixtures, not a validated Mythras sequence.
+
+**Direction agreed with the owner** after the reference videos (a stick-figure duel and a melee-swing sheet):
+- Keep the grounded bodies and footwork.
+- Take the timing contrast: stillness, then a short, fast strike with the easing kept extreme.
+- Add smears and impact flashes as a layer that can be switched off.
+- Kicks, flips and one-off choreography are out: in the Pits the moves come from the rules.
+
+**How a beat is written.** Key poses for the body; steps with their weight (`Fighter.walk`); and blows aimed with `aim()`:
+- The hand snaps toward a point past the contact.
+- Over its last 60 to 150 ms the blade is brought exactly onto the contact.
+- The blade angle is the nearest one the arm can actually hold there: within reach, never folded against the shoulder, the wrist inside its turn.
+- Parries are aimed at the same point, so both blades meet.
+- A miss seen from the side is a point that falls just short of the body (about 8 units).
+
+**New rules in the simulation:**
+- Strikes can snap: faster, critically damped.
+- Springs are per fighter; the fight uses firm springs, with damping 0.88 to 0.97 and under 1% overshoot.
+- Hips sink rather than overstretch a planted leg.
+- A blade rests on the floor rather than going through it.
+- In the fight, a hand goes round its own shoulder rather than through it, so elbows do not flip.
+- Runs resume from checkpoints, so the page builds in about 0.4 s rather than 2.5 s; the result is identical.
+
+**The beats.**
+
+| # | What happens | Contact |
+|---|---|---|
+| 1 | A still start; A comes in a short step (front foot, then rear); B gives a little. Points on different lines. | None |
+| 2 | Diagonal cut from a shoulder chamber on a step; B leans in and meets it in front of the body, near A's point; knees and elbow give; the cut is turned down and wide. | Parry, exact |
+| 3 | B advances (front foot, rear foot follows) and cuts rising from a low chamber at A's ribs; A draws the front foot back, turns, drops the point; the cut falls about 8 short and is reined in. | Near miss |
+| 4–5 | A closes the rear foot, then steps in with a cut at B's forward thigh; B takes the front foot back (weight onto the rear leg) and lowers the blade; the blades meet low; A's travel stops in the front leg and hips, B sinks and holds. Bound through the decision. | Bind, exact |
+| 6 | A lifts off B's blade, chambers and cuts high, following with rear then front foot; B steps away and parries above the head. | Parry, exact |
+| 7 | From the high parry B cuts short onto A's sword forearm; the arm is knocked back and in, and the guard closes. The forearm stays marked. | On the forearm |
+| 8 | B advances and thrusts; A gives a step and deflects the point up and out from waist height, arm bent; B's blade is carried outside the line. | Deflection, exact |
+| 9 | A steps into the opening and cuts B's forward thigh; the pelvis drops, the chest comes back up, the sword arm flies up and back. The thigh stays marked. | On the thigh |
+| 10 | B's weight drops onto the cut side; the rear foot is dragged under; B sits down hard and goes over onto the back, the sword along the floor, and never rises. A pulls the blade out, steps off twice, and stands guard with the point down and the cut arm held in. | None |
+
+**Checked how.** Numbers, held by `tests/pits-fight.cjs`:
+- Limbs within their length and wrists within their turn; nothing below the floor.
+- Planted feet do not slide; steps lift, travel only off the floor, and move the weight.
+- No snaps, and the springs are firm.
+- All six contacts are exact, the miss is a near miss, and no blade enters a body outside the contacts.
+- Parries stop the cut, and the wounds make the body react.
+- Holds are still and resume without a jump; nobody returns to the opening guard.
+- Injuries persist; B goes down and stays down; A ends standing.
+
+Stills at 600 ms through the whole fight (normal-speed spacing) and at 70 to 90 ms through beats 3 and 8 to 10 (half-speed spacing). In the browser, mechanics only. Whether it reads as one connected fight at speed is the owner's call.
+
+**Still weak:**
+- Blades briefly cross in transitions (for example early in beat 3) where, from the side, they pass each other in depth.
+- Hands come within a few units of the other blade near the hilts at the parries.
+- B's legs fold awkwardly for a moment as it sits down.
+- Several requested blade angles were adjusted to what the arm can hold (logged in `seq.notes`): B's low cover points less steeply down; the cut to the forearm comes in flatter than asked.
+- Everything is tuned for this one fight; the live Pits would need these phrases generalised.
+
 ## For Sonnet: routine defects in the pose stage
 
 Items 2 and 3 now apply only to the pose stage behind `?stage=poses`; fix them only if the owner wants to keep it. Item 1 is fixed for both stages (2026-11-12), item 4 is done.

@@ -38,3 +38,7 @@
 .pc-gap{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 3}
 .pc-strain{fill:none;stroke:var(--accent);stroke-width:2.5}
 .pc-grip{fill:none;stroke:var(--accent);stroke-width:2}
+.pc-smear{fill:var(--bone-dim);stroke:none;pointer-events:none}
+.pc-marks i.beat{height:16px;width:1px;background:var(--line)}
+.pc-marks i.beat::after{content:attr(data-n);position:absolute;top:15px;left:-3px;font-size:10px;color:var(--bone-dim)}
+.pc-scrub .pc-marks{margin-bottom:12px}
