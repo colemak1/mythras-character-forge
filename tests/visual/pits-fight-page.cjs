@@ -30,6 +30,14 @@ let passed=0;const ok=n=>{passed++;console.log('PASS '+n);};
   const n=await run(1),h=await run(.5);
   assert(!s.held,'stopped for a decision with stops off');
   assert(n>1200&&h>500&&h<n*.7,'normal advanced '+n.toFixed(0)+' ms, half '+h.toFixed(0)+' ms in the same time');
+  // the fight plays at 1.5 times its own time (owner, 2026-11-12): 1.5 s of Normal covers well over 1.5 s of fight
+  assert(n>1850,'normal advanced only '+n.toFixed(0)+' ms of fight in 1.5 s');
+  // the pace slider: at 2 (twice the current pace) the same 1.5 s covers about twice as much
+  await page.$eval('#pcPace',e=>{e.value='2';e.dispatchEvent(new Event('input'));});
+  const d=await run(1);
+  assert(d>n*1.6,'pace 2 advanced '+d.toFixed(0)+' ms against '+n.toFixed(0));
+  assert(/2\.00× current \(3\.00× fight time/.test(await page.$eval('#pcPaceOut',e=>e.textContent)),'pace readout');
+  await page.$eval('#pcPace',e=>{e.value='1';e.dispatchEvent(new Event('input'));});
   ok('continuous playback; half speed covers about half the fight time ('+Math.round(n)+' vs '+Math.round(h)+' ms in 1.5 s)');
 
   // decision stops on: holds at the first boundary, the picture stays, resume continues from it
@@ -53,10 +61,17 @@ let passed=0;const ok=n=>{passed++;console.log('PASS '+n);};
   const smeared=await page.evaluate(()=>{const x=window.pitsExchange;let n=0;
     for(const c of x.seq.contactList)for(let t=c.t-120;t<=c.t;t+=4){x.seek(t);if(document.getElementById('pcFx').innerHTML.includes('pc-smear'))n++;}return n;});
   assert(smeared>0,'no smear drawn in the strikes before any contact');
+  // the final wound shakes the picture, with a bright core in the flash
+  const hit=()=>page.evaluate(()=>{const x=window.pitsExchange,w=x.seq.contactList[x.seq.contactList.length-1];
+    x.seekShown(window.PitsSpring.shownAt(x.seq,w.t)+20);
+    return {tr:document.getElementById('pcShake').getAttribute('transform')||'',fx:document.getElementById('pcFx').innerHTML};});
+  const on=await hit();
+  assert(/translate/.test(on.tr)&&on.fx.includes('pc-woundfx-core'),'no shake or no flash core at the final wound');
   await page.uncheck('#pcSmear');
   const off=await page.evaluate(()=>document.getElementById('pcFx').innerHTML);assert.equal(off,'','smears or flashes drawn with the layer off');
+  assert.equal((await hit()).tr,'','the picture shakes with the layer off');
   await page.check('#pcSmear');
-  ok('beat buttons land on their beats; smears and flashes can be switched off');
+  ok('beat buttons land on their beats; smears, flashes and shake can be switched off');
   assert.deepEqual(errors,[]);
 
   if(process.env.PITS_SHOTS){
