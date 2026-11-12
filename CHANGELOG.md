@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: weapon profiles and the thrust family (step 3 of the path to the live Pits)
+
+- **Weapon profiles in the exchange writer.** Each fighter's weapon gives a blade length and a family: short blades and the rapier thrust, the swords cut. The sword phrases fit any blade (contact points, measure, a long point lifted when a short weapon comes inside it).
+- **Thrust family:** a thrust that lands (any location), one that falls short, and the deflection for a parried thrust. The collapse now follows any blow that ends the fight.
+- **Generated study:** `pits-fight-study.html?seq=thrust`, a dagger against a broadsword, built from scripted records.
+- **The sweep:** `tests/sweep/pits-sweep.cjs` checks 1,008 one-exchange fights (six weapons against each other, every location, four results) against the movement rules; all pass. CI runs a sample.
+- **Fixes:** the parried cut, turned down, no longer passes close to the defender's sword elbow; a fighter stepping back out of a too-close measure lifts the point away instead of lowering it through the other.
+- Still not wired into the live Pits (owner: everything lands at once).
+
 ## The Pits: the exchange writer (step 1 of the path to the live Pits)
 
 - **New `experiments/pits-writer.js`.** It turns resolved exchanges, in the engine's terms (attacker, hit location, outcome, damage, what follows), into the spring movement, one exchange after another, each starting from wherever the last one left both fighters. Phrases are written for an attacker and a defender, relative to where each stands; the attacker takes the measure first when the gap is not the phrase's, and either fighter gathers a stance left too wide or too narrow.

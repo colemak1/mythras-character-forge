@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-12 by Claude (Pits: exchange writer, step 1)_
+_Last updated: 2026-11-12 by Claude (Pits: weapon profiles and the thrust family)_
 
 ## Where things stand
 
@@ -16,7 +16,9 @@ _Last updated: 2026-11-12 by Claude (Pits: exchange writer, step 1)_
 
 ## Next
 
-000000000000. **Next, Claude:** step 3 of "Path to the live Pits" in `docs/pits-animation-direction.md`: weapon families one at a time (thrust, shields, heavy one-handed, two-handed, long thrust, flexible), each with a generated study, plus the automated sweep (step 4), starting with the two open faults listed under "Exchange writer ... Still weak". **Owner's rule (2026-11-12):** no live-stage step on its own; everything lands in the live Pits at once when all families are done. Work stays on branch `claude/go-wf0bsg` (pushed, no PR) until then.
+0000000000000. **Next, Claude:** the next weapon family, **shields** (block with the shield, cover posture, bash), then heavy one-handed, two-handed, long thrust, flexible: one family at a time, each with a generated study (`pits-fight-study.html?seq=...`) and its weapons added to the sweep (`tests/sweep/pits-sweep.cjs`). **Owner's rule (2026-11-12):** nothing goes live until all families are done; work stays on branch `claude/go-wf0bsg` (pushed, no PR).
+
+000000000000. **Claude, done 2026-11-12 (weapon profiles and the thrust family, step 3):** weapon lengths and families in the writer; thrust lands, falls short, deflected; collapse after any lethal blow; the two open faults fixed. Sweep: 1,008 fights (dagger, shortsword, rapier, broadsword, longsword, falchion against each other) all within the movement rules. **Owner (optional):** watch `experiments/pits-fight-study.html?seq=thrust` (on the branch, not deployed) and say whether the dagger looks right. Details: `docs/pits-animation-direction.md`, "Weapon families".
 
 00000000000. **Claude, done 2026-11-12 (exchange writer, step 1):** `experiments/pits-writer.js` turns engine-shaped records into the spring movement from wherever both fighters stand (measure and stance handled). The fight study is now the writer fed eight fixture records (`experiments/pits-fixtures.js`) and passes all 19 checks unchanged. New phrase "cut lands" for hits from an ordinary exchange. `tests/pits-writer.cjs`: roles swapped, another order, all 84 single exchanges. Details and weak points: `docs/pits-animation-direction.md`, "Exchange writer". **Owner:** nothing to watch; the fight study looks the same (one decision boundary is 80 ms later).
 

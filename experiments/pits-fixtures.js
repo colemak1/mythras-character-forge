@@ -14,7 +14,20 @@ const FIGHT=[
   {attacker:'a',weapon:'broadsword',loc:'rleg',outcome:'wound',lost:8,               // 9. the thigh cut that ends it
     after:[{type:'limb',loc:'rleg',leg:true},{type:'end',winner:'a',how:'injury'}]},
 ];
-const api={FIGHT};
+// The thrust family's study (step 3): a dagger (A) against a broadsword (B). Every thrust phrase, and the sword's cuts
+// met by the dagger: B's cut parried at the body and at the head, a slipped cut, A's thrust falling short, deflected,
+// landing, and the stab that ends it. Also scripted fixtures, not a validated Mythras sequence.
+const THRUST=[
+  {attacker:'b',weapon:'sword',loc:'chest',outcome:'parried',lost:0},
+  {attacker:'a',weapon:'dagger',loc:'chest',outcome:'miss',lost:0},
+  {attacker:'b',weapon:'sword',loc:'head',outcome:'parried',lost:0},
+  {attacker:'a',weapon:'dagger',loc:'abdomen',outcome:'parried',lost:0},
+  {attacker:'b',weapon:'sword',loc:'chest',outcome:'evaded',lost:0},
+  {attacker:'a',weapon:'dagger',loc:'rarm',outcome:'wound',lost:2},
+  {attacker:'a',weapon:'dagger',loc:'abdomen',outcome:'wound',lost:7,
+    after:[{type:'end',winner:'a',how:'injury'}]},
+];
+const api={FIGHT,THRUST};
 root.PitsFixtures=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

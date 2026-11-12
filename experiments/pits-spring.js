@@ -419,7 +419,7 @@ function frame(seq,t){
 // Other sequences (pits-fight.js) register here and are built with build(id); the short exchange is the default.
 const SEQS={};
 function buildAny(id){return id&&SEQS[id]?SEQS[id]():build();}
-const api={build:buildAny,register:(id,fn)=>{SEQS[id]=fn;},frame,joints,world,sample,simulate,Fighter,SPRING,LAG,CH,REC,GROUND,
+const api={build:buildAny,register:(id,fn)=>{SEQS[id]=fn;},has:id=>!!SEQS[id],frame,joints,world,sample,simulate,Fighter,SPRING,LAG,CH,REC,GROUND,
   // the pieces a sequence is written with
   pose,solve,torso,handAt,offFor,footX,footY,sm,rad,norm,WRIST,ARM,PM,resumeFrom,
   seqTime:PM.seqTime,shownDur:PM.shownDur,shownAt:PM.shownAt};

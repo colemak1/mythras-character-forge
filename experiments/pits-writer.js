@@ -28,6 +28,26 @@ const LIFE=(ph)=>({amp:{px:2.2,py:1.3,lean:1.4,bend:.8,head:1.6,turn:1.5,hx:1.8,
   ph:Object.fromEntries(['px','py','lean','bend','head','turn','hx','hy','wr','ox','oy'].map((c,i)=>[c,ph+i*1.7]))});
 const r2=t=>Math.round(t/REC)*REC;
 
+// ----- weapons: how each is held and moved (the stage's weapon keys, pitsStageWeaponKind in pits-stage.js) -----
+// family 'cut': the one-handed sword phrases. family 'thrust': short blades and the rapier (the point leads).
+// Phrases are written for the broadsword (92); contact points along a blade scale with its length, and the attacker
+// stands closer or further by the difference in reach. Other weapons have no family yet (later steps).
+function profile(key){
+  const k=String(key||'sword');
+  if(/^(dagger|knife|main-gauche)$/.test(k))return {key:k,len:50,family:'thrust'};
+  if(k==='shortsword')return {key:k,len:68,family:'thrust'};
+  if(k==='rapier')return {key:k,len:112,family:'thrust',thin:true};
+  if(k==='sword'||k==='broadsword')return {key:k,len:92,family:'cut'};
+  if(k==='longsword')return {key:k,len:104,family:'cut'};
+  if(/^(falchion|sabre|scimitar)$/.test(k))return {key:k,len:84,family:'cut'};
+  return null;
+}
+const SWORD=92,REACH=.75;
+// a contact point written for the broadsword, on this blade: on a shorter blade at the same fraction of its length;
+// on a longer one with as much blade beyond it as the broadsword has (the extra length is on the hilt side, so a long
+// blade's point does not reach past a contact into the other's body)
+const al=(f,along)=>f.weapon.len<=SWORD?along*f.weapon.len/SWORD:f.weapon.len-(SWORD-along);
+
 // where a fighter stands: the midpoint of its feet as planned so far (the last step written for each foot)
 function planned(f,foot){let s=null;for(const x of f.feet[foot])if(!s||x.t1>=s.t1)s=x;return s?s.x:f.home[foot];}
 const standAt=f=>(planned(f,'ff')+planned(f,'bf'))/2;
@@ -50,9 +70,12 @@ function placed(f,dx){
 function create(opt){
   opt=opt||{};
   const names=opt.names||{a:'A',b:'B'};
+  const wk={a:'sword',b:'sword',...(opt.weapons||{})},notes=[];
+  const arm=id=>{const p=profile(wk[id]);if(!p)notes.push({kind:'stand-in',weapon:wk[id],who:id});
+    return {...WEAPONS.sword,name:wk[id],...(p||profile('sword')),key:wk[id]};};
   // on guard, points threatening but on different lines (A's a little higher, B's lower), so they do not cross
-  const A=new Fighter('a',480,1,{...WEAPONS.sword},{...SWORD_GUARD,h:[27,-28],w:54});
-  const B=new Fighter('b',720,-1,{...WEAPONS.sword},{...SWORD_GUARD,h:[26,-36],w:16});
+  const A=new Fighter('a',480,1,arm('a'),{...SWORD_GUARD,h:[27,-28],w:54});
+  const B=new Fighter('b',720,-1,arm('b'),{...SWORD_GUARD,h:[26,-36],w:16});
   for(const f of [A,B]){
     f.spring=FIRM;f.minReach=20;
     // smooth: every key is eased into (35 ms; strikes a third of that), so nothing starts from rest with a jolt
@@ -63,7 +86,7 @@ function create(opt){
   A.life=LIFE(0);B.life=LIFE(2.1);
   const F={a:A,b:B};
   const seq={id:opt.id||'fight',title:opt.title||'A fight',fighters:F,marks:[],pauses:[],stops:[],fx:[],wounds:[],contacts:{},
-    contactList:[],misses:[],notes:[],beats:[],grips:[],names,scripted:true,records:[],exchanges:[]};
+    contactList:[],misses:[],notes,beats:[],grips:[],names,scripted:true,records:[],exchanges:[]};
 
   // ----- looking ahead: the poses at time t with everything written so far -----
   // Each look carries on from the last run's checkpoint before the earliest thing written since (dirty), so writing
@@ -83,6 +106,7 @@ function create(opt){
     else if(name==='forearm')p=L(j.E,j.Hn,u==null?.5:u);
     else if(name==='offarm')p=L(j.oE,j.oHn,u==null?.5:u);
     else if(name==='thigh')p=L(j.P,j.K,u==null?.55:u);
+    else if(name==='bthigh')p=L(j.P,j.bK,u==null?.55:u);
     else if(name==='chest')p=L(j.M,j.S,.5);
     else if(name==='abdomen')p=L(j.P,j.M,.5);
     else p=j[name];
@@ -96,18 +120,26 @@ function create(opt){
       const fore=solve({...q,h,wr:0},f.weapon.len).w,g=PS.norm(w-fore);
       if(g>=PS.WRIST[0]+1&&g<=PS.WRIST[1]-1){if(d)seq.notes.push({f:f.id,asked:w0,got:w});return w;}
     }
-    seq.notes.push({f:f.id,asked:w0,got:null});return w0;
+    return null;
+  }
+  // the angle, and if no angle fits at that point of the blade, a point a little further out or nearer the hilt
+  // (a longer blade, close in): {w, along}. The broadsword's own contacts all fit at the point asked.
+  function fit(f,q,P,along,w0){
+    for(const k of [1,1.1,.9,1.2,.8,.7]){const a=Math.min(f.weapon.len-2,along*k),w=feasible(f,q,P,a,w0);
+      if(w!=null){if(k!==1)seq.notes.push({f:f.id,kind:'along',asked:along,got:a});return {w,along:a};}}
+    seq.notes.push({f:f.id,asked:w0,got:null});return {w:w0,along};
   }
   // A blow, a parry or a deflection: from tKey the hand goes (snapping) toward a point past the contact (through),
   // and over the last `blend` ms the blade is brought exactly to it: the point `along` the blade on target at tc,
   // at blade angle w. hold: how long the contact holds. The blade angle is the nearest the arm can hold there.
   function aim(f0,tKey,tc,target,w,along,o){
-    const f=U(f0);o=o||{};tc=r2(tc);
+    const f=U(f0);o=o||{};tc=r2(tc);along=al(f,along);
     const c=look(tc),q=pose(f,c.out[f.id],tc),P=target(tc,c);
-    w=feasible(f,q,P,along,w);
+    ({w,along}=fit(f,q,P,along,w));
     const h=handAt(f,q,P,along,w),th=o.through||[0,0];
     f.key(tKey,{h:[h[0]+th[0],h[1]+th[1]],w:o.wKey==null?w:o.wKey},o.order||'attack',{snap:o.snap==null?true:o.snap});
     f.pin('h',along,target,tc-(o.blend||70),tc,tc+(o.hold||0),w);
+    P.along=along;          // the point of the blade actually on the contact (already for this blade)
     return P;
   }
   // A decision boundary must freeze a pose, not a blur: both feet down and nothing moving fast. If the phrase's own
@@ -133,7 +165,10 @@ function create(opt){
     mark:(t,who,label)=>seq.marks.push({t,who,label}),
     beat(n,t,short,label){seq.beats.push({n,t,short,label});W.mark(t,'both',n+'. '+label);},
     pause:(t,label)=>seq.pauses.push({t,label}),
-    contact(t,kind,P,parts){const c={t:r2(t),kind,at:P,...parts};seq.contactList.push(c);return c;},
+    contact(t,kind,P,parts){
+      for(const k of ['a','b'])if(parts[k]&&!parts[k].exact)parts[k]={...parts[k],along:al(F[parts[k].who],parts[k].along)};
+      for(const k of ['a','b'])if(parts[k])delete parts[k].exact;
+      const c={t:r2(t),kind,at:P,...parts};seq.contactList.push(c);return c;},
     stop:(t,d)=>seq.stops.push({t:r2(t),d}),
     fx:(t,kind,at,power)=>seq.fx.push({t:r2(t),kind,at,power}),
     nm:f=>names[U(f).id]};
@@ -284,7 +319,7 @@ PHRASES.armCut={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:20,run(W,a,d,t7,st
   a.key(tc+200,{px:14,py:71,lean:8,bend:7,head:-10,h:[22,-22],w:6,o:[16,-22]});
   W.stop(tc,190);
   W.mark(tc,d.id,'The blade lands on '+D+'\'s sword forearm: the arm is knocked back, the elbow comes in, the guard closes');
-  return {end:tc+280,label:D+' is cut on the forearm and has closed up.',hurt:{[d.id]:'rarm'}};
+  return {end:tc+280,tc,label:D+' is cut on the forearm and has closed up.',hurt:{[d.id]:'rarm'}};
 }};
 
 // ----- an advancing thrust, deflected up and out -----
@@ -324,7 +359,7 @@ PHRASES.legCut={ref:{a:68,d:28},gap:144,width:{a:64,d:84},lead:0,run(W,a,d,t9,st
   // (in the study the defender's blade had just been thrown out by a deflection; from anywhere else its point is
   // still in line, so it drops to cover low as the cut comes, too late)
   const inLine=()=>{const c=W.look(t9+60),j=solve(pose(d.f,c.out[d.id],t9+60),d.f.weapon.len);return Math.abs(PS.norm(j.w))<=45;};
-  if((!st.prev||st.prev.phrase!=='thrustDeflected'||st.prev.attacker===a.id)&&inLine())d.key(t9+60,{lean:8,bend:8,head:-12,h:[12,-32],w:-44,o:[10,-26]},'cover');
+  if((!st.prev||st.prev.phrase!=='thrustDeflected'||st.prev.attacker===a.id)&&inLine())d.key(t9+60,{lean:8,bend:8,head:-12,h:[12,-32],w:-44-Math.max(0,d.f.weapon.len-SWORD)*1.5,o:[10,-26]},'cover');   // a longer blade covers more steeply
   const P=W.aim(a,t9+150,tc,W.on(d,'thigh',.5),-40,62,{through:[6,-16],hold:40,blend:60});
   W.contact(tc,'wound',P,{a:{who:a.id,along:62},part:'thigh',on:d.id,target:'thigh'});
   if(!(st.lost>0)){
@@ -337,7 +372,10 @@ PHRASES.legCut={ref:{a:68,d:28},gap:144,width:{a:64,d:84},lead:0,run(W,a,d,t9,st
   W.stop(tc,220);W.fx(tc,'wound',P,1.8);
   // the cut leg gives at once; the pelvis drops, the chest comes back up over it and the arms go out to save it
   d.impulse(tc+1,{py:-380,lean:-100,head:-110});
-  d.key(tc+10,{px:2,py:44,lean:-6,bend:4,head:-6,turn:-6,h:[-6,16],w:130,o:[24,-8]},'together');     // the sword arm flies up and back
+  // the sword arm flies up and back (a blade longer than the broadsword, held point down, would sweep its point
+  // through the attacker on the way up, so it is flung back with the point going down instead)
+  const lng=d.f.weapon.len>SWORD&&(()=>{const c=W.look(tc),j=solve(pose(d.f,c.out[d.id],tc),d.f.weapon.len);return PS.norm(j.w)<0;})();
+  d.key(tc+10,{px:2,py:44,lean:-6,bend:4,head:-6,turn:-6,h:lng?[-10,-12]:[-6,16],w:lng?-130:130,o:[24,-8]},'together');
   W.mark(tc,d.id,'The cut lands on '+D+'\'s forward thigh: the leg gives, the pelvis drops and the chest comes back up over it');
   }
   if(!st.final){
@@ -378,7 +416,7 @@ PHRASES.cutLands={ref:{a:20,d:-11},gap:165,width:{a:64,d:70},lead:20,run(W,a,d,t
   d.key(tc-140,{lean:10,bend:6,head:-12,h:[22,-10],w:70,o:[6,-28]},'cover');
   const tgt=L.part==='Hd'?(t,c)=>{const p=W.on(d,'Hd')(t,c);return [p[0]+d.face*10,p[1]+4];}:W.on(d,L.part,L.part==='forearm'||L.part==='offarm'?.55:null);
   const P=W.aim(a,t2+300,tc,tgt,L.w,L.along,{through:[10,-18],hold:30,blend:60});
-  W.contact(tc,'wound',P,{a:{who:a.id,along:L.along},part:st.loc,on:d.id,target:L.part});
+  W.contact(tc,'wound',P,{a:{who:a.id,along:P.along,exact:true},part:st.loc,on:d.id,target:L.part});
   if(hurt)W.seq.wounds.push({t:W.r2(tc),who:d.id,part:L.mark,level:st.level||'minor'});
   W.stop(tc,hurt?190:110);W.fx(tc,'wound',P,hurt?1.3:.7);
   d.impulse(tc+1,Object.fromEntries(Object.entries(L.react).map(([c,v])=>[c,v*k])));
@@ -389,22 +427,86 @@ PHRASES.cutLands={ref:{a:20,d:-11},gap:165,width:{a:64,d:70},lead:20,run(W,a,d,t
   // the defender rides it and comes back into a closed, hurt guard
   d.key(tc+260,{px:-6,py:72,lean:10,bend:10,head:-12,turn:-8,h:[16,-16],w:60,o:[10,-26]});
   W.mark(tc,d.id,hurt?'The cut lands: '+L.say:'The cut lands but does not get through');
-  return {end:tc+340,label:hurt?D+' is cut.':'The blow is stopped by armour.'};
+  return {end:tc+340,tc,label:hurt?D+' is cut.':'The blow is stopped by armour.'};
+}};
+
+// ===== the thrust family: short blades and the rapier. The point leads, the arm extends last, and the blade comes
+// back out along the line it went in. Written in the same frame as the deflected thrust. =====
+const THRUST_AT={
+  head:{part:'Hd',w:6,react:{px:-70,lean:-70,head:220}},
+  chest:{part:'chest',w:-2,react:{px:-90,lean:-110,head:90}},
+  abdomen:{part:'abdomen',w:-10,react:{px:-60,py:-120,lean:120,bend:90,head:-80}},
+  rarm:{part:'forearm',w:-8,react:{px:-50,hx:-300,hy:-200,wr:-120,lean:-40,head:90}},
+  larm:{part:'offarm',w:-6,react:{px:-50,ox:-260,oy:-160,turn:-90,lean:-30}},
+  rleg:{part:'thigh',w:-30,react:{py:-160,lean:-40,head:-60}},
+  lleg:{part:'bthigh',w:-32,react:{py:-160,lean:-40,head:-60}}};
+const XL={back:1,px:1,w:1.5,deep:.8};
+const MARK={head:'head',chest:'chest',abdomen:'abdomen',rarm:'rfore',larm:'larm',rleg:'rthigh',lleg:'lleg'};
+function thrustIn(W,a,t8){
+  // a short advance, the point in line, the arm extending last
+  a.key(t8,{lean:10,bend:6,head:-12,turn:4,h:[10,-20],w:4,o:[18,-22]},'attack');
+  a.walk('ff',t8+100,t8+250,70,{py:70,lift:8,settle:.62,load:.35});
+  a.walk('bf',t8+265,t8+390,-14,{py:66,lift:7,settle:.25,load:.25,lead:60});
+  a.key(t8+220,{lean:16,bend:8,head:-16,turn:12,o:[-20,-40]});
+}
+PHRASES.thrustLands={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d,t8,st){
+  const A=W.nm(a),D=W.nm(d),tc=t8+420,T=THRUST_AT[st.loc]||THRUST_AT.chest,hurt=st.lost>0,k=hurt?1:.45;
+  W.beat(W.n(),t8,'Thrust lands',A+' advances with a thrust at '+D+'\'s '+(st.loc||'chest')+'; '+D+'\'s cover is too late');
+  thrustIn(W,a,t8);
+  d.key(tc-120,{lean:6,bend:8,head:-10,turn:-6,h:[16,-14],w:60,o:[8,-28]},'cover');
+  const tgt=T.part==='Hd'?(t,c)=>{const p=W.on(d,'Hd')(t,c);return [p[0]+d.face*10,p[1]+4];}:W.on(d,T.part,/arm$/.test(T.part)?.55:null);
+  // a longer blade is driven less far past the mark, so it is not buried deeper than it can be drawn out
+  const deep=Math.max(0,16-Math.max(0,a.f.weapon.len-SWORD)*XL.deep);
+  const P=W.aim(a,t8+260,tc,tgt,T.w,84,{through:[deep,0],hold:30,blend:70});
+  W.contact(tc,'wound',P,{a:{who:a.id,along:P.along,exact:true},part:st.loc,on:d.id,target:T.part});
+  if(hurt)W.seq.wounds.push({t:W.r2(tc),who:d.id,part:MARK[st.loc]||'chest',level:st.level||'minor'});
+  W.stop(tc,hurt?170:100);W.fx(tc,'wound',P,hurt?1.2:.6);
+  d.impulse(tc+1,Object.fromEntries(Object.entries(T.react).map(([c,v])=>[c,v*k])));
+  // drawn straight back out along the line it went in, then a guard over the front knee
+  // (a blade longer than the broadsword is drawn back further and settles with the point higher, clear of the body)
+  const xl=Math.max(0,a.f.weapon.len-SWORD);
+  // the body's travel stops at the contact too, or it carries the blade further in while the hand draws back
+  a.impulse(tc+1,{hx:'stop',hy:'stop',wr:'stop',px:'stop'});
+  a.key(tc+40,{h:[-6-xl*XL.back,-22]},'together',{snap:2});
+  a.key(tc+300,{px:24-xl*XL.px,py:72,lean:10,bend:6,head:-12,h:[14-xl*XL.back*.5,-22],w:20+xl*XL.w,o:[16,-24]});
+  d.key(tc+260,{lean:10,bend:10,head:-12,turn:-8,h:[16,-16],w:50,o:[10,-26]});
+  W.mark(tc,d.id,hurt?'The thrust goes in and is drawn out':'The thrust lands but does not get through');
+  return {end:tc+340,tc,label:hurt?D+' is stabbed.':'The thrust is stopped by armour.'};
+}};
+PHRASES.thrustMissed={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d,t8){
+  const A=W.nm(a),D=W.nm(d),tm=t8+420;
+  W.beat(W.n(),t8,'Thrust, short',A+' advances with a thrust; '+D+' gives two steps back and the point falls short');
+  thrustIn(W,a,t8);
+  // the defender gives ground: front foot, then rear foot, the body back and the guard closed
+  d.walk('ff',t8+80,t8+240,100,{py:70,lift:9,settle:.3,load:.4});
+  d.walk('bf',t8+250,t8+390,14,{py:71,lift:8,settle:.45,load:.3,lead:60});
+  d.key(t8+120,{lean:-2,bend:6,head:-6,turn:-10,h:[12,-14],w:62,o:[8,-28]},'cover');
+  const M=(()=>{const c=W.look(tm),p=W.on(d,'chest')(tm,c);return [p[0]+d.face*14,p[1]-2];})();
+  W.aim(a,t8+260,tm,W.fixed(M),-2,90,{through:[8,0],blend:60});
+  a.key(tm+40,{h:[0,-22],lean:10,bend:6},'attack',{snap:1.4});
+  a.key(tm+300,{px:24,py:72,lean:10,bend:6,head:-12,h:[14,-22],w:20,o:[16,-24]});
+  W.seq.misses.push({t:W.r2(tm),who:a.id,on:d.id,t0:W.r2(tm-120),t1:W.r2(tm+140)});
+  W.mark(tm,a.id,'Short: the point stops just in front of '+D+' and is drawn back');
+  return {end:tm+340,label:A+'\'s thrust has fallen short.'};
 }};
 
 // ----- the end: the defender goes down on the cut leg and over; the attacker recovers and stands guard -----
-// (follows legCut directly when the engine says the blow ended the fight: the same frame, written on from it)
-PHRASES.collapse={ref:null,gap:null,lead:0,run(W,a,d,t10,st){
+// (follows the blow when the engine says it ended the fight: after the thigh cut in the same frame, written on from
+// it; after any other blow from where the two stand, with the same falls and steps)
+PHRASES.collapse={ref:{a:68,d:28},gap:null,lead:0,run(W,a,d,t10,st){
   const A=W.nm(a),D=W.nm(d),tc=st.tc;
   W.beat(W.n(),t10,'Collapse',D+' goes down onto the cut leg and over; '+A+' stops the blade, recovers its balance and stands guard');
   // from the wound on, the defender is no longer guarding: the drift fades, and once down only the breathing is left
   d.f.life.scale=(tt,c)=>tt<tc?1:tt>t10+700?(c==='lean'||c==='bend'?1.2:0):Math.max(0,1-(tt-tc)/400);
   // the cut leg cannot hold: the weight drops onto that side, the hips go down and back past the rear foot and the
   // defender sits down hard, then goes over onto the back. Nothing comes back up.
-  d.key(t10,{px:-2,py:44,lean:-16,bend:10,head:4,h:[10,-36],w:-60,o:[-14,-30]},'together');
-  d.key(t10+260,{px:-20,py:18,lean:-40,bend:12,head:10,h:[30,-30],w:-6,o:[-30,-24]});
-  d.key(t10+560,{px:-22,py:13,lean:-70,bend:8,head:6,h:[40,-16],w:0,o:[-40,-10]});
-  d.key(t10+900,{lean:-80,bend:6,head:2,h:[44,-12],w:2,o:[-44,-6]});
+  // after the thigh cut the sword goes down in front, along the floor. After a blow at close quarters the other is
+  // right there, so the sword goes up and back, over the falling body's own side, and lies behind it.
+  const back=!st.inFrame,BW=back?[150,-178,178,176]:[-60,-6,0,2];
+  d.key(t10,{px:-2,py:44,lean:-16,bend:10,head:4,h:back?[4,-24]:[10,-36],w:BW[0],o:[-14,-30]},'together');
+  d.key(t10+260,{px:-20,py:18,lean:-40,bend:12,head:10,h:[30,-30],w:BW[1],o:[-30,-24]});
+  d.key(t10+560,{px:-22,py:13,lean:-70,bend:8,head:6,h:[40,-16],w:BW[2],o:[-40,-10]});
+  d.key(t10+900,{lean:-80,bend:6,head:2,h:[44,-12],w:BW[3],o:[-44,-6]});
   // the rear foot is dragged in under the body as the defender sits; the cut leg slides out in front
   d.step('bf',t10+80,t10+260,22,4);
   d.step('ff',t10+300,t10+560,58,4);
@@ -426,9 +528,15 @@ PHRASES.collapse={ref:null,gap:null,lead:0,run(W,a,d,t10,st){
 // rec: {attacker:'a'|'b', loc, outcome (the stage's words: parried, full-parry, partial-parry, wound, armour, zero,
 // miss, evaded, fumble), lost, action ('cut' or 'thrust'; a sword thrusts at the abdomen unless told), after:[cues]}
 const ZONE=loc=>loc==='head'?'high':/leg$/.test(loc||'')?'low':/arm$/.test(loc||'')?'arm':'mid';
-function pick(rec,prev){
+function pick(rec,prev,family){
   const o=rec.outcome,z=ZONE(rec.loc),act=rec.action||(rec.loc==='abdomen'?'thrust':'cut');
   const parried=/parr|ward/.test(o)&&!(rec.lost>0),missed=/^(miss|evaded|fumble)$/.test(o);
+  if(family==='thrust'){
+    // short blades and the rapier thrust; a thrust at the legs that is parried is met low, like a cut (stand-in)
+    if(missed)return {id:'thrustMissed',exact:true};
+    if(parried)return z==='low'?{id:'lowBind',exact:false}:{id:'thrustDeflected',exact:true};
+    return {id:'thrustLands',exact:!/^partial/.test(o)};
+  }
   if(missed)return {id:'cutMissed',exact:act==='cut'&&z==='mid'};
   if(parried){
     if(act==='thrust')return {id:'thrustDeflected',exact:true};
@@ -477,8 +585,12 @@ function play(S,id,aid,t,st,keep){
       f.walk('bf',t0+170,t0+330,planned(f,'bf')+e,{py:74,lift:7,settle:.5,load:.35});
       S.seq.notes.push({kind:'gather',t,who:f.id,by:Math.round(e)});u=Math.max(u,t0+370);}
     t=u;}
+  // a defender with the clearly longer weapon lifts the point as the shorter one comes inside it (the side view
+  // cannot show the point carried off the line, and a point held in line would run into the attacker)
+  if(!keep&&P.gap!=null&&D.weapon.len>A.weapon.len+15){const t0=Math.max(t,...D.keys.map(k=>k.t+110));
+    D.key(t0,{h:[14,-14],w:72},'cover');S.seq.notes.push({kind:'inside',t:t0,who:D.id});}
   if(P.gap!=null&&!keep){
-    const e=gapOf(A,D)-P.gap;
+    const e=gapOf(A,D)-(P.gap+(A.weapon.len-SWORD)*REACH);
     if(Math.abs(e)>1){S.seq.notes.push({kind:'measure',t,who:aid,by:Math.round(e)});t=takeMeasure(A,t,e);}
   }
   const a=placed(A,keep?keep.a:standAt(A)-P.ref.a),d=placed(D,keep?keep.d:standAt(D)-P.ref.d);
@@ -495,7 +607,7 @@ function write(records,opt){
   if(first){const r=play(S,'approach',first.attacker,t);t=W.settle(r.end);W.pause(t,r.label);}
   for(const rec of records){
     seq.records.push(rec);
-    const p=pick(rec,seq.exchanges[seq.exchanges.length-1]);
+    const p=pick(rec,seq.exchanges[seq.exchanges.length-1],S.F[rec.attacker].weapon.family);
     if(!p.exact)seq.notes.push({kind:'stand-in',rec,phrase:p.id});
     const tStart=t;
     const r=play(S,p.id,rec.attacker,t,{level:rec.lost>=6?'major':'minor',loc:rec.loc,lost:rec.lost,final:ended(rec),
@@ -504,7 +616,7 @@ function write(records,opt){
     if(S.bind){S.bind.hold=r2(tStart+PHRASES[p.id].lead+120)-S.bind.t;S.bind=null;}
     if(r.bind)S.bind=r.bind;
     seq.exchanges.push({t:tStart,attacker:rec.attacker,phrase:p.id,end:r.end});
-    if(ended(rec)){const r2_=play(S,'collapse',rec.attacker,r.end,{tc:r.tc},r.dx);t=r2_.end;S.over=true;break;}
+    if(ended(rec)){const r2_=play(S,'collapse',rec.attacker,r.end,{tc:r.tc,inFrame:p.id==='legCut'},p.id==='legCut'?r.dx:null);t=r2_.end;S.over=true;break;}
     t=W.settle(r.end);W.pause(t,r.label+' The next decision.');
   }
   seq.end=t+(S.over?1900:1200);seq.dur=seq.end+10;

@@ -9,29 +9,8 @@ const PW=require('../experiments/pits-writer.js');
 const FX=require('../experiments/pits-fixtures.js');
 require('../experiments/pits-fight.js');
 let passed=0;const test=(n,f)=>{f();passed++;console.log('PASS '+n);};
-const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
-const seg=(p,a,b)=>{const vx=b[0]-a[0],vy=b[1]-a[1],u=Math.max(0,Math.min(1,((p[0]-a[0])*vx+(p[1]-a[1])*vy)/(vx*vx+vy*vy||1)));
-  return dist(p,[a[0]+vx*u,a[1]+vy*u]);};
-const BODY=['Hd','S','M','P','K','F','bK','bF','E'],J=[...BODY,'Hn','oE','oHn','tip'],ids=['a','b'],other={a:'b',b:'a'};
-// the movement rules of tests/pits-fight.cjs that hold for any fight (the first fault found, or null)
-function fault(q,step){
-  step=step||4;
-  const inC=t=>q.contactList.some(c=>t>=c.t-90&&t<=c.t+(c.hold||0)+90);
-  for(let t=0;t<=q.dur;t+=step)for(const id of ids){const j=PS.joints(q,id,t);
-    for(const k in j.over)if(j.over[k]>.6)return id+'.'+k+' over its length at '+t;
-    if(!inC(t))for(const n of BODY){const d=seg(PS.world(q,other[id],t,n),PS.world(q,id,t,'Hn'),PS.world(q,id,t,'tip'));
-      if(d<2)return id+'\'s blade '+d.toFixed(1)+' from '+other[id]+'.'+n+' at '+t;}}
-  for(const c of q.contactList){
-    if(dist(PS.world(q,c.a.who,c.t,'blade',c.a.along),c.at)>.5)return c.kind+' at '+c.t+': the blade is off the point';
-    if(c.b&&dist(PS.world(q,c.b.who,c.t,'blade',c.b.along),c.at)>.5)return c.kind+' at '+c.t+': the other blade is off the point';}
-  for(const p of q.pauses)for(const id of ids){const f=PS.frame(q,p.t)[id].pose;if(f.ffy||f.bfy)return id+' has a foot up at the boundary '+p.t;
-    for(const n of J)if(dist(PS.world(q,id,p.t,n),PS.world(q,id,p.t+16,n))>=3)return id+'.'+n+' jumps after the boundary '+p.t;}
-  for(const id of ids){let prev=PS.frame(q,0)[id].pose;for(let t=2;t<=q.dur;t+=2){const p=PS.frame(q,t)[id].pose;
-    for(const f of ['ff','bf'])if(Math.abs(p[f+'x']-prev[f+'x'])>.01&&p[f+'y']<1.5&&prev[f+'y']<1.5)return id+'.'+f+' slides at '+t;prev=p;}}
-  for(let t=2;t<=q.dur;t+=2)for(const id of ids)for(const n of J){const d=dist(PS.world(q,id,t-2,n),PS.world(q,id,t,n));
-    if(d>(n==='tip'?20:n==='Hn'||n==='E'?6:4))return id+'.'+n+' snaps '+d.toFixed(1)+' at '+t;}
-  return null;
-}
+const {fault,LOCS,RESULTS,other}=require('./lib/pits-motion-rules.cjs');
+const ids=['a','b'];
 const swap=r=>r.map(x=>({...x,attacker:other[x.attacker],after:x.after&&x.after.map(c=>c.winner?{...c,winner:other[c.winner]}:c)}));
 
 test('the fixtures are engine-shaped records, and the study is them, written exchange by exchange',()=>{
@@ -85,8 +64,8 @@ test('the faults found by trying other orders stay fixed: one parried cut three 
 });
 test('every result at every hit location, by either fighter, from the opening',()=>{
   const bad=[];let n=0;
-  for(const aid of ids)for(const loc of ['head','chest','abdomen','rarm','larm','rleg','lleg'])
-    for(const [o,lost] of [['parried',0],['partial-parry',2],['wound',3],['armour',0],['miss',0],['evaded',0]]){
+  for(const aid of ids)for(const loc of LOCS)
+    for(const [o,lost] of RESULTS){
       const q=PW.write([{attacker:aid,loc,outcome:o,lost}]),f=fault(q,8);n++;
       if(f)bad.push(aid+' '+loc+' '+o+': '+f);
       // a blow that gets through marks the part it lands on, and only when damage got through
@@ -94,5 +73,43 @@ test('every result at every hit location, by either fighter, from the opening',(
       if(o==='armour')assert.equal(q.wounds.length,0);
     }
   assert.deepEqual(bad,[],bad.join('\n'));assert.equal(n,84);
+});
+// ----- weapons (step 3): profiles, the thrust family, and a sample of the full sweep (tests/sweep/pits-sweep.cjs) -----
+test('weapons: a profile per weapon key; short blades and the rapier thrust, the swords cut; others are stand-ins',()=>{
+  const q=PW.write([{attacker:'a',loc:'chest',outcome:'wound',lost:3}],{weapons:{a:'dagger',b:'longsword'}});
+  assert.equal(q.fighters.a.weapon.len,50);assert.equal(q.fighters.b.weapon.len,104);
+  assert.equal(q.exchanges[0].phrase,'thrustLands');
+  const P=(fam,r)=>PW.pick({attacker:'a',lost:0,...r},null,fam).id;
+  assert.equal(P('thrust',{loc:'chest',outcome:'parried'}),'thrustDeflected');
+  assert.equal(P('thrust',{loc:'head',outcome:'miss'}),'thrustMissed');
+  assert.equal(P('thrust',{loc:'rleg',outcome:'wound',lost:2}),'thrustLands');
+  assert.equal(P('cut',{loc:'chest',outcome:'wound',lost:2}),'cutLands');
+  const s=PW.write([{attacker:'a',loc:'chest',outcome:'parried',lost:0}],{weapons:{a:'great-axe'}});
+  assert(s.notes.some(n=>n.kind==='stand-in'&&n.weapon==='great-axe'),'an unknown weapon is not noted as a stand-in');
+});
+test('contact points scale with the blade: the same fraction on a shorter blade, the same blade beyond on a longer one',()=>{
+  for(const [w,len] of [['dagger',50],['sword',92],['rapier',112]]){
+    const q=PW.write([{attacker:'a',loc:'chest',outcome:'parried',lost:0}],{weapons:{a:'sword',b:w}}),c=q.contactList[0];
+    assert(Math.abs(c.b.along-(len<=92?20*len/92:len-72))<1e-9,w+': the parry is at '+c.b.along);}
+});
+test('the thrust family\'s study (dagger against broadsword) keeps the movement rules',()=>{
+  const q=PS.build('thrust');assert.equal(fault(q),null);
+  for(const id of ['thrustMissed','thrustDeflected','thrustLands','cutParried','highParry'])
+    assert(q.exchanges.some(e=>e.phrase===id),'the study has no '+id);
+  assert.equal(q.beats[q.beats.length-1].short,'Collapse');assert(q.lead&&q.title);
+});
+test('a fight ended by any blow ends in the collapse, with the fallen weapon kept clear of the winner',()=>{
+  const END=[{type:'end',winner:'a',how:'injury'}];
+  for(const [w,loc] of [['dagger','abdomen'],['sword','chest'],['sword','head'],['rapier','chest']]){
+    const q=PW.write([{attacker:'a',loc,outcome:'wound',lost:8,after:END}],{weapons:{a:w,b:'sword'}});
+    assert.equal(q.beats[q.beats.length-1].short,'Collapse');assert.equal(fault(q,8),null,w+' '+loc);}
+});
+test('a sample of the sweep: one pairing per kind (short, long, cut, thrust, both ways), every location, four results',()=>{
+  const bad=[];
+  for(const [wa,wb] of [['dagger','sword'],['sword','dagger'],['rapier','longsword'],['longsword','rapier'],['shortsword','falchion'],['dagger','rapier']])
+    for(const loc of LOCS)for(const [o,lost] of [['parried',0],['wound',3],['armour',0],['miss',0]]){
+      const q=PW.write([{attacker:'a',loc,outcome:o,lost}],{weapons:{a:wa,b:wb}}),f=fault(q,8);
+      if(f)bad.push(wa+' v '+wb+' '+loc+' '+o+': '+f);}
+  assert.deepEqual(bad,[],bad.join('\n'));
 });
 console.log(passed+' passed');
