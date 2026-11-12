@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: fight replay, result screen back, range by weapon length, scoring removed
+
+- **Replay fight:** after a fight, a **Replay fight** button (in the end panel and on the Victory/Defeat window) plays the whole fight again as fight animations only (no dice, no tray, no Continue stops, no choices), back to back like one fluid fight. It starts both fighters at full health, steps the range and the wounds as they happened, and ends on the real result. **Stop replay** (or Quick pace) cuts it short. Nothing in the fight changes.
+- **Result screen:** closing the Victory/Defeat window no longer loses it. A **Show result** button in the end panel opens it again.
+- **Range meter:** the label under the arena now names the range by weapon length: the longer weapon's reach (Medium range, Long range, Very long range) while it controls the distance or the weapons are about even, and Close range once the shorter weapon has closed inside. Apart still shows the gap. During a replay it follows each beat's own range.
+- **Removed:** Glory, Momentum, Pit Marks (and their toast), the bout recap ("Pit Marks and streaks", hits and damage totals, moment of the bout) and the win-streak lines on the end screens. The Sound switch and the hit shake stay. The Gauntlet leaderboard on the setup screen is untouched.
+- No rules or saved data changed.
+
 ## The Pits: five bottom-third layouts to choose from
 
 - The bottom of the battle screen can be drawn five ways, picked from the new **Bottom** list in the top bar (also `?bottom=A` to `E`): **A** Command bar, **B** Duel table, **C** Ground dock, **D** Step flow, **E** Odds first. The current layout stays the default and the choice is remembered in the browser. The list is temporary: it goes once the owner picks one.

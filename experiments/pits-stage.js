@@ -723,18 +723,32 @@ function psMount(){
   PS.ready=true;PS.raf=requestAnimationFrame(psFrame);
   return true;
 }
+// The range state to draw: the one recorded with the beat being replayed, else the live one.
+const psRng=()=>(typeof V!=='undefined'&&V.busy&&V.shown&&V.shownRange)||{disengaged:!!S.disengaged,engagement:S.engagement,gap:S.gapMetres||0};
 function psRangeKey(){
-  const info=typeof engagementInfo==='function'?engagementInfo():{active:false};
-  return S.disengaged?'apart':!info.active?'even':S.engagement==='short'?'short':'long';
+  const info=typeof engagementInfo==='function'?engagementInfo():{active:false},r=psRng();
+  return r.disengaged?'apart':!info.active?'even':r.engagement==='short'?'short':'long';
+}
+// The range meter names the range by weapon length: the longer weapon's reach while it controls the distance
+// (or both are about even), Close once the shorter weapon has closed inside it.
+const PS_REACH_WORD=['Touch','Close','Medium','Long','Very long'];
+function psRangeWord(key,r){
+  if(key==='apart')return 'Apart'+(r.gap?' · '+r.gap+' m':'');
+  if(key==='short')return 'Close range';
+  const w=id=>(typeof ARENA_WEAPONS!=='undefined'&&ARENA_WEAPONS[S.fighters[id].weapon]||{}).reach;
+  const reach=Math.max(w('a')??2,w('b')??2);
+  return (PS_REACH_WORD[reach]||'Medium')+' range';
 }
 function psDrawRange(key){
   const g=psLayer('ps-range');if(!g)return;
   const a=PS.fig.a.tx,b=PS.fig.b.tx,y=PS_GROUND+26;g.innerHTML='';
   psSvg('line',{x1:a,x2:b,y1:y,y2:y,class:'ps-rline'},g);
   for(const x of [a,b])psSvg('line',{x1:x,x2:x,y1:y-8,y2:y+8,class:'ps-rline thick'},g);
-  const word={apart:'Apart'+(S.gapMetres?' · '+S.gapMetres+' m':''),even:'Engaged',short:'Short reach',long:'Long reach'}[key];
+  const word=psRangeWord(key,psRng());
   const t=psSvg('text',{x:(a+b)/2,y:y+26,class:'ps-rtext'},g);t.textContent=word.toUpperCase();
 }
+// A replay of the whole fight starts the stage from nothing (no old weapons on the floor, spacing re-seeded).
+function pitsStageReset(){PS.run=null;}
 function psSetSpacing(snap){
   const key=psRangeKey(),d=PS_SPACING[key],tx={a:600-d/2,b:600+d/2};
   for(const id of ['a','b']){const f=PS.fig[id];

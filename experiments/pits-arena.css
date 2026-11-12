@@ -150,8 +150,6 @@ body.pa-on .pits-subbar,body.pa-on #root .mast,body.pa-on #root>.pits-bout{displ
 .pa-tools{display:flex;gap:6px;flex-wrap:wrap}
 .pa-bar .toolbutton{min-height:32px;padding:0 12px;font-size:13px}
 .pa-bar .pits-bout{display:flex;align-items:center;gap:14px;margin:0;padding:2px 10px;border:1px solid var(--st-line,var(--line));background:var(--st-surface,var(--paper));position:relative}
-.pa-bar .pits-b-note,.pa-bar .pits-b-item .label{display:none}
-.pa-bar .pits-b-item b{font-size:15px}
 .pa-bar .pits-b-ctl{margin:0}
 .act{flex:none}
 
@@ -162,7 +160,6 @@ body.pits-stone #root .deck .chron .combat-history{display:flex;flex-direction:c
 .chron .history-intro{display:none}
 .chron .history-toggle{min-height:28px;padding:0 10px;font-size:12px}
 .chron .chronicle-list{overflow:auto;flex:1;min-height:0}
-.pa-bar .pits-toast{position:absolute;top:calc(100% + 6px);right:0;z-index:20;width:max-content;max-width:320px;box-shadow:0 8px 24px color-mix(in srgb,var(--st-text,#000) 25%,transparent)}
 
 @media (max-width:900px){
   .pa-title .pill{display:none}
@@ -170,7 +167,6 @@ body.pits-stone #root .deck .chron .combat-history{display:flex;flex-direction:c
   .pa-bar{gap:6px;padding:4px 0 6px}
   .pa-tools{gap:4px}.pa-bar .toolbutton{min-height:30px;padding:0 8px;font-size:12px}
   .pa-bar .pits-bout{padding:2px 6px;gap:8px;flex-wrap:wrap}
-  .pa-bar .pits-toast{left:0;right:auto;max-width:calc(100vw - 24px)}
   .deck{display:flex;flex-direction:column;height:auto}
   .deck .mid{order:-1}
 }
@@ -241,8 +237,6 @@ body.pits-stone #root .pa-chron .combat-history{display:block;border:1px solid v
 .rbtn{min-height:38px;margin-top:6px}
 .roll [data-inline-dice]{min-height:44px}
 
-/* the Pit Marks toast must never cover a fighter's name */
-.pits-toast{position:fixed!important;left:50%!important;right:auto!important;top:auto!important;bottom:14px!important;transform:translateX(-50%);z-index:80}
 
 /* ---- One-screen battle (desktop): an app shell, not a page ----
    The window is split into two rows: the stage takes whatever is left, the command deck
@@ -259,8 +253,7 @@ body.pits-stone #root .pa-chron .combat-history{display:block;border:1px solid v
   body.pa-on>main#root{grid-row:2;display:flex;flex-direction:column;min-height:0;height:var(--pa-deck);width:100%;max-width:none;margin:0;
     padding:8px 12px 10px;box-sizing:border-box;overflow:hidden}
   body.pa-on #root>.effects-reference,body.pa-on #root>.footer-notes{display:none}
-  body.pa-on #root>.pits-recap{flex:none}
-  body.pa-on #root .deck{flex:1 1 0;min-height:0;height:auto;max-width:none;width:100%;margin:0;padding:0;gap:12px;box-sizing:border-box;
+    body.pa-on #root .deck{flex:1 1 0;min-height:0;height:auto;max-width:none;width:100%;margin:0;padding:0;gap:12px;box-sizing:border-box;
     grid-template-columns:minmax(300px,380px) minmax(320px,1.2fr) minmax(260px,1fr);grid-template-rows:minmax(0,1fr)}
   /* actions: two compact columns so the whole list is visible without scrolling */
   body.pa-on .acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(40px,auto);align-content:start;gap:5px;overflow:auto}
@@ -282,6 +275,14 @@ body.pits-stone #root .pa-chron .combat-history{display:block;border:1px solid v
   body.pa-on #root .mid .prompt .reaction-choices .choice strong{font-size:13.5px;line-height:1.15;padding-right:42px}
   body.pa-on #root .mid .prompt .reaction-choices .choice{padding:4px 8px;min-height:0}
   body.pa-on #root .mid .prompt .reaction-choices .choice small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:11px;line-height:1.25}
+  /* the end of a fight: a compact panel whose buttons (next fight, show result, replay) are all reachable without scrolling */
+  body.pa-on #root .prompt.end{padding:0;border:0;background:none;overflow:auto}
+  body.pa-on #root .prompt.end .endpanel{margin:0;padding:8px 14px 10px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;min-height:0;box-sizing:border-box}
+  body.pa-on #root .prompt.end .endpanel .eyebrow{flex:none}
+  body.pa-on #root .prompt.end .endpanel h3{margin:0;font-size:22px;line-height:1.1;flex:1 1 auto}
+  body.pa-on #root .prompt.end .endpanel p{flex:1 1 100%;margin:0;font-size:12.5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  body.pa-on #root .prompt.end .endbuttons{display:flex;flex-wrap:wrap;gap:6px;width:100%;margin:4px 0 0}
+  body.pa-on #root .prompt.end .endbuttons button{flex:1 1 auto;min-height:34px;padding:0 12px;font-size:13px;margin:0}
   /* right: the chronicle scrolls inside its panel */
   body.pa-on .deck .pa-chron{max-width:none;margin:0;padding:0;overflow:hidden;display:flex;flex-direction:column}
   body.pa-on #root .pa-chron .history-header{flex:none;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:space-between;white-space:nowrap;padding:8px 12px;border-right:0;border-bottom:1px solid var(--st-line,var(--line))}

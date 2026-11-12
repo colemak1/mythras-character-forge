@@ -203,10 +203,9 @@ function pbE(c,last){
 function pitsBottomDeckHtml(){
   const layout=pitsBottomLayout();
   if(layout==='current')return '';
-  const recap=typeof pitsRecapHtml==='function'?pitsRecapHtml():'';
   const c=pbCtx(),last=pbLast();
   const body={A:pbA,B:pbB,C:pbC,D:pbD,E:pbE}[layout](c,last);
-  return `${recap}${body}${resultModalHtml()}`;
+  return `${body}${resultModalHtml()}`;
 }
 
 // The history list opens in a window (the chronicle panel is gone from these layouts).
