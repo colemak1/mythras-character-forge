@@ -474,8 +474,6 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 .result-why strong{font:normal 23px Georgia,serif;color:var(--bone);line-height:1.2}
 .result-why span{font:12px/1.4 system-ui,sans-serif;color:var(--accent)}
 .result-why small{font:11px/1.4 system-ui,sans-serif;color:var(--accent)}
-.result-streak{margin:22px 0 0;font:11px system-ui,sans-serif;color:var(--accent);text-transform:uppercase;letter-spacing:.12em}
-.result-streak strong{font:700 23px Georgia,serif;color:var(--accent);margin-left:5px}
 .result-actions{display:flex;justify-content:center;gap:9px;margin-top:27px;flex-wrap:wrap}
 .result-actions button{padding:11px 16px;font:700 12px system-ui,sans-serif;border:1px solid var(--line);border-radius:3px;cursor:pointer;min-width:145px}
 .result-primary{background:var(--bone);color:var(--ink-0)}
@@ -510,9 +508,9 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 .recovery-options small{font:11px/1.5 system-ui;color:var(--accent);max-width:330px}
 
 </style>
-<link rel="stylesheet" href="pits-stone.css?v=f565ea1341">
+<link rel="stylesheet" href="pits-stone.css?v=ef71caae46">
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
-<link rel="stylesheet" href="pits-arena.css?v=1f471a3958">
+<link rel="stylesheet" href="pits-arena.css?v=64b8700ee9">
 <link rel="stylesheet" href="pits-stage.css?v=ccb5857e29">
 <link rel="stylesheet" href="pits-bottom.css?v=a6dcea5a45">
 <link rel="stylesheet" href="../sitota-theme.css?v=c8b123e401">
@@ -553,10 +551,10 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="practice-character.js?v=0c0d2375a0"></script>
 <script src="practice-guidance.js?v=e041ed5995"></script>
 <script src="pits-view.js?v=766aacde41"></script>
-<script src="pits-game.js?v=1d86e29baf"></script>
-<script src="pits-arena.js?v=deecffd3cd"></script>
-<script src="pits-bottom.js?v=484f391498"></script>
-<script src="pits-stage.js?v=89ef37f477"></script>
+<script src="pits-game.js?v=aa0a12a2ed"></script>
+<script src="pits-arena.js?v=f7d6ec3f38"></script>
+<script src="pits-bottom.js?v=ffba0d016b"></script>
+<script src="pits-stage.js?v=1a5f57bcb6"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -1545,10 +1543,12 @@ function playCaptured(fn,reset=false){
   const before=S.fighters?clone(S.fighters):null;
   V.queue=[];
   V.skillBefore=V.lastSkillRoll||null;   // readout before this replay (PUI-F02)
+  V.shownRange=null;
   V.capturing=true;
   try{fn();}finally{V.capturing=false;}
   const events=V.queue;
   V.queue=[];
+  if(S.phase!=='intro'&&!V.replaying&&V.tape)V.tape.push(...events);
   if(S.phase==='intro'){
     V.busy=false;V.visibleCount=Infinity;V.shown=null;V.stage=null;V.highlight=null;
     render();return;
@@ -1625,13 +1625,13 @@ function playBeat(){
   const e=V.events[V.step];
   const keepRoll=rollMatchesResult(V.roll,e)||!!(e?.checkpoint&&V.roll?.settled);
   clearPresentationTimers(keepRoll);
-  if(!e){V.busy=false;V.visibleCount=Infinity;V.shown=null;V.highlight=null;render();return;}
+  if(!e){V.busy=false;V.replaying=false;V.visibleCount=Infinity;V.shown=null;V.highlight=null;render();return;}
   if(e.checkpoint){pausePresentation(130);return;}
   if(e.roll){playDiceBeat(e.roll);return;}
   V.stage=stageFor(e);
   if(e.meta?.impact)V.impact=e.meta.impact;
   V.visibleCount=S.logs.filter(entry=>entry.id<=e.id).length;
-  if(e.view)V.shown=clone(e.view);
+  if(e.view){V.shown=clone(e.view);V.shownRange=e.rng||null;}
   V.highlight=V.stage.target?{id:V.stage.target,loc:V.stage.loc}:null;
   // Real choices and manual Roll buttons already provide a reading pause.
   schedulePresentation(typeof pitsStageBeatDelay==='function'?pitsStageBeatDelay(e,900):900);
@@ -1669,17 +1669,32 @@ function presentationControlsHtml(){
   const name=next?.checkpoint?S.fighters[next.actor]?.name:'';
   return `<div class="presentation-controls" role="group" aria-label="Combat playback">
     ${V.awaitingContinue?`<button class="cta continue-combat" data-act="continue">Continue</button><span class="playback-status">${esc(name||
-     'Opponent')} acts next</span>`:`<span class="playback-status">${V.roll&&!V.roll.settled?'Rolling dice…':'Resolving the exchange…'}</span>`}
-    <button class="toolbutton" data-act="skip">Show results</button>
+     'Opponent')} acts next</span>`:`<span class="playback-status">${V.replaying?'Replaying the fight…':V.roll&&!V.roll.settled?'Rolling dice…':'Resolving the exchange…'}</span>`}
+    <button class="toolbutton" data-act="skip">${V.replaying?'Stop replay':'Show results'}</button>
   </div>`;
 }
 function skipPresentation(){
   if(!V.busy)return;
   clearPresentationTimers();
   const e=V.events.findLast(event=>!event.roll&&!event.checkpoint);
-  V.stage=e?stageFor(e):null;V.busy=false;V.visibleCount=Infinity;V.shown=null;V.highlight=null;
+  V.stage=e?stageFor(e):null;V.busy=false;V.replaying=false;V.visibleCount=Infinity;V.shown=null;V.highlight=null;
   V.impact=V.events.findLast(event=>event?.meta?.impact)?.meta.impact||null;
   render();
+}
+
+// The end-of-fight replay: the whole fight again from the first beat, uninterrupted (no Continue stops, no choices),
+// built from the tape recorded while it was played. Stop replay (or Quick pace) cuts it short; nothing in the fight changes.
+function startFightReplay(){
+  if(V.busy||!V.tape||!V.tape.length||!V.tapeStart||!['between','over'].includes(S.phase))return;
+  const events=V.tape.filter(e=>!e.checkpoint);
+  if(!events.some(e=>!e.roll))return;
+  clearPresentationTimers();
+  V.replaying=true;V.busy=true;V.events=events;V.step=0;V.roll=null;V.impact=null;
+  const firstLog=events.find(e=>!e.roll);
+  V.visibleCount=S.logs.filter(entry=>entry.id<firstLog.id).length;
+  V.shown=clone(V.tapeStart);V.shownRange=V.tapeRange||null;V.stage=null;V.highlight=null;
+  if(typeof pitsStageReset==='function')pitsStageReset();
+  playBeat();
 }
 
 let scoreCache=null;
@@ -1917,10 +1932,9 @@ function resultModalHtml(){
         <strong>${esc(injuryTitle)}</strong><span>${esc(injuryDetail)}</span><small>${esc(consequence)}</small>${urgent?`<small>${esc(urgent)}</small>`:''}</div>
     </div>
     <div class="result-meta">Encounter ended in round ${S.round}${injury?' · Final hit to '+esc(cause.location):''}</div>
-    ${['normal','hardcore'].includes(S.mode)?`<div class="result-streak">Streak <strong>${S.wins}</strong></div>`:''}
     <div class="result-actions">${next&&S.mode==='hardcore'&&fieldAidCandidates(S.fighters.a).length?
      '<button type="button" class="result-secondary" data-act="openAid">First Aid</button>':
-     ''}${nextButton}<button type="button" class="result-secondary" data-act="dismissResult">View battlefield</button></div>
+     ''}${nextButton}<button type="button" class="result-secondary" data-act="dismissResult">View battlefield</button>${replayButtonHtml('result-secondary')}</div>
   </section></div>`;
 }
 
@@ -2332,7 +2346,7 @@ function arenaHtml(){
    ${pitsTurnCellHtml()}
    <div class="round-context">${pitsRangeTrackHtml(range)}</div>
  </header>
- ${typeof pitsRecapHtml==='function'?pitsRecapHtml():''}
+
  ${combatNarrationHtml()}
  ${presentationControlsHtml()}
  ${reachContextHtml()}
@@ -2443,19 +2457,22 @@ function tutorialHint(){let p=S.pending;if(
  +'Closing succeeds even if an interception hits.');if(
  p?.kind==='location')return 'Choose Location lets you target a normally reachable area of the opponent rather than roll the d20 location die.';
  return 'Each combatant gets one proactive action in initiative order per cycle. Reactive actions also cost an Action Point. Track both fighters’ location HP.'}
+// After a fight: look at the result again, or watch the whole fight again (the tape exists once any beat was played).
+const replayButtonHtml=cls=>V.tape&&V.tape.some(e=>!e.roll&&!e.checkpoint)?`<button type="button" class="${cls}" data-act="replayFight">Replay fight</button>`:'';
+const endExtraButtonsHtml=()=>`<button type="button" class="cta alt" data-act="showResult">Show result</button>${replayButtonHtml('cta alt')}`;
 function actionHtml(){if(
- V.busy)return (`<div class="resolving"><span class="resolving-icon">✦</span><div><strong>RESOLVING THE EXCHANGE</strong><small>Player rolls are `
- +`prompted; enemy dice resolve automatically.</small></div><button data-act="skip" class="toolbutton">Show results</button></div>`);
- if(S.phase==='between')return (`<div class="endpanel"><span class="eyebrow">Victory · streak ${S.wins}</span><h3>Opponent `
+ V.busy)return (`<div class="resolving"><span class="resolving-icon">✦</span><div><strong>${V.replaying?'REPLAYING THE FIGHT':'RESOLVING THE EXCHANGE'}</strong>`
+ +`<small>${V.replaying?'The whole fight again, without stops.':'Player rolls are prompted; enemy dice resolve automatically.'}</small></div>`
+ +`<button data-act="skip" class="toolbutton">${V.replaying?'Stop replay':'Show results'}</button></div>`);
+ if(S.phase==='between')return (`<div class="endpanel"><span class="eyebrow">Victory</span><h3>Opponent `
  +`Defeated</h3><p>${S.mode==='normal'?'Your character will be restored to full health for the next encounter.':
  'Your wounds and injuries will carry into the next encounter. Action Points will refresh.'} Your next opponent will be stronger.</p><div `
  +`class="endbuttons"><button class="cta" data-act="next">Face Opponent ${S.wave+
- 1} →</button><button class="cta alt" data-act="reset">Finish Run</button></div>${fieldDressingHtml()}</div>`);
+ 1} →</button><button class="cta alt" data-act="reset">Finish Run</button>${endExtraButtonsHtml()}</div>${fieldDressingHtml()}</div>`);
 if(S.phase==='over')return `<div class="endpanel"><span class="eyebrow">${S.mode==='pvp'?'Duel finished':S.mode==='tutorial'?'Lesson finished':
- 'Gauntlet finished'}</span><h3>${esc(S.winner||'Bout ended')}</h3><p>${esc(S.endReason||'Combat concluded.')} ${['normal',
- 'hardcore'].includes(S.mode)?`Your final win streak was ${S.wins}.`:
- ''}</p><div class="endbuttons"><button class="cta" data-act="retry">${S.mode==='pvp'?'Rematch':S.mode==='tutorial'?'Try Lesson Again':
- 'Run Again'}</button><button class="cta alt" data-act="reset">Back to Modes</button></div></div>`;
+ 'Gauntlet finished'}</span><h3>${esc(S.winner||'Bout ended')}</h3><p>${esc(S.endReason||'Combat concluded.')}</p>
+ <div class="endbuttons"><button class="cta" data-act="retry">${S.mode==='pvp'?'Rematch':S.mode==='tutorial'?'Try Lesson Again':
+ 'Run Again'}</button><button class="cta alt" data-act="reset">Back to Modes</button>${endExtraButtonsHtml()}</div></div>`;
 const p=S.pending;
 if(p?.kind==='range'){
   const mover=S.fighters[p.mover],d=S.fighters[p.defender];
@@ -2554,7 +2571,8 @@ return (`<div class="turnline"><h3>Choose an action</h3><span>${f.ap} AP remaini
  +`<strong>Concede Bout · 0 AP</strong><small>End this training fight without a death</small></button><button class="choice" data-act="help"><strong>`
  +`Combat reference</strong><small>Show the rules this prototype implements</small></button></div>`)}
 function log(title,body,kind='system',detail='',meta=null){
- const entry={id:nextLogId++,title,body,kind,detail,meta,round:S.round,cycle:S.cycle,view:S.fighters?clone(S.fighters):null};
+ const entry={id:nextLogId++,title,body,kind,detail,meta,round:S.round,cycle:S.cycle,view:S.fighters?clone(S.fighters):null,
+   rng:{disengaged:!!S.disengaged,engagement:S.engagement,gap:S.gapMetres||0}};
  S.logs.push(entry);
  if(V.capturing)V.queue.push(entry);
  if(S.logs.length>110)S.logs.shift();
@@ -2866,6 +2884,8 @@ function beginEncounter(){
   S.phase='fight';S.round=1;S.cycle=1;S.turnIndex=0;S.pending=null;S.roundProcessing=false;a.exertionRounds=0;b.exertionRounds=0;
   S.order=['a','b'];S.engagement=engagementInfo().active?'long':'equal';S.disengaged=false;S.gapMetres=0;S.ringClearance={a:6,b:6};
    for(const f of [a,b]){f.braced=false;f.delaying=false;f.pressedTurns=0;f.overextendedTurns=0;}
+  // The tape of this fight, for the end-of-fight replay: where it started, then every beat as it was played.
+  V.tape=[];V.tapeStart=clone(S.fighters);V.tapeRange={disengaged:false,engagement:S.engagement,gap:0};
   const rollNext=(index)=>{
     if(index>=2){
       S.order=a.initiative>=b.initiative?['a','b']:['b','a'];S.tie=null;
@@ -3730,6 +3750,8 @@ function nextEncounter(){if(S.phase!=='between')return;S.showEndModal=false;S.fi
 function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let act=n.dataset.act,v=n.dataset.val;
  switch(act){case 'mode':readSetupInputs();config.mode=v;render();break;case 'lbmode':S.lbMode=v;render();break;case 'start':readSetupInputs();
  startRun(true);break;case 'beginFight':if(S.phase==='intro')beginEncounter();break;case 'dismissResult':S.showEndModal=false;render();break;
+ case 'showResult':if(['between','over'].includes(S.phase)){S.showEndModal=true;render();}break;
+ case 'replayFight':startFightReplay();break;
  case 'openAid':S.showEndModal=false;render();document.querySelector('.field-dressing')?.scrollIntoView({block:'center'});break;
  case 'reset':V.impact=null;R=null;S={phase:'setup',mode:'normal',lbMode:S.lbMode||'normal'};render();break;case 'retry':startRun(true);break;
  case 'next':nextEncounter();break;case 'rest':restBetweenEncounters();break;case 'fieldAid':{const [woundId,action]=v.split(':');

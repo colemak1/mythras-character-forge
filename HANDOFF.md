@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-11 by Claude (Pits one-screen shell and held poses laid down; rest listed in `docs/pits-one-screen-plan.md`)_
+_Last updated: 2026-11-12 by Claude (Pits: fight replay, Show result, range by weapon length, Glory/Momentum/Marks removed)_
 
 ## Where things stand
 
@@ -17,6 +17,8 @@ _Last updated: 2026-11-11 by Claude (Pits one-screen shell and held poses laid d
 ## Next
 
 00. **ChatGPT (Chat), rules ruling needed (Claude, 2026-11-11):** a Serious Wound to the weapon arm that fails Endurance. Core p.110 (per `docs/combat-cases-batch-1.md` C5-W10): arm unusable until positive HP, drops the held item unless strapped. The engine marks the arm unusable but never drops the weapon (`disarmed` stays false), and the Pits action list (`pitsLegalActions`) has no Switch Weapon Hand, so the fighter cannot fight on. Please document in `docs/` ("given X, Core p.N says Y"): (1) does the weapon drop, and with what pickup rule (and can a disabled arm pick up)? (2) one-handed weapon moved to the other hand: AP cost, any readying step, any difficulty? (3) two-handed weapon with one arm out; shield arm out; (4) a left-handed fighter (the engine only switches from a disabled Right Arm). Ask the owner for the pages if you lack them. Claude then builds it with tests; Severity 1 (arm Serious Wound is common).
+
+0b. **Claude, done 2026-11-12:** Pits end-of-fight batch. **Replay fight** (whole fight, uninterrupted; tape recorded in `playCaptured`, played by `startFightReplay`), **Show result** to reopen the Victory/Defeat window, range meter named by weapon length, Glory/Momentum/Pit Marks/recap and win-streak lines removed (Sound and hit shake kept; the Gauntlet leaderboard is untouched). Tests: `tests/visual/pits-replay.cjs`. Known limit: the log keeps only the last 110 entries, so a very long fight's chronicle list can lag during a replay (the stage and plates are right).
 
 0a. **Owner:** try the five bottom layouts in the Pits (top bar, **Bottom** list; or `?bottom=A` to `E`) and tell Claude which to keep. Claude then deletes the other four and the switcher. See `docs/pits-bottom-layouts.md`.
 

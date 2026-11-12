@@ -243,8 +243,8 @@ function paActionsHtml(){
 }
 function paPromptHtml(){
   const phase=pitsPhase(),f=S.fighters[S.order?.[S.turnIndex]]||S.fighters.a;
+  if(V.busy)return `<div class="prompt"><h4>${V.replaying?'Replaying the fight':'Resolving the exchange'}</h4>${presentationControlsHtml()}</div>`;
   if(S.phase==='between'||S.phase==='over')return `<div class="prompt end">${actionHtml()}</div>`;
-  if(V.busy)return `<div class="prompt"><h4>Resolving the exchange</h4>${presentationControlsHtml()}</div>`;
   if(phase==='rolling')return `<div class="prompt"><h4>Roll the dice</h4><p>Press <b>Roll</b> in the dice tray (or Space). The target is shown there.</p></div>`;
   if(phase==='action')return `<div class="prompt"><h4>${S.mode==='pvp'?esc(f.name)+', your move':'Your move'}</h4><p>You have <b>${f.ap} AP</b>. Choose an action on the left.</p>${paHelp()}</div>`;
   if(phase==='opponent')return `<div class="prompt"><h4>${esc(f.name)} acts</h4><p>The opponent's dice resolve automatically; you will be asked to react when it matters.</p></div>`;
@@ -260,9 +260,8 @@ function pitsArenaDeckHtml(){
   // an alternative bottom layout (pits-bottom.js), when one is chosen
   const alt=typeof pitsBottomDeckHtml==='function'?pitsBottomDeckHtml():'';
   if(alt)return alt;
-  const recap=typeof pitsRecapHtml==='function'?pitsRecapHtml():'';
   const ex=paExchanges(),cur=ex[ex.length-1],prev=ex[ex.length-2];
-  return `${recap}<div class="deck" aria-label="Command deck">
+  return `<div class="deck" aria-label="Command deck">
     <div class="acts" role="group" aria-label="Your actions">${paActionsHtml()}</div>
     <div class="mid">${paPromptHtml()}
       <div class="xchs" aria-live="polite">${paExchangeHtml(cur,'Current exchange',true)}${prev?paExchangeHtml(prev,'Previous exchange',false):''}</div></div>
