@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: the fighters now move like the movement study
+
+- **The live Pits uses the new movement.** Each resolved exchange is drawn as one movement for both fighters, from the pose they are in: the cut on a step or the thrust on a short lunge, the parry and the sword turned down, a partial parry held and then driven through, a miss carried through a step, a landed blow with the hit reaction, and the fall when a blow ends the fight. Nobody goes back to a common standing pose between exchanges.
+- **Decisions stop the scene.** The stage runs on one clock: a choice or a roll stops it, a contact holds it for a moment, and it resumes from the same frame. The attack does not move until its result is known.
+- **Range changes are steps,** never a slide, and the distance between the fighters now comes from the weapon lengths.
+- **A partly parried blow no longer shows its wound early:** the plates take the damage when the blade reaches the body.
+- Other weapons, shields, trips, disarms, standing up and yielding use simple stand-ins for now (listed in `docs/pits-animation-direction.md`). The earlier poses are still there for comparison: add `?stage=poses` to the Pits address.
+- The movement study page is now stamped like the other pages, so returning visitors get its newest version.
+
 ## The Pits movement study: five connected exchanges
 
 - The study page (`experiments/pits-choreography.html`) now plays one fight of five exchanges as a single movement: each exchange starts in the pose the last one ended in, the attacker changes, and the scene stops twice where a decision would be made. A button starts from any exchange. Press Advantage stays as a second tab.
