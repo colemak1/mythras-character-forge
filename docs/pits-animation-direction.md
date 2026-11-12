@@ -220,6 +220,14 @@ Measured jerk (the third difference over 4 ms, worst 1%, outside contacts):
 
 The fight is about 12.3 s (the breathing gaps are 380 ms of live movement instead of 650). Decision boundaries now fall mid-movement; a hold freezes that exact pose and resumes from it.
 
+**One continuous movement (owner's review, 2026-11-12).** The owner: the individual movements look great, but there is still too much time between swings. Right after a parry, hit or miss, the next action should begin, with not a single standstill frame. In the live Pits the only pauses are decision holds, where everything stops; a replay is continuous, and this study should be too.
+
+- The breathing gaps (`GAP`, 380 ms, and the 520 ms of recovery before them) are removed. Each decision boundary is placed where the last recovery is slowest with both feet down (so a hold freezes a clean pose), and the next beat's first key follows within 0 to 80 ms. A recovery key that the next beat would override was dropped or moved earlier.
+- The opening on guard is 300 ms shorter. The fight is about 8.5 s (was 12.3).
+- Measured: from the first step to B's fall, the longest stretch where no hip, shoulder, hand or blade tip moves 1 unit per 20 ms is 60 ms (was 840; 1.1 s at 2 units). Each parry, bind, deflection, wound and miss is followed by the next beat within 420 ms (was up to 940).
+- Because the drift is time-based, shifting the timeline changed its phase at the thigh cut, and A's withdrawing blade brushed B's knee. A now draws the blade back a little further with the point lifted.
+- `tests/pits-fight.cjs` holds both numbers (next beat within 420 ms; no 200 ms lull).
+
 ## For Sonnet: routine defects in the pose stage
 
 Items 2 and 3 now apply only to the pose stage behind `?stage=poses`; fix them only if the owner wants to keep it. Item 1 is fixed for both stages (2026-11-12), item 4 is done.

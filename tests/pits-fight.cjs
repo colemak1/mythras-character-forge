@@ -22,11 +22,12 @@ const C=kind=>q.contactList.filter(c=>c.kind===kind);
 const beatT=n=>q.beats.find(b=>b.n===n).t;
 const inContact=t=>q.contactList.some(c=>t>=c.t-90&&t<=c.t+(c.hold||0)+90);
 
-test('ten beats in order, about 12 to 20 seconds, decision boundaries between them, built quickly',()=>{
+test('ten beats in order, about 8 to 20 seconds, decision boundaries between them, built quickly',()=>{
   assert.deepEqual(q.beats.map(b=>b.n),[1,2,3,4,5,6,7,8,9,10]);
   for(let i=1;i<q.beats.length;i++)assert(q.beats[i].t>q.beats[i-1].t,'beats out of order');
-  // 15 to 20 s in the first brief; the owner then asked for it a little faster and never still (2026-11-12)
-  assert(q.dur>=11500&&q.dur<=20000,'length '+q.dur);
+  // 15 to 20 s in the first brief; the owner then asked for it a little faster and never still, then for no gap at
+  // all between one action and the next (2026-11-12)
+  assert(q.dur>=8000&&q.dur<=20000,'length '+q.dur);
   assert(q.pauses.length>=6,'too few decision boundaries');
   for(const p of q.pauses)assert(p.t>0&&p.t<q.end&&p.label,'a decision boundary outside the fight');
   assert(q.scripted,'the fight is not marked as scripted');
@@ -130,6 +131,18 @@ test('nobody is ever still in continuous playback (only B, once down, is left br
   // and B, down, still breathes
   let br=0;range(down+200,q.end,20,t=>{br=Math.max(br,dist(PS.world(q,'b',t,'S'),PS.world(q,'b',down+200,'S')));});
   assert(br>.4,'B does not breathe on the floor');
+});
+test('continuous: the next action starts as the last one resolves, with no lull between beats',()=>{
+  // (owner, 2026-11-12: after a parry, a hit or a miss the next action begins at once; only a decision hold stops)
+  // every parry, bind, deflection, wound and miss is followed by the next beat within 420 ms (the last one ends the fight)
+  const res=[...q.contactList.map(c=>c.t),...q.misses.map(m=>m.t)].sort((x,y)=>x-y);
+  for(const r of res.slice(0,-1)){const next=q.beats.find(b=>b.t>r);
+    assert(next&&next.t-r<=420,'the next beat starts '+(next?next.t-r:'never')+' ms after the resolution at '+r);}
+  // from the first step to B's fall, some part of someone is always travelling with purpose (well above the drift):
+  // no stretch of 200 ms where every hip, shoulder, hand and blade tip moves under 1 unit per 20 ms
+  let run=0;range(300,beatT(10)+700,20,t=>{let m=0;
+    for(const id of ids)for(const k of ['P','S','Hn','tip'])m=Math.max(m,dist(PS.world(q,id,t,k),PS.world(q,id,t-20,k)));
+    run=m<1?run+20:0;assert(run<200,'a lull of '+run+' ms at '+t);});
 });
 test('smooth: no part jerks from rest to full speed (low jerk on the body and the hands)',()=>{
   // jerk: the third difference of a joint's position over 4 ms steps, outside the moments of contact

@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: fight study, one continuous movement (owner's review)
+
+- **No gap between actions.** The breathing gaps between beats are gone: the next action starts while the last parry, miss, bind or wound is still being recovered from. The only stops are the optional decision holds; played straight through (as a replay will be) it is one continuous movement.
+- The opening on guard is shorter. About 8.5 s instead of 12.3.
+- A's blade is drawn back from the thigh cut with the point lifting a little, so it no longer brushes B's knee as B goes down.
+- Tests: `tests/pits-fight.cjs`, 19 checks. New: every resolution is followed by the next beat within 420 ms, and from the first step to B's fall there is never 200 ms where nothing travels with purpose (the old version had a 1.1 s lull).
+
 ## The Pits: fight study, smoother and never still (owner's review)
 
 - **Smoother.** Every new pose is eased into, so no part jumps from rest to full speed. Hips start travelling as a foot leaves, feet lift and land on a smooth arc, and the hips ease down before a leg runs out of length. The body's worst-case jerk is a sixth of what it was, the hands' about half.
