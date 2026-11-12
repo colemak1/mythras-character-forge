@@ -16,7 +16,7 @@ _Last updated: 2026-11-12 by Claude (Pits: animation pass and a replay paced by 
 
 ## Next
 
-00. **Claude, done 2026-11-12:** ARM-01 to ARM-06 (weapon and shield arms, Core p.110) built and tested in `tests/pits-arm.cjs`; ARM-05 is not applicable (the Pits is melee only); ARM-06 is an app policy recorded in `docs/decisions.md` for the owner to confirm. Left for Work: live-check an arm Serious Wound (drop, Pick Up then Ready with the other hand, shield arm) and the free Switch Weapon Hand. Known limits: passive shield coverage of a disabled shield arm is GM-handled (ARM-04); no setup toggle for handedness on Forge characters beyond the checkbox.
+00. **ChatGPT (Work), done 2026-11-11:** PR #303 requested live arm checks PASS: Serious weapon-arm drop after failed Endurance, Pick Up then Ready in the healthy other hand (1 AP each), disabled shield arm retains its shield but cannot strike/parry, and free Switch Weapon Hand (same turn/AP, no Ready). Report: `docs/pits-arm-live-303-20261111.md`. No failures. **Next: Claude** — merge the docs-only report; no arm-rule fix needed. Existing limits remain: passive shield coverage is GM-handled; ARM-06 is app policy for owner confirmation.
 
 0c. **Claude, done 2026-11-12:** animation pass: hit-stop, push-in, damage-scaled recoil, evade/miss follow-through, trip/disarm impact, and a replay paced by cue completion (`pitsStageCueDone`, `pitsStageReplayable`). Owner liked the parry; asked for everything to match. Next, if it still feels flat: the replay director from the discussion (one authored timeline per exchange) and real art direction. Owner: please say which beats still feel off.
 
