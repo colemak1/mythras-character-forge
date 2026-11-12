@@ -7,6 +7,8 @@
 
 // Which prompt the screen is in: setup, intro, action, opponent, reaction,
 // effects, resist, rolling or recap (Core phases map to the mockup's views).
+// Screens show the presented state (V.shown) while a beat plays or a resolved blow is held back; otherwise the live state.
+const pitsPresenting=()=>typeof V!=='undefined'&&!!(V.busy||V.hold);
 function pitsPhase(){
   if(!S||S.phase==='setup')return 'setup';
   // While a recorded exchange is being replayed, follow the beat on screen

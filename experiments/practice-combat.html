@@ -550,11 +550,11 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="../js/data.js?v=e863ceddbb"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
 <script src="practice-guidance.js?v=c187d04720"></script>
-<script src="pits-view.js?v=01dfcf1ef6"></script>
-<script src="pits-game.js?v=aa0a12a2ed"></script>
-<script src="pits-arena.js?v=bb25e609fb"></script>
+<script src="pits-view.js?v=d94d8e0612"></script>
+<script src="pits-game.js?v=3769cec741"></script>
+<script src="pits-arena.js?v=b25a43c6b6"></script>
 <script src="pits-bottom.js?v=ffba0d016b"></script>
-<script src="pits-stage.js?v=cd6da8544a"></script>
+<script src="pits-stage.js?v=4803fb64b5"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -1166,7 +1166,7 @@ function exchangeHalf(id,info){
   // Only the ATTACKER / DEFENDER role changes as initiative and reactions change.
   const isPlayer=id==='a',isAtk=info.atkId===id,isDef=info.defId===id;
   const initialInitiative=V.busy&&/^Encounter.*Initiative/i.test(V.stage?.entry?.title||'');
-  const fighter=(V.busy&&V.shown?.[id])||S.fighters[id]||S.fighters.a;
+  const fighter=(pitsPresenting()&&V.shown?.[id])||S.fighters[id]||S.fighters.a;
   const p=info.pending,deciding=!V.busy&&S.phase==='fight';
   const decisionId=currentDecisionOwner();
   const decisionHere=deciding&&decisionId===id&&!R;
@@ -1539,6 +1539,7 @@ function combatHistory(opts){
 // Capture roll batches and rules events in their original order.
 function playCaptured(fn,reset=false){
   clearPresentationTimers();
+  V.skipped=false;
   V.impact=null;
   V.events=[];
   const before=S.fighters?clone(S.fighters):null;
@@ -1547,18 +1548,37 @@ function playCaptured(fn,reset=false){
   V.shownRange=null;
   V.capturing=true;
   try{fn();}finally{V.capturing=false;}
-  const events=V.queue;
+  const all=V.queue;
   V.queue=[];
-  if(S.phase!=='intro'&&!V.replaying&&V.tape)V.tape.push(...events);
+  const prevHold=V.hold;
   if(S.phase==='intro'){
-    V.busy=false;V.visibleCount=Infinity;V.shown=null;V.stage=null;V.highlight=null;
+    V.hold=null;V.pendingShown=null;V.busy=false;V.visibleCount=Infinity;V.shown=null;V.stage=null;V.highlight=null;
     render();return;
   }
-  if(!events.length){render();return;}
+  // The blow of an exchange is presented only once its whole exchange is resolved (rolls and decisions that follow the
+  // contact are finished first), so the contact flows straight into its real consequence. Rolls and choices stay manual
+  // and in their legal order; this only changes when the picture is drawn. Screens keep showing the state before the held
+  // blow (V.hold.shown) until it is played.
+  let events=all;
+  if(typeof pitsStageArrange==='function'){
+    const names={a:S.fighters.a.name,b:S.fighters.b.name};
+    const arranged=pitsStageArrange(all,prevHold?prevHold.events:[],S.phase==='fight'&&!!(R||S.pending),names);
+    events=arranged.play;
+    if(arranged.hold.length){
+      const lastPlayed=[...events].reverse().find(e=>!e.roll&&!e.checkpoint&&e.view);
+      V.hold={events:arranged.hold,shown:lastPlayed?clone(lastPlayed.view):(prevHold?prevHold.shown:(before||clone(S.fighters))),
+        rng:lastPlayed?(lastPlayed.rng||null):(prevHold?prevHold.rng:null),visible:S.logs.filter(l=>l.id<arranged.hold[0].id).length};
+    }else V.hold=null;
+  }
+  if(!V.replaying&&V.tape)V.tape.push(...events);
+  if(!events.length){
+    V.busy=false;V.visibleCount=V.hold?V.hold.visible:Infinity;V.shown=V.hold?V.hold.shown:null;V.shownRange=V.hold?V.hold.rng:null;
+    render();return;
+  }
   V.busy=true;V.events=events;V.step=0;
   const firstLog=events.find(event=>!event.roll&&!event.checkpoint);
-  V.visibleCount=firstLog?S.logs.filter(entry=>entry.id<firstLog.id).length:S.logs.length;
-  V.shown=before||clone(S.fighters);V.stage=null;V.highlight=null;
+  V.visibleCount=firstLog?S.logs.filter(entry=>entry.id<firstLog.id).length:(V.hold?V.hold.visible:S.logs.length);
+  V.shown=prevHold?clone(prevHold.shown):(before||clone(S.fighters));V.shownRange=prevHold?prevHold.rng:null;V.stage=null;V.highlight=null;
   if(reset){V.openChronicle.clear();V.expandedConditions.clear();V.moreActionsOpen=false;V.guideWhyOpen=false;V.breakdownOpen=false;}
   playBeat();
 }
@@ -1622,26 +1642,44 @@ function rollMatchesResult(roll,entry){
     (!entry.meta.actor||entry.meta.actor===roll.actor)&&
     dice.every((die,i)=>die.sides===roll.defs[i].sides&&die.value===roll.values[i]));
 }
+// Plates and text follow presentation time: a blow's result is shown at its contact (the stage calls pitsStageOnContact),
+// not when the engine logged it.
+function flushPendingShown(){
+  const p=V.pendingShown;if(!p)return false;
+  V.pendingShown=null;V.shown=p.view;V.shownRange=p.rng;V.visibleCount=p.visible;return true;
+}
+function pitsStageOnContact(){if(flushPendingShown())render();}
+function endPresentationState(){
+  flushPendingShown();
+  V.visibleCount=V.hold?V.hold.visible:Infinity;V.shown=V.hold?V.hold.shown:null;V.shownRange=V.hold?V.hold.rng:null;V.highlight=null;
+}
 function playBeat(){
   const e=V.events[V.step];
   const keepRoll=rollMatchesResult(V.roll,e)||!!(e?.checkpoint&&V.roll?.settled);
   clearPresentationTimers(keepRoll);
-  if(!e){V.busy=false;V.replaying=false;V.visibleCount=Infinity;V.shown=null;V.highlight=null;render();return;}
+  flushPendingShown();
+  if(!e){V.busy=false;V.replaying=false;endPresentationState();render();return;}
   if(e.checkpoint){pausePresentation(130);return;}
   if(e.roll){playDiceBeat(e.roll);return;}
   V.stage=stageFor(e);
   if(e.meta?.impact)V.impact=e.meta.impact;
-  V.visibleCount=S.logs.filter(entry=>entry.id<=e.id).length;
-  if(e.view){V.shown=clone(e.view);V.shownRange=e.rng||null;}
+  const names={a:S.fighters.a.name,b:S.fighters.b.name};
+  const beat=typeof pitsStageBeat==='function'?pitsStageBeat(V.events,V.step,names):{cue:null,consumed:false};
+  const upto=S.logs.filter(entry=>entry.id<=e.id).length;
+  if(e.view){
+    const view=clone(e.view);
+    if(beat.cue&&['hit','deflect'].includes(beat.cue.type)){
+      V.visibleCount=upto-1;V.pendingShown={view,rng:e.rng||null,visible:upto};   // shown at contact
+    }else{V.visibleCount=upto;V.shown=view;V.shownRange=e.rng||null;}
+  }else V.visibleCount=upto;
   V.highlight=V.stage.target?{id:V.stage.target,loc:V.stage.loc}:null;
-  if(V.replaying&&typeof pitsStageCueDone==='function'){
-    // a replay is paced by the animation itself: the next beat starts when this cue has finished
-    render();const tok=V.replayTok=(V.replayTok||0)+1,done=pitsStageCueDone();
-    if(done){done.then(()=>{if(V.busy&&V.replaying&&V.replayTok===tok)advancePresentation();});return;}
-    schedulePresentation(900);return;   // no stage on screen: fall back to timed beats
-  }
-  // Real choices and manual Roll buttons already provide a reading pause.
-  schedulePresentation(typeof pitsStageBeatDelay==='function'?pitsStageBeatDelay(e,900):900);
+  // Paced by the animation: the next beat starts the moment this beat's motion is done. Beats with no motion of their
+  // own (folded into a blow's record, or plain text) pass quickly. With no stage on screen, fall back to timed beats.
+  render();
+  const tok=V.beatTok=(V.beatTok||0)+1,done=typeof pitsStageCueDone==='function'?pitsStageCueDone(e.id):null;
+  if(done){done.then(()=>{if(V.busy&&V.beatTok===tok){flushPendingShown();advancePresentation();}});return;}
+  const stageUp=typeof pitsStageMounted==='function'&&pitsStageMounted();
+  schedulePresentation(!stageUp?(typeof pitsStageBeatDelay==='function'?pitsStageBeatDelay(e,900):900):beat.consumed?120:(beat.cue?400:300));
 }
 function schedulePresentation(delay){
   render();
@@ -1684,7 +1722,7 @@ function skipPresentation(){
   if(!V.busy)return;
   clearPresentationTimers();
   const e=V.events.findLast(event=>!event.roll&&!event.checkpoint);
-  V.stage=e?stageFor(e):null;V.busy=false;V.replaying=false;V.visibleCount=Infinity;V.shown=null;V.highlight=null;
+  V.skipped=true;V.pendingShown=null;V.stage=e?stageFor(e):null;V.busy=false;V.replaying=false;V.visibleCount=Infinity;V.shown=null;V.highlight=null;V.hold=null;
   V.impact=V.events.findLast(event=>event?.meta?.impact)?.meta.impact||null;
   render();
 }
@@ -1698,7 +1736,7 @@ function startFightReplay(){
   const events=V.tape.filter(e=>!e.checkpoint&&!e.roll&&(typeof pitsStageReplayable!=='function'||pitsStageReplayable(e,names)));
   if(!events.length)return;
   clearPresentationTimers();
-  V.replaying=true;V.busy=true;V.events=events;V.step=0;V.roll=null;V.impact=null;
+  V.replaying=true;V.busy=true;V.events=events;V.step=0;V.roll=null;V.impact=null;V.hold=null;V.pendingShown=null;
   V.visibleCount=S.logs.filter(entry=>entry.id<events[0].id).length;
   V.shown=clone(V.tapeStart);V.shownRange=V.tapeRange||null;V.stage=null;V.highlight=null;
   if(typeof pitsStageReset==='function')pitsStageReset();
@@ -2347,7 +2385,7 @@ function pitsRangeTrackHtml(range){
 }
 function arenaHtml(){
  if(typeof pitsArenaOn==='function'&&pitsArenaOn())return pitsArenaDeckHtml();
- const a=V.busy&&V.shown?.a?V.shown.a:S.fighters.a,b=V.busy&&V.shown?.b?V.shown.b:S.fighters.b;
+ const a=pitsPresenting()&&V.shown?.a?V.shown.a:S.fighters.a,b=pitsPresenting()&&V.shown?.b?V.shown.b:S.fighters.b;
  const info=currentExchange();
  const range=S.disengaged?'Separated · '+S.gapMetres+' m':engagementInfo().active?'Reach advantage':'Matched reach';
  return `${typeof pitsBoutBarHtml==='function'?pitsBoutBarHtml():''}<div class="arena">${fighterCard(a,
@@ -2955,7 +2993,7 @@ function availableEffects(p){
   return [id,SPECIAL_EFFECT_NAMES[id],text||SPECIAL_EFFECT_CONDITIONS[id]||''];
  });
 }
-function startRun(showIntro=false){if(!applyPracticeLoadout()){render();return;}R=null;
+function startRun(showIntro=false){if(!applyPracticeLoadout()){render();return;}R=null;V.hold=null;V.pendingShown=null;
  S={phase:'fight',mode:config.mode,wave:1,wins:0,sel:{},lbMode:'normal',logs:[],fighters:{
  },round:1,cycle:1,turnIndex:0,pending:null,endReason:'',winner:null};S.fighters={a:newHero(),b:newEnemy(1)};
  if(showIntro&&['normal','hardcore'].includes(S.mode))prepareEncounter();else beginEncounter();}
@@ -2969,6 +3007,7 @@ function beginEncounter(){
   S.order=['a','b'];S.engagement=engagementInfo().active?'long':'equal';S.disengaged=false;S.gapMetres=0;S.ringClearance={a:6,b:6};
    for(const f of [a,b]){f.braced=false;f.delaying=false;f.pressedTurns=0;f.overextendedTurns=0;}
   // The tape of this fight, for the end-of-fight replay: where it started, then every beat as it was played.
+  V.hold=null;V.pendingShown=null;
   V.tape=[];V.tapeStart=clone(S.fighters);V.tapeRange={disengaged:false,engagement:S.engagement,gap:0};
   const rollNext=(index)=>{
     if(index>=2){

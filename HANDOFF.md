@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-12 by Claude (Pits: animation pass and a replay paced by the animation; ARM-01 to ARM-06 merged earlier)_
+_Last updated: 2026-11-12 by Claude (Pits: continuous combat animation batch)_
 
 ## Where things stand
 
@@ -17,6 +17,8 @@ _Last updated: 2026-11-12 by Claude (Pits: animation pass and a replay paced by 
 ## Next
 
 00. **Claude, done 2026-11-12:** ARM-01 to ARM-06 (weapon and shield arms, Core p.110) built and tested in `tests/pits-arm.cjs`; ARM-05 is not applicable (the Pits is melee only); ARM-06 is an app policy recorded in `docs/decisions.md` for the owner to confirm. Left for Work: live-check an arm Serious Wound (drop, Pick Up then Ready with the other hand, shield arm) and the free Switch Weapon Hand. Known limits: passive shield coverage of a disabled shield arm is GM-handled (ARM-04); no setup toggle for handedness on Forge characters beyond the checkbox.
+
+0d. **Claude, done 2026-11-12:** the continuous-animation brief (exchange hold, decisions pause the scene, no idle resets, Press Advantage, specific finishing consequences). Details, confirmed bugs and limits: `docs/pits-animation-batch-20261112.md`; acceptance in `tests/visual/pits-flow.cjs`. **Owner:** watch a fight and a replay and say which beats still feel off. **Work (optional):** a live check of a finishing blow that waits on an Endurance roll, and a natural Press Advantage.
 
 0c. **Claude, done 2026-11-12:** animation pass: hit-stop, push-in, damage-scaled recoil, evade/miss follow-through, trip/disarm impact, and a replay paced by cue completion (`pitsStageCueDone`, `pitsStageReplayable`). Owner liked the parry; asked for everything to match. Next, if it still feels flat: the replay director from the discussion (one authored timeline per exchange) and real art direction. Owner: please say which beats still feel off.
 

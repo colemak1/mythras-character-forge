@@ -18,7 +18,7 @@ const paOn=()=>!PA_CLASSIC&&typeof document!=='undefined';
 function pitsArenaOn(){return paOn();}
 const PA={auto:false,wired:false,autoTimer:0};
 const paHuman=id=>S.fighters?.[id]?.kind==='human';
-const paView=()=>(V.busy&&V.shown&&V.shown.a)?V.shown:S.fighters;
+const paView=()=>(pitsPresenting()&&V.shown&&V.shown.a)?V.shown:S.fighters;
 
 // Body map: seven zones coloured by the engine's wound level, with HP and armour.
 // pick: draw each zone as a button that answers the engine's Choose Location.
@@ -75,7 +75,7 @@ function paStripHtml(){
 
 // ---- Exchanges, from the engine's log: the newest is "current", the one before "previous" ----
 const PA_BREAK=/^(Round |Encounter|Regain Footing|Brace|Delay|Dither|Stand Fast|Move to|Ready Weapon|Pick Up|Pin Weapon|Entangle|FIGHT)|changes range/;
-const paVisibleLogs=()=>V.busy?(S.logs||[]).slice(0,V.visibleCount):(S.logs||[]);
+const paVisibleLogs=()=>pitsPresenting()?(S.logs||[]).slice(0,V.visibleCount):(S.logs||[]);
 function paExchanges(){
   const out=[];let cur=null;
   for(const l of paVisibleLogs()){

@@ -24,7 +24,7 @@ function pitsGameOnRoll(actor,label,pct,result){
 // Hook: read new log entries for damage (meta.impact), after each render.
 function pitsGameOnLogs(){
   const g=pitsGameState();if(!g)return;
-  const logs=S.logs||[],shown=typeof V!=='undefined'&&V.busy?logs.slice(0,V.visibleCount):logs;
+  const logs=S.logs||[],shown=typeof V!=='undefined'&&pitsPresenting()?logs.slice(0,V.visibleCount):logs;
   for(const e of shown){
     const id=Number(e.id)||0;if(id<=g.seenLog)continue;g.seenLog=id;
     const hit=e.meta?.impact;if(!hit||!S.fighters[hit.target])continue;
