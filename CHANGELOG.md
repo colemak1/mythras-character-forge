@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits movement study: the sword is held, not hinged
+
+- On the study page the blade used to turn in the hand as if on a hinge. The weapon is now gripped: its angle follows the forearm, with only as much turn as a wrist has, so moving the blade means moving the arm. Cuts land with the sword in line with the arm, the wind-up carries it overhead, and a little of the hilt shows behind the hand.
+- The five sequences were re-posed to suit (the miss now runs out low and is lifted back up; a landed cut is drawn down and out). The Pits itself is still unchanged.
+
 ## The Pits: movement study (animation direction)
 
 - **New page, `experiments/pits-choreography.html`:** five short fights between a broadsword and a dagger that show how the stick figures should move: an attack, parry, counterattack, hit reaction and recovery as one continuous motion; a miss; a damaging hit; Press Advantage; a fight-ending injury. You can pause, step a frame at a time, slow it to quarter speed, drag to any moment, and switch on weapon paths and planted feet.

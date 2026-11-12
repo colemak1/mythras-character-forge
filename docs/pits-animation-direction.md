@@ -22,7 +22,8 @@ These come from the approach, not from tuning: a library of whole-body poses, bl
 - **Stance and balance.** Knees bent, feet a stride apart, weight between them. Each weapon has its own guard (sword: side on, point at the face, empty hand back; dagger: lower and squarer, blade forward, empty hand up). Any pose the scene can pause on has both feet down and the weight between them.
 - **From the ground up.** A foot stays where it is until a step moves it. The pelvis carries the weight between the feet. The body can only be where the feet allow, so reach comes from footwork: the sword's attack is a short advance and a passing step, not a slide.
 - **Order of the body.** Legs and hips go first, the chest follows, then the hand, then the blade. In the cut the hips have done most of their travel while the blade is still behind the shoulder. On a parry the order reverses: the blade arrives first and the body settles under it.
-- **Weapon weight.** A cut has five parts: load (slow, weight back), drive (hips, blade left behind), strike (the fastest moment, into contact), contact (a short hold), and what the blade does next, which depends on what it met. Stopped by a parry it is turned down and falls short of the body. Missing, nothing stops it: it finishes its arc, the body goes with it, and it is carried round onto the shoulder. Landing, it is drawn through. A thrust is different: a short gather, then a straight line, and it comes back out along the same line.
+- **Weapon weight.** A cut has five parts: load (slow, weight back), drive (hips, blade left behind), strike (the fastest moment, into contact), contact (a short hold), and what the blade does next, which depends on what it met. Stopped by a parry it is turned down and falls short of the body. Missing, nothing stops it: it runs out low and short, the body is carried forward with it, and the point has to be lifted back up over the shoulder. Landing, it is drawn through. A thrust is different: a short gather, then a straight line, and it comes back out along the same line.
+- **The weapon is held.** The blade's angle is the forearm's angle plus the turn of the wrist, and a wrist only turns so far (about 12 degrees one way, 120 the other). To move the blade the arm has to move. A blow lands with the weapon in line with the arm; a parry holds it across. (Added after the owner's first viewing: the blade had been a free channel and turned in the hand like a hinge.)
 - **Interaction.** Both fighters are written against one contact moment. The parry is aimed at the point where the cut will be; the defender's knees and elbow give when it lands. The counter goes in while the attacker is still trying to get the sword back, which is why it lands.
 - **Continuity.** No phrase ends in the guard it began in. A hit fighter ends closed over the wound, the one who missed ends in a high guard, the winner of an exchange ends with the point in line. Recovery belongs to the start of the next movement: the pause comes at the end of the follow-through, and what happens next decides how the fighter gets out of it.
 - **Timing.** Load about 300 ms, drive 300, strike 175 with the blade's own snap in the last 60, impact hold 70 to 110 ms, follow-through 200, recovery 500 to 700. Slow, fast, still, slow. The impact hold is the only stillness, and nothing is hidden behind shake, flashes or particles (the study page draws one small mark at a contact and nothing else).
@@ -31,7 +32,7 @@ These come from the approach, not from tuning: a library of whole-body poses, bl
 
 All three are in `experiments/pits-motion.js` (pure, no page or rules access; tests in `tests/pits-motion.cjs`).
 
-1. **A rig driven from the feet and hands, not from the hips.** Channels: two foot positions, pelvis position, two spine angles, head, weapon hand and off hand measured from the shoulder, blade angle. Legs and arms are solved (knees and elbows only bend the way they can). This replaces `PS_POSE`, `pitsStageGeom` and the after-the-fact foot rule.
+1. **A rig driven from the feet and hands, not from the hips.** Channels: two foot positions, pelvis position, two spine angles, head, weapon hand and off hand measured from the shoulder, and the wrist (the blade's angle from the forearm). Legs and arms are solved (knees and elbows only bend the way they can). This replaces `PS_POSE`, `pitsStageGeom` and the after-the-fact foot rule.
 2. **A track per body part instead of one blend per pose.** Each part has its own keys and its own curve, so parts can lead and follow, hands can swing in arcs or travel straight, and a step is a real event with a start and a landing. This replaces `psPlay`, `PS_LAG` and the momentum overshoot.
 3. **An exchange is one function of time for both fighters.** Phrases (cut, parry, redirect, thrust, reaction, retire, collapse, press) write keys against a shared contact time, starting from the pose the fighter is in. Because the picture is a function of the clock, pausing for a decision is stopping the clock, a replay is running it again, and any moment can be inspected. This is item 11 of `pits-one-screen-plan.md` (one timeline per exchange).
 
@@ -42,12 +43,12 @@ All three are in `experiments/pits-motion.js` (pure, no page or rules access; te
 | Sequence | Shows |
 |---|---|
 | Attack, parry, counterattack, reaction, recovery | The reference. Includes the decision pause after the redirect (tick "Stop where a decision would be made"). |
-| A miss | Follow-through and a recovery along the blade's own path. |
+| A miss | The cut running out low and short, the body carried with it, and the point lifted back up. |
 | A damaging hit | A late parry beaten, the cut landing, the body's answer, the stance regathered. |
 | Press Advantage | The attacker stays on the blade with the point in the face; the defender stays covering; held, then released. No blow, no ground taken. |
 | A fight-ending injury | The fall comes straight out of the contact and stays down. The winner lowers the sword. Nothing is implied beyond "out of the fight". |
 
-The tests hold these to the rules above: limbs never over-stretch, planted feet never slide, nothing jumps between moments, blades meet at the contact, a miss touches nothing, pause poses are balanced, fighters end back at measure, no phrase returns to its opening guard.
+The tests hold these to the rules above: limbs never over-stretch, the blade never turns further than a wrist can, planted feet never slide, nothing jumps between moments, blades meet at the contact, a miss touches nothing, pause poses are balanced, fighters end back at measure, no phrase returns to its opening guard.
 
 **Not demonstrated, still to be applied:**
 
