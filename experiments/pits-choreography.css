@@ -1,0 +1,30 @@
+/* Movement study page (experiments/pits-choreography.html). Colours come from the site tokens only. */
+.pc-page{margin:0;background:var(--ink,var(--paper));color:var(--bone);font:15px/1.5 var(--font-ui,system-ui,sans-serif)}
+.pc-main{max-width:1100px;margin:0 auto;padding:16px}
+.pc-main h1{font:600 24px/1.2 var(--font-display,Georgia,serif);margin:4px 0 6px}
+.pc-back{margin:0}.pc-back a{color:var(--bone-dim)}
+.pc-lead{color:var(--bone-dim);margin:0 0 14px;max-width:70ch}
+.pc-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pc-tabs button,.pc-controls button{padding:8px 12px;border:1px solid var(--line);border-radius:3px;background:transparent;
+  color:inherit;font:600 13px var(--font-ui,system-ui,sans-serif);cursor:pointer}
+.pc-tabs button[aria-selected=true],.pc-controls .pc-primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.pc-wrap{padding:0;margin:0;max-width:none;--ps-gold:var(--bone-dim)}
+.pc-stage{height:auto;aspect-ratio:7/3;max-height:470px}
+.pc-hold{margin:8px 0 0;padding:8px 12px;border:1px solid var(--line);border-radius:3px;background:var(--paper);color:var(--bone);font-size:13px}
+.pc-caption{min-height:3em;margin:10px 0 6px;font-size:15px}
+.pc-caption b{color:var(--accent)}
+.pc-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:13px}
+.pc-controls .pc-primary{min-width:84px}
+.pc-controls select{font:inherit;padding:5px;background:var(--paper);color:var(--bone);border:1px solid var(--line);border-radius:3px}
+.pc-scrub{position:relative;margin-top:12px}
+.pc-scrub input{width:100%;margin:0;accent-color:var(--accent)}
+.pc-marks{position:relative;height:16px;margin:0 8px}
+.pc-marks i{position:absolute;top:0;width:2px;height:9px;background:var(--bone-dim)}
+.pc-marks i.stop{height:14px;width:3px;background:var(--accent)}
+.pc-keys{color:var(--bone-dim);font-size:12px;margin:4px 0 0}
+.pc-tip{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.55}
+.pc-tip.a{stroke:var(--bone)}.pc-tip.b{stroke:var(--bone-dim)}
+.pc-plant{stroke:var(--accent);stroke-width:3;stroke-linecap:round}
+.pc-clash{stroke:var(--bone);stroke-width:3;stroke-linecap:round}
+.pc-woundfx{stroke:var(--accent);stroke-width:3;stroke-linecap:round}
+@media (max-width:600px){.pc-stage{aspect-ratio:5/3}}
