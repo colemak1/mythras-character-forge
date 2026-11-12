@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: fight study pace fixed at the owner's choice
+
+- The owner chose 1.10 times the previous pace on the slider. The fight now plays at 1.65 times its own time (about 5.7 s), and the slider is removed.
+
 ## The Pits: fight study, heavier and faster (owner's review)
 
 - **Faster.** The fight plays at 1.5 times its own time: about 6 s at Normal. Half and Quarter are relative to that.

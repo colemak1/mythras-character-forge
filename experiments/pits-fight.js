@@ -298,9 +298,10 @@ function buildFight(){
   t=t10+760;
 
   seq.end=t+1900;seq.dur=seq.end+10;
-  // played at 1.5 times the fight's own time (owner, 2026-11-12: "a bit faster, like .5x faster"). The movement is
-  // written and tested in fight time; the page plays it faster, hit-stops and flashes included (they are shown time)
-  seq.pace=1.5;
+  // played at 1.65 times the fight's own time (owner, 2026-11-12: first "about .5x faster", then 1.10 times that on
+  // the pace slider). The movement is written and tested in fight time; the page plays it faster, hit-stops and
+  // flashes included (they are shown time)
+  seq.pace=1.65;
   seq.rec=run(seq.dur);seq.marks.sort((x,y)=>x.t-y.t);
   return seq;
 }

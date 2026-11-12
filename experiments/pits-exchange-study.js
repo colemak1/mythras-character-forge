@@ -142,18 +142,7 @@ function seek(td){st.playing=false;st.held=null;st.td=Math.max(0,Math.min(total,
   // a pause already behind the bar does not stop playback again
   st.passed={};for(const p of seq.pauses)if(PS.shownAt(seq,p.t)<=st.td)st.passed[p.t]=true;draw();}
 const nudge=d=>seek(st.td+d*FRAME);
-// the pace slider (fight only): 1 is the fight's current pace (seq.pace), 2 is twice that. The readout gives both
-// numbers, so the owner can name the one wanted. Remembered in this browser only.
-const PACE=$('pcPace');
-const pace=()=>(seq.pace||1)*(PACE&&!$('pcPaceWrap').hidden?+PACE.value:1);
-if(PACE&&seq.pace){
-  $('pcPaceWrap').hidden=false;
-  try{const v=+localStorage.getItem('pits-fight-pace');if(v>=1&&v<=2)PACE.value=v;}catch(e){}
-  const show=()=>{const v=+PACE.value;$('pcPaceOut').textContent=v.toFixed(2)+'× current ('+(v*seq.pace).toFixed(2)+'× fight time, about '+
-    (PS.shownDur(seq)/(v*seq.pace)/1000).toFixed(1)+' s)';};
-  PACE.addEventListener('input',()=>{show();try{localStorage.setItem('pits-fight-pace',PACE.value);}catch(e){}});
-  show();
-}
+const pace=()=>seq.pace||1;
 
 // the scrub bar: a tick per caption, a taller one per decision
 $('pcScrub').max=Math.round(total);
