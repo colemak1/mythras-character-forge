@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-12 by Claude (Pits: animation direction and movement study)_
+_Last updated: 2026-11-12 by Claude (Pits: movement study refined, five connected exchanges)_
 
 ## Where things stand
 
@@ -16,7 +16,7 @@ _Last updated: 2026-11-12 by Claude (Pits: animation direction and movement stud
 
 ## Next
 
-000. **Claude, done 2026-11-12:** an animation direction for the Pits (`docs/pits-animation-direction.md`) and a movement study page, `experiments/pits-choreography.html` (engine `experiments/pits-motion.js`, tests `tests/pits-motion.cjs`). Demonstration only: the live stage is unchanged. Follow-up the same day (owner: the sword pivoted in the hand like a hinge): the blade now follows the forearm within a wrist's range, and the sequences were re-posed. **Owner:** watch the five sequences (try quarter speed and "Stop where a decision would be made") and say whether this is the movement to apply; also whether the fighters may stand closer (the doc's Known compromises). **Then Claude:** wire it into the stage in the order under "Not demonstrated, still to be applied". The four small stage defects at the end of the doc can go to a Sonnet session, only if the current stage stays in use meanwhile.
+000. **Claude, done 2026-11-12:** movement study refined after the owner's review (`experiments/pits-choreography.html`, engine `experiments/pits-motion.js`, tests `tests/pits-motion.cjs`, direction and compromises in `docs/pits-animation-direction.md`). Still study only: the live stage is unchanged. The page now plays one fight of five connected exchanges (sword cut parried and redirected; dagger counter; sword miss; dagger thrust beaten up; sword cut ends it) with two decision pauses, plus Press Advantage. The five points are fixed and tested: miss follow-through on a step, the empty hand, a clear lane for the counter, a closer measure (200) with a compact cut, and a collapse that tips and buckles. Remaining compromises are listed in the doc (flat scene, dagger stays in the fallen hand, phrases hand-tuned to this pair). **Owner:** watch the fight at normal and quarter speed and say whether it is convincing enough to wire in, or which exchange still looks wrong. **Then Claude:** wire it into the stage (doc, "Not demonstrated, still to be applied"); do not widen the weapon library first.
 
 00. **Claude, done 2026-11-12:** ARM-01 to ARM-06 (weapon and shield arms, Core p.110) built and tested in `tests/pits-arm.cjs`; ARM-05 is not applicable (the Pits is melee only); ARM-06 is an app policy recorded in `docs/decisions.md` for the owner to confirm. Left for Work: live-check an arm Serious Wound (drop, Pick Up then Ready with the other hand, shield arm) and the free Switch Weapon Hand. Known limits: passive shield coverage of a disabled shield arm is GM-handled (ARM-04); no setup toggle for handedness on Forge characters beyond the checkbox.
 

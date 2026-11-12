@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits movement study: five connected exchanges
+
+- The study page (`experiments/pits-choreography.html`) now plays one fight of five exchanges as a single movement: each exchange starts in the pose the last one ended in, the attacker changes, and the scene stops twice where a decision would be made. A button starts from any exchange. Press Advantage stays as a second tab.
+- The fighters stand closer and the sword's cut is tighter: one step of the front foot, the hilt beside the head, then hips, shoulders, arm and blade in turn.
+- A missed cut carries the body through a step and ends on a wide stance; the sword fighter's empty hand guards in front or trails behind as a counterweight; the dagger's counter goes in above a sword that has dropped beside its owner; the finishing fall tips backward and buckles, with the dagger arm dropped.
+- The Pits itself is still unchanged.
+
 ## The Pits movement study: the sword is held, not hinged
 
 - On the study page the blade used to turn in the hand as if on a hinge. The weapon is now gripped: its angle follows the forearm, with only as much turn as a wrist has, so moving the blade means moving the arm. Cuts land with the sword in line with the arm, the wind-up carries it overhead, and a little of the hilt shows behind the hand.

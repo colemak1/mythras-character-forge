@@ -16,11 +16,14 @@ document.documentElement.setAttribute("data-mode",m);})();}catch(e){}</script>
   <p class="pc-back"><a href="practice-combat.html">&larr; The Pits</a></p>
   <h1>Movement study: broadsword against dagger</h1>
   <p class="pc-lead">A demonstration of the animation direction in <code>docs/pits-animation-direction.md</code>.
-    It is not wired into the Pits yet. Every result shown here is fixed in advance: nothing is rolled.</p>
+    It is not wired into the Pits yet. Every result shown here is fixed in advance: nothing is rolled.
+    The fight is five exchanges played as one movement: each begins in the pose the last one ended in, the attacker
+    changes, and the scene stops twice where a decision would be made.</p>
   <div class="pc-tabs" id="pcTabs" role="tablist" aria-label="Sequence"></div>
+  <div class="pc-tabs pc-exchanges" id="pcExchanges" aria-label="Exchange"></div>
   <section class="ps-wrap pc-wrap" aria-label="Arena">
     <div class="ps-stage pc-stage">
-      <svg class="ps-scene" id="pcScene" viewBox="250 190 700 300" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Two stick figures fighting">
+      <svg class="ps-scene" id="pcScene" viewBox="330 215 600 257" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Two stick figures fighting">
         <rect class="ps-floorfill" x="-2400" y="450" width="6000" height="400"/>
         <line class="ps-floor" x1="-2400" x2="3600" y1="450" y2="450"/>
         <g id="pcPaths"></g><g class="ps-figs" id="pcFigs"></g><g id="pcFx"></g>
@@ -34,7 +37,7 @@ document.documentElement.setAttribute("data-mode",m);})();}catch(e){}</script>
     <button type="button" id="pcBack" aria-label="Back one frame">&minus; frame</button>
     <button type="button" id="pcFwd" aria-label="Forward one frame">+ frame</button>
     <label>Speed <select id="pcSpeed"><option value="1">Normal</option><option value="0.5">Half</option><option value="0.25">Quarter</option></select></label>
-    <label><input type="checkbox" id="pcDecide"> Stop where a decision would be made</label>
+    <label><input type="checkbox" id="pcDecide" checked> Stop where a decision would be made</label>
     <label><input type="checkbox" id="pcPath"> Show weapon paths and planted feet</label>
     <label><input type="checkbox" id="pcLoop"> Loop</label>
   </div>

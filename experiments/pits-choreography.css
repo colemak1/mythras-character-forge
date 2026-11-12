@@ -8,6 +8,7 @@
 .pc-tabs button,.pc-controls button{padding:8px 12px;border:1px solid var(--line);border-radius:3px;background:transparent;
   color:inherit;font:600 13px var(--font-ui,system-ui,sans-serif);cursor:pointer}
 .pc-tabs button[aria-selected=true],.pc-controls .pc-primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.pc-exchanges button{font-weight:400;padding:6px 10px}
 .pc-wrap{padding:0;margin:0;max-width:none;--ps-gold:var(--bone-dim)}
 .pc-stage{height:auto;aspect-ratio:7/3;max-height:470px}
 .pc-hold{margin:8px 0 0;padding:8px 12px;border:1px solid var(--line);border-radius:3px;background:var(--paper);color:var(--bone);font-size:13px}
@@ -27,4 +28,4 @@
 .pc-plant{stroke:var(--accent);stroke-width:3;stroke-linecap:round}
 .pc-clash{stroke:var(--bone);stroke-width:3;stroke-linecap:round}
 .pc-woundfx{stroke:var(--accent);stroke-width:3;stroke-linecap:round}
-@media (max-width:600px){.pc-stage{aspect-ratio:5/3}}
+@media (max-width:600px){.pc-stage{aspect-ratio:20/11}}
