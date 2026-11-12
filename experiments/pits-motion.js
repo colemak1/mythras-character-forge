@@ -47,7 +47,9 @@ function ik(a,b,l1,l2,sign){
 
 // ----- the rig: channel values -> joint positions (fighter frame) -----
 // turn: how far the shoulders are turned into the line (+: the weapon shoulder forward, the other back; 0 in the study)
-const SCALAR=['ffx','ffy','bfx','bfy','px','py','lean','bend','head','w','turn'];
+// fs: how far the blade is turned toward the viewer (0 flat in the picture; .5 drawn at half length). A cut that comes
+// round flat, at the chest or the legs, is foreshortened as it swings; it is always flat at contact.
+const SCALAR=['ffx','ffy','bfx','bfy','px','py','lean','bend','head','w','turn','fs'];
 const VEC=['h','o'];                       // weapon hand and off hand, measured from the shoulder
 function torso(p){
   const a1=rad(p.lean),a2=rad(p.lean+p.bend),a3=rad(p.lean+p.bend+p.head);
@@ -63,7 +65,7 @@ function solve(p,wlen){
   // The weapon is gripped, not hinged: its angle is the forearm's angle plus the turn of the wrist (wr).
   // Between keys the blade therefore rides with the forearm; it can only swing as far as a wrist can turn.
   const Hn=wa.end,fore=deg(Math.atan2(Hn[1]-wa.mid[1],Hn[0]-wa.mid[0])),w=p.wr==null?p.w:fore+p.wr;
-  const tip=[Hn[0]+Math.cos(rad(w))*wlen,Hn[1]+Math.sin(rad(w))*wlen];
+  const bln=wlen*(1-clamp(p.fs||0,0,.8)),tip=[Hn[0]+Math.cos(rad(w))*bln,Hn[1]+Math.sin(rad(w))*bln];
   return {P:t.P,M:t.M,S,wS,oS,Hd:t.Hd,K:fl.mid,F:fl.end,bK:bl.mid,bF:bl.end,E:wa.mid,Hn,oE:oa.mid,oHn:oa.end,tip,
     w,grip:norm(w-fore),over:{ff:fl.over,bf:bl.over,h:wa.over,o:oa.over}};
 }
@@ -121,7 +123,7 @@ Fig.prototype.k=function(t,vals,ease,opts){
   return this;
 };
 // keep parts exactly where they are until t (so the next key starts moving from t, not from the last key)
-const ALL=['p','lean','bend','head','h','w','o','turn'];
+const ALL=['p','lean','bend','head','h','w','o','turn','fs'];
 Fig.prototype.hold=function(t,chans){
   for(const c of chans||ALL){
     if(c==='p'){this.hold(t,['px','py']);continue;}
@@ -154,6 +156,8 @@ Fig.prototype.grip=function(){
     const t=Math.max(k.t,0),p=tr.pose(t);p.w=k.w;
     return {t:k.t,v:solve(p,len).grip,e:k.e};
   });
+  // the wrist turns the short way between two keys: never a spin through a full turn because an angle wrapped past 180
+  for(let i=1;i<out.length;i++){while(out[i].v-out[i-1].v>180)out[i].v-=360;while(out[i].v-out[i-1].v<-180)out[i].v+=360;}
   tr.ch.wr=out;
 };
 Fig.prototype.joints=function(t){return solve(this.tr.pose(t),this.weapon.len);};
@@ -770,28 +774,47 @@ function liveMiss(A,D,td,s,out){
   D.k(ta+390,{p:[-25,72],lean:8,bend:8,head:-12},'io');
   if(s.fall)out.end=Math.max(out.end,liveFallAt(D,out.tc+160));
 }
-// The cut at close measure (owner's review, 2026-11-12): no overhead wind-up. 380 ms from stillness to contact.
-//   preparation tc-380 .. tc-250  the weight settles onto the rear foot, the shoulders turn back, the hilt comes up beside the
-//                                 head with the blade back over the shoulder (not upright)
-//   commitment  tc-250 .. tc-140  the front foot goes, the rear leg drives the hips forward; the blade is left behind
-//   strike      tc-140 .. tc      the shoulders come round, the arm goes long, the front knee takes the weight; the blade last
-// The caller aims the blade at tc.
-function liveCut(A,tc,stride,gain){
-  const f=stride/34,t0=tc-380;
+// The cut at close measure. 380 ms from stillness to contact, and the target shapes it from the first frame
+// (owner's review, second pass, 2026-11-12): the chamber, the stance and the line of the blade all say where it is going.
+//   high (head)   the hilt comes up beside the face, the blade laid back at about 45 degrees; the body stays tall and the
+//                 cut comes down steeply
+//   mid (body)    the hilt stays at the rear shoulder, the blade laid back flat; the shoulders turn further away and the
+//                 cut comes round level (drawn shorter as it swings toward the viewer), arriving nearly flat
+//   low (legs)    the hips sink and the chest pitches forward; the hilt drops to the hip with the blade back and down,
+//                 and the cut sweeps round low into the knee
+// Rhythm: an unhurried preparation that arrives and settles; the blade waits behind while the foot and hips go; then
+// one accelerating swing to contact, with no stop on the way. The caller aims the blade at tc; the follow-through slows.
+const CUT_ZONE=loc=>loc==='head'?'high':/leg$/.test(loc||'')?'low':'mid';
+const CHAMBER={
+  high:{h:[5,-8],w:148,body:{py:77,lean:-1,bend:-2,head:-4,turn:-7},strike:{lean:15,bend:6,head:-12,turn:11},dy:0,fs:0},
+  mid:{h:[-8,-20],w:174,body:{py:75,lean:2,bend:0,head:-8,turn:-12},strike:{lean:15,bend:4,head:-12,turn:14},dy:-2,fs:.5},
+  low:{h:[-4,-42],w:-152,body:{py:72,lean:11,bend:6,head:-14,turn:-9},strike:{lean:26,bend:10,head:-22,turn:12},dy:-6,fs:.4}
+};
+const CUT_LEAD=520;   // from stillness to contact
+function liveCut(A,tc,stride,gain,zone){
+  const Z=CHAMBER[zone||'high'],f=stride/34,t0=tc-CUT_LEAD;
   A.hold(t0).rebase(t0,A.front);
   // a gaining step: the rear foot comes up during the preparation, so the front foot's step can stay short
   const g=gain>4?gain:0;
-  if(g)A.step('bf',t0+10,tc-250,A.tr.val('bfx',t0)-A.ox+g,5);
+  if(g)A.step('bf',t0+10,tc-290,A.tr.val('bfx',t0)-A.ox+g,5);
   // the hips go forward with the step but stay over the base: never past the front knee
   const bf1=A.tr.val('bfx',t0)-A.ox+g,ff1=A.front+stride;
-  const p0=A.tr.val('px',t0)-A.ox+g*.55,p1=Math.min(p0+4+22*f,ff1-24,(ff1+bf1)/2+14),y1=Math.max(70,78-7*f);
-  // the hilt comes to the shoulder, beside the face, the blade angled back at about 45 degrees: a short chamber
-  A.k(tc-250,{p:[p0-8,76],lean:0,bend:-2,head:-4,turn:-7},'io');
-  A.k(tc-250,{h:[5,-10],w:150},'io',ARC).k(tc-250,{o:[24,-8]},'io',ARC);
-  if(stride>3)A.step('ff',tc-240,tc-45,A.front+stride,6);
-  A.k(tc-140,{p:[p0+(p1-p0)*.55,75],lean:7,bend:2,head:-8,turn:1},'io');
-  A.k(tc-140,{h:[15,-2],w:120},'io',ARC).k(tc-140,{o:[18,-14]},'io',ARC);
-  A.k(tc,{p:[p1,y1],lean:16,bend:6,head:-12,turn:11},'io').k(tc,{o:[-30,-42]},'in',ARC);
+  const p0=A.tr.val('px',t0)-A.ox+g*.55,p1=Math.min(p0+4+22*f,ff1-24,(ff1+bf1)/2+14),y1=Math.max(66,78-7*f+Z.dy),pb=p0-8;
+  // preparation (controlled): the weight settles back over the rear foot and the shoulders turn away; it arrives and
+  // settles, and the hands are still finishing the chamber when the legs begin
+  A.k(tc-280,{p:[pb,Z.body.py],lean:Z.body.lean,bend:Z.body.bend,head:Z.body.head,turn:Z.body.turn},'io');
+  A.k(tc-255,{h:Z.h,w:Z.w},'io',ARC).k(tc-255,{o:[24,-8]},'io',ARC);
+  // the blade waits in the chamber while the foot and hips go (a little drift, not a hold)
+  A.k(tc-135,{h:[Z.h[0]+2,Z.h[1]-1],w:Z.w-4},'lin',ARC);
+  if(stride>3)A.step('ff',tc-280,tc-90,A.front+stride,Z===CHAMBER.low?4:6);
+  // commitment (fast): the rear leg drives; the hips gather speed, then the front knee catches them into contact.
+  // The two pieces meet at the same speed, so the drive is one movement, not two.
+  A.k(tc-200,{px:pb+(p1-pb)*.3,py:Z.body.py-1},'in').k(tc,{p:[p1,y1]},'out');
+  A.k(tc-130,{lean:Z.body.lean+4,turn:Z.body.turn+5,bend:Z.body.bend+1,head:Z.body.head-2},'io');
+  A.k(tc,{lean:Z.strike.lean,bend:Z.strike.bend,head:Z.strike.head,turn:Z.strike.turn},'in');
+  // a flat cut swings toward the viewer on its way round, then lies flat again on the target
+  if(Z.fs){A.k(tc-135,{fs:0},'lin').k(tc-60,{fs:Z.fs},'out').k(tc,{fs:0},'in');}
+  A.k(tc-130,{o:[16,-16]},'io',ARC).k(tc,{o:[-30,-42]},'in',ARC);
 }
 // After the contact the rear foot comes up behind a long step, so the base is a stance again by the end of the follow-through.
 function liveCutFollow(A,tc){
@@ -801,7 +824,7 @@ function liveCutFollow(A,tc){
   A.ox=ox;
 }
 // Where a cut comes down onto each part (blade angle in the attacker's frame)
-const CUT_PREF={head:-8,chest:-25,abdomen:-35,rarm:-28,larm:-28,rleg:-55,lleg:-58};
+const CUT_PREF={head:-8,chest:-14,abdomen:-22,rarm:-18,larm:-18,rleg:-50,lleg:-52};
 // The spent sword: the point comes down on the attacker's own side, short of the opponent's nearest foot, so a blade that
 // missed or was turned never ends across the other fighter. This is the pose the next movement starts from.
 function liveSpent(A,D,t,ease){
@@ -810,6 +833,86 @@ function liveSpent(A,D,t,ease){
   const tip=[Math.min(near-34,ff+46),12];
   A.aimGrip(t,A.W(tip),-6,A.weapon.len,ease||'out',{arc:true,pref:-64,minR:36});
   return tip;
+}
+// ----- the defender's side of a cut (owner's review, second pass): nobody stands and waits to be hit -----
+// Where a blade meets the cut, for each line: in front of and above the head, in front of the chest, or low over the
+// front knee.
+function liveParryPoint(D,t,zone){
+  const part=zone==='high'?D.at(t,'Hd'):zone==='low'?D.at(t,'K'):D.at(t,'chest');
+  return [part[0]+D.face*(zone==='low'?40:46),part[1]+(zone==='high'?8:zone==='low'?22:6)];
+}
+// the blade angle (defender's frame) that sets the guard across each line: up and across for a high or middle cut,
+// point down for a low one
+const PARRY_W={high:100,mid:84,low:-78};
+// where the weapon hand has to be for the blade, held at angle w, to have the point `along` its length on a world
+// point (as far as the arm goes); nothing is keyed
+function liveHandFor(D,t,world,w,along){
+  const tq=torso(D.tr.pose(t)),S=tq.S,dS=[tq.wS[0]-S[0],tq.wS[1]-S[1]],T=D.L(world);
+  let h=[T[0]-Math.cos(rad(w))*along-S[0],T[1]-Math.sin(rad(w))*along-S[1]];
+  const r=Math.hypot(h[0]-dS[0],h[1]-dS[1]);
+  if(r>ARM-1){const k=(ARM-1)/r;h=[dS[0]+(h[0]-dS[0])*k,dS[1]+(h[1]-dS[1])*k];}
+  return h;
+}
+// a weapon-hand position (from the shoulder) pulled in to what the arm reaches at time t
+function liveArmReach(F,t,h){
+  const tq=torso(F.tr.pose(t)),dS=[tq.wS[0]-tq.S[0],tq.wS[1]-tq.S[1]],r=Math.hypot(h[0]-dS[0],h[1]-dS[1]);
+  if(r<=ARM-3)return h;const k=(ARM-3)/r;return [dS[0]+(h[0]-dS[0])*k,dS[1]+(h[1]-dS[1])*k];
+}
+// The defender reads the preparation: the weight comes back a little and the weapon goes to a guard, wherever the last
+// exchange left it. Ends at tc-150, when the defence proper begins. The guard is short (the point at the attacker's
+// face, the hand in front of the chest), so the attacker can step in without walking onto it.
+const READ_GUARD={h:[22,-22],w:62};
+// The guard a hit gets past (owner's review: a hit is an attack that finds an opening). The defender covers one line
+// and the cut takes another: over a middle guard to the head; under a raised guard to the body or the legs.
+const OPEN_GUARD={high:{h:[18,-42],w:-8},mid:{h:[14,8],w:82},low:{h:[16,-8],w:74}};
+function liveRead(D,tc,guard){
+  const t0=tc-330;D.hold(t0);D.ox=0;
+  const px=D.tr.val('px',t0),py=D.tr.val('py',t0),G=guard||(D.style==='thrust'?DAGGER_OUT:READ_GUARD);
+  const l0=D.tr.val('lean',t0);
+  D.k(tc-200,{px:px-3,py:Math.min(py,76),lean:Math.min(l0,D.guard.lean+1),turn:-2},'io');
+  D.k(tc-200,{h:liveArmReach(D,tc-200,G.h),w:G.w},'io',ARC).k(tc-200,{o:[16,-24]},'io',ARC);
+  D.hold(tc-150,['h','w','px','py','lean','bend','head','turn']);
+  return px;
+}
+// A parry that intercepts: the guard is set across the line before the cut arrives (fast, decisive, then waiting),
+// the cut lands on it near its point, and the defender binds: the hilt drives forward and down and the attacker's
+// blade is carried with it before it falls away. Returns the meeting point.
+function liveParryCut(A,D,tc,zone,alongA,bind){
+  const px=liveRead(D,tc),dl=Math.round(D.weapon.len*.3);
+  D.k(tc-50,{px:px-7,lean:D.guard.lean-2,turn:-4},'out');
+  const C=liveParryPoint(D,tc-50,zone);
+  D.k(tc-50,{h:liveHandFor(D,tc-50,C,PARRY_W[zone],dl),w:PARRY_W[zone]},'out3',ARC).k(tc-50,{o:[12,-28]},'out',ARC);
+  D.hold(tc);
+  A.aimGrip(tc,C,8,Math.round(A.weapon.len*alongA),'in',{arc:true,wease:'in'});
+  // the stopped blade: its weight goes into the defender's arm and knees
+  D.k(tc+40,{py:D.tr.val('py',tc)-3},'out');
+  if(bind){
+    // the bind: the parrying blade turns down and forward, the cut is carried with it
+    const t2=tc+90,hb=D.tr.val('h',tc);
+    D.k(t2,{px:px-2,lean:D.guard.lean+4,turn:3},'out').k(t2,{h:liveArmReach(D,t2,[hb[0]+10,hb[1]-(zone==='low'?6:26)]),w:PARRY_W[zone]-(zone==='low'?10:100)},'out',ARC);
+    // the attacker's blade is carried once both bodies are written (bindCarry)
+    A.bind={t:t2,D,zone};
+  }
+  return C;
+}
+// After both fighters' keys are written: the attacker's blade rides the parrying blade down for a moment.
+function liveBindCarry(A){
+  const b=A.bind;if(!b)return;A.bind=null;A.ox=0;
+  const P=b.D.at(b.t,'blade',Math.round(b.D.weapon.len*.3)),S=torso(A.tr.pose(b.t)).S,Q=A.L(P);
+  // the blades slide on each other: the closer the bind comes, the nearer the hilt it bears on the attacking blade
+  const along=Math.max(20,Math.min(A.weapon.len*.75,Math.hypot(Q[0]-S[0],Q[1]-S[1])-42));
+  A.aimGrip(b.t,P,-2,Math.round(along),'out',{arc:true});
+}
+// A defence that is beaten: the defender sees the cut and goes to cover the line, but the blade gets there first.
+// At contact the guard is still on its way (about half way), clear of the cutting blade, so the hit reads as an
+// attack that beat a defence, not as a parry.
+const LATE_U={high:.2,mid:.25,low:.25};
+function liveLateGuard(A,D,tc,zone){
+  const px=liveRead(D,tc,D.style==='thrust'?null:OPEN_GUARD[zone]),dl=Math.round(D.weapon.len*.3),h0=D.tr.val('h',tc-150),w0=D.tr.val('w',tc-150);
+  const C=liveParryPoint(D,tc,zone),hp=liveHandFor(D,tc,C,PARRY_W[zone],dl),u=LATE_U[zone];
+  D.k(tc,{h:[h0[0]+(hp[0]-h0[0])*u,h0[1]+(hp[1]-h0[1])*u],w:w0+(PARRY_W[zone]-w0)*u},'in',ARC);
+  // the body only starts to give: the weight is still over the feet when the blade arrives
+  D.k(tc,{turn:-3},'in');
 }
 const inReach=h=>{const r=Math.hypot(h[0],h[1]);return r>ARM-2?[h[0]*(ARM-2)/r,h[1]*(ARM-2)/r]:h;};
 function liveFallAt(D,t){D.rebase(t,D.front);collapseBack(D,t);return t+800;}
@@ -835,7 +938,7 @@ function liveBlow(F,aid,t,s){
   const max=A.style==='cut'?34+50*.6:26;
   if(need>max){t1=liveWalk(A,t1,need-max+6);need=max-6;}
   const stride=Math.max(A.style==='cut'?8:12,Math.min(A.style==='cut'?34:max,need));out.stride=stride;
-  if(A.style==='cut'){out.tc=t1+380;liveCut(A,out.tc,stride,Math.max(0,(need-stride)/.6));}
+  if(A.style==='cut'){out.tc=t1+CUT_LEAD;liveCut(A,out.tc,stride,Math.max(0,(need-stride)/.6),CUT_ZONE(s.loc||'chest'));}
   else{
     // a long lunge brings the rear foot up behind it, so the base never gets wider than a leg can hold
     A.rebase(t1,A.front);out.tc=t1+300;
@@ -844,11 +947,12 @@ function liveBlow(F,aid,t,s){
   const tc=out.tc;
   if(o==='evaded'||o==='miss'||o==='fumble'){liveMiss(A,D,td,s,out);A.grip();D.grip();return out;}
   const parried=/parry|ward|parried/.test(o);
+  if(!parried&&A.style==='cut'&&!s.shield)liveLateGuard(A,D,tc,CUT_ZONE(s.loc||'chest'));
   let tb=tc;   // when the blade reaches the body
   if(parried){
     let C;
     // the parry takes the cut near its point, so the blade that is stopped never reaches past the defender's guard
-    if(A.style==='cut')C=daggerParry(A,D,tc,s.shield,.85);
+    if(A.style==='cut')C=s.shield?daggerParry(A,D,tc,true,.85):liveParryCut(A,D,tc,CUT_ZONE(s.loc||'chest'),.85,!/^partial/.test(o));
     else{
       // the thrust is met by the defender's blade coming up under it, blade first, the body under it afterwards
       D.hold(t1+30).rebase(t1+30,D.front);
@@ -861,20 +965,18 @@ function liveBlow(F,aid,t,s){
     out.contacts.push({t:tc,kind:'clash',at:C});
     if(o==='parried'||o==='full-parry'||o==='full-ward'){
       if(A.style==='cut'){
-        // turned down and away: the sword's own weight carries it down beside its owner's front foot
-        const hc=A.tr.val('h',tc),hb=D.tr.val('h',tc);
-        // the blade is turned down at once: its point drops toward the floor on the attacker's side, never across the defender
+        // turned down and away: after the bind the sword's own weight carries it down beside its owner's front foot,
+        // and the defender's point comes back up into line (the opening is now the defender's)
         liveCutFollow(A,tc);
-        A.hold(tc);
-        {const kn=D.at(tc+100,'K'),kx=A.L(kn)[0];A.aimGrip(tc+100,A.W([kx-36,Math.max(14,kn[1]-4)]),-4,A.weapon.len,'io',{arc:true,pref:-55,minR:34});}
-        if(!s.shield)D.k(tc+110,{h:[hb[0]+3,hb[1]-28],w:38},'out',ARC);
-        D.k(tc+220,{p:[3,72],lean:10,bend:5,head:-10},'io').k(tc+220,{o:[27,-12]},'io',ARC);
-        if(!s.shield)D.k(tc+220,{h:[30,-8],w:50},'io',ARC);
+        {const kn=D.at(tc+240,'K'),kx=A.L(kn)[0];A.aimGrip(tc+240,A.W([kx-36,Math.max(14,kn[1]-4)]),-4,A.weapon.len,'in',{arc:true,pref:-55,minR:34});}
+        D.ox=0;const dpx=D.tr.val('px',tc+90);
+        D.k(tc+320,{px:dpx+2,py:73,lean:9,bend:5,head:-10,turn:0},'io').k(tc+320,{o:[24,-16]},'io',ARC);
+        if(!s.shield)D.k(tc+320,{h:SWORD_POINT.h,w:SWORD_POINT.w+6},'io',ARC);
         {const ox=A.ox;A.ox=0;const mid=(A.tr.val('ffx',tc+400)+A.tr.val('bfx',tc+400))/2;
-         A.k(tc+220,{px:mid+10,py:70,lean:18,bend:8,head:-17,turn:4},'out');A.ox=ox;}
-        A.k(tc+220,{o:[-40,-40]},'out',ARC);
-        liveSpent(A,D,tc+240,'out');
-        out.end=tc+280;
+         A.k(tc+150,{px:mid+12,py:70,lean:19,bend:8,head:-17,turn:6},'out').k(tc+330,{px:mid+9,py:72,lean:15,bend:7,head:-15,turn:3},'io');A.ox=ox;}
+        A.k(tc+240,{o:[-40,-40]},'out',ARC);
+        liveBindCarry(A);liveSpent(A,D,tc+340,'out');
+        out.end=tc+340;
       }else{
         // carried up and over: the thrust is lifted off the line and comes back
         A.k(tc+90,{h:[36,25],w:102},'out',ARC).k(tc+150,{lean:17,bend:0,head:-13},'out');
@@ -900,7 +1002,8 @@ function liveBlow(F,aid,t,s){
     // the cut is drawn out of the target and comes down on the attacker's own side (written after the defender's reaction)
     liveCutFollow(A,parried?tc:tb);A.ox=0;const pa=A.tr.val('px',tb);
     // drawn back out of the target along its own line before it falls, so it does not sweep through the defender's legs
-    {const hb=A.tr.val('h',tb);A.k(tb+110,{h:[hb[0]-16,hb[1]-2]},'out',ARC);}
+    // the cut carries on through the target (slowing), drawn back and down along its own line, then settles
+    {const hb=A.tr.val('h',tb),wb=A.tr.val('w',tb);A.k(tb+120,{h:[hb[0]-12,hb[1]-12],w:wb-20},'lin',ARC);}
     // the hips settle between the feet, the weight still forward over the front knee
     const mid=(A.tr.val('ffx',tb+400)+A.tr.val('bfx',tb+400))/2;
     A.k(tb+150,{px:Math.min(pa+3,mid+16),py:70,lean:20,bend:8,head:-18,turn:12},'out').k(tb+320,{px:mid+10,py:72,lean:15,bend:7,head:-14,turn:7},'io');
@@ -914,7 +1017,7 @@ function liveBlow(F,aid,t,s){
   if(s.defeated||s.fall)out.end=Math.max(out.end,liveFallAt(D,tb));
   else if(s.lost>0)out.end=Math.max(out.end,Math.min(tb+340,liveReact(D,tb,s.lost,s.loc)));
   else out.end=Math.max(out.end,liveGive(D,tb));
-  if(out.spend)liveSpent(A,D,tb+300,'out');
+  if(out.spend)liveSpent(A,D,tb+360,'out');
   A.grip();D.grip();
   {const j=livePose(A,tb),al=liveAlong(A,true)*Math.min(1,j.blen/len0),P=A.W([j.Hn[0]+Math.cos(rad(j.w))*al,j.Hn[1]+Math.sin(rad(j.w))*al]);
    if(Math.hypot(P[0]-T[0],P[1]-T[1])>6)body.at=P;}
@@ -931,7 +1034,7 @@ function livePose(f,t,limp){
   const len=f.weapon.len;
   // a long blade turned down cannot go through the floor: its point rests on it, and the blade is drawn shorter, as
   // if it pointed into the scene (the scene is flat; this keeps the picture continuous)
-  j.blen=len;
+  j.blen=Math.hypot(j.tip[0]-j.Hn[0],j.tip[1]-j.Hn[1]);
   if(j.tip[1]<2){
     j.tip=[j.tip[0],2];const dx=j.tip[0]-j.Hn[0],dy=j.tip[1]-j.Hn[1];
     j.blen=Math.max(8,Math.hypot(dx,dy));const w=deg(Math.atan2(dy,dx));j.grip=norm(j.grip+w-j.w);j.w=w;
@@ -973,7 +1076,7 @@ function seqSword(){
 const LIVE_SEQUENCES={sword:seqSword};
 const LIVE={fighter:liveFighter,gap:liveGap,station:liveStation,place:livePlace,walk:liveWalk,recover:liveRecover,
   blow:liveBlow,fall:liveFall,stand:liveStand,lower:liveLower,yieldTo:liveYield,press:livePress,react:liveReact,
-  pose:livePose,part:livePart,style:liveStyle,along:liveAlong,CUT_PREF};
+  pose:livePose,part:livePart,style:liveStyle,along:liveAlong,CUT_PREF,CUT_LEAD,zone:CUT_ZONE,sequence:seqSword};
 
 const api={LIVE,DIM,EASE,ik,solve,torso,Track,Fig,GRIP,SWORD_GUARD,DAGGER_GUARD,WEAPONS,SPACING,CENTRE,SEQUENCES,LEG,ARM,
   // display time (with the impact holds) -> sequence time
