@@ -268,7 +268,10 @@ function pitsStageBeat(events,step,names){
 // Browser part
 // ---------------------------------------------------------------------------
 const PSTAGE_DUEL=(()=>{try{return /[?&]stage=duel\b/.test(location.search);}catch(e){return false;}})();
-const PS={paused:false,cuePromise:null,cueFor:0,fig:{},lastId:0,epoch:0,raf:0,ready:false,seeded:false,ex:null,run:null,wasBusy:false,fighters:{},lodge:{},tether:{},events:[]};
+// The movement language of docs/pits-animation-direction.md drives the figures; ?stage=poses keeps the earlier pose
+// library for comparison until the owner has judged the new movement at the table.
+const PS_MOTION=(()=>{try{return typeof PitsMotion!=='undefined'&&!/[?&]stage=poses\b/.test(location.search);}catch(e){return false;}})();
+const PS={clock:0,M:{},gap:0,busyUntil:0,paused:false,cuePromise:null,cueFor:0,fig:{},lastId:0,epoch:0,raf:0,ready:false,seeded:false,ex:null,run:null,wasBusy:false,fighters:{},lodge:{},tether:{},events:[]};
 const PS_GROUND=450,PS_SPACING={apart:440,even:300,short:220,long:390},PS_M=22;
 const psP=o=>({...PS_IDLE,...o});
 const PS_POSE={
@@ -329,7 +332,8 @@ function psEmit(type,data){
   try{if(window.__psRecord){window.__psRecord.push({t:Math.round(performance.now()),type,...data});
     // a review page may freeze the picture at the moment of contact (window.__psFreeze) and thaw it after the screenshot
     if(type==='contact'&&window.__psFreeze)psFreeze();}}catch(e){}
-  if(type==='contact'){try{if(typeof pitsStageOnContact==='function')pitsStageOnContact();}catch(e){}}
+  // the plates take the damage when the blade reaches the body, not at the guard of a partial parry
+  if(type==='contact'&&data.kind!=='deflect'){try{if(typeof pitsStageOnContact==='function')pitsStageOnContact();}catch(e){}}
 }
 const psFigs=()=>[PS.fig.a,PS.fig.b];
 function psFreeze(){
@@ -392,6 +396,7 @@ function psPlantFeet(f,g,pose,L,now){
 function psDraw(f,now){
   const L=f.look;if(!L)return;
   if(f.forceLimp)L.limp[f.forceLimp]=true;
+  if(PS_MOTION&&PS.M[f.id]){psDrawMotion(f,L,now);return;}
   const mo=psMomentum(f,now),c=mo?Object.fromEntries(PS_KEYS.map(k=>[k,f.cur[k]+mo[k]])):f.cur,down=L.prone||f.end==='ko';
   const br=!down&&!f.anim&&!f.holdPose&&!f.exPose&&!f.pressRole?Math.sin(now/480+(f.id==='b'?1.7:0)):0;
   const pose={...c,t:c.t+br*1.6,a1:c.a1+br*2,w:c.w+br*2};
@@ -401,8 +406,22 @@ function psDraw(f,now){
   const wLimp=L.swap?L.limp.larm:L.limp.rarm,oLimp=L.swap?L.limp.rarm:L.limp.larm;
   if(wLimp){pose.a1=6+Math.sin(now/650)*3;pose.a2=5;}
   if(oLimp){pose.ba1=-6+Math.sin(now/700)*3;pose.ba2=-4;}
-  const g=pitsStageGeom(pose,L.wk,L.swap),e=f.e;
+  const g=pitsStageGeom(pose,L.wk,L.swap);
   psPlantFeet(f,g,pose,L,now);
+  psPaint(f,L,g,pose.w,c.dx,c.lift,pose,now);
+}
+// The movement language (pits-motion.js): the figure is a function of the stage clock. Its joints are measured with y up
+// from the floor; the drawing below has y down, and its weapon angle is measured from straight down.
+function psDrawMotion(f,L,now){
+  const m=PS.M[f.id],wLimp=L.swap?L.limp.larm:L.limp.rarm,oLimp=L.swap?L.limp.rarm:L.limp.larm;
+  const j=PitsMotion.LIVE.pose(m,PS.clock,{weapon:wLimp,off:oLimp}),q=p=>[p[0],-p[1]];
+  const g={Sh:q(j.S),M:q(j.M),H:q(j.P),hd:q(j.Hd),E:q(j.E),Hn:q(j.Hn),bE:q(j.oE),bHn:q(j.oHn),K:q(j.K),bK:q(j.bK),F:q(j.F),bF:q(j.bF)};
+  f.scale=1;f.hx=m.hx;
+  // the shadow lifts with the hips when the figure is on the floor
+  psPaint(f,L,g,j.w+90,0,Math.max(0,Math.min(40,(70-j.P[1])*.5)),null,now,j.blen);
+}
+function psPaint(f,L,g,w1,dx,lift,pose,now,blen){
+  const e=f.e,c={dx,lift};
   const ln=(el,a,b)=>{el.setAttribute('x1',a[0]);el.setAttribute('y1',a[1]);el.setAttribute('x2',b[0]);el.setAttribute('y2',b[1]);};
   ln(e.chest,g.Sh,g.M);ln(e.abdomen,g.M,g.H);
   e.head.setAttribute('cx',g.hd[0]);e.head.setAttribute('cy',g.hd[1]);
@@ -414,13 +433,14 @@ function psDraw(f,now){
     const cls='ps-part ps-w-'+L.parts[key]+(f.flash===key&&now<f.flashUntil?' ps-flash':'');
     if(f.classes[key]!==cls){f.classes[key]=cls;e[key].setAttribute('class',cls);}
   }
+  const oLimp=L.swap?L.limp.rarm:L.limp.larm;
   e.shield.style.display=L.shield&&!oLimp?'':'none';
   if(L.shield){e.shield.setAttribute('cx',g.bHn[0]);e.shield.setAttribute('cy',g.bHn[1]);}
   const hand=g.Hn;let tip=hand;
   const show=L.armed&&!f.dropping;
   for(const k of ['shaft','guard','knob','wh','wh2','wire'])e[k].style.display='none';
   if(show){
-    const w1=pose.w,kind=L.wk.kind,len=L.wk.len;tip=psAdd(hand,psDir(w1,len));
+    const kind=L.wk.kind,len=blen||L.wk.len;tip=psAdd(hand,psDir(w1,len));
     const perp=psDir(w1+90,1),at=(d)=>psAdd(hand,psDir(w1,d));
     e.shaft.style.display='';e.shaft.setAttribute('class','ps-shaft'+(L.wk.thin?' thin':''));
     if(kind==='blade'){
@@ -445,7 +465,7 @@ function psDraw(f,now){
       else{e.wh.setAttribute('points',psPts([psAdd(tip,psDir(w1,12)),[tip[0]+perp[0]*8,tip[1]+perp[1]*8],[tip[0]-perp[0]*8,tip[1]-perp[1]*8]]));e.wh.style.display='';}
     }else if(kind==='chain'||kind==='whip'||kind==='net'){
       // flexible weapons: a short handle and a hanging, swinging end
-      const sw=Math.sin(now/260+(f.id==='b'?2:0))*(f.anim?0:8),hl=kind==='net'?26:30;
+      const sw=Math.sin(now/260+(f.id==='b'?2:0))*(f.anim||PS_MOTION?0:8),hl=kind==='net'?26:30;
       const h2=at(hl);ln(e.shaft,hand,h2);e.shaft.setAttribute('class','ps-shaft ps-wood');
       const end=psAdd(h2,psDir(w1+sw,len-hl)),mid=psAdd(h2,psDir(w1-sw*1.6,(len-hl)/2));
       e.wire.setAttribute('points',psPts([h2,mid,end]));e.wire.style.display='';tip=end;
@@ -454,7 +474,7 @@ function psDraw(f,now){
     }
   }
   const X=f.hx+f.face*c.dx*f.scale;f.X=X;
-  f.pts={...g,tip,hand,pose};
+  f.pts={...g,tip,hand,pose:pose||{w:w1,dx,lift}};
   f.g.setAttribute('transform','translate('+X+','+PS_GROUND+') scale('+(f.face*f.scale)+','+f.scale+')');
   f.shadow.setAttribute('cx',X);f.shadow.setAttribute('rx',(50-Math.min(c.lift,40)*.5)*f.scale);
   f.shadow.setAttribute('opacity',Math.max(.12,.4-c.lift/110));
@@ -499,6 +519,13 @@ function psFrame(now){
   if(PS.freeze){PS.raf=requestAnimationFrame(psFrame);return;}
   const dt=PS.lastFrame?Math.min(100,now-PS.lastFrame):0;PS.lastFrame=now;
   const stopped=PS.stopUntil&&now<PS.stopUntil;   // hit-stop: a few frames of stillness at contact
+  if(PS_MOTION){
+    // one clock for the whole bout: a decision stops it, a contact holds it for a moment, nothing else moves the picture
+    if(!PS.paused&&!stopped)PS.clock+=dt*psSpeed();
+    if(!PS.paused)psLull();
+    for(const id of ['a','b'])if(PS.fig[id])psDraw(PS.fig[id],now);
+    psDrawLodged(now);PS.raf=requestAnimationFrame(psFrame);return;
+  }
   for(const id of ['a','b']){
     const f=PS.fig[id];if(!f)continue;
     if(PS.paused||stopped){
@@ -630,6 +657,7 @@ function psSettle(keepExchange){
     f.anim=null;f.mom=null;f.vel=null;f.plant=null;f.relaxAt=0;f.endPose=null;f.forceLimp=null;if(!keepExchange)f.exPose=null;f.trailOn=false;f.trailPts=[];f.flash=null;f.dropping=false;f.slide=null;f.hx=f.tx;
     if(f.dropEl&&f.look&&f.look.armed){f.dropEl.remove();f.dropEl=null;}
     f.cur={...psRest(f)};}
+  if(PS_MOTION){PS.busyUntil=PS.clock;for(const id of ['a','b']){const f=PS.fig[id];if(!f)continue;f.mEnd=null;if(PS.M[id]&&f.look)psPlaceM(id);}}
   psClearEffects();{const b=psLayer('ps-banner');if(b)b.className='ps-banner';}psEmit('settle',{});
 }
 // Weapon knocked away or dropped: fly it in an arc, then leave it on the floor
@@ -734,6 +762,7 @@ const psWindupFor=wk=>psThrust(wk.kind)||wk.thin?PS_POSE.cock:PS_POSE.windup;
 const psReplaying=()=>typeof V!=='undefined'&&!!V.replaying;
 
 async function psRunCue(cue){
+  if(PS_MOTION&&PS.M.a&&PS.M.b)return psMotionCue(cue);
   const me=PS.fig[cue.actor]||null,tgt=PS.fig[cue.target]||null;
   // An exchange is one motion: the attacker stays wound up and the defender stays in guard
   // (exPose) through the dice and choices, and the blow releases from there. Anything that
@@ -932,6 +961,179 @@ async function psPressFinish(atk,def,cue){
   await psSleep(300);
 }
 
+// ---- The movement language: one exchange is one timeline for both fighters (pits-motion.js) ----
+// Each cue writes phrases from the stage clock, starting from the pose the figure is in. The effects (sparks, numbers,
+// sound, the plates) wait for the clock to reach the contact the phrase was written against.
+const PL=()=>PitsMotion.LIVE;
+// the point of a fighter's drawn weapon nearest to a world point (where the blades actually met)
+function psOnBlade(f,w){
+  if(!f.pts)return w;const a=psWorld(f,f.pts.hand),b=psWorld(f,f.pts.tip),vx=b[0]-a[0],vy=b[1]-a[1];
+  const u=Math.max(0,Math.min(1,((w[0]-a[0])*vx+(w[1]-a[1])*vy)/((vx*vx+vy*vy)||1)));return [a[0]+vx*u,a[1]+vy*u];
+}
+const psW=p=>[p[0],PS_GROUND-p[1]];          // the rig's world (y up from the floor) -> the stage's (y down)
+function psUntil(t){
+  const e=PS.epoch;
+  if(psReduced()){PS.clock=Math.max(PS.clock,t);return Promise.resolve();}
+  return new Promise((res,rej)=>{const tick=()=>{if(e!==PS.epoch)return rej(0);if(PS.clock>=t)return res();requestAnimationFrame(tick);};tick();});
+}
+const psHurt=f=>!!f.look&&Object.values(f.look.parts).some(v=>v&&v!=='none');
+function psStateOf(f){return f.mEnd||(f.end==='ko'||(f.look&&f.look.prone)?'lying':f.end==='win'?'low':'guard');}
+function psPlaceM(id){
+  const f=PS.fig[id],m=PS.M[id];if(!f||!m)return;
+  const st=psStateOf(f);PL().place(m,PS.clock,PS.gap,st);f.spent=false;f.mDown=st==='lying';
+}
+// a rig for each fighter, rebuilt (and placed) when the weapon or the weapon hand changes
+function psMotionFigs(){
+  for(const id of ['a','b']){
+    const f=PS.fig[id];if(!f||!f.look)continue;const wk=f.look.wk,m=PS.M[id];
+    if(!m||m.weapon.len!==wk.len||m.weapon.key!==wk.kind||m.swap!==!!f.look.swap){PS.M[id]=PL().fighter(id,wk,f.look.swap);PS.M[id].keep=20000;psPlaceM(id);}
+  }
+}
+// A lull: once nothing has moved for a while, a fighter left spent by the last exchange gets back to its station, and a
+// figure the engine has put on (or taken off) the floor without a motion of its own goes down or gets up.
+function psLull(){
+  const L=PL();
+  for(const id of ['a','b']){
+    const f=PS.fig[id],m=PS.M[id];if(!f||!m||!f.look||PS.clock<PS.busyUntil+300)continue;
+    if(f.look.prone&&!f.mDown){f.mDown=true;f.spent=false;PS.busyUntil=Math.max(PS.busyUntil,L.fall(m,PS.clock));continue;}
+    if(!f.look.prone&&f.mDown&&!f.end&&!f.mEnd){f.mDown=false;PS.busyUntil=Math.max(PS.busyUntil,L.stand(m,PS.clock,PS.gap));continue;}
+    if(!f.spent||PS.clock<PS.busyUntil+1300||f.end||f.mEnd||f.mDown||f.pressRole)continue;
+    f.spent=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,PS.gap,psHurt(f)));
+  }
+}
+async function psMotionCue(cue){
+  const me=PS.fig[cue.actor]||null,tgt=PS.fig[cue.target]||null,L=PL();
+  const g=x=>x==='fumble'?0:x==='failure'?1:x==='success'?2:3;
+  try{
+    if(cue.type==='attack'&&me){
+      // nothing moves yet: the attack is drawn once its result is known, as one movement from load to follow-through
+      PS.ex={exid:cue.exid,atk:me.id,aGrade:g(cue.grade),shield:cue.shield,react:'none',reactGrade:null,reactTool:'weapon'};
+      if(cue.grade==='critical')psBanner('Critical attack','crit');else if(cue.grade==='fumble')psBanner('Fumble','bad');
+      psEmit('attack',{actor:me.id,grade:cue.grade});await psSleep(300);
+    }else if(cue.type==='parry'&&me){
+      if(PS.ex){PS.ex.react='parry';PS.ex.reactGrade=g(cue.grade);PS.ex.reactTool=cue.shield?'shield':'weapon';}
+      psEmit('guard',{actor:me.id,grade:cue.grade});await psSleep(200);
+    }else if(cue.type==='evade'&&me){
+      if(PS.ex){PS.ex.react='evade';PS.ex.reactGrade=g(cue.grade);}
+      psEmit('brace',{actor:me.id,grade:cue.grade});await psSleep(200);
+    }else if(cue.type==='locate'&&tgt){
+      const w=psBodyPt(tgt,cue.loc);psReticle(w);
+      if(cue.chosen)psDom(psWorld(tgt,tgt.pts?tgt.pts.hd:[0,-120]),'Chosen: '+(PSTAGE_LOCNAME[cue.loc]||''),'fx');
+      psEmit('locate',{target:tgt.id,loc:cue.loc,point:w.map(Math.round)});await psSleep(420);
+    }else if(cue.type==='hit'||cue.type==='deflect'){
+      await psMotionBlow(cue);psReleaseExchange();
+    }else if(cue.type==='trip'&&tgt&&me){
+      // stand-in until trips have a phrase: a blow at the front leg; if it goes, the fall
+      psDom(psWorld(me,me.pts?me.pts.Sh:[0,-60]),'Trip Opponent','fx');
+      const r=L.blow(PS.M,me.id,PS.clock,{outcome:'armour',loc:'rleg',lost:0,fall:cue.fell});
+      PS.busyUntil=r.end;me.spent=tgt.spent=true;if(cue.fell)tgt.mDown=true;
+      const c=r.contacts[r.contacts.length-1],w=psW(c.at);await psUntil(c.t);
+      psEmit('contact',{kind:'trip',actor:me.id,target:tgt.id,point:w.map(Math.round)});psBurst(w,'spark',10);psRing(w);
+      await psHitStop(60);
+      if(cue.fell){await psUntil(c.t+380);psDust(tgt);psShake();psPunch(4);psSfx('hit');psBanner('Tripped','crit');psDom(psWorld(tgt,tgt.pts.hd),'Tripped!','fx');}
+      else psDom(psWorld(tgt,tgt.pts.Sh),'Stays up','blk');
+      await psUntil(r.end);
+    }else if(cue.type==='disarm'&&tgt&&me){
+      // stand-in until disarms have a phrase: the blow meets the weapon and the weapon goes
+      const r=L.blow(PS.M,me.id,PS.clock,{outcome:'parried',loc:'rarm',lost:0});
+      PS.busyUntil=r.end;me.spent=tgt.spent=true;
+      const c=r.contacts[0],w=psW(c.at);await psUntil(c.t);
+      psEmit('contact',{kind:'disarm',actor:me.id,target:tgt.id,point:w.map(Math.round)});
+      psBurst(w,'spark',14);psRing(w);psShake();psSfx('pick');
+      await psHitStop(70);psPunch(5);psBanner('Disarmed','crit');psFlyWeapon(tgt,cue.metres);
+      await psUntil(r.end);
+    }else if(cue.type==='stand'&&me){
+      me.mDown=false;const end=L.stand(PS.M[me.id],PS.clock,PS.gap);PS.busyUntil=Math.max(PS.busyUntil,end);
+      psDust(me);await psUntil(end);
+    }else if(cue.type==='wound'||cue.type==='limb'){
+      if(cue.type==='wound')psBanner(cue.level==='major'?'Major wound':'Serious wound','red');
+      else psBanner(cue.leg?'Legs gone':'Useless arm','red');
+      psSfx('crit');await psSleep(500);
+    }else if(cue.type==='lodge'&&me){
+      psBanner('Weapon lodged','red');psSfx('crit');psEmit('lodge',{actor:me.id});await psSleep(500);
+    }else if(cue.type==='press'&&me&&tgt){
+      await psMotionPress(me,tgt,{record:{press:cue}});
+    }else if(cue.type==='drop'&&me){
+      if(!me.dropEl&&me.look&&!me.look.armed)psFlyWeapon(me,0);await psSleep(300);
+    }else if(cue.type==='end'){
+      // only what the engine's own wording says: a concession yields; an injury or exhaustion with no finishing contact
+      // falls from where the figure stands
+      const won=cue.winner==='a';
+      psBanner(cue.winner?(won?'Victory':'Defeated'):'Draw',won?'vd':'bad');psSfx('crit');
+      const lo=cue.winner&&PS.fig[cue.winner==='a'?'b':'a'],wi=cue.winner&&PS.fig[cue.winner];
+      let end=PS.clock;
+      if(lo){
+        if(cue.how==='concede'){lo.mEnd='yield';psEmit('yield',{target:lo.id});end=L.yieldTo(PS.M[lo.id],PS.clock);}
+        else{lo.mEnd='lying';if(!lo.mDown){lo.mDown=true;end=L.fall(PS.M[lo.id],PS.clock);}}
+      }
+      if(wi){wi.mEnd='low';end=Math.max(end,L.lower(PS.M[wi.id],PS.clock));}
+      PS.busyUntil=Math.max(PS.busyUntil,end);await psUntil(Math.min(end,PS.clock+700));
+    }
+  }catch(e){if(e!==0)psEmit('cue-error',{cue:cue.type,message:String(e&&e.message||e)});}
+}
+// The blow of an exchange, once its result is known: the phrases are chosen from the engine's facts, and the effects
+// land when the drawn weapon gets there.
+async function psMotionBlow(cue){
+  const ex=PS.ex||{},px=cue.px||{},L=PL();
+  const atkId=cue.actor||ex.atk||(cue.target?(cue.target==='a'?'b':'a'):null);
+  const atk=PS.fig[atkId],def=atk&&psOther(atk);if(!atk||!def||!PS.M[atk.id]||!PS.M[def.id])return;
+  const out=pitsStageOutcome(cue,ex),loc=cue.loc||'chest',lost=cue.lost||0;
+  const reactTool=px.reactTool||ex.reactTool||'weapon',shield=out.endsWith('ward')||(reactTool==='shield'&&!!def.look.shield);
+  const after=(cue.record&&cue.record.after)||[],endC=after.find(c=>c.type==='end'),limbC=after.find(c=>c.type==='limb'),dropC=after.find(c=>c.type==='drop');
+  const defeated=lost>0&&!!endC&&endC.winner===atk.id&&endC.how==='injury';
+  const leg=lost>0&&!!limbC&&(limbC.leg||/leg/.test(limbC.loc||''));
+  psEmit('resolve',{outcome:out,loc,lost,actor:atk.id,target:def.id,px});
+  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,fall:leg&&!defeated,defeated});
+  PS.busyUntil=r.end;atk.spent=def.spent=true;
+  if(defeated||leg)def.mDown=true;if(defeated)def.mEnd='lying';
+  for(const c of r.contacts){
+    await psUntil(c.t);const w=psW(c.at);
+    if(c.kind==='miss'){
+      psEmit('contact',{kind:out,actor:atk.id,target:def.id,point:w.map(Math.round)});
+      psBurst(w,'gray',5);psSfx('miss');
+      if(out==='evaded'){psRing(w);psDom(psWorld(def,def.pts.Sh),'Evaded','blk');}
+      else psDom(w,out==='fumble'?'Fumble!':'Miss','miss');
+    }else if(c.kind==='clash'){
+      const full=out==='parried'||out==='full-parry'||out==='full-ward';
+      psEmit('contact',{kind:full?out:'deflect',actor:atk.id,target:def.id,point:w.map(Math.round),tip:psOnBlade(atk,w).map(Math.round)});
+      psBurst(w,'spark',full?16:12);psRing(w);psSfx('pick');
+      if(full){psShake();psDom(w,out.endsWith('ward')?'Shield ward':'Parried','blk');if(cue.type==='hit'&&px.blocked)psDom([w[0],w[1]+26],'−'+px.blocked,'blk');}
+      else psDom(w,(out.endsWith('ward')?'Ward':'Parry')+' −'+px.blocked,'blk');
+      await psHitStop(full?70:50);
+    }else{
+      def.flash=lost>0?loc:null;def.flashUntil=performance.now()+900;
+      psEmit('contact',{kind:out,actor:atk.id,target:def.id,loc,point:w.map(Math.round),tip:psWorld(atk,atk.pts.tip).map(Math.round),lost});
+      if(lost>0){
+        psBurst(w,'spark',10);psRing(w);psShake();psBurst(w,'blood',10+lost*2);
+        psDom(w,'−'+lost,'dmg');psSfx(lost>=6?'crit':'hit');
+        if(px.armour>0)psDom([w[0],w[1]+28],'Armour −'+px.armour,'blk');
+        // a disabled arm hangs from the blow on, and a dropped weapon leaves the hand
+        const arm=limbC&&!leg&&(limbC.loc==='larm'||limbC.loc==='rarm')?limbC.loc:null;
+        if(arm){def.forceLimp=arm;if(dropC&&!def.dropEl)psSleep(60).then(()=>{if(!def.dropEl)psFlyWeapon(def,0);}).catch(()=>{});}
+        if(defeated)psEmit('collapse',{target:def.id,actor:atk.id,how:endC.how});
+        await psHitStop(45+Math.min(70,lost*9));psPunch(lost);
+      }else{
+        psBurst(w,'gray',8);psRing(w);psSfx('pick');
+        psDom(w,out==='armour'?'Armour −'+px.armour:'No damage','blk');
+      }
+    }
+  }
+  await psUntil(r.end);
+  if(defeated){
+    const won=endC.winner==='a';psBanner(won?'Victory':'Defeated',won?'vd':'bad');psSfx('crit');
+    atk.mEnd='low';const e2=L.lower(PS.M[atk.id],PS.clock);PS.busyUntil=Math.max(PS.busyUntil,e2);
+    await psUntil(Math.min(e2,PS.clock+380));return;
+  }
+  await psMotionPress(atk,def,cue);
+}
+// Press Advantage: the attacker stays on the blade with the point in the face, held until the engine ends the effect.
+async function psMotionPress(atk,def,cue){
+  const rec=cue&&cue.record;if(!rec||!rec.press||!PS.M[atk.id]||!PS.M[def.id])return;
+  const end=PL().press(PS.M[atk.id],PS.M[def.id],PS.clock);PS.busyUntil=Math.max(PS.busyUntil,end);atk.spent=def.spent=true;
+  psDom(psWorld(atk,atk.pts?atk.pts.Sh:[0,-60]),'Press Advantage','fx');psEmit('press',{actor:atk.id,target:def.id});
+  await psUntil(end);
+}
+
 // ---- Hooks the arena calls ----
 function psMount(){
   if(document.getElementById('pitsStage'))return true;
@@ -976,6 +1178,16 @@ function psDrawRange(key){
 // A replay of the whole fight starts the stage from nothing (no old weapons on the floor, spacing re-seeded).
 function pitsStageReset(){PS.run=null;}
 function psSetSpacing(snap){
+  if(PS_MOTION&&PS.fig.a.look&&PS.fig.b.look){
+    // a change of range is footwork: the fighters step to their new places (no sliding)
+    const key=psRangeKey(),L=PL(),gap=L.gap(PS.fig.a.look.wk,PS.fig.b.look.wk,key),moved=gap!==PS.gap;PS.gap=gap;
+    psMotionFigs();
+    for(const id of ['a','b']){const f=PS.fig[id],m=PS.M[id];
+      if(moved&&snap)psPlaceM(id);
+      else if(moved&&!f.mDown&&!f.mEnd){if(PS.clock>=PS.busyUntil){f.spent=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,gap,psHurt(f)));}else f.spent=true;}
+      f.tx=m.hx+m.face*(L.station(m,gap)-m.guard.ffx+m.guard.px);}
+    psDrawRange(key);return;
+  }
   const key=psRangeKey(),d=PS_SPACING[key],tx={a:600-d/2,b:600+d/2};
   for(const id of ['a','b']){const f=PS.fig[id];
     if(f.tx!==tx[id]||snap){f.tx=tx[id];
@@ -1000,7 +1212,8 @@ function pitsStageSync(){
   const fresh=PS.run!==S||PS.fighters.b!==S.fighters.b;
   if(fresh){psSettle();for(const k of Object.keys(PS.lodge)){PS.lodge[k].remove();delete PS.lodge[k];}
     for(const id of ['a','b']){const f=PS.fig[id];if(f.dropEl){f.dropEl.remove();f.dropEl=null;}f.look=null;}
-    PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};}
+    PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};
+    PS.M={};PS.gap=0;for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.mDown=false;f.spent=false;f.forceLimp=null;}}
   for(const id of ['a','b']){
     const f=PS.fig[id];f.look=pitsStageLook(view[id]);f.scale=f.look.scale;
     if(f.look.armed&&f.dropEl){f.dropEl.remove();f.dropEl=null;}
@@ -1010,7 +1223,9 @@ function pitsStageSync(){
   }
   // Press Advantage: the effect is active while the engine says the opponent still cannot attack (pressedTurns).
   {const pr=['a','b'].filter(i=>view[i]&&(view[i].pressedTurns||0)>0),active=S.phase==='fight'&&pr.length===1?pr[0]:null;
-   for(const id of ['a','b'])PS.fig[id].pressRole=active?(id===active?'cover':'press'):null;}
+   for(const id of ['a','b']){const f=PS.fig[id];f.pressRole=active?(id===active?'cover':'press'):null;
+     // released: the pair gets out of it at the next lull
+     if(f.pressWas&&!f.pressRole)f.spent=true;f.pressWas=f.pressRole;}}
   PS.fighters.lodged={a:pitsStageLodged(view,'a'),b:pitsStageLodged(view,'b')};
   PS.fighters.tether={a:pitsStageEntangle(view,'a'),b:pitsStageEntangle(view,'b')};
   const over=(S.phase==='over'||S.phase==='between')&&S.winnerId&&!V.busy;

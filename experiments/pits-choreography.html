@@ -7,16 +7,16 @@ try{(function(){var m=null;try{m=localStorage.getItem("sitota-mode")}catch(e){}
 if(m!=="light"&&m!=="dark")m=typeof matchMedia==="function"&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
 document.documentElement.setAttribute("data-mode",m);})();}catch(e){}</script>
 <title>The Pits: movement study</title>
-<link rel="stylesheet" href="pits-stage.css">
-<link rel="stylesheet" href="../sitota-theme.css">
-<link rel="stylesheet" href="pits-choreography.css">
+<link rel="stylesheet" href="pits-stage.css?v=ccb5857e29">
+<link rel="stylesheet" href="../sitota-theme.css?v=c8b123e401">
+<link rel="stylesheet" href="pits-choreography.css?v=4739a1328c">
 </head>
 <body class="pc-page">
 <main class="pc-main">
   <p class="pc-back"><a href="practice-combat.html">&larr; The Pits</a></p>
   <h1>Movement study: broadsword against dagger</h1>
   <p class="pc-lead">A demonstration of the animation direction in <code>docs/pits-animation-direction.md</code>.
-    It is not wired into the Pits yet. Every result shown here is fixed in advance: nothing is rolled.
+    The live Pits stage now uses the same movement (the earlier poses: <code>practice-combat.html?stage=poses</code>). Every result shown here is fixed in advance: nothing is rolled.
     The fight is five exchanges played as one movement: each begins in the pose the last one ended in, the attacker
     changes, and the scene stops twice where a decision would be made.</p>
   <div class="pc-tabs" id="pcTabs" role="tablist" aria-label="Sequence"></div>
@@ -47,7 +47,7 @@ document.documentElement.setAttribute("data-mode",m);})();}catch(e){}</script>
   </div>
   <p class="pc-keys">Space: play or pause. Left and right arrows: one frame. Drag the bar to stop on any moment.</p>
 </main>
-<script src="pits-motion.js"></script>
-<script src="pits-choreography.js"></script>
+<script src="pits-motion.js?v=ab98f643a1"></script>
+<script src="pits-choreography.js?v=679eba3a0c"></script>
 </body>
 </html>
