@@ -56,7 +56,21 @@ The tests hold these to the rules above: limbs never over-stretch, the blade nev
 - **Starting from an arbitrary pose.** The phrases read the current pose, but every demonstration starts from guard. Chaining many exchanges (and the whole-fight replay) from wherever the last one ended is untested, as is the dagger attacking first from measure.
 - **Other phrases:** thrusting and two-handed weapons, shields (parry and bash), other hit locations (the aim is general; the body reactions are written for the chest only), evade, trip, disarm, stand up, concede, a disabled limb, a dropped weapon, range changes, left-handed fighters, impaled and entangling weapons.
 - **Judged from stills and filmstrips,** not watched at speed by a person. The owner's eye is the test.
-- **Known compromises.** At the current spacing (300 units) a sword needs an advance and a passing step to reach; tightening the spacing would make shorter attacks possible (a layout choice for the owner). The scene is flat, so when the dagger steps in past the lowered sword the leg crosses the blade.
+- **Known compromises.** At the current spacing (300 units) a sword needs an advance and a passing step to reach (the owner has since allowed closer spacing; see the order of work). The scene is flat, so when the dagger steps in past the lowered sword the leg crosses the blade.
+
+## Owner's decisions (2026-11-12) and the order of work
+
+After watching the study page the owner decided: **this is the movement for the Pits**, the held sword reads right, and **the fighters may stand closer**.
+
+Apply it in this order, one PR per step, each with the study tests extended to cover it:
+
+1. **Closer spacing and either fighter attacking.** Choose the new spacing so a sword reaches with one passing step and a dagger with a step and a gather (`SPACING` in `pits-motion.js`, then `PS_SPACING` in the stage to match). Make every phrase take "attacker" and "defender" instead of sword and dagger, and start from the pose the fighter is in. Add a sixth study sequence: two exchanges back to back with the second starting where the first ended, the dagger attacking.
+2. **The stage draws with the new rig.** `psDraw` takes joints from `PitsMotion`; guards per weapon family; the pose library, `psPlay` and the foot rule are removed. Wounds, limp arms, shields, dropped and lodged weapons keep their current rules.
+3. **Exchanges choose phrases.** The stage's exchange record (outcome, tool, location, damage, consequences) picks the phrases; `pitsStageOnContact` fires at the contact time; a decision stops the clock at the pause key and the next playback starts from that pose. The acceptance checks in `tests/visual/pits-flow.cjs` must still pass.
+4. **The remaining phrases,** most common first: thrusting weapons, shield parry, hits to head, abdomen, arms and legs, evade, two-handed weapons, then trip, disarm, stand up, concede, disabled limb, range changes.
+5. **Work live-checks** a full bout and a whole-fight replay on the deployed site.
+
+Step 3 replaces the code the Sonnet items below are about, so those are only worth doing if steps 1 to 3 take more than a few sessions.
 
 ## For Sonnet: routine defects in the live stage
 

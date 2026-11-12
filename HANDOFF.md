@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-12 by Claude (Pits: animation direction and movement study)_
+_Last updated: 2026-11-12 by Claude (Pits: movement approved by the owner; order of work recorded)_
 
 ## Where things stand
 
@@ -16,7 +16,7 @@ _Last updated: 2026-11-12 by Claude (Pits: animation direction and movement stud
 
 ## Next
 
-000. **Claude, done 2026-11-12:** an animation direction for the Pits (`docs/pits-animation-direction.md`) and a movement study page, `experiments/pits-choreography.html` (engine `experiments/pits-motion.js`, tests `tests/pits-motion.cjs`). Demonstration only: the live stage is unchanged. Follow-up the same day (owner: the sword pivoted in the hand like a hinge): the blade now follows the forearm within a wrist's range, and the sequences were re-posed. **Owner:** watch the five sequences (try quarter speed and "Stop where a decision would be made") and say whether this is the movement to apply; also whether the fighters may stand closer (the doc's Known compromises). **Then Claude:** wire it into the stage in the order under "Not demonstrated, still to be applied". The four small stage defects at the end of the doc can go to a Sonnet session, only if the current stage stays in use meanwhile.
+000. **Claude, next:** apply the Pits movement to the live stage. The owner approved it on 2026-11-12 (this is the movement; the held sword reads right; the fighters may stand closer). Follow "Owner's decisions and the order of work" in `docs/pits-animation-direction.md`, starting at step 1 (closer spacing, either fighter attacking, phrases that start from the current pose, a two-exchange study sequence). One PR per step. Study page: `experiments/pits-choreography.html`; engine `experiments/pits-motion.js`; tests `tests/pits-motion.cjs`. The live stage is still unchanged.
 
 00. **Claude, done 2026-11-12:** ARM-01 to ARM-06 (weapon and shield arms, Core p.110) built and tested in `tests/pits-arm.cjs`; ARM-05 is not applicable (the Pits is melee only); ARM-06 is an app policy recorded in `docs/decisions.md` for the owner to confirm. Left for Work: live-check an arm Serious Wound (drop, Pick Up then Ready with the other hand, shield arm) and the free Switch Weapon Hand. Known limits: passive shield coverage of a disabled shield arm is GM-handled (ARM-04); no setup toggle for handedness on Forge characters beyond the checkbox.
 
