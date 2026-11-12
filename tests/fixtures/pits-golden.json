@@ -24,7 +24,7 @@
    "2.1 | system | Borik attacks | 90 against Combat Style 68% — FAILURE. | Battleaxe (2H). 1 AP left.",
    "2.1 | system | Asha does not defend | Asha preserves Action Points. The exchange is treated as an undefended attack. | ",
    "2.1 | system | No Damaging Hit | Borik's attack failed to connect. | ",
-   "2.2 | system | Pick Up Weapon | Asha picks up their weapon; it must be readied on a later action (Core p.92). | ",
+   "2.2 | system | Pick Up Weapon | Asha picks up their weapon with the right hand; it must be readied on a later action (Core p.92). | ",
    "2.2 | system | Borik attacks | 35 against Combat Style 68% — SUCCESS. | Battleaxe (2H). 0 AP left.",
    "2.2 | system | Asha does not defend | Asha preserves Action Points. The exchange is treated as an undefended attack. | ",
    "2.2 | hit | Offensive Special Effects | Borik gains 1 Special Effect from superior success. | ",
@@ -54,7 +54,7 @@
    "4.2 | system | Asha does not defend | Asha preserves Action Points. The exchange is treated as an undefended attack. | ",
    "4.2 | system | No Damaging Hit | Borik's attack failed to connect. | ",
    "5.1 | system | Round 5 | AP refresh. Fatigue and blood loss carry forward. | ",
-   "5.1 | system | Ready Weapon | Asha readies their recovered weapon (second action). | ",
+   "5.1 | system | Ready Weapon | Asha readies their recovered weapon in the right hand (second action). | ",
    "5.1 | system | Borik attacks | 100 against Combat Style 68% — FUMBLE. | Battleaxe (2H). 1 AP left.",
    "5.1 | system | Asha parries | 97 vs 36% — FAILURE. 1 AP remaining. | ",
    "5.1 | hit | Defensive Special Effects | Asha gains 1 Special Effect from superior success. | ",
@@ -153,7 +153,7 @@
    "10.3 | hurt | FIGHT ENDS | Asha wins. Borik dies immediately from a Major Wound to Abdomen. | "
   ],
   "decisions": "attack react:evade effect:scar stand footingSkill:brawn dither react:none recoverWeapon react:none brace dither react:none dither react:evade brace react:evade brace react:none recoverWeapon react:parry effect:disarm attack attack react:none attack effect:bleed attack effect:compel dither react:parry effect:trip dither footingDefend:athletics delay react:parry delay react:none attack effect:disarm dither attack attack attack attack effect:scar attack effect:choose pickloc:Abdomen",
-  "stateHash": "d0cba2b67ae34ad4",
+  "stateHash": "cc984637c12e3c52",
   "end": {
    "phase": "between",
    "winner": "Asha",
@@ -369,7 +369,7 @@
    "9.3 | hurt | FIGHT ENDS | Dessa wins. Cade has a Major Limb Wound to the Left Arm: incapacitated and prone. Falls unconscious from agony. If the GM rules the limb severed, punctured or ripped off, untreated blood loss becomes fatal after 15 minutes. | "
   ],
   "decisions": "attack react:parry effect:withdraw dither react:none react:none dither impaleResist:yes attack effect:trip attack effect:damageWeapon brace impaleResist:no attack effect:press attack impaleResist:no delay impaleResist:yes dither impaleResist:no attack impaleResist:no delay impaleResist:yes attack effect:impale impaleChoose:0 impaleLeave:hold delay impaleResist:no delay impaleResist:no withdrawImpale impaleResist:yes withdrawImpale impaleResist:no dither impaleResist:yes dither impaleResist:no delay impaleResist:yes dither impaleResist:yes withdrawImpale impaleResist:no dither impaleResist:no delay impaleResist:yes dither impaleResist:yes delay impaleResist:yes",
-  "stateHash": "9872d69cf7727acc",
+  "stateHash": "3c4d0861b8b72691",
   "end": {
    "phase": "over",
    "winner": "Dessa",
@@ -587,7 +587,7 @@
    "8.3 | hurt | FIGHT ENDS | Faro wins. Esme loses consciousness from a Serious Wound to Head. | "
   ],
   "decisions": "attack footingDefend:athletics attack effect:entangle attack effect:stun attack effect:damageWeapon attack react:none dither attack tripResist:evade brace footingDefend:athletics attack attack footingDefend:athletics attack effect:bash stand dither tripResist:acrobatics freeEntangle react:parry react:none attack footingDefend:athletics dither footingDefend:athletics attack attack footingDefend:athletics attack react:evade react:none stand footingSkill:brawn react:evade brace react:none react:none",
-  "stateHash": "9cc51cc13b75feaa",
+  "stateHash": "1560f3a4748a2350",
   "end": {
    "phase": "over",
    "winner": "Faro",
@@ -753,7 +753,7 @@
    "7.1 | hurt | FIGHT ENDS | Hrolf wins. Gisla dies immediately from a Major Wound to Head. | "
   ],
   "decisions": "react:parry brace react:none react:none dither react:none attack effect:bypassArmour effect:trip footingDefend:athletics delay footingDefend:brawn changeRange footingDefend:athletics shieldAttack footingDefend:brawn attack footingDefend:brawn attack footingDefend:athletics shieldAttack react:shield attack effect:bash react:shield",
-  "stateHash": "1243ccc4e24295eb",
+  "stateHash": "ae1f51f77aa89ea0",
   "end": {
    "phase": "over",
    "winner": "Hrolf",
@@ -871,7 +871,7 @@
    "2.1 | system | Hit Location | Jarn rolls 9 (d20): Abdomen. | ",
    "2.1 | hurt | Jarn hits Abdomen | 2 weapon (2) +1d2 (+2) = 4 total; 0 parry; 2 armour; 2 HP lost. | No successful parry. Abdomen: 7 → 5 HP.",
    "2.2 | system | Tied Initiative | Ivo and Jarn both have Initiative 21, so they act concurrently this cycle. Jarn declares first (arena convention, alternating each cycle); nothing done in that turn can stop Ivo's action this cycle. | Core p.90: tied Initiative totals act concurrently.",
-   "2.2 | system | Pick Up Weapon | Jarn retrieves their weapon; a later Ready Weapon action is required (Core p.92). | ",
+   "2.2 | system | Pick Up Weapon | Jarn picks up their weapon with the right hand; it must be readied on a later action (Core p.92). | ",
    "2.2 | system | Concurrent turn | Ivo acts at the same moment as Jarn's turn: what that turn did to them takes effect after this action. | Core p.90: tied Initiative totals act concurrently.",
    "2.2 | system | Ivo attacks | 100 against Combat Style 70% — FUMBLE. | Longsword. 0 AP left.",
    "2.2 | system | Jarn does not defend | Jarn preserves Action Points. The exchange is treated as an undefended attack. | ",
@@ -882,7 +882,7 @@
    "3.1 | system | Jarn does not defend | Jarn preserves Action Points. The exchange is treated as an undefended attack. | ",
    "3.1 | system | No Damaging Hit | Ivo's attack failed to connect. | ",
    "3.1 | system | Concurrent turn | Jarn acts at the same moment as Ivo's turn: what that turn did to them takes effect after this action. | Core p.90: tied Initiative totals act concurrently.",
-   "3.1 | system | Ready Weapon | Jarn readies their retrieved weapon (second action). | ",
+   "3.1 | system | Ready Weapon | Jarn readies their recovered weapon in the right hand (second action). | ",
    "3.2 | system | Tied Initiative | Ivo and Jarn both have Initiative 21, so they act concurrently this cycle. Jarn declares first (arena convention, alternating each cycle); nothing done in that turn can stop Ivo's action this cycle. | Core p.90: tied Initiative totals act concurrently.",
    "3.2 | system | Jarn changes range | Jarn spends 1 AP to close inside Ivo's reach. Ivo may permit, oppose with Evade, or intercept with an attack. | ",
    "3.2 | system | Change Range · Evade contest | Jarn Evade 13/45% (SUCCESS) vs Ivo Evade 28/45% (SUCCESS). Original range maintained. | ",
@@ -975,7 +975,7 @@
    "7.2 | hit | Engagement Range | Ivo opens to the longer reach. | ",
    "7.3 | system | Tied Initiative | Ivo and Jarn both have Initiative 21, so they act concurrently this cycle. Ivo declares first (arena convention, alternating each cycle); nothing done in that turn can stop Jarn's action this cycle. | Core p.90: tied Initiative totals act concurrently.",
    "7.3 | system | Concurrent turn | Jarn acts at the same moment as Ivo's turn: what that turn did to them takes effect after this action. | Core p.90: tied Initiative totals act concurrently.",
-   "7.3 | system | Move to Weapon | Jarn moves 4m to the disarmed weapon (arena movement: 1 AP). | ",
+   "7.3 | system | Move to Weapon | Jarn moves 4m to the dropped weapon (1 AP; arena movement convention). | ",
    "8.1 | system | Round 8 | AP refresh. Fatigue and blood loss carry forward. | ",
    "8.1 | system | Tied Initiative | Ivo and Jarn both have Initiative 21, so they act concurrently this cycle. Ivo declares first (arena convention, alternating each cycle); nothing done in that turn can stop Jarn's action this cycle. | Core p.90: tied Initiative totals act concurrently.",
    "8.1 | system | Ivo attacks | 49 against Combat Style 70% — SUCCESS. | Longsword. 2 AP left.",
@@ -984,11 +984,11 @@
    "8.1 | hit | Compel Surrender | Jarn Willpower 83/53% (FAILURE) versus Ivo's original 49 (SUCCESS): capitulates. No bodily damage is inflicted. | ",
    "8.1 | hurt | Falling | Jarn is going down, but their concurrent action this cycle still happens first. Jarn surrenders under threat after failing Willpower. | Core p.90: tied Initiative totals act concurrently.",
    "8.1 | system | Concurrent turn | Jarn acts at the same moment as Ivo's turn: what that turn did to them takes effect after this action. | Core p.90: tied Initiative totals act concurrently.",
-   "8.1 | system | Pick Up Weapon | Jarn retrieves their weapon; a later Ready Weapon action is required (Core p.92). | ",
+   "8.1 | system | Pick Up Weapon | Jarn picks up their weapon with the right hand; it must be readied on a later action (Core p.92). | ",
    "8.1 | hurt | FIGHT ENDS | Ivo wins. Jarn surrenders under threat after failing Willpower. | "
   ],
   "decisions": "",
-  "stateHash": "2d23ca27685610b8",
+  "stateHash": "6a5a5234c467663b",
   "end": {
    "phase": "between",
    "winner": "Ivo",

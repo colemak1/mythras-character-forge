@@ -62,7 +62,7 @@ function unavailableReaction(f,tool){
  if(tool==='shield'){
   if(ARENA_WEAPONS[f.weapon].twoHanded)return 'Both hands are committed to your weapon.';
   if(f.pinnedGear==='shield')return 'Your shield is pinned.';
-  if(f.disabled.includes('Left Arm')||f.stunnedLocations?.['Left Arm'])return 'Your shield arm cannot be used.';
+  if(!armUsable(f,shieldArmOf(f)))return 'Your shield arm cannot be used.';
  }else{
   if(f.pinnedGear==='weapon')return 'Your weapon is pinned.';
   if(f.disarmed)return 'Your weapon is on the ground.';
@@ -116,7 +116,7 @@ function actionChoiceHelp(act,f){
   case 'recoverWeapon':return f.droppedMetres>3?'Spend 1 AP moving to the dropped weapon.':f.recoveringWeapon?'Spend 1 AP to ready the weapon you picked up.':'Spend 1 AP to pick up the weapon; ready it on a later turn.';
   case 'reengage':return f.prone?'Stand before moving to engage.':S.gapMetres>3?'The arena charges 1 AP to cross this gap.':'Return to melee range; this short arena gap costs no Move AP.';
   case 'freePin':return 'Contest the pin to free your trapped item.';
-  case 'swapHand':return 'Spend 1 AP readying the weapon in your usable hand.';
+  case 'swapHand':return swapHandReason(f)||'Free. Move the weapon to your other working hand. House policy, not Core RAW.';
   case 'withdrawImpale':return 'Spend 1 AP and test Brawn to withdraw the embedded weapon.';
   default:return '';
  }

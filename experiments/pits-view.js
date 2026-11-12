@@ -45,7 +45,9 @@ function pitsLegalActions(id){
   if(f.pinnedGear)add('freePin','Free Pinned '+(f.pinnedGear==='shield'?'Shield':'Weapon'),1,needs(1));
   if(typeof entangledLoc==='function'&&entangledLoc(f))add('freeEntangle','Break Free',1,needs(1));
   if(typeof entangling==='function'){const held=entangling(f);if(held&&!held.prone)add('entangleTrip','Trip Entangled Foe',1,needs(1));}
-  if(f.disarmed)add('recoverWeapon',f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?'Ready Weapon':'Pick Up Weapon',1,needs(1));
+  if(f.disarmed)add('recoverWeapon',f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?'Ready Weapon':'Pick Up Weapon',1,recoverWeaponReason(f));
+  // ARM-06 (app policy): a free move of a held one-handed weapon to the other hand
+  if(!f.disarmed&&!ARENA_WEAPONS[f.weapon].twoHanded&&!shieldCarried(f))add('swapHand','Switch Weapon Hand',0,swapHandReason(f));
   add('changeRange','Change Range',1,needs(1)||(!proposedRange(id)?'No reach to contest':''));
   add('brace','Brace',1,needs(1)||(f.braced?'Already braced':''));
   add('delay','Delay',0,'');

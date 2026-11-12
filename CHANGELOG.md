@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: Serious Wounds to the weapon and shield arms
+
+- A Serious Wound to an arm that fails Endurance now drops what that arm holds unless strapped on (Core p.110): a one-handed weapon falls at the fighter's feet. A shield stays on its arm but the arm cannot use it. A two-handed weapon is not lost but cannot be used with one arm. A resisted wound never drops anything.
+- Getting a dropped weapon back takes a working, free hand and two actions (Pick Up, then Ready; Move to Weapon first when it is far). It ends up in that hand, so a fighter whose sword arm is out fights on with the other. A hand kept busy by a strapped shield is not free; a fighter with no free hand can only use the shield or concede.
+- A fighter can now be left-handed (a checkbox in the setup forms): the weapon goes in the left hand and the shield on the right arm.
+- The disabled shield arm can no longer parry, strike or choose a Ward Location with the shield. The weapon arm is unaffected.
+- **Switch Weapon Hand** is now a Free Action (0 AP) between two working hands, with no readying step (app policy, not Core RAW, labelled as such; see `docs/decisions.md`). It no longer ends the turn and is not offered with a shield, a useless hand or a dropped weapon. It replaces the old 1 AP switch that was only possible after the weapon arm failed.
+- Between Hardcore fights the weapon is picked up again, in a working hand.
+- The arena now draws a dropped weapon on the floor and keeps a resisted-wound weapon in the hand.
+
 ## The Pits: fight replay, result screen back, range by weapon length, scoring removed
 
 - **Replay fight:** after a fight, a **Replay fight** button (in the end panel and on the Victory/Defeat window) plays the whole fight again as fight animations only (no dice, no tray, no Continue stops, no choices), back to back like one fluid fight. It starts both fighters at full health, steps the range and the wounds as they happened, and ends on the real result. **Stop replay** (or Quick pace) cuts it short. Nothing in the fight changes.

@@ -549,12 +549,12 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="../js/combat-rules.js?v=ae609fd04d"></script>
 <script src="../js/data.js?v=e863ceddbb"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
-<script src="practice-guidance.js?v=e041ed5995"></script>
-<script src="pits-view.js?v=766aacde41"></script>
+<script src="practice-guidance.js?v=c187d04720"></script>
+<script src="pits-view.js?v=01dfcf1ef6"></script>
 <script src="pits-game.js?v=aa0a12a2ed"></script>
 <script src="pits-arena.js?v=bb25e609fb"></script>
 <script src="pits-bottom.js?v=ffba0d016b"></script>
-<script src="pits-stage.js?v=1a5f57bcb6"></script>
+<script src="pits-stage.js?v=6873ccaa6f"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -660,7 +660,7 @@ function ensureEffectState(f){
  f.stunnedLocations??={};f.impaledWounds??=[];f.impaledWeapon??=null;
  f.wounds??=[];f.bandagedBleed??=false;f.firstAid??=40;f.willpower??=50;f.braced??=false;f.partialLimbs??={};f.blindedTurns??=0;
   f.blindSkipTick??=false;f.athletics??=50;f.recoveringWeapon??=false;f.droppedMetres??=0;f.pinnedGear??=null;f.pinnedBy??=null;f.preparedCounters??=[];
-  f.entangled??=null;f.acrobatics??=0;
+  f.entangled??=null;f.acrobatics??=0;f.shieldHand??=(f.weaponHand==='Left Arm'?'Right Arm':'Left Arm');
 }
 // Core pp.78–79: combat is strenuous exertion; Endurance is tested after
 // CON seconds (rounded up to a combat round). Core p.79 governs recovery;
@@ -950,7 +950,8 @@ function practiceCharacterHtml(){
  ${ready?`<label>Weapon<select id="practiceWeapon">${style.weapons.map(w=>`<option value="${w.key}" ${w.key===config.weapon?'selected':
   ''}>${esc(w.name)}</option>`).join('')}</select></label><label>Shield<select id="practiceShield" ${ARENA_WEAPONS[config.weapon].twoHanded?'disabled':
   ''}><option value="none">No shield</option>${ARENA_WEAPONS[config.weapon].twoHanded?'':
-  style.shields.map(w=>`<option value="${w.key}" ${w.key===config.shield?'selected':''}>${esc(w.name)}</option>`).join('')}</select></label>`:''}</div>
+  style.shields.map(w=>`<option value="${w.key}" ${w.key===config.shield?'selected':''}>${esc(w.name)}</option>`).join('')}</select></label>
+  <label class="check"><input type="checkbox" id="practiceLeft" ${config.leftHanded?'checked':''}> Left-handed</label>`:''}</div>
  ${ready?`<p class="practice-summary">${p.apMax} Action Points · Evade ${p.skills.Evade}% · Endurance ${p.skills.Endurance}%</p>`:
   '<p role="alert">This Combat Style has no weapon The Pits supports. Choose another style, or attach a melee weapon to this style in Forge, then reopen practice.</p>'}
  <a href="../index.html#/the-pits">Choose another character</a></div>`;
@@ -1712,7 +1713,7 @@ function mkFighter(id,name,kind,style,weapon,armor=0,evade=48,level=1,str=13,siz
  return {id,name,kind,style,evade,brawn:50+Math.min(level,13),endurance:60+Math.min(level,12),firstAid:40,willpower:50+Math.min(level,12),weapon,armor,
  str,siz,con,dex,int,athletics:str+dex,healingRate:healingRateFor(con),shield,warded:[],apMax,ap:apMax,init:initiativeBonusFor(int,dex),
   armourInitPenalty:armourInitiativePenalty(armor),
- hp,maxHp:clone(hp),prone:false,skipAttack:0,disabled:[],weaponHand:'Right Arm',status:'Ready',lastDamage:null,bleeding:false,fatigue:0,
+ hp,maxHp:clone(hp),prone:false,skipAttack:0,disabled:[],weaponHand:'Right Arm',shieldHand:'Left Arm',status:'Ready',lastDamage:null,bleeding:false,fatigue:0,
   stunnedLocations:{},impaledWounds:[],impaledWeapon:null};
 }
 // Core pp. 106-107: optional Closing and Opening Range. Two or more Reach steps matter.
@@ -1729,8 +1730,7 @@ function mustTargetWeapon(id){return !S.disengaged&&!canAttackBody(id);}
 function canParryAtReach(id){if(S.disengaged)return false;const r=engagementInfo();const f=S.fighters[id];
  return !cannotRespond(f)&&canUseWeapon(f)&&!ARENA_WEAPONS[f.weapon]?.noParry&&(!r.active||S.engagement!=='short'||id!==r.longer)}
 function canShieldParry(f){ensureEffectState(f);return !cannotRespond(f)&&f.shield!=='none'&&!f.shieldLost&&!String(f.impaledWeapon?.weapon||
- '').startsWith('shield:')&&f.pinnedGear!=='shield'&&!entangledArm(f,'Left Arm')&&!ARENA_WEAPONS[f.weapon].twoHanded&&
- !f.disabled.includes('Left Arm')&&!f.stunnedLocations['Left Arm']}
+ '').startsWith('shield:')&&f.pinnedGear!=='shield'&&!ARENA_WEAPONS[f.weapon].twoHanded&&armUsable(f,shieldArmOf(f))}
 function isCrampedAtReach(id){const r=engagementInfo();return r.active&&S.engagement==='short'&&id===r.longer}
 function proposedRange(id){if(S.disengaged)return null;const r=engagementInfo(),f=S.fighters[id];
  if(!r.active||f.stunnedLocations?.['Right Leg']||f.stunnedLocations?.['Left Leg']||entangledLegs(f)||cannotRespond(f))return null;
@@ -1861,12 +1861,15 @@ function prepareEncounter(){
 }
 function newHero(){const f=mkFighter('a',config.charname,'human',config.style,config.weapon,config.armor,config.evade,3,config.str,config.siz,
  config.shield,config.con,config.dex,config.int);f.firstAid=config.firstAid;f.willpower=config.willpower;
+ if(config.leftHanded){f.weaponHand='Left Arm';f.shieldHand='Right Arm';}
  if(practiceCharacter&&!practiceCharacter.error){const p=practiceCharacter;f.apMax=p.apMax;f.ap=p.apMax;f.init=p.init;f.hp=clone(p.hp);
  f.maxHp=clone(p.hp);f.armourLocations=clone(p.armour);f.armourInitPenalty=p.armourInitPenalty;f.armor=Math.max(...Object.values(p.armour));
  f.brawn=p.skills.Brawn;f.endurance=p.skills.Endurance;f.athletics=p.skills.Athletics;f.acrobatics=p.skills.Acrobatics||0;return f;
  }return applyCustomArmour(f,config.mixedArmour,config.armourByLocation);};
-function newEnemy(wave){if(S.mode==='pvp')return applyCustomArmour(mkFighter('b',config.pvpName,'human',config.pvpSkill,config.pvpWeapon,
- config.pvpArmor,config.pvpEvade,3,config.pvpStr,config.pvpSiz,config.pvpShield,config.pvpCon,config.pvpDex,config.pvpInt),config.pvpMixedArmour,
+// Handedness (ARM-01): a left-hander holds the weapon in the left hand and straps the shield to the right arm.
+function handed(f,left){if(left){f.weaponHand='Left Arm';f.shieldHand='Right Arm';}return f;}
+function newEnemy(wave){if(S.mode==='pvp')return applyCustomArmour(handed(mkFighter('b',config.pvpName,'human',config.pvpSkill,config.pvpWeapon,
+ config.pvpArmor,config.pvpEvade,3,config.pvpStr,config.pvpSiz,config.pvpShield,config.pvpCon,config.pvpDex,config.pvpInt),config.pvpLeftHanded),config.pvpMixedArmour,
  config.pvpArmourByLocation);const lvl=S.mode==='tutorial'?1:wave;const type=ENEMY_NAMES[Math.min(ENEMY_NAMES.length-1,Math.floor((wave-1)/2))];
  let weaponKeys=['dagger','sword','mace','spear','greatsword'];let weapon=weaponKeys[(wave+die(5)-1)%weaponKeys.length];
  if(typeof PSTAGE_DUEL!=='undefined'&&PSTAGE_DUEL)weapon='spear';   // ?stage=duel: sword v spear
@@ -2048,7 +2051,8 @@ function setupHtml(){applyPracticeLoadout();let modes=[['tutorial','01','Guided 
  x=>`<option value="${x}" ${config.weapon===x?'selected':''}>${ARENA_WEAPONS[x].name}</option>`).join(
  '')}</select></label><label>Shield<select id="shield">${Object.keys(SHIELDS).map(x=>`<option value="${x}" ${config.shield===x?'selected':
  ''}>${SHIELDS[x].name}</option>`).join(
- '')}</select></label><label>First Aid % (sample)<input id="firstAid" type="number" min="1" max="100" value="${config.firstAid}"></label><label>`
+ '')}</select></label><label>Left-handed<input id="leftHanded" type="checkbox" ${config.leftHanded?'checked':''}></label>
+ <label>First Aid % (sample)<input id="firstAid" type="number" min="1" max="100" value="${config.firstAid}"></label><label>`
  +`Willpower % (sample)<input id="willpower" type="number" min="1" max="110" value="${config.willpower}"></label><label>Strength (STR)<input id="str" `
  +`type="number" min="5" max="20" value="${config.str}"></label><label>Size (SIZ)<input id="siz" type="number" min="5" max="20" value="${config.siz}"></l`
  +`abel><label>Constitution (CON)<input id="con" type="number" min="5" max="20" value="${config.con}"></label><label>Dexterity (DEX)<input id="dex" `
@@ -2064,7 +2068,8 @@ function setupHtml(){applyPracticeLoadout();let modes=[['tutorial','01','Guided 
  +`id="pvpWeapon">${Object.keys(ARENA_WEAPONS).map(x=>`<option value="${x}" ${config.pvpWeapon===x?'selected':
  ''}>${ARENA_WEAPONS[x].name}</option>`).join('')}</select></label><label>Second player shield<select id="pvpShield">${Object.keys(SHIELDS).map(
  x=>`<option value="${x}" ${config.pvpShield===x?'selected':''}>${SHIELDS[x].name}</option>`).join(
- '')}</select></label><label>Second player STR<input id="pvpStr" type="number" min="5" max="20" value="${config.pvpStr}"></label><label>Second player `
+ '')}</select></label><label>Second player left-handed<input id="pvpLeftHanded" type="checkbox" ${config.pvpLeftHanded?'checked':''}></label>
+ <label>Second player STR<input id="pvpStr" type="number" min="5" max="20" value="${config.pvpStr}"></label><label>Second player `
  +`SIZ<input id="pvpSiz" type="number" min="5" max="20" value="${config.pvpSiz}"></label><label>Second player CON<input id="pvpCon" type="number" `
  +`min="5" max="20" value="${config.pvpCon}"></label><label>Second player DEX<input id="pvpDex" type="number" min="5" max="20" `
  +`value="${config.pvpDex}"></label><label>Second player INT<input id="pvpInt" type="number" min="5" max="20" value="${config.pvpInt}"></label><details `
@@ -2553,14 +2558,14 @@ return (`<div class="turnline"><h3>Choose an action</h3><span>${f.ap} AP remaini
  ''}><strong>Break Free · 1 AP</strong><small>Entangled ${f.entangled.loc}: opposed Brawn (Core p.97)</small></button>`:''}${entangling(f)&&
  !entangling(f).prone?`<button class="choice" data-act="entangleTrip" ${f.ap<1?'disabled':
  ''}><strong>Trip Entangled Foe · 1 AP</strong><small>Your Entangle roll against their Brawn, Evade or Acrobatics</small></button>`:''}${f.disarmed?
- `<button class="choice" data-act="recoverWeapon" ${f.ap<1?'disabled':''}><strong>${f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?
+ `<button class="choice" data-act="recoverWeapon" ${recoverWeaponReason(f)?'disabled':''} title="${esc(recoverWeaponReason(f))}"><strong>${f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?
  'Ready Weapon':'Pick Up Weapon'} · 1 AP</strong></button>`:''}<button class="choice" data-act="changeRange" ${f.ap<1||!proposedRange(id)?'disabled':
  ''}><strong>${proposedRange(id)==='short'?'Close Inside · 1 AP':'Change Range · 1 AP'}</strong><small>${proposedRange(id)==='short'?
  'Close to shorter reach':proposedRange(id)==='long'?'Open to longer reach':
- 'No contested reach difference'}</small></button>${f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&
- !ARENA_WEAPONS[f.weapon].twoHanded?
- `<button class="choice" data-act="swapHand"><strong>Switch Weapon Hand · 1 AP</strong><small>Ready your weapon in the usable hand</small></button>`:
- ''}${f.shield!=='none'?`<button class="choice" data-act="ward" title="Free action before an incoming attack"><strong>${f.warded?.length?
+ 'No contested reach difference'}</small></button>${!ARENA_WEAPONS[f.weapon].twoHanded&&!f.disarmed?
+ `<button class="choice" data-act="swapHand" ${swapHandReason(f)?'disabled':''} title="${esc(swapHandReason(f))}">
+  <strong>Switch Weapon Hand · Free</strong><small>Move the weapon to your other working hand (app policy, not Core RAW)</small></button>`:
+ ''}${f.shield!=='none'?`<button class="choice" data-act="ward" ${armUsable(f,shieldArmOf(f))?'':'disabled'} title="Free action before an incoming attack"><strong>${f.warded?.length?
  'Change Shield Ward':'Ward Shield'} · 0 AP</strong></button>`:''}<button class="choice" data-act="brace" ${f.ap<1||f.braced?'disabled':
  ''}><strong>Brace · 1 AP</strong><small>Brace against force; doubles SIZ versus Bash (Core p.91)</small></button><button class="choice" `
  +`data-act="delay"><strong>${proposedRange(id)==='short'?'Hold for a Reaction':
@@ -2597,7 +2602,7 @@ function weaponRoll(w,maxDie,cramped=false,forcedRolls=null){let v=cramped?{dice
 function combatTarget(f,tool='weapon'){
  let pct=f.style;
  if(f.prone)pct=CombatRules.skillAtGrade(pct,2);
- const arm=tool==='shield'?'Left Arm':f.weaponHand;
+ const arm=tool==='shield'?shieldArmOf(f):f.weaponHand;
  if(arm&&zoneClass(f,arm)==='serious')pct=CombatRules.skillAtGrade(pct,1);
  if(f.blindedTurns>0)pct=Math.max(1,CombatRules.skillAtGrade(pct,3));
  return pct;
@@ -2720,6 +2725,78 @@ function canUseWeapon(f){ensureEffectState(f);return f.pinnedGear!=='weapon'&&!e
  f.weaponHand||'Right Arm')&&!f.stunnedLocations[f.weaponHand||'Right Arm']&&!(ARENA_WEAPONS[f.weapon].twoHanded&&
  (f.disabled.some(x=>x.endsWith('Arm')&&limbDisabled(f,x))||f.stunnedLocations['Right Arm']||f.stunnedLocations['Left Arm']));}
 
+// ---- Weapon and shield arms: Core p.110 (a failed Endurance test on a Serious Wound makes the arm useless and
+// drops what it holds unless strapped on). Cases ARM-01 to ARM-06 in docs/pits-serious-weapon-arm-cases-20261111.md.
+const otherArm=arm=>arm==='Left Arm'?'Right Arm':'Left Arm';
+const shieldCarried=f=>f.shield!=='none'&&!f.shieldLost;
+// The arm a shield is strapped to: the off arm (left for a right-hander, right for a left-hander). It does not move with the weapon.
+const shieldArmOf=f=>f.shieldHand||otherArm(f.weaponHand||'Right Arm');
+function armUsable(f,arm){ensureEffectState(f);return !limbDisabled(f,arm)&&!f.stunnedLocations[arm]&&!entangledArm(f,arm);}
+// ARM-02: a dropped weapon is retrieved with a working hand that is free (a strapped shield keeps its arm busy);
+// a two-handed weapon needs both arms. The weapon ends up in that hand.
+function recoveryHand(f){
+  if(ARENA_WEAPONS[f.weapon].twoHanded)return armUsable(f,'Right Arm')&&armUsable(f,'Left Arm')?(f.weaponHand||'Right Arm'):null;
+  const free=['Right Arm','Left Arm'].filter(a=>armUsable(f,a)&&!(shieldCarried(f)&&a===shieldArmOf(f)));
+  return free.includes(f.weaponHand)?f.weaponHand:free[0]||null;
+}
+function recoverWeaponReason(f){
+  if(!f.disarmed)return 'Your weapon is in your hand.';
+  if(guardWeapon(f).hp<=0)return 'Your weapon is broken.';
+  if(f.ap<1)return 'Needs 1 AP';
+  return recoveryHand(f)?'':'No working free hand';
+}
+// Move (if it is beyond 3m), Pick Up, then Ready: 1 AP each (Core pp.91–92).
+function recoverWeaponStep(f){
+  const hand=recoveryHand(f),side=hand==='Left Arm'?'left':'right';
+  f.ap--;advanceStun(f);
+  if(f.droppedMetres>3){const metres=f.droppedMetres;f.droppedMetres=0;
+    log('Move to Weapon',`${f.name} moves ${metres}m to the dropped weapon (1 AP; arena movement convention).`,'system');
+  }else if(f.recoveringWeapon){f.disarmed=false;f.recoveringWeapon=false;
+    log('Ready Weapon',`${f.name} readies their recovered weapon in the ${side} hand (second action).`,'system');
+  }else{f.weaponHand=hand;f.droppedMetres=0;f.recoveringWeapon=true;
+    log('Pick Up Weapon',`${f.name} picks up their weapon with the ${side} hand; it must be readied on a later action (Core p.92).`,'system');}
+}
+// ARM-06 (app policy, not Core RAW): moving a held one-handed weapon between two working hands is a Free Action.
+function swapHandReason(f){
+  ensureEffectState(f);
+  const from=f.weaponHand||'Right Arm',to=otherArm(from);
+  if(ARENA_WEAPONS[f.weapon].twoHanded)return 'Both hands hold the weapon.';
+  if(f.disarmed)return 'Your weapon is on the ground.';
+  if(f.impaledWeapon||f.pinnedGear==='weapon')return 'Your weapon is stuck.';
+  if(!armUsable(f,from))return 'Your weapon arm cannot be used.';
+  if(!armUsable(f,to))return 'The other hand cannot be used.';
+  if(shieldCarried(f)&&to===shieldArmOf(f))return 'Your shield is on that arm.';
+  return '';
+}
+function swapWeaponHand(f){
+  const to=otherArm(f.weaponHand||'Right Arm');f.weaponHand=to;
+  log('Switch Weapon Hand',`${f.name} moves their weapon to the ${to==='Left Arm'?'left':'right'} hand (free action).`,'system',
+   'App policy (ARM-06), not Core RAW: a transfer between two working hands costs nothing. Core p.109 gives a Free Action only for a prepared throwing weapon.',{actor:f.id});
+}
+// ARM-01: the arm is useless until healed, and drops what it holds unless strapped on. A shield stays on its arm; a
+// two-handed weapon is still gripped by the other hand (unusable, not lost). Dropping again cancels a half-done recovery.
+function dropFromDisabledArm(f,loc){
+  const holding=(f.weaponHand||'Right Arm')===loc&&(!f.disarmed||f.recoveringWeapon);
+  if(!holding||ARENA_WEAPONS[f.weapon].twoHanded)return false;
+  f.disarmed=true;f.recoveringWeapon=false;f.droppedMetres=0;
+  log('Weapon Dropped',`${f.name}'s ${loc} is useless and the weapon falls from it. Picking it up takes a working free hand and two actions.`,'hurt',
+   'Core p.110: the arm drops anything it holds unless strapped on. Recovery: Core pp.91–92.',{actor:f.id});
+  return true;
+}
+function applyLimbDisabled(def,loc,prone){
+  if(!def.disabled.includes(loc))def.disabled.push(loc);
+  if(prone)def.prone=true;
+  log('Limb Disabled',`${def.name}'s ${loc} becomes unusable until healed to positive HP. ${loc.endsWith('Leg')?'They fall prone.':'They cannot use that arm.'}`,'hurt');
+  if(loc.endsWith('Arm'))dropFromDisabledArm(def,loc);
+}
+// Between fights the weapon is picked up again, in a working hand if one-handed (a shield keeps its own arm).
+function rearmBetweenFights(f){
+  f.disarmed=false;f.recoveringWeapon=false;f.droppedMetres=0;
+  if(!ARENA_WEAPONS[f.weapon].twoHanded&&!armUsable(f,f.weaponHand||'Right Arm')){
+    const to=otherArm(f.weaponHand||'Right Arm');
+    if(armUsable(f,to)&&!(shieldCarried(f)&&to===shieldArmOf(f)))f.weaponHand=to;
+  }
+}
 function attackRestrictionTurns(f){
  return Math.max(f.skipAttack||0,f.pressedTurns||0,f.overextendedTurns||0);
 }
@@ -2734,7 +2811,7 @@ function restrictNextAttack(f,effect){
 function canShieldStrike(f){
  ensureEffectState(f);
  return f.shield!=='none'&&!!SHIELD_ATTACKS[f.shield]&&!f.shieldLost&&!f.impaledWeapon&&f.pinnedGear!=='shield'&&!ARENA_WEAPONS[f.weapon].twoHanded
-  &&!limbDisabled(f,'Left Arm')&&!f.stunnedLocations['Left Arm']&&!entangledArm(f,'Left Arm')&&f.weaponHand!=='Left Arm';
+  &&armUsable(f,shieldArmOf(f));
 }
 // Optional Reach (Core p.106): the shield's Short Reach must reach the
 // current fighting distance, set by the weapons in use.
@@ -3055,15 +3132,7 @@ if(f.kind==='ai'){
     if(f.stunnedLocations[f.weaponHand]||cannotAttackDueToStun(f)){
       f.ap--;advanceStun(f);log('Stunned limb',`${f.name} cannot use the weapon for this turn.`,'system');S.turnIndex++;continue;
     }
-    if(f.disarmed&&guardWeapon(f).hp>0){f.ap--;advanceStun(f);if(f.droppedMetres>3){const metres=f.droppedMetres;f.droppedMetres=0;
-     log('Move to Weapon',`${f.name} moves ${metres}m to the disarmed weapon (arena movement: 1 AP).`,'system');
-     }else if(f.recoveringWeapon){f.disarmed=false;f.recoveringWeapon=false;log('Ready Weapon',`${f.name} readies their retrieved weapon (second action).`,
-     'system');}else{f.droppedMetres=0;f.recoveringWeapon=true;log('Pick Up Weapon',
-     `${f.name} retrieves their weapon; a later Ready Weapon action is required (Core p.92).`,'system');}S.turnIndex++;continue;}
-    if(f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&!ARENA_WEAPONS[f.weapon].twoHanded){
-      f.weaponHand='Left Arm';f.ap--;advanceStun(f);
-      log('Ready Weapon',`${f.name} transfers their weapon to the uninjured hand (1 AP).`,'system');S.turnIndex++;continue;
-    }
+    if(f.disarmed&&!recoverWeaponReason(f)){recoverWeaponStep(f);S.turnIndex++;continue;}
     endFight(id==='a'?'b':'a',`${f.name} cannot continue using the equipped weapon and concedes the bout.`);return;
   }
   const rangeChange=proposedRange(id);
@@ -3706,9 +3775,7 @@ function resolveWound(atk,def,loc,cls,wound,attackRoll,onContinue){
        return;
      }
      if(result.outcome==='limbDisabled'){
-       if(!def.disabled.includes(loc))def.disabled.push(loc);
-       if(result.prone)def.prone=true;
-       log('Limb Disabled',`${def.name}'s ${loc} becomes unusable until healed to positive HP. ${loc.endsWith('Leg')?'They fall prone.':'They cannot use that arm.'}`,'hurt');
+       applyLimbDisabled(def,loc,result.prone);
      }else{
        log('Wound Resisted',
         `${def.name} remains functional; tasks requiring the injured ${loc} are one difficulty grade harder until the wound heals to a Minor Wound.`,'system',
@@ -3744,7 +3811,7 @@ function endFight(winnerId,reason){
 }
 function nextEncounter(){if(S.phase!=='between')return;S.showEndModal=false;S.finalCause=null;S.wave++;
  let hero=S.mode==='normal'?newHero():S.fighters.a;hero.prone=false;hero.skipAttack=0;hero.blindedTurns=0;hero.blindSkipTick=false;
- hero.recoveringWeapon=false;hero.entangled=null;hero.shieldLost=false;hero.pinnedGear=null;hero.pinnedBy=null;if(S.mode==='normal')hero.disabled=[];
+ rearmBetweenFights(hero);hero.entangled=null;hero.shieldLost=false;hero.pinnedGear=null;hero.pinnedBy=null;if(S.mode==='normal')hero.disabled=[];
  if(S.mode==='hardcore'&&hero.impaledWeapon){hero.impaledWeapon=null;}hero.status='Ready';hero.restUsed=false;S.fighters={a:hero,b:newEnemy(S.wave)};
  log('New Opponent',`${S.fighters.b.name} steps forward. ${S.mode==='normal'?'Your HP was restored.':'Your current HP carries over.'}`,'system');prepareEncounter();}
 function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let act=n.dataset.act,v=n.dataset.val;
@@ -3769,7 +3836,7 @@ function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let 
 }case 'reengage':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')moveEngage(id);break;}case 'attack':{const id=S.order[S.turnIndex];
  if(S.fighters[id].kind==='human')beginAttack(id);break;}case 'shieldAttack':{const id=S.order[S.turnIndex];
  if(S.fighters[id]?.kind==='human')beginAttack(id,false,'shield');break;}case 'react':react(v);break;
- case 'ward':{const id=S.order[S.turnIndex],f=S.fighters[id];if(f?.kind==='human'&&f.shield!=='none'&&!R&&!S.pending){S.pending={
+ case 'ward':{const id=S.order[S.turnIndex],f=S.fighters[id];if(f?.kind==='human'&&f.shield!=='none'&&armUsable(f,shieldArmOf(f))&&!R&&!S.pending){S.pending={
  kind:'ward',actor:id,selected:[...(f.warded||[])]};render();}break;}case 'wardloc':{const p=S.pending;
  if(p?.kind==='ward'&&HIT_LOCS.includes(v)){const max=SHIELDS[S.fighters[p.actor].shield].coverage;
  p.selected=p.selected.includes(v)?p.selected.filter(x=>x!==v):p.selected.length<max?[...p.selected,v]:p.selected;render();}break;
@@ -3793,15 +3860,11 @@ function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let 
  case 'freePin':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')beginFreePinnedGear(id);break;
  }case 'freeEntangle':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')beginFreeEntangle(id);break;
  }case 'entangleTrip':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')beginEntangleTrip(id);break;
- }case 'recoverWeapon':{let f=S.fighters[S.order[S.turnIndex]];if(f?.kind==='human'&&f.ap>0&&f.disarmed&&guardWeapon(f).hp>0){f.ap--;advanceStun(f);
- if(f.droppedMetres>3){const metres=f.droppedMetres;f.droppedMetres=0;log('Move to Weapon',
- `${f.name} moves ${metres}m to the disarmed weapon (1 AP; arena movement convention).`,'system');}else if(f.recoveringWeapon){f.disarmed=false;
- f.recoveringWeapon=false;log('Ready Weapon',`${f.name} readies their recovered weapon (second action).`,'system');}else{f.droppedMetres=0;
- f.recoveringWeapon=true;log('Pick Up Weapon',`${f.name} picks up their weapon; it must be readied on a later action (Core p.92).`,'system');
- }S.turnIndex++;advance();}break;}case 'swapHand':{let f=S.fighters[S.order[S.turnIndex]];
- if(f?.kind==='human'&&f.ap>=1&&f.weaponHand==='Right Arm'&&f.disabled.includes('Right Arm')&&!f.disabled.includes('Left Arm')&&
- !ARENA_WEAPONS[f.weapon].twoHanded){f.ap--;advanceStun(f);f.weaponHand='Left Arm';
- log('Ready Weapon',`${f.name} transfers their weapon to the functioning left hand (1 AP).`,'system');S.turnIndex++;advance();}break;
+ }case 'recoverWeapon':{let f=S.fighters[S.order[S.turnIndex]];
+ if(f?.kind==='human'&&!recoverWeaponReason(f)){recoverWeaponStep(f);S.turnIndex++;advance();}break;
+ }case 'swapHand':{let f=S.fighters[S.order[S.turnIndex]];
+ // a Free Action (ARM-06): no AP, and it does not end the turn
+ if(f?.kind==='human'&&!R&&!S.pending&&!swapHandReason(f)){swapWeaponHand(f);render();}break;
  }case 'yield':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')endFight(id==='a'?'b':'a',
  `${S.fighters[id].name} concedes the training bout.`);break;}case 'brace':{const f=S.fighters[S.order[S.turnIndex]];
  if(f?.kind==='human'&&f.ap>0&&!f.braced){f.ap--;f.braced=true;advanceStun(f);log('Brace',
@@ -3826,7 +3889,8 @@ function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let 
  +'skill choices. Athletics defaults to the STR+DEX base.\n• Still unimplemented: unarmed grapples, full recovery and Luck Points. Some movement and '
  +'combat effects remain abstracted.'));break;}}
 function readSetupInputs(){if(practiceCharacter){applyPracticeLoadout();return;
- }for(let k of ['username','charname','pvpName'])if($('#'+k))config[k]=$('#'+k).value.trim().slice(0,45)||config[k];
+ }if($('#leftHanded'))config.leftHanded=$('#leftHanded').checked;if($('#pvpLeftHanded'))config.pvpLeftHanded=$('#pvpLeftHanded').checked;
+ for(let k of ['username','charname','pvpName'])if($('#'+k))config[k]=$('#'+k).value.trim().slice(0,45)||config[k];
  for(let k of ['style','evade','armor','pvpSkill','pvpEvade','pvpArmor','str','siz','con','dex','int','pvpStr','pvpSiz','pvpCon','pvpDex','pvpInt',
  'firstAid','willpower'])if($('#'+k)){let v=Number($('#'+k).value);const attr=['str','siz','con','dex','int','pvpStr','pvpSiz','pvpCon','pvpDex',
  'pvpInt'].includes(k);config[k]=Math.max(['armor','pvpArmor'].includes(k)?0:(attr?5:20),Math.min(['armor','pvpArmor'].includes(k)?8:(attr?20:110),
@@ -3875,6 +3939,7 @@ $('#root').addEventListener('change',e=>{
  if(e.target.id==='practiceStyle'){practiceStyle=e.target.value;config.weapon='';config.shield='none';}
  else if(e.target.id==='practiceWeapon')config.weapon=e.target.value;
  else if(e.target.id==='practiceShield')config.shield=e.target.value;
+ else if(e.target.id==='practiceLeft')config.leftHanded=e.target.checked;
  else return;
  applyPracticeLoadout();render();
 });
