@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: sword cuts that know their target, and defenders that defend
+
+- **The target shapes the cut from its first frame.** A cut to the head chambers beside the face and comes down steeply; a cut to the body keeps the hilt at the rear shoulder with the blade laid back flat and comes round level; a cut to the legs sinks the hips, pitches the chest forward and sweeps in low.
+- **One movement, not three poses.** A slower, settled preparation; the foot and hips drive while the blade waits; then one accelerating swing to contact, and a follow-through that carries on and slows. The hips no longer surge and stop mid-step, and the front foot lands before the weight arrives on it.
+- **Defenders defend.** As the cut is prepared the defender goes to a guard. A hit now beats a guard: over a middle guard to the head, under a raised guard to the body or the leg, with the defender's late cover still moving when the blade lands and kept clear of it. A parry is set across the line before the cut arrives, takes it, then binds and carries it down before it falls away.
+- Fixed: a blade could spin a full turn between two keys when its wrist angle wrapped past half a turn.
+- Presentation only: no rules, rolls or choices changed, and committed attacks still play after they are resolved. Tests: `tests/pits-live.cjs` (22 checks).
+
 ## The Pits: watch the sword exchange on its own page
 
 - The movement study page now opens on **Sword against sword (the live Pits)**: a miss, a parry, hits to the chest, head and leg, and a blow that ends the fight, drawn exactly as the Pits draws them, one after another. Play, pause, step a frame, quarter speed, or start from any exchange; no fight setup needed. Link: `experiments/pits-choreography.html?seq=sword`.

@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-12 by Claude (Pits: the ordinary sword exchange polished)_
+_Last updated: 2026-11-12 by Claude (Pits: sword exchange, second pass)_
 
 ## Where things stand
 
@@ -16,7 +16,7 @@ _Last updated: 2026-11-12 by Claude (Pits: the ordinary sword exchange polished)
 
 ## Next
 
-0000. **Claude, done 2026-11-12:** the ordinary sword exchange polished after the owner's review (close-measure cut, a miss that clears, a parry that intercepts, local hit reactions, a finishing blow straight to the floor). What changed and what is left: `docs/pits-animation-direction.md`, "The ordinary sword exchange"; contact sheet `docs/pits-visual-checks/sword-exchange-review.png`. **Owner:** watch it on `experiments/pits-choreography.html?seq=sword` (no setup: play, pause, step, quarter speed) at normal speed and say whether this is the standard to copy; then Claude takes the same care over the next phrase you name (thrust, shield, trip...).
+0000. **Claude, done 2026-11-12 (second pass):** the sword exchange after the owner's second review: cuts shaped by their target from the preparation (high, body, legs), one continuous drive instead of three phases, defenders that go to a guard (a hit beats it; a parry is set early and binds the blade). Details and what is still weak: `docs/pits-animation-direction.md`, "Second pass"; contact sheet `docs/pits-visual-checks/sword-exchange-review.png`. **Owner:** watch `experiments/pits-choreography.html?seq=sword` at normal speed and say whether this is the standard to copy, or which moment still looks wrong; then Claude takes the same care over the next phrase you name (thrust, shield, trip...).
 
 000. **Claude, done 2026-11-12:** the movement study is wired into the live Pits stage (`experiments/pits-stage.js` draws from `PitsMotion.LIVE` in `experiments/pits-motion.js`; one stage clock; phrases chosen from the engine's record; range changes are steps). Tests: `tests/pits-live.cjs` (CI) and `tests/visual/pits-motion-live.cjs`; all 18 `pits-scenarios.cjs` pass on the new stage. Stand-ins (other weapons borrow sword or dagger, shields, trip, disarm, stand up, yield, reactions written for the chest) are listed in `docs/pits-animation-direction.md`. The old poses stay behind `?stage=poses` for comparison. **Owner:** play a few bouts (and a replay) at normal speed and say whether it is convincing at the table, or which moment looks wrong; then Claude deletes the pose stage. **Then Claude:** phrases for the stand-ins, in the order the owner names (still no new weapons first). **Work (optional, one batch):** a signed-in bout on the deployed site with a shield and a spear, reporting anything that looks broken (Severity per `AGENTS.md`).
 

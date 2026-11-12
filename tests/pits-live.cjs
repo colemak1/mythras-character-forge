@@ -144,7 +144,7 @@ test('sword: a hit reacts where it lands (head snaps back, abdomen folds, a leg 
   assert(chest.lean<-5,'the chest goes back');
 });
 test('sword: the cut runs preparation, commitment, contact, follow-through; hips before blade; the weight moves from the rear foot to the front',()=>{
-  const {F}=swords(),A=F.a,r=L.blow(F,'a',100,{outcome:'wound',loc:'chest',lost:3}),tc=r.contacts[0].t,t0=tc-380;
+  const {F}=swords(),A=F.a,r=L.blow(F,'a',100,{outcome:'wound',loc:'chest',lost:3}),tc=r.contacts[0].t,t0=tc-L.CUT_LEAD;
   const p=t=>A.pose(t),j=t=>L.pose(A,t),share=t=>{const q=p(t);return (q.px-q.bfx)/(q.ffx-q.bfx);};
   // preparation: the weight settles back, the shoulders turn away, the hilt comes up beside the head, not over it
   assert(share(tc-250)<share(t0)-.04,'the weight goes back onto the rear foot first');assert(p(tc-250).turn<-4,'the shoulders turn back');
@@ -161,6 +161,55 @@ test('sword: a fight-ending blow goes straight into the fall, with no recovery t
   const {F}=swords(),r=L.blow(F,'a',100,{outcome:'wound',loc:'chest',lost:9,defeated:true}),tb=r.contacts[0].t;
   let prev=1e9;for(let t=tb+60;t<=tb+800;t+=20){const y=L.pose(F.b,t).P[1];assert(y<=prev+3,'the hips never rise again on the way down');prev=y;}
   assert(L.pose(F.b,tb+800).Hd[1]<30,'down');
+});
+// ---- Second pass on the sword exchange (owner's review, 2026-11-12): target, balance, rhythm, defensive intent ----
+const tipSpeed=(f,t)=>dist(L.pose(f,t).tip,L.pose(f,t+5).tip);
+const segDist=(p,a,b)=>{const vx=b[0]-a[0],vy=b[1]-a[1],u=Math.max(0,Math.min(1,((p[0]-a[0])*vx+(p[1]-a[1])*vy)/(vx*vx+vy*vy||1)));return dist(p,[a[0]+vx*u,a[1]+vy*u]);};
+function bladeGap(f1,f2,t){const j1=L.pose(f1,t),j2=L.pose(f2,t),a=f1.W(j1.Hn),b=f1.W(j1.tip),c=f2.W(j2.Hn),e=f2.W(j2.tip);let m=1e9;
+  for(let s=0;s<=1;s+=.05){m=Math.min(m,segDist([a[0]+(b[0]-a[0])*s,a[1]+(b[1]-a[1])*s],c,e),segDist([c[0]+(e[0]-c[0])*s,c[1]+(e[1]-c[1])*s],a,b));}return m;}
+test('sword: the target shapes the attack from the preparation (hilt high for the head, at the shoulder for the body, low for the legs)',()=>{
+  const prep=loc=>{const {F}=swords(),r=L.blow(F,'a',100,{outcome:'wound',loc,lost:3}),tc=r.contacts[0].t,t=tc-250,j=L.pose(F.a,t);
+    return {hy:j.Hn[1]-j.S[1],py:F.a.pose(t).py,tipy:j.tip[1]-j.Hn[1],lean:F.a.pose(t).lean};};
+  const hi=prep('head'),mid=prep('chest'),lo=prep('rleg');
+  assert(hi.hy>mid.hy+8&&mid.hy>lo.hy+12,'the hilt is set by the target ('+[hi.hy,mid.hy,lo.hy].map(v=>v.toFixed(0))+')');
+  assert(hi.tipy>25,'the high chamber lays the blade back and up');assert(Math.abs(mid.tipy)<20,'the body cut lays the blade back flat');
+  assert(lo.tipy<-25,'the low cut carries the blade back and down');
+  assert(lo.py<hi.py-3&&lo.lean>hi.lean+6,'the low cut sinks the hips and pitches the chest forward');
+});
+test('sword: a hit beats a guard: the defender goes to a guard as the cut is prepared, and at contact its blade is clear of the cut',()=>{
+  for(const loc of ['head','chest','rleg']){const {F}=swords(),r=L.blow(F,'a',100,{outcome:'wound',loc,lost:3}),tc=r.contacts[0].t;
+    const before=L.pose(F.b,tc-330),guard=L.pose(F.b,tc-160);
+    assert(dist(before.tip,guard.tip)>15,loc+': the defender\'s weapon goes to a guard');
+    assert(bladeGap(F.a,F.b,tc)>=12,loc+': at contact the defending blade is clear of the cut ('+bladeGap(F.a,F.b,tc).toFixed(1)+'), so a hit never reads as a parry');
+    // and it is moving to cover when the cut lands: beaten by time, not standing still
+    assert(dist(L.pose(F.b,tc-60).tip,L.pose(F.b,tc).tip)>3,loc+': the late guard is still moving at contact');}
+});
+test('sword: a parry is set before the cut arrives, then binds: the attacking blade is carried on the parrying one',()=>{
+  for(const loc of ['head','chest']){const {F}=swords(),r=L.blow(F,'a',100,{outcome:'parried',loc,lost:0}),c=r.contacts[0];
+    assert(toDrawnBlade(F.b,c.t-40,c.at)<12,loc+': the parrying blade is already across the line 40 ms before contact');
+    assert(tipSpeed(F.b,c.t-20)<tipSpeed(F.a,c.t-20)/3,loc+': the guard waits; the cut is the fast thing');
+    assert(bladeGap(F.a,F.b,c.t+60)<10,loc+': the blades stay together in the bind ('+bladeGap(F.a,F.b,c.t+60).toFixed(1)+')');
+    const ja=L.pose(F.a,c.t),jb=L.pose(F.a,c.t+90);assert(jb.tip[1]<ja.tip[1]-20,loc+': the bind carries the cut down');}
+});
+test('sword: rhythm: a controlled preparation, a faster strike, and hips that drive without stopping',()=>{
+  for(const loc of ['head','chest','rleg']){const {F}=swords(),r=L.blow(F,'a',100,{outcome:'wound',loc,lost:3}),tc=r.contacts[0].t,A=F.a;
+    let prep=0,strike=0;for(let t=tc-L.CUT_LEAD;t<tc-200;t+=5)prep=Math.max(prep,tipSpeed(A,t));for(let t=tc-120;t<tc;t+=5)strike=Math.max(strike,tipSpeed(A,t));
+    assert(strike>prep*1.4,loc+': the strike is clearly faster than the preparation ('+strike.toFixed(1)+' v '+prep.toFixed(1)+')');
+    const hip=t=>L.pose(A,t+5).P[0]-L.pose(A,t).P[0];let peak=0;for(let t=tc-260;t<tc-20;t+=5)peak=Math.max(peak,hip(t));
+    for(let t=tc-230;t<tc-40;t+=5)assert(hip(t)>peak*.2,loc+': the hips stall in the drive at '+(t-tc));}
+});
+test('sword: the defender\'s weapon never runs into the attacker as the attacker steps in',()=>{
+  const Q=L.sequence(),BODY2=['Hd','chest','abdomen','P'];
+  for(const e of Q.exchanges){const A=Q.fighters[e.attacker],D=Q.fighters[e.attacker==='a'?'b':'a'];
+    const tc=Q.marks.find(m=>m.t>e.t&&/^Strike/.test(m.label)).t+140;
+    for(let t=e.t;t<tc-10;t+=5){const j=L.pose(D,t),a=D.W(j.Hn),b=D.W(j.tip);
+      for(const n of BODY2)assert(segDist(A.at(t,n),a,b)>=9,e.label+': the guard is in the attacker\'s '+n+' at '+(t-tc));}}
+});
+test('sword: the study sequence is one continuous motion: each exchange starts from the pose the last one ended in',()=>{
+  const Q=L.sequence();
+  for(const id of ['a','b']){const f=Q.fighters[id];let prev=null;
+    for(let u=0;u<Q.dur;u+=5){const j=L.pose(f,u);
+      if(prev)for(const n of JOINTS)assert(dist(j[n],prev[n])<(n==='tip'?40:22),id+'.'+n+' jumps at '+u);prev=j;}}
 });
 test('presentation only: the live layer reads no rules, dice or page',()=>{
   const src=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','experiments','pits-motion.js'),'utf8').replace(/\/\/.*$/gm,'');
