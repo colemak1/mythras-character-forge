@@ -257,7 +257,29 @@ The fight study is hand-written: every beat's timing and every clearance was tun
 5. **Special effects and hit locations:** reactions per location (head, each arm, each leg, chest, abdomen), then trip, disarm, impale (blade lodged), bash and the rest, in the order they come up at the table.
 6. **Retire the old stages** (the pose stage and the keyframe `PitsMotion.LIVE`) once the owner approves the spring stage in play.
 
-Steps 1 and 2 are the next batch (one PR). Each later family is one PR with its study page and its share of the sweep.
+**Changed by the owner (2026-11-12):** step 2 is not done on its own. Everything (the writer, every weapon family, the sweep) is built first and lands in the live Pits at once. Work stays on one branch until then; no PR per family.
+
+## Exchange writer (step 1, done 2026-11-12)
+
+**Code:** `experiments/pits-writer.js` (`PitsWriter.write(records)`), fixtures in `experiments/pits-fixtures.js`. `pits-fight.js` is now three lines: the writer fed the fixtures. **Tests:** `tests/pits-fight.cjs` (the study, unchanged, 19 checks) and `tests/pits-writer.cjs`.
+
+**A record** is what the stage already has after an exchange: `{attacker, loc, outcome, lost, after}`. `outcome` uses the stage's words (`parried`, `full-parry`, `partial-parry`, `wound`, `armour`, `zero`, `miss`, `evaded`, `fumble`); `after` holds the cues that follow (an `end` with `how:'injury'` for the attacker means the blow ended the fight). `action` (`cut` or `thrust`) is optional; a sword thrusts at the abdomen unless told.
+
+**How it works.**
+- The phrases are the study's beats, written for an attacker and a defender. Every foot and hip position is relative to where that fighter stands (the midpoint of its planned feet) when the phrase starts, so a phrase plays from anywhere, by either fighter. Each phrase records the stance, measure and stance width the study had.
+- **Measure:** if the gap is not the phrase's, the attacker first steps in (blade up into a middle guard) or out (point low until the step is made). **Stance:** a fighter whose stance is more than 16 wider or narrower than the phrase's gathers it with the rear foot. In the study's own order neither happens, so the study is unchanged.
+- **Which phrase:** a parry at the body → cut parried; at the head → high parry; at a leg → low bind; a thrust parried → deflection; a miss, evade or fumble → the slipped counter; a hit to a leg → thigh cut (collapse if the record says the fight ended); a hit to the weapon forearm just after the other's high cut was parried → the short arm cut; any other hit or armour stop → **cut lands** (new: the study's first cut, with the cover too late, the blade drawn out back and up, and a reaction by location). A partial parry is drawn as a blow that lands and is noted as a stand-in (`seq.notes`, kind `stand-in`).
+- **Decision boundaries:** every exchange ends on one. If the movement is still fast there, the boundary moves to the nearest quiet moment with both feet down (earlier only, up to 80 ms, so no decision falls after the next movement has started; the last one of an unfinished fight may also wait). Notes of kind `measure`, `gather` and `boundary` say when any of this happened.
+
+**What the tests hold.** The study rebuilt from the records passes all of `tests/pits-fight.cjs` with no measure, gather, stand-in or moved boundary. With the roles swapped, with another order from other places, and for all 84 single exchanges (either fighter; head, chest, abdomen, both arms, both legs; parried, partial parry, wound, armour, miss, evaded): limbs within length, contacts exact, no blade into a body outside the contacts, feet down and no jump at each boundary, no sliding foot, no snap.
+
+**Still weak (for the sweep, step 4).** Found by trying other orders, not yet fixed:
+- Three parried cuts in a row by the same fighter: the attacker's blade passes within about 0.3 to 1.5 units of the defender's sword elbow between exchanges.
+- Six exchanges in a shuffled order: after "cut lands" leaves the two very close, the next attacker's blade, lowered while stepping back, passes 0.3 to 1.1 units from the other's shoulder, chest and elbow.
+- A partial parry has no clash of its own yet; it is drawn as a blow that lands.
+- Only the sword. Everything else, shields included, is steps 3 and 5.
+- **For the live stage (step 2, later):** a phrase's weight shift can start up to 170 ms before its first step, so before the decision boundary when the phrase starts at one. Written ahead (the study) that is fine; the live stage writes after the hold and cannot write into the past. Clamping it there spoils the weight transfer before the step (tried); the live stage will need the preparation folded into the phrase start instead.
+- The parry clearance in the study's low bind is at the limit (3.0 units against a minimum of 3): a 1 ms shift in the phrase start breaks it. The study's numbers are kept exactly for that reason.
 
 ## For Sonnet: routine defects in the pose stage
 

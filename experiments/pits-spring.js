@@ -421,7 +421,7 @@ const SEQS={};
 function buildAny(id){return id&&SEQS[id]?SEQS[id]():build();}
 const api={build:buildAny,register:(id,fn)=>{SEQS[id]=fn;},frame,joints,world,sample,simulate,Fighter,SPRING,LAG,CH,REC,GROUND,
   // the pieces a sequence is written with
-  pose,solve,torso,handAt,offFor,footX,sm,rad,norm,WRIST,ARM,PM,resumeFrom,
+  pose,solve,torso,handAt,offFor,footX,footY,sm,rad,norm,WRIST,ARM,PM,resumeFrom,
   seqTime:PM.seqTime,shownDur:PM.shownDur,shownAt:PM.shownAt};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 root.PitsSpring=api;

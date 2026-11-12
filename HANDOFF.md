@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-12 by Claude (Pits: fight study, heavier and faster)_
+_Last updated: 2026-11-12 by Claude (Pits: exchange writer, step 1)_
 
 ## Where things stand
 
@@ -16,7 +16,9 @@ _Last updated: 2026-11-12 by Claude (Pits: fight study, heavier and faster)_
 
 ## Next
 
-00000000000. **Next, Claude (after the owner says go):** steps 1 and 2 of "Path to the live Pits" in `docs/pits-animation-direction.md`: an exchange writer that builds spring movement from the engine's resolved exchanges (proved by rebuilding the ten-beat fight from fixtures), then the live stage behind `?stage=spring` for broadsword against broadsword. Then weapon families one PR at a time: thrust, shields, heavy one-handed, two-handed, long thrust, flexible, each with a generated study and an automated sweep. Pace fixed at the owner's choice (1.65 times fight time).
+000000000000. **Next, Claude:** step 3 of "Path to the live Pits" in `docs/pits-animation-direction.md`: weapon families one at a time (thrust, shields, heavy one-handed, two-handed, long thrust, flexible), each with a generated study, plus the automated sweep (step 4), starting with the two open faults listed under "Exchange writer ... Still weak". **Owner's rule (2026-11-12):** no live-stage step on its own; everything lands in the live Pits at once when all families are done. Work stays on branch `claude/go-wf0bsg` (pushed, no PR) until then.
+
+00000000000. **Claude, done 2026-11-12 (exchange writer, step 1):** `experiments/pits-writer.js` turns engine-shaped records into the spring movement from wherever both fighters stand (measure and stance handled). The fight study is now the writer fed eight fixture records (`experiments/pits-fixtures.js`) and passes all 19 checks unchanged. New phrase "cut lands" for hits from an ordinary exchange. `tests/pits-writer.cjs`: roles swapped, another order, all 84 single exchanges. Details and weak points: `docs/pits-animation-direction.md`, "Exchange writer". **Owner:** nothing to watch; the fight study looks the same (one decision boundary is 80 ms later).
 
 0000000000. **Claude, done 2026-11-12 (fight study, heavier and faster):** the owner liked the flow. Now 1.5 times faster, with longer hit-stops, bigger impact jolts, screen shake and heavier flashes (`docs/pits-animation-direction.md`, "Crunch and pace"). **Owner:** watch `experiments/pits-fight-study.html`, set the **Pace** slider where it feels right and tell Claude the number shown, and say whether the parries feel heavy and the hits brutal enough. If yes, Claude starts the live integration (sword cut, parry and miss from the engine's resolved results), keeping the no-gap rule and this crunch.
 

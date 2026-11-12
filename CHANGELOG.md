@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: the exchange writer (step 1 of the path to the live Pits)
+
+- **New `experiments/pits-writer.js`.** It turns resolved exchanges, in the engine's terms (attacker, hit location, outcome, damage, what follows), into the spring movement, one exchange after another, each starting from wherever the last one left both fighters. Phrases are written for an attacker and a defender, relative to where each stands; the attacker takes the measure first when the gap is not the phrase's, and either fighter gathers a stance left too wide or too narrow.
+- **The ten-beat fight study is now the writer fed eight fixture records** (`experiments/pits-fixtures.js`). It is the same fight, and passes all 19 checks in `tests/pits-fight.cjs`. One change: the decision boundary after the deflection is 80 ms later, so a hold freezes a pose rather than a swing (every exchange now ends on a decision).
+- **New phrase "cut lands"** (head, chest, belly, either arm) and a withdrawal for a thigh cut that does not end the fight, so every result at every hit location can be drawn from an ordinary exchange.
+- **Tests:** `tests/pits-writer.cjs`: the records and the phrase table; the fight with the roles swapped; another order from other places; all 84 single exchanges (either fighter, seven locations, six outcomes) against the movement rules.
+- Not wired into the live Pits (owner, 2026-11-12: everything lands at once when all weapon families are done).
+
 ## The Pits: fight study pace fixed at the owner's choice
 
 - The owner chose 1.10 times the previous pace on the slider. The fight now plays at 1.65 times its own time (about 5.7 s), and the slider is removed.
