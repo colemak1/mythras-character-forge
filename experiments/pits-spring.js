@@ -53,7 +53,7 @@ Fighter.prototype.walk=function(foot,t0,t1,x,opt){
   this.step(foot,t0,t1,x,o.lift==null?10:o.lift);
   this.key(t0-(o.lead==null?170:o.lead),{px:sup+(from-sup)*(o.load==null?.2:o.load),py:py-3});
   // the hips travel while the foot is in the air (a spring arrives late, so the key is set at mid-step)
-  this.key(t0+(t1-t0)*.4,{px:sup+(x-sup)*(o.settle==null?.45:o.settle),py});
+  this.key(t0+(t1-t0)*(this.stepLead==null?.4:this.stepLead),{px:sup+(x-sup)*(o.settle==null?.45:o.settle),py});
   // push: the foot that is about to leave drives the hips toward the support foot (out of a lunge, where the stance is
   // too long for the hips to get over the rear foot first)
   if(o.push)this.impulse(t0,{px:Math.sign(sup-from)*o.push});
@@ -90,7 +90,7 @@ function footX(f,foot,t){
   return x;
 }
 function footY(f,foot,t){
-  for(const s of f.feet[foot])if(t>s.t0&&t<s.t1)return s.lift*Math.pow(Math.sin(Math.PI*(t-s.t0)/(s.t1-s.t0)),.6);
+  for(const s of f.feet[foot])if(t>s.t0&&t<s.t1)return s.lift*Math.pow(Math.sin(Math.PI*(t-s.t0)/(s.t1-s.t0)),f.liftShape||.6);
   return 0;
 }
 
@@ -137,7 +137,7 @@ function simulate(F,dur,opt){
   let ctxOut;
   if(from){
     t0=from.t+DT;
-    for(const id of ids){st[id]={x:{...from.st[id].x},v:{...from.st[id].v}};rec[id]=from.rec[id].slice(0,from.n);
+    for(const id of ids){const k=from.st[id];st[id]={x:{...k.x},v:{...k.v}};if(k.ts){st[id].ts={...k.ts};st[id].tv={...k.tv};}rec[id]=from.rec[id].slice(0,from.n);
       F[id].pins.forEach((p,i)=>{const k=from.pins[id][i];if(k){p.prev=k.prev&&{...k.prev};p.w=k.w;p.lastW=k.lastW;}});}
     ctxOut=from.out;
   }
@@ -150,7 +150,20 @@ function simulate(F,dur,opt){
       for(const c of CH){
         // the current target for this part (a pointer that only moves forward: time only moves forward)
         const L=tg[id][c];let i=ptr[id][c];while(i+1<L.length&&L[i+1].t<=t)i++;ptr[id][c]=i;
-        const e=L[i],sp=(F[id].spring||SPRING)[c],hz=sp[0]*(e.s||1),z=e.s?1:sp[1],w=2*Math.PI*hz,target=e.v;
+        const e=L[i],sp=(F[id].spring||SPRING)[c],hz=sp[0]*(e.s||1),z=e.s?1:sp[1],w=2*Math.PI*hz;
+        let target=e.v;
+        // alive (opt-in, f.life): a slow, never-repeating drift added to every target, so the body is never quite still
+        const lf=F[id].life;if(lf&&lf.amp[c]){const k=lf.scale?lf.scale(t,c):1;
+          if(k)target+=k*lf.amp[c]*(.65*Math.sin(2*Math.PI*t/lf.per[c]+lf.ph[c])+.35*Math.sin(2*Math.PI*t/(lf.per[c]*.61)+lf.ph[c]*2.3));}
+        // with smoothing on, the hips aim no higher than the planted legs allow (a little short of straight), so they
+        // ease down into a deeper stance before the hard leg limit below has to catch them
+        if(c==='py'&&F[id].smooth){const f=F[id],R=LEGLEN-4;
+          for(const ft of ['ff','bf']){const dx=s.x.px-footX(f,ft,t);if(Math.abs(dx)<R)target=Math.min(target,Math.max(0,footY(f,ft,t))+Math.sqrt(R*R-dx*dx));}}
+        // smoothing (opt-in, f.smooth ms): the spring follows a target that itself eases toward the key (critically
+        // damped), so a part never jumps from rest to full acceleration when a new key arrives. Strikes ease faster.
+        if(F[id].smooth){const ts=s.ts||(s.ts={...s.x}),tv=s.tv||(s.tv=Object.fromEntries(CH.map(k=>[k,0])));
+          const ws=1000/(e.s?F[id].smooth*.35:F[id].smooth);
+          tv[c]+=(ws*ws*(target-ts[c])-2*ws*tv[c])*DT/1000;ts[c]+=tv[c]*DT/1000;target=ts[c];}
         // semi-implicit Euler, per second
         const a=w*w*(target-s.x[c])-2*z*w*s.v[c];
         s.v[c]+=a*DT/1000;s.x[c]+=s.v[c]*DT/1000;
@@ -230,7 +243,7 @@ function simulate(F,dur,opt){
     if(t%REC===0)for(const id of ids)rec[id].push({...out[id]});
     ctx.out=out;ctx.t=t;
     if(t%SNAP===0)snaps.push({t,n:rec[ids[0]].length,out,pins:pinState(F),
-      st:Object.fromEntries(ids.map(id=>[id,{x:{...st[id].x},v:{...st[id].v}}]))});
+      st:Object.fromEntries(ids.map(id=>[id,{x:{...st[id].x},v:{...st[id].v},ts:st[id].ts&&{...st[id].ts},tv:st[id].tv&&{...st[id].tv}}]))});
   }
   Object.defineProperty(rec,'_snaps',{value:snaps,enumerable:false});
   return rec;
