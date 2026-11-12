@@ -18,6 +18,7 @@ async function playToEnd(page){
     else if(s.pend==='reaction')await click(page,'[data-act=react][data-val=none]');
     else if(s.pend==='effect')await click(page,'[data-act=skipEffect]');
     else if(s.pend==='location')await click(page,'[data-act=pickloc]');
+    else if(i>2500&&s.phase==='fight'&&!s.pend&&s.turn==='a'&&await click(page,'[data-act=yield]')){}   // a fight that drags on is conceded
     else if(s.pend)await click(page,'#root .prompt .choice');   // any other choice (resist, withdraw, ...): the first offered
     else if(s.phase==='fight'&&s.turn==='a')await click(page,'[data-act=attack]');
     await sleep(15);}
@@ -60,16 +61,17 @@ async function playToEnd(page){
     const logs=await page.evaluate(()=>prototypeCombat.state().logs.length);
     await click(page,'[data-act=replayFight]');await sleep(60);
     let s=await st(page);assert(s.busy&&s.replaying,'replaying');
-    const seen={hp:[],continues:0,modal:false,steps:new Set(),first:null};
+    const seen={hp:[],continues:0,modal:false,tray:0,dice:0,steps:new Set(),first:null};
     for(let i=0;i<3000;i++){
       s=await st(page);if(!s.busy)break;
       const snap=await page.evaluate(()=>({hp:[...document.querySelectorAll('.plate .tot b')].map(e=>+e.textContent),cont:!!document.querySelector('[data-act=continue]'),
-        modal:!!document.querySelector('.result-modal'),step:prototypeCombat.presentation().step,vis:prototypeCombat.presentation().visibleCount}));
-      if(!seen.first)seen.first=snap;seen.hp.push(snap.hp.join('/'));if(snap.cont)seen.continues++;if(snap.modal)seen.modal=true;seen.steps.add(snap.step);
+        modal:!!document.querySelector('.result-modal'),tray:!!document.querySelector('#pitsStage .roll'),dice:!!prototypeCombat.presentation().roll,step:prototypeCombat.presentation().step,vis:prototypeCombat.presentation().visibleCount}));
+      if(!seen.first)seen.first=snap;seen.hp.push(snap.hp.join('/'));if(snap.cont)seen.continues++;if(snap.modal)seen.modal=true;if(snap.tray)seen.tray++;if(snap.dice)seen.dice++;seen.steps.add(snap.step);
       await sleep(30);
     }
     assert(!s.busy,'the replay finished');
     assert.equal(seen.continues,0,'never stopped for Continue');assert.equal(seen.modal,false,'the result window stays away while it plays');
+    assert.equal(seen.tray,0,'no dice tray during the replay');assert.equal(seen.dice,0,'no dice beats during the replay');
     assert(seen.steps.size>5,'many beats played ('+seen.steps.size+')');
     const startHp=seen.first.hp,max=await page.evaluate(()=>Object.values(prototypeCombat.state().fighters).map(f=>Object.values(f.maxHp).reduce((a,b)=>a+b,0)));
     assert.deepEqual(startHp,max,'both fighters start the replay at full health');

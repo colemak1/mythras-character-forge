@@ -135,6 +135,7 @@ const paPct=label=>{const m=[...String(label||'').matchAll(/(\d{1,3})%/g)];retur
 function paTrayHtml(){
   let title='Dice tray',sub='Rolls appear here',who='you',body='',bar='',res='',btn='',cls='';
   const defsOf=r=>r.defs.map(d=>d.sides===100?'d100':'d'+d.sides).join(' + ');
+  if(V.replaying)return '';   // a replay of the fight shows the fight, not the dice
   if(V.busy&&V.roll){
     const r=V.roll,pct=paPct(r.label);
     title=rollHeading(r.label);who=paHuman(r.actor)?'you':'foe';sub=pct!=null?`Target <b>${pct}%</b>`:esc(defsOf(r));

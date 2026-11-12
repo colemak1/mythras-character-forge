@@ -552,7 +552,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="practice-guidance.js?v=e041ed5995"></script>
 <script src="pits-view.js?v=766aacde41"></script>
 <script src="pits-game.js?v=aa0a12a2ed"></script>
-<script src="pits-arena.js?v=f7d6ec3f38"></script>
+<script src="pits-arena.js?v=bb25e609fb"></script>
 <script src="pits-bottom.js?v=ffba0d016b"></script>
 <script src="pits-stage.js?v=1a5f57bcb6"></script>
 <script>
@@ -1686,12 +1686,12 @@ function skipPresentation(){
 // built from the tape recorded while it was played. Stop replay (or Quick pace) cuts it short; nothing in the fight changes.
 function startFightReplay(){
   if(V.busy||!V.tape||!V.tape.length||!V.tapeStart||!['between','over'].includes(S.phase))return;
-  const events=V.tape.filter(e=>!e.checkpoint);
-  if(!events.some(e=>!e.roll))return;
+  // fight animations only: no dice beats and no stops, so it reads as one fluid fight
+  const events=V.tape.filter(e=>!e.checkpoint&&!e.roll);
+  if(!events.length)return;
   clearPresentationTimers();
   V.replaying=true;V.busy=true;V.events=events;V.step=0;V.roll=null;V.impact=null;
-  const firstLog=events.find(e=>!e.roll);
-  V.visibleCount=S.logs.filter(entry=>entry.id<firstLog.id).length;
+  V.visibleCount=S.logs.filter(entry=>entry.id<events[0].id).length;
   V.shown=clone(V.tapeStart);V.shownRange=V.tapeRange||null;V.stage=null;V.highlight=null;
   if(typeof pitsStageReset==='function')pitsStageReset();
   playBeat();
