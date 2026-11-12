@@ -196,6 +196,26 @@ Fig.prototype.aimGrip=function(t,world,r,along,ease,opts){
   if(!best){this.notes.push({t,what:'reach',short:1});return this.aim(t,world,w0,along,ease,opts);}
   this.k(t,{h:best.h},ease,opts);this.tr.set('w',t,best.w,(opts&&opts.wease)||ease);return this;
 };
+// A cut lands on its target coming down: the blade angle is the one asked for (pref) wherever the arm can hold it,
+// with the arm long (at least minR from the shoulder) and the wrist broken into the cut. Only if the arm cannot reach
+// does the blade come up toward level, a few degrees at a time.
+Fig.prototype.aimCut=function(t,world,pref,along,ease,opts){
+  const tq=torso(this.tr.pose(t)),S=tq.S,wS=tq.wS,T=this.L(world),minR=(opts&&opts.minR)||56,wmin=(opts&&opts.wrist)||-36;
+  let best=null;
+  for(let w=pref-10;w<=pref+70;w+=.5){
+    const h=[T[0]-Math.cos(rad(w))*along-S[0],T[1]-Math.sin(rad(w))*along-S[1]];
+    const hr=Math.hypot(S[0]+h[0]-wS[0],S[1]+h[1]-wS[1]);
+    const a=ik(wS,[S[0]+h[0],S[1]+h[1]],DIM.upper,DIM.fore,1),wr=norm(w-deg(Math.atan2(a.end[1]-a.mid[1],a.end[0]-a.mid[0])));
+    // how far this blade is from a cut the arm can make: out of reach, a bent arm, a wrist past its break, or off the line
+    const bad=Math.max(0,hr-(ARM-1.5))*4+Math.max(0,minR-hr)+Math.max(0,wmin-wr)*2+Math.max(0,wr-8)+Math.abs(w-pref)*.25;
+    if(!best||bad<best.bad)best={w,h,bad,hr,wr};
+  }
+  if(best.hr>ARM-1){
+    this.notes.push({t,what:'reach',short:+(best.hr-ARM+1).toFixed(1)});
+    const dS=[wS[0]-S[0],wS[1]-S[1]],k=(ARM-1)/best.hr;best.h=[dS[0]+(best.h[0]-dS[0])*k,dS[1]+(best.h[1]-dS[1])*k];
+  }
+  this.k(t,{h:best.h},ease,opts);this.tr.set('w',t,best.w,(opts&&opts.wease)||ease);return this;
+};
 // the off hand toward a world point (as far as the arm goes)
 Fig.prototype.reach=function(t,world,ease,opts){
   const tq=torso(this.tr.pose(t)),S=tq.S,dS=[tq.oS[0]-S[0],tq.oS[1]-S[1]],T=this.L(world);
@@ -267,7 +287,7 @@ function daggerParry(A,B,tc,shield,alongA){
   else{B.hold(tc-170,['h','w']);
     // the dagger's own parry; a longer weapon held across has to be solved from the arm
     if(B.weapon.len<=50)B.aim(tc-25,C,104,15,'out3',ARC);else B.aimGrip(tc-25,C,70,Math.round(B.weapon.len*.3),'out3',ARC);}
-  A.aimGrip(tc,C,8,Math.round(A.weapon.len*(alongA||.67)),'in',{arc:true,wease:'in3'});
+  A.aimGrip(tc,C,8,Math.round(A.weapon.len*(alongA||.67)),A.cutEase||'in',{arc:true,wease:A.cutWease||'in3'});
   // contact: the cut is stopped; its weight goes into B's arm and knees
   B.hold(tc);B.k(tc+70,{p:[0,71],lean:7,bend:3},'out');
   return C;
@@ -749,7 +769,7 @@ function liveMiss(A,D,td,s,out){
     if(s.fall)out.end=liveFallAt(D,tc+160);
     // the cut passes in front of the chest; nothing stops it, so it runs on down and the body is carried after it
     const ch=livePart(D,tc,'chest'),P=[ch[0]+D.face*36,ch[1]-4];
-    A.aimGrip(tc,P,6,Math.round(A.weapon.len*.89),'in',{arc:true,wease:'in',pref:-22,minR:40});
+    A.aimGrip(tc,P,6,Math.round(A.weapon.len*.89),A.cutEase||'in',{arc:true,wease:A.cutWease||'in',pref:-22,minR:40});
     out.contacts.push({t:tc,kind:'miss',at:P});
     A.ox=0;const px=A.tr.val('px',tc),py=A.tr.val('py',tc),bf=A.tr.val('bfx',tc);
     A.k(tc+130,{px:px+5,py:py-2,lean:21,bend:9,head:-18,turn:13},'out');
@@ -786,8 +806,8 @@ function liveMiss(A,D,td,s,out){
 // one accelerating swing to contact, with no stop on the way. The caller aims the blade at tc; the follow-through slows.
 const CUT_ZONE=loc=>loc==='head'?'high':/leg$/.test(loc||'')?'low':'mid';
 const CHAMBER={
-  high:{h:[5,-8],w:148,body:{py:77,lean:-1,bend:-2,head:-4,turn:-7},strike:{lean:15,bend:6,head:-12,turn:11},dy:0,fs:0},
-  mid:{h:[-8,-20],w:174,body:{py:75,lean:2,bend:0,head:-8,turn:-12},strike:{lean:15,bend:4,head:-12,turn:14},dy:-2,fs:.5},
+  high:{h:[26,14],w:128,over:{h:[34,18],w:100},body:{py:77,lean:-1,bend:-2,head:-4,turn:-7},strike:{lean:15,bend:6,head:-12,turn:11},dy:0,fs:0},
+  mid:{h:[22,0],w:170,over:{h:[34,8],w:112},body:{py:75,lean:2,bend:0,head:-8,turn:-12},strike:{lean:15,bend:4,head:-12,turn:14},dy:-2,fs:0},
   low:{h:[-4,-42],w:-152,body:{py:72,lean:11,bend:6,head:-14,turn:-9},strike:{lean:26,bend:10,head:-22,turn:12},dy:-6,fs:.4}
 };
 const CUT_LEAD=520;   // from stillness to contact
@@ -806,6 +826,8 @@ function liveCut(A,tc,stride,gain,zone){
   A.k(tc-255,{h:Z.h,w:Z.w},'io',ARC).k(tc-255,{o:[24,-8]},'io',ARC);
   // the blade waits in the chamber while the foot and hips go (a little drift, not a hold)
   A.k(tc-135,{h:[Z.h[0]+2,Z.h[1]-1],w:Z.w-4},'lin',ARC);
+  if(Z.over)A.k(tc-70,{h:Z.over.h,w:Z.over.w},'in',ARC);
+  A.cutEase=Z.over?'lin':'in';A.cutWease=Z.over?'lin':'in';
   if(stride>3)A.step('ff',tc-280,tc-90,A.front+stride,Z===CHAMBER.low?4:6);
   // commitment (fast): the rear leg drives; the hips gather speed, then the front knee catches them into contact.
   // The two pieces meet at the same speed, so the drive is one movement, not two.
@@ -864,7 +886,7 @@ function liveArmReach(F,t,h){
 const READ_GUARD={h:[22,-22],w:62};
 // The guard a hit gets past (owner's review: a hit is an attack that finds an opening). The defender covers one line
 // and the cut takes another: over a middle guard to the head; under a raised guard to the body or the legs.
-const OPEN_GUARD={high:{h:[18,-42],w:-8},mid:{h:[14,8],w:82},low:{h:[16,-8],w:74}};
+const OPEN_GUARD={high:{h:[18,-42],w:-8},mid:{h:[10,20],w:84},low:{h:[16,-8],w:74}};
 function liveRead(D,tc,guard){
   const t0=tc-330;D.hold(t0);D.ox=0;
   const px=D.tr.val('px',t0),py=D.tr.val('py',t0),G=guard||(D.style==='thrust'?DAGGER_OUT:READ_GUARD);
@@ -874,34 +896,117 @@ function liveRead(D,tc,guard){
   D.hold(tc-150,['h','w','px','py','lean','bend','head','turn']);
   return px;
 }
-// A parry that intercepts: the guard is set across the line before the cut arrives (fast, decisive, then waiting),
-// the cut lands on it near its point, and the defender binds: the hilt drives forward and down and the attacker's
-// blade is carried with it before it falls away. Returns the meeting point.
+// A parry that intercepts (owner's review, third pass): the guard is set across the line before the cut arrives, the
+// two blades cross in a clear X with the parrying blade near its middle, and the spark is drawn exactly where they
+// cross. A full parry then knocks the cut back off the parrying blade: the attacking blade is driven back along its own
+// line and up, clear of the defender, and only then falls away on its owner's side. Returns the meeting point.
+// The parrying guard for a high or middle cut: the hand out in front of the chest, the blade upright in front of the face.
+const PARRY_GUARD={high:{h:[44,-26],w:98,cut:-10},mid:{h:[38,-28],w:93,cut:-26}};
 function liveParryCut(A,D,tc,zone,alongA,bind){
   const px=liveRead(D,tc),dl=Math.round(D.weapon.len*.3);
   D.k(tc-50,{px:px-7,lean:D.guard.lean-2,turn:-4},'out');
-  const C=liveParryPoint(D,tc-50,zone);
-  D.k(tc-50,{h:liveHandFor(D,tc-50,C,PARRY_W[zone],dl),w:PARRY_W[zone]},'out3',ARC).k(tc-50,{o:[12,-28]},'out',ARC);
-  D.hold(tc);
-  A.aimGrip(tc,C,8,Math.round(A.weapon.len*alongA),'in',{arc:true,wease:'in'});
+  const G=PARRY_GUARD[zone];
+  let C=null;
+  if(G){
+    D.k(tc-50,{h:liveArmReach(D,tc-50,G.h),w:G.w},'out3',ARC).k(tc-50,{o:[12,-28]},'out',ARC);
+    D.hold(tc);
+    const X=liveCross(A,D,tc,G.cut);
+    if(X){C=X.C;A.aim(tc,C,X.w,X.along,A.cutEase||'in',{arc:true,wease:A.cutWease||'in'});A.parry={tc,along:X.along,D,C,zone};}
+  }
+  if(!C){
+    // a low line (or no clean crossing): the guard is set on the point where the cut will be
+    C=liveParryPoint(D,tc-50,zone);
+    D.k(tc-50,{h:liveHandFor(D,tc-50,C,PARRY_W[zone],dl),w:PARRY_W[zone]},'out3',ARC).k(tc-50,{o:[12,-28]},'out',ARC);
+    D.hold(tc);
+    A.aimGrip(tc,C,8,Math.round(A.weapon.len*alongA),A.cutEase||'in',{arc:true,wease:A.cutWease||'in'});
+    // the spark goes where the two drawn blades actually cross
+    const X2=bladeMeet(A,D,tc);if(X2)C=X2;
+    // a sane contact (the sword held, not hinged) is knocked back like a clean one; otherwise the low bind carries it
+    if(X2&&Math.abs(A.joints(tc).grip)<60)A.parry={tc,along:Math.round(A.weapon.len*alongA),D,C,zone};
+  }
   // the stopped blade: its weight goes into the defender's arm and knees
   D.k(tc+40,{py:D.tr.val('py',tc)-3},'out');
-  if(bind){
-    // the bind: the parrying blade turns down and forward, the cut is carried with it
+  if(bind&&A.parry){
+    // the beat: the defender's hilt drives forward and the blade tips toward the attacker, knocking the cut back
+    D.ox=0;const hb=D.tr.val('h',tc),wb=D.tr.val('w',tc);
+    D.k(tc+70,{h:liveArmReach(D,tc+70,[hb[0]+5,hb[1]+2]),w:wb-6},'out',ARC);
+    D.hold(tc+210,['h','w']);
+  }else if(bind){
     const t2=tc+90,hb=D.tr.val('h',tc);
     D.k(t2,{px:px-2,lean:D.guard.lean+4,turn:3},'out').k(t2,{h:liveArmReach(D,t2,[hb[0]+10,hb[1]-(zone==='low'?6:26)]),w:PARRY_W[zone]-(zone==='low'?10:100)},'out',ARC);
-    // the attacker's blade is carried once both bodies are written (bindCarry)
     A.bind={t:t2,D,zone};
   }
   return C;
 }
-// After both fighters' keys are written: the attacker's blade rides the parrying blade down for a moment.
+// Where a cut can meet an upright parrying blade: search the attacker's blade angle and the two points of contact for a
+// crossing the arm can make, coming down onto the parry at a clear angle, with the point that passes the parrying blade
+// kept clear of the defender's head and body. Nothing is keyed. Returns {C, w (attacker's frame), along} or null.
+function liveCross(A,D,tc,want){
+  const jd=D.joints(tc),hn=D.W(jd.Hn),dw=D.face>0?jd.w:180-jd.w,dir=[Math.cos(rad(dw)),Math.sin(rad(dw))];
+  const tq=torso(A.tr.pose(tc)),wS=A.W(tq.wS),La=A.weapon.len,Ld=D.weapon.len;
+  const hd=D.at(tc,'Hd'),ch=D.at(tc,'chest'),nk=D.at(tc,'S');
+  let best=null;
+  for(let fd=.3;fd<=.62;fd+=.02){
+    const C=[hn[0]+dir[0]*Ld*fd,hn[1]+dir[1]*Ld*fd];
+    for(let wa=want-30;wa<=want+22;wa+=1){
+      const aw=A.face>0?wa:180-wa,ad=[Math.cos(rad(aw)),Math.sin(rad(aw))];
+      // the crossing angle between the two blades (0 parallel, 90 square)
+      const cross=Math.abs(Math.asin(clamp(ad[0]*dir[1]-ad[1]*dir[0],-1,1)))*180/Math.PI;
+      if(cross<50)continue;
+      for(let fa=.6;fa<=.86;fa+=.02){
+        const along=La*fa,H=[C[0]-ad[0]*along,C[1]-ad[1]*along],r=Math.hypot(H[0]-wS[0],H[1]-wS[1]);
+        if(r>ARM-2||r<42)continue;
+        // held, not hinged: the blade within a wrist's turn of the forearm (a cut may break the wrist a little down)
+        const a=ik(tq.wS,A.L(H),DIM.upper,DIM.fore,1),fore=deg(Math.atan2(a.end[1]-a.mid[1],a.end[0]-a.mid[0]));
+        const wr=norm(wa-fore);
+        if(wr<-60||wr>50)continue;
+        // the part of the cut that passes the parrying blade stays clear of the defender
+        const tip=[C[0]+ad[0]*(La-along),C[1]+ad[1]*(La-along)];
+        const clear=Math.min(Math.hypot(tip[0]-hd[0],tip[1]-hd[1])-DIM.headR,segPt(tip,ch,nk));
+        if(clear<12)continue;
+        const score=Math.abs(wa-want)*.6+Math.max(0,-30-wr)*.6+Math.abs(fd-.42)*60+Math.abs(fa-.74)*40+Math.max(0,24-clear);
+        if(!best||score<best.score)best={score,C,w:wa,along:Math.round(along)};
+      }
+    }
+  }
+  return best;
+}
+// where the two fighters' blades cross at time t (world), or null
+function bladeMeet(A,D,t){
+  const ja=A.joints(t),jd=D.joints(t),a=A.W(ja.Hn),b=A.W(ja.tip),c=D.W(jd.Hn),e=D.W(jd.tip);
+  const r=[b[0]-a[0],b[1]-a[1]],q=[e[0]-c[0],e[1]-c[1]],den=r[0]*q[1]-r[1]*q[0];if(Math.abs(den)<1e-9)return null;
+  const u=((c[0]-a[0])*q[1]-(c[1]-a[1])*q[0])/den,v=((c[0]-a[0])*r[1]-(c[1]-a[1])*r[0])/den;
+  return u>=0&&u<=1&&v>=0&&v<=1?[a[0]+r[0]*u,a[1]+r[1]*u]:null;
+}
+const segPt=(p,a,b)=>{const vx=b[0]-a[0],vy=b[1]-a[1],u=clamp(((p[0]-a[0])*vx+(p[1]-a[1])*vy)/(vx*vx+vy*vy||1),0,1);
+  return Math.hypot(p[0]-a[0]-vx*u,p[1]-a[1]-vy*u);};
+// A low parry binds: after both fighters' keys are written, the attacker's blade rides the parrying blade down.
 function liveBindCarry(A){
   const b=A.bind;if(!b)return;A.bind=null;A.ox=0;
   const P=b.D.at(b.t,'blade',Math.round(b.D.weapon.len*.3)),S=torso(A.tr.pose(b.t)).S,Q=A.L(P);
   // the blades slide on each other: the closer the bind comes, the nearer the hilt it bears on the attacking blade
   const along=Math.max(20,Math.min(A.weapon.len*.75,Math.hypot(Q[0]-S[0],Q[1]-S[1])-42));
   A.aimGrip(b.t,P,-2,Math.round(along),'out',{arc:true});
+}
+// After a full parry with a clean crossing: the cut is knocked back off the parrying blade. The attacker's hand gives
+// back along the line of its own blade until the point is behind the parrying blade, and the point rises a little with
+// the blow; then the sword's weight takes it down on the attacker's own side.
+function liveRebound(A){
+  const b=A.parry;if(!b)return;A.parry=null;A.ox=0;
+  const tc=b.tc,h=A.tr.val('h',tc),w=norm(A.tr.val('w',tc));
+  A.hold(tc,['h','w','p','lean','turn']);
+  // the jar goes into the body: the shoulders are knocked back and the hand gives a little, so the whole sword comes
+  // back off the parrying blade with the arm still long, and the point lifts with the blow
+  A.k(tc+70,{px:A.tr.val('px',tc)-12,lean:A.tr.val('lean',tc)-10,turn:A.tr.val('turn',tc)-5},'out');
+  const h1=liveArmReach(A,tc+70,[Math.max(24,h[0]-24),h[1]+(b.zone==='high'?2:-12)]),wr=A.joints(tc).grip;
+  A.kg(tc+70,h1,wr+(Math.abs(wr)<60&&b.zone==='high'?8:0),'out');
+  // the weight takes it: the hand comes down in front of the body and the point drops steeply, drawn in short of the
+  // defender's guard and front leg
+  // the body stays back under it (the stopped cut carries nothing forward), then settles over the feet
+  A.k(tc+150,{px:A.tr.val('px',tc)-10,lean:A.tr.val('lean',tc)-6,turn:A.tr.val('turn',tc)-5},'io');
+  A.k(tc+175,{px:A.tr.val('px',tc)-6,lean:A.tr.val('lean',tc)-3,turn:A.tr.val('turn',tc)-4},'io');
+  const S2=torso(A.tr.pose(tc+175)).S,kx=A.L(b.D.at(tc+175,'K'))[0]-S2[0];
+  A.kg(tc+175,liveArmReach(A,tc+175,[Math.max(18,Math.min(h1[0]-20,kx-30-Math.cos(rad(62))*A.weapon.len)),h1[1]-34]),-20,'io');
 }
 // A defence that is beaten: the defender sees the cut and goes to cover the line, but the blade gets there first.
 // At contact the guard is still on its way (about half way), clear of the cutting blade, so the hit reads as an
@@ -926,14 +1031,16 @@ function liveGather(f,t){
 }
 function liveBlow(F,aid,t,s){
   const A=F[aid],D=F[aid==='a'?'b':'a'],o=s.outcome;
-  A.cut(t);D.cut(t);
+  A.cut(t);D.cut(t);A.parry=A.bind=null;
   const out={tc:0,contacts:[],end:t,stride:0};
   // recovery belongs to the start of the next movement: a stance left wide or narrow by the last one is put right first
   let t1=liveGather(A,t);const td=liveGather(D,t);
   // close the measure first if one step will not reach
   // a partial parry takes the defender's body back a little before the blade gets through
   // a miss is a blow that falls short: the attacker commits a little less, a partial parry takes the defender's body back
-  let need=liveStride(A,t1,livePart(D,t1,s.loc||'chest'))+(/^partial/.test(o)?14:0)-(A.style==='cut'&&/^(miss|fumble|evaded)$/.test(o)?18:0);
+  let need=liveStride(A,t1,livePart(D,t1,s.loc||'chest'))+(/^partial/.test(o)?14:0)-(A.style==='cut'&&/^(miss|fumble|evaded)$/.test(o)?18:0)
+    // a full parry meets the cut out in front of the defender, at the length of the attacker's arm and blade
+    -(A.style==='cut'&&!s.shield&&/^(parried|full-parry)$/.test(o)?34:0);
   // a cut reaches with one step of the front foot (up to 34), or a gaining step of the rear foot first (up to 36 more)
   const max=A.style==='cut'?34+50*.6:26;
   if(need>max){t1=liveWalk(A,t1,need-max+6);need=max-6;}
@@ -968,14 +1075,14 @@ function liveBlow(F,aid,t,s){
         // turned down and away: after the bind the sword's own weight carries it down beside its owner's front foot,
         // and the defender's point comes back up into line (the opening is now the defender's)
         liveCutFollow(A,tc);
-        {const kn=D.at(tc+240,'K'),kx=A.L(kn)[0];A.aimGrip(tc+240,A.W([kx-36,Math.max(14,kn[1]-4)]),-4,A.weapon.len,'in',{arc:true,pref:-55,minR:34});}
+        {const kn=D.at(tc+240,'K'),kx=A.L(kn)[0];A.aimGrip(tc+240,A.W([kx-(A.parry?50:36),Math.max(14,kn[1]-4)]),-4,A.weapon.len,'in',{arc:true,pref:-55,minR:34});}
         D.ox=0;const dpx=D.tr.val('px',tc+90);
         D.k(tc+320,{px:dpx+2,py:73,lean:9,bend:5,head:-10,turn:0},'io').k(tc+320,{o:[24,-16]},'io',ARC);
         if(!s.shield)D.k(tc+320,{h:SWORD_POINT.h,w:SWORD_POINT.w+6},'io',ARC);
         {const ox=A.ox;A.ox=0;const mid=(A.tr.val('ffx',tc+400)+A.tr.val('bfx',tc+400))/2;
          A.k(tc+150,{px:mid+12,py:70,lean:19,bend:8,head:-17,turn:6},'out').k(tc+330,{px:mid+9,py:72,lean:15,bend:7,head:-15,turn:3},'io');A.ox=ox;}
         A.k(tc+240,{o:[-40,-40]},'out',ARC);
-        liveBindCarry(A);liveSpent(A,D,tc+340,'out');
+        liveRebound(A);liveBindCarry(A);liveSpent(A,D,tc+340,'out');
         out.end=tc+340;
       }else{
         // carried up and over: the thrust is lifted off the line and comes back
@@ -993,7 +1100,7 @@ function liveBlow(F,aid,t,s){
   const T=livePart(D,tb,s.loc||'chest');
   // after a partial parry the blade is pushed on through from where the guard held it: a straight, even drive
   const pref=CUT_PREF[s.loc||'chest'];
-  if(A.style==='cut')A.aimGrip(tb,T,6,liveAlong(A,true),parried?'io':'in',parried?{pref,minR:40}:{arc:true,wease:'in',pref,minR:40});
+  if(A.style==='cut'){if(parried)A.aimGrip(tb,T,6,liveAlong(A,true),'io',{pref,minR:40});else A.aimCut(tb,T,pref,liveAlong(A,true),A.cutEase||'in',{arc:true,wease:A.cutWease||'in'});}
   else A.aimGrip(tb,T,0,liveAlong(A),parried?'io':'in');
   // the effects are drawn where the blade is: after a partial parry it can arrive a little short of the part
   const body={t:tb,kind:'body',at:T,part:T},len0=A.weapon.len;out.contacts.push(body);

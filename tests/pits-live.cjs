@@ -184,12 +184,30 @@ test('sword: a hit beats a guard: the defender goes to a guard as the cut is pre
     // and it is moving to cover when the cut lands: beaten by time, not standing still
     assert(dist(L.pose(F.b,tc-60).tip,L.pose(F.b,tc).tip)>3,loc+': the late guard is still moving at contact');}
 });
-test('sword: a parry is set before the cut arrives, then binds: the attacking blade is carried on the parrying one',()=>{
-  for(const loc of ['head','chest']){const {F}=swords(),r=L.blow(F,'a',100,{outcome:'parried',loc,lost:0}),c=r.contacts[0];
-    assert(toDrawnBlade(F.b,c.t-40,c.at)<12,loc+': the parrying blade is already across the line 40 ms before contact');
-    assert(tipSpeed(F.b,c.t-20)<tipSpeed(F.a,c.t-20)/3,loc+': the guard waits; the cut is the fast thing');
-    assert(bladeGap(F.a,F.b,c.t+60)<10,loc+': the blades stay together in the bind ('+bladeGap(F.a,F.b,c.t+60).toFixed(1)+')');
-    const ja=L.pose(F.a,c.t),jb=L.pose(F.a,c.t+90);assert(jb.tip[1]<ja.tip[1]-20,loc+': the bind carries the cut down');}
+// where two drawn blades cross (null if they do not), and at what angle
+function bladeCross(f1,f2,t){const j1=L.pose(f1,t),j2=L.pose(f2,t),a=f1.W(j1.Hn),b=f1.W(j1.tip),c=f2.W(j2.Hn),e=f2.W(j2.tip);
+  const r=[b[0]-a[0],b[1]-a[1]],q=[e[0]-c[0],e[1]-c[1]],den=r[0]*q[1]-r[1]*q[0];if(Math.abs(den)<1e-9)return null;
+  const u=((c[0]-a[0])*q[1]-(c[1]-a[1])*q[0])/den,v=((c[0]-a[0])*r[1]-(c[1]-a[1])*r[0])/den;
+  if(u<0||u>1||v<0||v>1)return null;
+  const ang=Math.abs(Math.asin(Math.max(-1,Math.min(1,den/Math.hypot(...r)/Math.hypot(...q)))))*180/Math.PI;
+  return {at:[a[0]+r[0]*u,a[1]+r[1]*u],ang,u,v};}
+test('sword: a parry intercepts and redirects: set early, the blades cross where the spark is drawn, then the cut is knocked off and falls away',()=>{
+  for(const loc of ['head','chest'])for(const first of [true,false]){
+    const {F}=swords();if(!first)L.blow(F,'a',100,{outcome:'miss',loc:'chest',lost:0});
+    const t0=first?100:1400,r=L.blow(F,'a',t0,{outcome:'parried',loc,lost:0}),c=r.contacts[0],A=F.a,D=F.b,k=loc+(first?'':' (second blow)');
+    assert(toDrawnBlade(D,c.t-40,c.at)<12,k+': the parrying blade is already across the line 40 ms before contact');
+    assert(tipSpeed(D,c.t-20)<tipSpeed(A,c.t-20)/3,k+': the guard waits; the cut is the fast thing');
+    // contact: a clear X, and the spark on the crossing (not beside a head)
+    const X=bladeCross(A,D,c.t);assert(X,k+': the blades cross at contact');
+    assert(X.ang>=45,k+': they cross at a clear angle ('+(X&&X.ang.toFixed(0))+')');
+    assert(dist(X.at,c.at)<3,k+': the spark is where the blades cross ('+dist(X.at,c.at).toFixed(1)+' away)');
+    assert(X.v>.2&&X.v<.7,k+': the cut meets the parrying blade between its hilt and its point');
+    // the redirect: the attacking blade comes off the parry and away from the defender
+    const hd=t=>dist(A.W(L.pose(A,t).tip),D.at(t,'Hd')),h0=hd(c.t);
+    for(let t=c.t;t<=c.t+200;t+=5)assert(hd(t)>=h0-2,k+': the point never comes nearer the defender\'s head than at contact ('+(t-c.t)+')');
+    for(let t=c.t+90;t<=r.end;t+=5)assert(!bladeCross(A,D,t)&&bladeGap(A,D,t)>=4,k+': the blades stay apart after the beat ('+(t-c.t)+')');
+    assert(A.W(L.pose(A,r.end).tip)[1]<c.at[1]-50,k+': the cut falls away low on the attacker\'s side');
+    assert(Math.abs(L.pose(A,c.t+60).grip)<=62,k+': the sword stays held through the jar');}
 });
 test('sword: rhythm: a controlled preparation, a faster strike, and hips that drive without stopping',()=>{
   for(const loc of ['head','chest','rleg']){const {F}=swords(),r=L.blow(F,'a',100,{outcome:'wound',loc,lost:3}),tc=r.contacts[0].t,A=F.a;
