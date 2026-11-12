@@ -5,6 +5,33 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a ten-beat fight study (prototype)
+
+- **New page: `experiments/pits-fight-study.html`.** A whole fight, broadsword against broadsword, about 15 seconds, on the spring movement from the exchange study:
+  1. approach and measure;
+  2. a parried cut;
+  3. a slipped counter;
+  4. a low attack;
+  5. a low bind;
+  6. a disengage to a high parry;
+  7. a cut to A's sword forearm;
+  8. a deflected thrust;
+  9. a cut to B's thigh;
+  10. the collapse.
+  Every beat starts from where the last one left both fighters. The outcomes are scripted animation fixtures and say so on the page; the live Pits is unchanged.
+- **Plays straight through by default.** Tick "Stop where a decision would be made" to hold the exact pose at each decision and resume from it. Normal, half and quarter speed, frame stepping, a scrubber with numbered beat marks, and a button per beat.
+- **Movement:**
+  - Strikes ease hard: a short fast part, no overshoot. Springs are firm, so nothing wobbles.
+  - Contacts are exact, and blows are aimed at angles the arm can actually hold.
+  - A miss falls just short of the turned body.
+  - Hips sink rather than overstretch a leg.
+  - A hand cannot pass through its own shoulder, and a blade rests on the floor rather than going through it.
+- **Wounds:** only the cut segment is marked (A's forearm, B's thigh), and both stay marked to the end.
+- **Smears and impact flashes:** a layer you can switch off, on both study pages.
+- Tests:
+  - `tests/pits-fight.cjs`: 15 checks, CI.
+  - `tests/visual/pits-fight-page.cjs`: browser, local.
+
 ## The Pits: exchange study, second pass (owner's review)
 
 - **The sword arm is caught, held and let go.** The sword fighter starts to bring the sword down. The dagger fighter's empty hand catches it at the wrist and stops it in front of the body, holding it up through the thrust (a ring marks the grip). Then it lets go with a small push, and only after that does the arm drop.

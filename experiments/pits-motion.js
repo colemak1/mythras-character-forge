@@ -542,8 +542,10 @@ function figureSvg(fig,j,wounds){
   return '<g class="ps-fig ps-'+(fig.id==='a'?'left':'right')+'"><g class="ps-back">'
     +bone(j.P,j.bK,j.bF,9,cls('lleg'))+bone(j.oS||j.S,j.oE,j.oHn,8,cls('larm'))+'</g>'
     +line(j.M,j.P,12,cls('abdomen'))+line(j.S,j.M,12,cls('chest'))+bone(j.P,j.K,j.F,10,cls('rleg'))
+    // a wound to one segment (the studies): only that segment is marked
+    +(wounds&&wounds.rthigh?line(j.P,j.K,10,cls('rthigh')):'')
     +'<circle cx="'+hc[0]+'" cy="'+hc[1]+'" r="'+DIM.headR+'" stroke-width="5" class="ps-head '+cls('head')+'"/>'
-    +bone(j.wS||j.S,j.E,j.Hn,8,cls('rarm'))
+    +bone(j.wS||j.S,j.E,j.Hn,8,cls('rarm'))+(wounds&&wounds.rfore?line(j.E,j.Hn,8,cls('rfore')):'')
     +line(pm,j.tip,4,'ps-shaft')+line([g[0]-d[1]*9,g[1]+d[0]*9],[g[0]+d[1]*9,g[1]-d[0]*9],4,'ps-guard')+'</g>';
 }
 // everything a page needs to draw one moment of a sequence (sequence time t)

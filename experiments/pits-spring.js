@@ -127,11 +127,23 @@ function handAt(f,q,P,along,w){const S=torso(q).S,T=f.L(P);return [T[0]-Math.cos
 function offFor(f,q,P){const S=torso(q).S,T=f.L(P);return [T[0]-S[0],T[1]-S[1]];}
 
 // ----- the simulation: both fighters, one clock -----
-function simulate(F,dur){
-  const ids=Object.keys(F),st={},tg={},rec={};
+// opt.from: a checkpoint of an earlier run (rec._snaps) to carry on from, when nothing before it has changed.
+// Every run keeps checkpoints every 200 ms, so a sequence written beat by beat need not start again from zero.
+const SNAP=200;
+const pinState=F=>Object.fromEntries(Object.keys(F).map(id=>[id,F[id].pins.map(p=>({prev:p.prev&&{...p.prev},w:p.w,lastW:p.lastW}))]));
+function simulate(F,dur,opt){
+  const ids=Object.keys(F),st={},tg={},rec={},from=opt&&opt.from;let t0=0;
   for(const id of ids){const f=F[id];for(const p of f.pins){p.prev=null;p.w=null;p.lastW=null;}tg[id]=targets(f);st[id]={x:{...f.start},v:Object.fromEntries(CH.map(c=>[c,0]))};rec[id]=[];}
-  const ctx={F,st,dur},ptr={};for(const id of ids)ptr[id]=Object.fromEntries(CH.map(c=>[c,0]));
-  for(let t=0;t<=dur;t+=DT){
+  let ctxOut;
+  if(from){
+    t0=from.t+DT;
+    for(const id of ids){st[id]={x:{...from.st[id].x},v:{...from.st[id].v}};rec[id]=from.rec[id].slice(0,from.n);
+      F[id].pins.forEach((p,i)=>{const k=from.pins[id][i];if(k){p.prev=k.prev&&{...k.prev};p.w=k.w;p.lastW=k.lastW;}});}
+    ctxOut=from.out;
+  }
+  const ctx={F,st,dur,out:ctxOut},ptr={};for(const id of ids)ptr[id]=Object.fromEntries(CH.map(c=>[c,0]));
+  const snaps=from?from.prior.filter(x=>x.t<=from.t):[];
+  for(let t=t0;t<=dur;t+=DT){
     for(const id of ids){
       const f=F[id],s=st[id];
       for(const im of f.impulses)if(im.t>t-DT&&im.t<=t)for(const c in im.v){if(im.v[c]==='stop')s.v[c]=0;else s.v[c]+=im.v[c];}
@@ -186,6 +198,11 @@ function simulate(F,dur){
     for(const id of ids){const f=F[id],s=st[id],o=out[id],tq=torso(pose(f,o,t));
       for(const [kx,ky,sh] of [['hx','hy',tq.wS],['ox','oy',tq.oS]]){
         const dx=tq.S[0]+o[kx]-sh[0],dy=tq.S[1]+o[ky]-sh[1],r=Math.hypot(dx,dy);
+        // nor can a hand pass through its own shoulder (where the elbow would flip): with minReach set, it goes round
+        if(f.minReach&&r<f.minReach){const L=f._dir||(f._dir={}),d0=L[kx]||[1,0],
+            u=r>1e-3?[dx/r,dy/r]:d0,nx=sh[0]+u[0]*f.minReach-tq.S[0],ny=sh[1]+u[1]*f.minReach-tq.S[1];
+          L[kx]=u;o[kx]=nx;o[ky]=ny;if(!(o._blend&&o._blend[kx])){s.x[kx]=nx;s.x[ky]=ny;}continue;}
+        if(f.minReach&&r>1e-3)(f._dir||(f._dir={}))[kx]=[dx/r,dy/r];
         if(r<=ARM-1)continue;
         const ux=dx/r,uy=dy/r,k=(ARM-1)/r,nx=sh[0]+dx*k-tq.S[0],ny=sh[1]+dy*k-tq.S[1];
         o[kx]=nx;o[ky]=ny;if(!(o._blend&&o._blend[kx])){s.x[kx]=nx;s.x[ky]=ny;}
@@ -212,8 +229,17 @@ function simulate(F,dur){
     for(const id of ids)delete out[id]._blend;
     if(t%REC===0)for(const id of ids)rec[id].push({...out[id]});
     ctx.out=out;ctx.t=t;
+    if(t%SNAP===0)snaps.push({t,n:rec[ids[0]].length,out,pins:pinState(F),
+      st:Object.fromEntries(ids.map(id=>[id,{x:{...st[id].x},v:{...st[id].v}}]))});
   }
+  Object.defineProperty(rec,'_snaps',{value:snaps,enumerable:false});
   return rec;
+}
+// carry on from the last checkpoint of an earlier run that is before `dirty` (the earliest time anything was added)
+function resumeFrom(prev,dirty){
+  if(!prev||!prev._snaps)return null;
+  let s=null;for(const x of prev._snaps)if(x.t<dirty)s=x;else break;
+  return s&&{...s,rec:prev,prior:prev._snaps};
 }
 
 // ----- the exchange -----
@@ -382,7 +408,7 @@ const SEQS={};
 function buildAny(id){return id&&SEQS[id]?SEQS[id]():build();}
 const api={build:buildAny,register:(id,fn)=>{SEQS[id]=fn;},frame,joints,world,sample,simulate,Fighter,SPRING,LAG,CH,REC,GROUND,
   // the pieces a sequence is written with
-  pose,solve,torso,handAt,offFor,footX,sm,rad,norm,WRIST,ARM,PM,
+  pose,solve,torso,handAt,offFor,footX,sm,rad,norm,WRIST,ARM,PM,resumeFrom,
   seqTime:PM.seqTime,shownDur:PM.shownDur,shownAt:PM.shownAt};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 root.PitsSpring=api;
