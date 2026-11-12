@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-12 by Claude (Pits: spring-driven exchange study)_
+_Last updated: 2026-11-12 by Claude (Pits: fight study, one continuous movement)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-12 by Claude (Pits: spring-driven exchange study)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+000000000. **Claude, done 2026-11-12 (fight study, one continuous movement):** no gap between actions; the next beat starts as the last parry, miss or wound resolves; only the optional decision holds stop. About 8.5 s. Details: `docs/pits-animation-direction.md`, "One continuous movement". **Owner:** watch `experiments/pits-fight-study.html` with the decision box unticked and say whether it now flows like a replay should; if yes, Claude starts the live integration (sword cut, parry and miss from the engine's resolved results), with the same no-gap rule for replays.
 
 00000000. **Claude, done 2026-11-12 (fight study, smoother and never still):** after the owner's review. Eased keys, a live drift so nobody is ever still, smoother steps, about 12.3 s; jerk numbers in `docs/pits-animation-direction.md`. **Owner:** watch `experiments/pits-fight-study.html` again and say whether it is smooth enough to start the live integration.
 

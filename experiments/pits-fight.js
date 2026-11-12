@@ -38,10 +38,8 @@ function buildFight(){
   const mark=(t,who,label)=>seq.marks.push({t,who,label});
   const beat=(n,t,short,label)=>{seq.beats.push({n,t,short,label});mark(t,'both',n+'. '+label);};
   const pause=(t,label)=>seq.pauses.push({t,label});
-  // between beats the fighters breathe: the knees and the chest give a little and come back. Nothing resets.
-  const GAP=380;
-  const breathe=t0=>{const c=look(t0);for(const f of [A,B]){const o=c.out[f.id];
-    f.key(t0+GAP*.45,{py:o.py-1.6,lean:o.lean+1.2},'together');f.key(t0+GAP*.95,{py:o.py,lean:o.lean},'together');}};
+  // No gap between beats (owner, 2026-11-12): the next action starts while the last one's recovery is still moving,
+  // so a replay is one continuous movement. A decision boundary falls on that moment; holding there freezes the scene.
   const r2=t=>Math.round(t/REC)*REC;
 
   // ----- looking ahead: the poses at time t with everything written so far -----
@@ -96,19 +94,19 @@ function buildFight(){
   // ============ 1. Approach and measure ============
   let t=0;
   beat(1,t,'Approach','Approach and measure: A comes in a short step, B gives a little');
-  // a moment on guard, watching (never quite still). Then A comes in one short step (front foot, then the rear foot
+  // a short moment on guard, watching (never quite still). Then A comes in one short step (front foot, then the rear foot
   // follows) and B gives a little (rear foot back, then the front foot draws after it); the points stay on each other
-  A.walk('ff',620,840,52,{py:77,lift:8,settle:.5});
-  A.walk('bf',980,1160,-12,{py:75,lift:8,settle:.5,load:.4});
-  A.key(700,{lean:7,bend:4,head:-8,h:[27,-28],w:50});
-  B.walk('bf',800,1000,-46,{py:77,lift:8,settle:.45});
-  B.walk('ff',1120,1290,24,{py:77,lift:8,settle:.5,load:.25});
-  B.key(880,{lean:4,bend:5,head:-7,h:[26,-36],w:16});
-  t=1750;pause(t,'Measure taken. A chooses to attack.');breathe(t);t+=GAP;
+  A.walk('ff',320,540,52,{py:77,lift:8,settle:.5});
+  A.walk('bf',680,860,-12,{py:75,lift:8,settle:.5,load:.4});
+  A.key(400,{lean:7,bend:4,head:-8,h:[27,-28],w:50});
+  B.walk('bf',500,700,-46,{py:77,lift:8,settle:.45});
+  B.walk('ff',750,910,24,{py:77,lift:8,settle:.5,load:.25});
+  B.key(580,{lean:4,bend:5,head:-7,h:[26,-36],w:16});
+  t=930;pause(t,'Measure taken. A chooses to attack.');
 
   // ============ 2. First cut, caught by a parry ============
-  beat(2,t+50,'Cut, parried','A cuts diagonally at B\'s upper body; B meets it in front of the body and gives through elbow and knees');
-  const t2=t+50;
+  beat(2,t+20,'Cut, parried','A cuts diagonally at B\'s upper body; B meets it in front of the body and gives through elbow and knees');
+  const t2=t+20;
   // load: the weight settles back, the hilt comes up to the shoulder, the blade lies back
   A.key(t2,{px:-6,py:77,lean:0,bend:-3,head:-2,turn:-8,h:[12,4],w:140,o:[26,-12]});
   A.walk('ff',t2+240,t2+400,96,{py:70,lift:7,settle:.55,load:.35});
@@ -130,7 +128,7 @@ function buildFight(){
   B.key(tc2+300,{px:0,py:74,lean:6,bend:7,head:-10,h:[22,-10],w:60,o:[6,-28]});
   seq.stops.push({t:tc2,d:70});seq.fx.push({t:tc2,kind:'clash',at:C2});
   mark(tc2,'b','Parry: the cut is met in front of the body; B gives through the elbow and knees, and turns it down');
-  t=tc2+520;pause(t,'The cut is parried and A\'s blade is low and wide. B chooses to counter.');breathe(t);t+=GAP;
+  t=tc2+240;pause(t,'The cut is parried and A\'s blade is low and wide. B chooses to counter.');
 
   // ============ 3. Counter from the parry: B cuts at the ribs, A slips it ============
   beat(3,t+40,'Counter, slipped','B counters at A\'s ribs; A draws the front foot back and turns, and the cut passes outside');
@@ -150,18 +148,18 @@ function buildFight(){
   aim(B,t3+220,tm3,fixed(M3),2,90,{through:[-6,16],blend:60});
   // nothing stops it: it runs on down across B's own front, and B controls it there
   B.key(tm3+30,{h:[16,8],w:74,lean:12,bend:8},'attack',{snap:1.4});      // it runs on up past A's front and is drawn back
-  B.walk('bf',tm3+200,tm3+380,-26,{py:69,lift:8,settle:.5,load:.2});
+  B.walk('bf',tm3+130,tm3+300,-26,{py:69,lift:8,settle:.5,load:.2});
   B.key(tm3+320,{lean:9,bend:7,head:-10,turn:2,h:[24,-30],w:-30,o:[14,-26]});
   A.key(tm3+150,{px:30,py:67});
   A.key(tm3+320,{px:30,py:67,lean:6,bend:3,head:-8,turn:-4,h:[26,-14],w:58,o:[14,-26]});
   seq.misses.push({t:r2(tm3),who:'b',on:'a',t0:r2(tm3-120),t1:r2(tm3+140)});
   mark(tm3,'b','Miss: the rising cut passes just outside A\'s turned body and runs on past; B reins it in');
-  t=tm3+760;pause(t,'B\'s cut has missed and B has reined it in. A chooses to press.');breathe(t);t+=GAP;
+  t=tm3+385;pause(t,'B\'s cut has missed and B has reined it in. A chooses to press.');
 
 
   // ============ 4. Pursuit and low attack ============
-  beat(4,t+60,'Low attack','A follows the recovering blade with a cut at B\'s forward thigh; B pulls the leg back and lowers the blade to cover');
-  const t4=t+60,tc5=t4+560;
+  beat(4,t+5,'Low attack','A follows the recovering blade with a cut at B\'s forward thigh; B pulls the leg back and lowers the blade to cover');
+  const t4=t+5,tc5=t4+560;
   // A: the hilt comes up beside the shoulder as the front foot goes in
   A.key(t4,{px:20,py:71,lean:6,bend:0,head:-6,turn:-6,h:[8,6],w:132,o:[22,-14]});
   A.walk('bf',t4+10,t4+140,20,{py:69,lift:7,settle:.8,load:.45});
@@ -186,7 +184,7 @@ function buildFight(){
   mark(tc5,'a','Low bind: both blades stop; A\'s weight is caught in the front leg and hips, B sinks a little and holds');
 
   // ============ 6. Disengage and change level ============
-  t=tc5+300;pause(t,'The blades are bound low. A chooses to disengage and go high.');breathe(t);t+=GAP;
+  t=tc5+130;pause(t,'The blades are bound low. A chooses to disengage and go high.');
   beat(6,t+40,'Disengage high','A draws the blade back clear of B\'s point and cuts at the shoulder; B lifts into a high parry, stepping away');
   const t6=t+40,tc6=t6+520;
   bind5.hold=r2(t6+120)-bind5.t;          // the blades stay bound through the decision until A lifts away
@@ -225,16 +223,16 @@ function buildFight(){
   A.impulse(tc7+1,{hx:-220,hy:-160,wr:-80,lean:-30,head:60});
   A.key(tc7+20,{px:68,py:69,lean:4,bend:6,head:-10,turn:-10,h:[14,-18],w:82,o:[10,-26]},'together');
   B.key(tc7+40,{lean:8,bend:6,h:[24,-20],w:-20},'attack');
-  B.key(tc7+300,{px:14,py:71,lean:8,bend:7,head:-10,h:[22,-22],w:6,o:[16,-22]});
+  B.key(tc7+200,{px:14,py:71,lean:8,bend:7,head:-10,h:[22,-22],w:6,o:[16,-22]});
   seq.stops.push({t:r2(tc7),d:80});
   mark(tc7,'a','The blade lands on A\'s sword forearm: the arm is knocked back, the elbow comes in, the guard closes');
 
-  t=tc7+520;pause(t,'A is cut on the forearm and has closed up. B chooses to press with a thrust.');breathe(t);t+=GAP;
+  t=tc7+280;pause(t,'A is cut on the forearm and has closed up. B chooses to press with a thrust.');
 
 
   // ============ 8. A retreats under pressure ============
-  beat(8,t+60,'Thrust, deflected','B advances with a thrust at the body; A gives a short step back and deflects the point outward');
-  const t8=t+60,tc8=t8+420;
+  beat(8,t+80,'Thrust, deflected','B advances with a thrust at the body; A gives a short step back and deflects the point outward');
+  const t8=t+80,tc8=t8+420;
   // B: a short advance, the point in line, the arm extending last
   B.key(t8,{lean:10,bend:6,head:-12,turn:4,h:[10,-20],w:4,o:[18,-22]},'attack');
   B.walk('ff',t8+100,t8+250,70,{py:70,lift:8,settle:.62,load:.35});
@@ -289,7 +287,7 @@ function buildFight(){
   // A: the follow-through is stopped, the hips come back over the feet, then two steps out, guard up, elbow still in
   A.impulse(tc9+1,{hx:'stop',hy:'stop',wr:'stop'});
   // drawn out along the line it went in, then lifted clear
-  A.key(tc9+20,{h:[0,-32],w:-30},'together',{snap:2});           // straight back along the line of the cut, angle kept
+  A.key(tc9+20,{h:[-8,-32],w:-20},'together',{snap:2});           // drawn back along the line of the cut, the point lifting a little clear of the leg
   A.key(tc9+200,{px:70,py:68,lean:8,bend:8,head:-10,h:[12,-12],w:60,o:[12,-26]},'attack');
   A.walk('ff',t10+260,t10+440,84,{py:70,lift:9,settle:.3,load:.4});
   A.walk('bf',t10+560,t10+740,2,{py:71,lift:8,settle:.5,load:.5});
