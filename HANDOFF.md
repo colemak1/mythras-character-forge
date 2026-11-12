@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-12 by Claude (Pits: weapon profiles and the thrust family)_
+_Last updated: 2026-11-12 by Claude (Pits: shields)_
 
 ## Where things stand
 
@@ -16,7 +16,9 @@ _Last updated: 2026-11-12 by Claude (Pits: weapon profiles and the thrust family
 
 ## Next
 
-0000000000000. **Next, Claude:** the next weapon family, **shields** (block with the shield, cover posture, bash), then heavy one-handed, two-handed, long thrust, flexible: one family at a time, each with a generated study (`pits-fight-study.html?seq=...`) and its weapons added to the sweep (`tests/sweep/pits-sweep.cjs`). **Owner's rule (2026-11-12):** nothing goes live until all families are done; work stays on branch `claude/go-wf0bsg` (pushed, no PR).
+00000000000000. **Next, Claude:** the next weapon family, **heavy one-handed** (axe, mace, club, hammer: slower chamber, harder impact), then two-handed, long thrust, flexible; each with a generated study (`pits-fight-study.html?seq=...`) and its weapons in the sweep (`tests/sweep/pits-sweep.cjs`). **Owner's rule (2026-11-12):** nothing goes live until all families are done; work stays on branch `claude/go-wf0bsg` (pushed, no PR).
+
+0000000000000. **Claude, done 2026-11-12 (shields, step 3):** shield sizes, shield parry and ward on the shield's face, shield strike; study `pits-fight-study.html?seq=shields`; the sweep covers shields. **Owner (optional):** watch it on the branch and say whether the shield blocks and the shove look right. Details: `docs/pits-animation-direction.md`, "Shields".
 
 000000000000. **Claude, done 2026-11-12 (weapon profiles and the thrust family, step 3):** weapon lengths and families in the writer; thrust lands, falls short, deflected; collapse after any lethal blow; the two open faults fixed. Sweep: 1,008 fights (dagger, shortsword, rapier, broadsword, longsword, falchion against each other) all within the movement rules. **Owner (optional):** watch `experiments/pits-fight-study.html?seq=thrust` (on the branch, not deployed) and say whether the dagger looks right. Details: `docs/pits-animation-direction.md`, "Weapon families".
 

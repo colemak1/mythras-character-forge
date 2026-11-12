@@ -307,4 +307,22 @@ Items 2 and 3 now apply only to the pose stage behind `?stage=poses`; fix them o
 
 **Checked how.** Numbers (the sweep and the tests), and two stills of the generated study (the short thrust, the stab to the sword arm). Not watched at speed: whether a dagger fighter looks right is for the owner.
 
-**Next families**, in the planned order: shields (block, cover, bash), heavy one-handed (axe, mace, club, hammer), two-handed, long thrust (spear and polearms, their own range), flexible.
+## Shields (step 3, second family, 2026-11-12)
+
+**Watch it (optional; nothing is live):** `experiments/pits-fight-study.html?seq=shields`, broadsword and heater against broadsword and buckler (`PitsFixtures.SHIELDS`).
+
+**In the records.** `write(records,{shields:{a,b}})` with the engine's shield keys (buckler, target, heater, kite, hoplite, scutum). A parry made with the shield is `defence:'shield'` on the record; a ward (`full-ward`, `partial-ward`) is the shield's without it. A shield strike is `strike:'shield'`. A shield defence or strike by a fighter with no shield is drawn with the blade (or as a cut) and noted as a stand-in.
+
+**How it moves.**
+- **Carried:** a circle on the off hand, sized by type (buckler 13 to scutum 26), drawn behind the body as the stage draws it. A shield-bearer keeps it forward in front of the chest wherever a phrase would swing the empty arm.
+- **Shield parry and ward:** every parry phrase (at the body, at the head, low, against a thrust) meets the blow on the shield's face instead of the blade: the off hand is pinned on the shield's centre, set back from the contact toward the defender, and the blow knocks the arm back. Low blows take the lower rim if the front does not reach; if no rim reaches, the shield meets the blow higher, at the lowest point it can reach, and the attacker's cut is aimed there (noted `shield-higher`).
+- **Shield strike:** the weapon is laid back over the shoulder, the shield shoulder turns in, two steps, and the face is driven onto the target (if it cannot reach the location hit, the nearest point toward the chest; the wound mark still goes on the location). Lands: the defender is knocked back a step. Parried: the defender's blade meets the face where the striker's shield comfortably reaches, then both give ground. Missed: the defender gives two steps and the face stops short. Either way the striker steps out of the clinch before lowering the weapon.
+- **The defender against a shield strike** brings the hand back to the shoulder as the striker comes in, so the blade goes up and over and hangs behind, out of the way; once they are apart it comes up into an upright hold above the shoulder (the hanging hold sways: the hand is pressed against the shoulder).
+
+**Found and fixed on the way** (they affect everything, not only shields): a contact record now carries the point of the blade the aim actually used; a decision boundary chosen while writing only ever waits for the movement to settle, never cuts it short; a fighter stepping back keeps the blade's angle until the step is made; closing to a measure shorter than the blade's reach carries the point up.
+
+**The sweep** now also runs the 36 weapon pairings with shields on both sides (a different pair of sizes each time): shield parries, wards, hits and misses against a shield-bearer, and shield strikes that land, are stopped by armour, are parried and miss. `node tests/sweep/pits-sweep.cjs` (about ten minutes; `--attacker=dagger` runs one weapon's share). CI runs a sample of three shield pairings.
+
+**Still weak.** A partial ward is drawn as a blow that lands. The Bash special effect (knockback by damage, Core) is not drawn as its own distance: every landed shield strike knocks back one step. Seen from the side, a shield is a circle, so a kite or scutum looks round.
+
+**Next families**, in the planned order: heavy one-handed (axe, mace, club, hammer), two-handed, long thrust (spear and polearms, their own range), flexible.

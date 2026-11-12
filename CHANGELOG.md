@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: shields in the exchange writer (step 3, second family)
+
+- **Shields** sized by type (buckler to scutum), carried forward on the off hand and drawn in the studies.
+- **Shield parry and ward:** every parry meets the blow on the shield's face (low blows on the lower rim, or as low as the shield reaches).
+- **Shield strike:** the shield driven onto the target; it knocks the defender back a step, is met by the blade, or stops short.
+- **Generated study:** `pits-fight-study.html?seq=shields`, broadsword and heater against broadsword and buckler.
+- **Sweep:** the 36 weapon pairings again with shields on both sides; CI runs a sample. General fixes found on the way: contact records use the point of the blade actually used; decision boundaries only wait, never cut a movement short; stepping back keeps the blade's angle until the step is made.
+- Still not wired into the live Pits (owner: everything lands at once).
+
 ## The Pits: weapon profiles and the thrust family (step 3 of the path to the live Pits)
 
 - **Weapon profiles in the exchange writer.** Each fighter's weapon gives a blade length and a family: short blades and the rapier thrust, the swords cut. The sword phrases fit any blade (contact points, measure, a long point lifted when a short weapon comes inside it).
