@@ -5,6 +5,17 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: fight study, smoother and never still (owner's review)
+
+- **Smoother.** Every new pose is eased into, so no part jumps from rest to full speed. Hips start travelling as a foot leaves, feet lift and land on a smooth arc, and the hips ease down before a leg runs out of length. The body's worst-case jerk is a sixth of what it was, the hands' about half.
+- **Never still.** A slow, never-repeating drift keeps both fighters alive: weight shift, breathing, the guard and the head. Once down, B only breathes. A decision hold still freezes the exact pose and resumes from it.
+- **A little faster:** about 12.3 s instead of 15.
+- **Fixed:**
+  - After the deflection, B's point was left in A's chest. It is now thrown up and off the line.
+  - A's thigh cut carried on into B's hip. It is now arrested at contact and drawn straight back out.
+  - A's last step back was longer than a leg.
+- Tests: `tests/pits-fight.cjs`, 18 checks, with new checks for never still, smoothness and blade clearance during contacts.
+
 ## The Pits: a ten-beat fight study (prototype)
 
 - **New page: `experiments/pits-fight-study.html`.** A whole fight, broadsword against broadsword, about 15 seconds, on the spring movement from the exchange study:

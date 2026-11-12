@@ -22,10 +22,11 @@ const C=kind=>q.contactList.filter(c=>c.kind===kind);
 const beatT=n=>q.beats.find(b=>b.n===n).t;
 const inContact=t=>q.contactList.some(c=>t>=c.t-90&&t<=c.t+(c.hold||0)+90);
 
-test('ten beats in order, 15 to 20 seconds, decision boundaries between them, built quickly',()=>{
+test('ten beats in order, about 12 to 20 seconds, decision boundaries between them, built quickly',()=>{
   assert.deepEqual(q.beats.map(b=>b.n),[1,2,3,4,5,6,7,8,9,10]);
   for(let i=1;i<q.beats.length;i++)assert(q.beats[i].t>q.beats[i-1].t,'beats out of order');
-  assert(q.dur>=15000&&q.dur<=20000,'length '+q.dur);
+  // 15 to 20 s in the first brief; the owner then asked for it a little faster and never still (2026-11-12)
+  assert(q.dur>=11500&&q.dur<=20000,'length '+q.dur);
   assert(q.pauses.length>=6,'too few decision boundaries');
   for(const p of q.pauses)assert(p.t>0&&p.t<q.end&&p.label,'a decision boundary outside the fight');
   assert(q.scripted,'the fight is not marked as scripted');
@@ -100,6 +101,11 @@ test('outside the contacts, no blade goes into the other fighter',()=>{
   range(0,q.dur,4,t=>{if(inContact(t))return;for(const id of ids)for(const n of BODY){const d=toBlade(id,t,PS.world(q,other[id],t,n));
     assert(d>=2,id+'\'s blade is '+d.toFixed(1)+' from '+other[id]+'.'+n+' at '+t);}});
 });
+test('during a parry, a bind or a deflection, neither blade goes into the other fighter (the contact is blade on blade)',()=>{
+  for(const c of q.contactList.filter(c=>c.b))for(const [w,o] of [[c.a.who,c.b.who],[c.b.who,c.a.who]])
+    range(c.t-90,c.t+(c.hold||0)+90,4,t=>{for(const n of BODY){const d=toBlade(w,t,PS.world(q,o,t,n));
+      assert(d>=3,c.kind+' at '+c.t+': '+w+'\'s blade is '+d.toFixed(1)+' from '+o+'.'+n+' at '+t);}});
+});
 test('a parry stops or turns the attack; a wound makes the body react where it was hit',()=>{
   // at each parry or bind the attacking hand stops (it does not carry on through the contact)
   for(const c of [...C('parry'),...C('bind')]){const id=c.a.who,v0=dist(PS.world(q,id,c.t-6,'Hn'),PS.world(q,id,c.t,'Hn'));
@@ -110,10 +116,27 @@ test('a parry stops or turns the attack; a wound makes the body react where it w
   // the thigh wound: B's pelvis drops at once
   assert(PS.world(q,'b',w9.t+200,'P')[1]<PS.world(q,'b',w9.t,'P')[1]-10,'B\'s pelvis does not drop');
 });
-test('the held decision poses stand still on two feet, and play resumes from them without a jump',()=>{
-  for(const p of q.pauses){for(const id of ids){const f=PS.frame(q,p.t)[id].pose;assert(f.ffy===0&&f.bfy===0,id+' has a foot up at '+p.t);
-      const a=PS.sample(q,id,p.t-20),b=PS.sample(q,id,p.t);for(const ch of PS.CH)assert(Math.abs(b[ch]-a[ch])<.8,id+'.'+ch+' moving at the hold '+p.t);}
+test('at each decision boundary both feet are down, and play resumes from the held pose without a jump',()=>{
+  // (the owner, 2026-11-12: in a real fight nobody is ever still, so the boundary falls mid-movement; holding it freezes
+  // that exact pose, and resuming carries on from it)
+  for(const p of q.pauses){for(const id of ids){const f=PS.frame(q,p.t)[id].pose;assert(f.ffy===0&&f.bfy===0,id+' has a foot up at '+p.t);}
     for(const id of ids)for(const n of JOINTS)assert(dist(PS.world(q,id,p.t,n),PS.world(q,id,p.t+16,n))<3,id+'.'+n+' jumps after the hold '+p.t);}
+});
+test('nobody is ever still in continuous playback (only B, once down, is left breathing)',()=>{
+  const down=beatT(10)+700;
+  for(const id of ids){let run=0;range(100,q.end,50,t=>{if(id==='b'&&t>down)return;let m=0;
+    for(const k of ['P','S','Hd','Hn','tip'])m=Math.max(m,dist(PS.world(q,id,t,k),PS.world(q,id,t-50,k)));
+    run=m<.3?run+50:0;assert(run<=150,id+' is still for '+run+' ms at '+t);});}
+  // and B, down, still breathes
+  let br=0;range(down+200,q.end,20,t=>{br=Math.max(br,dist(PS.world(q,'b',t,'S'),PS.world(q,'b',down+200,'S')));});
+  assert(br>.4,'B does not breathe on the floor');
+});
+test('smooth: no part jerks from rest to full speed (low jerk on the body and the hands)',()=>{
+  // jerk: the third difference of a joint's position over 4 ms steps, outside the moments of contact
+  const p99=(id,n)=>{const J=[];range(12,q.dur,4,t=>{if(inContact(t))return;const p=k=>PS.world(q,id,t-4*k,n);
+    J.push(Math.hypot(...[0,1].map(i=>p(0)[i]-3*p(1)[i]+3*p(2)[i]-p(3)[i])));});J.sort((x,y)=>x-y);return J[Math.floor(J.length*.99)];};
+  for(const id of ids){for(const n of ['P','S','Hd'])assert(p99(id,n)<.05,id+'.'+n+' jerk '+p99(id,n).toFixed(3));
+    assert(p99(id,'Hn')<.3,id+' hand jerk '+p99(id,'Hn').toFixed(3));}
 });
 test('nobody snaps back to a standard guard between beats',()=>{
   for(const id of ids){const g=PS.sample(q,id,0);
@@ -140,7 +163,7 @@ test('the final injury ends the fight: B goes down and stays down; A stands guar
   assert(j.w<0,'A\'s point is not down toward B');
   // the fall is connected: B's pelvis comes down without a jump, and B's sword arm comes with the body
   assert(PS.world(q,'b',w9.t,'P')[1]>60);
-  // the end is held: nothing moves in the last second
-  for(const id of ids){const a=PS.sample(q,id,q.end-1000),b=PS.sample(q,id,q.end);for(const ch of PS.CH)assert(Math.abs(b[ch]-a[ch])<1,id+'.'+ch+' still moving at the end');}
+  // the end is settled: in the last second nothing makes a new movement (A only drifts in its guard, B only breathes)
+  for(const id of ids){const a=PS.sample(q,id,q.end-1000),b=PS.sample(q,id,q.end);for(const ch of PS.CH)assert(Math.abs(b[ch]-a[ch])<8,id+'.'+ch+' makes a new movement at the end');}
 });
 console.log(passed+' passed');

@@ -16,6 +16,8 @@ _Last updated: 2026-11-12 by Claude (Pits: spring-driven exchange study)_
 
 ## Next
 
+00000000. **Claude, done 2026-11-12 (fight study, smoother and never still):** after the owner's review. Eased keys, a live drift so nobody is ever still, smoother steps, about 12.3 s; jerk numbers in `docs/pits-animation-direction.md`. **Owner:** watch `experiments/pits-fight-study.html` again and say whether it is smooth enough to start the live integration.
+
 0000000. **Claude, done 2026-11-12 (ten-beat fight study):** `experiments/pits-fight-study.html`, broadsword against broadsword, scripted fixtures, about 15 s. It plays straight through, with an optional hold at each decision. Smears and impact flashes are a layer that can be switched off. Details and weak points: `docs/pits-animation-direction.md`, "Ten-beat fight study". **Owner:** watch it at normal speed, then at half speed for any transition that looks wrong, and say whether it reads as one connected fight that ends because of the final wound. **Then Claude:** the first integration into the live Pits (sword cut, parry and miss from the engine's resolved results), keeping the pose stage for comparison until you approve.
 
 000000. **Claude, done 2026-11-12 (exchange study, second pass):** the owner's four points: sword recovery path, the sword arm caught, held and released, steps that carry weight, the wounded end stance (`docs/pits-animation-direction.md`, "Second pass (owner's review"). **Owner:** watch `experiments/pits-exchange-study.html` at normal and half speed. If it holds up, say so and Claude starts porting the spring layer into the live Pits, one phrase at a time (the ordinary sword cut and parry first).

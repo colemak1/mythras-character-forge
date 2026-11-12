@@ -202,6 +202,24 @@ Stills at 600 ms through the whole fight (normal-speed spacing) and at 70 to 90 
 - Several requested blade angles were adjusted to what the arm can hold (logged in `seq.notes`): B's low cover points less steeply down; the cut to the forearm comes in flatter than asked.
 - Everything is tuned for this one fight; the live Pits would need these phrases generalised.
 
+**Smoother and never still (owner's review, 2026-11-12).** The owner said the movement is basically there but not smooth: speed it up a little, and in a real fight nobody is ever still. These options in `pits-spring.js` are opt-in, so the exchange study is unchanged; the fight uses them all.
+
+- **Smoothing** (`f.smooth`, 35 ms; strikes a third of that): each spring follows a target that itself eases toward the key, so a new key never starts a part from rest at full acceleration.
+- **Alive** (`f.life`): two slow sines per channel with different periods (about 1.1 to 2.3 s), added to the targets, with each fighter on its own phases. Contacts stay exact, because the constraints override it.
+- **Steps:** a smooth lift arc (`liftShape`), and the hips start travelling as the foot leaves (`stepLead`).
+- **Hips:** the hip target is limited ahead of the hard leg limit, so the hips ease down rather than being caught.
+
+Measured jerk (the third difference over 4 ms, worst 1%, outside contacts):
+
+| | Before | After |
+|---|---|---|
+| Body | 0.06 | 0.01 |
+| Hands | 0.26–0.43 | 0.16–0.17 |
+| Blade tips | 1.1–1.5 | 0.7–0.8 |
+| Time a fighter is still (in 100 ms windows) | 39% | A never more than 100 ms; B only once down, breathing |
+
+The fight is about 12.3 s (the breathing gaps are 380 ms of live movement instead of 650). Decision boundaries now fall mid-movement; a hold freezes that exact pose and resumes from it.
+
 ## For Sonnet: routine defects in the pose stage
 
 Items 2 and 3 now apply only to the pose stage behind `?stage=poses`; fix them only if the owner wants to keep it. Item 1 is fixed for both stages (2026-11-12), item 4 is done.
