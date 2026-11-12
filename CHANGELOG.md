@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: movement study (animation direction)
+
+- **New page, `experiments/pits-choreography.html`:** five short fights between a broadsword and a dagger that show how the stick figures should move: an attack, parry, counterattack, hit reaction and recovery as one continuous motion; a miss; a damaging hit; Press Advantage; a fight-ending injury. You can pause, step a frame at a time, slow it to quarter speed, drag to any moment, and switch on weapon paths and planted feet.
+- This is a demonstration only. **The Pits itself is unchanged**: nothing is wired in yet, and no rules or saved data are touched. Every result on the page is fixed in advance; nothing is rolled.
+- The direction, what is and is not demonstrated, and a short list of small defects in the current stage: `docs/pits-animation-direction.md`.
+
 ## The Pits: continuous combat animation
 
 - **One exchange, one animation.** A blow is shown only once its whole exchange is resolved: any Endurance or resist roll that follows the contact is done first (rolls stay manual, in their usual order). The contact then flows straight into its real consequence: a fight-ending hit goes from contact into the collapse, with no reset and no second hit. The plates, wounds and chronicle change at the contact moment, not when the engine logged them.
