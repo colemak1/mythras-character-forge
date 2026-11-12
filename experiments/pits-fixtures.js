@@ -27,7 +27,19 @@ const THRUST=[
   {attacker:'a',weapon:'dagger',loc:'abdomen',outcome:'wound',lost:7,
     after:[{type:'end',winner:'a',how:'injury'}]},
 ];
-const api={FIGHT,THRUST};
+// The shields study: broadsword and heater (A) against broadsword and buckler (B). Shield parries at the body, the
+// head and low (a ward), a parry with the blade, shield strikes that land and are met, and the cut that ends it.
+const SHIELDS=[
+  {attacker:'b',weapon:'sword',loc:'chest',outcome:'parried',lost:0,defence:'shield'},
+  {attacker:'a',weapon:'sword',loc:'head',outcome:'parried',lost:0,defence:'shield'},
+  {attacker:'b',weapon:'sword',loc:'rleg',outcome:'full-ward',lost:0},
+  {attacker:'a',strike:'shield',loc:'chest',outcome:'wound',lost:1},
+  {attacker:'b',weapon:'sword',loc:'abdomen',outcome:'parried',lost:0},
+  {attacker:'a',weapon:'sword',loc:'chest',outcome:'evaded',lost:0},
+  {attacker:'a',strike:'shield',loc:'chest',outcome:'parried',lost:0},
+  {attacker:'a',weapon:'sword',loc:'rleg',outcome:'wound',lost:7,after:[{type:'end',winner:'a',how:'injury'}]},
+];
+const api={FIGHT,THRUST,SHIELDS};
 root.PitsFixtures=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

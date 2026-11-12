@@ -19,9 +19,11 @@ function fault(q,step){
     for(const k in w.j.over)if(w.j.over[k]>.6)return id+'.'+k+' over its length at '+t;
     if(!inC(t))for(const n of BODY){const d=seg(o[n],w.Hn,w.tip);
       if(d<2)return id+'\'s blade '+d.toFixed(1)+' from '+other[id]+'.'+n+' at '+t;}}
+  // a contact part is a point on a blade, or a shield's face: the off hand on the shield's centre, the point on its rim
+  const off=(p,t,C)=>p.shield?Math.max(dist(PS.world(q,p.who,t,'oHn'),p.ctr),Math.abs(dist(p.ctr,C)-p.shield)):dist(PS.world(q,p.who,t,'blade',p.along),C);
   for(const c of q.contactList){
-    if(dist(PS.world(q,c.a.who,c.t,'blade',c.a.along),c.at)>.5)return c.kind+' at '+c.t+': the blade is off the point';
-    if(c.b&&dist(PS.world(q,c.b.who,c.t,'blade',c.b.along),c.at)>.5)return c.kind+' at '+c.t+': the other blade is off the point';}
+    if(off(c.a,c.t,c.at)>.5)return c.kind+' at '+c.t+': '+(c.a.shield?'the shield':'the blade')+' is off the point';
+    if(c.b&&off(c.b,c.t,c.at)>.5)return c.kind+' at '+c.t+': the other '+(c.b.shield?'shield':'blade')+' is off the point';}
   for(const p of q.pauses)for(const id of ids){const f=poseAt(q,id,p.t);if(f.ffy||f.bfy)return id+' has a foot up at the boundary '+p.t;
     for(const n of J)if(dist(PS.world(q,id,p.t,n),PS.world(q,id,p.t+16,n))>=3)return id+'.'+n+' jumps after the boundary '+p.t;}
   for(const id of ids){let prev=poseAt(q,id,0);for(let t=2;t<=q.dur;t+=2){const p=poseAt(q,id,t);

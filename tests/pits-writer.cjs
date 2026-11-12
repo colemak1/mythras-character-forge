@@ -112,4 +112,43 @@ test('a sample of the sweep: one pairing per kind (short, long, cut, thrust, bot
       if(f)bad.push(wa+' v '+wb+' '+loc+' '+o+': '+f);}
   assert.deepEqual(bad,[],bad.join('\n'));
 });
+// ----- shields (step 3, second family) -----
+test('shields: sized by type, carried forward; a shield parry or a ward meets the blow on the shield\'s face',()=>{
+  const q=PW.write([{attacker:'a',loc:'chest',outcome:'parried',lost:0,defence:'shield'}],{shields:{b:'heater'}});
+  assert.equal(q.fighters.b.shieldR,19);assert.equal(q.fighters.a.shieldR,0);
+  const c=q.contactList[0];assert(c.b.shield===19&&c.b.ctr,'the parry is not on the shield');assert.equal(fault(q),null);
+  // a ward is the shield's, with no record of a parry
+  const w=PW.write([{attacker:'a',loc:'rleg',outcome:'full-ward',lost:0}],{shields:{b:'kite'}});
+  assert(w.contactList[0].b.shield===23);assert.equal(fault(w),null);
+  // a shield defence by a fighter without one is drawn with the blade, and noted
+  const n=PW.write([{attacker:'a',loc:'chest',outcome:'parried',lost:0,defence:'shield'}]);
+  assert(n.contactList[0].b.along>0);assert(n.notes.some(x=>x.kind==='stand-in'&&/no shield/.test(x.why||'')));
+  // the shield is drawn on the off hand
+  assert(/ps-shield/.test(PS.frame(q,0).b.svg)&&!/ps-shield/.test(PS.frame(q,0).a.svg));
+});
+test('a shield strike: the face lands on the target and knocks back, is met by the blade, or stops short',()=>{
+  const S={weapons:{a:'sword',b:'sword'},shields:{a:'heater'}};
+  const land=PW.write([{attacker:'a',strike:'shield',loc:'chest',outcome:'wound',lost:2}],S),c=land.contactList[0];
+  assert.equal(land.exchanges[0].phrase,'shieldStrike');assert(c.a.shield===19&&!c.b);
+  const back=t=>PS.world(land,'b',t,'P')[0];assert(back(c.t+500)>back(c.t)+15,'the defender is not knocked back');
+  const met=PW.write([{attacker:'a',strike:'shield',loc:'chest',outcome:'parried',lost:0}],S).contactList[0];
+  assert(met.a.shield&&met.b.along>0);
+  const miss=PW.write([{attacker:'a',strike:'shield',loc:'chest',outcome:'miss',lost:0}],S);
+  assert.equal(miss.contactList.length,0);assert(miss.misses[0].shield);
+  for(const q of [land,miss])assert.equal(fault(q,8),null);
+});
+test('the shields study (broadsword and heater against broadsword and buckler) keeps the movement rules',()=>{
+  const q=PS.build('shields');assert.equal(fault(q),null);
+  assert(q.contactList.filter(c=>(c.a&&c.a.shield)||(c.b&&c.b.shield)).length>=4,'too few shield contacts');
+  for(const id of ['shieldStrike','lowBind','highParry','cutParried'])assert(q.exchanges.some(e=>e.phrase===id),'no '+id);
+});
+test('a sample of the shield sweep: shield parries, wards and shield strikes, every location',()=>{
+  const bad=[];
+  for(const [wa,sa,wb,sb] of [['sword','heater','sword','buckler'],['dagger','buckler','rapier','kite'],['longsword','scutum','shortsword','heater']]){
+    const opt={weapons:{a:wa,b:wb},shields:{a:sa,b:sb}};
+    for(const loc of LOCS)for(const r of [{outcome:'parried',lost:0,defence:'shield'},{outcome:'full-ward',lost:0},
+      {strike:'shield',outcome:'wound',lost:2},{strike:'shield',outcome:'parried',lost:0}]){
+      const q=PW.write([{attacker:'a',loc,...r}],opt),f=fault(q,8);if(f)bad.push(wa+'/'+sa+' v '+wb+'/'+sb+' '+loc+' '+JSON.stringify(r)+': '+f);}}
+  assert.deepEqual(bad,[],bad.join('\n'));
+});
 console.log(passed+' passed');

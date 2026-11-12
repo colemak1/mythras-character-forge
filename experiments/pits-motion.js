@@ -539,8 +539,11 @@ function figureSvg(fig,j,wounds){
   // the hand closes round the grip: a little of the hilt shows behind it, the guard sits just in front
   const d=[Math.cos(rad(j.w)),Math.sin(rad(j.w))],g=[j.Hn[0]+d[0]*8,j.Hn[1]+d[1]*8],pm=[j.Hn[0]-d[0]*8,j.Hn[1]-d[1]*8];
   const hc=X(j.Hd).split(',');
+  // a shield (the studies: fig.shieldR) is carried on the off hand, behind the body, as the stage draws it
+  const sh=fig.shieldR?X(j.oHn).split(','):null;
   return '<g class="ps-fig ps-'+(fig.id==='a'?'left':'right')+'"><g class="ps-back">'
-    +bone(j.P,j.bK,j.bF,9,cls('lleg'))+bone(j.oS||j.S,j.oE,j.oHn,8,cls('larm'))+'</g>'
+    +bone(j.P,j.bK,j.bF,9,cls('lleg'))+bone(j.oS||j.S,j.oE,j.oHn,8,cls('larm'))
+    +(sh?'<circle cx="'+sh[0]+'" cy="'+sh[1]+'" r="'+fig.shieldR+'" class="ps-shield"/>':'')+'</g>'
     +line(j.M,j.P,12,cls('abdomen'))+line(j.S,j.M,12,cls('chest'))+bone(j.P,j.K,j.F,10,cls('rleg'))
     // a wound to one segment (the studies): only that segment is marked
     +(wounds&&wounds.rthigh?line(j.P,j.K,10,cls('rthigh')):'')

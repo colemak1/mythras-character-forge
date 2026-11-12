@@ -42,6 +42,11 @@ function profile(key){
   if(/^(falchion|sabre|scimitar)$/.test(k))return {key:k,len:84,family:'cut'};
   return null;
 }
+// shields (Core p.63 sizes): the radius it is drawn with. Carried on the off hand.
+const SHIELD_R={buckler:13,target:17,heater:19,kite:23,hoplite:25,scutum:26};
+const shieldR=key=>key&&key!=='none'?(SHIELD_R[key]||19):0;
+// a shield-bearer keeps the shield forward in front of the chest (offset from the shoulders), not the empty arm swung
+const COVER=[26,-18];
 const SWORD=92,REACH=.75;
 // a contact point written for the broadsword, on this blade: on a shorter blade at the same fraction of its length;
 // on a longer one with as much blade beyond it as the broadsword has (the extra length is on the hilt side, so a long
@@ -59,7 +64,9 @@ const gapOf=(a,b)=>Math.abs(b.W([standAt(b),0])[0]-a.W([standAt(a),0])[0]);
 // (A step's weight shift can start up to 170 ms before its phrase, so before the decision boundary. Fine for a
 // record written ahead; the live stage cannot write into the past, and will need it clamped: see the direction doc.)
 function placed(f,dx){
-  const mv=p=>p&&p.px!=null?{...p,px:p.px+dx}:p;
+  const mv0=p=>p&&p.px!=null?{...p,px:p.px+dx}:p;
+  // a phrase's empty-hand posture is the shield held forward when this fighter carries one
+  const mv=p=>{p=mv0(p);return p&&f.shieldR&&p.o?{...p,o:COVER.slice()}:p;};
   return {f,dx,id:f.id,face:f.face,
     walk(foot,t0,t1,x,o){f.walk(foot,t0,t1,x+dx,o);return this;},
     step(foot,t0,t1,x,lift){f.step(foot,t0,t1,x+dx,lift);return this;},
@@ -70,7 +77,7 @@ function placed(f,dx){
 function create(opt){
   opt=opt||{};
   const names=opt.names||{a:'A',b:'B'};
-  const wk={a:'sword',b:'sword',...(opt.weapons||{})},notes=[];
+  const wk={a:'sword',b:'sword',...(opt.weapons||{})},sk={a:'none',b:'none',...(opt.shields||{})},notes=[];
   const arm=id=>{const p=profile(wk[id]);if(!p)notes.push({kind:'stand-in',weapon:wk[id],who:id});
     return {...WEAPONS.sword,name:wk[id],...(p||profile('sword')),key:wk[id]};};
   // on guard, points threatening but on different lines (A's a little higher, B's lower), so they do not cross
@@ -84,6 +91,8 @@ function create(opt){
     f.liftShape=1;f.stepLead=.1;
   }
   A.life=LIFE(0);B.life=LIFE(2.1);
+  for(const f of [A,B]){f.shieldR=shieldR(sk[f.id]);f.shieldKey=sk[f.id];
+    if(f.shieldR){f.guard.o=COVER.slice();f.start.ox=COVER[0];f.start.oy=COVER[1];}}
   const F={a:A,b:B};
   const seq={id:opt.id||'fight',title:opt.title||'A fight',fighters:F,marks:[],pauses:[],stops:[],fx:[],wounds:[],contacts:{},
     contactList:[],misses:[],notes,beats:[],grips:[],names,scripted:true,records:[],exchanges:[]};
@@ -140,10 +149,12 @@ function create(opt){
     f.key(tKey,{h:[h[0]+th[0],h[1]+th[1]],w:o.wKey==null?w:o.wKey},o.order||'attack',{snap:o.snap==null?true:o.snap});
     f.pin('h',along,target,tc-(o.blend||70),tc,tc+(o.hold||0),w);
     P.along=along;          // the point of the blade actually on the contact (already for this blade)
+    f._aim={t:tc,along};
     return P;
   }
   // A decision boundary must freeze a pose, not a blur: both feet down and nothing moving fast. If the phrase's own
-  // boundary is not like that (played from another place or after another phrase), the nearest quiet moment is used.
+  // boundary is not like that (played from another place or after another phrase), it waits (up to 160 ms) for a quiet
+  // moment; never earlier, which would cut the exchange's own movement short.
   const JN=['Hd','S','M','P','K','F','bK','bF','E','Hn','oE','oHn','tip'];
   function motion(t){
     const r=run(t+16+REC);let m=0;
@@ -157,16 +168,55 @@ function create(opt){
   function settle(t){
     const t0=t;t=r2(t);if(motion(t)<4.5)return t0;
     let best=t,bm=Infinity;
-    for(let d=10;d<=160;d+=10)for(const u of [t+d,t-d]){if(u<=0)continue;const m=motion(u);
+    for(let d=10;d<=160;d+=10){const u=t+d,m=motion(u);
       if(m<2.5)return u;if(m<bm){bm=m;best=u;}}
     return best;
   }
-  const W={seq,F,names,look,on,fixed,aim,r2,settle,
+  // The defender meets the blow at C: with the blade (aim), or, when the record says the parry or the ward was the
+  // shield's and this fighter has one, with the shield's face. The shield's centre is set back from C toward the
+  // defender, a little below the line of the blow, and the off hand is pinned there; the blow pushes the arm back.
+  function guard(f0,st,tKey,tc,target,w,along,o){
+    const f=U(f0);o=o||{};
+    if(!(st&&st.defence==='shield'&&f.shieldR))return aim(f0,tKey,tc,target,w,along,o);
+    tc=r2(tc);const c=look(tc),q=pose(f,c.out[f.id],tc),R=f.shieldR;let C=target(tc,c);
+    // the blow meets the front of the shield if the off hand reaches there, else a rim further down (low blows: the
+    // lower rim, the shield held above the point)
+    // and if no rim reaches, the shield meets the blow higher, at the lowest point it can reach (the attacker aims there)
+    const oS=f.W(PS.torso(q).oS),reach=x=>{const r=Math.hypot(x[0]-oS[0],x[1]-oS[1]);return r<=PS.ARM-4&&r>=24;};let ctr=null;   // (nor pushed round the shoulder)
+    for(let lift=0;lift<=80&&!ctr;lift+=2){const Cl=[C[0],C[1]+lift];
+      for(const a of [12,-10,-30,-50,-70,-90]){const u=[f.face*Math.cos(rad(a)),Math.sin(rad(a))],x=[Cl[0]-u[0]*R,Cl[1]-u[1]*R];
+        if(reach(x)){ctr=x;if(lift)seq.notes.push({kind:'shield-higher',who:f.id,by:lift});C=Cl;break;}}}
+    if(!ctr)ctr=[C[0]-f.face*R,C[1]];
+    f.key(tKey,{o:PS.offFor(f,q,ctr)},o.order||'cover',{snap:o.snap==null?true:o.snap});
+    f.pin('o',null,()=>ctr,tc-(o.blend||70),tc,tc+(o.hold||0));
+    f.impulse(tc+1,{ox:-180,oy:-40});
+    f._block={t:tc,R,ctr};return C;
+  }
+  // The shield's face driven onto C (a shield strike): the off hand keyed toward it and pinned where the face is on C.
+  // o.toward: a second target (the chest); if the off hand cannot put the face on the first, the face goes to the
+  // nearest point between the two that it can reach.
+  function shieldTo(f0,tKey,tc,target,o){
+    const f=U(f0);o=o||{};tc=r2(tc);const c=look(tc),q=pose(f,c.out[f.id],tc),R=f.shieldR;let C=target(tc,c);
+    if(o.toward){const T2=o.toward(tc,c),oS=f.W(PS.torso(q).oS);
+      for(let k=0;k<=1.001;k+=.1){const X=[C[0]+(T2[0]-C[0])*k,C[1]+(T2[1]-C[1])*k],cx=[X[0]-f.face*R,X[1]];
+        const r=Math.hypot(cx[0]-oS[0],cx[1]-oS[1]);if(r<=PS.ARM-4&&r>=26){if(k)seq.notes.push({kind:'shield-nearer',who:f.id,by:+k.toFixed(1)});C=X;break;}}
+      const tgt=C;target=()=>tgt;}
+    const ctr=[C[0]-f.face*R,C[1]];
+    f.key(tKey,{o:PS.offFor(f,q,[ctr[0]+f.face*(o.through||0),ctr[1]])},'attack',{snap:o.snap==null?1.6:o.snap});
+    f.pin('o',null,()=>ctr,tc-(o.blend||60),tc,tc+(o.hold||0));
+    f._block={t:tc,R,ctr};return C;
+  }
+  const W={seq,F,names,look,on,fixed,aim,guard,shieldTo,r2,settle,
     mark:(t,who,label)=>seq.marks.push({t,who,label}),
     beat(n,t,short,label){seq.beats.push({n,t,short,label});W.mark(t,'both',n+'. '+label);},
     pause:(t,label)=>seq.pauses.push({t,label}),
     contact(t,kind,P,parts){
-      for(const k of ['a','b'])if(parts[k]&&!parts[k].exact)parts[k]={...parts[k],along:al(F[parts[k].who],parts[k].along)};
+      // a part met by a shield (guard above) is the shield's face, not a point on a blade
+      for(const k of ['a','b']){const f=parts[k]&&F[parts[k].who];
+        if(f&&f._block&&f._block.t===r2(t)){parts[k]={who:f.id,shield:f._block.R,ctr:f._block.ctr};f._block=null;}}
+      // a blade part is the point the aim actually put on the contact (it may have moved along the blade to fit)
+      for(const k of ['a','b'])if(parts[k]&&!parts[k].exact&&!parts[k].shield){const f=F[parts[k].who];
+        parts[k]={...parts[k],along:f._aim&&f._aim.t===r2(t)?f._aim.along:al(f,parts[k].along)};}
       for(const k of ['a','b'])if(parts[k])delete parts[k].exact;
       const c={t:r2(t),kind,at:P,...parts};seq.contactList.push(c);return c;},
     stop:(t,d)=>seq.stops.push({t:r2(t),d}),
@@ -197,7 +247,7 @@ PHRASES.approach={ref:{a:-2,d:-2},gap:244,width:{a:64,d:64},lead:0,run(W,a,d,t){
 }};
 
 // ----- a cut at the upper body, met by a parry in front of the body and turned down -----
-PHRASES.cutParried={ref:{a:20,d:-11},gap:231,width:{a:64,d:70},lead:20,run(W,a,d,t2){
+PHRASES.cutParried={ref:{a:20,d:-11},gap:231,width:{a:64,d:70},lead:20,run(W,a,d,t2,st){
   const A=W.nm(a),D=W.nm(d);
   W.beat(W.n(),t2,'Cut, parried',A+' cuts diagonally at '+D+'\'s upper body; '+D+' meets it in front of the body and gives through elbow and knees');
   // load: the weight settles back, the hilt comes up to the shoulder, the blade lies back
@@ -206,9 +256,9 @@ PHRASES.cutParried={ref:{a:20,d:-11},gap:231,width:{a:64,d:70},lead:20,run(W,a,d
   a.key(t2+330,{lean:18,bend:8,head:-14,turn:12,o:[-30,-42]});
   const tc=t2+520;
   // the meeting point: in front of the defender's upper body, a little above the shoulder
-  const C=(()=>{const c=W.look(tc),s=W.on(d,'S')(tc,c);return [s[0]+d.face*61,s[1]+4];})();
+  let C=(()=>{const c=W.look(tc),s=W.on(d,'S')(tc,c);return [s[0]+d.face*61,s[1]+4];})();
   d.key(tc-260,{px:9,py:74,lean:14,bend:6,head:-12,o:[2,-30]},'cover');
-  W.aim(d,tc-220,tc,W.fixed(C),100,20,{order:'cover',hold:40,blend:130,snap:1.4});
+  C=W.guard(d,st,tc-220,tc,W.fixed(C),100,20,{order:'cover',hold:40,blend:130,snap:1.4});
   W.aim(a,t2+300,tc,W.fixed(C),20,72,{through:[14,-22],hold:40,blend:60});
   W.contact(tc,'parry',C,{a:{who:a.id,along:72},b:{who:d.id,along:20},hold:40});
   // contact: the cut stops dead; the defender's knees and elbow give under it
@@ -251,7 +301,7 @@ PHRASES.cutMissed={ref:{a:-11,d:42},gap:209,width:{a:70,d:108},lead:40,run(W,a,d
 }};
 
 // ----- a cut at the forward thigh, met low: the blades bind -----
-PHRASES.lowBind={ref:{a:36,d:23},gap:181,width:{a:96,d:98},lead:5,run(W,a,d,t4){
+PHRASES.lowBind={ref:{a:36,d:23},gap:181,width:{a:96,d:98},lead:5,run(W,a,d,t4,st){
   const A=W.nm(a),D=W.nm(d),tc=t4+560;
   W.beat(W.n(),t4,'Low attack',A+' follows the recovering blade with a cut at '+D+'\'s forward thigh; '+D+' pulls the leg back and lowers the blade to cover');
   // the hilt comes up beside the shoulder as the front foot goes in
@@ -263,8 +313,8 @@ PHRASES.lowBind={ref:{a:36,d:23},gap:181,width:{a:96,d:98},lead:5,run(W,a,d,t4){
   d.walk('ff',t4+200,t4+380,44,{py:66,lift:11,settle:.3,load:.38});
   d.key(t4+260,{lean:12,bend:10,head:-16,o:[16,-18]},'cover');
   W.beat(W.n(),tc-40,'Low bind',A+'\'s cut meets '+D+'\'s lowered blade; '+A+' stops through the planted leg and hips, '+D+' holds its ground');
-  const C=(()=>{const c=W.look(tc),k=W.on(d,'K')(tc,c);return [k[0]+d.face*26,k[1]+10];})();
-  W.aim(d,t4+260,tc,W.fixed(C),-72,48,{order:'cover',hold:130,blend:150,snap:1.3});
+  let C=(()=>{const c=W.look(tc),k=W.on(d,'K')(tc,c);return [k[0]+d.face*26,k[1]+10];})();
+  C=W.guard(d,st,t4+260,tc,W.fixed(C),-72,48,{order:'cover',hold:130,blend:150,snap:1.3});
   W.aim(a,t4+330,tc,W.fixed(C),-34,70,{through:[6,-14],hold:130,blend:60});
   const bind=W.contact(tc,'bind',C,{a:{who:a.id,along:70},b:{who:d.id,along:48},hold:130});
   // both take it: the attacker's travel is stopped in the front leg and hips (they sink), the defender's knees give
@@ -291,8 +341,8 @@ PHRASES.highParry={ref:{a:61,d:9},gap:170,width:{a:82,d:70},lead:40,run(W,a,d,t6
   // the defender steps away with the rear foot and the blade comes up across, above the head
   d.walk('bf',t6+120,t6+300,-44,{py:71,lift:9,settle:.45,load:.3});
   d.key(t6+200,{lean:2,bend:0,head:-6},'cover');
-  const C=(()=>{const c=W.look(tc),hd=W.on(d,'Hd')(tc,c);return [hd[0]+d.face*40,hd[1]+18];})();
-  W.aim(d,t6+220,tc,W.fixed(C),170,30,{order:'cover',hold:60,blend:150,snap:1.3});
+  let C=(()=>{const c=W.look(tc),hd=W.on(d,'Hd')(tc,c);return [hd[0]+d.face*40,hd[1]+18];})();
+  C=W.guard(d,st,t6+220,tc,W.fixed(C),170,30,{order:'cover',hold:60,blend:150,snap:1.3});
   W.aim(a,t6+330,tc,W.fixed(C),20,70,{through:[10,-18],hold:60,blend:60});
   W.contact(tc,'parry',C,{a:{who:a.id,along:70},b:{who:d.id,along:30},hold:60});
   a.impulse(tc+1,{hx:'stop',hy:'stop',wr:'stop',px:-60,lean:-25});
@@ -323,7 +373,7 @@ PHRASES.armCut={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:20,run(W,a,d,t7,st
 }};
 
 // ----- an advancing thrust, deflected up and out -----
-PHRASES.thrustDeflected={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d,t8){
+PHRASES.thrustDeflected={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d,t8,st){
   const A=W.nm(a),D=W.nm(d),tc=t8+420;
   W.beat(W.n(),t8,'Thrust, deflected',A+' advances with a thrust at the body; '+D+' gives a short step back and deflects the point outward');
   // a short advance, the point in line, the arm extending last
@@ -334,9 +384,9 @@ PHRASES.thrustDeflected={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,
   // weight back, the front foot comes back, the guard stays closed
   d.walk('ff',t8+80,t8+240,100,{py:70,lift:9,settle:.3,load:.4});
   d.key(t8+120,{lean:2,bend:8,head:-8,turn:-10,h:[12,-14],w:72,o:[8,-28]},'cover');
-  const C=(()=>{const c=W.look(tc),p=W.on(d,'chest')(tc,c);return [p[0]+d.face*28,p[1]-4];})();
+  let C=(()=>{const c=W.look(tc),p=W.on(d,'chest')(tc,c);return [p[0]+d.face*28,p[1]-4];})();
+  C=W.guard(d,st,t8+250,tc,W.fixed(C),45,30,{order:'cover',hold:30,blend:110,snap:1.5});
   W.aim(a,t8+260,tc,W.fixed(C),-2,78,{through:[16,0],hold:30,blend:70});
-  W.aim(d,t8+250,tc,W.fixed(C),45,30,{order:'cover',hold:30,blend:110,snap:1.5});
   W.contact(tc,'deflect',C,{a:{who:a.id,along:78},b:{who:d.id,along:30},hold:30});
   // the deflection carries the point up and out past the defender's head; the attacker's weight is still going forward
   a.impulse(tc+1,{hy:210,wr:100,lean:-20});d.impulse(tc+1,{py:-60,lean:-25});
@@ -454,14 +504,16 @@ PHRASES.thrustLands={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d,
   W.beat(W.n(),t8,'Thrust lands',A+' advances with a thrust at '+D+'\'s '+(st.loc||'chest')+'; '+D+'\'s cover is too late');
   thrustIn(W,a,t8);
   d.key(tc-120,{lean:6,bend:8,head:-10,turn:-6,h:[16,-14],w:60,o:[8,-28]},'cover');
-  const tgt=T.part==='Hd'?(t,c)=>{const p=W.on(d,'Hd')(t,c);return [p[0]+d.face*10,p[1]+4];}:W.on(d,T.part,/arm$/.test(T.part)?.55:null);
+  // (the shield arm of a shield-bearer is held forward behind the shield: the thrust takes it near the elbow)
+  const tgt=T.part==='Hd'?(t,c)=>{const p=W.on(d,'Hd')(t,c);return [p[0]+d.face*10,p[1]+4];}:W.on(d,T.part,/arm$/.test(T.part)?(T.part==='offarm'&&d.f.shieldR?.2:.55):null);
   // a longer blade is driven less far past the mark, so it is not buried deeper than it can be drawn out
   const deep=Math.max(0,16-Math.max(0,a.f.weapon.len-SWORD)*XL.deep);
   const P=W.aim(a,t8+260,tc,tgt,T.w,84,{through:[deep,0],hold:30,blend:70});
   W.contact(tc,'wound',P,{a:{who:a.id,along:P.along,exact:true},part:st.loc,on:d.id,target:T.part});
   if(hurt)W.seq.wounds.push({t:W.r2(tc),who:d.id,part:MARK[st.loc]||'chest',level:st.level||'minor'});
   W.stop(tc,hurt?170:100);W.fx(tc,'wound',P,hurt?1.2:.6);
-  d.impulse(tc+1,Object.fromEntries(Object.entries(T.react).map(([c,v])=>[c,v*k])));
+  // (an arm that is hit recoils once the blade lets go of it, or it drags the attacker's arm with it)
+  d.impulse(/arm$/.test(st.loc||'')?tc+31:tc+1,Object.fromEntries(Object.entries(T.react).map(([c,v])=>[c,v*k])));
   // drawn straight back out along the line it went in, then a guard over the front knee
   // (a blade longer than the broadsword is drawn back further and settles with the point higher, clear of the body)
   const xl=Math.max(0,a.f.weapon.len-SWORD);
@@ -488,6 +540,76 @@ PHRASES.thrustMissed={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d
   W.seq.misses.push({t:W.r2(tm),who:a.id,on:d.id,t0:W.r2(tm-120),t1:W.r2(tm+140)});
   W.mark(tm,a.id,'Short: the point stops just in front of '+D+' and is drawn back');
   return {end:tm+340,label:A+'\'s thrust has fallen short.'};
+}};
+
+// ===== shields: a strike with the shield (the engine's "strikes with the shield"). Written in the deflected thrust's
+// frame, closer in. The weapon is held up and out of the way; the shield shoulder turns in and the face is driven onto
+// the target. Lands: the defender is knocked back a step. Parried: the defender's blade meets the face. Missed: the
+// defender gives two steps and the face stops short. =====
+const BASH_AT={head:'Hd',chest:'chest',abdomen:'abdomen',rarm:'forearm',larm:'chest',rleg:'abdomen',lleg:'abdomen'};
+PHRASES.shieldStrike={ref:{a:0,d:79},gap:125,width:{a:88,d:86},lead:60,run(W,a,d,t0,st){
+  const A=W.nm(a),D=W.nm(d),tc=t0+400,o=st.outcome||'wound',miss=/^(miss|evaded|fumble)$/.test(o),
+    parried=/parr|ward/.test(o)&&!(st.lost>0),hurt=st.lost>0;
+  W.beat(W.n(),t0,'Shield strike',A+' steps in and drives the shield at '+D+(miss?'; '+D+' gives ground':parried?'; '+D+' meets it with the blade':''));
+  // the chamber: the weapon up and back out of the way, the shield drawn in, the shield shoulder turning in
+  a.key(t0,{lean:8,bend:8,head:-10,turn:-12,h:[12,4],w:140,o:[10,-16]},'attack');
+  a.walk('ff',t0+80,t0+230,70,{py:70,lift:8,settle:.62,load:.35});
+  a.walk('bf',t0+245,t0+370,-14,{py:66,lift:7,settle:.3,load:.25,lead:60});
+  a.key(t0+220,{lean:18,bend:10,head:-16,turn:8});
+  let C;
+  if(miss){
+    d.walk('ff',t0+80,t0+240,100,{py:70,lift:9,settle:.3,load:.4});
+    d.walk('bf',t0+250,t0+390,14,{py:71,lift:8,settle:.45,load:.3,lead:60});
+    d.key(t0+120,{lean:-2,bend:6,head:-6,turn:-10,h:[12,-14],w:62},'cover');
+    C=(()=>{const c=W.look(tc),p=W.on(d,'chest')(tc,c);return [p[0]+d.face*14,p[1]];})();
+    W.shieldTo(a,t0+240,tc,W.fixed(C),{through:6});
+    W.seq.misses.push({t:W.r2(tc),who:a.id,on:d.id,t0:W.r2(tc-120),t1:W.r2(tc+140),shield:true});
+    W.mark(tc,a.id,'Short: the shield stops just in front of '+D);
+  }else if(parried){
+    // the meeting point is where the striker's shield comfortably reaches (three quarters out in front of the off
+    // shoulder); the defender's blade, which has the reach, meets it there
+    // (drawn back toward the striker, never closer than 30 from its shoulder, if the defender's sword shoulder is
+    // nearer than 44: a long blade needs room to come onto it)
+    C=(()=>{const c=W.look(tc),q=pose(a.f,c.out[a.id],tc),oS=a.f.W(PS.torso(q).oS),R=a.f.shieldR;
+      const qd=pose(d.f,c.out[d.id],tc),wS=d.f.W(PS.torso(qd).wS);let ext=PS.ARM*.72;
+      while(ext>30&&Math.abs(oS[0]+a.face*(ext+R)-wS[0])<44)ext-=2;
+      return [oS[0]+a.face*(ext+R),oS[1]-6];})();
+    W.shieldTo(a,t0+240,tc,W.fixed(C),{through:8,hold:40});
+    W.aim(d,t0+230,tc,W.fixed(C),80,40,{order:'cover',hold:40,blend:110,snap:1.4});
+    W.contact(tc,'parry',C,{a:{who:a.id},b:{who:d.id,along:40},hold:40});
+    a.impulse(tc+1,{ox:-160,px:-40});d.impulse(tc+1,{py:-90,lean:-30,head:-30});
+    d.key(tc+50,{h:[-2,-4],w:104},'together',{snap:1.4});          // the blade comes off the shield, back to the shoulder
+    // and both give ground, so they do not stay chest to chest: the striker steps back, the defender pushes off a step
+    a.walk('bf',tc+80,tc+240,-44,{py:72,lift:8,settle:.4,load:.4,lead:60});
+    a.walk('ff',tc+260,tc+420,40,{py:73,lift:7,settle:.45,load:.3,lead:60});
+    d.walk('bf',tc+120,tc+280,6,{py:71,lift:8,settle:.4,load:.3,lead:60});
+    W.stop(tc,110);W.fx(tc,'clash',C,.9);
+    W.mark(tc,d.id,'The shield is met by '+D+'\'s blade');
+  }else{
+    const part=BASH_AT[st.loc]||'chest';
+    C=W.shieldTo(a,t0+240,tc,W.on(d,part,part==='forearm'?.5:null),{through:10,hold:30,toward:W.on(d,'chest')});
+    W.contact(tc,'wound',C,{a:{who:a.id},part:st.loc,on:d.id,target:part});
+    if(hurt)W.seq.wounds.push({t:W.r2(tc),who:d.id,part:MARK[st.loc]||'chest',level:st.level||'minor'});
+    W.stop(tc,hurt?170:120);W.fx(tc,'wound',C,hurt?1.2:.8);
+    // knocked back: the chest and head go back, a step back catches the weight
+    d.impulse(tc+31,{px:-150,py:-60,lean:-90,head:80});
+    d.walk('bf',tc+90,tc+250,6,{py:70,lift:8,settle:.4,load:.3,lead:40});
+    d.walk('ff',tc+280,tc+430,92,{py:72,lift:7,settle:.45,load:.3,lead:40});
+    a.impulse(tc+1,{ox:-80,px:'stop'});
+    W.mark(tc,d.id,'The shield lands and '+D+' is knocked back a step');
+  }
+  // back to a guard, the shield forward, the weapon still up; out of the clinch (the parried strike has stepped back
+  // already), and only then the weapon down into a guard
+  a.key(tc+260,{px:24,py:72,lean:10,bend:6,head:-12,turn:0,h:[12,4],w:140,o:[26,-18]});
+  if(!parried){a.walk('bf',tc+240,tc+400,-44,{py:72,lift:8,settle:.4,load:.4,lead:60});
+    a.walk('ff',tc+420,tc+580,40,{py:73,lift:7,settle:.45,load:.3,lead:60});}
+  a.key(tc+(parried?440:600),{h:[16,-20],w:60},'cover');
+  // the defender settles: while still close, with the striker's sword arm raised, the sword stays hanging behind (a
+  // swing to a guard would cross the striker); once both have stepped apart it comes up into an upright hold above
+  // the shoulder, which the arm keeps still (the hanging hold, with the hand pressed against the shoulder, sways)
+  d.key(tc+300,{lean:8,bend:8,head:-10,turn:-6});
+  d.key(tc+460,{h:[14,22],w:120},'cover');
+  return {end:tc+(parried?740:680),tc,label:miss?A+'\'s shield strike falls short.':parried?'The shield strike is met.':D+' is knocked back.'};
 }};
 
 // ----- the end: the defender goes down on the cut leg and over; the attacker recovers and stands guard -----
@@ -529,6 +651,7 @@ PHRASES.collapse={ref:{a:68,d:28},gap:null,lead:0,run(W,a,d,t10,st){
 // miss, evaded, fumble), lost, action ('cut' or 'thrust'; a sword thrusts at the abdomen unless told), after:[cues]}
 const ZONE=loc=>loc==='head'?'high':/leg$/.test(loc||'')?'low':/arm$/.test(loc||'')?'arm':'mid';
 function pick(rec,prev,family){
+  if(rec.strike==='shield')return {id:'shieldStrike',exact:true};
   const o=rec.outcome,z=ZONE(rec.loc),act=rec.action||(rec.loc==='abdomen'?'thrust':'cut');
   const parried=/parr|ward/.test(o)&&!(rec.lost>0),missed=/^(miss|evaded|fumble)$/.test(o);
   if(family==='thrust'){
@@ -551,18 +674,22 @@ function pick(rec,prev,family){
   if(rec.loc==='rarm'&&prev&&prev.phrase==='highParry'&&prev.attacker!==rec.attacker)return {id:'armCut',exact};
   return {id:'cutLands',exact:exact&&act==='cut'};
 }
+const other=id=>id==='a'?'b':'a';
 const ended=rec=>(rec.after||[]).some(c=>c.type==='end'&&c.winner===rec.attacker&&c.how==='injury');
 
 // The measure: the attacker steps in (front foot first) or out (rear foot first) by e, with its weight handled.
-function takeMeasure(f,t,e){
+function takeMeasure(f,t,e,want){
   // the last exchange's recovery is let finish (its keys can run past its decision boundary), then the blade comes up
   // into a middle guard first, so a point left low by the last exchange is not carried into a leg
   t=Math.max(t,...f.keys.map(k=>k.t+110));          // (a key reaches the blade up to 90 ms after its time)
   const n=Math.ceil(Math.abs(e)/48),d=e/n;let u=t;
-  // stepping in, the blade comes up into a middle guard at once; stepping back (too close), the point goes up and
-  // back, away from the other fighter, until the step is made (lowered or raised forward, it would cross the body)
-  if(e>0)f.key(t,{h:[22,-18],w:38,lean:6,bend:4,head:-8},'cover');
-  else f.key(t,{h:[12,-12],w:84,lean:2,bend:4,head:-8},'cover').key(t+560*Math.ceil(Math.abs(e)/48)-120,{h:[22,-18],w:30},'cover');
+  // stepping in, the blade comes up into a middle guard at once
+  // (closing to a measure shorter than the blade's reach, e.g. a long blade or a shield strike, the point is carried
+  // up, or it runs into the other fighter on the way in)
+  if(e>0)f.key(t,{h:[22,-18],w:want!=null&&want<f.weapon.len+50?80:38,lean:6,bend:4,head:-8},'cover');
+  // (stepping back, the blade keeps its angle and only travels back with the hand and the step, and comes up into
+  // guard once the step is made: turned up or down at once, its point can cross the other's body or raised arm)
+  else f.key(t,{h:[2,-24],lean:2,bend:4,head:-8},'cover').key(t+560*Math.ceil(Math.abs(e)/48)-120,{h:[22,-18],w:30},'cover');
   for(let i=0;i<n;i++){
     const lead=d>0?'ff':'bf',trail=d>0?'bf':'ff';
     f.walk(lead,u+170,u+330,planned(f,lead)+d,{py:74,lift:8,settle:.5,load:.4});
@@ -587,11 +714,15 @@ function play(S,id,aid,t,st,keep){
     t=u;}
   // a defender with the clearly longer weapon lifts the point as the shorter one comes inside it (the side view
   // cannot show the point carried off the line, and a point held in line would run into the attacker)
-  if(!keep&&P.gap!=null&&D.weapon.len>A.weapon.len+15){const t0=Math.max(t,...D.keys.map(k=>k.t+110));
-    D.key(t0,{h:[14,-14],w:72},'cover');S.seq.notes.push({kind:'inside',t:t0,who:D.id});}
+  // (a shield strike counts as the short weapon: it comes in to the shield's length)
+  if(!keep&&P.gap!=null&&D.weapon.len>(id==='shieldStrike'?30:A.weapon.len)+15){const t0=Math.max(t,...D.keys.map(k=>k.t+110));
+    // (against a shield strike, which comes in chest to chest, the hand comes back to the shoulder and the blade
+    // goes up and over to hang behind, out of the way)
+    D.key(t0,id==='shieldStrike'?{h:[-2,-4],w:104}:{h:[14,-14],w:72},'cover');S.seq.notes.push({kind:'inside',t:t0,who:D.id});}
   if(P.gap!=null&&!keep){
-    const e=gapOf(A,D)-(P.gap+(A.weapon.len-SWORD)*REACH);
-    if(Math.abs(e)>1){S.seq.notes.push({kind:'measure',t,who:aid,by:Math.round(e)});t=takeMeasure(A,t,e);}
+    // (the measure follows the attacker's reach with its weapon; a shield strike's reach is the shield's)
+    const e=gapOf(A,D)-(P.gap+(id==='shieldStrike'?0:(A.weapon.len-SWORD)*REACH));
+    if(Math.abs(e)>1){S.seq.notes.push({kind:'measure',t,who:aid,by:Math.round(e)});t=takeMeasure(A,t,e,gapOf(A,D)-e);}
   }
   const a=placed(A,keep?keep.a:standAt(A)-P.ref.a),d=placed(D,keep?keep.d:standAt(D)-P.ref.d);
   const r=P.run(S.W,a,d,t+P.lead,st||{});
@@ -610,7 +741,11 @@ function write(records,opt){
     const p=pick(rec,seq.exchanges[seq.exchanges.length-1],S.F[rec.attacker].weapon.family);
     if(!p.exact)seq.notes.push({kind:'stand-in',rec,phrase:p.id});
     const tStart=t;
-    const r=play(S,p.id,rec.attacker,t,{level:rec.lost>=6?'major':'minor',loc:rec.loc,lost:rec.lost,final:ended(rec),
+    // the defence was the shield's: the record says so (a parry with the shield), or the outcome is a ward
+    const defence=rec.defence||(/ward/.test(rec.outcome||'')?'shield':null);
+    if(rec.strike==='shield'&&!S.F[rec.attacker].shieldR)seq.notes.push({kind:'stand-in',rec,why:'a shield strike by a fighter with no shield'});
+    if(defence==='shield'&&!S.F[other(rec.attacker)].shieldR)seq.notes.push({kind:'stand-in',rec,why:'a shield defence by a fighter with no shield'});
+    const r=play(S,p.id,rec.attacker,t,{level:rec.lost>=6?'major':'minor',loc:rec.loc,lost:rec.lost,final:ended(rec),defence,outcome:rec.outcome,
       prev:seq.exchanges[seq.exchanges.length-1]});
     // a bind holds through the decision until the next movement lifts away from it
     if(S.bind){S.bind.hold=r2(tStart+PHRASES[p.id].lead+120)-S.bind.t;S.bind=null;}
