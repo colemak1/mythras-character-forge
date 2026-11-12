@@ -119,14 +119,14 @@ function buildFight(){
   aim(A,t2+300,tc2,fixed(C2),20,72,{through:[14,-22],hold:40,blend:60});
   contact(tc2,'parry',C2,{a:{who:'a',along:72},b:{who:'b',along:20}});
   // contact: the cut stops dead; B's knees and elbow give under it
-  A.impulse(tc2+1,{hx:'stop',hy:'stop',wr:'stop',px:-40});
-  B.impulse(tc2+1,{py:-90,lean:-30});
+  A.impulse(tc2+1,{hx:'stop',hy:'stop',wr:'stop',px:-90,lean:-25,head:40});
+  B.impulse(tc2+1,{px:-50,py:-160,lean:-60,head:-50});
   // the parry redirects: B turns the cut down and out to its own outside; A's sword ends low and wide
   B.key(tc2+40,{py:72,lean:8,bend:8,h:[26,-4],w:70},'together',{snap:true});
   A.key(tc2+40,{h:[40,-30],w:-38,lean:14,bend:6},'together',{snap:true});
   A.key(tc2+300,{px:40,py:72,lean:12,bend:6,head:-12,h:[34,-36],w:-30,o:[-20,-40]});
   B.key(tc2+300,{px:0,py:74,lean:6,bend:7,head:-10,h:[22,-10],w:60,o:[6,-28]});
-  seq.stops.push({t:tc2,d:70});seq.fx.push({t:tc2,kind:'clash',at:C2});
+  seq.stops.push({t:tc2,d:140});seq.fx.push({t:tc2,kind:'clash',at:C2,power:1});
   mark(tc2,'b','Parry: the cut is met in front of the body; B gives through the elbow and knees, and turns it down');
   t=tc2+240;pause(t,'The cut is parried and A\'s blade is low and wide. B chooses to counter.');
 
@@ -176,11 +176,11 @@ function buildFight(){
   aim(A,t4+330,tc5,fixed(C5),-34,70,{through:[6,-14],hold:130,blend:60});
   const bind5=contact(tc5,'bind',C5,{a:{who:'a',along:70},b:{who:'b',along:48},hold:130});
   // both take it: A's forward travel is stopped in the front leg and hips (they sink), B's knees give without sliding
-  A.impulse(tc5+1,{hx:'stop',hy:'stop',wr:'stop',px:'stop',py:-60,lean:-20});
-  B.impulse(tc5+1,{py:-60});
+  A.impulse(tc5+1,{hx:'stop',hy:'stop',wr:'stop',px:'stop',py:-100,lean:-35});
+  B.impulse(tc5+1,{py:-110,lean:-25});
   A.key(tc5,{px:44,py:63,lean:14,bend:8},'together');
   B.key(tc5,{py:67,lean:10,bend:10},'together');
-  seq.stops.push({t:r2(tc5),d:60});seq.fx.push({t:r2(tc5),kind:'clash',at:C5});
+  seq.stops.push({t:r2(tc5),d:130});seq.fx.push({t:r2(tc5),kind:'clash',at:C5,power:.9});
   mark(tc5,'a','Low bind: both blades stop; A\'s weight is caught in the front leg and hips, B sinks a little and holds');
 
   // ============ 6. Disengage and change level ============
@@ -202,10 +202,10 @@ function buildFight(){
   aim(B,t6+220,tc6,fixed(C6),170,30,{order:'cover',hold:60,blend:150,snap:1.3});
   aim(A,t6+330,tc6,fixed(C6),20,70,{through:[10,-18],hold:60,blend:60});
   contact(tc6,'parry',C6,{a:{who:'a',along:70},b:{who:'b',along:30},hold:60});
-  A.impulse(tc6+1,{hx:'stop',hy:'stop',wr:'stop'});
+  A.impulse(tc6+1,{hx:'stop',hy:'stop',wr:'stop',px:-60,lean:-25});
   A.key(tc6+40,{h:[40,0],w:110},'together',{snap:2});
-  B.impulse(tc6+1,{py:-50});
-  seq.stops.push({t:r2(tc6),d:60});seq.fx.push({t:r2(tc6),kind:'clash',at:C6});
+  B.impulse(tc6+1,{py:-130,lean:-30,head:-40});
+  seq.stops.push({t:r2(tc6),d:130});seq.fx.push({t:r2(tc6),kind:'clash',at:C6,power:1});
   mark(tc6,'b','High parry: the cut is caught above B\'s head');
 
   // ============ 7. B scores a minor arm wound ============
@@ -216,15 +216,15 @@ function buildFight(){
   B.key(t7,{lean:10,bend:6,head:-12,turn:6},'attack');
   const fore=on(A,'forearm',.55);
   const P7=aim(B,t7+40,tc7,fore,-40,60,{through:[4,-18],hold:30,blend:70,snap:1.6});
-  seq.fx.push({t:r2(tc7),kind:'wound',at:P7});
+  seq.fx.push({t:r2(tc7),kind:'wound',at:P7,power:1.3});
   contact(tc7,'wound',P7,{a:{who:'b',along:60},part:'forearm',on:'a',target:'forearm'});
   seq.wounds.push({t:r2(tc7),who:'a',part:'rfore',level:'minor'});
   // A recoils at the arm: the hand is knocked back and down, the elbow comes in, the guard closes; the sword is kept
-  A.impulse(tc7+1,{hx:-220,hy:-160,wr:-80,lean:-30,head:60});
+  A.impulse(tc7+1,{px:-70,hx:-320,hy:-220,wr:-120,lean:-60,head:110});
   A.key(tc7+20,{px:68,py:69,lean:4,bend:6,head:-10,turn:-10,h:[14,-18],w:82,o:[10,-26]},'together');
   B.key(tc7+40,{lean:8,bend:6,h:[24,-20],w:-20},'attack');
   B.key(tc7+200,{px:14,py:71,lean:8,bend:7,head:-10,h:[22,-22],w:6,o:[16,-22]});
-  seq.stops.push({t:r2(tc7),d:80});
+  seq.stops.push({t:r2(tc7),d:190});
   mark(tc7,'a','The blade lands on A\'s sword forearm: the arm is knocked back, the elbow comes in, the guard closes');
 
   t=tc7+280;pause(t,'A is cut on the forearm and has closed up. B chooses to press with a thrust.');
@@ -247,11 +247,11 @@ function buildFight(){
   aim(A,t8+250,tc8,fixed(C8),45,30,{order:'cover',hold:30,blend:110,snap:1.5});
   contact(tc8,'deflect',C8,{a:{who:'b',along:78},b:{who:'a',along:30},hold:30});
   // the deflection carries B's point up and out past A's head; B's weight is still going forward
-  B.impulse(tc8+1,{hy:150,wr:70});
+  B.impulse(tc8+1,{hy:210,wr:100,lean:-20});A.impulse(tc8+1,{py:-60,lean:-25});
   // thrown off the line: the hand comes back and up together, so the point leaves A's line as the blade rises
   B.key(tc8+30,{h:[14,26],w:86,lean:12,bend:8},'together',{snap:1.6});
   A.key(tc8+40,{h:[16,-4],w:96},'together',{snap:1.3});
-  seq.stops.push({t:r2(tc8),d:50});seq.fx.push({t:r2(tc8),kind:'clash',at:C8});
+  seq.stops.push({t:r2(tc8),d:110});seq.fx.push({t:r2(tc8),kind:'clash',at:C8,power:.8});
   mark(tc8,'a','Deflection: A\'s blade meets the thrust and carries the point out and up; B\'s weapon is left outside the line');
 
   // ============ 9. A lands the decisive counter ============
@@ -263,9 +263,9 @@ function buildFight(){
   const P9=aim(A,t9+150,tc9,on(B,'thigh',.5),-40,62,{through:[6,-16],hold:40,blend:60});
   contact(tc9,'wound',P9,{a:{who:'a',along:62},part:'thigh',on:'b',target:'thigh'});
   seq.wounds.push({t:r2(tc9),who:'b',part:'rthigh',level:'major'});
-  seq.stops.push({t:r2(tc9),d:90});seq.fx.push({t:r2(tc9),kind:'wound',at:P9});
+  seq.stops.push({t:r2(tc9),d:220});seq.fx.push({t:r2(tc9),kind:'wound',at:P9,power:1.8});
   // B: the cut leg gives at once; the pelvis drops, the chest comes back up over it and the arms go out to save it
-  B.impulse(tc9+1,{py:-300,lean:-70,head:-60});
+  B.impulse(tc9+1,{py:-380,lean:-100,head:-110});
   B.key(tc9+10,{px:2,py:44,lean:-6,bend:4,head:-6,turn:-6,h:[-6,16],w:130,o:[24,-8]},'together');     // the sword arm flies up and back
   mark(tc9,'b','The cut lands on B\'s forward thigh: the leg gives, the pelvis drops and the chest comes back up over it');
 
@@ -285,7 +285,7 @@ function buildFight(){
   B.step('bf',t10+80,t10+260,22,4);
   B.step('ff',t10+300,t10+560,58,4);
   // A: the follow-through is stopped, the hips come back over the feet, then two steps out, guard up, elbow still in
-  A.impulse(tc9+1,{hx:'stop',hy:'stop',wr:'stop'});
+  A.impulse(tc9+1,{hx:'stop',hy:'stop',wr:'stop',py:-50});
   // drawn out along the line it went in, then lifted clear
   A.key(tc9+20,{h:[-8,-32],w:-20},'together',{snap:2});           // drawn back along the line of the cut, the point lifting a little clear of the leg
   A.key(tc9+200,{px:70,py:68,lean:8,bend:8,head:-10,h:[12,-12],w:60,o:[12,-26]},'attack');
@@ -298,6 +298,9 @@ function buildFight(){
   t=t10+760;
 
   seq.end=t+1900;seq.dur=seq.end+10;
+  // played at 1.5 times the fight's own time (owner, 2026-11-12: "a bit faster, like .5x faster"). The movement is
+  // written and tested in fight time; the page plays it faster, hit-stops and flashes included (they are shown time)
+  seq.pace=1.5;
   seq.rec=run(seq.dur);seq.marks.sort((x,y)=>x.t-y.t);
   return seq;
 }

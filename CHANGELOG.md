@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: fight study, heavier and faster (owner's review)
+
+- **Faster.** The fight plays at 1.5 times its own time: about 6 s at Normal. Half and Quarter are relative to that.
+- **Heavier parries.** Longer hit-stops (110 to 140 ms of fight time instead of 50 to 70). The defender's knees, chest and head take a bigger jolt; the attacker is knocked back through the hips.
+- **More brutal hits.** Hit-stops of 190 ms (forearm) and 220 ms (thigh). The forearm recoil is half as big again, and B's collapse starts harder.
+- **Screen shake and heavier flashes.** Each impact shakes the scene for a moment (harder for wounds). The flash has a bright core and more rays, red for a wound. All of it is in the "Smears, impact flashes and shake" layer, which can be switched off; no shake with reduced motion.
+
 ## The Pits: fight study, one continuous movement (owner's review)
 
 - **No gap between actions.** The breathing gaps between beats are gone: the next action starts while the last parry, miss, bind or wound is still being recovered from. The only stops are the optional decision holds; played straight through (as a replay will be) it is one continuous movement.

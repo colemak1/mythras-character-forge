@@ -228,6 +228,15 @@ The fight is about 12.3 s (the breathing gaps are 380 ms of live movement instea
 - Because the drift is time-based, shifting the timeline changed its phase at the thigh cut, and A's withdrawing blade brushed B's knee. A now draws the blade back a little further with the point lifted.
 - `tests/pits-fight.cjs` holds both numbers (next beat within 420 ms; no 200 ms lull).
 
+**Crunch and pace (owner's review, 2026-11-12).** The flow is right; it needs more crunch: heavier parries, more brutal hits, and about half as fast again.
+
+- **Pace:** `seq.pace = 1.5`; the page plays fight time 1.5 times faster at Normal. The movement is still written and tested in fight time, so every check in `tests/pits-fight.cjs` is unchanged; hit-stops and flashes are shown time and speed up with it.
+- **Hit-stops** (fight time): parries 110 to 140 ms, the forearm wound 190, the thigh wound 220.
+- **Impulses:** parried blows knock the attacker back through the hips and the head; the defender's knees, chest and head give about twice as much. The forearm recoil is about 1.5 times as strong, and the thigh cut drops B harder.
+- **Shake:** each impact in `seq.fx` with a `power` shakes the whole scene (floor included) with a decaying jolt, 3.2 units times power for a clash and 5 for a wound, over about 260 ms of shown time. It is deterministic, so a still is repeatable. It is part of the smears and flashes layer and is off with reduced motion.
+- **Flashes:** scaled by power, with a filled core for the first 70 ms; 8 rays for a clash and 12 for a wound.
+- Checked by `tests/visual/pits-fight-page.cjs`: Normal covers over 1.85 s of fight in 1.5 s, the final wound shakes and has a core, and the layer switches it off.
+
 ## For Sonnet: routine defects in the pose stage
 
 Items 2 and 3 now apply only to the pose stage behind `?stage=poses`; fix them only if the owner wants to keep it. Item 1 is fixed for both stages (2026-11-12), item 4 is done.

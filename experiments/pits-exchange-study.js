@@ -83,9 +83,17 @@ function caption(t){
   const who=cur.who==='a'?seq.names.a:cur.who==='b'?seq.names.b:'Both';
   $('pcCaption').innerHTML='<b>'+who+'.</b> '+cur.label;
 }
-function star(at,cls,r){
+// the shake at shown time td: each powered impact gives a short decaying jolt, deterministic so a still is repeatable
+function shake(td){
+  let x=0,y=0;
+  for(const e of seq.fx){if(!e.power)continue;const dt=td-PS.shownAt(seq,e.t);if(dt<0||dt>260)continue;
+    const amp=(e.kind==='wound'?5:3.2)*e.power*Math.exp(-dt/80);
+    x+=amp*Math.sin(dt*.11+1);y+=amp*.7*Math.sin(dt*.157+.4);}
+  return [x,y];
+}
+function star(at,cls,r,n){
   const x=at[0],y=Y(at[1]);let s='';
-  for(const a of [20,80,140,200,260,320]){const c=Math.cos(a*Math.PI/180),n=Math.sin(a*Math.PI/180);
+  for(const a of n?Array.from({length:n},(_,i)=>i*360/n+15):[20,80,140,200,260,320]){const c=Math.cos(a*Math.PI/180),n=Math.sin(a*Math.PI/180);
     s+='<line class="'+cls+'" x1="'+(x+c*r*.45)+'" y1="'+(y+n*r*.45)+'" x2="'+(x+c*r)+'" y2="'+(y+n*r)+'"/>';}
   return s;
 }
@@ -95,10 +103,18 @@ function draw(){
   let fx='';
   if($('pcSmear').checked){
     for(const id of ['a','b'])fx+=smear(id,t);
-    // the impact flash: a star that opens out over 170 ms at each contact
-    for(const e of seq.fx){const dt=st.td-PS.shownAt(seq,e.t);if(dt>=0&&dt<170)fx+=star(e.at,e.kind==='clash'?'pc-clash':'pc-woundfx',10+dt*.08);}
+    // the impact flash: a star that opens out over 170 ms at each contact, bigger for a heavier blow (power), with a
+    // bright core while the blow lands; a wound also throws a red spray along the cut
+    for(const e of seq.fx){const dt=st.td-PS.shownAt(seq,e.t),pw=e.power||0;if(dt<0||dt>=170)continue;
+      if(!pw){fx+=star(e.at,e.kind==='clash'?'pc-clash':'pc-woundfx',10+dt*.08);continue;}
+      const r=(12+dt*.12)*pw,cls=e.kind==='clash'?'pc-clash':'pc-woundfx';
+      if(dt<70)fx+='<circle class="'+cls+'-core" cx="'+e.at[0]+'" cy="'+Y(e.at[1])+'" r="'+(7*pw*(1-dt/70)+2).toFixed(1)+'"/>';
+      fx+=star(e.at,cls,r,e.kind==='clash'?8:12);}
   }
   $('pcFx').innerHTML=fx;
+  // the blow shakes the picture: hard while the hit-stop holds, then it dies out (a layer with the flashes)
+  const sh=$('pcSmear').checked&&!reduced()?shake(st.td):[0,0];
+  $('pcShake').setAttribute('transform',sh[0]||sh[1]?'translate('+sh[0].toFixed(2)+' '+sh[1].toFixed(2)+')':'');
   $('pcInspect').innerHTML=overlays(t);
   $('pcScrub').value=Math.round(st.td);
   $('pcPlay').textContent=st.playing?'Pause':st.held?'Resume':'Play';
@@ -107,7 +123,7 @@ function draw(){
 }
 function tick(now){
   if(!st.playing)return;
-  const dt=Math.min(50,now-st.last)*(+$('pcSpeed').value);st.last=now;
+  const dt=Math.min(50,now-st.last)*(+$('pcSpeed').value)*(seq.pace||1);st.last=now;
   let td=st.td+dt;
   if($('pcDecide').checked)for(const p of seq.pauses){
     const at=PS.shownAt(seq,p.t);

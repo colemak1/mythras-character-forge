@@ -28,6 +28,8 @@
 .pc-plant{stroke:var(--accent);stroke-width:3;stroke-linecap:round}
 .pc-clash{stroke:var(--bone);stroke-width:3;stroke-linecap:round}
 .pc-woundfx{stroke:var(--accent);stroke-width:3;stroke-linecap:round}
+.pc-clash-core{fill:var(--bone);stroke:none}
+.pc-woundfx-core{fill:var(--accent);stroke:none}
 @media (max-width:600px){.pc-stage{aspect-ratio:20/11}}
 /* Exchange study (pits-exchange-study.html): inspection overlays */
 .pc-inspect{margin-top:8px;color:var(--bone-dim)}
