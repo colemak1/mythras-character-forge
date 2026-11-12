@@ -1,0 +1,317 @@
+// The Pits: spring-driven exchange study (one attack -> parry -> counter -> wound -> recovery).
+// PRESENTATION ONLY: nothing here rolls or decides. The results are fixed in advance and labelled as such on the page.
+//
+// Reference: David Rosen, "An Indie Approach to Procedural Animation" (GDC 2014), slides only (the recording was not
+// watched). The ideas taken from the slide headings, and how they are used here:
+//   - few key poses, spring interpolation: each fighter has a handful of authored key poses; every body part follows
+//     its target with its own damped spring, so parts arrive at different times and carry momentum through a key
+//     instead of all stopping at it;
+//   - overlapping simple systems: the feet are explicit steps (a planted foot never moves), the legs and arms are
+//     solved (the rig from pits-motion.js), and contacts are constraints applied on top of the springs;
+//   - impact compression and recoil springs: a parry or a hit is a velocity impulse into the springs (knees give,
+//     the chest goes back, the arm is knocked), not a separate keyed pose.
+// The whole exchange is simulated once at a fixed 1 ms step and stored, so the picture is still a function of the time
+// on the bar: it can be paused, stepped frame by frame and replayed exactly.
+(function(root){
+const PM=root.PitsMotion||(typeof require==='function'?require('./pits-motion.js'):null);
+const {DIM,solve,torso,SWORD_GUARD,DAGGER_GUARD,WEAPONS,GROUND,ARM}=PM;
+const rad=d=>d*Math.PI/180,deg=r=>r*180/Math.PI;
+const norm=a=>((a+180)%360+360)%360-180;
+const DT=1,REC=2,WRIST=[PM.GRIP.min,PM.GRIP.max];                         // simulation step and recording interval (ms)
+
+// ----- the springs: [frequency (Hz), damping ratio] per channel -----
+// The hips are heavy and well damped; the chest a little looser; the head and the empty hand follow and overshoot;
+// the weapon hand is quick; the wrist (the blade's angle in the hand) is quickest and least damped, so it whips last.
+const CH=['px','py','lean','bend','head','turn','hx','hy','ox','oy','wr'];
+const SPRING={px:[3.2,.95],py:[3.4,.9],lean:[2.9,.8],bend:[2.7,.72],head:[2.4,.62],turn:[3,.8],
+  hx:[3.8,.8],hy:[3.8,.8],ox:[2.4,.6],oy:[2.4,.6],wr:[3.2,.75]};
+// Order of the body: a new key reaches each part this many ms later. Legs and hips first, the blade last.
+const LAG={attack:{px:0,py:0,turn:25,lean:35,bend:50,head:70,hx:60,hy:60,ox:40,oy:40,wr:90},
+  // a parry or a cover: the blade first, the body settles under it
+  cover:{wr:0,hx:0,hy:0,ox:20,oy:20,head:40,lean:60,bend:70,turn:60,px:90,py:90},
+  together:{px:0,py:0,turn:0,lean:0,bend:0,head:0,hx:0,hy:0,ox:0,oy:0,wr:0}};
+
+// ----- a fighter being written -----
+function Fighter(id,hx,face,weapon,guard){
+  this.id=id;this.hx=hx;this.face=face;this.weapon=weapon;this.guard=guard;
+  this.feet={ff:[],bf:[]};this.home={ff:guard.ffx,bf:guard.bfx};
+  this.keys=[];this.impulses=[];this.pins=[];this.events=[];
+  const p={...guard,h:guard.h.slice(),o:guard.o.slice()};
+  this.start=flat(p,wristFor(p,guard.w,weapon.len));
+}
+// a key pose in the fighter's own frame. w is the blade's angle as seen (converted to a wrist turn from the key's own arm)
+Fighter.prototype.key=function(t,pose,order){this.keys.push({t,pose,order:order||'attack'});return this;};
+Fighter.prototype.step=function(foot,t0,t1,x,lift){this.feet[foot].push({t0,t1,x,lift:lift==null?8:lift});return this;};
+Fighter.prototype.impulse=function(t,v){this.impulses.push({t,v});return this;};
+// a contact constraint: from t0 the hand is blended toward the place where the point `along` the blade (or the empty
+// hand, along null) is on target(t); fully there from t1 to t2; released at t2 with the momentum it had.
+Fighter.prototype.pin=function(hand,along,target,t0,t1,t2,w){this.pins.push({hand,along,target,t0,t1,t2,wSet:w});return this;};
+Fighter.prototype.W=function(p){return [this.hx+this.face*p[0],p[1]];};
+Fighter.prototype.L=function(w){return [this.face*(w[0]-this.hx),w[1]];};
+
+function flat(p,wr){return {px:p.px,py:p.py,lean:p.lean,bend:p.bend,head:p.head,turn:p.turn||0,
+  hx:p.h[0],hy:p.h[1],ox:p.o[0],oy:p.o[1],wr};}
+// the wrist turn that gives blade angle w with the arm of pose p
+function wristFor(p,w,len){const j=solve({...p,w,wr:null,ffx:30,ffy:0,bfx:-30,bfy:0},len);return norm(w-(j.w-j.grip));}
+function pose(f,s,t){
+  const q={ffx:footX(f,'ff',t),ffy:footY(f,'ff',t),bfx:footX(f,'bf',t),bfy:footY(f,'bf',t),
+    px:s.px,py:s.py,lean:s.lean,bend:s.bend,head:s.head,turn:s.turn,h:[s.hx,s.hy],o:[s.ox,s.oy],w:0,wr:s.wr,fs:0};
+  return q;
+}
+const sm=u=>u<=0?0:u>=1?1:u*u*(3-2*u);
+function footX(f,foot,t){
+  let x=f.home[foot];
+  for(const s of f.feet[foot]){if(t>=s.t1)x=s.x;else if(t>s.t0){return x+(s.x-x)*sm((t-s.t0)/(s.t1-s.t0));}else break;}
+  return x;
+}
+function footY(f,foot,t){
+  for(const s of f.feet[foot])if(t>s.t0&&t<s.t1)return s.lift*Math.sin(Math.PI*(t-s.t0)/(s.t1-s.t0));
+  return 0;
+}
+
+// Resolve key poses into per-channel target lists (each part switches at key time + its lag).
+function targets(f){
+  f.keys.sort((a,b)=>a.t-b.t);
+  const tg={};for(const c of CH)tg[c]=[{t:-1e9,v:f.start[c]}];
+  const cur={...f.guard,h:f.guard.h.slice(),o:f.guard.o.slice()};let curW=f.guard.w;
+  for(const k of f.keys){
+    Object.assign(cur,k.pose);if(k.pose.w!=null)curW=k.pose.w;
+    const fl=flat(cur,wristFor(cur,curW,f.weapon.len)),lag=LAG[k.order];
+    const set=new Set();
+    for(const n in k.pose){if(n==='h'){set.add('hx');set.add('hy');}else if(n==='o'){set.add('ox');set.add('oy');}
+      else if(n==='w')set.add('wr');else set.add(n);}
+    if(k.pose.h)set.add('wr');            // the wrist is re-solved when the arm moves, so the blade keeps its asked angle
+    for(const c of set)tg[c].push({t:k.t+lag[c],v:fl[c]});
+  }
+  for(const c of CH)tg[c].sort((a,b)=>a.t-b.t);
+  return tg;
+}
+const at=(list,t)=>{let v=list[0].v;for(const k of list){if(k.t<=t)v=k.v;else break;}return v;};
+
+// where the hand must be (from the shoulder) for the blade point `along` to sit on world point P, keeping the wrist turn
+function handFor(f,q,P,along){
+  const T=f.L(P);let h=q.h.slice();
+  for(let i=0;i<4;i++){
+    const j=solve({...q,h},f.weapon.len),S=j.S;
+    h=[T[0]-Math.cos(rad(j.w))*along-S[0],T[1]-Math.sin(rad(j.w))*along-S[1]];
+  }
+  return h;
+}
+// the same with the blade's angle given: one placement, no search
+function handAt(f,q,P,along,w){const S=torso(q).S,T=f.L(P);return [T[0]-Math.cos(rad(w))*along-S[0],T[1]-Math.sin(rad(w))*along-S[1]];}
+function offFor(f,q,P){const S=torso(q).S,T=f.L(P);return [T[0]-S[0],T[1]-S[1]];}
+
+// ----- the simulation: both fighters, one clock -----
+function simulate(F,dur){
+  const ids=Object.keys(F),st={},tg={},rec={};
+  for(const id of ids){const f=F[id];for(const p of f.pins){p.prev=null;p.w=null;p.lastW=null;}tg[id]=targets(f);st[id]={x:{...f.start},v:Object.fromEntries(CH.map(c=>[c,0]))};rec[id]=[];}
+  const ctx={F,st,dur};
+  for(let t=0;t<=dur;t+=DT){
+    for(const id of ids){
+      const f=F[id],s=st[id];
+      for(const im of f.impulses)if(im.t>t-DT&&im.t<=t)for(const c in im.v){if(im.v[c]==='stop')s.v[c]=0;else s.v[c]+=im.v[c];}
+      for(const c of CH){
+        const [hz,z]=SPRING[c],w=2*Math.PI*hz,target=at(tg[id][c],t);
+        // semi-implicit Euler, per second
+        const a=w*w*(target-s.x[c])-2*z*w*s.v[c];
+        s.v[c]+=a*DT/1000;s.x[c]+=s.v[c]*DT/1000;
+        // a wrist only turns so far: at its limit the blade stops turning in the hand (a joint limit, not a spring)
+        if(c==='wr'&&(s.x.wr<WRIST[0]||s.x.wr>WRIST[1])){s.x.wr=Math.max(WRIST[0],Math.min(WRIST[1],s.x.wr));s.v.wr=0;}
+      }
+    }
+    // contacts: hard while held (the state is moved), blended in the picture while coming in
+    const out={};
+    for(const id of ids){
+      const f=F[id],s=st[id],o={...s.x};
+      for(const p of f.pins){
+        if(t<p.t0||t>p.t2+DT)continue;
+        const q=pose(f,o,t),P=p.target(t,ctx),held=t>=p.t1;
+        // a held blade keeps the angle it had when the contact was made: the hand moves, the wrist takes up the difference
+        if(p.hand==='h'&&held&&p.w==null)p.w=p.wSet!=null?p.wSet:p.lastW!=null?p.lastW:solve(q,f.weapon.len).w;
+        // coming in: the blade turns toward the angle the contact asks for (wSet) as the hand comes to the point
+        const u=held?1:sm((t-p.t0)/(p.t1-p.t0)),wNow=solve(q,f.weapon.len).w;
+        const wIn=held?p.w:p.wSet!=null?wNow+norm(p.wSet-wNow)*u:wNow;
+        let d=p.hand==='h'?handAt(f,q,P,p.along,wIn):offFor(f,q,P);
+        // the wrist only turns so far: settle on a blade angle the hand can actually hold there, and place the hand for it
+        if(p.hand==='h')for(let i=0;i<4;i++){const j=solve({...q,h:d,wr:0},f.weapon.len),fore=j.w;
+          const wf=fore+Math.max(WRIST[0],Math.min(WRIST[1],norm(wIn-fore)));d=handAt(f,q,P,p.along,wf);}
+        // a contact never asks an arm to reach further than it goes: past that, the hand is pulled out of it
+        const tq=torso(q),sh=p.hand==='h'?tq.wS:tq.oS,dx=tq.S[0]+d[0]-sh[0],dy=tq.S[1]+d[1]-sh[1],r=Math.hypot(dx,dy);
+        if(r>ARM-1){const k=(ARM-1)/r;d[0]=sh[0]+dx*k-tq.S[0];d[1]=sh[1]+dy*k-tq.S[1];}
+        const kx=p.hand==='h'?'hx':'ox',ky=p.hand==='h'?'hy':'oy';
+        if(t>=p.t1){
+          // held: the state is moved there; on release it keeps the speed the contact gave it
+          if(t>p.t2){continue;}
+          const nx=d[0],ny=d[1];
+          const pv=p.prev;
+          if(pv&&pv.t===t-DT){s.v[kx]=(nx-pv.x)/DT*1000;s.v[ky]=(ny-pv.y)/DT*1000;}else{s.v[kx]=0;s.v[ky]=0;}
+          s.x[kx]=o[kx]=nx;s.x[ky]=o[ky]=ny;p.prev={t,x:nx,y:ny};
+          if(p.hand==='h'){const j=solve({...q,h:[nx,ny]},f.weapon.len);s.x.wr=o.wr=Math.max(WRIST[0],Math.min(WRIST[1],norm(p.w-(j.w-j.grip))));s.v.wr=0;}
+        }else{
+          o[kx]+=(d[0]-o[kx])*u;o[ky]+=(d[1]-o[ky])*u;(o._blend=o._blend||{})[kx]=1;
+          if(p.hand==='h'){const j=solve({...pose(f,o,t)},f.weapon.len);o.wr=Math.max(WRIST[0],Math.min(WRIST[1],norm(wIn-(j.w-j.grip))));}
+          if(p.hand==='h')p.lastW=solve(pose(f,o,t),f.weapon.len).w;
+        }
+      }
+      out[id]=o;
+    }
+    // an arm is only so long: a hand carried past its reach stops there (a joint limit, like the wrist's)
+    for(const id of ids){const f=F[id],s=st[id],o=out[id],tq=torso(pose(f,o,t));
+      for(const [kx,ky,sh] of [['hx','hy',tq.wS],['ox','oy',tq.oS]]){
+        const dx=tq.S[0]+o[kx]-sh[0],dy=tq.S[1]+o[ky]-sh[1],r=Math.hypot(dx,dy);
+        if(r<=ARM-1)continue;
+        const ux=dx/r,uy=dy/r,k=(ARM-1)/r,nx=sh[0]+dx*k-tq.S[0],ny=sh[1]+dy*k-tq.S[1];
+        o[kx]=nx;o[ky]=ny;if(!(o._blend&&o._blend[kx])){s.x[kx]=nx;s.x[ky]=ny;}
+        const vo=s.v[kx]*ux+s.v[ky]*uy;if(vo>0){s.v[kx]-=vo*ux;s.v[ky]-=vo*uy;}
+      }}
+    // momentum is not lost on release (the speed the held contact gave is kept, capped so a jump cannot fling a hand)
+    for(const id of ids)for(const c of ['hx','hy','ox','oy'])st[id].v[c]=Math.max(-900,Math.min(900,st[id].v[c]));
+    for(const id of ids)delete out[id]._blend;
+    if(t%REC===0)for(const id of ids)rec[id].push({...out[id]});
+    ctx.out=out;ctx.t=t;
+  }
+  return rec;
+}
+
+// ----- the exchange -----
+// Results fixed in advance (labelled on the page): the cut is parried; the dagger counters to the abdomen and wounds
+// (a minor wound: the fighter can go on); both recover into new stances.
+const SPACING=200,CENTRE=600;
+function build(){
+  const A=new Fighter('a',CENTRE-SPACING/2,1,WEAPONS.sword,SWORD_GUARD);
+  const B=new Fighter('b',CENTRE+SPACING/2,-1,WEAPONS.dagger,DAGGER_GUARD);
+  const F={a:A,b:B},seq={id:'spring',title:'Attack, parry, counter, wound, recovery',fighters:F,marks:[],pauses:[],stops:[],
+    fx:[],wounds:[],contacts:{},names:{a:'Sword',b:'Dagger'}};
+  const mark=(t,who,label)=>seq.marks.push({t,who,label});
+  mark(0,'both','On guard. Results are fixed in advance for this study: parried, then a counter that wounds');
+
+  // 1. The cut. Load, drive, strike; the strike's key is past the target, so the blade is still travelling fast
+  //    when it is met (a spring slows as it arrives; aiming through keeps the speed into contact).
+  const t0=180;
+  A.key(t0,{px:-12,py:77,lean:-1,bend:-4,head:1,turn:-8,h:[12,2],w:140,o:[27,-10]});
+  A.step('ff',t0+220,t0+360,50,7);
+  A.key(t0+240,{px:12,py:75,lean:8,bend:0,head:-4,turn:6,h:[22,8],w:128});
+  A.key(t0+290,{px:25,py:70,lean:17,bend:9,head:-14,turn:14,h:[56,-34],w:-40,o:[-34,-44]});
+  // The contact is where the free cut is when its blade, coming down, passes 42 degrees: high in front of the
+  // dagger fighter's head (at this measure a level blade would already be in the head). Found from the cut itself,
+  // so the attacker is not steered into it; only the defender aims.
+  const alongA=Math.round(A.weapon.len*.6);
+  const free=simulate({a:A},t0+700);let tc=t0+290;
+  while(tc<t0+700&&solve(pose(A,free.a[tc/REC],tc),A.weapon.len).w>42)tc+=REC;
+  const jA=solve(pose(A,free.a[tc/REC],tc),A.weapon.len);
+  const C=A.W([jA.Hn[0]+Math.cos(rad(jA.w))*alongA,jA.Hn[1]+Math.sin(rad(jA.w))*alongA]);
+  mark(t0,'a','Load: the weight settles onto the rear foot, the hilt comes up beside the head, the blade lies back');
+  mark(t0+220,'a','Drive: the front foot steps and the hips go with it; the blade is left behind');
+  mark(t0+290,'a','Strike: hips, then chest, then the arm; the blade comes last and fastest');
+  // B reads it and covers early: the dagger goes up across the line, blade first, the body settles under it
+  B.key(tc-340,{py:70,lean:9,bend:8,head:-12,h:[24,-12],w:62,o:[18,-20]});
+  B.key(tc-260,{px:26,py:69,lean:14,bend:6});
+  B.key(tc-170,{px:30,py:69,lean:6,bend:5,head:-8,h:[24,10],w:112,o:[16,-18]},'cover');
+  // and steps in to meet it: the cut is taken early, before it has come down to the head
+  B.step('ff',tc-300,tc-150,62,5);
+  seq.contacts.parry={t:tc,at:C,alongA,alongB:26};
+  // the dagger comes to the meeting point (blended in over 140 ms, exact at contact), holds it through the bind
+  B.pin('h',26,()=>C,tc-140,tc,tc+20);
+  // impact: the cut is stopped dead (its hand and blade lose their speed); the defender's knees and elbow give
+  A.impulse(tc+1,{hx:'stop',hy:'stop',wr:'stop',py:-30});
+  B.impulse(tc+1,{py:-110,lean:-50,bend:40});
+  // the redirect: the defender sinks under the bind and lifts; the sword is carried up and off the line.
+  // While bound, the sword rides the dagger (its own contact point is pinned to the dagger's).
+  B.key(tc,{py:62,lean:15,bend:12,head:-16,h:[42,22],w:118,o:[22,-16]},'together');
+  const daggerPt=(t,ctx)=>{const q=pose(B,ctx.out?ctx.out.b:B.start,t),j=solve(q,B.weapon.len);
+    return B.W([j.Hn[0]+Math.cos(rad(j.w))*26,j.Hn[1]+Math.sin(rad(j.w))*26]);};
+  A.pin('h',alongA,daggerPt,tc+1,tc+2,tc+90);
+  A.key(tc+30,{px:18,py:75,lean:4,bend:0,head:-6,turn:4,h:[26,26],w:80,o:[10,-30]},'together');
+  A.key(tc+260,{px:20,py:73,lean:5,bend:0,head:-6,turn:2,h:[22,18],w:112,o:[16,-24]});
+  B.key(tc+200,{px:2,py:65,lean:14,bend:10,head:-14,h:[28,-6],w:66,o:[24,-12]});
+  seq.stops.push({t:tc,d:70});seq.fx.push({t:tc,kind:'clash',at:C});
+  mark(tc,'b','Parry: one contact point, in front of the dagger fighter\'s head. The knees and elbow give under the blow');
+  mark(tc+1,'b','Redirect: the dagger fighter sinks under the bind and lifts; the sword is carried up and off the line');
+  const P1=tc+560;
+  seq.pauses.push({t:P1,label:'The parry is resolved: the sword is high and off the line, the dagger fighter is low and close. '
+    +'In the Pits the dagger fighter would choose the next action now.'});
+  mark(P1,'both','Held for the decision: both poses stand on two feet, nobody is moving');
+
+  // 2. The counter, from the held poses. A short step in under the raised sword; the empty hand goes up to the sword
+  //    arm and stays on it; the thrust goes in low to the abdomen. The sword fighter is trying to bring the sword back.
+  const tk=P1+330;
+  B.step('ff',P1+30,P1+210,84,6).step('bf',P1+200,P1+330,6,5);
+  B.key(P1+10,{px:26,py:62,lean:20,bend:8,head:-16,h:[8,-26],w:10,o:[34,24]});
+  A.key(P1+80,{py:74,lean:3,bend:-2,head:-4,h:[14,22],w:108,o:[18,-20]});
+  const rec=simulate(F,tk+5);
+  const qA2=pose(A,rec.a[tk/REC],tk),jA2=solve(qA2,A.weapon.len);
+  const abd=[(jA2.M[0]+jA2.P[0])/2+4,(jA2.M[1]+jA2.P[1])/2];
+  const qB2=pose(B,rec.b[tk/REC],tk),T=A.W(abd);
+  B.key(tk-180,{px:62,py:63,lean:26,bend:4,head:-20,h:handFor(B,qB2,T,46),w:6});
+  const abdomen=(t,ctx)=>{const q=pose(A,ctx.out?ctx.out.a:A.start,t),j=solve(q,A.weapon.len);
+    return A.W([(j.M[0]+j.P[0])/2+4,(j.M[1]+j.P[1])/2]);};
+  B.pin('h',46,abdomen,tk-110,tk,tk+25);
+  // the empty hand checks the sword arm at the forearm while the thrust goes in
+  const forearm=(t,ctx)=>{const q=pose(A,ctx.out?ctx.out.a:A.start,t),j=solve(q,A.weapon.len);
+    return A.W(j.E);};
+  B.pin('o',null,forearm,P1+120,tk-40,tk+30);
+  seq.contacts.counter={t:tk,along:46};
+  mark(P1,'b','Counter: a short step in under the raised sword; the empty hand goes up to the sword arm');
+  mark(tk-180,'b','Thrust: low and straight to the abdomen, the empty hand still on the sword arm');
+
+  // 3. The wound. The reaction starts at the abdomen: the hips are pushed back, the body folds over the wound, the
+  //    head follows late, the sword arm drops. A rear step catches the weight. A minor wound: the fighter goes on.
+  A.impulse(tk,{px:-170,bend:320,lean:-60,head:200,hx:-160,py:-50});
+  A.key(tk,{px:-6,py:72,lean:2,bend:24,head:-24,turn:-4,h:[2,4],w:112,o:[6,-34]},'together');
+  // the empty hand goes to the wound and stays on it (a contact with the fighter's own body)
+  const ownWound=(t,ctx)=>{const q=pose(A,ctx.out?ctx.out.a:A.start,t),j=solve(q,A.weapon.len);
+    return A.W([(j.M[0]+j.P[0])/2+7,(j.M[1]+j.P[1])/2]);};
+  A.pin('o',null,ownWound,tk+40,tk+220,tk+1200);
+  A.step('ff',tk+40,tk+220,44,6).step('bf',tk+230,tk+430,-56,7);
+  seq.stops.push({t:tk,d:90});seq.fx.push({t:tk,kind:'wound',at:T});
+  seq.wounds.push({t:tk,who:'a',part:'abdomen',level:'minor'});
+  mark(tk,'a','Hit to the abdomen: the hips go back, the body folds over the wound, the head follows; a rear step catches the weight');
+
+  // 4. Recovery, into stances neither began in. The dagger comes back out along its line and the dagger fighter steps
+  //    out behind the empty hand; the sword fighter gives ground, closed over the wound, the point low and in line.
+  B.key(tk+60,{px:34,py:66,lean:18,bend:6,head:-16,h:[12,-24],w:14},'together');
+  B.step('bf',tk+200,tk+380,-24,6).step('ff',tk+360,tk+560,36,6);
+  B.key(tk+380,{px:-6,py:68,lean:14,bend:8,head:-14,h:[16,-20],w:36,o:[24,6]});
+  A.step('ff',tk+450,tk+640,24,6);
+  A.key(tk+300,{h:[22,-4],w:62});
+  A.key(tk+420,{px:-14,py:75,lean:9,bend:14,head:-12,turn:-2,o:[8,-38]});
+  A.key(tk+560,{h:[24,-34],w:-40});
+  mark(tk+150,'both','Recovery: the dagger comes out along its line; both give ground');
+  const end=tk+1100;
+  mark(tk+700,'both','New stances: the sword fighter closed over the wound, point low and in line; the dagger fighter low, empty hand up');
+  seq.pauses.push({t:end,label:'End of the exchange. Both stay in these poses for the next decision; the next exchange starts from them.'});
+  seq.dur=end+10;seq.P1=P1;seq.tk=tk;seq.tc=tc;seq.end=end;
+  seq.rec=simulate(F,seq.dur);
+  seq.marks.sort((x,y)=>x.t-y.t);
+  return seq;
+}
+
+// ----- reading the stored simulation -----
+function sample(seq,id,t){
+  const r=seq.rec[id],i=Math.max(0,Math.min(r.length-1,t/REC)),a=Math.floor(i),b=Math.min(r.length-1,a+1),u=i-a,o={};
+  for(const c of CH)o[c]=r[a][c]+(r[b][c]-r[a][c])*u;
+  return o;
+}
+function joints(seq,id,t){const f=seq.fighters[id];return solve(pose(f,sample(seq,id,t),t),f.weapon.len);}
+function world(seq,id,t,name,along){
+  const f=seq.fighters[id],j=joints(seq,id,t);let p;
+  if(name==='abdomen')p=[(j.M[0]+j.P[0])/2,(j.M[1]+j.P[1])/2];
+  else if(name==='chest')p=[(j.M[0]+j.S[0])/2,(j.M[1]+j.S[1])/2];
+  else if(name==='blade')p=[j.Hn[0]+Math.cos(rad(j.w))*along,j.Hn[1]+Math.sin(rad(j.w))*along];
+  else p=j[name];
+  return f.W(p);
+}
+function frame(seq,t){
+  const out={};
+  for(const id of ['a','b']){
+    const f=seq.fighters[id],wounds={};
+    for(const w of seq.wounds)if(w.who===id&&t>=w.t)wounds[w.part]=w.level;
+    const j=joints(seq,id,t);out[id]={joints:j,wounds,svg:PM.figureSvg(f,j,wounds),pose:pose(f,sample(seq,id,t),t)};
+  }
+  return out;
+}
+const api={build,frame,joints,world,sample,simulate,Fighter,SPRING,LAG,CH,REC,GROUND,
+  seqTime:PM.seqTime,shownDur:PM.shownDur,shownAt:PM.shownAt};
+if(typeof module!=='undefined'&&module.exports)module.exports=api;
+root.PitsSpring=api;
+})(typeof window!=='undefined'?window:globalThis);

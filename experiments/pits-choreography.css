@@ -29,3 +29,11 @@
 .pc-clash{stroke:var(--bone);stroke-width:3;stroke-linecap:round}
 .pc-woundfx{stroke:var(--accent);stroke-width:3;stroke-linecap:round}
 @media (max-width:600px){.pc-stage{aspect-ratio:20/11}}
+/* Exchange study (pits-exchange-study.html): inspection overlays */
+.pc-inspect{margin-top:8px;color:var(--bone-dim)}
+.pc-readout{color:var(--bone-dim);font-size:12px;margin:2px 0 0;font-variant-numeric:tabular-nums}
+.pc-com{fill:var(--accent);stroke:none}
+.pc-base{stroke:var(--bone-dim);stroke-width:2;stroke-dasharray:3 3}
+.pc-contact{fill:none;stroke:var(--accent);stroke-width:2}
+.pc-gap{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 3}
+.pc-strain{fill:none;stroke:var(--accent);stroke-width:2.5}

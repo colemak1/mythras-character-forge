@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a spring-driven exchange study (prototype)
+
+- **New page: `experiments/pits-exchange-study.html`.** One exchange, broadsword against dagger: cut, parry, counter, wound, recovery. Results are fixed in advance and labelled; the live Pits is unchanged.
+- **How it moves.** Each body part follows a few key poses on its own damped spring, so parts arrive one after another instead of all stopping at each key. Feet still move only in steps. A parry or a hit is an impulse into the springs: knees and elbow give, the hips are pushed back and the head follows. Contacts are constraints: both blades meet at one point, and the dagger stays on the sword's edge through the bind.
+- **For inspection.** Normal, half and quarter speed, frame stepping, the decision hold (on or off), jump buttons (parry contact, held decision, counter, wound reaction, end pose), and overlays for planted feet and centre of mass, blade paths, the contact point and clearance from the sword.
+- Tests: `tests/pits-spring.cjs` (15 checks, CI) and `tests/visual/pits-exchange.cjs` (browser, local).
+
 ## The Pits: sword cuts that know their target, and defenders that defend
 
 - **The target shapes the cut from its first frame.** A cut to the head chambers beside the face and comes down steeply; a cut to the body keeps the hilt at the rear shoulder with the blade laid back flat and comes round level; a cut to the legs sinks the hips, pitches the chest forward and sweeps in low.
