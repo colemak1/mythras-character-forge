@@ -548,7 +548,7 @@ function frame(seq,t){
   for(const id of ['a','b']){
     const f=seq.fighters[id],wounds={};
     for(const w of seq.wounds||[])if(w.who===id&&t>=w.t)wounds[w.part]=w.level;
-    out[id]={joints:f.joints(t),wounds,svg:''};out[id].svg=figureSvg(f,out[id].joints,wounds);
+    out[id]={joints:f.live?livePose(f,t):f.joints(t),wounds,svg:''};out[id].svg=figureSvg(f,out[id].joints,wounds);
   }
   return out;
 }
@@ -938,6 +938,39 @@ function livePose(f,t,limp){
   }
   return j;
 }
+// The ordinary sword exchange as the live stage writes it, laid out for the study page (?seq=sword): the same LIVE
+// phrases the Pits uses, one exchange after another, each starting from the pose the last one ended in.
+function seqSword(){
+  const W={kind:'blade',len:92},gap=liveGap(W,W,'long'),F={a:liveFighter('a',W),b:liveFighter('b',W)};
+  F.a.live=F.b.live=true;livePlace(F.a,0,gap,'guard');livePlace(F.b,0,gap,'guard');
+  const Q=newSeq('sword','Sword against sword (the live Pits)');Q.names={a:'Left',b:'Right'};
+  mark(Q,0,'both','On guard at close measure');
+  const HIT={chest:'Hit: the chest goes back, then a foot comes back to catch the weight',head:'Hit: the head snaps back and the empty hand comes up',
+    rleg:'Hit: the struck knee gives and the hips drop over it'};
+  const steps=[['a','miss','chest','A cut that misses'],['b','parried','head','A cut that is parried'],['a','wound','chest','A cut to the chest'],
+    ['b','wound','head','A cut to the head'],['a','wound','rleg','A cut to the leg'],['b','kill','chest','The blow that ends it']];
+  let t=150;
+  for(const [aid,o,loc,label] of steps){
+    const kill=o==='kill',did=aid==='a'?'b':'a';
+    Q.exchanges.push({t,attacker:aid,label,by:Q.names[aid]});
+    const r=liveBlow(F,aid,t,{outcome:kill?'wound':o,loc,lost:kill?9:o==='wound'?4:0,defeated:kill}),tc=r.tc;
+    mark(Q,tc-380,aid,'Preparation: the weight settles onto the rear foot, the shoulders turn away, the hilt comes to the shoulder with the blade laid back');
+    mark(Q,tc-250,aid,'Commitment: the front foot steps and the rear leg drives the hips; the blade is still back');
+    mark(Q,tc-140,aid,'Strike: the shoulders come round, the arm goes long, the blade arrives last');
+    for(const c of r.contacts){
+      if(c.kind==='miss'){mark(Q,c.t,did,'Miss: the defender slips back and the cut passes in front of the chest; it runs on down on the attacker\'s own side');continue;}
+      Q.stops.push({t:c.t,d:80});Q.fx.push({t:c.t,kind:c.kind==='clash'?'clash':'wound',at:c.at});
+      if(c.kind==='clash')mark(Q,c.t,did,'Parry: the cut is met near its point in front of the head, then turned down beside its owner');
+      else{Q.wounds.push({t:c.t,who:did,part:loc,level:kill?'major':'minor'});mark(Q,c.t,did,kill?'The blow lands and the fighter goes straight down: no recovery':HIT[loc]);}
+    }
+    if(kill){liveLower(F[aid],r.end);mark(Q,r.end,aid,'The winner lowers the point and watches');t=r.end+900;break;}
+    Q.pauses.push({t:r.end,label:'The exchange is resolved. In the Pits the scene stops here for the next decision; the next movement starts from this pose.'});
+    t=r.end+60;
+  }
+  Q.fighters=F;Q.marks.sort((x,y)=>x.t-y.t);Q.dur=t;Q.notes=[];
+  return Q;
+}
+const LIVE_SEQUENCES={sword:seqSword};
 const LIVE={fighter:liveFighter,gap:liveGap,station:liveStation,place:livePlace,walk:liveWalk,recover:liveRecover,
   blow:liveBlow,fall:liveFall,stand:liveStand,lower:liveLower,yieldTo:liveYield,press:livePress,react:liveReact,
   pose:livePose,part:livePart,style:liveStyle,along:liveAlong,CUT_PREF};
@@ -949,7 +982,7 @@ const api={LIVE,DIM,EASE,ik,solve,torso,Track,Fig,GRIP,SWORD_GUARD,DAGGER_GUARD,
   // sequence time -> display time (a pause point or a mark on the scrubber)
   shownAt(seq,t){let td=t;for(const s of seq.stops||[])if(t>s.t)td+=s.d;return td;},
   GROUND,figureSvg,frame,
-  build(id){return (SEQUENCES[id]||SEQUENCES.fight)();}
+  build(id){return (SEQUENCES[id]||LIVE_SEQUENCES[id]||SEQUENCES.fight)();}
 };
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 root.PitsMotion=api;
