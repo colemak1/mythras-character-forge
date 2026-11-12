@@ -62,16 +62,73 @@ test('the cut never passes through the defender (outside the contact, the blade 
 test('the counter goes in beneath the displaced sword and keeps clear of it',()=>{
   // at the held decision the sword is high: its hand is above the defender's head
   assert(PS.world(q,'a',q.P1,'Hn')[1]>PS.world(q,'b',q.P1,'Hd')[1],'the sword is not displaced high');
-  range(q.P1,q.tk+300,2,t=>{for(const n of JOINTS){const d=toSword(PS.world(q,'b',t,n),t);
+  const g=q.grips[0],gripping=t=>t>=g.t0-40&&t<=g.t1+30;   // (closing on it, and letting go)
+  range(q.P1,q.tk+300,2,t=>{for(const n of JOINTS){if(gripping(t)&&(n==='oHn'||n==='oE'))continue;   // holding the arm, below
+    const d=toSword(PS.world(q,'b',t,n),t);
     assert(d>=10,'the sword is '+d.toFixed(1)+' from the dagger fighter\'s '+n+' at '+t);}});
   // the dagger enters lower than the sword hand
   range(q.tk-150,q.tk,2,t=>assert(PS.world(q,'b',t,'tip')[1]<PS.world(q,'a',t,'Hn')[1]-20,'the dagger is not under the sword at '+t));
 });
-test('the empty hands do something: the dagger fighter\'s is on the sword arm when the thrust lands',()=>{
-  assert(dist(PS.world(q,'b',q.tk,'oHn'),PS.world(q,'a',q.tk,'E'))<2,'the empty hand is not on the sword arm');
-  // the sword fighter's goes to the wound and stays there
+// the point on the sword arm the dagger fighter holds: the forearm just behind the wrist
+const forearm=t=>{const j=PS.joints(q,'a',t);return A.W([j.Hn[0]+(j.E[0]-j.Hn[0])*.25,j.Hn[1]+(j.E[1]-j.Hn[1])*.25]);};
+test('the sword arm is caught, held and let go (owner, 2026-11-12: make the control and its release clear)',()=>{
+  const g=q.grips[0];assert(g&&g.t0>q.P1&&g.t0<q.tk&&g.t1>q.tk,'the grip does not span the thrust');
+  // before the catch the sword is on its way down; it is caught in front of the body, not folded beside the head
+  const c=PS.world(q,'a',g.t0,'Hn'),s0=PS.world(q,'a',g.t0,'S'),hd=PS.world(q,'a',g.t0,'Hd');
+  assert(c[0]-s0[0]>25,'the sword hand is not out in front when it is caught');
+  assert(dist(c,hd)>35,'the sword hand is caught beside the head');
+  assert(c[1]<PS.world(q,'a',q.P1,'Hn')[1]-8,'the sword does not start down before the catch');
+  // held: the dagger fighter's hand is on the forearm, the sword hand does not come down (it is lifted a little)
+  range(g.t0+20,g.t1,2,t=>{assert(dist(PS.world(q,'b',t,'oHn'),forearm(t))<2,'the empty hand is off the arm at '+t);
+    assert(PS.world(q,'a',t,'Hn')[1]>=c[1]-1,'the held arm comes down at '+t);});
+  // let go: the hand comes away from the arm, and the arm drops only after it is free
+  assert(dist(PS.world(q,'b',g.t1+60,'oHn'),forearm(g.t1+60))>12,'the empty hand does not come away');
+  assert(PS.world(q,'a',g.t1+200,'Hn')[1]<PS.world(q,'a',g.t1,'Hn')[1]-15,'the arm does not drop once free');
+});
+test('the empty hands do something: the sword fighter\'s goes to the wound and stays there',()=>{
   const abd=t=>{const j=PS.joints(q,'a',t);return A.W([(j.M[0]+j.P[0])/2,(j.M[1]+j.P[1])/2]);};
   for(const t of [q.tk+400,q.end])assert(dist(PS.world(q,'a',t,'oHn'),abd(t))<20,'the empty hand is not on the wound at '+t);
+});
+test('the sword comes back on a deliberate path, clear of the face: the hilt leads, the point follows',()=>{
+  const g=q.grips[0];
+  range(g.t1,q.end,2,t=>{const hd=PS.world(q,'a',t,'Hd'),h=PS.world(q,'a',t,'Hn');
+    assert(dist(h,hd)>=30,'the sword hand is '+dist(h,hd).toFixed(1)+' from the face at '+t);
+    const d=seg(hd,h,PS.world(q,'a',t,'tip'));assert(d>=18,'the blade passes '+d.toFixed(1)+' from the face at '+t);});
+  const y0=PS.world(q,'a',g.t1,'Hn')[1],first=(f)=>{for(let t=g.t1;t<=q.end;t+=2)if(f(t))return t;return q.end;};
+  const hilt=first(t=>PS.world(q,'a',t,'Hn')[1]<y0-12),point=first(t=>PS.joints(q,'a',t).w<60);
+  assert(hilt<point-150,'the point comes down with the hilt (hilt '+hilt+', point '+point+')');
+  // deliberate, not a sweep: the blade turns at well under half the speed of the cut
+  const turn=(t0,t1)=>{let m=0;for(let t=t0+10;t<=t1;t+=10)m=Math.max(m,Math.abs(PS.joints(q,'a',t).w-PS.joints(q,'a',t-10).w));return m;};
+  assert(turn(g.t1,q.end)<turn(q.tc-200,q.tc)*.4,'the recovery swings the blade nearly as fast as the cut');
+  // the point comes down only once the dagger fighter has stepped out (no sweep across the other fighter)
+  const lastStep=Math.max(...B.steps.map(s=>s.t1));assert(point>lastStep-200,'the point comes down while the dagger fighter is still close');
+});
+test('steps carry weight: push off, a clear lift, set down, then the weight goes onto the new base',()=>{
+  const com=(id,t)=>{const j=PS.joints(q,id,t);return j.P[0]*.5+j.M[0]*.3+j.S[0]*.2;};
+  let n=0;
+  for(const id of ['a','b'])for(const st of q.fighters[id].steps){n++;
+    const P=t=>PS.frame(q,t)[id].pose,sup=P(st.t0)[st.sup+'x'],from=P(st.t0)[st.foot+'x'],land=P(st.t1)[st.foot+'x'];
+    let top=0;range(st.t0,st.t1,2,t=>{top=Math.max(top,P(t)[st.foot+'y']);
+      // the foot travels only while it is clearly off the floor (no gliding along it)
+      if(Math.abs(P(t)[st.foot+'x']-P(t-2)[st.foot+'x'])>.05)assert(P(t)[st.foot+'y']>=2,id+' '+st.foot+' glides at '+t);});
+    assert(top>=8,id+' '+st.foot+' step barely lifts ('+top.toFixed(1)+')');
+    // before the foot leaves, the hips go toward the foot that will carry the weight (or are driven there by a push)
+    const toward=Math.abs(com(id,st.t0)-sup)<Math.abs(com(id,st.t0-170)-sup)-2;
+    const pushing=st.push&&Math.sign(com(id,st.t0+40)-com(id,st.t0))===Math.sign(sup-from);
+    assert(toward||pushing,id+' '+st.foot+': the weight does not go onto the other foot before the step');
+    // set down inside the base it makes; then the weight goes on (the hips keep moving onto the new base)
+    const lo=Math.min(sup,land)-3,hi=Math.max(sup,land)+3,c1=com(id,st.t1);
+    assert(c1>=lo&&c1<=hi,id+' '+st.foot+' lands with the weight outside its feet');
+    assert(Math.abs(P(st.t1+120).px-P(st.t1).px)>1.5,id+' '+st.foot+': no weight transfer after the foot is set down');
+  }
+  assert(n>=3,'the retreat has fewer than three steps');
+});
+test('the final wounded stance: bent over the wound, weight back, a low guard',()=>{
+  const s=PS.sample(q,'a',q.end),j=PS.joints(q,'a',q.end),p=PS.frame(q,q.end).a.pose;
+  assert(s.bend>=18,'not bent over the wound ('+s.bend.toFixed(0)+')');
+  const c=j.P[0]*.5+j.M[0]*.3+j.S[0]*.2;assert(c<(p.ffx+p.bfx)/2,'the weight is not back');
+  assert(j.Hn[1]<j.S[1]-25,'the guard is not low');assert(j.w<0&&j.w>-45,'the point is not low and forward ('+j.w.toFixed(0)+')');
+  assert(j.Hn[0]>j.S[0]+10,'the sword is not in front of the body');
 });
 test('the wound reaction starts at the hit: the dagger is in the abdomen, the hips move first and the head follows',()=>{
   const j=PS.joints(q,'a',q.tk),abd=A.W([(j.M[0]+j.P[0])/2+4,(j.M[1]+j.P[1])/2]);
@@ -79,8 +136,8 @@ test('the wound reaction starts at the hit: the dagger is in the abdomen, the hi
   const mv=(n,t)=>dist(PS.world(q,'a',q.tk,n),PS.world(q,'a',t,n));
   assert(mv('P',q.tk+30)>mv('Hd',q.tk+30)*.8,'the reaction does not start low');
   assert(mv('Hd',q.tk+200)>mv('Hd',q.tk+30)+3,'the head does not follow');
-  // a rear step catches the weight
-  const s=PS.frame(q,q.tk+200).a.pose;assert(s.bfy>0||s.ffy>0,'no catching step');
+  // a step gives ground soon after
+  assert(A.steps.some(st=>st.t0>q.tk&&st.t0<q.tk+400),'no step to give ground after the hit');
   // a minor wound: still standing and holding the sword at the end, the wound still marked
   const end=PS.frame(q,q.end).a;assert.equal(end.wounds.abdomen,'minor');
   assert(end.joints.P[1]>60,'the wounded fighter is not on its feet');
