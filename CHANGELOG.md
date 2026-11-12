@@ -12,6 +12,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 - A missed cut carries the body through a step and ends on a wide stance; the sword fighter's empty hand guards in front or trails behind as a counterweight; the dagger's counter goes in above a sword that has dropped beside its owner; the finishing fall tips backward and buckles, with the dagger arm dropped.
 - The Pits itself is still unchanged.
 
+## The Pits movement study: second pass
+
+- **Three exchanges, one fight** is the new first sequence on `experiments/pits-choreography.html`: the sword cuts and is parried, the dagger counters and wounds, the sword comes again and lands. The attacker changes, there are two decision pauses in the middle of the action, and each exchange starts from the pose the last one left.
+- **Closer and tighter.** The fighters stand closer; the sword cuts from the shoulder with one lunge (no overhead wind-up, no long advance), and the dagger has to step in to reach.
+- **A clear counter.** The dagger fighter's empty hand holds the sword overhead by the wrist and the dagger goes in underneath, instead of crossing the lowered blade.
+- **The miss** is caught with a step instead of a squat. **The empty hand** balances or guards instead of folding behind the back. **The collapse** is a failed catching step and a fall, with the arms slack, instead of a sit.
+- The Pits itself is still unchanged. Details and remaining compromises: `docs/pits-animation-direction.md`.
+
 ## The Pits movement study: the sword is held, not hinged
 
 - On the study page the blade used to turn in the hand as if on a hinge. The weapon is now gripped: its angle follows the forearm, with only as much turn as a wrist has, so moving the blade means moving the arm. Cuts land with the sword in line with the arm, the wind-up carries it overhead, and a little of the hilt shows behind the hand.
