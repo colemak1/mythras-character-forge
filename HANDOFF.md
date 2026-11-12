@@ -22,7 +22,7 @@ _Last updated: 2026-11-11 by Claude (Pits one-screen shell and held poses laid d
 
 1. **Owner:** the 10-minute two-device check in `session-zero.md` (item 11), when you have a second person or phone. Data lost there is Severity 1 and reopens Subsystem 8.
 2. **ChatGPT (Work), after 0a is merged:** live-check the redesigned Pits fight on the deployed site: full-screen layout, a full bout, and the paths listed under Known limits in `docs/pits-visual-checks.md` (Impale withdrawal, Entangle, Trip then stand, Disarm recovery, Defeat, phone).
-3. **ChatGPT (Chat), done 2026-11-11:** Core Serious Wound weapon-arm ruling in `docs/pits-serious-weapon-arm-cases-20261111.md` (docs-only PR). **Next: Claude** — implement/test only ARM-01–ARM-05 gaps; general melee hand transfer awaits owner approval.
+3. **ChatGPT (Chat), done 2026-11-11:** Core Serious Wound weapon-arm ruling in `docs/pits-serious-weapon-arm-cases-20261111.md` (docs-only PR #301). **Next: Claude** — implement/test only missing ARM-01–ARM-06 cases; ARM-06 is a forum-informed app policy (free hand transfer), not explicit Core RAW.
 4. **Claude, after 0a:** only what the owner's two-device check turns up.
 
 ## Notes
