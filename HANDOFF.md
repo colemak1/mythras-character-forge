@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-12 by Claude (Pits: fight replay, Show result, range by weapon length, Glory/Momentum/Marks removed)_
+_Last updated: 2026-11-12 by Claude (Pits: weapon and shield arm wounds ARM-01 to ARM-06; replay, result screen, range, scoring removal merged earlier)_
 
 ## Where things stand
 
@@ -16,7 +16,7 @@ _Last updated: 2026-11-12 by Claude (Pits: fight replay, Show result, range by w
 
 ## Next
 
-00. **ChatGPT (Chat), rules ruling needed (Claude, 2026-11-11):** a Serious Wound to the weapon arm that fails Endurance. Core p.110 (per `docs/combat-cases-batch-1.md` C5-W10): arm unusable until positive HP, drops the held item unless strapped. The engine marks the arm unusable but never drops the weapon (`disarmed` stays false), and the Pits action list (`pitsLegalActions`) has no Switch Weapon Hand, so the fighter cannot fight on. Please document in `docs/` ("given X, Core p.N says Y"): (1) does the weapon drop, and with what pickup rule (and can a disabled arm pick up)? (2) one-handed weapon moved to the other hand: AP cost, any readying step, any difficulty? (3) two-handed weapon with one arm out; shield arm out; (4) a left-handed fighter (the engine only switches from a disabled Right Arm). Ask the owner for the pages if you lack them. Claude then builds it with tests; Severity 1 (arm Serious Wound is common).
+00. **Claude, done 2026-11-12:** ARM-01 to ARM-06 (weapon and shield arms, Core p.110) built and tested in `tests/pits-arm.cjs`; ARM-05 is not applicable (the Pits is melee only); ARM-06 is an app policy recorded in `docs/decisions.md` for the owner to confirm. Left for Work: live-check an arm Serious Wound (drop, Pick Up then Ready with the other hand, shield arm) and the free Switch Weapon Hand. Known limits: passive shield coverage of a disabled shield arm is GM-handled (ARM-04); no setup toggle for handedness on Forge characters beyond the checkbox.
 
 0b. **Claude, done 2026-11-12:** Pits end-of-fight batch. **Replay fight** (whole fight, uninterrupted; tape recorded in `playCaptured`, played by `startFightReplay`), **Show result** to reopen the Victory/Defeat window, range meter named by weapon length, Glory/Momentum/Pit Marks/recap and win-streak lines removed (Sound and hit shake kept; the Gauntlet leaderboard is untouched). Tests: `tests/visual/pits-replay.cjs`. Known limit: the log keeps only the last 110 entries, so a very long fight's chronicle list can lag during a replay (the stage and plates are right).
 

@@ -134,7 +134,8 @@ test('aim: a shield bash uses the off arm; a left-handed wielder keeps role-base
  const r=J(`pitsStageAim(PS_POSE.lunge,{kind:'blade',len:92},false,[110,-90],{arm:'off',shieldR:16,pen:0})`);
  assert.equal(r.ok,true);assert.notEqual(r.pose.ba1,J('PS_POSE.lunge').ba1,'the off arm moved');assert.equal(r.pose.a1,J('PS_POSE.lunge').a1,'the weapon arm did not');
  const l=J(`pitsStageLook({weapon:'sword',weaponHand:'Left Arm',hp:{'Right Arm':5,'Left Arm':0,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},maxHp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},shield:'none',siz:13})`);
- assert.equal(l.swap,true);assert.equal(l.armed,false,'weapon arm (the left) is out of action');
+ assert.equal(l.swap,true);assert.equal(l.armed,true,'a resisted Serious Wound leaves the weapon in the hand: the engine says when it drops (disarmed)');
+ assert.equal(J(`pitsStageLook({weapon:'sword',weaponHand:'Left Arm',disarmed:true,hp:{'Right Arm':5,'Left Arm':0,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},maxHp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6}})`).armed,false,'a weapon the engine dropped is not drawn in the hand');
 });
 test('lodged weapons and entanglement are read from engine state: held, abandoned, withdrawn',()=>{
  const f=(a,b)=>JSON.stringify({a,b});
@@ -168,7 +169,8 @@ test('the look of a fighter follows the engine: wounds, prone, disarmed, arm dow
  a.run(`S.fighters.a.prone=true;S.fighters.a.disarmed=true;`);l=look();
  assert.equal(l.prone,true);assert.equal(l.armed,false,'disarmed shows no weapon');
  a.run(`S.fighters.a.disarmed=false;S.fighters.a.hp['Right Arm']=0;`);l=look();
- assert.equal(l.armed,false,'weapon arm out of action');assert.equal(l.limp.rarm,true);
+ assert.equal(l.armed,true,'the weapon is drawn until the engine drops it (a resisted wound keeps it)');assert.equal(l.limp.rarm,true,'but the arm hangs');
+ a.run(`S.fighters.a.disarmed=true;`);assert.equal(look().armed,false,'a dropped weapon is not drawn in the hand');
  a.run(`S.fighters.b.weapon='spear'`);assert.equal(JSON.parse(a.run(`JSON.stringify(pitsStageLook(S.fighters.b))`)).weapon,'spear');
 });
 test('?stage=duel is Sword v Spear; without it the usual setup opens',()=>{

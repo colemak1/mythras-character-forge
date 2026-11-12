@@ -101,7 +101,7 @@ function pitsStageLook(f){
   for(const [name,key] of Object.entries(PSTAGE_LOCS))parts[key]=level(name);
   const wk=pitsStageWeaponKind(f.weapon,w.reach);
   return {weapon:wk.kind,wk,swap:hand==='Left Arm',
-    armed:!f.disarmed&&!(f.hp[hand]<=0),prone:!!f.prone,parts,shield:!!f.shield&&f.shield!=='none'&&!f.shieldLost,
+    armed:!f.disarmed,prone:!!f.prone,parts,shield:!!f.shield&&f.shield!=='none'&&!f.shieldLost,
     limp:{rarm:f.hp['Right Arm']<=0,larm:f.hp['Left Arm']<=0},scale:Math.max(.92,Math.min(1.1,.95+((+f.siz||13)-13)*.012))};
 }
 // What the engine says is stuck in, or wrapped around, a fighter right now (pure).
@@ -779,7 +779,7 @@ function pitsStageSync(){
     const f=PS.fig[id];f.look=pitsStageLook(view[id]);f.scale=f.look.scale;
     if(f.look.armed&&f.dropEl){f.dropEl.remove();f.dropEl=null;}
     // A weapon already on the floor (for example after Show results) stays there.
-    if(!f.look.armed&&!f.dropEl&&view[id].disarmed&&!f.look.limp.rarm)psFlyWeapon(f,view[id].droppedMetres||2);
+    if(!f.look.armed&&!f.dropEl&&view[id].disarmed)psFlyWeapon(f,view[id].droppedMetres||2);
     f.end=null;
   }
   PS.fighters.lodged={a:pitsStageLodged(view,'a'),b:pitsStageLodged(view,'b')};

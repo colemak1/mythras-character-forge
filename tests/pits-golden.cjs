@@ -30,7 +30,7 @@ function arena(seed){
 const fighter=(id,o)=>`Object.assign(mkFighter(${JSON.stringify(id)},${JSON.stringify(o.name)},${JSON.stringify(o.kind)},${o.style??65},${JSON.stringify(o.weapon)},${o.armor??0},${o.evade??45},${o.level??3},${o.str??13},${o.siz??13},${JSON.stringify(o.shield??'none')},${o.con??13},${o.dex??13},${o.int??13}),${JSON.stringify(o.extra||{})})`;
 
 // Buttons the page offers for a fight decision, read from the rendered HTML.
-const SKIP=new Set(['mode','lbmode','start','beginFight','reset','retry','next','dismissResult','openAid','selectloc','guidance','speed','help','togglelog','continue','skip','roll','rest','fieldAid','ward','wardloc','saveward','clearward']);
+const SKIP=new Set(['swapHand','mode','lbmode','start','beginFight','reset','retry','next','dismissResult','openAid','selectloc','guidance','speed','help','togglelog','continue','skip','roll','rest','fieldAid','ward','wardloc','saveward','clearward']);
 function offered(html){
  const out=[],seen=new Set();
  for(const m of html.matchAll(/<[a-z]+\b([^<>]*\bdata-act="([^"]+)"[^<>]*)>/g)){
