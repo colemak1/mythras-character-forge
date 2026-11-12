@@ -2,7 +2,7 @@
 // The picture is a function of the time on the bar, so any moment can be stopped on and stepped through.
 (function(){
 const PM=window.PitsMotion,$=id=>document.getElementById(id);
-const ORDER=['exchange','miss','hit','press','finish'],FRAME=1000/60;
+const ORDER=['bout','exchange','miss','hit','press','finish'],FRAME=1000/60;
 const st={seq:null,td:0,playing:false,last:0,held:null,passed:{}};
 const reduced=()=>typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -92,7 +92,7 @@ document.addEventListener('keydown',e=>{
 const fit=()=>$('pcScene').setAttribute('viewBox',window.innerWidth<=600?'350 190 500 300':'250 190 700 300');
 fit();window.addEventListener('resize',fit);
 const want=(/[?&]seq=(\w+)/.exec(location.search)||[])[1];
-load(ORDER.includes(want)?want:'exchange');
+load(ORDER.includes(want)?want:'bout');
 // a test or a review script can put the picture on an exact moment
 window.pitsChoreography={load,seek(td){st.playing=false;st.held=null;st.td=td;draw();},state:st};
 if(!reduced()&&!/[?&]still\b/.test(location.search))play();

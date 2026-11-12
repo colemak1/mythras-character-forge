@@ -2,7 +2,7 @@
 
 Goal (owner): keep the stick figures; make them fighters with balance, momentum and intent, so that a replay reads as one continuous fight. Decisions pause the scene; the resolved exchange then plays without interruption, and each movement starts where the last one ended.
 
-**Watch it:** `experiments/pits-choreography.html` (on the site after merge: `/experiments/pits-choreography.html`). Five sequences, broadsword against dagger, with pause, frame step, quarter speed, a scrub bar, weapon paths and planted feet. A filmstrip of the reference sequence: `docs/pits-visual-checks/movement-study-exchange.png`.
+**Watch it:** `experiments/pits-choreography.html` (on the site after merge: `/experiments/pits-choreography.html`). Six sequences, broadsword against dagger (the first is three connected exchanges), with pause, frame step, quarter speed, a scrub bar, weapon paths and planted feet. A filmstrip of the reference sequence: `docs/pits-visual-checks/movement-study-exchange.png`.
 
 ## Why the current movement looks wrong
 
@@ -56,7 +56,36 @@ The tests hold these to the rules above: limbs never over-stretch, the blade nev
 - **Starting from an arbitrary pose.** The phrases read the current pose, but every demonstration starts from guard. Chaining many exchanges (and the whole-fight replay) from wherever the last one ended is untested, as is the dagger attacking first from measure.
 - **Other phrases:** thrusting and two-handed weapons, shields (parry and bash), other hit locations (the aim is general; the body reactions are written for the chest only), evade, trip, disarm, stand up, concede, a disabled limb, a dropped weapon, range changes, left-handed fighters, impaled and entangling weapons.
 - **Judged from stills and filmstrips,** not watched at speed by a person. The owner's eye is the test.
-- **Known compromises.** At the current spacing (300 units) a sword needs an advance and a passing step to reach; tightening the spacing would make shorter attacks possible (a layout choice for the owner). The scene is flat, so when the dagger steps in past the lowered sword the leg crosses the blade.
+- **Known compromises.** At the current spacing (300 units) a sword needs an advance and a passing step to reach (the owner has since allowed closer spacing; see the order of work). The scene is flat, so when the dagger steps in past the lowered sword the leg crosses the blade.
+
+## Second pass (2026-11-12, after Work's review)
+
+The owner approved the direction (this is the movement for the Pits; the held sword reads right; the fighters may stand closer) and asked for these refinements on the study page before anything is wired in.
+
+| Asked | What changed |
+|---|---|
+| Miss: a cramped squat | The weight overruns the front foot and the rear foot steps up to catch it. Feet stay a stride apart and the hips stay up; then back out one foot at a time. |
+| Empty hand: a triangle behind the back | The sword fighter's free hand now has a job: low in front in guard, up in front as a counterweight while preparing, thrown back long and straight in the lunge, forward as a ward when hurt. |
+| Counter crosses the lowered sword | New staging. The parry keeps the sword high; the dagger fighter's empty hand goes up under the sword wrist and holds the blade overhead, the body steps in beneath it, and the dagger goes from the hip to the body under the sword arm. A test keeps the blade off the dagger fighter for the whole counter. |
+| Wind-up and advance exaggerated | The fighters stand closer (206 units, was 300), so the sword reaches with one lunge and the dagger has to step in first. The cut is from the shoulder: the hand never goes above the head, the hips go first, then shoulder, arm and blade. The advance and the passing step are gone. |
+| Collapse looks like sitting down | The arms go slack at the blow, the rear foot goes back to catch the weight, the leg does not hold, the hips drop behind the foot while the body is already toppling, and the arms land last. |
+| Three connected exchanges | New first sequence, "Three exchanges, one fight": the sword cuts and is parried; the dagger counters and wounds; the sword, hurt, comes again and lands. Two decision pauses, each in the middle of the action (blades crossed; the dagger still in close). Each exchange starts from the pose the last one left, and the recovery from one is the preparation for the next. |
+
+**Remaining compromises**
+
+- Still judged from filmstrips and stills, not watched at speed by a person.
+- Phrases expect the situation they follow (a cut expects the fighter roughly at its place; the counter expects the bind). They hold the pose they start from, but they are not yet general "from any pose" phrases.
+- In the counter the two figures overlap at the legs for a moment (the dagger fighter's front foot comes close to the sword fighter's). The blade is clear; the legs are not separated in depth.
+- After a landed cut the blade is drawn back but still points toward the struck fighter's legs for a few frames.
+- Only broadsword against dagger, chest and abdomen hits, and the dagger never parries low or evades.
+- The live Pits is unchanged. Its spacing is still 300; the closer measure exists only on the study page.
+
+**Next, when the owner is happy with this small sequence** (one PR per step):
+
+1. The stage draws with the new rig and the closer spacing; guards per weapon family.
+2. Exchanges choose phrases from the stage's record; `pitsStageOnContact` fires at the contact; a decision stops the clock at the pause key and the next playback starts from that pose.
+3. The remaining phrases, most common first: thrusting weapons, shield parry, other hit locations, evade, two-handed weapons, then trip, disarm, stand up, concede, disabled limb.
+4. Work live-checks a full bout and a whole-fight replay.
 
 ## For Sonnet: routine defects in the live stage
 
