@@ -2,13 +2,14 @@
 // The picture is a function of the time on the bar, so any moment can be stopped on and stepped through.
 (function(){
 const PM=window.PitsMotion,$=id=>document.getElementById(id);
-const ORDER=['fight','press'],FRAME=1000/60;
+const ORDER=['sword','fight','press'],FRAME=1000/60;
 const st={seq:null,td:0,playing:false,last:0,held:null,passed:{}};
 const reduced=()=>typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function load(id){
   st.seq=PM.build(id);st.td=0;st.playing=false;st.held=null;st.passed={};
   for(const b of $('pcTabs').children)b.setAttribute('aria-selected',b.dataset.id===id?'true':'false');
+  document.querySelector('h1').textContent=st.seq.title;
   const total=PM.shownDur(st.seq),marks=$('pcMarks');marks.innerHTML='';
   $('pcScrub').max=Math.round(total);
   const tick=(t,cls)=>{const i=document.createElement('i');i.className=cls||'';i.style.left=(PM.shownAt(st.seq,t)/total*100)+'%';marks.appendChild(i);};
@@ -18,7 +19,7 @@ function load(id){
   const ex=$('pcExchanges');ex.innerHTML='';ex.hidden=st.seq.exchanges.length<2;
   st.seq.exchanges.forEach((e,i)=>{
     const b=document.createElement('button');b.type='button';
-    b.textContent=(i+1)+'. '+e.label+' ('+(e.attacker==='a'?'sword':'dagger')+' attacks)';
+    b.textContent=(i+1)+'. '+e.label+' ('+(e.by||(e.attacker==='a'?'sword':'dagger')).toLowerCase()+' attacks)';
     b.addEventListener('click',()=>{st.td=PM.shownAt(st.seq,e.t);st.held=null;st.passed={};st.playing=false;play();});
     ex.appendChild(b);
   });
@@ -26,7 +27,7 @@ function load(id){
 }
 function caption(t){
   let cur=st.seq.marks[0];for(const m of st.seq.marks)if(t>=m.t)cur=m;
-  const who=cur.who==='a'?'Sword':cur.who==='b'?'Dagger':'Both';
+  const nm=st.seq.names||{a:'Sword',b:'Dagger'},who=cur.who==='a'?nm.a:cur.who==='b'?nm.b:'Both';
   $('pcCaption').innerHTML='<b>'+who+'.</b> '+cur.label;
 }
 function star(at,cls,r){
@@ -100,7 +101,7 @@ document.addEventListener('keydown',e=>{
 const fit=()=>$('pcScene').setAttribute('viewBox',window.innerWidth<=600?'395 215 500 275':'330 215 600 257');
 fit();window.addEventListener('resize',fit);
 const want=(/[?&]seq=(\w+)/.exec(location.search)||[])[1];
-load(ORDER.includes(want)?want:'fight');
+load(ORDER.includes(want)?want:'sword');
 // a test or a review script can put the picture on an exact moment
 window.pitsChoreography={load,seek(td){st.playing=false;st.held=null;st.td=td;draw();},state:st};
 if(!reduced()&&!/[?&]still\b/.test(location.search))play();

@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: watch the sword exchange on its own page
+
+- The movement study page now opens on **Sword against sword (the live Pits)**: a miss, a parry, hits to the chest, head and leg, and a blow that ends the fight, drawn exactly as the Pits draws them, one after another. Play, pause, step a frame, quarter speed, or start from any exchange; no fight setup needed. Link: `experiments/pits-choreography.html?seq=sword`.
+
 ## The Pits: a sword exchange you can read without the result text
 
 - **A shorter, grounded cut.** No more overhead wind-up: the hilt comes to the shoulder with the blade laid back, the weight settles onto the rear foot, then the front foot steps, the hips drive and the shoulders turn into the blow. The fighters stand a little closer.
