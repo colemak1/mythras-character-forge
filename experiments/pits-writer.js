@@ -175,13 +175,13 @@ PHRASES.cutParried={ref:{a:20,d:-11},gap:231,width:{a:64,d:70},lead:20,run(W,a,d
   d.key(tc-260,{px:9,py:74,lean:14,bend:6,head:-12,o:[2,-30]},'cover');
   W.aim(d,tc-220,tc,W.fixed(C),100,20,{order:'cover',hold:40,blend:130,snap:1.4});
   W.aim(a,t2+300,tc,W.fixed(C),20,72,{through:[14,-22],hold:40,blend:60});
-  W.contact(tc,'parry',C,{a:{who:a.id,along:72},b:{who:d.id,along:20}});
+  W.contact(tc,'parry',C,{a:{who:a.id,along:72},b:{who:d.id,along:20},hold:40});
   // contact: the cut stops dead; the defender's knees and elbow give under it
   a.impulse(tc+1,{hx:'stop',hy:'stop',wr:'stop',px:-90,lean:-25,head:40});
   d.impulse(tc+1,{px:-50,py:-160,lean:-60,head:-50});
   // the parry redirects: the cut is turned down and out; the attacker's sword ends low and wide
   d.key(tc+40,{py:72,lean:8,bend:8,h:[26,-4],w:70},'together',{snap:true});
-  a.key(tc+40,{h:[40,-30],w:-38,lean:14,bend:6},'together',{snap:true});
+  a.key(tc+40,{h:[32,-34],w:-46,lean:14,bend:6},'together',{snap:true});
   a.key(tc+300,{px:40,py:72,lean:12,bend:6,head:-12,h:[34,-36],w:-30,o:[-20,-40]});
   d.key(tc+300,{px:0,py:74,lean:6,bend:7,head:-10,h:[22,-10],w:60,o:[6,-28]});
   W.stop(tc,140);W.fx(tc,'clash',C,1);
@@ -451,10 +451,10 @@ function takeMeasure(f,t,e){
   // into a middle guard first, so a point left low by the last exchange is not carried into a leg
   t=Math.max(t,...f.keys.map(k=>k.t+110));          // (a key reaches the blade up to 90 ms after its time)
   const n=Math.ceil(Math.abs(e)/48),d=e/n;let u=t;
-  // stepping in, the blade comes up into a middle guard at once; stepping back (too close), the point stays low and
-  // off the line until the step is made, so it is not raised into the other fighter's head
+  // stepping in, the blade comes up into a middle guard at once; stepping back (too close), the point goes up and
+  // back, away from the other fighter, until the step is made (lowered or raised forward, it would cross the body)
   if(e>0)f.key(t,{h:[22,-18],w:38,lean:6,bend:4,head:-8},'cover');
-  else f.key(t,{h:[4,-30],w:-24,lean:2,bend:4,head:-8},'cover').key(t+560*Math.ceil(Math.abs(e)/48)-120,{h:[22,-18],w:30},'cover');
+  else f.key(t,{h:[12,-12],w:84,lean:2,bend:4,head:-8},'cover').key(t+560*Math.ceil(Math.abs(e)/48)-120,{h:[22,-18],w:30},'cover');
   for(let i=0;i<n;i++){
     const lead=d>0?'ff':'bf',trail=d>0?'bf':'ff';
     f.walk(lead,u+170,u+330,planned(f,lead)+d,{py:74,lift:8,settle:.5,load:.4});

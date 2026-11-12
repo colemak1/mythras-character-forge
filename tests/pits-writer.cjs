@@ -76,6 +76,13 @@ test('another order, from other places: the attacker takes the measure, and the 
   assert(q.notes.some(n=>n.kind==='measure'),'no measure was taken');
   assert.equal(fault(q),null);
 });
+test('the faults found by trying other orders stay fixed: one parried cut three times; a shuffled fight',()=>{
+  const F=FX.FIGHT;
+  // the parried cut, turned down, used to pass the defender's sword elbow; repeated, it went through it
+  assert.equal(fault(PW.write([F[0],F[0],F[0],F[6]])),null);
+  // after a cut lands at close measure, the next attacker steps back and used to lower the blade through the other
+  assert.equal(fault(PW.write([F[1],F[0],F[4],F[5],F[3],F[6]])),null);
+});
 test('every result at every hit location, by either fighter, from the opening',()=>{
   const bad=[];let n=0;
   for(const aid of ids)for(const loc of ['head','chest','abdomen','rarm','larm','rleg','lleg'])
