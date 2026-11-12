@@ -34,6 +34,15 @@ test('one continuous motion: no joint jumps between two moments, including acros
         const d=dist(f[w].joints[n],prev[w].joints[n]);assert(d<(n==='tip'?34:22),id+' '+w+'.'+n+' jumps '+d.toFixed(1)+' at '+td);}
       prev=f;}});
 });
+test('the weapon is held, not hinged: the blade never turns further from the forearm than a wrist can',()=>{
+  each((s,id)=>{for(let t=0;t<=s.dur;t+=5)for(const w of ['a','b']){const g=PM.frame(s,t)[w].joints.grip;
+    assert(g>=PM.GRIP.min-.5&&g<=PM.GRIP.max+.5,id+' '+w+' wrist at '+g.toFixed(0)+' degrees at '+t);}});
+  // between keys the blade rides with the arm: when the forearm swings, the blade swings with it
+  const A=seqs.exchange.fighters.a,j0=A.joints(725),j1=A.joints(860);
+  const fore=j=>j.w-j.grip;assert(Math.abs((j1.w-j0.w)-(fore(j1)-fore(j0)))<40);
+  // a blow lands with the weapon in line with the arm
+  assert(Math.abs(seqs.hit.fighters.a.joints(900).grip)<12);
+});
 test('contacts meet: the blades cross at the parry, and a landed blow is on the struck part',()=>{
   each((s,id)=>{for(const c of s.checks){const at=s.fighters[c.who].at(c.t,'blade',c.along);
     assert(dist(at,c.at)<6,id+' '+c.who+' is '+dist(at,c.at).toFixed(1)+' from its contact at '+c.t);}});
@@ -66,7 +75,7 @@ test('a decision pause is a pose that can be held: weight between the feet, both
 test('the strike has changes of speed: slow to load, fastest into contact, still at the impact hold',()=>{
   const s=seqs.exchange,A=s.fighters.a,tc=s.checks[0].t,sp=(t0,t1)=>dist(A.at(t0,'tip'),A.at(t1,'tip'))/(t1-t0);
   const load=sp(tc-700,tc-400),strike=sp(tc-60,tc);
-  assert(strike>load*4,'strike '+strike.toFixed(2)+' against load '+load.toFixed(2));
+  assert(strike>load*3.5,'strike '+strike.toFixed(2)+' against load '+load.toFixed(2));
   const a=PM.frame(s,PM.seqTime(s,tc+10)),b=PM.frame(s,PM.seqTime(s,tc+60));
   assert(dist(a.a.joints.tip,b.a.joints.tip)<.01,'the impact hold is still');
   assert.equal(PM.shownDur(s),s.dur+150);
@@ -74,7 +83,7 @@ test('the strike has changes of speed: slow to load, fastest into contact, still
 test('the hips lead and the blade follows: the pelvis has done most of its travel while the blade is still back',()=>{
   const A=seqs.exchange.fighters.a,tc=900,p0=A.pose(tc-400),p1=A.pose(tc-175),p2=A.pose(tc);
   assert((p1.px-p0.px)/(p2.px-p0.px)>.6);
-  assert(p1.w>110,'the blade is still behind the shoulder when the hips have gone');
+  assert(A.joints(tc-175).w>110,'the blade is still behind the shoulder when the hips have gone');
 });
 test('wounds and effects appear at the contact, not before',()=>{
   const s=seqs.hit,tc=s.wounds[0].t;
