@@ -237,6 +237,28 @@ The fight is about 12.3 s (the breathing gaps are 380 ms of live movement instea
 - **Flashes:** scaled by power, with a filled core for the first 70 ms; 8 rays for a clash and 12 for a wound.
 - Checked by `tests/visual/pits-fight-page.cjs`: Normal covers over 1.85 s of fight in 1.5 s, the final wound shakes and has a core, and the layer switches it off.
 
+**Pace chosen (owner, 2026-11-12):** 1.10 times the 1.5 pace on the slider, so `seq.pace = 1.65`; the slider is removed.
+
+## Path to the live Pits: all weapons and shields (plan, 2026-11-12)
+
+The fight study is hand-written: every beat's timing and every clearance was tuned by hand. The live Pits needs the same movement written by code, from the engine's resolved results, for any pair of weapons. The plan:
+
+1. **An exchange writer.** Input: one resolved exchange from the engine's record (who attacks, weapon, hit location, the defence chosen, the outcome, damage, special effects). Output: keys, steps, impulses and contacts on the running spring fighters, starting from wherever they are, with the no-gap rule and the crunch. Proof: the ten-beat fight is rebuilt from ten fixture records and passes all of `tests/pits-fight.cjs`.
+2. **Live, sword only.** The writer drives the live stage behind a flag (`?stage=spring`) for broadsword against broadsword; any other weapon falls back to today's stage. Decisions hold the scene; a replay is continuous.
+3. **Weapon families, not single weapons.** Weapons move by how they are held and what they do, so each family is one set of phrases plus a profile per weapon (length, grip, weight and balance, guard):
+   - one-handed cut (have it): broadsword, shortsword cut, and as a base for the heavy family;
+   - thrust: dagger, shortsword, rapier;
+   - **shields** (block with the shield, cover posture, bash), early because they are common at the table;
+   - heavy one-handed: axe, mace, club, hammer (slower chamber, harder impact);
+   - two-handed swing: great sword, great axe, maul, staff;
+   - long thrust: spear, trident, pike and polearms, at their own range;
+   - flexible: flail, chain, whip, net (last; a stand-in until then).
+4. **A sweep instead of watching everything.** Every weapon against every weapon, with and without a shield, through every outcome and hit location, built headless and checked against the fight study's rules: exact contacts, no blade through a body, no lull, feet planted, limbs possible. The owner watches one short generated study per family; the sweep covers the combinations nobody will watch.
+5. **Special effects and hit locations:** reactions per location (head, each arm, each leg, chest, abdomen), then trip, disarm, impale (blade lodged), bash and the rest, in the order they come up at the table.
+6. **Retire the old stages** (the pose stage and the keyframe `PitsMotion.LIVE`) once the owner approves the spring stage in play.
+
+Steps 1 and 2 are the next batch (one PR). Each later family is one PR with its study page and its share of the sweep.
+
 ## For Sonnet: routine defects in the pose stage
 
 Items 2 and 3 now apply only to the pose stage behind `?stage=poses`; fix them only if the owner wants to keep it. Item 1 is fixed for both stages (2026-11-12), item 4 is done.
