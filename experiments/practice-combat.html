@@ -554,7 +554,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="pits-game.js?v=aa0a12a2ed"></script>
 <script src="pits-arena.js?v=bb25e609fb"></script>
 <script src="pits-bottom.js?v=ffba0d016b"></script>
-<script src="pits-stage.js?v=6873ccaa6f"></script>
+<script src="pits-stage.js?v=cd6da8544a"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -1634,6 +1634,12 @@ function playBeat(){
   V.visibleCount=S.logs.filter(entry=>entry.id<=e.id).length;
   if(e.view){V.shown=clone(e.view);V.shownRange=e.rng||null;}
   V.highlight=V.stage.target?{id:V.stage.target,loc:V.stage.loc}:null;
+  if(V.replaying&&typeof pitsStageCueDone==='function'){
+    // a replay is paced by the animation itself: the next beat starts when this cue has finished
+    render();const tok=V.replayTok=(V.replayTok||0)+1,done=pitsStageCueDone();
+    if(done){done.then(()=>{if(V.busy&&V.replaying&&V.replayTok===tok)advancePresentation();});return;}
+    schedulePresentation(900);return;   // no stage on screen: fall back to timed beats
+  }
   // Real choices and manual Roll buttons already provide a reading pause.
   schedulePresentation(typeof pitsStageBeatDelay==='function'?pitsStageBeatDelay(e,900):900);
 }
@@ -1688,7 +1694,8 @@ function skipPresentation(){
 function startFightReplay(){
   if(V.busy||!V.tape||!V.tape.length||!V.tapeStart||!['between','over'].includes(S.phase))return;
   // fight animations only: no dice beats and no stops, so it reads as one fluid fight
-  const events=V.tape.filter(e=>!e.checkpoint&&!e.roll);
+  const names={a:S.fighters.a.name,b:S.fighters.b.name};
+  const events=V.tape.filter(e=>!e.checkpoint&&!e.roll&&(typeof pitsStageReplayable!=='function'||pitsStageReplayable(e,names)));
   if(!events.length)return;
   clearPresentationTimers();
   V.replaying=true;V.busy=true;V.events=events;V.step=0;V.roll=null;V.impact=null;

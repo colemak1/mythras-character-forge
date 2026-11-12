@@ -59,6 +59,7 @@ async function playToEnd(page){
     assert(await page.evaluate(()=>!!document.querySelector('#root [data-act="replayFight"]')),'a Replay fight button is on the screen');
     const finalHp=await page.evaluate(()=>Object.values(prototypeCombat.state().fighters).map(f=>Object.values(f.hp).reduce((a,b)=>a+Math.max(0,b),0)));
     const logs=await page.evaluate(()=>prototypeCombat.state().logs.length);
+    await page.evaluate(()=>{window.__psRecord.length=0;window.__replayT0=performance.now();});
     await click(page,'[data-act=replayFight]');await sleep(60);
     let s=await st(page);assert(s.busy&&s.replaying,'replaying');
     const seen={hp:[],continues:0,modal:false,tray:0,dice:0,steps:new Set(),first:null};
@@ -71,6 +72,12 @@ async function playToEnd(page){
     }
     assert(!s.busy,'the replay finished');
     assert.equal(seen.continues,0,'never stopped for Continue');assert.equal(seen.modal,false,'the result window stays away while it plays');
+    // paced by the animation itself: it opens on the first real action and never sits idle between cues
+    const rec=await page.evaluate(()=>({t0:window.__replayT0,ev:window.__psRecord.filter(r=>r.type!=='settle').map(r=>r.t)}));
+    assert(rec.ev.length>3,'cues were played');
+    assert(rec.ev[0]-rec.t0<900,'the first cue starts at once, not after dead initiative beats ('+Math.round(rec.ev[0]-rec.t0)+' ms)');
+    const gaps=rec.ev.slice(1).map((t,i)=>t-rec.ev[i]);
+    assert(Math.max(...gaps)<2600,'no long stretch with nothing happening (longest gap '+Math.round(Math.max(...gaps))+' ms)');
     assert.equal(seen.tray,0,'no dice tray during the replay');assert.equal(seen.dice,0,'no dice beats during the replay');
     assert(seen.steps.size>5,'many beats played ('+seen.steps.size+')');
     const startHp=seen.first.hp,max=await page.evaluate(()=>Object.values(prototypeCombat.state().fighters).map(f=>Object.values(f.maxHp).reduce((a,b)=>a+b,0)));

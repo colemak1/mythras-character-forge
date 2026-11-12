@@ -358,8 +358,11 @@ function psPartRest(f,loc){
 function psFrame(now){
   if(!PS.ready)return;
   if(PS.freeze){PS.raf=requestAnimationFrame(psFrame);return;}
+  // Hit-stop: for a few frames at contact the figures hold still, so the blow lands with weight.
+  const stopped=PS.stopUntil&&now<PS.stopUntil,dt=PS.lastFrame?now-PS.lastFrame:0;PS.lastFrame=now;
   for(const id of ['a','b']){
     const f=PS.fig[id];if(!f)continue;
+    if(stopped){if(f.anim)f.anim.t0+=dt;if(f.slide)f.slide.t0+=dt;psDraw(f,now);continue;}
     if(f.slide){const s=f.slide,p=Math.min(1,(now-s.t0)/s.d);f.hx=s.a+(s.b-s.a)*psEase(p);if(p>=1)f.slide=null;}
     if(f.anim){
       const a=f.anim,s=a.steps[a.i];const p=s.d>0?(now-a.t0)/s.d:1;
@@ -439,6 +442,16 @@ function psGhost(f){
 function psShake(){
   if(psReduced())return;const b=psLayer('ps-stage');if(!b)return;
   b.classList.remove('ps-shake');void b.offsetWidth;b.classList.add('ps-shake');
+}
+// A few frames of stillness at contact (the cue waits too), and a brief push-in on the whole scene.
+function psHitStop(ms){
+  if(psReduced()||!(ms>0))return Promise.resolve();
+  PS.stopUntil=performance.now()+ms/psSpeed();return psSleep(ms);
+}
+function psPunch(power){
+  if(psReduced())return;const sc=document.querySelector('#pitsStage .ps-scene');if(!sc||!sc.animate)return;
+  const k=1+Math.min(.05,.012+power*.004);
+  sc.animate([{transform:'scale(1)'},{transform:'scale('+k+')',offset:.25},{transform:'scale(1)'}],{duration:260/psSpeed(),easing:'ease-out'});
 }
 function psBanner(text,cls){
   try{if(window.__psRecord)(window.__psBanners=window.__psBanners||[]).push(text);}catch(e){}
@@ -563,6 +576,8 @@ function psStrikePose(atk,target,opts){
 const psThrust=k=>/^(spear|trident|polearm|staff|whip|net|chain)$/.test(k);
 const psWindupFor=wk=>psThrust(wk.kind)||wk.thin?PS_POSE.cock:PS_POSE.windup;
 
+const psReplaying=()=>typeof V!=='undefined'&&!!V.replaying;
+
 async function psRunCue(cue){
   const me=PS.fig[cue.actor]||null,tgt=PS.fig[cue.target]||null;
   // An exchange is one motion: the attacker stays wound up and the defender stays in guard
@@ -596,8 +611,10 @@ async function psRunCue(cue){
       psPlay(me,[psWindupFor(me.look.wk),130],[aim.pose,150,{out:true}]);
       if(cue.fell){
         await psSleep(150);psEmit('contact',{kind:'trip',actor:me.id,target:tgt.id,point:psBodyPt(tgt,'rleg').map(Math.round)});
+        {const leg=psBodyPt(tgt,'rleg');psBurst(leg,'spark',10);psRing(leg);}
+        await psHitStop(60);
         await psPlay(tgt,[PS_POSE.trip,220,{out:true}],[PS_POSE.prone,300]);
-        psDust(tgt);psShake();psSfx('hit');psBanner('Tripped','crit');psDom(psWorld(tgt,tgt.pts.hd),'Tripped!','fx');
+        psDust(tgt);psShake();psPunch(4);psSfx('hit');psBanner('Tripped','crit');psDom(psWorld(tgt,tgt.pts.hd),'Tripped!','fx');
       }else{psPlay(tgt,[PS_POSE.crouch,200],[PS_POSE.idle,220]);psDom(psWorld(tgt,tgt.pts.Sh),'Stays up','blk');}
       await psSleep(500);psPlay(me,[PS_POSE.idle,240]);
     }else if(cue.type==='disarm'&&tgt&&me){
@@ -605,7 +622,9 @@ async function psRunCue(cue){
       const aim=psStrikePose(me,psLocal(me,hand),{});
       psPlay(me,[psWindupFor(me.look.wk),130],[aim.pose,110,{trail:true,out:true}]);await psSleep(240);
       psEmit('contact',{kind:'disarm',actor:me.id,target:tgt.id,point:hand.map(Math.round)});
-      psPlay(tgt,[PS_POSE.flinch,140]);psBurst(hand,'spark',14);psRing(hand);psShake();psSfx('pick');
+      psBurst(hand,'spark',14);psRing(hand);psShake();psSfx('pick');
+      await psHitStop(70);psPunch(5);
+      psPlay(tgt,[PS_POSE.flinch,140]);
       psBanner('Disarmed','crit');psFlyWeapon(tgt,cue.metres);
       await psSleep(700);psPlay(me,[PS_POSE.idle,240]);psPlay(tgt,[PS_POSE.idle,260]);
     }else if(cue.type==='stand'&&me){
@@ -645,10 +664,11 @@ async function psResolveBlow(cue){
   if(out==='evaded'){
     // the engine puts an evader prone; the strike goes through where they were
     const aim=pitsStageAim(PS_POSE.lunge,atk.look.wk,atk.look.swap,T,{arm:armKind,pen:-10});
-    psGhost(def);psPlay(atk,[aim.pose,130,{trail:true,out:true}],[PS_POSE.idle,300]);
+    psGhost(def);psPlay(atk,[aim.pose,130,{trail:true,out:true}],[PS_POSE.whiff,170],[PS_POSE.idle,260]);
     psPlay(def,[PS_POSE.evade,170,{out:true}]);psSfx('miss');psDust(def);
-    await psSleep(160);psEmit('contact',{kind:'evaded',actor:atk.id,target:def.id,point:aim.tip.map(Math.round)});
-    psDom(psWorld(def,def.pts.Sh),'Evaded','blk');await psSleep(420);psPlay(def,[PS_POSE.idle,300]);
+    await psSleep(135);psEmit('contact',{kind:'evaded',actor:atk.id,target:def.id,point:aim.tip.map(Math.round)});
+    psBurst(aim.tip,'gray',6);psRing(aim.tip);
+    psDom(psWorld(def,def.pts.Sh),'Evaded','blk');await psSleep(psReplaying()?300:420);psPlay(def,[PS_POSE.idle,300]);
     return;
   }
   if(out==='miss'||out==='fumble'){
@@ -656,8 +676,9 @@ async function psResolveBlow(cue){
     const wide=[T[0]+(out==='fumble'?-30:12),T[1]-(out==='fumble'?10:46)];
     const aim=pitsStageAim(PS_POSE.lunge,atk.look.wk,atk.look.swap,wide,{arm:armKind,pen:0});
     psPlay(atk,[aim.pose,130,{trail:true,out:true}],[out==='fumble'?PS_POSE.whiff:PS_POSE.idle,260]);
-    psSfx('miss');await psSleep(140);psEmit('contact',{kind:out,actor:atk.id,target:def.id,point:aim.tip.map(Math.round)});
-    psDom(psWorld(atk,atk.pts.tip),out==='fumble'?'Fumble!':'Miss','miss');await psSleep(420);psPlay(atk,[PS_POSE.idle,260]);
+    psSfx('miss');await psSleep(135);psEmit('contact',{kind:out,actor:atk.id,target:def.id,point:aim.tip.map(Math.round)});
+    psBurst(aim.tip,'gray',5);
+    psDom(psWorld(atk,atk.pts.tip),out==='fumble'?'Fumble!':'Miss','miss');await psSleep(psReplaying()?300:420);psPlay(atk,[PS_POSE.idle,260]);
     return;
   }
   // --- contact with the defender's weapon or shield ---
@@ -695,15 +716,20 @@ async function psResolveBlow(cue){
     psBurst(w2,'spark',10);psRing(w2);psShake();psBurst(w2,'blood',10+cue.lost*2);
     psDom(w2,'−'+cue.lost,'dmg');psSfx(cue.lost>=6?'crit':'hit');
     if(px.armour>0)psDom([w2[0],w2[1]+28],'Armour −'+px.armour,'blk');
-    psPlay(def,[PS_POSE.hit,100,{out:true}],[PS_POSE.hit,170]);
+    await psHitStop(45+Math.min(70,cue.lost*9));psPunch(cue.lost);
+    // a harder blow throws the defender back further
+    const rec={...PS_POSE.hit,dx:PS_POSE.hit.dx-Math.min(42,cue.lost*5)};
+    psPlay(def,[rec,110,{out:true}],[rec,170]);
   }else{
     // armour, or nothing got through: neutral feedback, no injury, no flinch
     psBurst(w2,'gray',8);psRing(w2);psSfx('pick');
     psDom(w2,out==='armour'?'Armour −'+px.armour:'No damage','blk');
     psPlay(def,[PS_POSE.stagger,100]);
   }
-  await psSleep(380);
-  psPlay(atk,[PS_POSE.idle,300]);psPlay(def,[PS_POSE.idle,300]);await psSleep(300);
+  await psSleep(psReplaying()?260:380);
+  psPlay(atk,[PS_POSE.idle,300]);psPlay(def,[PS_POSE.idle,300]);
+  // in a replay the next beat starts while the figures are still settling: one flowing fight
+  if(!psReplaying())await psSleep(300);
 }
 
 // ---- Hooks the arena calls ----
@@ -800,11 +826,17 @@ function pitsStageSync(){
     if(e&&!e.roll&&!e.checkpoint&&e.id!==PS.lastId){
       PS.lastId=e.id;PS.epoch++;
       const cue=pitsStageCue(e,names);
-      if(cue)psRunCue(cue);
+      PS.cuePromise=cue?psRunCue(cue):null;
     }
   }else{PS.epoch++;PS.lastId=Math.max(PS.lastId,...(S.logs||[]).map(l=>Number(l.id)||0));}
 }
 // The replay asks how long to stay on a beat (see playBeat in the arena).
 function pitsStageBeatDelay(entry,fallback){
   try{return pitsStageHold(entry,{a:S.fighters.a.name,b:S.fighters.b.name},fallback);}catch(e){return fallback;}
+}
+// A replay of the whole fight paces itself by the stage: the next beat starts the moment the current cue is done.
+function pitsStageCueDone(){return PS.cuePromise||null;}
+// Replay filter: only entries that have something to show, and not the reticle beat (the strike already shows where it lands).
+function pitsStageReplayable(entry,names){
+  try{const c=pitsStageCue(entry,names);return !!c&&c.type!=='locate';}catch(e){return false;}
 }
