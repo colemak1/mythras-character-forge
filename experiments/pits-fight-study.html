@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script>/* Light/Dark before first paint: saved choice, else the device setting. */
+try{(function(){var m=null;try{m=localStorage.getItem("sitota-mode")}catch(e){}
+if(m!=="light"&&m!=="dark")m=typeof matchMedia==="function"&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
+document.documentElement.setAttribute("data-mode",m);})();}catch(e){}</script>
+<title>The Pits: fight study</title>
+<link rel="stylesheet" href="pits-stage.css?v=ccb5857e29">
+<link rel="stylesheet" href="../sitota-theme.css?v=c8b123e401">
+<link rel="stylesheet" href="pits-choreography.css?v=9cb50a1a3c">
+</head>
+<body class="pc-page" data-seq="fight" data-decide="off">
+<main class="pc-main">
+  <p class="pc-back"><a href="pits-exchange-study.html">&larr; Exchange study</a></p>
+  <h1>Fight study: ten beats, broadsword against broadsword</h1>
+  <p class="pc-lead">One continuous fight on the same movement as the <a href="pits-exchange-study.html">exchange study</a>: every
+    beat starts from the pose, balance and blade the last one left. <b>The outcomes are scripted animation fixtures, not a
+    rolled or validated Mythras sequence:</b> a parried cut, a slipped counter, a low cut met low, a high parry, a minor wound to
+    A's sword forearm, a deflected thrust, and a cut to B's thigh that ends the fight. It plays straight through; tick
+    "Stop where a decision would be made" to hold at each decision. A prototype only; the live Pits does not use it.</p>
+  <section class="ps-wrap pc-wrap" aria-label="Arena">
+    <div class="ps-stage pc-stage">
+      <svg class="ps-scene" id="pcScene" viewBox="330 215 600 257" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Two stick figures fighting">
+        <rect class="ps-floorfill" x="-2400" y="450" width="6000" height="400"/>
+        <line class="ps-floor" x1="-2400" x2="3600" y1="450" y2="450"/>
+        <g id="pcPaths"></g><g class="ps-figs" id="pcFigs"></g><g id="pcFx"></g><g id="pcInspect"></g>
+      </svg>
+    </div>
+  </section>
+  <p class="pc-hold" id="pcHold" hidden></p>
+  <p class="pc-caption" id="pcCaption" aria-live="off"></p>
+  <div class="pc-controls">
+    <button type="button" id="pcPlay" class="pc-primary">Play</button>
+    <button type="button" id="pcBack" aria-label="Back one frame">&minus; frame</button>
+    <button type="button" id="pcFwd" aria-label="Forward one frame">+ frame</button>
+    <label>Speed <select id="pcSpeed"><option value="1">Normal</option><option value="0.5">Half</option><option value="0.25">Quarter</option></select></label>
+    <label><input type="checkbox" id="pcDecide" checked> Stop where a decision would be made</label>
+    <label><input type="checkbox" id="pcLoop"> Loop</label>
+  </div>
+  <div class="pc-controls pc-inspect">
+    <span>Show:</span>
+    <label><input type="checkbox" id="pcFeet"> Feet on the floor and balance</label>
+    <label><input type="checkbox" id="pcPath"> Blade paths</label>
+    <label><input type="checkbox" id="pcClear"> Clearance from the sword</label>
+    <label><input type="checkbox" id="pcSmear" checked> Smears and impact flashes</label>
+  </div>
+  <div class="pc-tabs pc-exchanges" id="pcJumps" aria-label="Go to a moment"></div>
+  <div class="pc-scrub">
+    <input type="range" id="pcScrub" min="0" max="1000" value="0" step="1" aria-label="Position in the fight">
+    <div class="pc-marks" id="pcMarks" aria-hidden="true"></div>
+  </div>
+  <p class="pc-readout" id="pcReadout"></p>
+  <p class="pc-keys">Space: play or pause. Left and right arrows: one frame (1/60 s). Drag the bar to stop on any moment.</p>
+</main>
+<script src="pits-motion.js?v=0791cd5339"></script>
+<script src="pits-spring.js?v=f360af47c0"></script>
+<script src="pits-fight.js?v=0c5dd4cb7a"></script>
+<script src="pits-exchange-study.js?v=ed8a2e4708"></script>
+</body>
+</html>

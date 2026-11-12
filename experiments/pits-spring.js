@@ -17,7 +17,7 @@ const PM=root.PitsMotion||(typeof require==='function'?require('./pits-motion.js
 const {DIM,solve,torso,SWORD_GUARD,DAGGER_GUARD,WEAPONS,GROUND,ARM}=PM;
 const rad=d=>d*Math.PI/180,deg=r=>r*180/Math.PI;
 const norm=a=>((a+180)%360+360)%360-180;
-const DT=1,REC=2,WRIST=[PM.GRIP.min,PM.GRIP.max];                         // simulation step and recording interval (ms)
+const DT=1,REC=2,WRIST=[PM.GRIP.min,PM.GRIP.max],LEGLEN=PM.LEG;                         // simulation step and recording interval (ms)
 
 // ----- the springs: [frequency (Hz), damping ratio] per channel -----
 // The hips are heavy and well damped; the chest a little looser; the head and the empty hand follow and overshoot;
@@ -40,7 +40,10 @@ function Fighter(id,hx,face,weapon,guard){
   this.start=flat(p,wristFor(p,guard.w,weapon.len));
 }
 // a key pose in the fighter's own frame. w is the blade's angle as seen (converted to a wrist turn from the key's own arm)
-Fighter.prototype.key=function(t,pose,order){this.keys.push({t,pose,order:order||'attack'});return this;};
+// opt.snap: the parts this key moves get there faster and without overshoot (a strike: the easing kept extreme, the
+// fast part short), until the next key for that part. A number is how much faster (default 1.8).
+Fighter.prototype.key=function(t,pose,order,opt){
+  this.keys.push({t,pose,order:order||'attack',snap:opt&&opt.snap?(opt.snap===true?1.8:opt.snap):0});return this;};
 Fighter.prototype.step=function(foot,t0,t1,x,lift){this.feet[foot].push({t0,t1,x,lift:lift==null?8:lift});return this;};
 // A step with its weight handled. Before the foot leaves, the hips go over the other foot (that leg is loaded, the
 // knees give a little: the push); the foot lifts, travels and is set down; then the hips move onto the new base.
@@ -103,7 +106,7 @@ function targets(f){
     for(const n in k.pose){if(n==='h'){set.add('hx');set.add('hy');}else if(n==='o'){set.add('ox');set.add('oy');}
       else if(n==='w')set.add('wr');else set.add(n);}
     if(k.pose.h)set.add('wr');            // the wrist is re-solved when the arm moves, so the blade keeps its asked angle
-    for(const c of set)tg[c].push({t:k.t+lag[c],v:fl[c]});
+    for(const c of set)tg[c].push({t:k.t+lag[c],v:fl[c],s:k.snap});
   }
   for(const c of CH)tg[c].sort((a,b)=>a.t-b.t);
   return tg;
@@ -127,13 +130,15 @@ function offFor(f,q,P){const S=torso(q).S,T=f.L(P);return [T[0]-S[0],T[1]-S[1]];
 function simulate(F,dur){
   const ids=Object.keys(F),st={},tg={},rec={};
   for(const id of ids){const f=F[id];for(const p of f.pins){p.prev=null;p.w=null;p.lastW=null;}tg[id]=targets(f);st[id]={x:{...f.start},v:Object.fromEntries(CH.map(c=>[c,0]))};rec[id]=[];}
-  const ctx={F,st,dur};
+  const ctx={F,st,dur},ptr={};for(const id of ids)ptr[id]=Object.fromEntries(CH.map(c=>[c,0]));
   for(let t=0;t<=dur;t+=DT){
     for(const id of ids){
       const f=F[id],s=st[id];
       for(const im of f.impulses)if(im.t>t-DT&&im.t<=t)for(const c in im.v){if(im.v[c]==='stop')s.v[c]=0;else s.v[c]+=im.v[c];}
       for(const c of CH){
-        const [hz,z]=SPRING[c],w=2*Math.PI*hz,target=at(tg[id][c],t);
+        // the current target for this part (a pointer that only moves forward: time only moves forward)
+        const L=tg[id][c];let i=ptr[id][c];while(i+1<L.length&&L[i+1].t<=t)i++;ptr[id][c]=i;
+        const e=L[i],sp=(F[id].spring||SPRING)[c],hz=sp[0]*(e.s||1),z=e.s?1:sp[1],w=2*Math.PI*hz,target=e.v;
         // semi-implicit Euler, per second
         const a=w*w*(target-s.x[c])-2*z*w*s.v[c];
         s.v[c]+=a*DT/1000;s.x[c]+=s.v[c]*DT/1000;
@@ -186,6 +191,22 @@ function simulate(F,dur){
         o[kx]=nx;o[ky]=ny;if(!(o._blend&&o._blend[kx])){s.x[kx]=nx;s.x[ky]=ny;}
         const vo=s.v[kx]*ux+s.v[ky]*uy;if(vo>0){s.v[kx]-=vo*ux;s.v[ky]-=vo*uy;}
       }}
+    // a leg is only so long: when the hips would pull a foot's leg straighter than it goes, they sink into a deeper
+    // stance instead (and, if a foot is too far away for that, they stay within reach of it)
+    for(const id of ids){const f=F[id],s=st[id],o=out[id],q=pose(f,o,t),R=LEGLEN-.3;
+      for(const ft of ['ff','bf']){const fx=q[ft+'x'],fy=Math.max(0,q[ft+'y']),dx=o.px-fx;
+        if(Math.hypot(dx,o.py-fy)<=R)continue;
+        if(Math.abs(dx)>=R-1){o.px=s.x.px=fx+Math.sign(dx)*(R-1);if(Math.sign(s.v.px)===Math.sign(dx))s.v.px=0;}
+        const ny=fy+Math.sqrt(Math.max(0,R*R-(o.px-fx)*(o.px-fx)));
+        if(ny<o.py){o.py=s.x.py=ny;if(s.v.py>0)s.v.py=0;}
+      }}
+    // a blade cannot go through the floor: one that would, rests on it (the wrist gives, the hand stays)
+    for(const id of ids){const f=F[id],s=st[id],o=out[id],j=solve(pose(f,o,t),f.weapon.len),L=f.weapon.len*(1-Math.min(.8,0));
+      if(j.tip[1]>=0)continue;
+      const fore=j.w-j.grip,sn=Math.max(-1,Math.min(1,-j.Hn[1]/L)),wA=deg(Math.asin(sn)),cands=[wA,180-wA];
+      // keep the blade pointing the way it was (forward or back), as near its current angle as the floor allows
+      const pick=cands.reduce((b,c)=>Math.abs(norm(c-j.w))<Math.abs(norm(b-j.w))?c:b);
+      o.wr=s.x.wr=Math.max(WRIST[0],Math.min(WRIST[1],norm(pick-fore)));s.v.wr=0;}
     // momentum is not lost on release (the speed the held contact gave is kept, capped so a jump cannot fling a hand)
     for(const id of ids)for(const c of ['hx','hy','ox','oy'])st[id].v[c]=Math.max(-900,Math.min(900,st[id].v[c]));
     for(const id of ids)delete out[id]._blend;
@@ -356,7 +377,12 @@ function frame(seq,t){
   }
   return out;
 }
-const api={build,frame,joints,world,sample,simulate,Fighter,SPRING,LAG,CH,REC,GROUND,
+// Other sequences (pits-fight.js) register here and are built with build(id); the short exchange is the default.
+const SEQS={};
+function buildAny(id){return id&&SEQS[id]?SEQS[id]():build();}
+const api={build:buildAny,register:(id,fn)=>{SEQS[id]=fn;},frame,joints,world,sample,simulate,Fighter,SPRING,LAG,CH,REC,GROUND,
+  // the pieces a sequence is written with
+  pose,solve,torso,handAt,offFor,footX,sm,rad,norm,WRIST,ARM,PM,
   seqTime:PM.seqTime,shownDur:PM.shownDur,shownAt:PM.shownAt};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 root.PitsSpring=api;
