@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: every blow animates like the parry, and the replay flows
+
+- **Same treatment as the parry.** The parry works because everything is aimed at one contact point, with impact effects there and a follow-through. The other outcomes now get the same care: a body hit freezes for a few frames at contact (longer for bigger damage), pushes the scene in slightly and throws the defender back further the harder it lands. An evade carries the strike through into an overextension with a swish at the near miss; a miss gets a swish too. Trips and disarms get the same spark, ring, freeze and push-in.
+- **Replay paced by the animation.** The replay no longer waits fixed times per chronicle line. Each beat starts the moment the previous animation finishes, the fight opens on the first real attack (no dead initiative beats), the hit-location reticle beat is skipped, and the figures are still settling as the next attack winds up. A recorded replay of a short bout went from about 13 beats and 9 seconds to 8 beats and about 4 seconds, with no idle gaps.
+- No rules or saved data changed. Parry timing is untouched.
+
 ## The Pits: Serious Wounds to the weapon and shield arms
 
 - A Serious Wound to an arm that fails Endurance now drops what that arm holds unless strapped on (Core p.110): a one-handed weapon falls at the fighter's feet. A shield stays on its arm but the arm cannot use it. A two-handed weapon is not lost but cannot be used with one arm. A resisted wound never drops anything.
