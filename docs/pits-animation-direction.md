@@ -134,6 +134,17 @@ All three are in `experiments/pits-motion.js` (pure, no page or rules access; te
 - Tuning is for this one exchange and this measure. Other weapons, distances or orders would need their own keys, or a solver for reach.
 - Springs make timing indirect: a key sets where a part goes, not when it arrives. Contacts are exact only because they are constraints.
 
+**Second pass (owner's review, 2026-11-12).** The owner judged the study more natural than the movement study and asked for four fixes. Each is held by a test in `tests/pits-spring.cjs`.
+
+1. **Sword recovery after the stab.** The elbow drops first, then the hilt comes down in front of the chest with the point up. Only once the dagger fighter's front foot is back is the point lowered into the low guard. The hand stays at least 30 units from the face and the blade at least 18. The point starts down at least 150 ms after the hilt, and the blade turns at under 40% of the cut's peak speed.
+2. **The raised sword arm during the counter.** The sword fighter starts the sword down and forward. The dagger fighter's empty hand catches the forearm just behind the wrist (a ring on the page marks it), which stops the arm in front of the body, not beside the head. The hand holds it, lifting it a little, through the thrust. Then it lets go with a small push away, and the arm drops only after it is free.
+3. **Grounded steps** (`Fighter.walk`). Before a step, the weight goes over the other foot, or a push-off drives the body there (out of the lunge, where the stance is too long to load the rear foot first). The foot rises before it travels and moves only while clearly off the floor (at least 2 units). It is set down a moment before it takes weight, and the hips then move onto the new base. The dagger fighter comes out of the lunge front foot first, then steps the rear foot back.
+4. **The wounded end stance.** Bend at least 18 over the abdomen, the shoulders rounded and the wound side turned away, the empty hand on the wound, the weight behind the middle of the feet, the hilt low in front with the point forward and down.
+
+Checked from stills at 50 ms intervals through the counter and recovery, and from numbers. Playback at normal and half speed was checked in a browser for mechanics only. Whether it now looks right at speed is for the owner.
+
+**Still weak after this pass.** For about 180 ms of the push-off out of the lunge, the dagger fighter's centre of mass is about 28 units ahead of the rear foot. The body is moving back, but the frame is less settled than a slow step. The sword holds upright in front of the chest for about 250 ms while the dagger fighter steps out, which may read as a pause.
+
 ## For Sonnet: routine defects in the pose stage
 
 Items 2 and 3 now apply only to the pose stage behind `?stage=poses`; fix them only if the owner wants to keep it. Item 1 is fixed for both stages (2026-11-12), item 4 is done.

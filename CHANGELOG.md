@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: exchange study, second pass (owner's review)
+
+- **The sword arm is caught, held and let go.** The sword fighter starts to bring the sword down. The dagger fighter's empty hand catches it at the wrist and stops it in front of the body, holding it up through the thrust (a ring marks the grip). Then it lets go with a small push, and only after that does the arm drop.
+- **A deliberate sword recovery.** The elbow drops and the hilt comes down in front of the chest with the point up, clear of the face. The point is lowered only once the dagger fighter has stepped out, at under a third of the cut's speed.
+- **Steps that carry weight.** Before a foot leaves, the weight goes over the other foot, or the foot pushes off (out of the lunge). The foot rises before it travels, is set down, and then the hips move onto the new base. The dagger fighter comes out of the lunge front foot first.
+- **The wound shapes the end.** The sword fighter ends bent over the abdomen with the hand on the wound, weight back and the point low in front.
+- New jump buttons: *Sword arm caught*, *Arm let go*, *Sword recovers*. Tests: `tests/pits-spring.cjs` (19 checks).
+
 ## The Pits: a spring-driven exchange study (prototype)
 
 - **New page: `experiments/pits-exchange-study.html`.** One exchange, broadsword against dagger: cut, parry, counter, wound, recovery. Results are fixed in advance and labelled; the live Pits is unchanged.

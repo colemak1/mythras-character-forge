@@ -42,6 +42,21 @@ function Fighter(id,hx,face,weapon,guard){
 // a key pose in the fighter's own frame. w is the blade's angle as seen (converted to a wrist turn from the key's own arm)
 Fighter.prototype.key=function(t,pose,order){this.keys.push({t,pose,order:order||'attack'});return this;};
 Fighter.prototype.step=function(foot,t0,t1,x,lift){this.feet[foot].push({t0,t1,x,lift:lift==null?8:lift});return this;};
+// A step with its weight handled. Before the foot leaves, the hips go over the other foot (that leg is loaded, the
+// knees give a little: the push); the foot lifts, travels and is set down; then the hips move onto the new base.
+// settle: where between the support foot and the placed foot the weight ends (0 = on the support foot).
+Fighter.prototype.walk=function(foot,t0,t1,x,opt){
+  const o=opt||{},other=foot==='ff'?'bf':'ff',sup=footX(this,other,t0),from=footX(this,foot,t0),py=o.py==null?74:o.py;
+  this.step(foot,t0,t1,x,o.lift==null?10:o.lift);
+  this.key(t0-(o.lead==null?170:o.lead),{px:sup+(from-sup)*(o.load==null?.2:o.load),py:py-3});
+  // the hips travel while the foot is in the air (a spring arrives late, so the key is set at mid-step)
+  this.key(t0+(t1-t0)*.4,{px:sup+(x-sup)*(o.settle==null?.45:o.settle),py});
+  // push: the foot that is about to leave drives the hips toward the support foot (out of a lunge, where the stance is
+  // too long for the hips to get over the rear foot first)
+  if(o.push)this.impulse(t0,{px:Math.sign(sup-from)*o.push});
+  this.steps=(this.steps||[]).concat([{foot,t0,t1,sup:other,push:!!o.push}]);
+  return this;
+};
 Fighter.prototype.impulse=function(t,v){this.impulses.push({t,v});return this;};
 // a contact constraint: from t0 the hand is blended toward the place where the point `along` the blade (or the empty
 // hand, along null) is on target(t); fully there from t1 to t2; released at t2 with the momentum it had.
@@ -59,13 +74,20 @@ function pose(f,s,t){
   return q;
 }
 const sm=u=>u<=0?0:u>=1?1:u*u*(3-2*u);
+// A step, from the floor up: the foot pushes off (it rises before it travels), swings, is set down at its place
+// (it arrives a moment before it takes weight), and only travels while it is clearly off the floor.
+const STEP_GO=.14,STEP_SET=.88;
 function footX(f,foot,t){
   let x=f.home[foot];
-  for(const s of f.feet[foot]){if(t>=s.t1)x=s.x;else if(t>s.t0){return x+(s.x-x)*sm((t-s.t0)/(s.t1-s.t0));}else break;}
+  for(const s of f.feet[foot]){
+    if(t>=s.t1)x=s.x;
+    else if(t>s.t0){const u=(t-s.t0)/(s.t1-s.t0);return x+(s.x-x)*sm((u-STEP_GO)/(STEP_SET-STEP_GO));}
+    else break;
+  }
   return x;
 }
 function footY(f,foot,t){
-  for(const s of f.feet[foot])if(t>s.t0&&t<s.t1)return s.lift*Math.sin(Math.PI*(t-s.t0)/(s.t1-s.t0));
+  for(const s of f.feet[foot])if(t>s.t0&&t<s.t1)return s.lift*Math.pow(Math.sin(Math.PI*(t-s.t0)/(s.t1-s.t0)),.6);
   return 0;
 }
 
@@ -232,13 +254,29 @@ function build(){
     +'In the Pits the dagger fighter would choose the next action now.'});
   mark(P1,'both','Held for the decision: both poses stand on two feet, nobody is moving');
 
-  // 2. The counter, from the held poses. A short step in under the raised sword; the empty hand goes up to the sword
-  //    arm and stays on it; the thrust goes in low to the abdomen. The sword fighter is trying to bring the sword back.
-  const tk=P1+330;
-  B.step('ff',P1+30,P1+210,84,6).step('bf',P1+200,P1+330,6,5);
-  B.key(P1+10,{px:26,py:62,lean:20,bend:8,head:-16,h:[8,-26],w:10,o:[34,24]});
-  A.key(P1+80,{py:74,lean:3,bend:-2,head:-4,h:[14,22],w:108,o:[18,-20]});
-  const rec=simulate(F,tk+5);
+  // 2. The counter, from the held poses. The sword fighter starts to bring the sword back down; the dagger fighter steps
+  //    in under it, catches the sword arm at the wrist with the empty hand and stops it there, and thrusts low while
+  //    holding it. The arm is held (it cannot come down) until the dagger fighter lets go to step out.
+  const tk=P1+330,tg=P1+190,tr=tk+40;
+  B.step('ff',P1+50,P1+170,84,8).step('bf',P1+172,P1+272,8,7);
+  B.key(P1+10,{px:40,py:60,lean:22,bend:8,head:-16,turn:-12,h:[8,-26],w:10,o:[34,24]});
+  // the sword starts down and forward: the hand leads, the point is still up
+  A.key(P1+20,{py:74,lean:7,bend:2,head:-8,turn:8,h:[44,0],w:58,o:[18,-20]});
+  let rec=simulate(F,tg+5);
+  // the catch: the sword hand stops where it is caught (an impulse), and is held there; the dagger fighter then lifts
+  // it a little as the thrust goes in (the arm is driven up and back, the sword fighter leans away from the push)
+  const qg=pose(A,rec.a[tg/REC],tg),jg=solve(qg,A.weapon.len),caught=A.W(jg.Hn);
+  const lifted=[caught[0]-6*A.face,caught[1]+12];
+  const held=t=>{const u=sm((t-tg)/(tk-tg));return [caught[0]+(lifted[0]-caught[0])*u,caught[1]+(lifted[1]-caught[1])*u];};
+  A.impulse(tg+1,{hx:'stop',hy:'stop',wr:'stop'});
+  A.pin('h',0,held,tg,tg+1,tr+50);
+  A.key(tg,{lean:-1,bend:-3,head:-2,turn:2,w:92},'together');
+  // the empty hand on the forearm just behind the wrist (never on the blade)
+  const wrist=(t,ctx)=>{const q=pose(A,ctx.out?ctx.out.a:A.start,t),j=solve(q,A.weapon.len);
+    return A.W([j.Hn[0]+(j.E[0]-j.Hn[0])*.25,j.Hn[1]+(j.E[1]-j.Hn[1])*.25]);};
+  B.pin('o',null,wrist,P1+60,tg,tr);
+  seq.grips=[{who:'b',t0:tg,t1:tr}];
+  rec=simulate(F,tk+5);
   const qA2=pose(A,rec.a[tk/REC],tk),jA2=solve(qA2,A.weapon.len);
   const abd=[(jA2.M[0]+jA2.P[0])/2+4,(jA2.M[1]+jA2.P[1])/2];
   const qB2=pose(B,rec.b[tk/REC],tk),T=A.W(abd);
@@ -246,39 +284,47 @@ function build(){
   const abdomen=(t,ctx)=>{const q=pose(A,ctx.out?ctx.out.a:A.start,t),j=solve(q,A.weapon.len);
     return A.W([(j.M[0]+j.P[0])/2+4,(j.M[1]+j.P[1])/2]);};
   B.pin('h',46,abdomen,tk-110,tk,tk+25);
-  // the empty hand checks the sword arm at the forearm while the thrust goes in
-  const forearm=(t,ctx)=>{const q=pose(A,ctx.out?ctx.out.a:A.start,t),j=solve(q,A.weapon.len);
-    return A.W(j.E);};
-  B.pin('o',null,forearm,P1+120,tk-40,tk+30);
   seq.contacts.counter={t:tk,along:46};
-  mark(P1,'b','Counter: a short step in under the raised sword; the empty hand goes up to the sword arm');
-  mark(tk-180,'b','Thrust: low and straight to the abdomen, the empty hand still on the sword arm');
+  mark(P1,'b','Counter: a short step in under the raised sword as the sword fighter starts to bring it down');
+  mark(tg,'b','Control: the empty hand catches the sword arm at the wrist and stops it; the sword cannot come down');
+  mark(tk-180,'b','Thrust: low and straight to the abdomen while the sword arm is held up');
 
   // 3. The wound. The reaction starts at the abdomen: the hips are pushed back, the body folds over the wound, the
-  //    head follows late, the sword arm drops. A rear step catches the weight. A minor wound: the fighter goes on.
-  A.impulse(tk,{px:-170,bend:320,lean:-60,head:200,hx:-160,py:-50});
-  A.key(tk,{px:-6,py:72,lean:2,bend:24,head:-24,turn:-4,h:[2,4],w:112,o:[6,-34]},'together');
-  // the empty hand goes to the wound and stays on it (a contact with the fighter's own body)
+  //    head follows late. The sword arm is still held, so it stays up until it is let go.
+  A.impulse(tk,{px:-150,bend:320,lean:-60,head:200,py:-50});
+  A.key(tk,{px:-8,py:72,lean:4,bend:24,head:-24,turn:-4,o:[6,-34]},'together');
   const ownWound=(t,ctx)=>{const q=pose(A,ctx.out?ctx.out.a:A.start,t),j=solve(q,A.weapon.len);
     return A.W([(j.M[0]+j.P[0])/2+7,(j.M[1]+j.P[1])/2]);};
-  A.pin('o',null,ownWound,tk+40,tk+220,tk+1200);
-  A.step('ff',tk+40,tk+220,44,6).step('bf',tk+230,tk+430,-56,7);
+  A.pin('o',null,ownWound,tk+40,tk+220,tk+1400);
   seq.stops.push({t:tk,d:90});seq.fx.push({t:tk,kind:'wound',at:T});
   seq.wounds.push({t:tk,who:'a',part:'abdomen',level:'minor'});
-  mark(tk,'a','Hit to the abdomen: the hips go back, the body folds over the wound, the head follows; a rear step catches the weight');
+  mark(tk,'a','Hit to the abdomen: the hips go back and the body folds over the wound, the head follows; the sword arm is still held');
 
-  // 4. Recovery, into stances neither began in. The dagger comes back out along its line and the dagger fighter steps
-  //    out behind the empty hand; the sword fighter gives ground, closed over the wound, the point low and in line.
-  B.key(tk+60,{px:34,py:66,lean:18,bend:6,head:-16,h:[12,-24],w:14},'together');
-  B.step('bf',tk+200,tk+380,-24,6).step('ff',tk+360,tk+560,36,6);
-  B.key(tk+380,{px:-6,py:68,lean:14,bend:8,head:-14,h:[16,-20],w:36,o:[24,6]});
-  A.step('ff',tk+450,tk+640,24,6);
-  A.key(tk+300,{h:[22,-4],w:62});
-  A.key(tk+420,{px:-14,py:75,lean:9,bend:14,head:-12,turn:-2,o:[8,-38]});
-  A.key(tk+560,{h:[24,-34],w:-40});
-  mark(tk+150,'both','Recovery: the dagger comes out along its line; both give ground');
-  const end=tk+1100;
-  mark(tk+700,'both','New stances: the sword fighter closed over the wound, point low and in line; the dagger fighter low, empty hand up');
+  // 4. Release and recovery. The dagger fighter lets go with a small push and steps out, rear foot first.
+  //    The sword comes down on a deliberate path: the elbow drops and the hilt comes down in front of the chest
+  //    with the point still up (clear of the face), then the point is lowered into a low guard as the weight goes back.
+  B.key(tr,{o:[16,-10]},'together');                     // the empty hand lets go and comes back down to the chest, clear of the sword
+  B.impulse(tr+1,{ox:-260,oy:-160});                     // a small push off the arm as it lets go
+  B.key(tk+60,{lean:18,bend:6,head:-16,h:[12,-24],w:14},'together');
+  // out of the lunge: the front foot pushes off and comes back first (the weight goes back onto the rear foot),
+  // then the rear foot steps back from the front one
+  B.walk('ff',tk+240,tk+420,44,{py:66,lift:11,load:.3,settle:.15,push:220});
+  B.walk('bf',tk+500,tk+660,-20,{py:68,lift:10,load:.3,settle:.5});
+  B.key(tk+300,{h:[12,-8],w:76});                       // the dagger comes up to cover as it steps out
+  B.key(tk+660,{lean:14,bend:8,head:-14,o:[24,6]});
+  A.impulse(tr+50,{hx:'stop',hy:-180});                  // let go, the arm drops under its own weight
+  A.key(tr+50,{h:[30,-10],w:88});                            // released: the elbow drops, the hilt comes down in front of the shoulder
+  A.key(tk+200,{h:[24,-20],w:84});                      // the hilt in front of the chest, the point still up, clear of the face
+  A.key(tk+480,{h:[26,-28],w:24});                      // once the dagger fighter is out: the point comes down toward the opponent
+  A.key(tk+680,{h:[24,-34],w:-26});                     // a low guard: point at the opponent's knees
+  // gives ground with the front foot, the weight carried back over the rear leg
+  A.walk('ff',tk+300,tk+490,28,{py:72,lift:10,load:.3,settle:.12,push:180});
+  A.key(tk+520,{lean:12,bend:22,head:-20,turn:-6});    // closed over the wound: the shoulders round, the wound side away
+  mark(tr,'b','Release: the hand lets go with a small push; the dagger comes back out along its line');
+  mark(tk+240,'b','Steps out: the front foot pushes off and comes back under the body; then the rear foot steps back');
+  mark(tk+260,'a','The sword comes down: elbow first, the hilt in front of the chest with the point up, then the point lowers');
+  const end=tk+1150;
+  mark(tk+700,'both','New stances: the sword fighter bent over the wound, weight back, point low; the dagger fighter low, empty hand up');
   seq.pauses.push({t:end,label:'End of the exchange. Both stay in these poses for the next decision; the next exchange starts from them.'});
   seq.dur=end+10;seq.P1=P1;seq.tk=tk;seq.tc=tc;seq.end=end;
   seq.rec=simulate(F,seq.dur);

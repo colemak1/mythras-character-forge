@@ -16,7 +16,7 @@ function clearance(t){
   for(const n of B_PARTS){const p=PS.world(seq,'b',t,n),q=toSeg(p,h,tip),d=dist(p,q);if(!best||d<best.d)best={d,p,q,n};}
   return best;
 }
-const inContact=t=>{const c=seq.contacts;return Math.abs(t-c.parry.t)<=90||(t>=seq.tk&&t<=seq.tk+60);};
+const inContact=t=>{const c=seq.contacts;return Math.abs(t-c.parry.t)<=90||(t>=seq.tk&&t<=seq.tk+60)||(seq.grips||[]).some(g=>t>=g.t0-40&&t<=g.t1+30);};
 
 function overlays(t){
   let s='';
@@ -44,6 +44,9 @@ function overlays(t){
   // the parry's one contact point, from the moment it is met until the bind lets go
   const pc=seq.contacts.parry;
   if(t>=pc.t-1&&t<=pc.t+90)s+='<circle class="pc-contact" cx="'+pc.at[0]+'" cy="'+Y(pc.at[1])+'" r="6"/>';
+  // the grip on the sword arm, while it is held: a small ring where the hand closes on the forearm
+  for(const g of seq.grips||[])if(t>=g.t0&&t<=g.t1){const p=PS.world(seq,g.who,t,'oHn');
+    s+='<circle class="pc-grip" cx="'+p[0]+'" cy="'+Y(p[1])+'" r="7"/>';}
   return s;
 }
 function readout(t){
@@ -52,7 +55,8 @@ function readout(t){
   if(Math.abs(t-pc.t)<1){
     const a=PS.world(seq,'a',t,'blade',pc.alongA),b=PS.world(seq,'b',t,'blade',pc.alongB);
     s+=' · parry: sword and dagger '+dist(a,pc.at).toFixed(1)+' and '+dist(b,pc.at).toFixed(1)+' units from the contact point';
-  }else if(inContact(t))s+=' · in contact';
+  }else if((seq.grips||[]).some(g=>t>=g.t0&&t<=g.t1))s+=' · the sword arm is held at the wrist';
+  else if(inContact(t))s+=' · in contact';
   else s+=' · nearest the dagger fighter comes to the sword blade: '+c.d.toFixed(0)+' units ('+c.n+')';
   $('pcReadout').textContent=s;
 }
@@ -105,8 +109,9 @@ const nudge=d=>seek(st.td+d*FRAME);
 $('pcScrub').max=Math.round(total);
 for(const m of seq.marks){const i=document.createElement('i');i.style.left=(PS.shownAt(seq,m.t)/total*100)+'%';$('pcMarks').appendChild(i);}
 for(const p of seq.pauses){const i=document.createElement('i');i.className='stop';i.style.left=(PS.shownAt(seq,p.t)/total*100)+'%';$('pcMarks').appendChild(i);}
-const JUMPS=[['Parry contact',seq.contacts.parry.t],['Held for the decision',seq.P1],['Counter lands',seq.tk],
-  ['Wound reaction',seq.tk+160],['End pose',seq.end]];
+const GRIP=(seq.grips||[])[0];
+const JUMPS=[['Parry contact',seq.contacts.parry.t],['Held for the decision',seq.P1],['Sword arm caught',GRIP.t0],['Counter lands',seq.tk],
+  ['Arm let go',GRIP.t1+40],['Wound reaction',seq.tk+160],['Sword recovers',seq.tk+300],['End pose',seq.end]];
 for(const [label,t] of JUMPS){const b=document.createElement('button');b.type='button';b.textContent=label;
   b.addEventListener('click',()=>seek(PS.shownAt(seq,t)));$('pcJumps').appendChild(b);}
 
