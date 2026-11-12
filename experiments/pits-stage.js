@@ -415,7 +415,7 @@ function psDraw(f,now){
 function psDrawMotion(f,L,now){
   const m=PS.M[f.id],wLimp=L.swap?L.limp.larm:L.limp.rarm,oLimp=L.swap?L.limp.rarm:L.limp.larm;
   const j=PitsMotion.LIVE.pose(m,PS.clock,{weapon:wLimp,off:oLimp}),q=p=>[p[0],-p[1]];
-  const g={Sh:q(j.S),M:q(j.M),H:q(j.P),hd:q(j.Hd),E:q(j.E),Hn:q(j.Hn),bE:q(j.oE),bHn:q(j.oHn),K:q(j.K),bK:q(j.bK),F:q(j.F),bF:q(j.bF)};
+  const g={Sh:q(j.S),wSh:q(j.wS),oSh:q(j.oS),M:q(j.M),H:q(j.P),hd:q(j.Hd),E:q(j.E),Hn:q(j.Hn),bE:q(j.oE),bHn:q(j.oHn),K:q(j.K),bK:q(j.bK),F:q(j.F),bF:q(j.bF)};
   f.scale=1;f.hx=m.hx;
   // the shadow lifts with the hips when the figure is on the floor
   psPaint(f,L,g,j.w+90,0,Math.max(0,Math.min(40,(70-j.P[1])*.5)),null,now,j.blen);
@@ -428,7 +428,7 @@ function psPaint(f,L,g,w1,dx,lift,pose,now,blen){
   e.rleg.setAttribute('points',psPts([g.H,g.K,g.F]));e.lleg.setAttribute('points',psPts([g.H,g.bK,g.bF]));
   // the weapon arm draws as 'rarm' unless the engine's weapon hand is the left
   const frontArm=L.swap?'larm':'rarm',backArm=L.swap?'rarm':'larm';
-  e[frontArm].setAttribute('points',psPts([g.Sh,g.E,g.Hn]));e[backArm].setAttribute('points',psPts([g.Sh,g.bE,g.bHn]));
+  e[frontArm].setAttribute('points',psPts([g.wSh||g.Sh,g.E,g.Hn]));e[backArm].setAttribute('points',psPts([g.oSh||g.Sh,g.bE,g.bHn]));
   for(const key of Object.keys(L.parts)){
     const cls='ps-part ps-w-'+L.parts[key]+(f.flash===key&&now<f.flashUntil?' ps-flash':'');
     if(f.classes[key]!==cls){f.classes[key]=cls;e[key].setAttribute('class',cls);}

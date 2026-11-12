@@ -67,6 +67,17 @@ All three are in `experiments/pits-motion.js` (pure, no page or rules access; te
 - **Range is footwork.** The station gap comes from the engine's range and the weapon lengths (the longer weapon sets the measure; closing in brings it to the shorter one; apart is furthest). A change of range is walked, never slid.
 - **Tests:** `tests/pits-live.cjs` (every outcome, seven weapon pairs, both sides, chained blows: bodies possible, contacts meet, no jumps, planted feet, the pause stands on two feet, nobody returns to the opening guard); `tests/visual/pits-motion-live.cjs` (whole bouts in a browser on the movement stage: no errors, the clock frozen while paused, the replay); `tests/visual/pits-scenarios.cjs` passes all 18 scenarios on the movement stage.
 
+**The ordinary sword exchange (owner's review, 2026-11-12).** The quality standard for every other phrase; a contact sheet from the live stage (miss, parry, chest hit, head hit, finishing blow, one after another): `docs/pits-visual-checks/sword-exchange-review.png`.
+
+- **A close-measure cut, not an overhead swing.** Preparation: the weight settles onto the rear foot, the shoulders turn away, the hilt comes to the shoulder with the blade laid back at about 45 degrees (never upright, never over the head). Commitment: the front foot leaves and the rear leg drives the hips while the blade is still back. Strike: the shoulders come round, the arm goes long, the blade arrives last, onto the target with the middle of the blade. 380 ms from stillness to contact. Where one step will not reach, the rear foot takes a gaining step during the preparation instead of a separate shuffle.
+- **Shoulders and hips.** The rig has a shoulder turn: the weapon shoulder comes forward into the blow and the other goes back, so rotation shows in a side view. The hips stay over the base (never past the front knee); after a long step the rear foot comes up during the follow-through. When a planted leg would have to stretch, the hips sink into a deeper stance instead.
+- **A miss clears the body.** The attacker commits a little less; the defender slips (weight back, chest out of the line, weapon drawn up out of the way) and the cut passes in front of the chest. On the way down the point passes short of the front knee, and the follow-through ends with the point on the attacker's own side of the defender's nearest foot. The sword is held there, low: the next movement starts from it.
+- **A parry intercepts.** The cut is taken near its point in front of the defender's head, so the stopped blade never reaches past the guard; it is then turned straight down beside the attacker, short of the defender's knee, and ends in the same low hold.
+- **A hit lands where the engine says, and the reaction is local.** The head snaps back and the empty hand comes up; the chest goes back; the body folds over the abdomen; the weapon arm is knocked back and down; the other arm is pulled in; a struck knee gives. Then a foot catches the weight and the fighter ends closed over the wound. The cut is drawn back out of the target before it falls.
+- **A fight-ending blow** goes straight into the collapse; the hips never rise again.
+- **Tests** (`tests/pits-live.cjs`): the miss keeps at least 14 units from every part of the defender and ends short of the nearest foot; both blades are at the meeting point of a parry and the turned blade keeps clear; each hit location has its own reaction; the cut's order (weight back, foot before blade, hips before blade, weight forward at contact), a hilt that stays below the top of the head and a blade laid back, not upright; a finishing blow that only goes down.
+- **Still to do for the sword:** the landed cut on the chest arrives nearly in line with the arm (at this measure a straight line from the shoulder can only descend about 15 degrees); the blades cross at the opening guard; there is no feint or second intention; armour and "no damage" share one small give.
+
 **Stand-ins on the live stage (no phrase of their own yet):**
 
 - **Other weapons borrow a pair.** A short blade, a rapier, a spear or a trident stands and attacks like the dagger (thrust); everything else like the sword (cut). Two-handed weapons are held in one hand; a long blade turned down rests its point on the floor and is drawn shorter.
@@ -75,7 +86,7 @@ All three are in `experiments/pits-motion.js` (pure, no page or rules access; te
 - **Reactions** are written for the chest; other hit locations are aimed at the right part, but the body reacts the same way.
 - **Press Advantage** is held still (no darting point); **a lodged weapon** is drawn from the wielder's hand, but the arm is not kept in the wound.
 - **A disabled arm** hangs; figures are drawn at one size (SIZ no longer scales them).
-- **Live tolerance:** in the stand-in recoveries a leg can be asked to reach up to 10 units (a tenth of its length) further than it goes; the study's own sequences stay within 0.6.
+- **Live tolerance:** in the stand-in recoveries an arm can be asked to reach up to 10 units further than it goes; legs no longer stretch (the hips sink instead). The study page still shows the earlier, higher sword load.
 - **Still not watched at speed by a person.** The owner's eye is the test.
 
 **Remaining compromises:**

@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a sword exchange you can read without the result text
+
+- **A shorter, grounded cut.** No more overhead wind-up: the hilt comes to the shoulder with the blade laid back, the weight settles onto the rear foot, then the front foot steps, the hips drive and the shoulders turn into the blow. The fighters stand a little closer.
+- **A miss clears.** The defender slips back out of the line and the cut passes in front of the chest; the follow-through ends low on the attacker's own side, never across the other fighter's legs. The lowered sword is held, and the next movement starts from it.
+- **A parry intercepts** in front of the head, and the stopped sword is turned down beside its owner.
+- **Hits react where they land:** the head snaps back, the body folds over the abdomen, the arm is knocked back, the knee gives. A blow that ends the fight goes straight into the fall.
+- Other weapons share the improvements; their own phrases are still stand-ins.
+
 ## The Pits: the fighters now move like the movement study
 
 - **The live Pits uses the new movement.** Each resolved exchange is drawn as one movement for both fighters, from the pose they are in: the cut on a step or the thrust on a short lunge, the parry and the sword turned down, a partial parry held and then driven through, a miss carried through a step, a landed blow with the hit reaction, and the fall when a blow ends the fight. Nobody goes back to a common standing pose between exchanges.
