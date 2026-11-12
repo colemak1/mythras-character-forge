@@ -66,7 +66,7 @@ test('wounds, disabled limbs and the end of the fight',()=>{
  assert.equal(cue('MINOR WOUND · Head','x',{}),null,'a minor wound needs no banner (the part just turns red)');
  assert.equal(cue('Limb Disabled',"Marek's Right Leg becomes unusable until healed. They fall prone.",{}).leg,true);
  assert.equal(cue('Limb Disabled',"Marek's Left Arm becomes unusable. They cannot use that arm.",{}).leg,false);
- assert.deepEqual(cue('FIGHT ENDS','Kethan wins. Marek is incapacitated.',{}),{type:'end',winner:'a'});
+ assert.deepEqual(cue('FIGHT ENDS','Kethan wins. Marek is incapacitated.',{}),{type:'end',winner:'a',how:'injury'});
  assert.equal(cue('FIGHT ENDS','Marek wins. Kethan dies.',{}).winner,'b');
 });
 test('beats last as long as their own motion plus a short read; unknown beats use the replay default',()=>{
@@ -168,7 +168,7 @@ test('the look of a fighter follows the engine: wounds, prone, disarmed, arm dow
  assert.equal(l.parts.chest,'minor');assert.equal(l.parts.lleg,'serious');assert.equal(l.parts.head,'major');assert.equal(l.parts.abdomen,'ok','only damaged parts change');
  a.run(`S.fighters.a.prone=true;S.fighters.a.disarmed=true;`);l=look();
  assert.equal(l.prone,true);assert.equal(l.armed,false,'disarmed shows no weapon');
- a.run(`S.fighters.a.disarmed=false;S.fighters.a.hp['Right Arm']=0;`);l=look();
+ a.run(`S.fighters.a.disarmed=false;S.fighters.a.hp['Right Arm']=0;S.fighters.a.disabled.push('Right Arm');`);l=look();
  assert.equal(l.armed,true,'the weapon is drawn until the engine drops it (a resisted wound keeps it)');assert.equal(l.limp.rarm,true,'but the arm hangs');
  a.run(`S.fighters.a.disarmed=true;`);assert.equal(look().armed,false,'a dropped weapon is not drawn in the hand');
  a.run(`S.fighters.b.weapon='spear'`);assert.equal(JSON.parse(a.run(`JSON.stringify(pitsStageLook(S.fighters.b))`)).weapon,'spear');
@@ -208,5 +208,65 @@ test('the stage never changes a fight: same seeded bouts with and without it',()
 test('the stage reads only: no rule or dice code in it',()=>{
  const src=fs.readFileSync(path.join(root,'experiments/pits-stage.js'),'utf8').replace(/\/\/.*$/gm,'');
  assert.doesNotMatch(src,/Math\.random\(\)\s*\*\s*100|\bd100\(|\brollSkill\(|\brequestSkill\(|\blog\(|\.hp\[[^\]]+\]\s*[-+]?=[^=]|\.ap\s*[-+]?=[^=]/,'no engine calls or writes');
+});
+test('cues for Press Advantage, a dropped weapon, a disabled limb and how a fight ended (only what the engine says)',()=>{
+ assert.deepEqual(cue('Press Advantage','Marek cannot attack on the next Turn, but may act otherwise.',{actor:'a'}),{type:'press',actor:'a',target:'b',name:'Press Advantage'});
+ assert.equal(cue('Overextend Opponent','Marek cannot attack on the next Turn.',{actor:'a'}),null,'Overextend keeps the generic look');
+ assert.deepEqual(cue('Weapon Dropped',"Kethan's Right Arm is useless and the weapon falls from it.",{actor:'a'}),{type:'drop',actor:'a'});
+ const lm=cue('Limb Disabled',"Kethan's Left Leg becomes unusable until healed to positive HP. They fall prone.",{});
+ assert.equal(lm.type,'limb');assert.equal(lm.leg,true);assert.equal(lm.loc,'lleg');assert.equal(lm.who,'a');
+ assert.equal(cue('FIGHT ENDS','Marek wins. Kethan concedes the training bout.',{}).how,'concede');
+ assert.equal(cue('FIGHT ENDS','Marek wins. Kethan has a Major Limb Wound to the Right Leg: incapacitated and prone.',{}).how,'injury');
+ assert.equal(cue('FIGHT ENDS','Marek wins. Kethan is incapacitated by blood loss.',{}).how,'fatigue');
+ assert.equal(cue('FIGHT ENDS','Marek wins. Kethan dies immediately from a Major Wound to Head.',{}).how,'injury','a death is still only "injury": nothing about severing is inferred');
+});
+// The beats of one batch, as the stage sees them.
+const B=(title,body,meta)=>({id:++bid,title,body,meta:meta||{}});let bid=0;
+const D=()=>({roll:{label:'d100'}});
+const KIND=e=>e.roll?'dice':(JSON.parse(A.run(`JSON.stringify(pitsStageCue(${JSON.stringify(e)},${JSON.stringify(names)}))`))||{}).type||'other';
+const arrange=(events,held,waiting)=>JSON.parse(A.run(`JSON.stringify(pitsStageArrange(${JSON.stringify(events)},${JSON.stringify(held)},${waiting},${JSON.stringify(names)}))`));
+const HIT=()=>B('Kethan hits Right Leg','x',{actor:'a',impact:{target:'b',location:'Right Leg',hpLost:5},px:{total:5}});
+const ATK=()=>B('Kethan attacks','42 against Combat Style 67% — SUCCESS.',{actor:'a',exid:1});
+const WND=()=>B('SERIOUS WOUND · Right Leg','Marek Endurance 70/60% (FAILURE) versus the attack 30 (SUCCESS). Fails to resist.',{actor:'b'});
+test('the blow of an exchange is held back while the engine waits for the exchange to finish',()=>{
+ const atk=ATK(),loc=B('Hit Location','x',{actor:'a',target:'b',location:'Right Leg'}),hit=HIT();
+ // the hit is logged and the engine now waits for the defender's Endurance roll: only the build-up is shown
+ let r=arrange([atk,loc,hit],[],true);
+ assert.deepEqual(r.play.map(e=>e.id),[atk.id,loc.id]);assert.deepEqual(r.hold.map(e=>e.id),[hit.id]);
+ // the Endurance dice are shown at once; the wound entry joins the held ones while the engine still waits
+ const wnd=WND(),dice=D();
+ r=arrange([dice,wnd],r.hold,true);
+ assert.equal(r.play.length,1);assert.equal(r.play[0].roll!=null,true,'the dice play now');assert.deepEqual(r.hold.map(e=>e.id),[hit.id,wnd.id]);
+ // the exchange is resolved: the dice, then the whole record in order
+ const end=B('FIGHT ENDS','Kethan wins. Marek has a Major Limb Wound to the Right Leg: incapacitated and prone.',{});
+ const held=r.hold;r=arrange([end],held,false);
+ assert.deepEqual(r.play.map(e=>e.id),[hit.id,wnd.id,end.id]);assert.deepEqual(r.hold,[]);
+});
+test('with nothing to wait for, or no blow yet, nothing is held; a new attack closes the held exchange first',()=>{
+ const atk=ATK(),hit=HIT();
+ assert.equal(arrange([atk,hit],[],false).hold.length,0,'no one to wait for: the exchange plays whole');
+ assert.equal(arrange([atk],[],true).hold.length,0,'no blow yet: the windup plays and holds by itself');
+ const next=B('Marek attacks','50 against Combat Style 60% — SUCCESS.',{actor:'b',exid:2}),r=arrange([next],[hit],true);
+ assert.deepEqual(r.play.map(e=>e.id),[hit.id,next.id],'the held blow plays before the next attack');assert.equal(r.hold.length,0);
+});
+test('a blow takes its effects and consequences into one record; those beats have no motion of their own',()=>{
+ const atk=ATK(),press=B('Press Advantage','Marek cannot attack on the next Turn, but may act otherwise.',{actor:'a'}),hit=HIT(),wnd=WND(),
+  limb=B('Limb Disabled',"Marek's Right Leg becomes unusable until healed to positive HP. They fall prone.",{}),end=B('FIGHT ENDS','Kethan wins. Marek is incapacitated.',{});
+ const ev=[atk,press,hit,wnd,limb,end],beat=i=>JSON.parse(A.run(`JSON.stringify(pitsStageBeat(${JSON.stringify(ev)},${i},${JSON.stringify(names)}))`));
+ assert.equal(beat(0).consumed,false);
+ assert.equal(beat(1).consumed,true,'Press Advantage plays with the blow, not before it');
+ const b=beat(2);assert.equal(b.consumed,false);assert.equal(b.cue.record.press.type,'press');assert.deepEqual(b.cue.record.after.map(c=>c.type),['wound','limb','end']);
+ for(const i of [3,4,5])assert.equal(beat(i).consumed,true,'consequence '+i+' is part of the blow');
+ const lone=[B('FIGHT ENDS','Marek wins. Kethan concedes the training bout.',{})];
+ assert.equal(JSON.parse(A.run(`JSON.stringify(pitsStageBeat(${JSON.stringify(lone)},0,${JSON.stringify(names)}))`)).consumed,false,'a concession has no blow: it plays by itself');
+ const solo=[B('Press Advantage','x',{actor:'a'})];
+ assert.equal(JSON.parse(A.run(`JSON.stringify(pitsStageBeat(${JSON.stringify(solo)},0,${JSON.stringify(names)}))`)).consumed,false,'Press Advantage with no blow plays by itself');
+});
+test('every Pits script parses (a syntax error in the browser-only part must not pass unnoticed)',()=>{
+ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),root=path.resolve(__dirname,'..');
+ for(const f of fs.readdirSync(path.join(root,'experiments')).filter(n=>/^pits-.*\.js$|^practice-guidance\.js$/.test(n)))
+  new vm.Script(fs.readFileSync(path.join(root,'experiments',f),'utf8'),{filename:f});
+ const html=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8');
+ new vm.Script(html.match(/<script>([\s\S]*?)<\/script>/)[1],{filename:'practice-combat-inline.js'});
 });
 console.log(passed+' pits stage tests passed');

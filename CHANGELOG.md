@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: continuous combat animation
+
+- **One exchange, one animation.** A blow is shown only once its whole exchange is resolved: any Endurance or resist roll that follows the contact is done first (rolls stay manual, in their usual order). The contact then flows straight into its real consequence: a fight-ending hit goes from contact into the collapse, with no reset and no second hit. The plates, wounds and chronicle change at the contact moment, not when the engine logged them.
+- **Decisions pause the scene.** While you choose or roll, the figures, trails, particles and camera hold their exact pose together and resume from the same moment; dice and buttons stay live.
+- **No compulsory idle.** Recoveries go to a ready stance, a fighter relaxes only after a real lull, and joint speed carries into the next motion. Beats are paced by the animation, not by timers.
+- **Better movement.** Hips and legs lead, shoulder, elbow and weapon follow; strikes accelerate into contact; feet stay planted and step instead of sliding; a failed parry shows the guard beaten aside.
+- **Press Advantage** has its own paired look (the aggressor pressing, the opponent covering) that lasts exactly as long as the effect and is named briefly. Nothing is added: no range change, damage or extra attack.
+- **Finishing consequences are specific:** a disabled leg buckles then falls, a disabled arm hangs limp with the weapon leaving the hand, incapacitation collapses at the contact, a concession bows. Nothing is inferred about severing.
+- Fixes: contact now waits for the strike to arrive (it was a fixed timer), banners clear themselves, a resisted wound no longer draws a limp arm. Diagnosis and limits: `docs/pits-animation-batch-20261112.md`.
+
 ## The Pits: every blow animates like the parry, and the replay flows
 
 - **Same treatment as the parry.** The parry works because everything is aimed at one contact point, with impact effects there and a follow-through. The other outcomes now get the same care: a body hit freezes for a few frames at contact (longer for bigger damage), pushes the scene in slightly and throws the defender back further the harder it lands. An evade carries the strike through into an overextension with a swish at the near miss; a miss gets a swish too. Trips and disarms get the same spark, ring, freeze and push-in.
