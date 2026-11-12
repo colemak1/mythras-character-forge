@@ -123,7 +123,7 @@ function draw(){
 }
 function tick(now){
   if(!st.playing)return;
-  const dt=Math.min(50,now-st.last)*(+$('pcSpeed').value)*(seq.pace||1);st.last=now;
+  const dt=Math.min(50,now-st.last)*(+$('pcSpeed').value)*pace();st.last=now;
   let td=st.td+dt;
   if($('pcDecide').checked)for(const p of seq.pauses){
     const at=PS.shownAt(seq,p.t);
@@ -142,6 +142,18 @@ function seek(td){st.playing=false;st.held=null;st.td=Math.max(0,Math.min(total,
   // a pause already behind the bar does not stop playback again
   st.passed={};for(const p of seq.pauses)if(PS.shownAt(seq,p.t)<=st.td)st.passed[p.t]=true;draw();}
 const nudge=d=>seek(st.td+d*FRAME);
+// the pace slider (fight only): 1 is the fight's current pace (seq.pace), 2 is twice that. The readout gives both
+// numbers, so the owner can name the one wanted. Remembered in this browser only.
+const PACE=$('pcPace');
+const pace=()=>(seq.pace||1)*(PACE&&!$('pcPaceWrap').hidden?+PACE.value:1);
+if(PACE&&seq.pace){
+  $('pcPaceWrap').hidden=false;
+  try{const v=+localStorage.getItem('pits-fight-pace');if(v>=1&&v<=2)PACE.value=v;}catch(e){}
+  const show=()=>{const v=+PACE.value;$('pcPaceOut').textContent=v.toFixed(2)+'× current ('+(v*seq.pace).toFixed(2)+'× fight time, about '+
+    (PS.shownDur(seq)/(v*seq.pace)/1000).toFixed(1)+' s)';};
+  PACE.addEventListener('input',()=>{show();try{localStorage.setItem('pits-fight-pace',PACE.value);}catch(e){}});
+  show();
+}
 
 // the scrub bar: a tick per caption, a taller one per decision
 $('pcScrub').max=Math.round(total);
@@ -172,6 +184,6 @@ document.addEventListener('keydown',e=>{
 const fit=()=>$('pcScene').setAttribute('viewBox',window.innerWidth<=600?'395 215 500 275':'330 215 600 257');
 fit();window.addEventListener('resize',fit);
 // a test or a review script can put the picture on an exact moment (sequence time) and read the state
-window.pitsExchange={seq,seek:t=>seek(PS.shownAt(seq,t)),seekShown:seek,play,state:st,clearance,total};
+window.pitsExchange={seq,pace,seek:t=>seek(PS.shownAt(seq,t)),seekShown:seek,play,state:st,clearance,total};
 if(!reduced()&&!/[?&]still\b/.test(location.search))play();else draw();
 })();

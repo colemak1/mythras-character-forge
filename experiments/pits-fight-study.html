@@ -9,7 +9,7 @@ document.documentElement.setAttribute("data-mode",m);})();}catch(e){}</script>
 <title>The Pits: fight study</title>
 <link rel="stylesheet" href="pits-stage.css?v=ccb5857e29">
 <link rel="stylesheet" href="../sitota-theme.css?v=c8b123e401">
-<link rel="stylesheet" href="pits-choreography.css?v=008ad7a1bc">
+<link rel="stylesheet" href="pits-choreography.css?v=d4726b004b">
 </head>
 <body class="pc-page" data-seq="fight" data-decide="off">
 <main class="pc-main">
@@ -35,6 +35,8 @@ document.documentElement.setAttribute("data-mode",m);})();}catch(e){}</script>
     <button type="button" id="pcPlay" class="pc-primary">Play</button>
     <button type="button" id="pcBack" aria-label="Back one frame">&minus; frame</button>
     <button type="button" id="pcFwd" aria-label="Forward one frame">+ frame</button>
+    <label class="pc-pace" id="pcPaceWrap" hidden>Pace <input type="range" id="pcPace" min="1" max="2" step="0.05" value="1"
+      aria-describedby="pcPaceOut"> <output id="pcPaceOut"></output></label>
     <label>Speed <select id="pcSpeed"><option value="1">Normal</option><option value="0.5">Half</option><option value="0.25">Quarter</option></select></label>
     <label><input type="checkbox" id="pcDecide" checked> Stop where a decision would be made</label>
     <label><input type="checkbox" id="pcLoop"> Loop</label>
@@ -57,6 +59,6 @@ document.documentElement.setAttribute("data-mode",m);})();}catch(e){}</script>
 <script src="pits-motion.js?v=e51da43e1a"></script>
 <script src="pits-spring.js?v=13c53da3ad"></script>
 <script src="pits-fight.js?v=5107709311"></script>
-<script src="pits-exchange-study.js?v=0388356812"></script>
+<script src="pits-exchange-study.js?v=9f0db2677a"></script>
 </body>
 </html>

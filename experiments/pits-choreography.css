@@ -15,6 +15,9 @@
 .pc-caption{min-height:3em;margin:10px 0 6px;font-size:15px}
 .pc-caption b{color:var(--accent)}
 .pc-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:13px}
+.pc-pace{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pc-pace input{width:160px;accent-color:var(--accent)}
+.pc-pace output{font-variant-numeric:tabular-nums}
 .pc-controls .pc-primary{min-width:84px}
 .pc-controls select{font:inherit;padding:5px;background:var(--paper);color:var(--bone);border:1px solid var(--line);border-radius:3px}
 .pc-scrub{position:relative;margin-top:12px}

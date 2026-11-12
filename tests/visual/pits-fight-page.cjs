@@ -32,6 +32,12 @@ let passed=0;const ok=n=>{passed++;console.log('PASS '+n);};
   assert(n>1200&&h>500&&h<n*.7,'normal advanced '+n.toFixed(0)+' ms, half '+h.toFixed(0)+' ms in the same time');
   // the fight plays at 1.5 times its own time (owner, 2026-11-12): 1.5 s of Normal covers well over 1.5 s of fight
   assert(n>1850,'normal advanced only '+n.toFixed(0)+' ms of fight in 1.5 s');
+  // the pace slider: at 2 (twice the current pace) the same 1.5 s covers about twice as much
+  await page.$eval('#pcPace',e=>{e.value='2';e.dispatchEvent(new Event('input'));});
+  const d=await run(1);
+  assert(d>n*1.6,'pace 2 advanced '+d.toFixed(0)+' ms against '+n.toFixed(0));
+  assert(/2\.00× current \(3\.00× fight time/.test(await page.$eval('#pcPaceOut',e=>e.textContent)),'pace readout');
+  await page.$eval('#pcPace',e=>{e.value='1';e.dispatchEvent(new Event('input'));});
   ok('continuous playback; half speed covers about half the fight time ('+Math.round(n)+' vs '+Math.round(h)+' ms in 1.5 s)');
 
   // decision stops on: holds at the first boundary, the picture stays, resume continues from it
