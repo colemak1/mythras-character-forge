@@ -3,7 +3,7 @@
 // serving the old copy. Fix a failure with: python3 scripts/stamp-assets.py
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const root=path.resolve(__dirname,'..');
-const pages=['index.html','experiments/practice-combat.html','experiments/pits-choreography.html'];
+const pages=['index.html','experiments/practice-combat.html','experiments/pits-choreography.html','experiments/pits-exchange-study.html'];
 let checked=0;
 for(const page of pages){
  const html=fs.readFileSync(path.join(root,page),'utf8');

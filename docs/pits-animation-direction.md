@@ -106,6 +106,34 @@ All three are in `experiments/pits-motion.js` (pure, no page or rules access; te
 - **The miss shows the defender giving a half step.** The rules need no defender action for a miss; without it, at this measure, the cut would look parried.
 - **The page stops at a decision until Resume is pressed** (untick "Stop where a decision would be made" to watch straight through).
 
+## Spring exchange study (2026-11-12, owner's animation reference pack)
+
+**Watch it:** `experiments/pits-exchange-study.html`. One exchange (sword cuts, dagger parries, dagger counters to the abdomen, minor wound, both recover) at normal, half or quarter speed, frame by frame, with the decision hold on or off. Contact sheet: `docs/pits-visual-checks/spring-exchange.png`. Code: `experiments/pits-spring.js` (presentation only; uses the rig, solver and drawing from `pits-motion.js`). Tests: `tests/pits-spring.cjs`, `tests/visual/pits-exchange.cjs`. Not wired into the live Pits: that waits for the owner's verdict on the look.
+
+**Sources used.** David Rosen, *An Indie Approach to Procedural Animation* (GDC 2014): the slides only. The talk recording was not watched, so nothing here claims to match motion shown in it. Ideas taken from the slide headings: few keyframes; spring rather than linear or bicubic interpolation; anticipation; impact compression and a recoil spring; IK; simple overlapping systems; "animation and code must work together". Everything below that goes beyond those headings is this project's own proposal.
+
+**What changed compared with the hand-keyed phrases.**
+
+1. **Springs between a few key poses.** Each channel (hips, two spine angles, head, shoulder turn, both hands, wrist) follows its target with its own damped spring. The hips are heavy and well damped; the chest is looser; the head and the empty hand follow late and overshoot a little; the wrist is quickest. A new key reaches each part with a lag: hips first, the blade last. On a parry the order reverses. Nothing stops dead at a key, because a spring carries its speed through.
+2. **Impacts are impulses.** At the parry the cut's hand and wrist lose their speed, and the defender's knees and elbow get a push down. At the hit the hips are pushed back, the spine forward and the head late. The reaction comes out of the springs, so it starts at the abdomen and travels up.
+3. **Contacts are constraints on top.** The parry point is found from the free cut: where the blade, coming down, passes about 42°. The defender's dagger is blended onto that point over its last 140 ms. During the bind the sword's contact point rides the dagger. The thrust is held on the moving abdomen, and the empty hand is held on the sword arm's elbow, then on its own wound. A constraint never asks an arm to reach past its length, and the wrist and arm limits are hard joint limits (not springs).
+4. **One stored simulation.** Both fighters are simulated together at 1 ms steps, once, and stored. The picture is still a function of the time on the bar, so pause, scrub, frame step and replay are exact.
+
+**Not used, and why.** *GSAP:* the study's timeline is already a pure function of time with pause, speed, step and seek; GSAP would add a dependency without solving a timing problem we have. The official GSAP skills in the pack were not installed. *Mixamo:* no signed-in access, so no clips were viewed or downloaded and no clip names are claimed; the pack's search terms (sword, slash, parry, block, dagger, stab, hit reaction, stumble, combat idle) are still unverified suggestions. *Spine:* left for later, if visual authoring becomes necessary.
+
+**What the tests hold** (numbers, not looks): bodies possible (no limb past its length, the wrist inside its turn); planted feet never slide; no joint jumps between 2 ms samples; both blades exactly on the shared contact point, and the dagger on the sword's edge for 80 ms of bind; the defender yields (hips drop, arm shortens); the cut keeps at least 8 units from the defender's body (19 from the head's centre); the counter goes in under the raised sword and keeps 10 units from it; the dagger lands on the abdomen and the reaction starts low with the head following; both held poses stand on two feet with the weight between them and nothing moving; continuing from the hold moves nothing more than 1.5 units in the first frame; hips start before the hand and the hand before the blade; neither fighter ends in its opening guard, and the blades stay apart in the recovery.
+
+**What was checked how.** *From stills and numbers only:* every observation above, the contact sheet, and layouts at 390 and 1280 px in light and dark. *From playback in a browser:* only mechanics (it plays without errors, half speed takes about twice as long, the hold stops and resumes without a jump, frame stepping, the overlays draw). No one has yet watched the motion at speed and judged it natural. **The owner's viewing is the test of the look.**
+
+**Remaining compromises.**
+
+- The parry is staged flat: the dagger lifts the cut up and off the line. In a real fight it would be carried to the side, which the side view cannot show. The sword therefore ends high, and the counter goes in under it.
+- The sword tip peaks at about 3.5 units per ms at the strike (roughly 35 m/s if a figure is 1.8 m). That is a little fast for a real cut but reads as a cut.
+- The cut's tip stops about 11 units in front of the dagger fighter's face at the contact. A parry made just in time is intended, but it is close.
+- The opening guards still cross blades (as in the earlier study).
+- Tuning is for this one exchange and this measure. Other weapons, distances or orders would need their own keys, or a solver for reach.
+- Springs make timing indirect: a key sets where a part goes, not when it arrives. Contacts are exact only because they are constraints.
+
 ## For Sonnet: routine defects in the pose stage
 
 Items 2 and 3 now apply only to the pose stage behind `?stage=poses`; fix them only if the owner wants to keep it. Item 1 is fixed for both stages (2026-11-12), item 4 is done.
