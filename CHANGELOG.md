@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a readable sword cut and parry (third pass)
+
+- **The cut no longer tucks the sword against the body.** The chamber keeps the hilt out in front of the shoulder with the elbow open; on the strike the hand rises in front of the face (still below the top of the head) while the blade waits laid back, then the arm goes long and the blade comes over. The hand never crosses the chest with the blade upright.
+- **A landed cut arrives with the arm long and the blade in line with it** instead of rising from a bent arm.
+- **A parry reads with the captions hidden.** The defender holds the blade upright out in front of the face; the cut meets it in a clear X near the middle of the parrying blade, and the spark is drawn exactly where the blades cross. A full parry then knocks the cut back: the attacker's shoulders are jarred back, the whole sword comes back off the parrying blade, and it falls away low on the attacker's own side, short of the defender's guard and legs. The old horizontal "bind" (both blades lying along each other at chest height) is gone for high and middle parries; a low parry still binds.
+- Tests: `tests/pits-live.cjs` now checks that the blades cross at the spark at a clear angle, separate after the beat, and that the point never comes nearer the defender's head than at contact.
+
 ## The Pits: sword cuts that know their target, and defenders that defend
 
 - **The target shapes the cut from its first frame.** A cut to the head chambers beside the face and comes down steeply; a cut to the body keeps the hilt at the rear shoulder with the blade laid back flat and comes round level; a cut to the legs sinks the hips, pitches the chest forward and sweeps in low.

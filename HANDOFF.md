@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-12 by Claude (Pits: sword exchange, second pass)_
+_Last updated: 2026-11-12 by Claude (Pits: sword cut and parry, third pass)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-12 by Claude (Pits: sword exchange, second pass)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+00000. **Claude, done 2026-11-12 (third pass):** cut path (no tucked sword), landed cut with a long arm, parry as a clear X with the spark on the crossing and the cut knocked back and falling on the attacker's side. Details and weak points: `docs/pits-animation-direction.md`, "Third pass". **Not done:** point 4, the collapse (support fails, hips drop, torso and head follow; weapon stays with the hand). **Next Claude:** the collapse, then the owner's next judgement of `?seq=sword`.
 
 0000. **Claude, done 2026-11-12 (second pass):** the sword exchange after the owner's second review: cuts shaped by their target from the preparation (high, body, legs), one continuous drive instead of three phases, defenders that go to a guard (a hit beats it; a parry is set early and binds the blade). Details and what is still weak: `docs/pits-animation-direction.md`, "Second pass"; contact sheet `docs/pits-visual-checks/sword-exchange-review.png`. **Owner:** watch `experiments/pits-choreography.html?seq=sword` at normal speed and say whether this is the standard to copy, or which moment still looks wrong; then Claude takes the same care over the next phrase you name (thrust, shield, trip...).
 
