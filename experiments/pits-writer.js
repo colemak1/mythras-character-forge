@@ -776,7 +776,7 @@ function play(S,id,aid,t,st,keep){
   if(!keep&&P.gap!=null&&D.weapon.len>(id==='shieldStrike'?30:A.weapon.len)+15){const t0=Math.max(t,...D.keys.map(k=>k.t+110));
     // (against a shield strike, which comes in chest to chest, the hand comes back to the shoulder and the blade
     // goes up and over to hang behind, out of the way)
-    if(id==='shieldStrike')raiseHigh(D,t0,'cover');else D.key(t0,{h:[14,-14],w:72},'cover');
+    if(id==='shieldStrike')raiseHigh(D,t0,'cover');else D.key(t0,{h:[24,-14],w:70},'cover');   // (hand out in front: upright close in, the blade stands through the face)
     S.seq.notes.push({kind:'inside',t:t0,who:D.id});}
   if(P.gap!=null&&!keep){
     // (the measure follows the attacker's reach with its weapon; a shield strike's reach is the shield's)

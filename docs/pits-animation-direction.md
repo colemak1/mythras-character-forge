@@ -337,3 +337,13 @@ The owner asked that a parry which fails should still look attempted. In the rec
 **Still weak.** A failed shield parry and a weapon inside the point show only a small move in a still; at speed the motion is what reads (not yet watched by the owner). Not added to the shield strike: a failed parry against it is drawn as before.
 
 **Next families**, in the planned order: heavy one-handed (axe, mace, club, hammer), two-handed, long thrust (spear and polearms, their own range), flexible.
+
+## Own blade across own head (Work's check, PR #323; in progress 2026-11-13)
+
+Work's visual check (`docs/pits-studies-work-20261113.md`) found a fighter's own weapon held across its own head (Severity 2): the dagger held overhead after a deflection, the sword laid back over the shoulder in the shield strike. Work's other results stay as recorded there: screenshots, not a continuous recording, so the Severity 3 "unverified" items are evidence missing, not confirmed faults, and the report is not full visual acceptance.
+
+**Rule added** (`tests/lib/pits-motion-rules.cjs`): a blade within 17 units of its own head's centre (the drawn head and blade touching) may only be sweeping past (tip path at least 0.5 units per ms, at most 250 ms); slower, or over 250 ms, is a hold and a fault. Crossings under 60 ms (two frames at normal speed) do not count. From the side, a cut from over the shoulder must pass the head; in depth it passes beside it.
+
+**Changed:** the cut's chamber lies flatter behind the shoulder (hand [12,-8], 160°); raised holds put the hilt above the head ([20,48], 140°), reached in two steps (hand up first, then the blade back), and lowered the same way; upright guards stand further out in front; a step back chooses where the hand goes by the blade's angle; a short blade parries a head cut higher; a stab to the head is drawn back lower; the fall after a stab at close quarters holds the sword up until the winner steps back, then lays it along the body.
+
+**State:** the three generated studies pass the rule, and the ten-beat fight still passes all its checks. The full sweep does not yet: 550 of 4,032 fights have a fault, most in the shield strike (315 own-head holds, and new grazes and snaps from the changed raise), then stabs that land (70), cuts that land (20) and the thigh cut (12). Next: work through those groups, then rerun the sweep.

@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-13 by Claude (Pits: failed parries look tried)_
+_Last updated: 2026-11-13 by Claude (Pits: own-head fix in progress)_
 
 ## Where things stand
 
@@ -17,6 +17,8 @@ _Last updated: 2026-11-13 by Claude (Pits: failed parries look tried)_
 ## Next
 
 00000000000000. **Next, Claude:** the next weapon family, **heavy one-handed** (axe, mace, club, hammer: slower chamber, harder impact), then two-handed, long thrust, flexible; each with a generated study (`pits-fight-study.html?seq=...`) and its weapons in the sweep (`tests/sweep/pits-sweep.cjs`). **Owner's rule (2026-11-12):** nothing goes live until all families are done; work stays on branch `claude/go-wf0bsg` (pushed, no PR).
+
+0000000000000c. **Claude, in progress 2026-11-13:** Work's own-head finding (PR #323, merged into the branch). Studies fixed; the full sweep still has 550 of 4,032 fights with a fault, mostly the shield strike. Details: `docs/pits-animation-direction.md`, "Own blade across own head". Waiting on the owner's answer about integrating the live Pits sooner (see Claude's last message).
 
 0000000000000b. **ChatGPT (Work), checked 2026-11-13:** prototype results in `docs/pits-studies-work-20261113.md`: readable dagger/late defences/shields/shove; Severity 2 own-blade/head overlaps, Severity 3 capture/endpoint limits. Not full visual acceptance and nothing deployed. **Next: Claude** — address the overlap and preserve the reported limits.
 
