@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-13 by Claude (Pits: live trial behind ?stage=spring)_
+_Last updated: 2026-11-13 by Claude (Pits: evade as a dodge; trial keeps the flow)_
 
 ## Where things stand
 
@@ -16,9 +16,9 @@ _Last updated: 2026-11-13 by Claude (Pits: live trial behind ?stage=spring)_
 
 ## Next
 
-000000000000000. **Owner, decision needed:** the live trial (`experiments/practice-combat.html?stage=spring`) shows the writer moving fighters closer than the engine's range. Should the attacker step back out to the engine's range after every blow (Claude's suggestion), or should the range follow the picture? See `docs/pits-animation-direction.md`, "Live trial".
+0000000000000000. **Claude, done 2026-11-13 (owner's notes on the trial):** evade drawn as a dodge to the ground, not a fall; the trial keeps the flow (no walk back after a lull; range changes still walk). Owner decided: natural over technically accurate on range. **Owner:** try an evade on `experiments/practice-combat.html?stage=spring`.
 
-00000000000000. **Next, Claude:** (1) the shield strike's own-head and elbow faults, which fail the shield sample in `tests/pits-writer.cjs` (the only failing test; recorded under "Own blade across own head"); (2) the trial's findings 2 and 3 (write a blow during the dice roll, drop old frames), and finding 1 once the owner decides; then the remaining families. **Owner's rule (2026-11-12):** nothing goes live until it is all done; branch `claude/go-wf0bsg` (pushed, no PR).
+00000000000000. **Next, Claude:** (1) the shield strike's own-head and elbow faults, which fail the shield sample in `tests/pits-writer.cjs` (the only failing test; recorded under "Own blade across own head"); (2) the trial's findings 2 and 3 (write a blow during the dice roll, drop old frames), and the range marker and drift (finding 1); then the remaining families. **Owner's rule (2026-11-12):** nothing goes live until it is all done; branch `claude/go-wf0bsg` (pushed, no PR).
 
 0000000000000c. **Claude, in progress 2026-11-13:** Work's own-head finding (PR #323, merged into the branch). Studies fixed; the full sweep still has 550 of 4,032 fights with a fault, mostly the shield strike. Details: `docs/pits-animation-direction.md`, "Own blade across own head". Owner chose the live trial first (2026-11-13); done, see the Next items above.
 

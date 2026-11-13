@@ -15,9 +15,9 @@ function run(label,fights){const f=[];
   for(const [rec,opt] of fights){n++;const q=PW.write([rec],opt),e=fault(q,8);
     if(e)f.push(rec.loc+' '+rec.outcome+(rec.defence?' (shield parry)':'')+(rec.strike?' (shield strike)':'')+' '+q.exchanges[0].phrase+': '+e);}
   bad+=f.length;console.log((f.length?'FAIL ':'PASS ')+label+(f.length?'\n  '+f.join('\n  '):''));}
-const OUT=[['parried',0],['wound',3],['armour',0],['miss',0]];
+const OUT=[['parried',0],['wound',3],['armour',0],['miss',0],['evaded',0,true]];   // (the last: an evade that ends prone)
 for(const wa of W)for(const wb of W)if(!only||wa===only)
-  run(wa+' against '+wb,LOCS.flatMap(loc=>OUT.map(([outcome,lost])=>[{attacker:'a',loc,outcome,lost},{weapons:{a:wa,b:wb}}])));
+  run(wa+' against '+wb,LOCS.flatMap(loc=>OUT.map(([outcome,lost,prone])=>[{attacker:'a',loc,outcome,lost,...(prone?{prone}:{})},{weapons:{a:wa,b:wb}}])));
 if(!arg.includes('--no-shields')){let i=0;
   for(const wa of W)for(const wb of W){const sa=SH[i%4],sb=SH[(i+1)%4];i++;if(only&&wa!==only)continue;const opt={weapons:{a:wa,b:wb},shields:{a:sa,b:sb}};
     run(wa+' and '+sa+' against '+wb+' and '+sb,LOCS.flatMap(loc=>[

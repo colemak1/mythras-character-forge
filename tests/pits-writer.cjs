@@ -112,6 +112,19 @@ test('a sample of the sweep: one pairing per kind (short, long, cut, thrust, bot
       if(f)bad.push(wa+' v '+wb+' '+loc+' '+o+': '+f);}
   assert.deepEqual(bad,[],bad.join('\n'));
 });
+test('an evade that ends on the ground is a dodge, not a fall (owner, 2026-11-13)',()=>{
+  // the engine ends a successful evade prone; the writer draws the evader ducking out of the line and going down under
+  // control: down at the end, head up above the hips, the weapon still pointing toward the attacker, not along the floor
+  for(const [wa,wb] of [['sword','sword'],['dagger','sword'],['rapier','dagger']]){
+    const q=PW.write([{attacker:'a',loc:'chest',outcome:'evaded',lost:0,prone:true}],{weapons:{a:wa,b:wb}});
+    assert.equal(fault(q,8),null,wa+' v '+wb);const t=q.dur;
+    const P=PS.world(q,'b',t,'P'),Hd=PS.world(q,'b',t,'Hd'),j=PS.joints(q,'b',t);
+    assert(P[1]<30,'the evader is not down');assert(Hd[1]>P[1]+25,'the head is not up');
+    assert(j.w>5&&j.w<80,'the weapon is not toward the attacker ('+j.w.toFixed(0)+')');
+    assert(q.contactList.length===0&&q.misses.length===1,'an evade is a miss');}
+  // without prone (an evade while changing range) it is the plain slip
+  const s=PW.write([{attacker:'a',loc:'chest',outcome:'evaded',lost:0}]);assert(PS.world(s,'b',s.dur,'P')[1]>55);
+});
 // ----- shields (step 3, second family) -----
 test('shields: sized by type, carried forward; a shield parry or a ward meets the blow on the shield\'s face',()=>{
   const q=PW.write([{attacker:'a',loc:'chest',outcome:'parried',lost:0,defence:'shield'}],{shields:{b:'heater'}});

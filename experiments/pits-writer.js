@@ -304,8 +304,23 @@ PHRASES.cutParried={ref:{a:20,d:-11},gap:231,width:{a:64,d:70},lead:20,run(W,a,d
 }};
 
 // ----- a rising cut at the ribs that the defender slips: it passes just outside the turned body -----
-PHRASES.cutMissed={ref:{a:-11,d:42},gap:209,width:{a:70,d:108},lead:40,run(W,a,d,t3){
-  const A=W.nm(a),D=W.nm(d),tm=t3+450;
+// An evade that ends on the ground (the engine: a successful evade leaves the evader prone). Drawn as a dodge, not a
+// fall (owner, 2026-11-13): the knees drop and the body ducks back out of the line, the rear foot goes back long, the
+// body sits back over it with the empty hand reaching for the floor, and ends propped on that hand, head up and the
+// weapon still toward the attacker. Written on the fighter itself, from where its feet are, so it fits any phrase.
+function diveAway(d,t,tm){
+  const f=d.f,ff=planned(f,'ff'),bf=planned(f,'bf'),back=bf-36;
+  f.key(t+100,{py:60,lean:-6,bend:14,head:-12,turn:-14,h:[20,-6],w:40,o:[10,-30]},'cover');
+  f.walk('bf',t+150,t+320,back,{py:52,lift:9,settle:.6,load:.3,push:120});
+  f.key(t+300,{px:back+14,py:46,lean:-24,bend:10,head:-8,h:[24,-6],w:30,o:[-26,-40]});
+  // the front foot is drawn in as the body goes down, so the legs fold under it rather than stretch
+  f.step('ff',tm+40,tm+260,(ff+back)/2+12,6);
+  f.key(tm+120,{px:back,py:22,lean:-40,bend:12,head:-6,h:[30,-10],w:24,o:[-34,-26]});
+  f.key(tm+420,{px:back-2,py:15,lean:-58,bend:8,head:-10,h:[34,-4],w:28,o:[-40,-16]});
+  return tm+560;
+}
+PHRASES.cutMissed={ref:{a:-11,d:42},gap:209,width:{a:70,d:108},lead:40,run(W,a,d,t3,st){
+  st=st||{};const A=W.nm(a),D=W.nm(d),tm=t3+450;
   W.beat(W.n(),t3,'Counter, slipped',A+' counters at '+D+'\'s ribs; '+D+' draws the front foot back and turns, and the cut passes outside');
   a.key(t3,{px:-4,py:73,lean:2,bend:4,head:-8,turn:-10,h:[-2,-32],w:-155},'attack');      // a low chamber at the hip, blade back
   // an advance: the front foot, then the rear foot closes up, so the hips can go over the front foot for the cut
@@ -313,8 +328,11 @@ PHRASES.cutMissed={ref:{a:-11,d:42},gap:209,width:{a:70,d:108},lead:40,run(W,a,d
   a.walk('bf',t3+250,t3+370,-8,{py:67,lift:7,settle:.2,load:.25,lead:60});
   a.key(t3+200,{lean:14,bend:8,head:-14,turn:12,o:[-26,-40]});
   // the slip: weight back, the front foot comes back under, the chest turns away and leans out of the line
-  d.walk('ff',t3+170,t3+330,84,{py:68,lift:9,settle:.35,load:.45,push:160});
-  d.key(t3+190,{lean:-8,bend:-4,head:-4,turn:-16,h:[12,-42],w:-95,o:[-6,-30]},'cover');
+  // (or, for an evade that ends on the ground, the dodge and the controlled drop)
+  let dEnd=0;
+  if(st.dive)dEnd=diveAway(d,t3,tm);
+  else{d.walk('ff',t3+170,t3+330,84,{py:68,lift:9,settle:.35,load:.45,push:160});
+    d.key(t3+190,{lean:-8,bend:-4,head:-4,turn:-16,h:[12,-42],w:-95,o:[-6,-30]},'cover');}
   // seen from the side, a cut that passes outside the body is one whose point falls just short of it
   const M=(()=>{const c=W.look(tm),p=W.on(d,'chest')(tm,c);return [p[0]+d.face*12,p[1]-12];})();
   W.aim(a,t3+220,tm,W.fixed(M),2,90,{through:[-6,16],blend:60});
@@ -322,11 +340,11 @@ PHRASES.cutMissed={ref:{a:-11,d:42},gap:209,width:{a:70,d:108},lead:40,run(W,a,d
   a.key(tm+30,{h:[30,8],w:70,lean:12,bend:8},'attack',{snap:1.4});
   a.walk('bf',tm+130,tm+300,-26,{py:69,lift:8,settle:.5,load:.2});
   a.key(tm+320,{lean:9,bend:7,head:-10,turn:2,h:[24,-30],w:-30,o:[14,-26]});
-  d.key(tm+150,{px:30,py:67});
-  d.key(tm+320,{px:30,py:67,lean:6,bend:3,head:-8,turn:-4,h:[26,-14],w:58,o:[14,-26]});
+  if(!st.dive){d.key(tm+150,{px:30,py:67});
+    d.key(tm+320,{px:30,py:67,lean:6,bend:3,head:-8,turn:-4,h:[26,-14],w:58,o:[14,-26]});}
   W.seq.misses.push({t:W.r2(tm),who:a.id,on:d.id,t0:W.r2(tm-120),t1:W.r2(tm+140)});
-  W.mark(tm,a.id,'Miss: the rising cut passes just outside '+D+'\'s turned body and runs on past; '+A+' reins it in');
-  return {end:tm+385,label:A+'\'s cut has missed and '+A+' has reined it in.'};
+  W.mark(tm,a.id,st.dive?D+' dodges under the cut and goes to the ground, weapon still up':'Miss: the rising cut passes just outside '+D+'\'s turned body and runs on past; '+A+' reins it in');
+  return {end:Math.max(tm+385,dEnd),label:st.dive?D+' has dodged to the ground.':A+'\'s cut has missed and '+A+' has reined it in.',down:st.dive?d.id:null};
 }};
 
 // ----- a cut at the forward thigh, met low: the blades bind -----
@@ -590,21 +608,23 @@ PHRASES.thrustLands={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d,
   W.mark(tc,d.id,hurt?'The thrust goes in and is drawn out':'The thrust lands but does not get through');
   return {end:tc+340,tc,label:hurt?D+' is stabbed.':'The thrust is stopped by armour.'};
 }};
-PHRASES.thrustMissed={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d,t8){
-  const A=W.nm(a),D=W.nm(d),tm=t8+420;
+PHRASES.thrustMissed={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d,t8,st){
+  st=st||{};const A=W.nm(a),D=W.nm(d),tm=t8+420;
   W.beat(W.n(),t8,'Thrust, short',A+' advances with a thrust; '+D+' gives two steps back and the point falls short');
   thrustIn(W,a,t8);
-  // the defender gives ground: front foot, then rear foot, the body back and the guard closed
-  d.walk('ff',t8+80,t8+240,100,{py:70,lift:9,settle:.3,load:.4});
-  d.walk('bf',t8+250,t8+390,14,{py:71,lift:8,settle:.45,load:.3,lead:60});
-  d.key(t8+120,{lean:-2,bend:6,head:-6,turn:-10,h:[12,-14],w:62,o:[8,-28]},'cover');
+  // the defender gives ground: front foot, then rear foot, the body back and the guard closed (or dodges to the ground)
+  let dEnd=0;
+  if(st.dive)dEnd=diveAway(d,t8,tm);
+  else{d.walk('ff',t8+80,t8+240,100,{py:70,lift:9,settle:.3,load:.4});
+    d.walk('bf',t8+250,t8+390,14,{py:71,lift:8,settle:.45,load:.3,lead:60});
+    d.key(t8+120,{lean:-2,bend:6,head:-6,turn:-10,h:[12,-14],w:62,o:[8,-28]},'cover');}
   const M=(()=>{const c=W.look(tm),p=W.on(d,'chest')(tm,c);return [p[0]+d.face*14,p[1]-2];})();
   W.aim(a,t8+260,tm,W.fixed(M),-2,90,{through:[8,0],blend:60});
   a.key(tm+40,{h:[0,-22],lean:10,bend:6},'attack',{snap:1.4});
   a.key(tm+300,{px:24,py:72,lean:10,bend:6,head:-12,h:[14,-22],w:20,o:[16,-24]});
   W.seq.misses.push({t:W.r2(tm),who:a.id,on:d.id,t0:W.r2(tm-120),t1:W.r2(tm+140)});
-  W.mark(tm,a.id,'Short: the point stops just in front of '+D+' and is drawn back');
-  return {end:tm+340,label:A+'\'s thrust has fallen short.'};
+  W.mark(tm,a.id,st.dive?D+' dodges the thrust and goes to the ground, weapon still up':'Short: the point stops just in front of '+D+' and is drawn back');
+  return {end:Math.max(tm+340,dEnd),label:st.dive?D+' has dodged to the ground.':A+'\'s thrust has fallen short.',down:st.dive?d.id:null};
 }};
 
 // ===== shields: a strike with the shield (the engine's "strikes with the shield"). Written in the deflected thrust's
@@ -820,7 +840,7 @@ function exchange(S,rec,t){
     const tried=rec.tried||(rec.defence&&/^(wound|armour|zero)$/.test(rec.outcome||'')?rec.defence:null);
     if(rec.strike==='shield'&&!S.F[rec.attacker].shieldR)seq.notes.push({kind:'stand-in',rec,why:'a shield strike by a fighter with no shield'});
     if(defence==='shield'&&!S.F[other(rec.attacker)].shieldR)seq.notes.push({kind:'stand-in',rec,why:'a shield defence by a fighter with no shield'});
-    const r=play(S,p.id,rec.attacker,t,{level:rec.lost>=6?'major':'minor',loc:rec.loc,lost:rec.lost,final:ended(rec),defence,tried,outcome:rec.outcome,
+    const r=play(S,p.id,rec.attacker,t,{level:rec.lost>=6?'major':'minor',loc:rec.loc,lost:rec.lost,final:ended(rec),defence,tried,outcome:rec.outcome,dive:rec.outcome==='evaded'&&!!rec.prone,
       prev:seq.exchanges[seq.exchanges.length-1]});
     // a bind holds through the decision until the next movement lifts away from it
     if(S.bind){S.bind.hold=r2(tStart+PHRASES[p.id].lead+120)-S.bind.t;S.bind=null;}
@@ -829,7 +849,7 @@ function exchange(S,rec,t){
     if(ended(rec)){const r2_=play(S,'collapse',rec.attacker,r.end,{tc:r.tc,inFrame:p.id==='legCut'},p.id==='legCut'?r.dx:null);S.over=true;
       return {t:r2_.end,tc:r.tc,phrase:p.id,ended:true};}
     t=W.settle(r.end);W.pause(t,r.label+' The next decision.');
-    return {t,tc:r.tc,phrase:p.id};
+    return {t,tc:r.tc,phrase:p.id,down:r.down||null};
 }
 // Write a whole fight from records. opt: names, id, title. The first exchange is preceded by the approach.
 function write(records,opt){

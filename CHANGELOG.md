@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: evade drawn as a dodge; the trial keeps the flow
+
+- An evade that the engine ends prone is drawn as a dodge: the evader ducks out of the line, steps back long and goes down under control, propped on one hand with the head up and the weapon toward the attacker, instead of the knockout fall (spring movement and the `?stage=spring` trial; the default stage is unchanged).
+- The trial no longer walks fighters back to their stations after every lull (owner: fluidity over strict range); real range changes still walk.
+
 ## The Pits: the spring movement on the live stage, as a hidden trial
 
 - `?stage=spring` on the Pits draws bouts between blade fighters with the exchange writer (`experiments/pits-spring-live.js`); everything else, and the Pits without the switch, are unchanged. Nothing released.

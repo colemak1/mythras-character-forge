@@ -1008,7 +1008,8 @@ function psLull(){
     const f=PS.fig[id],m=PS.M[id];if(!f||!m||!f.look||PS.clock<PS.busyUntil+300)continue;
     if(f.look.prone&&!f.mDown){f.mDown=true;f.spent=false;PS.busyUntil=Math.max(PS.busyUntil,L.fall(m,PS.clock));continue;}
     if(!f.look.prone&&f.mDown&&!f.end&&!f.mEnd){f.mDown=false;PS.busyUntil=Math.max(PS.busyUntil,L.stand(m,PS.clock,PS.gap));continue;}
-    if(!f.spent||PS.clock<PS.busyUntil+1300||f.end||f.mEnd||f.mDown||f.pressRole)continue;
+    // (the spring trial keeps the flow: no walk back to the station after a lull; a change of range still walks)
+    if(PS.springOn||!f.spent||PS.clock<PS.busyUntil+1300||f.end||f.mEnd||f.mDown||f.pressRole)continue;
     f.spent=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,PS.gap,psHurt(f)));
   }
 }
@@ -1094,7 +1095,8 @@ async function psMotionBlow(cue){
   const defeated=lost>0&&!!endC&&endC.winner===atk.id&&endC.how==='injury';
   const leg=lost>0&&!!limbC&&(limbC.leg||/leg/.test(limbC.loc||''));
   psEmit('resolve',{outcome:out,loc,lost,actor:atk.id,target:def.id,px});
-  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,fall:leg&&!defeated,defeated});
+  // (prone: an evade that the engine ends on the ground, so the spring trial draws a dodge to the ground, not a fall)
+  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,fall:leg&&!defeated,defeated,prone:out==='evaded'&&!px.rangeIntercept});
   PS.busyUntil=r.end;atk.spent=def.spent=true;
   if(defeated||leg)def.mDown=true;if(defeated)def.mEnd='lying';
   for(const c of r.contacts){

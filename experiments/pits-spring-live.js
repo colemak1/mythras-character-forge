@@ -63,7 +63,7 @@ function blow(F,aid,t,s){
   const A=F[aid],did=aid==='a'?'b':'a',w=world(A,t);
   if(!w)return {tc:t,contacts:[],end:t};
   const u0=Math.max(tau(w,t),w.next);w.S.now=u0;
-  const rec={attacker:aid,loc:s.loc||'chest',outcome:s.outcome||'wound',lost:s.lost||0,
+  const rec={attacker:aid,loc:s.loc||'chest',outcome:s.outcome||'wound',lost:s.lost||0,...(s.prone?{prone:true}:{}),
     ...(s.shield?{defence:'shield'}:{}),after:s.defeated?[{type:'end',winner:aid,how:'injury'}]:[]};
   const seq=w.S.seq,c0=seq.contactList.length,m0=seq.misses.length;
   const r=PW.exchange(w.S,rec,u0);
@@ -74,6 +74,7 @@ function blow(F,aid,t,s){
   out.sort((x,y)=>x.t-y.t);
   let end=r.t;
   if(r.ended)w.over=true;
+  if(r.down)(w.down=w.down||{})[r.down]=true;           // an evade that ended on the ground: already down
   else if(s.fall)end=fallAt(w,did,r.t);
   w.next=end;
   return {tc:out.length?out[0].t:clock(w,u0),contacts:out,end:clock(w,end),phrase:r.phrase};
@@ -84,8 +85,8 @@ function keyAt(m,t,fn){const w=world(m,t);if(!w)return null;const u=Math.max(tau
 function fallAt(w,id,u){const f=w.S.F[id],x=PW.standAt(f);w.S.now=Math.max(w.S.now,u);
   f.key(u,{px:x-6,py:44,lean:-16,bend:10,head:4},'together');f.key(u+300,{px:x-22,py:16,lean:-60,bend:10,head:8});
   f.key(u+700,{px:x-24,py:12,lean:-80,bend:6,head:2,h:[40,-16],w:4,o:[-40,-10]});return u+800;}
-function fall(m,t){const w=world(m,t);if(!w||w.over)return t;const u=Math.max(tau(w,t),w.next);const e=fallAt(w,m.id,u);w.next=e;ensure(w,e);return clock(w,e);}
-function stand(m,t){return keyAt(m,t,(f,u)=>{const x=PW.standAt(f);f.key(u,{px:x-6,py:44,lean:24,bend:10,head:-10},'together');
+function fall(m,t){const w=world(m,t);if(!w||w.over||(w.down&&w.down[m.id]))return t;const u=Math.max(tau(w,t),w.next);const e=fallAt(w,m.id,u);w.next=e;ensure(w,e);return clock(w,e);}
+function stand(m,t){const w0=world(m,t);if(w0&&w0.down)w0.down[m.id]=false;return keyAt(m,t,(f,u)=>{const x=PW.standAt(f);f.key(u,{px:x-6,py:44,lean:24,bend:10,head:-10},'together');
   f.key(u+420,{px:x,py:74,lean:6,bend:4,head:-8,h:[22,-18],w:30,o:[18,-27]});return u+620;})??t;}
 function lower(m,t){const w=world(m,t);if(!w||w.over)return t;
   return keyAt(m,t,(f,u)=>{f.key(u,{lean:3,head:-14,h:[22,-36],w:-30});return u+600;})??t;}
