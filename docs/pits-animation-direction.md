@@ -456,6 +456,8 @@ The whole suite passes.
 
 **Not done (same report):** attacks and defence from the ground (only the arms move); action names clipped in the deck's two narrow columns (`pits-arena.css`).
 
+**Work's check of the preview, 2026-11-13 (done):** the plate said Prone before the figure went down (after an Evade, through the location and damage rolls). The HUD now asks the stage (`pitsStageShownProne`): the chip follows `mDown` and the blow's first contact (`downAt`), and the stage rewrites only the chips at that contact (`pitsArenaConditions`). The clipped action names now wrap. Attacks and defence from the ground are still not done.
+
 ## Instructions for Opus (written 2026-11-13, after the fluid-flow batch)
 
 Read `AGENTS.md`, `HANDOFF.md` and the section above first. Work on the branch `claude/fable-combat-fluidity-jus18q` (it contains `claude/go-wf0bsg`), or a session branch started from it. The owner's rule stands: nothing goes to `main` until the spring stage is finished for every weapon; no PR per step.

@@ -260,7 +260,8 @@ body.pits-stone #root .pa-chron .combat-history{display:block;border:1px solid v
   body.pa-on .acts h3{grid-column:1/-1}
   body.pa-on .act{min-height:0;padding:3px 8px;gap:6px}
   body.pa-on .act>span:first-child{min-width:0}
-  body.pa-on .act b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* a long name (Switch Weapon Hand, Regain Footing) wraps onto a second line instead of being cut off */
+  body.pa-on .act b{font-size:14px;line-height:1.05;white-space:normal;overflow-wrap:break-word}
   body.pa-on .act small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   /* middle: the decision first, the exchange breakdown in what is left */
   body.pa-on .mid{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}

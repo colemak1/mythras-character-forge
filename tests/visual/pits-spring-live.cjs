@@ -28,7 +28,8 @@ async function bout(browser,cfg,seed,shots){
     // every animation frame: the stage clock, what the page is waiting for, and where the figures are
     window.__frames=[];const tick=()=>{try{if(typeof PS!=='undefined'&&PS.fig&&PS.fig.a&&PS.fig.a.pts&&PS.fig.b.pts&&typeof prototypeCombat!=='undefined'){
         const S=prototypeCombat.state(),V=prototypeCombat.presentation();
-        const P=id=>{const f=PS.fig[id],p=f.pts;return {j:['H','hand','tip','hd','F','bF'].map(k=>[Math.round(f.X+f.face*p[k][0]),Math.round(p[k][1])]),ep:!!S.fighters[id].prone};};
+        const P=id=>{const f=PS.fig[id],p=f.pts;return {j:['H','hand','tip','hd','F','bF'].map(k=>[Math.round(f.X+f.face*p[k][0]),Math.round(p[k][1])]),ep:!!S.fighters[id].prone,
+          chip:/Prone/.test((document.querySelector('#pitsStage .plate.'+(id==='a'?'you':'foe')+' .chips')||{}).textContent||'')};};
         window.__frames.push({t:performance.now(),c:PS.clock,wait:!V.busy&&S.phase==='fight',dice:!!(V.busy&&V.roll&&!V.roll.settled),a:P('a'),b:P('b')});}}catch(e){}
       requestAnimationFrame(tick);};requestAnimationFrame(tick);},seed);
   await page.goto(URL_);await page.evaluate(c=>{Object.assign(config,c);startRun(false);},cfg);await sleep(300);
@@ -58,6 +59,10 @@ async function bout(browser,cfg,seed,shots){
   // a declared action getting to its hold; getting up while the engine has the fighter prone
   const fr=await page.evaluate(()=>window.__frames);out.still=0;out.ran=0;out.rose=0;
   let run=0;const low={a:false,b:false};
+  // the HUD's Prone chip against the figure: a plate that says Prone while its figure still stands, held for a decision
+  // or the dice (Work, 2026-11-13: after an Evade the plate said Prone through the location and damage rolls)
+  out.ahead=0;out.chips=0;
+  for(const f of fr)for(const id of ['a','b']){if(f[id].chip)out.chips++;if(f[id].chip&&(f.wait||f.dice)&&f[id].j[0][1]<-55)out.ahead++;}
   for(let i=1;i<fr.length;i++){const f=fr[i],g=fr[i-1];
     if(f.c===g.c)for(const id of ['a','b']){const k=f[id].j.findIndex((p,k)=>Math.hypot(p[0]-g[id].j[k][0],p[1]-g[id].j[k][1])>1);
       if(k>=0){out.still++;out.stillWhat=id+'.'+['H','hand','tip','hd','F','bF'][k]+' at clock '+Math.round(f.c)+' '+JSON.stringify(g[id].j[k])+'->'+JSON.stringify(f[id].j[k]);break;}}
@@ -69,7 +74,7 @@ async function bout(browser,cfg,seed,shots){
   const browser=await chromium.launch();let pass=0,fail=0;
   const T=async(name,f)=>{try{await f();console.log('PASS '+name);pass++;}catch(e){console.log('FAIL '+name+': '+e.message.split('\n')[0]);fail++;}};
   const base={mode:'pvp',charname:'Aurel',pvpName:'Brann',style:75,pvpSkill:70,armor:0,pvpArmor:0,str:13,siz:13,pvpStr:13,pvpSiz:13};
-  const shots=process.env.PITS_SHOTS||null;const kinds=new Set();let first=null;
+  const shots=process.env.PITS_SHOTS||null;const kinds=new Set();let first=null,proneChips=0;
   // (seed 21: a full fight with a successful evade under this reaction order; some seeds end in one exchange, when the
   // first blow disables the opponent's weapon arm and the engine has it concede)
   for(const [w,v,seed,sh] of [['sword','dagger',21],['rapier','shortsword',23],['sword','sword',5,{shield:'heater',pvpShield:'buckler'}]]){
@@ -93,6 +98,8 @@ async function bout(browser,cfg,seed,shots){
       // (a declared action getting to its hold takes well under a second of the stage clock, a step in included)
       assert(r.ran<950,'the clock ran '+Math.round(r.ran)+' ms while the page waited for a person or the dice');
       assert.equal(r.rose,0,'a fighter the engine has prone got up');
+      assert.equal(r.ahead,0,'a plate said Prone while its figure was still standing ('+r.ahead+' frames)');
+      proneChips+=r.chips;
       assert(r.stalls<=2,'the playback paced itself ('+r.stalls+' stalls)');
     });
   }
@@ -101,6 +108,7 @@ async function bout(browser,cfg,seed,shots){
     assert(kinds.has('evaded'),'an evade: '+[...kinds]);
     assert([...kinds].some(k=>/parr|deflect|ward/.test(k)),'a parry: '+[...kinds]);
   });
+  await T('the Prone chip was shown once a figure was down',async()=>{assert(proneChips>0,'no plate ever said Prone');});
   await T('the whole fight replays on the spring trial without errors',async()=>{
     // (the first bout's page has sat in a background tab while the others ran, where the browser throttles its
     // animation clock: bring it to the front before replaying)

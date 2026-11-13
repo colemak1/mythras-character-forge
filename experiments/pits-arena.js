@@ -35,7 +35,9 @@ function paZonesSvg(f,pick){
 function paConditions(f){
   const chips=[];
   const add=(t,bad)=>chips.push(`<span class="chip${bad?'':' soft'}">${esc(t)}</span>`);
-  if(f.prone)add('Prone',1);
+  // (Prone follows the figure on the stage when the stage draws the fall later than the engine rules it)
+  const shown=typeof pitsStageShownProne==='function'&&f.id?pitsStageShownProne(f.id):null;
+  if(shown==null?f.prone:shown)add('Prone',1);
   if(f.bleeding)add('Bleeding',1);
   if(f.fatigue>0)add(FATIGUE_NAMES[f.fatigue]);
   if(f.disarmed)add('Disarmed',1);
@@ -184,6 +186,12 @@ function paPatch(el,html){
   const next=[...t.content.children],cur=[...el.children];
   if(next.length!==cur.length||el.childNodes.length!==cur.length||t.content.childNodes.length!==next.length){el.innerHTML=html;return;}
   next.forEach((n,i)=>{if(cur[i].outerHTML!==n.outerHTML)cur[i].replaceWith(n);});
+}
+// The stage calls this when a figure is seen to go down inside a movement: only the condition chips are rewritten.
+function pitsArenaConditions(){
+  if(typeof document==='undefined'||!paOn()||typeof S==='undefined'||!S||!S.fighters)return;
+  const v=paView(),set=(q,f)=>{const el=document.querySelector(q);if(!el||!f)return;const t=document.createElement('div');t.innerHTML=paConditions(f);if(el.innerHTML!==t.innerHTML)el.innerHTML=t.innerHTML;};
+  set('#pitsStage .plate.you .chips',v.a);set('#pitsStage .plate.foe .chips',v.b);set('.btgt .chips',v.b);
 }
 function pitsArenaHud(){
   const hud=document.querySelector('#pitsStage .ps-hud'),bar=document.querySelector('#pitsStage .pa-bar');if(!hud)return;

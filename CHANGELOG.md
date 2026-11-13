@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits trial: the Prone chip waits for the figure; action names shown whole
+
+- On the `?stage=spring` trial a fighter's plate no longer says Prone before the figure is seen to go down. After an Evade the engine has the evader prone from the roll, but the dodge to the ground is drawn only when the exchange is resolved; through the hit location and damage rolls the plate said Prone over a standing figure. The chip now appears at the blow's contact, when the figure goes down (the opponent panel in the bottom layouts too). Rules and state are unchanged; other stages are unchanged.
+- In the two-column action list, long names (Switch Weapon Hand, Change Range, Regain Footing) wrap onto a second line instead of being cut off. The list still fits without scrolling at 1024x768 and up.
+- Checks added to `tests/visual/pits-spring-live.cjs` (plate against figure, every frame) and `tests/visual/pits-layout.cjs` (no clipped action name).
+
 ## The Pits: Work's code findings (Disarm, shield strikes, shield sizes, Press Advantage, result dialog, current exchange)
 
 - A Disarm is no longer drawn before its exchange is resolved: it waits with the blow until location, damage and any Endurance roll are done. A Disarm won by the attacker is part of that one blow, and the weapon leaves the hand at its contact. A defender's Disarm is drawn after the parry.

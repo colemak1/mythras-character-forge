@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-13 by Claude (Pits: Work's six code findings fixed)_
+_Last updated: 2026-11-13 by Claude (Pits: Prone chip timing, clipped action names)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-13 by Claude (Pits: Work's six code findings fixed)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+000000000000000000000. **Claude, done 2026-11-13 (Work's check of the spring preview):** on branch `claude/sharp-franklin-mbjthj` (contains `claude/fable-combat-fluidity-jus18q`; pushed, no PR). The plate's Prone chip now waits for the figure to go down (it was ahead after an Evade), and long action names wrap instead of being cut off. Still not done: attacks and defences from the ground (only the arms move), next in "Instructions for Opus" item 2. Still to be seen by eye: replay, shield strike, Disarm and the finishing blow. **Owner:** play `https://raw.githack.com/colemak1/mythras-character-forge/claude/sharp-franklin-mbjthj/experiments/practice-combat.html?stage=spring`.
 
 00000000000000000000. **Claude, done 2026-11-13 (Work's six code findings, `docs/pits-spring-code-findings-20261113.md`):** all six fixed on `claude/fable-combat-fluidity-jus18q` (pushed, no PR), each with a regression test:
 - a Disarm waits for its whole exchange and is part of the attacker's one blow;

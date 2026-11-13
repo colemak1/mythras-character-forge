@@ -1200,10 +1200,11 @@ async function psMotionBlow(cue){
   const strike=(px.tool==='shield'||(px.tool==null&&ex.shield))&&atk.look&&atk.look.shield?'shield':null;
   const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying()});
   PS.busyUntil=r.end;atk.spent=def.spent=true;
-  if(defeated||leg||evading)def.mDown=true;if(defeated)def.mEnd='lying';
+  // (downAt: the HUD's Prone chip waits for the blow's contact, when the figure is seen to go down)
+  if(defeated||leg||evading){if(!def.mDown)def.downAt=r.contacts.length?r.contacts[0].t:PS.clock;def.mDown=true;}if(defeated)def.mEnd='lying';
   const disarm=cue.record&&cue.record.disarm;let flown=false;
   for(const c of r.contacts){
-    await psUntil(c.t);const w=psW(c.at);
+    await psUntil(c.t);const w=psW(c.at);psHudConditions();
     // the attacker's Disarm: the weapon leaves the defender's hand at the blow's (first) contact
     if(disarm&&!flown&&c.kind!=='miss'){flown=true;def.dropAhead=true;psEmit('contact',{kind:'disarm',actor:atk.id,target:def.id,point:w.map(Math.round)});
       psBanner('Disarmed','crit');psFlyWeapon(def,disarm.metres);}
@@ -1337,7 +1338,7 @@ function pitsStageSync(){
   if(fresh){psSettle();for(const k of Object.keys(PS.lodge)){PS.lodge[k].remove();delete PS.lodge[k];}
     for(const id of ['a','b']){const f=PS.fig[id];if(f.dropEl){f.dropEl.remove();f.dropEl=null;}f.look=null;}
     PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};
-    PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.mDown=false;f.spent=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
+    PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.mDown=false;f.downAt=0;f.spent=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
   for(const id of ['a','b']){
     const f=PS.fig[id];f.look=pitsStageLook(view[id]);f.scale=f.look.scale;
     // a weapon the blow has already knocked from the hand (drawn at the contact, before the engine's own entry for it
@@ -1396,6 +1397,14 @@ function pitsStageSync(){
 }
 // The stage reports when the motion of a beat is done, so playback can be paced by the animation itself.
 const pitsStageMounted=()=>!!PS.ready&&!!document.getElementById('pitsStage')&&!document.getElementById('pitsStage').hidden;
+// What the picture shows, for the HUD. On the spring stage the engine's state can be ahead of the figures: an evader
+// is prone from its roll, but is drawn going down only when the exchange is resolved and the blow plays. The HUD's
+// Prone chip follows the figure, so a held scene and its plates agree. null: no opinion (the other stages, no bout).
+function pitsStageShownProne(id){
+  if(!PS.springOn||!PS.M[id]||!PS.fig[id])return null;
+  const f=PS.fig[id];return !!f.mDown&&PS.clock>=(f.downAt||0);
+}
+function psHudConditions(){if(typeof pitsArenaConditions==='function')try{pitsArenaConditions();}catch(e){}}
 function pitsStageCueDone(id){return PS.cueFor===id&&PS.cuePromise?PS.cuePromise:null;}
 // The replay asks how long to stay on a beat (see playBeat in the arena).
 function pitsStageBeatDelay(entry,fallback){
