@@ -456,6 +456,8 @@ The whole suite passes.
 
 **Not done (same report):** attacks and defence from the ground (only the arms move); action names clipped in the deck's two narrow columns (`pits-arena.css`).
 
+**Owner's play notes, 2026-11-13 (second set):** trips now use `PitsWriter.sit` (on the backside, legs out, weapon up; `fall:'sit'` through `PitsSpringLive.blow`), not the crumble. A weapon left in an Impale wound is not thrown by the sync (`lodgedIn`). The miss order did not reproduce; the trial now has a **Copy fight record** button (`pitsFightRecord` in `pits-arena.js`: presented order, engine log, stage record with clock) so the owner's next case can be replayed. Scripted checks: `tests/visual/pits-spring-scripted.cjs`.
+
 **Work's check of the preview, 2026-11-13 (done):** the plate said Prone before the figure went down (after an Evade, through the location and damage rolls). The HUD now asks the stage (`pitsStageShownProne`): the chip follows `mDown` and the blow's first contact (`downAt`), and the stage rewrites only the chips at that contact (`pitsArenaConditions`). The clipped action names now wrap. Attacks and defence from the ground are still not done.
 
 ## Instructions for Opus (written 2026-11-13, after the fluid-flow batch)

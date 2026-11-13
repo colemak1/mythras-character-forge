@@ -369,7 +369,10 @@ const psSfx=k=>{try{if(typeof pitsSfx==='function')pitsSfx(k);}catch(e){}};
 const psLayer=c=>document.querySelector('#pitsStage .'+c);
 // Test and review hook: every stage event is recorded when a page asks for it.
 function psEmit(type,data){
-  try{if(window.__psRecord){window.__psRecord.push({t:Math.round(performance.now()),type,...data});
+  // (the spring trial keeps its own record for the Copy fight record button: what was drawn, in order, on the stage clock)
+  try{if(PS_SPRING&&!window.__psRecord)window.__psRecord=[];}catch(e){}
+  try{if(window.__psRecord){window.__psRecord.push({t:Math.round(performance.now()),c:Math.round(PS.clock),type,...data});
+    if(window.__psRecord.length>6000)window.__psRecord.splice(0,1000);
     // a review page may freeze the picture at the moment of contact (window.__psFreeze) and thaw it after the screenshot
     if(type==='contact'&&window.__psFreeze)psFreeze();}}catch(e){}
   // the plates take the damage when the blade reaches the body, not at the guard of a partial parry
@@ -1127,7 +1130,7 @@ async function psMotionCue(cue){
     }else if(cue.type==='trip'&&tgt&&me){
       // stand-in until trips have a phrase: a blow at the front leg; if it goes, the fall
       psDom(psWorld(me,me.pts?me.pts.Sh:[0,-60]),'Trip Opponent','fx');PS.intents={};
-      const r=L.blow(PS.M,me.id,PS.clock,{outcome:'armour',loc:'rleg',lost:0,fall:cue.fell,flow:psReplaying()});
+      const r=L.blow(PS.M,me.id,PS.clock,{outcome:'armour',loc:'rleg',lost:0,fall:cue.fell?'sit':false,flow:psReplaying()});
       PS.busyUntil=r.end;me.spent=tgt.spent=true;if(cue.fell)tgt.mDown=true;
       const c=r.contacts[r.contacts.length-1],w=psW(c.at);await psUntil(c.t);
       psEmit('contact',{kind:'trip',actor:me.id,target:tgt.id,point:w.map(Math.round)});psBurst(w,'spark',10);psRing(w);
@@ -1346,7 +1349,10 @@ function pitsStageSync(){
     if(f.dropAhead){if(!f.look.armed)f.dropAhead=false;else if(V.busy||V.hold)f.look.armed=false;else f.dropAhead=false;}
     if(f.look.armed&&f.dropEl){f.dropEl.remove();f.dropEl=null;}
     // A weapon already on the floor (for example after Show results) stays there.
-    if(!f.look.armed&&!f.dropEl&&view[id].disarmed)psFlyWeapon(f,view[id].droppedMetres||2);
+    // (not a weapon left in the other fighter's wound: Impale, "leave it in" marks the wielder disarmed, but the weapon
+    // is drawn where it is lodged, not thrown to the floor as well)
+    const lodgedIn=(view[id==='a'?'b':'a'].impaledWounds||[]).some(w=>w&&w.attacker===id);
+    if(!f.look.armed&&!f.dropEl&&view[id].disarmed&&!lodgedIn)psFlyWeapon(f,view[id].droppedMetres||2);
     f.end=null;
   }
   // Press Advantage: the effect is active while the engine says the opponent still cannot attack (pressedTurns).

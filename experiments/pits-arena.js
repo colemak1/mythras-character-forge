@@ -285,16 +285,38 @@ function pitsArenaBarHtml(){
     <div class="pa-tools">${typeof pitsBottomSelectHtml==='function'?pitsBottomSelectHtml():''}${guidanceToggleHtml()}<button type="button" class="toolbutton" data-pa="auto" aria-pressed="${PA.auto}">Auto-roll ${PA.auto?'on':'off'}</button>
     <button type="button" class="toolbutton" data-act="help">Rules</button>
     <button type="button" class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Standard pace'}</button>
+    ${typeof PS_SPRING!=='undefined'&&PS_SPRING?'<button type="button" class="toolbutton" data-pa="record" title="Copies this fight (dice, rulings and what the stage drew, in order) to paste to Claude">Copy fight record</button>':''}
     <button type="button" class="toolbutton" data-pa="fs" aria-pressed="${!!document.fullscreenElement}">Full screen</button>
     <button type="button" class="toolbutton" data-act="reset">Exit battle</button></div>${bout}`;
 }
 function pitsArenaBarWire(){
   const b=document.querySelector('[data-pa="auto"]');
   if(b&&!b.dataset.wired){b.dataset.wired='1';b.addEventListener('click',()=>{PA.auto=!PA.auto;render();});}
+  const rec=document.querySelector('[data-pa="record"]');
+  if(rec&&!rec.dataset.wired){rec.dataset.wired='1';rec.addEventListener('click',()=>pitsCopyRecord(rec));}
   const fs=document.querySelector('[data-pa="fs"]');
   if(fs&&!fs.dataset.wired){fs.dataset.wired='1';fs.addEventListener('click',()=>{
     try{const p=document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();if(p&&p.then)p.then(render,()=>{});}catch(e){}
   });}
+}
+// The spring trial's fight record, for reporting a fault: the dice and rulings in the order they were presented, the
+// engine's log in its own order, and what the stage drew (declared actions, blows, contacts) with its clock. Copied
+// to the clipboard; if the browser refuses, shown in a box to copy by hand.
+function pitsFightRecord(){
+  const sh=e=>e.roll?{roll:[e.roll.actor,e.roll.label,e.roll.values]}:e.checkpoint?{cp:1}:{id:e.id,t:e.title,b:e.body};
+  const stage=(window.__psRecord||[]).map(r=>[r.c,r.type,r.kind||r.outcome||r.how||'',r.actor||'',r.target||'',r.loc||'',r.lost||0]);
+  return JSON.stringify({record:'pits-spring-1',at:new Date().toISOString(),page:location.search,ua:navigator.userAgent,
+    config,mode:S.mode,guidance:!!V.guidance,quick:!!V.quick,auto:!!PA.auto,bottom:document.body.dataset.bottom||'',
+    fighters:{a:{name:S.fighters.a.name,weapon:S.fighters.a.weapon,shield:S.fighters.a.shield},b:{name:S.fighters.b.name,weapon:S.fighters.b.weapon,shield:S.fighters.b.shield}},
+    presented:(V.tape||[]).map(sh),log:(S.logs||[]).map(l=>({id:l.id,t:l.title,b:l.body})),stage});
+}
+function pitsCopyRecord(btn){
+  const text=pitsFightRecord(),done=()=>{btn.textContent='Copied';setTimeout(()=>{btn.textContent='Copy fight record';},2000);};
+  const box=()=>{document.getElementById('paRecord')?.remove();const d=document.createElement('div');d.id='paRecord';d.className='modal pa-rules';
+    d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-label','Fight record');
+    d.innerHTML='<div class="mbox"><h2>Fight record</h2><p>Copy all of this and paste it to Claude.</p><textarea readonly rows="12" style="width:100%"></textarea><p class="pa-rules-close"><button type="button" class="toolbutton">Close</button></p></div>';
+    d.querySelector('textarea').value=text;d.querySelector('button').addEventListener('click',()=>d.remove());document.body.append(d);d.querySelector('textarea').select();};
+  try{navigator.clipboard.writeText(text).then(done,box);}catch(e){box();}
 }
 // The battle is one screen with no page scroll, so the rules notes and the Special Effects
 // catalogue (which sit below the fold outside a fight) open in a window instead.

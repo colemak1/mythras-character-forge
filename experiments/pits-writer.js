@@ -796,6 +796,19 @@ function crumble(f,u,x){
   return u+760;
 }
 
+// A trip (owner, 2026-11-13: "getting tripped is different and should put you on your ass"): not the crumble of a
+// defeat. The swept front foot goes out from under, the hips drop back and down onto the floor, the body tips back
+// and the empty hand goes behind to catch the weight; the legs end out in front, knees up, and the weapon stays up
+// toward the other fighter. x: where the fighter stands.
+function sit(f,u,x){
+  f.key(u,{px:x-8,py:60,lean:-12,bend:-6,head:-8,h:[20,-30],w:44,o:[-8,-34]},'together');
+  f.step('ff',u,u+200,x+30,18);
+  f.key(u+220,{px:x-32,py:32,lean:-22,bend:-6,head:2,h:[22,-24],w:34,o:[-30,6]});
+  f.step('bf',u+180,u+400,x-4,6);
+  f.key(u+440,{px:x-40,py:13,lean:-14,bend:2,head:-6,h:[24,-16],w:26,o:[-36,42]});
+  return u+640;
+}
+
 // A shield strike met by the blade does not get all the way in: the same movement, at a longer measure, so there is
 // room between the two for the blade on the shield (chest to chest, any blade on the shield reaches the striker)
 PHRASES.shieldStrikeMet={...PHRASES.shieldStrike,gap:160};
@@ -998,7 +1011,7 @@ function write(records,opt){
   return seq;
 }
 
-const api={calibrate:null,write,create,exchange,intent,variants,crumble,pick,PHRASES,ZONE,standAt,gapOf,planned,takeMeasure,profile,shieldR};
+const api={calibrate:null,write,create,exchange,intent,variants,crumble,sit,pick,PHRASES,ZONE,standAt,gapOf,planned,takeMeasure,profile,shieldR};
 root.PitsWriter=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -95,7 +95,7 @@ function blow(F,aid,t,s){
     if(w.down&&w.down[did]){const f=w.S.F[did];f.groundWrite=true;
       f.key(r.tc||u0+400,{py:13,lean:72,bend:10,head:30,h:[34,-20],w:-4,o:[26,-22]});f.groundWrite=false;}}
   if(r.down)(w.down=w.down||{})[r.down]=true;           // an evade that ended on the ground: already down
-  else if(s.fall)end=fallAt(w,did,r.t);
+  else if(s.fall)end=fallAt(w,did,r.t,s.fall==='sit'?'sit':null);
   rerun(w,end+500);
   // (the exchange's own recovery plays on to the hold; what it had planned for after that is dropped by the next write)
   // s.flow (the replay): nothing holds between exchanges, so there is no hold to choose, and the next exchange is
@@ -165,8 +165,9 @@ function declare(w,id,kind,u,pick){
 
 // ----- stand-ins (kept simple until they have phrases) -----
 function keyAt(m,t,fn){const w=world(m,t);if(!w)return null;const u=Math.max(tau(w,t),w.next);w.S.now=u;const e=fn(w.S.F[m.id],u,w);w.next=Math.max(w.next,e);rerun(w,e);return clock(w,e);}
-function fallAt(w,id,u){const f=w.S.F[id],x=PW.standAt(f);w.S.now=Math.max(w.S.now,u);(w.down=w.down||{})[id]=true;
-  return PW.crumble(f,u,x);}
+// how: 'sit' for a trip (the fighter is put on its backside), otherwise the crumble
+function fallAt(w,id,u,how){const f=w.S.F[id],x=PW.standAt(f);w.S.now=Math.max(w.S.now,u);(w.down=w.down||{})[id]=true;
+  return how==='sit'?PW.sit(f,u,x):PW.crumble(f,u,x);}
 function fall(m,t){const w=world(m,t);if(!w||w.over||(w.down&&w.down[m.id]))return t;const u=Math.max(tau(w,t),w.next);const e=fallAt(w,m.id,u);w.next=e;rerun(w,e);return clock(w,e);}
 function stand(m,t){const w0=world(m,t);if(w0&&w0.down)w0.down[m.id]=false;if(w0)w0.S.F[m.id].grounded=false;return keyAt(m,t,(f,u)=>{const x=PW.standAt(f);f.key(u,{px:x-6,py:44,lean:24,bend:10,head:-10},'together');
   // (from the heap the feet are under the body: the rear foot goes back to push up, the front one out into a stance)

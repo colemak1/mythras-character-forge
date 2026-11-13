@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits trial: trips sit you down, an impaled weapon stays put, a fight record to report faults
+
+- A successful Trip now puts the fighter on its backside: the swept foot goes out, the hips drop back onto the floor, a hand goes behind and the weapon stays up toward the other fighter. It is no longer the crumble onto the knees used for a defeat (owner, 2026-11-13). Leg wounds and defeats still crumble.
+- Impale, "Leave it in the wound": the weapon is drawn lodged in the wound only. The engine marks the wielder unarmed, and the stage had also thrown a weapon to the floor behind them as if they had been disarmed.
+- New on the `?stage=spring` trial: a **Copy fight record** button in the top bar. It copies the fight's dice and rulings in the order they were shown, the engine's log, and what the stage drew, so a fault seen in play can be replayed exactly.
+- The reported miss order (my miss drawn only after the opponent's next attack and my parry) did not reproduce in scripted or random bouts against either opponent type; a check for it is in the new `tests/visual/pits-spring-scripted.cjs`, with the Impale and Trip cases.
+
 ## The Pits trial: the Prone chip waits for the figure; action names shown whole
 
 - On the `?stage=spring` trial a fighter's plate no longer says Prone before the figure is seen to go down. After an Evade the engine has the evader prone from the roll, but the dodge to the ground is drawn only when the exchange is resolved; through the hit location and damage rolls the plate said Prone over a standing figure. The chip now appears at the blow's contact, when the figure goes down (the opponent panel in the bottom layouts too). Rules and state are unchanged; other stages are unchanged.

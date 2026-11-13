@@ -179,4 +179,19 @@ test('Press Advantage is drawn: the point stays in the other\'s face, the other 
     const t2=PL.intent(B.M.b,e,'attack',0);assert(t2>e);
   }
 });
+// (owner, 2026-11-13: "when tripped it should not be the go to your knees animation that goes off when you die,
+// getting tripped is different and should put you on your ass")
+test('a trip puts the fighter on its backside: hips on the floor, torso up, legs out toward the other; not the crumble',()=>{
+  const end=fall=>{const B=bout('sword','sword');const r=PL.blow(B.M,'a',0,{outcome:'armour',loc:'rleg',lost:0,fall});const t=r.end+400;
+    const p=n=>B.at('b',t,n);return {B,t,P:p('P'),S:p('S'),Hd:p('Hd'),F:p('F'),bF:p('bF'),aP:B.at('a',t,'P')};};
+  const s=end('sit'),c=end(true);
+  assert(s.P[1]<20,'the hips are on the floor ('+s.P[1].toFixed(0)+')');
+  assert(s.S[1]-s.P[1]>45,'the torso is upright, shoulders well above the hips ('+(s.S[1]-s.P[1]).toFixed(0)+')');
+  const toward=Math.sign(s.aP[0]-s.P[0]);
+  for(const k of ['F','bF'])assert((s[k][0]-s.P[0])*toward>10,'the '+k+' foot is out in front, toward the other fighter');
+  assert(Math.abs(s.F[0]-s.aP[0])>40,'the legs stop short of the other fighter');
+  // the crumble folds over its knees: shoulders much lower over the hips than when sitting
+  assert(c.S[1]-c.P[1]<s.S[1]-s.P[1]-15,'the trip is not the defeat crumble');
+  cleanHold(s.B,s.t,'after the trip');
+});
 console.log(passed+' passed');

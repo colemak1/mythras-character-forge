@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-13 by Claude (Pits: Prone chip timing, clipped action names)_
+_Last updated: 2026-11-13 by Claude (Pits: trip fall, impaled weapon, fight record)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-13 by Claude (Pits: Prone chip timing, clipped action nam
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+0000000000000000000000. **Claude, done 2026-11-13 (owner's play notes):** on `claude/sharp-franklin-mbjthj` (pushed, no PR). A trip now sits the fighter on its backside (`PitsWriter.sit`), and a weapon left in an Impale wound is no longer also thrown to the floor. The miss-order report (my miss drawn after the opponent's next attack and my parry) did **not** reproduce in scripted bouts (two-player and against the computer, every reaction, Trip and Disarm effects, Guidance on and off) or in 20 random bouts. **Owner:** when it happens again, press **Copy fight record** in the top bar straight away and paste it to Claude, with one line on which moment looked wrong. **Then Claude:** replay that record and fix the order; then "Instructions for Opus" item 2 (attacks and defences from the ground).
 
 000000000000000000000. **Claude, done 2026-11-13 (Work's check of the spring preview):** on branch `claude/sharp-franklin-mbjthj` (contains `claude/fable-combat-fluidity-jus18q`; pushed, no PR). The plate's Prone chip now waits for the figure to go down (it was ahead after an Evade), and long action names wrap instead of being cut off. Still not done: attacks and defences from the ground (only the arms move), next in "Instructions for Opus" item 2. Still to be seen by eye: replay, shield strike, Disarm and the finishing blow. **Owner:** play `https://raw.githack.com/colemak1/mythras-character-forge/claude/sharp-franklin-mbjthj/experiments/practice-combat.html?stage=spring`.
 
