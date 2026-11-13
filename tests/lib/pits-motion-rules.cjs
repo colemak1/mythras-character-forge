@@ -14,9 +14,22 @@ function fault(q,step){
   const cache={a:new Map(),b:new Map()};
   const at=(id,t)=>{let w=cache[id].get(t);if(w)return w;const f=q.fighters[id],j=PS.joints(q,id,t);w={j};
     for(const n of J)w[n]=f.W(j[n]);cache[id].set(t,w);return w;};
-  const inC=t=>q.contactList.some(c=>t>=c.t-90&&t<=c.t+(c.hold||0)+90);
+  const inC=t=>q.contactList.some(c=>t>=c.t-90&&t<=c.t+(c.hold||0)+90),own={};
   for(let t=0;t<=q.dur;t+=step)for(const id of ids){const w=at(id,t),o=at(other[id],t);
     for(const k in w.j.over)if(w.j.over[k]>.6)return id+'.'+k+' over its length at '+t;
+    // a fighter's own blade is never held across its own head (the drawn head, radius 13 with its stroke, against the
+    // blade's stroke: centre line within 17 of the head's centre). Seen from the side, a cut from over the shoulder
+    // has to sweep past the head (in depth it passes beside it), so a crossing is allowed while the blade is clearly
+    // moving: its tip averaging at least 0.5 units a millisecond (about 8 a frame at normal speed, a sweep), and for
+    // no more than 250 ms. Slower or longer is a hold; under 60 ms (about two frames at normal speed) does not show as
+    // one. Work's check, 2026-11-13.
+    {const d=seg(w.Hd,w.Hn,w.tip),e=own[id];
+      // (the tip's speed is the length of the path it travels, not the distance between where it starts and ends)
+      if(d<17){if(!e)own[id]={t0:t,tip:w.tip,path:0,min:d};else{e.min=Math.min(e.min,d);
+          e.path+=Math.hypot(w.tip[0]-e.tip[0],w.tip[1]-e.tip[1]);e.tip=w.tip;
+          if(t-e.t0>250)return id+'\'s blade is held across its own head ('+e.min.toFixed(1)+', over 250 ms) at '+e.t0;}}
+      else if(e){const dt=t-e.t0,sp=dt?(e.path+Math.hypot(w.tip[0]-e.tip[0],w.tip[1]-e.tip[1]))/dt:9;own[id]=null;
+        if(dt>=60&&sp<.5)return id+'\'s blade is held across its own head ('+e.min.toFixed(1)+', '+dt+' ms, tip '+sp.toFixed(2)+'/ms) at '+e.t0;}}
     if(!inC(t))for(const n of BODY){const d=seg(o[n],w.Hn,w.tip);
       if(d<2)return id+'\'s blade '+d.toFixed(1)+' from '+other[id]+'.'+n+' at '+t;}}
   // a contact part is a point on a blade, or a shield's face: the off hand on the shield's centre, the point on its rim
