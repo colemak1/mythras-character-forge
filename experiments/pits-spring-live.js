@@ -65,6 +65,8 @@ function blow(F,aid,t,s){
   const u0=Math.max(tau(w,t),w.next);w.S.now=u0;
   const rec={attacker:aid,loc:s.loc||'chest',outcome:s.outcome||'wound',lost:s.lost||0,...(s.prone?{prone:true}:{}),
     ...(s.shield?{defence:'shield'}:{}),after:s.defeated?[{type:'end',winner:aid,how:'injury'}]:[]};
+  // a fighter the engine has on the floor stays down through the exchange (only its arms and head move)
+  for(const id of ['a','b'])w.S.F[id].grounded=!!(w.down&&w.down[id]);
   const seq=w.S.seq,c0=seq.contactList.length,m0=seq.misses.length;
   const r=PW.exchange(w.S,rec,u0);
   ensure(w,r.t);
@@ -82,21 +84,30 @@ function blow(F,aid,t,s){
 
 // ----- stand-ins (kept simple until they have phrases) -----
 function keyAt(m,t,fn){const w=world(m,t);if(!w)return null;const u=Math.max(tau(w,t),w.next);w.S.now=u;const e=fn(w.S.F[m.id],u,w);w.next=Math.max(w.next,e);ensure(w,e);return clock(w,e);}
-function fallAt(w,id,u){const f=w.S.F[id],x=PW.standAt(f);w.S.now=Math.max(w.S.now,u);
+function fallAt(w,id,u){const f=w.S.F[id],x=PW.standAt(f);w.S.now=Math.max(w.S.now,u);(w.down=w.down||{})[id]=true;
   f.key(u,{px:x-6,py:44,lean:-16,bend:10,head:4},'together');f.key(u+300,{px:x-22,py:16,lean:-60,bend:10,head:8});
   f.key(u+700,{px:x-24,py:12,lean:-80,bend:6,head:2,h:[40,-16],w:4,o:[-40,-10]});return u+800;}
 function fall(m,t){const w=world(m,t);if(!w||w.over||(w.down&&w.down[m.id]))return t;const u=Math.max(tau(w,t),w.next);const e=fallAt(w,m.id,u);w.next=e;ensure(w,e);return clock(w,e);}
-function stand(m,t){const w0=world(m,t);if(w0&&w0.down)w0.down[m.id]=false;return keyAt(m,t,(f,u)=>{const x=PW.standAt(f);f.key(u,{px:x-6,py:44,lean:24,bend:10,head:-10},'together');
+function stand(m,t){const w0=world(m,t);if(w0&&w0.down)w0.down[m.id]=false;if(w0)w0.S.F[m.id].grounded=false;return keyAt(m,t,(f,u)=>{const x=PW.standAt(f);f.key(u,{px:x-6,py:44,lean:24,bend:10,head:-10},'together');
   f.key(u+420,{px:x,py:74,lean:6,bend:4,head:-8,h:[22,-18],w:30,o:[18,-27]});return u+620;})??t;}
 function lower(m,t){const w=world(m,t);if(!w||w.over)return t;
   return keyAt(m,t,(f,u)=>{f.key(u,{lean:3,head:-14,h:[22,-36],w:-30});return u+600;})??t;}
 function yieldTo(m,t){return keyAt(m,t,(f,u)=>{f.key(u,{lean:16,bend:10,head:22,h:[0,-58],w:-70,o:[4,-50]});return u+520;})??t;}
 function press(A,D,t){return t;}
 function react(){return 0;}
-// back to the engine's range: a walk (the writer's measure step), from where the fighter stands
-function recover(m,t,gap){const w=world(m,t);if(!w||w.over)return t;
-  return keyAt(m,t,(f,u)=>{const want=L0.station(m,gap),e=want-PW.planned(f,'ff');
+// back to the engine's range: a walk (the writer's measure step), from where the fighter stands. With settle (a new
+// round): the stance is squared up first (the rear foot, to the guard's width) and the fighter ends in its guard.
+function recover(m,t,gap,hurt,settle){const w=world(m,t);if(!w||w.over||(w.down&&w.down[m.id]))return t;
+  return keyAt(m,t,(f,u)=>{
+    if(settle){const width=PW.planned(f,'ff')-PW.planned(f,'bf'),g=f.guard.ffx-f.guard.bfx,e0=width-g;
+      if(Math.abs(e0)>10){f.walk('bf',u+120,u+300,PW.planned(f,'bf')+e0,{py:74,lift:7,settle:.5,load:.35});u+=340;}}
+    const want=L0.station(m,gap),e=want-PW.planned(f,'ff');
     return Math.abs(e)<6?u:PW.takeMeasure(f,u,e,null,w.S.W.look);})??t;}
+// a new round, after both have walked to their places: the guard, both together (settled one at a time, the one who
+// has not moved raises its point while the other is still walking back past it)
+function settleGuard(m,t,hurt){return keyAt(m,t,(f,u)=>{const G=f.guard,mid=(PW.planned(f,'ff')+PW.planned(f,'bf'))/2;
+  f.key(u,{px:mid+(G.px-(G.ffx+G.bfx)/2),py:G.py,lean:G.lean+(hurt?4:0),bend:G.bend+(hurt?4:0),head:G.head,turn:0,h:G.h.slice(),w:G.w,
+    ...(f.shieldR?{}:{o:G.o.slice()})},'cover');return u+300;})??t;}
 function place(m,t,gap,state){
   m.pair.gap=gap;const w=m.pair.world;
   if(!w)return t+1;                                    // before the bout's first movement: the world is made at that gap
@@ -104,7 +115,7 @@ function place(m,t,gap,state){
   return recover(m,t,gap);
 }
 
-const api={supports,fighter,gap:L0.gap,station:L0.station,place,recover,blow,fall,stand,lower,yieldTo,press,react,pose,
+const api={supports,fighter,gap:L0.gap,station:L0.station,place,recover,settleGuard,blow,fall,stand,lower,yieldTo,press,react,pose,
   PACE,bladeKey,world:m=>m.pair.world};
 root.PitsSpringLive=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;

@@ -110,10 +110,16 @@ function create(opt){
   // live (opt.live): nothing may be written before S.now, the moment the stage has already shown; a key or impulse
   // that would start earlier (a step's weight shift before its phrase) starts then instead
   let last=null,dirty=Infinity;const S0={now:null};
+  // grounded (the live stage: the engine has this fighter on the floor and it has not regained footing): a phrase
+  // moves only its arms and head; its body, feet and steps stay down (a stand-in until there are phrases on the ground)
+  const BODYCH=['px','py','lean','bend'];
+  const ground=v=>{const o={};for(const k in v)if(!BODYCH.includes(k))o[k]=v[k];return Object.keys(o).length?o:null;};
   for(const f of [A,B])for(const [m,ti] of [['key',0],['step',1],['impulse',0],['pin',3]]){const orig=f[m];
     f[m]=function(...a){if(S0.now!=null&&(m==='key'||m==='impulse')&&a[ti]<S0.now)a[ti]=S0.now;
+      if(f.grounded&&!f.groundWrite){if(m==='step')return this;
+        if(m==='key'||m==='impulse'){const g=ground(a[1]);if(!g)return this;a[1]=g;}}
       dirty=Math.min(dirty,a[ti]-REC*2);return orig.apply(this,a);};}
-  for(const f of [A,B]){const w=f.walk;f.walk=function(foot,t0,...r){dirty=Math.min(dirty,t0-400);return w.call(this,foot,t0,...r);};}
+  for(const f of [A,B]){const w=f.walk;f.walk=function(foot,t0,...r){if(f.grounded&&!f.groundWrite)return this;dirty=Math.min(dirty,t0-400);return w.call(this,foot,t0,...r);};}
   const run=t=>{const r=simulate(F,t,{from:PS.resumeFrom(last,dirty)});last=r;dirty=Infinity;return r;};
   const look=t=>{t=r2(t);const r=run(t+REC);return {t,out:{a:r.a[t/REC],b:r.b[t/REC]}};};
   const U=f=>f.f||f;
@@ -840,7 +846,7 @@ function exchange(S,rec,t){
     const tried=rec.tried||(rec.defence&&/^(wound|armour|zero)$/.test(rec.outcome||'')?rec.defence:null);
     if(rec.strike==='shield'&&!S.F[rec.attacker].shieldR)seq.notes.push({kind:'stand-in',rec,why:'a shield strike by a fighter with no shield'});
     if(defence==='shield'&&!S.F[other(rec.attacker)].shieldR)seq.notes.push({kind:'stand-in',rec,why:'a shield defence by a fighter with no shield'});
-    const r=play(S,p.id,rec.attacker,t,{level:rec.lost>=6?'major':'minor',loc:rec.loc,lost:rec.lost,final:ended(rec),defence,tried,outcome:rec.outcome,dive:rec.outcome==='evaded'&&!!rec.prone,
+    const r=play(S,p.id,rec.attacker,t,{level:rec.lost>=6?'major':'minor',loc:rec.loc,lost:rec.lost,final:ended(rec),defence,tried,outcome:rec.outcome,dive:/^(evaded|miss|fumble)$/.test(rec.outcome||'')&&!!rec.prone,
       prev:seq.exchanges[seq.exchanges.length-1]});
     // a bind holds through the decision until the next movement lifts away from it
     if(S.bind){S.bind.hold=r2(tStart+PHRASES[p.id].lead+120)-S.bind.t;S.bind=null;}

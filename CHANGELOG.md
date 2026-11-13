@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits trial: round reset; fighters on the ground stay down
+
+- In the `?stage=spring` trial, at each new round both fighters walk back to their places and settle into guard together (owner's idea, to judge by eye).
+- An evade tried against a blow that missed anyway also ends in the dodge to the ground (the engine leaves the evader prone then too), and a fighter the engine has prone stays down while it attacks or defends from the floor, until it regains footing.
+
 ## The Pits: evade drawn as a dodge; the trial keeps the flow
 
 - An evade that the engine ends prone is drawn as a dodge: the evader ducks out of the line, steps back long and goes down under control, propped on one hand with the head up and the weapon toward the attacker, instead of the knockout fall (spring movement and the `?stage=spring` trial; the default stage is unchanged).

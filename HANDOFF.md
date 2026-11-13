@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-13 by Claude (Pits: evade as a dodge; trial keeps the flow)_
+_Last updated: 2026-11-13 by Claude (Pits trial: round reset, prone stays down)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-13 by Claude (Pits: evade as a dodge; trial keeps the flo
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+00000000000000000. **Claude, done 2026-11-13 (owner's idea):** round reset in the trial (both back to their places and into guard at each new round); prone fighters stay down until they regain footing. **Owner:** watch a few rounds and say whether the reset looks right. Open: the live trial has movement faults the studies don't (see "Round reset, and fighters on the ground").
 
 0000000000000000. **Claude, done 2026-11-13 (owner's notes on the trial):** evade drawn as a dodge to the ground, not a fall; the trial keeps the flow (no walk back after a lull; range changes still walk). Owner decided: natural over technically accurate on range. **Owner:** try an evade on `experiments/practice-combat.html?stage=spring`.
 

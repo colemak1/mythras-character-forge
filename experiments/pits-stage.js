@@ -1095,8 +1095,10 @@ async function psMotionBlow(cue){
   const defeated=lost>0&&!!endC&&endC.winner===atk.id&&endC.how==='injury';
   const leg=lost>0&&!!limbC&&(limbC.leg||/leg/.test(limbC.loc||''));
   psEmit('resolve',{outcome:out,loc,lost,actor:atk.id,target:def.id,px});
-  // (prone: an evade that the engine ends on the ground, so the spring trial draws a dodge to the ground, not a fall)
-  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,fall:leg&&!defeated,defeated,prone:out==='evaded'&&!px.rangeIntercept});
+  // (prone: the engine ends an evade on the ground, a successful one and one tried against a blow that missed anyway,
+  // except while changing range; the spring trial draws a dodge to the ground, not a fall)
+  const tried=out==='evaded'||((px.react||ex.react)==='evade'&&/^(miss|fumble)$/.test(out));
+  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,fall:leg&&!defeated,defeated,prone:tried&&!px.rangeIntercept});
   PS.busyUntil=r.end;atk.spent=def.spent=true;
   if(defeated||leg)def.mDown=true;if(defeated)def.mEnd='lying';
   for(const c of r.contacts){
@@ -1138,6 +1140,18 @@ async function psMotionBlow(cue){
     await psUntil(Math.min(e2,PS.clock+380));return;
   }
   await psMotionPress(atk,def,cue);
+}
+// The spring trial: at a new round (both out of AP, the engine's "Round N"), both fighters go back to their places for
+// the range and settle into their stance, together (owner, 2026-11-13: "maybe they reset to stances after every round
+// when out of AP, we can see how that looks"). Within a round the fight flows on. A fighter on the floor stays there.
+async function psSpringRound(){
+  const L=PL(),ids=['a','b'].filter(id=>{const f=PS.fig[id];return f&&PS.M[id]&&!f.mDown&&!(f.look&&f.look.prone)&&!f.end&&!f.mEnd;});
+  let end=PS.clock;
+  for(const id of ids){end=Math.max(end,L.recover(PS.M[id],PS.clock,PS.gap,psHurt(PS.fig[id]),true));PS.fig[id].spent=false;}
+  // then both settle into guard together, once the slower one has arrived
+  let end2=end;for(const id of ids)end2=Math.max(end2,L.settleGuard(PS.M[id],end,psHurt(PS.fig[id])));
+  end=end2;PS.busyUntil=Math.max(PS.busyUntil,end);psEmit('round-reset',{who:ids,ms:Math.round(end-PS.clock)});
+  try{await psUntil(end);}catch(e){}
 }
 // Press Advantage: the attacker stays on the blade with the point in the face, held until the engine ends the effect.
 async function psMotionPress(atk,def,cue){
@@ -1262,7 +1276,7 @@ function pitsStageSync(){
       const b=pitsStageBeat(V.events,V.step,names);
       PS.cueFor=e.id;
       if(b.consumed)PS.cuePromise=null;      // part of the blow's own motion: nothing to start, and nothing to cancel
-      else{PS.epoch++;PS.cuePromise=b.cue?psRunCue(b.cue):null;}
+      else{PS.epoch++;PS.cuePromise=b.cue?psRunCue(b.cue):PS.springOn&&/^Round \d+$/.test(String(e.title||''))?psSpringRound():null;}
     }
   }else{
     // entries held back for an unfinished exchange have not been presented yet: they must still start their cue when their turn comes

@@ -14,7 +14,7 @@ const URL_=(process.env.PITS_URL||'http://localhost:8765/experiments/practice-co
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const st=page=>page.evaluate(()=>{const S=prototypeCombat.state(),V=prototypeCombat.presentation();
   return {phase:S.phase,busy:!!V.busy,pend:S.pending?S.pending.kind:null,hasR:!!prototypeCombat.pendingRoll(),turn:S.order?S.order[S.turnIndex]:null,
-    paused:PS.paused,clock:PS.clock,motion:PS_MOTION,spring:!!PS.springOn,
+    paused:PS.paused,clock:PS.clock,motion:PS_MOTION,spring:!!PS.springOn,round:S.round,
     finite:['a','b'].every(i=>{const p=PS.fig[i].pts;return !p||['Sh','H','F','bF','Hn','tip'].every(k=>Number.isFinite(p[k][0])&&Number.isFinite(p[k][1]));})};});
 const click=(page,q)=>page.evaluate(q=>{const e=[...document.querySelectorAll(q)].find(x=>!x.disabled);if(!e)return false;e.click();return true;},q);
 async function bout(browser,cfg,seed,shots){
@@ -63,6 +63,9 @@ async function bout(browser,cfg,seed,shots){
       const errs=r.rec.filter(x=>x.type==='cue-error');assert.deepEqual(errs,[],'cue errors: '+JSON.stringify(errs));
       const c=r.rec.filter(x=>x.type==='contact');assert(c.length>=1,'contacts were drawn ('+c.length+')');c.forEach(x=>kinds.add(x.kind));
       assert(r.paused>0,'the scene paused for a decision at least once');
+      // at a new round both go back to their places and settle into guard (owner, 2026-11-13)
+      // (when the bout reaches a second round at all)
+      if(r.end.round>=2)assert(r.rec.some(x=>x.type==='round-reset'),'no round reset in '+r.end.round+' rounds');
       assert.equal(r.frozenMoves,0,'the stage clock never moved while the scene was paused');
       assert(r.stalls<=2,'the playback paced itself ('+r.stalls+' stalls)');
     });
