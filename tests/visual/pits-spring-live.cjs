@@ -2,7 +2,11 @@
 // exchange writer). Whole bouts in a real browser, left to play at their own pace, for blade pairings (one with shields);
 // a pairing without a family falls back to the movement stage. Nothing here is released (owner, 2026-11-13).
 //   - no page errors and no cue errors; every kind of blow reaches its contact
-//   - a decision stops the stage clock: the picture does not move while the scene is paused
+//   - a declared action is drawn before its dice (the attacker's weapon drawn back, the defender's ward or crouch),
+//     and then the picture is completely still: no joint moves while the stage clock is stopped, and the clock only
+//     runs for written movement (never through a person's choice or the dice)
+//   - nobody gets up while the engine has them on the ground (the evader that went down early, stood up to be hit
+//     and went down again), and there is no reset to stances between rounds
 //   - the figures are always drawn (finite joints) and the replay of the whole fight plays without errors
 //   - ?stage=poses still opens the earlier pose stage
 //
@@ -20,7 +24,13 @@ const click=(page,q)=>page.evaluate(q=>{const e=[...document.querySelectorAll(q)
 async function bout(browser,cfg,seed,shots){
   const page=await browser.newPage({viewport:{width:1280,height:800}});page.errors=[];page.on('pageerror',e=>page.errors.push(e.message));
   await page.addInitScript(s=>{window.__psRecord=[];let a=s;const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
-    window.__pitsDie=n=>Math.ceil(rnd()*n);},seed);
+    window.__pitsDie=n=>Math.ceil(rnd()*n);
+    // every animation frame: the stage clock, what the page is waiting for, and where the figures are
+    window.__frames=[];const tick=()=>{try{if(typeof PS!=='undefined'&&PS.fig&&PS.fig.a&&PS.fig.a.pts&&PS.fig.b.pts&&typeof prototypeCombat!=='undefined'){
+        const S=prototypeCombat.state(),V=prototypeCombat.presentation();
+        const P=id=>{const f=PS.fig[id],p=f.pts;return {j:['H','hand','tip','hd','F','bF'].map(k=>[Math.round(f.X+f.face*p[k][0]),Math.round(p[k][1])]),ep:!!S.fighters[id].prone};};
+        window.__frames.push({t:performance.now(),c:PS.clock,wait:!V.busy&&S.phase==='fight',dice:!!(V.busy&&V.roll&&!V.roll.settled),a:P('a'),b:P('b')});}}catch(e){}
+      requestAnimationFrame(tick);};requestAnimationFrame(tick);},seed);
   await page.goto(URL_);await page.evaluate(c=>{Object.assign(config,c);startRun(false);},cfg);await sleep(300);
   const out={paused:0,frozenMoves:0,stalls:0,page};let prev=null,busySince=0,shot={};let nr=0;
   for(let i=0;i<4000;i++){
@@ -43,7 +53,16 @@ async function bout(browser,cfg,seed,shots){
     await sleep(40);
   }
   out.end=await st(page);
-  out.rec=await page.evaluate(()=>window.__psRecord.map(r=>({type:r.type,kind:r.kind,message:r.message})));
+  out.rec=await page.evaluate(()=>window.__psRecord.map(r=>({type:r.type,kind:r.kind,message:r.message,actor:r.actor})));
+  // from the frames: movement with the clock stopped; the clock running while the page waits or the dice roll, beyond
+  // a declared action getting to its hold; getting up while the engine has the fighter prone
+  const fr=await page.evaluate(()=>window.__frames);out.still=0;out.ran=0;out.rose=0;
+  let run=0;const low={a:false,b:false};
+  for(let i=1;i<fr.length;i++){const f=fr[i],g=fr[i-1];
+    if(f.c===g.c)for(const id of ['a','b']){const k=f[id].j.findIndex((p,k)=>Math.hypot(p[0]-g[id].j[k][0],p[1]-g[id].j[k][1])>1);
+      if(k>=0){out.still++;out.stillWhat=id+'.'+['H','hand','tip','hd','F','bF'][k]+' at clock '+Math.round(f.c)+' '+JSON.stringify(g[id].j[k])+'->'+JSON.stringify(f[id].j[k]);break;}}
+    if((f.wait&&g.wait)||(f.dice&&g.dice)){if(f.c!==g.c){run+=f.c-g.c;out.ran=Math.max(out.ran,run);}else run=0;}else run=0;
+    for(const id of ['a','b']){const y=f[id].j[0][1];if(!low[id]&&y>-32)low[id]=true;else if(low[id]&&y<-55){low[id]=false;if(f[id].ep)out.rose++;}}}
   return out;
 }
 (async()=>{
@@ -63,10 +82,17 @@ async function bout(browser,cfg,seed,shots){
       const errs=r.rec.filter(x=>x.type==='cue-error');assert.deepEqual(errs,[],'cue errors: '+JSON.stringify(errs));
       const c=r.rec.filter(x=>x.type==='contact');assert(c.length>=1,'contacts were drawn ('+c.length+')');c.forEach(x=>kinds.add(x.kind));
       assert(r.paused>0,'the scene paused for a decision at least once');
-      // at a new round both go back to their places and settle into guard (owner, 2026-11-13)
-      // (when the bout reaches a second round at all)
-      if(r.end.round>=2)assert(r.rec.some(x=>x.type==='round-reset'),'no round reset in '+r.end.round+' rounds');
-      assert.equal(r.frozenMoves,0,'the stage clock never moved while the scene was paused');
+      // every attack is declared (the weapon drawn back) before its dice are shown, by the fighter that attacks
+      const seen=r.rec.filter(x=>x.type==='intent'||x.type==='attack'||x.type==='resolve');let open=null;
+      for(const x of seen){if(x.type==='intent'&&/attack|strike/.test(x.kind))open=x.actor;
+        else if(x.type==='attack')assert.equal(open,x.actor,'an attack was shown without its declared movement');
+        else if(x.type==='resolve')open=null;}
+      assert(r.rec.some(x=>x.type==='intent'&&/parry|shield|evade/.test(x.kind)),'a declared defence was drawn');
+      assert(!r.rec.some(x=>x.type==='round-reset'),'no reset to stances between rounds');
+      assert.equal(r.still,0,'nothing moved while the stage clock was stopped ('+r.still+' frames: '+r.stillWhat+')');
+      // (a declared action getting to its hold takes well under a second of the stage clock, a step in included)
+      assert(r.ran<950,'the clock ran '+Math.round(r.ran)+' ms while the page waited for a person or the dice');
+      assert.equal(r.rose,0,'a fighter the engine has prone got up');
       assert(r.stalls<=2,'the playback paced itself ('+r.stalls+' stalls)');
     });
   }

@@ -106,7 +106,9 @@ function targets(f){
     for(const n in k.pose){if(n==='h'){set.add('hx');set.add('hy');}else if(n==='o'){set.add('ox');set.add('oy');}
       else if(n==='w')set.add('wr');else set.add(n);}
     if(k.pose.h)set.add('wr');            // the wrist is re-solved when the arm moves, so the blade keeps its asked angle
-    for(const c of set)tg[c].push({t:k.t+lag[c],v:fl[c],s:k.snap});
+    // (k.until, the live Pits: the picture held at that moment and what came next was written from there; a part
+    // this key had not reached by then is left to the next key, or it would arrive late and override it)
+    for(const c of set)if(k.until==null||k.t+lag[c]<=k.until)tg[c].push({t:k.t+lag[c],v:fl[c],s:k.snap});
   }
   for(const c of CH)tg[c].sort((a,b)=>a.t-b.t);
   return tg;

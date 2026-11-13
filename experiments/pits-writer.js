@@ -40,6 +40,13 @@ function profile(key){
   if(k==='sword'||k==='broadsword')return {key:k,len:92,family:'cut'};
   if(k==='longsword')return {key:k,len:104,family:'cut'};
   if(/^(falchion|sabre|scimitar)$/.test(k))return {key:k,len:84,family:'cut'};
+  // short one-handed swung weapons: the cut phrases as a stand-in until the heavy one-handed family has its own
+  // (a slower chamber, a harder impact). The live Pits only; not in the studies' sweep.
+  if(k==='hatchet')return {key:k,len:58,family:'cut',standIn:true};
+  if(k==='club')return {key:k,len:66,family:'cut',standIn:true};
+  if(k==='mace')return {key:k,len:70,family:'cut',standIn:true};
+  if(k==='military-pick')return {key:k,len:82,family:'cut',standIn:true};
+  if(k==='axe'||k==='battleaxe')return {key:k,len:84,family:'cut',standIn:true};
   return null;
 }
 // shields (Core p.63 sizes): the radius it is drawn with. Carried on the off hand.
@@ -121,6 +128,19 @@ function create(opt){
       dirty=Math.min(dirty,a[ti]-REC*2);return orig.apply(this,a);};}
   for(const f of [A,B]){const w=f.walk;f.walk=function(foot,t0,...r){if(f.grounded&&!f.groundWrite)return this;dirty=Math.min(dirty,t0-400);return w.call(this,foot,t0,...r);};}
   const run=t=>{const r=simulate(F,t,{from:PS.resumeFrom(last,dirty)});last=r;dirty=Infinity;return r;};
+  // live: the picture froze at u (a decision), and the next movement is written from that pose. What the last
+  // exchange had planned for after u (its recovery toward guard) is dropped, so a fighter goes from where the blow
+  // left it straight into what it does next, not back to a guard first. Steps already in the air are kept whole.
+  const cut=u=>{for(const f of [A,B]){
+      const fly=(f.steps||[]).filter(s=>s.t0<u&&s.t1>u);
+      f.keys=f.keys.filter(k=>k.t<=u||fly.some(s=>k.t<=s.t1));f.impulses=f.impulses.filter(k=>k.t<=u);
+      // (a kept key's slower parts that had not started by u do not start later either: see targets in pits-spring.js)
+      for(const k of f.keys)if(k.t<=u&&k.until==null)k.until=u;
+      for(const ft of ['ff','bf'])f.feet[ft]=f.feet[ft].filter(s=>s.t0<u);
+      if(f.steps)f.steps=f.steps.filter(s=>s.t0<u);
+      // (pins keep their places in the list, which the simulation's checkpoints count by: one not yet begun is switched off)
+      for(const p of f.pins)if(p.t0>=u)p.t0=p.t1=p.t2=-1e9;}
+    dirty=Math.min(dirty,u-REC*2);};
   const look=t=>{t=r2(t);const r=run(t+REC);return {t,out:{a:r.a[t/REC],b:r.b[t/REC]}};};
   const U=f=>f.f||f;
   const J=(f,ctx,t)=>{f=U(f);return solve(pose(f,ctx.out[f.id],t),f.weapon.len);};
@@ -255,7 +275,15 @@ function create(opt){
     nm:f=>names[U(f).id]};
   let nBeat=0;W.n=()=>++nBeat;
   W.run=run;W.last=()=>last;
-  const S={W,seq,F,t:0,n:0,bind:null,over:false};
+  // live: a trial write can be taken back (the declared action tries its variants and keeps the one that holds
+  // cleanly): mark() before writing, rollback(mark,u) to drop everything written since (u: the earliest time it touched)
+  const mark=()=>Object.fromEntries([A,B].map(f=>[f.id,{keys:new Set(f.keys),imp:new Set(f.impulses),ff:new Set(f.feet.ff),bf:new Set(f.feet.bf),steps:new Set(f.steps||[]),pins:f.pins.length}]));
+  const rollback=(m,u)=>{for(const f of [A,B]){const k=m[f.id];
+      f.keys=f.keys.filter(x=>k.keys.has(x));f.impulses=f.impulses.filter(x=>k.imp.has(x));
+      f.feet.ff=f.feet.ff.filter(x=>k.ff.has(x));f.feet.bf=f.feet.bf.filter(x=>k.bf.has(x));
+      if(f.steps)f.steps=f.steps.filter(x=>k.steps.has(x));f.pins.length=k.pins;}
+    dirty=Math.min(dirty,u-400);};
+  const S={W,seq,F,t:0,n:0,bind:null,over:false,cut,mark,rollback};
   Object.defineProperty(S,'now',{get:()=>S0.now,set:v=>{S0.now=v;}});
   return S;
 }
@@ -776,7 +804,7 @@ const other=id=>id==='a'?'b':'a';
 const ended=rec=>(rec.after||[]).some(c=>c.type==='end'&&c.winner===rec.attacker&&c.how==='injury');
 
 // The measure: the attacker steps in (front foot first) or out (rear foot first) by e, with its weight handled.
-function takeMeasure(f,t,e,want,look){
+function takeMeasure(f,t,e,want,look,o){
   // the last exchange's recovery is let finish (its keys can run past its decision boundary), then the blade comes up
   // into a middle guard first, so a point left low by the last exchange is not carried into a leg
   t=Math.max(t,...f.keys.map(k=>k.t+110));          // (a key reaches the blade up to 90 ms after its time)
@@ -784,7 +812,9 @@ function takeMeasure(f,t,e,want,look){
   // stepping in, the blade comes up into a middle guard at once
   // (closing to a measure shorter than the blade's reach, e.g. a long blade or a shield strike, the point is carried
   // up, or it runs into the other fighter on the way in)
-  if(e>0)f.key(t,{h:[22,-18],w:want!=null&&want<f.weapon.len+50?80:38,lean:6,bend:4,head:-8},'cover');
+  // (live, o.chambered: the attack was declared and the weapon is already drawn back; it stays there through the step)
+  if(o&&o.chambered)f.key(t,{lean:4,bend:4,head:-8},'cover');
+  else if(e>0)f.key(t,{h:[22,-18],w:want!=null&&want<f.weapon.len+50?80:38,lean:6,bend:4,head:-8},'cover');
   // (stepping back, the blade keeps its angle and only travels back with the hand and the step, and comes up into
   // guard once the step is made: turned up or down at once, its point can cross the other's body or raised arm)
   // (where the hand goes depends on the blade: an upright one keeps the hand forward of the face, or it stands through
@@ -800,15 +830,62 @@ function takeMeasure(f,t,e,want,look){
   return u+40;
 }
 
+// A declared action, before its result is known (the live Pits: the attack is chosen, then the dice roll; the defence
+// is chosen, then its dice roll). The fighter commits and the picture then holds: an attacker draws the weapon back
+// (the start of the swing), a defender brings the blade or the shield across to where it will meet the blow, an evader
+// sinks onto the rear leg. Written from the pose the fighter is in; the exchange itself (exchange, below) is written
+// from wherever this leaves it. No steps: the measure is taken when the blow is written.
+// kind: 'attack' | 'shield-strike' | 'parry' | 'shield' | 'evade'. o.pick: 0..1, which of the variants (the stage
+// passes a random number, so two fights do not open the same way). Returns when the movement has got there.
+const CHAMBERS={
+  cut:[{py:77,lean:0,bend:-3,head:-2,turn:-8,h:[12,-8],w:160},            // back over the shoulder
+    {py:74,lean:2,bend:3,head:-6,turn:-12,h:[2,-28],w:18},                // the hilt back at the hip, the point on
+    {py:73,lean:4,bend:4,head:-8,turn:-14,h:[4,-40],w:-28},               // low, the point down in front (for a rising cut)
+    {py:77,lean:-1,bend:-2,head:-2,turn:-10,h:[20,40],w:150}],            // raised, the hilt above the head
+  thrust:[{py:74,lean:2,bend:4,head:-8,turn:-10,h:[6,-30],w:6},           // the hand drawn back to the hip, point on
+    {py:75,lean:0,bend:2,head:-6,turn:-12,h:[8,-18],w:-4}]};              // drawn back higher, by the ribs
+const WARDS={
+  blade:[{py:74,lean:6,bend:7,head:-10,h:[24,-12],w:66},                  // across in front of the body
+    {py:75,lean:4,bend:6,head:-10,h:[26,-22],w:84},                       // the hilt lower, the blade upright
+    {py:73,lean:8,bend:8,head:-12,h:[22,-4],w:50}],                       // higher, for the upper lines
+  shield:[{py:73,lean:8,bend:8,head:-12,o:[30,-12],h:[12,-36],w:-60}],
+  evade:[{py:68,lean:-4,bend:10,head:-10,turn:-12,h:[18,-24],w:36},
+    {py:70,lean:-8,bend:6,head:-8,turn:-16,h:[14,-34],w:20}]};
+function intent(S,id,kind,u,o){
+  // (the first of each list is the commonest: half the time; the others share the rest)
+  // o.index: that variant exactly (the live layer tries them in turn; variants(kind) says how many there are)
+  o=o||{};const f=S.F[id],pk=o.pick==null?0:o.pick,n=arr=>o.index!=null?arr[o.index%arr.length]:pk<.5||arr.length<2?arr[0]:arr[Math.min(arr.length-1,1+Math.floor((pk-.5)*2*(arr.length-1)))];
+  if(kind==='attack'){
+    S.chambered=id;
+    const c=n(CHAMBERS[f.weapon.family==='thrust'?'thrust':'cut']);
+    // the off hand: the shield stays forward; an empty hand comes forward to balance the drawn-back weapon
+    f.key(u,{...c,h:c.h.slice(),...(f.shieldR?{}:{o:[26,-12]})},'together');
+    // too far out to attack from here (the first exchange, or after the range opened): the attacker comes in to
+    // striking distance now, with the weapon drawn back, so the resolved blow needs no walk first
+    const D=S.F[id==='a'?'b':'a'],G=(f.weapon.family==='thrust'?161:170)+(f.weapon.len-SWORD)*REACH,e=gapOf(f,D)-G;
+    if(e>8&&!f.grounded)return takeMeasure(f,u+60,e,G,S.W.look,{chambered:true});
+    return u+260;
+  }
+  if(kind==='shield-strike'){f.key(u,{py:74,lean:-2,bend:4,head:-8,turn:-10,o:[10,-22]},'together');return u+240;}
+  if(kind==='evade'){const c=n(WARDS.evade);f.key(u,{...c,h:c.h.slice()},'together');return u+240;}
+  const c=kind==='shield'&&f.shieldR?WARDS.shield[0]:n(WARDS.blade);
+  f.key(u,{...c,h:c.h.slice(),...(c.o?{o:c.o.slice()}:{})},'cover');
+  return u+250;
+}
+
+const variants=(S,id,kind)=>kind==='attack'?CHAMBERS[S.F[id].weapon.family==='thrust'?'thrust':'cut'].length:kind==='evade'?WARDS.evade.length:
+  kind==='parry'||(kind==='shield'&&!S.F[id].shieldR)?WARDS.blade.length:1;
+
 // one phrase, played from wherever the two stand. keep: the frames of the phrase before (a phrase that carries on
 // from it, like the collapse after the wound, is written in the same frame)
 function play(S,id,aid,t,st,keep){
-  const P=PHRASES[id],F=S.F,A=F[aid],D=F[aid==='a'?'b':'a'];
+  const P=PHRASES[id],F=S.F,A=F[aid],D=F[aid==='a'?'b':'a'];let reach=0;
   const width=f=>planned(f,'ff')-planned(f,'bf');
   if(api.calibrate&&!keep){api.calibrate(id,{a:standAt(A),d:standAt(D)},gapOf(A,D),{a:width(A),d:width(D)});}
   // a stance left wider or narrower than the phrase was written for is gathered first (the rear foot), by both
   if(P.width&&!keep){let u=t;
-    for(const [f,role] of [[A,'a'],[D,'d']]){const e=width(f)-P.width[role];if(Math.abs(e)<=16)continue;
+    // (live: only a stance far too wide or narrow is gathered; otherwise the phrase's own steps are that much longer or shorter)
+    for(const [f,role] of [[A,'a'],[D,'d']]){const e=width(f)-P.width[role];if(Math.abs(e)<=(S.absorb?44:16)||f.grounded)continue;
       const t0=Math.max(t,...f.keys.map(k=>k.t+110));
       f.walk('bf',t0+170,t0+330,planned(f,'bf')+e,{py:74,lift:7,settle:.5,load:.35});
       S.seq.notes.push({kind:'gather',t,who:f.id,by:Math.round(e)});u=Math.max(u,t0+370);}
@@ -823,10 +900,15 @@ function play(S,id,aid,t,st,keep){
     S.seq.notes.push({kind:'inside',t:t0,who:D.id});}
   if(P.gap!=null&&!keep){
     // (the measure follows the attacker's reach with its weapon; a shield strike's reach is the shield's)
-    const e=gapOf(A,D)-(P.gap+(id==='shieldStrike'?0:(A.weapon.len-SWORD)*REACH));
-    if(Math.abs(e)>1){S.seq.notes.push({kind:'measure',t,who:aid,by:Math.round(e)});t=takeMeasure(A,t,e,gapOf(A,D)-e,S.W.look);}
+    let e=gapOf(A,D)-(P.gap+(id==='shieldStrike'?0:(A.weapon.len-SWORD)*REACH));
+    // live (S.absorb): a small difference in measure is not walked off first; the attack's own step is that much
+    // longer or shorter (the attacker's frame is moved by it), so a resolved blow starts at once. Only what is left
+    // over is stepped, with the weapon kept drawn back if the attack was declared (S.chambered).
+    // (too close is always taken in the attack's own step: nobody steps back in order to strike)
+    if(S.absorb&&!A.grounded){reach=Math.max(-90,Math.min(S.absorb,e));e-=reach;}
+    if(Math.abs(e)>(S.absorb?8:1)){S.seq.notes.push({kind:'measure',t,who:aid,by:Math.round(e)});t=takeMeasure(A,t,e,gapOf(A,D)-e,S.W.look,{chambered:S.chambered===aid});}
   }
-  const a=placed(A,keep?keep.a:standAt(A)-P.ref.a),d=placed(D,keep?keep.d:standAt(D)-P.ref.d);
+  const a=placed(A,keep?keep.a:standAt(A)-P.ref.a+reach),d=placed(D,keep?keep.d:standAt(D)-P.ref.d);
   const r=P.run(S.W,a,d,t+P.lead,st||{});
   r.dx={a:a.dx,d:d.dx};
   return r;
@@ -848,6 +930,7 @@ function exchange(S,rec,t){
     if(defence==='shield'&&!S.F[other(rec.attacker)].shieldR)seq.notes.push({kind:'stand-in',rec,why:'a shield defence by a fighter with no shield'});
     const r=play(S,p.id,rec.attacker,t,{level:rec.lost>=6?'major':'minor',loc:rec.loc,lost:rec.lost,final:ended(rec),defence,tried,outcome:rec.outcome,dive:/^(evaded|miss|fumble)$/.test(rec.outcome||'')&&!!rec.prone,
       prev:seq.exchanges[seq.exchanges.length-1]});
+    S.chambered=null;
     // a bind holds through the decision until the next movement lifts away from it
     if(S.bind){S.bind.hold=r2(tStart+PHRASES[p.id].lead+120)-S.bind.t;S.bind=null;}
     if(r.bind)S.bind=r.bind;
@@ -887,7 +970,7 @@ function write(records,opt){
   return seq;
 }
 
-const api={calibrate:null,write,create,exchange,pick,PHRASES,ZONE,standAt,gapOf,planned,takeMeasure,profile,shieldR};
+const api={calibrate:null,write,create,exchange,intent,variants,pick,PHRASES,ZONE,standAt,gapOf,planned,takeMeasure,profile,shieldR};
 root.PitsWriter=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

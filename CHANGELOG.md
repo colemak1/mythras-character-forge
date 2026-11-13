@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits trial: fluid flow (declare, hold, resolve); the round reset removed
+
+- On the `?stage=spring` trial an exchange now plays the way the owner described it. Choosing Attack draws the weapon back (and brings the attacker in to striking distance) and holds; choosing a parry or an evade sets the blade or shield, or sinks the body, and holds; both figures are completely still while anyone chooses or the dice roll; when the exchange is fully ruled the blow lands at once from the held poses. Fighters no longer go back to a guard after a blow or at a new round: each movement starts from where the last one left them. Declared actions have several variants, picked at random.
+- Fixed: a fighter going prone early, standing up to be hit and going prone again (evades and killing blows); the Arise effect; a killing blow on a fighter already on the ground; a knocked-away weapon jumping back into the hand; a disabled arm snapping to its hang; a wind-up undone by an older movement's late parts; the range marker left behind the fighters.
+- Axe, hatchet, club, mace and military pick bouts run on the trial with the sword's cut phrases as a stand-in. Longer and two-handed weapons still use the earlier movement.
+- New: `tests/pits-spring-live.cjs` (CI), `tests/sweep/pits-live-sweep.cjs` (random whole fights through the live flow against the movement rules), `tests/visual/pits-film.cjs` (slow-motion film strips for review). `docs/pits-animation-direction.md` has "Fluid flow" and "Instructions for Opus". Nothing released; `tests/pits-writer.cjs` still fails on the shield strike, as recorded.
+
 ## The Pits trial: round reset; fighters on the ground stay down
 
 - In the `?stage=spring` trial, at each new round both fighters walk back to their places and settle into guard together (owner's idea, to judge by eye).

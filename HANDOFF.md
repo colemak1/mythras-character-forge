@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-13 by Claude (Pits trial: round reset, prone stays down)_
+_Last updated: 2026-11-13 by Claude (Pits: fluid flow, declare, hold, resolve; instructions for Opus)_
 
 ## Where things stand
 
@@ -16,11 +16,11 @@ _Last updated: 2026-11-13 by Claude (Pits trial: round reset, prone stays down)_
 
 ## Next
 
-00000000000000000. **Claude, done 2026-11-13 (owner's idea):** round reset in the trial (both back to their places and into guard at each new round); prone fighters stay down until they regain footing. **Owner:** watch a few rounds and say whether the reset looks right. Open: the live trial has movement faults the studies don't (see "Round reset, and fighters on the ground").
+000000000000000000. **Claude, done 2026-11-13 (owner: keep it fluid, fix the bugs, instructions for Opus):** on branch `claude/fable-combat-fluidity-jus18q` (contains `claude/go-wf0bsg`; pushed, no PR). The spring stage now plays as the owner described: an attack is drawn back and held before its dice, a parry or evade is set and held before its dice, both figures are completely still through every choice and roll, the resolved blow lands at once from the held pose, and nobody goes back to guard. Round reset removed. Fixed: prone, up, hit, prone again; Arise; a kill on a fighter already down; the dropped weapon jumping back; the limp-arm snap. Axe, mace, club and pick now run on the spring stage (stand-in). Details, tests, tools and what is weak: `docs/pits-animation-direction.md`, "Fluid flow". **Owner:** play `experiments/practice-combat.html?stage=spring` (branch link: `https://raw.githack.com/colemak1/mythras-character-forge/claude/fable-combat-fluidity-jus18q/experiments/practice-combat.html?stage=spring`) and name anything that looks wrong.
+
+00000000000000000. **Next, Claude (Opus):** follow "Instructions for Opus" in `docs/pits-animation-direction.md`: the owner's notes first, then the stand-ins as phrases (fall, getting up, lowering, yield, trip, disarm), the shield strike (the only failing CI test, `tests/pits-writer.cjs`), the live sweep by kind (`tests/sweep/pits-live-sweep.cjs`: 139 of 144 fights with a fault, 5 in held frames), the remaining weapon families, cost, then release. Owner's rule: nothing goes to `main` until it is all done.
 
 0000000000000000. **Claude, done 2026-11-13 (owner's notes on the trial):** evade drawn as a dodge to the ground, not a fall; the trial keeps the flow (no walk back after a lull; range changes still walk). Owner decided: natural over technically accurate on range. **Owner:** try an evade on `experiments/practice-combat.html?stage=spring`.
-
-00000000000000. **Next, Claude:** (1) the shield strike's own-head and elbow faults, which fail the shield sample in `tests/pits-writer.cjs` (the only failing test; recorded under "Own blade across own head"); (2) the trial's findings 2 and 3 (write a blow during the dice roll, drop old frames), and the range marker and drift (finding 1); then the remaining families. **Owner's rule (2026-11-12):** nothing goes live until it is all done; branch `claude/go-wf0bsg` (pushed, no PR).
 
 0000000000000c. **Claude, in progress 2026-11-13:** Work's own-head finding (PR #323, merged into the branch). Studies fixed; the full sweep still has 550 of 4,032 fights with a fault, mostly the shield strike. Details: `docs/pits-animation-direction.md`, "Own blade across own head". Owner chose the live trial first (2026-11-13); done, see the Next items above.
 
