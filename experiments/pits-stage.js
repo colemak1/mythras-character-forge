@@ -112,6 +112,8 @@ function pitsStageLook(f){
   const wk=pitsStageWeaponKind(f.weapon,w.reach);
   return {weapon:wk.kind,wk,swap:hand==='Left Arm',
     armed:!f.disarmed,prone:!!f.prone,parts,shield:!!f.shield&&f.shield!=='none'&&!f.shieldLost,
+    // which shield (the engine's key: buckler, heater, kite...), so it is drawn and meets blows at its own size
+    shieldKey:f.shield&&f.shield!=='none'?String(f.shield):null,
     // an arm hangs limp only when the engine has disabled it (a failed Endurance test), not just because its hit points are low
     limp:{rarm:out('Right Arm'),larm:out('Left Arm')},pressed:(f.pressedTurns||0)>0,scale:Math.max(.92,Math.min(1.1,.95+((+f.siz||13)-13)*.012))};
 }
@@ -204,6 +206,7 @@ function pitsStageAim(base,wk,swap,target,opts){
 // finished first, so the contact flows straight into its real consequence. Dice are always shown at once.
 const PSTAGE_BLOW=['hit','deflect'];
 const PSTAGE_AFTER=['wound','limb','drop','lodge','end'];
+const PSTAGE_EFFECT=['trip','disarm'];
 function pitsStageKind(e,names){
   if(!e)return 'none';if(e.roll)return 'roll';if(e.checkpoint)return 'checkpoint';
   const c=pitsStageCue(e,names);return c?c.type:'other';
@@ -237,7 +240,9 @@ function pitsStageArrange(events,held,waiting,names){
   }
   if(list.length){
     const ks=list.map(e=>pitsStageKind(e,names));
-    const b=ks.findIndex(k=>PSTAGE_BLOW.includes(k));
+    // (a Trip or a Disarm can be resolved before the blow, while the engine still waits for the location and damage:
+    // it is held with the blow, so nothing of the exchange is drawn before the whole of it is known)
+    const b=ks.findIndex(k=>PSTAGE_BLOW.includes(k)||PSTAGE_EFFECT.includes(k));
     if(waiting&&b>=0){
       play.push(...list.slice(0,b),...list.slice(b).filter(e=>e.roll));
       hold=list.slice(b).filter(e=>!e.roll);
@@ -270,10 +275,17 @@ function pitsStageBeat(events,step,names){
   for(let i=step;i>=0;i--)if(k(i)==='attack'){a0=i;break;}
   for(let i=step+1;i<events.length;i++)if(k(i)==='attack'){a1=i;break;}
   const inEx=(lo,hi,types)=>{const out=[];for(let i=lo;i<hi;i++){const c=pitsStageCue(events[i],names);if(c&&types.includes(c.type)&&!events[i].roll&&!events[i].checkpoint)out.push(c);}return out;};
+  // who attacked in this exchange (its attack entry)
+  // (the attack entry can be in an earlier batch than its blow: then the blow's own actor, the engine's attacker)
+  const blowActor=i0=>{for(let i=i0;i>a0&&i>=0;i--){const c=pitsStageCue(events[i],names);if(c&&PSTAGE_BLOW.includes(c.type)&&c.actor)return c.actor;}return null;};
+  const attacker=a0>=0?(pitsStageCue(events[a0],names)||{}).actor:PSTAGE_BLOW.includes(cue.type)?cue.actor:blowActor(step-1);
   if(PSTAGE_BLOW.includes(cue.type)){
     const arise=inEx(a0+1,a1,['arise'])[0];
-    return {cue:{...cue,record:{press:inEx(a0+1,step,['press'])[0]||null,after:inEx(step+1,a1,PSTAGE_AFTER),arise:arise?arise.actor:null}},consumed:false};
+    // a Disarm won by the attacker is part of its blow: the weapon leaves the hand at the contact, no second swing
+    const disarm=attacker?inEx(step+1,a1,['disarm']).find(c=>c.actor===attacker)||null:null;
+    return {cue:{...cue,record:{press:inEx(a0+1,step,['press'])[0]||null,after:inEx(step+1,a1,PSTAGE_AFTER),arise:arise?arise.actor:null,disarm}},consumed:false};
   }
+  if(cue.type==='disarm'&&attacker&&cue.actor===attacker&&inEx(a0+1,step,PSTAGE_BLOW).length)return {cue,consumed:true};
   // Arise has no movement of its own: the blow of its exchange draws it (the evader keeps its feet; a fighter already
   // down gets up as the exchange ends)
   if(cue.type==='arise')return {cue,consumed:true};
@@ -465,7 +477,8 @@ function psPaint(f,L,g,w1,dx,lift,pose,now,blen){
   }
   const oLimp=L.swap?L.limp.rarm:L.limp.larm;
   e.shield.style.display=L.shield&&!oLimp?'':'none';
-  if(L.shield){e.shield.setAttribute('cx',g.bHn[0]);e.shield.setAttribute('cy',g.bHn[1]);}
+  if(L.shield){e.shield.setAttribute('cx',g.bHn[0]);e.shield.setAttribute('cy',g.bHn[1]);
+    const r=psShieldR(L.shieldKey);if(f.shieldDrawnR!==r){f.shieldDrawnR=r;e.shield.setAttribute('r',r);}}
   const hand=g.Hn;let tip=hand;
   const show=L.armed&&!f.dropping;
   for(const k of ['shaft','guard','knob','wh','wh2','wire'])e[k].style.display='none';
@@ -802,6 +815,8 @@ function psStrikePose(atk,target,opts){
 const psThrust=k=>/^(spear|trident|polearm|staff|whip|net|chain)$/.test(k);
 const psWindupFor=wk=>psThrust(wk.kind)||wk.thin?PS_POSE.cock:PS_POSE.windup;
 
+// a shield's drawn radius: the writer's sizes (Core p.63), so the drawing and the spring stage's contacts agree
+const psShieldR=key=>typeof PitsWriter!=='undefined'&&PitsWriter.shieldR&&key?PitsWriter.shieldR(key):19;
 const psReplaying=()=>typeof V!=='undefined'&&!!V.replaying;
 
 async function psRunCue(cue){
@@ -1180,11 +1195,18 @@ async function psMotionBlow(cue){
   const evading=((px.react||ex.react)==='evade'||out==='evaded')&&!px.rangeIntercept&&arise!==def.id;
   const tried=evading&&/^(evaded|miss|fumble)$/.test(out);
   PS.intents={};
-  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying()});
+  // the attacking tool (the engine's px.tool, or the attack beat's): a shield strike is drawn as one. Kept apart from
+  // `shield`, which is the defender's
+  const strike=(px.tool==='shield'||(px.tool==null&&ex.shield))&&atk.look&&atk.look.shield?'shield':null;
+  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying()});
   PS.busyUntil=r.end;atk.spent=def.spent=true;
   if(defeated||leg||evading)def.mDown=true;if(defeated)def.mEnd='lying';
+  const disarm=cue.record&&cue.record.disarm;let flown=false;
   for(const c of r.contacts){
     await psUntil(c.t);const w=psW(c.at);
+    // the attacker's Disarm: the weapon leaves the defender's hand at the blow's (first) contact
+    if(disarm&&!flown&&c.kind!=='miss'){flown=true;def.dropAhead=true;psEmit('contact',{kind:'disarm',actor:atk.id,target:def.id,point:w.map(Math.round)});
+      psBanner('Disarmed','crit');psFlyWeapon(def,disarm.metres);}
     if(c.kind==='miss'){
       psEmit('contact',{kind:out,actor:atk.id,target:def.id,point:w.map(Math.round)});
       psBurst(w,'gray',5);psSfx('miss');

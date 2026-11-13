@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-13 by Claude (Pits: owner's play notes: order of blows, replay, falls, arm wound)_
+_Last updated: 2026-11-13 by Claude (Pits: Work's six code findings fixed)_
 
 ## Where things stand
 
@@ -16,7 +16,15 @@ _Last updated: 2026-11-13 by Claude (Pits: owner's play notes: order of blows, r
 
 ## Next
 
-**ChatGPT (Work), 2026-11-13 — Next: Claude:** `docs/pits-spring-code-findings-20261113.md` traces six reproduced presentation defects to source locations (early Disarm, lost shield-strike identity, shield geometry, no-op pressure, duplicate result dialog, stale bout exchange), with fix directions and regression cases. Docs only; preserve the fluidity branch and no-main rule; readiness unchanged.
+00000000000000000000. **Claude, done 2026-11-13 (Work's six code findings, `docs/pits-spring-code-findings-20261113.md`):** all six fixed on `claude/fable-combat-fluidity-jus18q` (pushed, no PR), each with a regression test:
+- a Disarm waits for its whole exchange and is part of the attacker's one blow;
+- shield strikes reach the writer as shield strikes;
+- each shield keeps its own size;
+- Press Advantage is drawn;
+- one result dialog;
+- a new opponent starts with an empty Current exchange.
+
+Also fixed: the shield-strike phrase (parried) and two failures that had been hidden behind it, so `tests/pits-writer.cjs` and the whole suite now pass. Not done (from the same report): attacks and defence from the ground, and the clipped action names. Details: `docs/pits-animation-direction.md`, "Work's code findings". **Owner:** play the branch link below with a shield, try a shield strike, a Disarm and a replay, and name anything wrong.
 
 0000000000000000000. **Claude, done 2026-11-13 (owner's notes from playing `?stage=spring`):** on branch `claude/fable-combat-fluidity-jus18q` (pushed, no PR). Fixed:
 - a miss was drawn after the next attack's declare and the parry;

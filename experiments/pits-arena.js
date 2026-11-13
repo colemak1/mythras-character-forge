@@ -80,6 +80,8 @@ function paExchanges(){
   const out=[];let cur=null;
   for(const l of paVisibleLogs()){
     if(l.meta&&l.meta.exid&&/(?: attacks| makes a Remise attack| strikes with the shield)$/.test(l.title)){cur={exid:l.meta.exid,atk:l.meta.actor,entries:[l]};out.push(cur);}
+    // a new bout (a new opponent, a new encounter) starts its own list: the last bout's exchanges are history only
+    else if(/^(New Opponent|Encounter \d)/.test(l.title)){out.length=0;cur=null;}
     else if(PA_BREAK.test(l.title))cur=null;
     else if(cur)cur.entries.push(l);
   }
@@ -266,7 +268,8 @@ function pitsArenaDeckHtml(){
     <div class="acts" role="group" aria-label="Your actions">${paActionsHtml()}</div>
     <div class="mid">${paPromptHtml()}
       <div class="xchs" aria-live="polite">${paExchangeHtml(cur,'Current exchange',true)}${prev?paExchangeHtml(prev,'Previous exchange',false):''}</div></div>
-    <div class="chron pa-chron">${combatHistory({deck:true})}</div></div>${resultModalHtml()}`;
+    <div class="chron pa-chron">${combatHistory({deck:true})}</div></div>`;
+  // (the result dialog has one owner: render() in practice-combat.html appends it after the arena)
 }
 function pitsArenaBarHtml(){
   const bout=typeof pitsBoutBarHtml==='function'?pitsBoutBarHtml():'';

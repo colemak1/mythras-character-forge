@@ -136,6 +136,9 @@ test('aim: a shield bash uses the off arm; a left-handed wielder keeps role-base
  const l=J(`pitsStageLook({weapon:'sword',weaponHand:'Left Arm',hp:{'Right Arm':5,'Left Arm':0,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},maxHp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},shield:'none',siz:13})`);
  assert.equal(l.swap,true);assert.equal(l.armed,true,'a resisted Serious Wound leaves the weapon in the hand: the engine says when it drops (disarmed)');
  assert.equal(J(`pitsStageLook({weapon:'sword',weaponHand:'Left Arm',disarmed:true,hp:{'Right Arm':5,'Left Arm':0,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},maxHp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6}})`).armed,false,'a weapon the engine dropped is not drawn in the hand');
+ const HP="hp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},maxHp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6}";
+ assert.equal(J(`pitsStageLook({weapon:'sword',${HP},shield:'buckler'})`).shieldKey,'buckler','the shield keeps its kind (Work, 2026-11-13)');
+ assert.equal(J(`pitsStageLook({weapon:'sword',${HP},shield:'none'})`).shieldKey,null);
 });
 test('lodged weapons and entanglement are read from engine state: held, abandoned, withdrawn',()=>{
  const f=(a,b)=>JSON.stringify({a,b});
@@ -271,6 +274,37 @@ test('a parry that wins a Trip or a Disarm: the blocked blow is drawn first, the
  assert.deepEqual(ids,[atk.id,par.id,dh.id,dt.id,trip.id]);
  const dis=B('Disarm Opponent','The weapon lands 2m away.',{actor:'b'}),dh2=B('No Damaging Hit','x',{actor:'a'});
  assert.deepEqual(arrange([dis,dh2],[],false).play.map(e=>e.id),[dh2.id,dis.id]);
+});
+test('an offensive Disarm waits for its whole exchange, then is part of the one blow (Work, 2026-11-13)',()=>{
+ const beat=(ev,i)=>JSON.parse(A.run(`JSON.stringify(pitsStageBeat(${JSON.stringify(ev)},${i},${JSON.stringify(names)}))`));
+ for(const body of ["Marek's weapon lands 2m away.","Marek drops the weapon at their feet."]){
+  // the attack, the effect chosen and resolved (with its distance roll) while location and damage are still to come
+  const atk=ATK(),dd=DI('Disarm distance · d4'),dis=B('Disarm Opponent',body,{actor:'a',target:'b'});
+  let r=arrange([atk,dd,dis],[],true);
+  assert(!r.play.some(e=>e.id===dis.id),'the Disarm is not drawn while the engine still waits');assert.deepEqual(r.hold.map(e=>e.id),[dis.id]);
+  assert(r.play.some(e=>e.id===dd.id),'its dice still show at once');
+  // location, damage, then the Endurance roll: still held
+  const loc=B('Hit Location','x',{actor:'a',target:'b',location:'Chest'}),dl=DI('Hit Location · d20');
+  r=arrange([dl,loc],r.hold,true);assert(!r.play.some(e=>!e.roll),'nothing but dice while waiting');
+  const hit=B('Kethan hits Chest','x',{actor:'a',impact:{target:'b',location:'Chest',hpLost:4},px:{total:4}}),dm=DI('Damage · Chest');
+  r=arrange([dm,hit],r.hold,true);assert(!r.play.some(e=>!e.roll));
+  const wnd=WND(),de=DI('Endurance');
+  r=arrange([de,wnd],r.hold,false);
+  const ids=r.play.map(e=>e.id),at=e=>ids.indexOf(e.id);
+  assert(at(hit)>=0&&at(dis)>=0&&at(hit)<at(dis),'the blow first, then the Disarm');
+  // one attack and its effect: the Disarm is folded into the blow, which knows where the weapon goes
+  const ev=r.play,bi=at(hit),di=at(dis),hb=beat([atk,...ev],bi+1),db=beat([atk,...ev],di+1);
+  assert.equal(hb.cue.record.disarm.type,'disarm');assert.equal(db.consumed,true,'no second swing for the Disarm');
+  // and so in play, where the attack entry was in an earlier batch than its blow
+  const hb2=beat(ev,bi),db2=beat(ev,di);
+  assert.equal(hb2.cue.record.disarm&&hb2.cue.record.disarm.type,'disarm','without the attack entry: still part of the blow');assert.equal(db2.consumed,true);
+ }
+ // a defensive Disarm (the defender's, after a parry): drawn after the parry, with its own movement
+ const atk=ATK(),par=B('Marek parries','x',{actor:'b'}),dis=B('Disarm Opponent',"Kethan's weapon lands 1m away.",{actor:'b',target:'a'}),dh=B('No Damaging Hit','x',{actor:'a'});
+ const r=arrange([atk,par,dis,dh],[],false),ids=r.play.map(e=>e.id);
+ assert.deepEqual(ids,[atk.id,par.id,dh.id,dis.id]);
+ const db=JSON.parse(A.run(`JSON.stringify(pitsStageBeat(${JSON.stringify(r.play)},3,${JSON.stringify(names)}))`));
+ assert.equal(db.consumed,false,'the defender\'s Disarm keeps its own movement');
 });
 test('a blow takes its effects and consequences into one record; those beats have no motion of their own',()=>{
  const atk=ATK(),press=B('Press Advantage','Marek cannot attack on the next Turn, but may act otherwise.',{actor:'a'}),hit=HIT(),wnd=WND(),

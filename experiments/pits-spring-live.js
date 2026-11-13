@@ -14,7 +14,7 @@
 //     read cleanly (holdAt);
 //   - the simulation runs forward as the clock does (ensure), from the writer's checkpoints;
 //   - writer time runs at PACE times the stage's clock (the owner's chosen pace for the studies).
-// Stand-ins, kept simple until they have phrases: fall, stand, lower, yield, Press Advantage (nothing), recover (a walk
+// Stand-ins, kept simple until they have phrases: fall (a crumble), stand, lower, yield, Press Advantage, recover (a walk
 // to the engine's range when it changes). How the flow works, what is weak and what is next:
 // docs/pits-animation-direction.md, "Fluid flow" and "Instructions for Opus".
 (function(root){
@@ -37,13 +37,13 @@ let pend=null;
 function fighter(id,wk,swap,look){
   if(!pend||pend[id])pend={};                       // a fighter made again starts a new pair (a new bout)
   const m={id,hx:PM.CENTRE+(id==='a'?-1:1)*PM.SPACING/2,face:id==='a'?1:-1,weapon:{key:wk.kind,len:wk.len},swap:!!swap,
-    guard:{...PM.SWORD_GUARD},wk,shield:!!(look&&look.shield),pair:pend,spring:true};
+    guard:{...PM.SWORD_GUARD},wk,shield:!!(look&&look.shield),shieldKey:look&&look.shield?(look.shieldKey||'heater'):null,pair:pend,spring:true};
   pend[id]=m;return m;
 }
 function world(m,t){
   const P=m.pair;if(P.world)return P.world;if(!P.a||!P.b)return null;
   const gap=P.gap||L0.gap(P.a.wk,P.b.wk,'long'),sh=-(gap-PM.SPACING)/2;
-  const S=PW.create({weapons:{a:bladeKey(P.a.wk),b:bladeKey(P.b.wk)},shields:{a:P.a.shield?'heater':'none',b:P.b.shield?'heater':'none'},
+  const S=PW.create({weapons:{a:bladeKey(P.a.wk),b:bladeKey(P.b.wk)},shields:{a:P.a.shieldKey||'none',b:P.b.shieldKey||'none'},
     hx:{a:P.a.hx,b:P.b.hx},shift:{a:sh,b:sh},id:'live',title:'The Pits (spring trial)'});
   S.now=0;S.absorb=28;S.crumble=true;
   P.world={S,T0:t,next:0,over:false,shown:0};
@@ -72,13 +72,14 @@ function pose(m,t,limp){
 }
 
 // ----- a blow: the engine's facts as one record for the writer -----
-// s: {outcome (the stage's words), loc, lost, shield (the parry was the shield's), fall, defeated, flow (the replay)}
+// s: {outcome (the stage's words), loc, lost, shield (the parry was the shield's), strike ('shield': the attack was a
+// shield strike), fall, defeated, flow (the replay)}
 function blow(F,aid,t,s){
   const A=F[aid],did=aid==='a'?'b':'a',w=world(A,t);
   if(!w)return {tc:t,contacts:[],end:t};
   const u0=Math.max(tau(w,t),w.next);w.S.now=u0;w.S.cut(u0);
   const rec={attacker:aid,loc:s.loc||'chest',outcome:s.outcome||'wound',lost:s.lost||0,...(s.prone?{prone:true}:{}),
-    ...(s.shield?{defence:'shield'}:{}),after:s.defeated?[{type:'end',winner:aid,how:'injury'}]:[]};
+    ...(s.shield?{defence:'shield'}:{}),...(s.strike==='shield'?{strike:'shield'}:{}),after:s.defeated?[{type:'end',winner:aid,how:'injury'}]:[]};
   // a fighter the engine has on the floor stays down through the exchange (only its arms and head move)
   for(const id of ['a','b'])w.S.F[id].grounded=!!(w.down&&w.down[id]);
   const seq=w.S.seq,c0=seq.contactList.length,m0=seq.misses.length;
@@ -174,7 +175,27 @@ function stand(m,t){const w0=world(m,t);if(w0&&w0.down)w0.down[m.id]=false;if(w0
 function lower(m,t){const w=world(m,t);if(!w||w.over)return t;
   return keyAt(m,t,(f,u)=>{f.key(u,{lean:3,head:-14,h:[10,-32],w:-66});return u+600;})??t;}
 function yieldTo(m,t){return keyAt(m,t,(f,u)=>{f.key(u,{lean:16,bend:10,head:22,h:[0,-58],w:-70,o:[4,-50]});return u+520;})??t;}
-function press(A,D,t){return t;}
+// Press Advantage (Core p.97): the presser keeps the point in the other's face and the other covers, giving a little
+// ground with the upper body, so it cannot attack. Written from where both are; the first variant that holds cleanly
+// is kept (the picture holds on it until the next action). The engine's restriction is unchanged: this only draws it.
+const PRESS=[
+  // (the arm well out, the forearm level, so the wrist can hold the point forward)
+  {a:{lean:12,bend:8,head:-14,h:[50,-4],w:6},d:{lean:-6,bend:8,head:-4,h:[18,-10],w:74}},
+  {a:{lean:10,bend:8,head:-12,h:[46,-12],w:12},d:{lean:-8,bend:8,head:-2,h:[14,-16],w:84}},
+  {a:{lean:8,bend:6,head:-10,h:[42,2],w:0},d:{lean:-4,bend:6,head:-6,h:[20,-6],w:66}}];
+function press(A,D,t){
+  const w=world(A,t);if(!w||w.over||(w.down&&(w.down[A.id]||w.down[D.id])))return t;
+  const u=Math.max(tau(w,t),w.next);w.S.now=u;w.S.cut(u);
+  const fa=w.S.F[A.id],fd=w.S.F[D.id];let best=null;
+  for(let i=0;i<PRESS.length;i++){const mk=w.S.mark(),v=PRESS[i];
+    fa.key(u,{...v.a,h:v.a.h.slice()},'attack');fd.key(u+40,{...v.d,h:v.d.h.slice()},'cover');
+    rerun(w,u+900);const e=holdAt(w,u+380,300,true),bad=holdAt.bad;
+    if(!bad){w.next=e;return clock(w,e);}
+    if(!best||bad<best.bad)best={i,bad};
+    w.S.rollback(mk,u);}
+  const v=PRESS[best.i];fa.key(u,{...v.a,h:v.a.h.slice()},'attack');fd.key(u+40,{...v.d,h:v.d.h.slice()},'cover');
+  rerun(w,u+900);const e=holdAt(w,u+380,300,true);w.next=e;return clock(w,e);
+}
 function react(){return 0;}
 // back to the engine's range (the engine changed it): a walk, the writer's measure step, from where the fighter stands
 function recover(m,t,gap){const w=world(m,t);if(!w||w.over||(w.down&&w.down[m.id]))return t;

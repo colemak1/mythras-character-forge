@@ -421,7 +421,7 @@ The owner's description of how a live exchange should play, which is now the rul
 - The dagger at close quarters overlaps the other figure (the study's measure for a 50-unit blade).
 - Writing a declared action tries its variants, each a short simulation: more work per click than before. Time to write and memory (finding 2 and 3 of the live trial) are not solved, and the lists of keys and pins grow through a bout.
 - Bouts with a long or two-handed weapon use the old movement, which still returns to idle stances.
-- `tests/pits-writer.cjs` still fails on the shield strike (recorded above); CI is red on this branch until that is fixed.
+- `tests/pits-writer.cjs` passes since Work's code findings were fixed.
 
 ## Owner's notes from play (2026-11-13, after the fluid-flow batch)
 
@@ -436,6 +436,25 @@ The owner played `?stage=spring` and named five things. All five are fixed; each
 **Live sweep** (same 144 fights, run on the code before and after this batch): 139 and 140 with a fault. Held frames: 5 before (4 after getting up, 1 declared parry), 8 after (2 after getting up, 6 declared actions, mostly a weapon through the knees of a fighter in the heap). The heap sits back as it folds to keep its knees out of the way. Attacks against a fighter on the ground need their own declared poses (item 5 below).
 
 **Still weak:** the crumble ends with the dropped blade along the floor toward the other fighter. Getting up from it is still a stand-in of two keys and two steps.
+
+## Work's code findings (2026-11-13)
+
+ChatGPT (Work) traced six presentation defects to the code (`docs/pits-spring-code-findings-20261113.md`). All six are fixed, each with a regression test:
+
+1. **Disarm drawn early.** `pitsStageArrange` now also holds the last exchange from its first Trip or Disarm (`PSTAGE_EFFECT`), not only from its blow, while the engine waits. A Disarm won by the attacker is folded into that attacker's blow (`record.disarm` from `pitsStageBeat`; the beat itself is consumed): the weapon flies at the blow's first contact, with no second swing. When the attack entry was in an earlier batch, the attacker is the blow's own actor. A defender's Disarm keeps its own movement after the parry (`pitsStageOrder`). The screen keeps the state from before the held exchange (`V.hold.shown`), so the sync does not drop the weapon early either. Checked in the browser: one blow in the Disarm's exchange, one disarm contact. Tests: `tests/pits-stage.cjs`.
+2. **Shield strikes drawn as cuts.** `psMotionBlow` passes `strike` from the engine's `px.tool` (or the attack beat), kept apart from `shield` (the defender's), and `PitsSpringLive.blow` puts it in the record. A strike met by the blade is now `shieldStrikeMet`: the same movement at a measure of 160 instead of 125. Chest to chest, any blade on the shield reached the striker's head or arm. The defender's blade also leaves its raised hold earlier and unhurried (`aim` at t0+100, no snap), which removes the elbow flip the contact pin caused when it pulled in late. Tests: `tests/pits-spring-live.cjs`, `tests/pits-writer.cjs`.
+3. **Shield sizes.** `pitsStageLook` carries `shieldKey`; the adapter passes it to the writer (`SHIELD_R`, with peltast and viking added); the stage draws the shield at the same radius (`psShieldR`).
+4. **Press Advantage.** `PitsSpringLive.press` writes a short movement for both: the presser's point at the other's face, the other covering. The first of three variants that holds cleanly is kept. Still a stand-in for a phrase in the writer.
+5. **Two result dialogs.** `render()` is the only owner: the deck and the bottom layouts no longer append it.
+6. **Old exchange as Current.** `paExchanges` starts a new list at "New Opponent" and "Encounter N".
+
+**Hidden failures, now fixed.** With the shield strike passing, `tests/pits-writer.cjs` ran on to two tests that had never run, and both failed at the branch head as well:
+- a failed shield parry against a thigh cut flung the sword point into the attacker's head (it now goes up upright, the hand forward);
+- a longsword's failed parry against a stab to its sword arm stood upright past its own head (it now falls forward as the arm comes in).
+
+The whole suite passes.
+
+**Not done (same report):** attacks and defence from the ground (only the arms move); action names clipped in the deck's two narrow columns (`pits-arena.css`).
 
 ## Instructions for Opus (written 2026-11-13, after the fluid-flow batch)
 
@@ -462,7 +481,7 @@ Read `AGENTS.md`, `HANDOFF.md` and the section above first. Work on the branch `
 
 1. **Whatever the owner names** after watching `experiments/practice-combat.html?stage=spring`. Their eye outranks the sweep.
 2. **The stand-ins, as phrases in `pits-writer.js`** (they are a few raw keys in `pits-spring-live.js` now): the fall is settled as a crumble (owner, 2026-11-13; `PitsWriter.crumble`), so the next is getting up (Regain Footing: onto a knee, then up, weapon toward the other), the winner's lowering, the yield, the trip, the disarm, Press Advantage. Then attacks and parries from the ground with more than the arms. Each ends in a hold that passes `holdAt`.
-3. **The shield strike** (`tests/pits-writer.cjs`, the only failing CI test): its raised holds cross the striker's or the defender's head and a parried strike flips the defender's elbow. Nothing merges while this is red.
+3. **The shield strike:** fixed (see "Work's code findings"); `tests/pits-writer.cjs` passes.
 4. **The live sweep, by kind,** largest first: blades slow past their own head; blades within 2 units of the other's head or elbow at close quarters; contacts off their point (probably where `S.absorb` asks an arm to reach further than it goes: check `reach` in `play` against the pin's arm limit). Fix in the phrase or in `aim`/`guard`, not by loosening a rule.
 5. **Declared actions that say more.** The chamber does not know the hit location (it is rolled later). When the engine does know more at declare time (a chosen location, a shield strike, a charge), use it. Add variants where a weapon family lacks them. Keep every variant clean at its hold for every weapon length (the CI test checks this).
 6. **The remaining weapon families,** one at a time, each with its profile in `profile`, its phrases, a generated study, the studies' sweep and the live sweep: heavy one-handed (replace the stand-in: slower chamber, harder impact), two-handed swing, long thrust (spear, pike, polearms, at their own range), flexible. Until a family exists its bouts stay on the old movement; when all exist, `supports` returns true for everything.

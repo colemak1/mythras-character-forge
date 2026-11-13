@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: Work's code findings (Disarm, shield strikes, shield sizes, Press Advantage, result dialog, current exchange)
+
+- A Disarm is no longer drawn before its exchange is resolved: it waits with the blow until location, damage and any Endurance roll are done. A Disarm won by the attacker is part of that one blow, and the weapon leaves the hand at its contact. A defender's Disarm is drawn after the parry.
+- On the spring trial a shield strike is drawn as a shield strike, not a sword cut. A strike met by the blade is drawn at a longer measure, so there is room for the blade on the shield.
+- Each shield keeps its own size (buckler, heater, kite, scutum, ...), both in the drawing and in where blows meet it.
+- Press Advantage is drawn on the spring trial: the point stays in the other's face while the other covers.
+- The result window is drawn once, in every bottom layout (it was drawn twice, with duplicate ids).
+- A new opponent starts with an empty Current exchange; the last bout's blows stay in the chronicle.
+- Movement fixes found once the shield-strike test passed: a failed shield parry against a thigh cut, and a long blade's failed parry against a stab to the sword arm.
+
 ## The Pits trial: owner's notes from play (order of blows, replay, falls, arm wound)
 
 - A miss is drawn before the next attack. When the other fighter attacked at once after a miss and the engine waited for your reaction, the miss was held back behind that attack, so their swing and your parry were drawn before your miss. Now an exchange that is over plays whole before the next one is declared.

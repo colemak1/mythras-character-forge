@@ -50,7 +50,7 @@ function profile(key){
   return null;
 }
 // shields (Core p.63 sizes): the radius it is drawn with. Carried on the off hand.
-const SHIELD_R={buckler:13,target:17,heater:19,kite:23,hoplite:25,scutum:26};
+const SHIELD_R={buckler:13,target:17,heater:19,peltast:19,viking:21,kite:23,hoplite:25,scutum:26};
 const shieldR=key=>key&&key!=='none'?(SHIELD_R[key]||19):0;
 // Own head (Work's check, 2026-11-13): seen from the side, a blade held back over the shoulder or upright in front of
 // the face crosses the wielder's own head. Chambers lie flatter behind the shoulder, under the head (h [12,-8], 160);
@@ -508,7 +508,10 @@ PHRASES.legCut={ref:{a:68,d:28},gap:144,width:{a:64,d:84},lead:0,run(W,a,d,t9,st
   // the sword arm flies up and back (a blade longer than the broadsword, held point down, would sweep its point
   // through the attacker on the way up, so it is flung back with the point going down instead)
   const lng=d.f.weapon.len>SWORD&&(()=>{const c=W.look(tc),j=solve(pose(d.f,c.out[d.id],tc),d.f.weapon.len);return PS.norm(j.w)<0;})();
-  d.key(tc+10,{px:2,py:44,lean:-6,bend:4,head:-6,turn:-6,h:lng?[-10,-12]:[24,40],w:lng?-130:80,o:[24,-8]},'together');   // (flung up with the point forward: up and back, it lies across the head)
+  // (after a shield parry tried low, the sword arm was not drawn down to cover: flung from there with the point forward,
+  // it goes up into the attacker's lowered head, so it goes up upright, the hand forward of the face)
+  const upW=st.tried==='shield'?92:80,upH=st.tried==='shield'?[30,40]:[24,40];
+  d.key(tc+10,{px:2,py:44,lean:-6,bend:4,head:-6,turn:-6,h:lng?[-10,-12]:upH,w:lng?-130:upW,o:[24,-8]},'together');   // (flung up with the point forward: up and back, it lies across the head)
   W.mark(tc,d.id,'The cut lands on '+D+'\'s forward thigh: the leg gives, the pelvis drops and the chest comes back up over it');
   }
   if(!st.final){
@@ -615,7 +618,9 @@ PHRASES.thrustLands={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d,
     const out=parryArm?44:28;
     W.tryParry(d,st,tc-220,tc,inside?[p[0]+d.face*INS.x,p[1]+INS.y]:[p[0]+d.face*out,p[1]-4],inside?INS.w:62,inside?INS.al:30);   // (beaten up harder than a parry would, so it shows)
     // the arm that is hit is the one that was parrying: the attempt ends there, the arm pulled in
-    if(parryArm)d.key(tc+40,st.tried==='shield'?{o:[16,-24]}:{h:[8,-24]},'together');}
+    // (a long blade held upright inside the point is let fall forward as the arm comes in: kept upright that close,
+    // it stands past its own fighter's head)
+    if(parryArm)d.key(tc+40,st.tried==='shield'?{o:[16,-24]}:inside?{h:[8,-24],w:55}:{h:[8,-24]},'together');}
   // (the shield arm of a shield-bearer is held forward behind the shield: the thrust takes it near the elbow)
   const tgt=T.part==='Hd'?(t,c)=>{const p=W.on(d,'Hd')(t,c);return [p[0]+d.face*10,p[1]+4];}:W.on(d,T.part,/arm$/.test(T.part)?(T.part==='offarm'&&d.f.shieldR?.2:.55):null);
   // a longer blade is driven less far past the mark, so it is not buried deeper than it can be drawn out
@@ -697,7 +702,9 @@ PHRASES.shieldStrike={ref:{a:0,d:79},gap:125,width:{a:88,d:86},lead:60,run(W,a,d
       while(ext>30&&Math.abs(oS[0]+a.face*(ext+R)-wS[0])<44)ext-=2;
       return [oS[0]+a.face*(ext+R),oS[1]-6];})();
     W.shieldTo(a,t0+240,tc,W.fixed(C),{through:8,hold:40});
-    W.aim(d,t0+230,tc,W.fixed(C),80,40,{order:'cover',hold:40,blend:110,snap:1.4});
+    // (the blade leaves its raised hold early and unhurried, so the contact's pin has little left to pull: pulled in
+    // late and fast, the elbow flipped over)
+    W.aim(d,t0+100,tc,W.fixed(C),80,40,{order:'cover',hold:40,blend:110});
     W.contact(tc,'parry',C,{a:{who:a.id},b:{who:d.id,along:40},hold:40});
     a.impulse(tc+1,{ox:-160,px:-40});d.impulse(tc+1,{py:-90,lean:-30,head:-30});
     raiseHigh(d,tc+50,'cover');          // the blade comes off the shield into the raised hold
@@ -789,12 +796,16 @@ function crumble(f,u,x){
   return u+760;
 }
 
+// A shield strike met by the blade does not get all the way in: the same movement, at a longer measure, so there is
+// room between the two for the blade on the shield (chest to chest, any blade on the shield reaches the striker)
+PHRASES.shieldStrikeMet={...PHRASES.shieldStrike,gap:160};
+
 // ----- which phrase an exchange gets -----
 // rec: {attacker:'a'|'b', loc, outcome (the stage's words: parried, full-parry, partial-parry, wound, armour, zero,
 // miss, evaded, fumble), lost, action ('cut' or 'thrust'; a sword thrusts at the abdomen unless told), after:[cues]}
 const ZONE=loc=>loc==='head'?'high':/leg$/.test(loc||'')?'low':/arm$/.test(loc||'')?'arm':'mid';
 function pick(rec,prev,family){
-  if(rec.strike==='shield')return {id:'shieldStrike',exact:true};
+  if(rec.strike==='shield')return {id:/parr|ward/.test(rec.outcome||'')&&!(rec.lost>0)?'shieldStrikeMet':'shieldStrike',exact:true};
   const o=rec.outcome,z=ZONE(rec.loc),act=rec.action||(rec.loc==='abdomen'?'thrust':'cut');
   const parried=/parr|ward/.test(o)&&!(rec.lost>0),missed=/^(miss|evaded|fumble)$/.test(o);
   if(family==='thrust'){
@@ -910,14 +921,14 @@ function play(S,id,aid,t,st,keep){
   // a defender with the clearly longer weapon lifts the point as the shorter one comes inside it (the side view
   // cannot show the point carried off the line, and a point held in line would run into the attacker)
   // (a shield strike counts as the short weapon: it comes in to the shield's length)
-  if(!keep&&P.gap!=null&&D.weapon.len>(id==='shieldStrike'?30:A.weapon.len)+15){const t0=Math.max(t,...D.keys.map(k=>k.t+110));
+  if(!keep&&P.gap!=null&&D.weapon.len>(/^shieldStrike/.test(id)?30:A.weapon.len)+15){const t0=Math.max(t,...D.keys.map(k=>k.t+110));
     // (against a shield strike, which comes in chest to chest, the hand comes back to the shoulder and the blade
     // goes up and over to hang behind, out of the way)
-    if(id==='shieldStrike')raiseHigh(D,t0,'cover');else D.key(t0,{h:[24,-14],w:70},'cover');   // (hand out in front: upright close in, the blade stands through the face)
+    if(/^shieldStrike/.test(id))raiseHigh(D,t0,'cover');else D.key(t0,{h:[24,-14],w:70},'cover');   // (hand out in front: upright close in, the blade stands through the face)
     S.seq.notes.push({kind:'inside',t:t0,who:D.id});}
   if(P.gap!=null&&!keep){
     // (the measure follows the attacker's reach with its weapon; a shield strike's reach is the shield's)
-    let e=gapOf(A,D)-(P.gap+(id==='shieldStrike'?0:(A.weapon.len-SWORD)*REACH));
+    let e=gapOf(A,D)-(P.gap+(/^shieldStrike/.test(id)?0:(A.weapon.len-SWORD)*REACH));
     // live (S.absorb): a small difference in measure is not walked off first; the attack's own step is that much
     // longer or shorter (the attacker's frame is moved by it), so a resolved blow starts at once. Only what is left
     // over is stepped, with the weapon kept drawn back if the attack was declared (S.chambered).

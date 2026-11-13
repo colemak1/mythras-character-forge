@@ -139,4 +139,44 @@ test('the replay runs on: each exchange is written from just after the last one\
   for(let x=200;x<t;x+=40){const p0=q(x),p1=q(x+40);const m=Math.max(...p0.map((v,i)=>Math.abs(p1[i]-v)));run=m<.4?run+40:0;still=Math.max(still,run);}
   assert(still<=240,'no stretch of stillness longer than 240 ms ('+still+')');
 });
+// (Work's code findings, docs/pits-spring-code-findings-20261113.md)
+test('a shield strike reaches the writer as one: landed, missed and parried, it is drawn as the shield strike',()=>{
+  for(const [out,lost,want] of [['wound',1,'shieldStrike'],['miss',0,'shieldStrike'],['parried',0,'shieldStrikeMet']]){
+    const M={a:PL.fighter('a',WK.sword,false,{shield:true,shieldKey:'heater'}),b:PL.fighter('b',WK.sword,false,{})};
+    for(const id of ['a','b'])PL.place(M[id],0,PL.gap(WK.sword,WK.sword,'long'),'guard');PL.pose(M.a,0);const w=PL.world(M.a);
+    let t=PL.intent(M.a,0,'shield-strike',0);if(out==='parried')t=PL.intent(M.b,t,'parry',0);
+    const r=PL.blow(M,'a',t,{outcome:out,loc:'chest',lost,strike:'shield'});
+    assert.equal(r.phrase,want,out);
+    const ex=w.S.seq.exchanges.at(-1);assert.equal(ex.phrase,want);
+    if(out!=='miss')assert(r.contacts.length>=1,out+': a contact');
+  }
+  // and the defender's shield is not mistaken for the attacker's tool
+  const M={a:PL.fighter('a',WK.sword,false,{}),b:PL.fighter('b',WK.sword,false,{shield:true,shieldKey:'kite'})};
+  for(const id of ['a','b'])PL.place(M[id],0,PL.gap(WK.sword,WK.sword,'long'),'guard');PL.pose(M.a,0);
+  const t=PL.intent(M.a,0,'attack',0);assert.notEqual(PL.blow(M,'a',PL.intent(M.b,t,'shield',0),{outcome:'parried',loc:'chest',lost:0,shield:true}).phrase,'shieldStrike');
+});
+test('each shield keeps its own size: a buckler and a heater are not the same shield on the spring stage',()=>{
+  const M={a:PL.fighter('a',WK.sword,false,{shield:true,shieldKey:'buckler'}),b:PL.fighter('b',WK.sword,false,{shield:true,shieldKey:'scutum'})};
+  for(const id of ['a','b'])PL.place(M[id],0,PL.gap(WK.sword,WK.sword,'long'),'guard');PL.pose(M.a,0);const w=PL.world(M.a);
+  assert.equal(w.S.F.a.shieldR,PW.shieldR('buckler'));assert.equal(w.S.F.b.shieldR,PW.shieldR('scutum'));
+  assert(w.S.F.a.shieldR<w.S.F.b.shieldR);
+  // a look without a key (an older caller) is still a shield
+  const N={a:PL.fighter('a',WK.sword,false,{shield:true}),b:PL.fighter('b',WK.sword,false,{})};
+  for(const id of ['a','b'])PL.place(N[id],0,PL.gap(WK.sword,WK.sword,'long'),'guard');PL.pose(N.a,0);
+  assert.equal(PL.world(N.a).S.F.a.shieldR,PW.shieldR('heater'));
+});
+test('Press Advantage is drawn: the point stays in the other\'s face, the other covers; then it holds cleanly',()=>{
+  for(const [wa,wb] of [['sword','sword'],['dagger','sword'],['sword','rapier'],['mace','sword']]){
+    const B=bout(wa,wb);let t=PL.intent(B.M.a,0,'attack',0);t=PL.intent(B.M.b,t,'parry',0);
+    t=PL.blow(B.M,'a',t,{outcome:'wound',loc:'chest',lost:2}).end;
+    const k0=[B.w.S.F.a.keys.length,B.w.S.F.b.keys.length],e=PL.press(B.M.a,B.M.b,t);
+    assert(e>t,wa+': the pressure takes time to set');
+    assert(B.w.S.F.a.keys.length>k0[0]&&B.w.S.F.b.keys.length>k0[1],wa+': both fighters move');
+    const tip=B.at('a',e,'tip'),hd=B.at('b',e,'Hd');
+    assert(Math.hypot(tip[0]-hd[0],tip[1]-hd[1])<70,wa+' v '+wb+': the point is at the face ('+Math.round(Math.hypot(tip[0]-hd[0],tip[1]-hd[1]))+')');
+    cleanHold(B,e,wa+' v '+wb+' pressed');
+    // and the next action is written from there
+    const t2=PL.intent(B.M.b,e,'attack',0);assert(t2>e);
+  }
+});
 console.log(passed+' passed');
