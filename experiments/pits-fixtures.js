@@ -23,7 +23,7 @@ const THRUST=[
   {attacker:'b',weapon:'sword',loc:'head',outcome:'parried',lost:0},
   {attacker:'a',weapon:'dagger',loc:'abdomen',outcome:'parried',lost:0},
   {attacker:'b',weapon:'sword',loc:'chest',outcome:'evaded',lost:0},
-  {attacker:'a',weapon:'dagger',loc:'rarm',outcome:'wound',lost:2},
+  {attacker:'a',weapon:'dagger',loc:'rarm',outcome:'wound',lost:2,tried:'parry'},             // the parry fails
   {attacker:'a',weapon:'dagger',loc:'abdomen',outcome:'wound',lost:7,
     after:[{type:'end',winner:'a',how:'injury'}]},
 ];
@@ -37,7 +37,8 @@ const SHIELDS=[
   {attacker:'b',weapon:'sword',loc:'abdomen',outcome:'parried',lost:0},
   {attacker:'a',weapon:'sword',loc:'chest',outcome:'evaded',lost:0},
   {attacker:'a',strike:'shield',loc:'chest',outcome:'parried',lost:0},
-  {attacker:'a',weapon:'sword',loc:'rleg',outcome:'wound',lost:7,after:[{type:'end',winner:'a',how:'injury'}]},
+  {attacker:'a',weapon:'sword',loc:'rleg',outcome:'wound',lost:7,tried:'shield',                // the buckler is too late
+    after:[{type:'end',winner:'a',how:'injury'}]},
 ];
 const api={FIGHT,THRUST,SHIELDS};
 root.PitsFixtures=api;

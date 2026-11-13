@@ -151,4 +151,26 @@ test('a sample of the shield sweep: shield parries, wards and shield strikes, ev
       const q=PW.write([{attacker:'a',loc,...r}],opt),f=fault(q,8);if(f)bad.push(wa+'/'+sa+' v '+wb+'/'+sb+' '+loc+' '+JSON.stringify(r)+': '+f);}}
   assert.deepEqual(bad,[],bad.join('\n'));
 });
+test('a failed parry still looks tried: the defender goes for the parry, late and short, and the blow lands',()=>{
+  // the record says so (tried), or names a defence for a blow that landed in full
+  for(const r of [{tried:'parry'},{defence:'parry'}]){
+    const q=PW.write([{attacker:'a',loc:'chest',outcome:'wound',lost:3,...r}]);
+    assert(q.notes.some(n=>n.kind==='late parry'&&n.who==='b'),JSON.stringify(r)+': no late parry');
+    assert.equal(q.contactList.length,1);assert.equal(q.contactList[0].kind,'wound');assert.equal(fault(q),null);
+    // at the blow, the defender's sword hand and blade are well on their way to the parry (sword against sword: the
+    // hand about 25 units from where it would be, the blade turned about 50 degrees)
+    const p=PW.write([{attacker:'a',loc:'chest',outcome:'wound',lost:3}]),tc=q.contactList[0].t;
+    const h=s=>PS.world(s,'b',tc,'Hn'),dh=Math.hypot(h(q)[0]-h(p)[0],h(q)[1]-h(p)[1]);
+    assert(dh>15,'the parry is not attempted (the hand is '+dh.toFixed(1)+' from where it would be)');
+    assert(PS.joints(q,'b',tc).w-PS.joints(p,'b',tc).w>30,'the blade does not turn toward the parry');
+  }
+  // with the shield, at every height; and nothing is tried when no defence was made
+  for(const loc of ['head','chest','rleg']){const q=PW.write([{attacker:'a',loc,outcome:'wound',lost:3,tried:'shield'}],{shields:{b:'heater'}});
+    assert(q.notes.some(n=>n.kind==='late parry'&&n.with==='shield'));assert.equal(fault(q),null);}
+  assert(!PW.write([{attacker:'a',loc:'chest',outcome:'wound',lost:3}]).notes.some(n=>n.kind==='late parry'));
+  // a sample across weapons
+  const bad=[];for(const [wa,wb] of [['falchion','rapier'],['rapier','dagger'],['dagger','longsword']])for(const loc of LOCS){
+    const q=PW.write([{attacker:'a',loc,outcome:'armour',lost:0,tried:'parry'}],{weapons:{a:wa,b:wb}}),f=fault(q,8);if(f)bad.push(wa+' v '+wb+' '+loc+': '+f);}
+  assert.deepEqual(bad,[],bad.join('\n'));
+});
 console.log(passed+' passed');

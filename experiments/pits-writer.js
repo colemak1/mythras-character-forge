@@ -206,7 +206,19 @@ function create(opt){
     f.pin('o',null,()=>ctr,tc-(o.blend||60),tc,tc+(o.hold||0));
     f._block={t:tc,R,ctr};return C;
   }
-  const W={seq,F,names,look,on,fixed,aim,guard,shieldTo,r2,settle,
+  // A parry that fails (the record: tried 'parry' or 'shield'): the defender goes for the place a parry would meet the
+  // blow (C), with the blade or the shield, but is set moving late (from tKey, the body under it) and stops a little
+  // short of the line, so the blow gets there first. No contact: the blow lands as written.
+  // short: how far short of the line it stops (12 unless asked)
+  function tryParry(f0,st,tKey,tc,C,w,along,short){
+    const f=U(f0);if(!st||!st.tried)return;tc=r2(tc);
+    const c=look(tc),q=pose(f,c.out[f.id],tc),Cs=[C[0]-f.face*(short==null?12:short),C[1]];
+    if(st.tried==='shield'&&f.shieldR){const R=f.shieldR,ctr=[Cs[0]-f.face*R*Math.cos(rad(12)),Cs[1]-R*Math.sin(rad(12))];
+      f.key(tKey,{o:PS.offFor(f,q,ctr)},'cover');}
+    else{const r=fit(f,q,Cs,al(f,along),w);f.key(tKey,{h:handAt(f,q,Cs,r.along,r.w),w:r.w},'cover');}
+    seq.notes.push({kind:'late parry',who:f.id,t:tc,with:st.tried});
+  }
+  const W={seq,F,names,look,on,fixed,aim,guard,shieldTo,tryParry,r2,settle,
     mark:(t,who,label)=>seq.marks.push({t,who,label}),
     beat(n,t,short,label){seq.beats.push({n,t,short,label});W.mark(t,'both',n+'. '+label);},
     pause:(t,label)=>seq.pauses.push({t,label}),
@@ -410,6 +422,7 @@ PHRASES.legCut={ref:{a:68,d:28},gap:144,width:{a:64,d:84},lead:0,run(W,a,d,t9,st
   // still in line, so it drops to cover low as the cut comes, too late)
   const inLine=()=>{const c=W.look(t9+60),j=solve(pose(d.f,c.out[d.id],t9+60),d.f.weapon.len);return Math.abs(PS.norm(j.w))<=45;};
   if((!st.prev||st.prev.phrase!=='thrustDeflected'||st.prev.attacker===a.id)&&inLine())d.key(t9+60,{lean:8,bend:8,head:-12,h:[12,-32],w:-44-Math.max(0,d.f.weapon.len-SWORD)*1.5,o:[10,-26]},'cover');   // a longer blade covers more steeply
+  if(st.tried){const c=W.look(tc),k=W.on(d,'K')(tc,c);W.tryParry(d,st,tc-220,tc,[k[0]+d.face*26,k[1]+10],-72,48,22+Math.max(0,d.f.weapon.len-SWORD));}   // (a longer blade stops further short: the attacker's front knee comes in under it)
   const P=W.aim(a,t9+150,tc,W.on(d,'thigh',.5),-40,62,{through:[6,-16],hold:40,blend:60});
   W.contact(tc,'wound',P,{a:{who:a.id,along:62},part:'thigh',on:d.id,target:'thigh'});
   if(!(st.lost>0)){
@@ -439,7 +452,8 @@ PHRASES.legCut={ref:{a:68,d:28},gap:144,width:{a:64,d:84},lead:0,run(W,a,d,t9,st
     }else{
       // the defender is still up, so the point is kept low and off the line while the attacker settles back
       a.key(tc+200,{px:60,py:70,lean:8,bend:8,head:-10,h:[10,-26],w:-10,o:[12,-26]},'attack');
-      d.key(tc+260,{lean:8,bend:8,head:-10,h:[18,-20],w:24,o:[12,-26]});
+      // (after a late low parry with the blade, the blade stays down: brought up, a long one sweeps past the attacker)
+      d.key(tc+260,st.tried==='parry'?{lean:8,bend:8,head:-10,o:[12,-26]}:{lean:8,bend:8,head:-10,h:[18,-20],w:24,o:[12,-26]});
     }
     return {end:tc+460,tc,label:st.lost>0?D+' is cut in the thigh and has caught the weight.':'The cut is stopped by armour.'};
   }
@@ -450,6 +464,9 @@ PHRASES.legCut={ref:{a:68,d:28},gap:144,width:{a:64,d:84},lead:0,run(W,a,d,t9,st
 // The study's first cut (cutParried), with the defender's cover too late: the blade arrives on the part, holds a
 // moment, and is drawn out along its line; the body reacts where it was hit. armour/zero: the same blow, a smaller
 // reaction and no mark.
+// a cover key with what a tried parry moves taken out (the blade for a parry, the shield for a shield)
+function tryKeep(st,p){if(!st||!st.tried)return p;const q={...p};
+  if(st.tried==='shield')delete q.o;else{delete q.h;delete q.w;}return q;}
 const LANDS={
   head:{part:'Hd',mark:'head',w:10,along:70,react:{px:-70,lean:-70,head:220},say:'the head snaps back'},
   chest:{part:'chest',mark:'chest',w:16,along:70,react:{px:-90,lean:-110,head:90},say:'the chest is driven back'},
@@ -463,7 +480,11 @@ PHRASES.cutLands={ref:{a:20,d:-11},gap:165,width:{a:64,d:70},lead:20,run(W,a,d,t
   a.walk('ff',t2+240,t2+400,96,{py:70,lift:7,settle:.55,load:.35});
   a.key(t2+330,{lean:18,bend:8,head:-14,turn:12,o:[-30,-42]});
   // the defender starts to cover, late: the blade only begins to come across
-  d.key(tc-140,{lean:10,bend:6,head:-12,h:[22,-10],w:70,o:[6,-28]},'cover');
+  // (when a parry was tried, the blade, or the shield, is left to it, below)
+  d.key(tc-140,tryKeep(st,{lean:10,bend:6,head:-12,h:[22,-10],w:70,o:[6,-28]}),'cover');
+  // a failed parry: the defender goes for where the parry would have met the cut (high: above the head), too late
+  if(st.tried){const c=W.look(tc),hi=st.loc==='head',p=W.on(d,hi?'Hd':'S')(tc,c);
+    W.tryParry(d,st,tc-220,tc,hi?[p[0]+d.face*40,p[1]+18]:[p[0]+d.face*61,p[1]+4],hi?170:100,hi?30:20);}
   const tgt=L.part==='Hd'?(t,c)=>{const p=W.on(d,'Hd')(t,c);return [p[0]+d.face*10,p[1]+4];}:W.on(d,L.part,L.part==='forearm'||L.part==='offarm'?.55:null);
   const P=W.aim(a,t2+300,tc,tgt,L.w,L.along,{through:[10,-18],hold:30,blend:60});
   W.contact(tc,'wound',P,{a:{who:a.id,along:P.along,exact:true},part:st.loc,on:d.id,target:L.part});
@@ -472,7 +493,8 @@ PHRASES.cutLands={ref:{a:20,d:-11},gap:165,width:{a:64,d:70},lead:20,run(W,a,d,t
   d.impulse(tc+1,Object.fromEntries(Object.entries(L.react).map(([c,v])=>[c,v*k])));
   // drawn out along its own line, quickly, then back to a guard over the front knee
   a.impulse(tc+1,{hx:'stop',hy:'stop',wr:'stop',px:-40});
-  a.key(tc+30,{h:[12,-8],w:55},'together',{snap:2});           // back and up, clear of the legs
+  // (after a late high parry the defender's arm is up over the head: the blade comes straight back along its line)
+  a.key(tc+30,st.tried&&st.loc==='head'?{h:[-6,-14]}:{h:[12,-8],w:55},'together',{snap:2});           // back and up, clear of the legs
   a.key(tc+300,{px:40,py:72,lean:12,bend:6,head:-12,h:[24,-22],w:40,o:[-20,-40]});
   // the defender rides it and comes back into a closed, hurt guard
   d.key(tc+260,{px:-6,py:72,lean:10,bend:10,head:-12,turn:-8,h:[16,-16],w:60,o:[10,-26]});
@@ -490,6 +512,8 @@ const THRUST_AT={
   larm:{part:'offarm',w:-6,react:{px:-50,ox:-260,oy:-160,turn:-90,lean:-30}},
   rleg:{part:'thigh',w:-30,react:{py:-160,lean:-40,head:-60}},
   lleg:{part:'bthigh',w:-32,react:{py:-160,lean:-40,head:-60}}};
+// a parry tried against a weapon inside the point: where the strong of the blade goes (from the chest), its angle
+const INS={x:34,y:-14,w:78,al:8};
 const XL={back:1,px:1,w:1.5,deep:.8};
 const MARK={head:'head',chest:'chest',abdomen:'abdomen',rarm:'rfore',larm:'larm',rleg:'rthigh',lleg:'lleg'};
 function thrustIn(W,a,t8){
@@ -501,13 +525,26 @@ function thrustIn(W,a,t8){
 }
 PHRASES.thrustLands={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d,t8,st){
   const A=W.nm(a),D=W.nm(d),tc=t8+420,T=THRUST_AT[st.loc]||THRUST_AT.chest,hurt=st.lost>0,k=hurt?1:.45;
+  // the arm that is hit is the one making the failed parry (the sword arm, or the shield arm pushing the shield out)
+  const parryArm=(st.tried==='parry'&&st.loc==='rarm')||(st.tried==='shield'&&st.loc==='larm');
   W.beat(W.n(),t8,'Thrust lands',A+' advances with a thrust at '+D+'\'s '+(st.loc||'chest')+'; '+D+'\'s cover is too late');
   thrustIn(W,a,t8);
-  d.key(tc-120,{lean:6,bend:8,head:-10,turn:-6,h:[16,-14],w:60,o:[8,-28]},'cover');
+  d.key(tc-120,tryKeep(st,{lean:6,bend:8,head:-10,turn:-6,h:[16,-14],w:60,o:[8,-28]}),'cover');
+  // (a short weapon already inside a long blade's point: the attempt is made with the strong of the blade, near the
+  // hilt, upright across the chest; brought down with the point, the long blade would come down on the attacker)
+  // (and a blade longer than a longsword, which has no room for the point that close in)
+  if(st.tried){const c=W.look(tc),p=W.on(d,'chest')(tc,c),inside=d.f.weapon.len>a.f.weapon.len+15||d.f.weapon.len>100;
+    // (when the parrying arm is the one hit, it reaches further out, or seen from the side the stab to it passes
+    // through the body)
+    const out=parryArm?44:28;
+    W.tryParry(d,st,tc-220,tc,inside?[p[0]+d.face*INS.x,p[1]+INS.y]:[p[0]+d.face*out,p[1]-4],inside?INS.w:62,inside?INS.al:30);   // (beaten up harder than a parry would, so it shows)
+    // the arm that is hit is the one that was parrying: the attempt ends there, the arm pulled in
+    if(parryArm)d.key(tc+40,st.tried==='shield'?{o:[16,-24]}:{h:[8,-24]},'together');}
   // (the shield arm of a shield-bearer is held forward behind the shield: the thrust takes it near the elbow)
   const tgt=T.part==='Hd'?(t,c)=>{const p=W.on(d,'Hd')(t,c);return [p[0]+d.face*10,p[1]+4];}:W.on(d,T.part,/arm$/.test(T.part)?(T.part==='offarm'&&d.f.shieldR?.2:.55):null);
   // a longer blade is driven less far past the mark, so it is not buried deeper than it can be drawn out
-  const deep=Math.max(0,16-Math.max(0,a.f.weapon.len-SWORD)*XL.deep);
+  // (a thrust at the sword arm while it is out in front parrying stops at the arm: driven on, it reaches the chest)
+  const deep=parryArm?0:Math.max(0,16-Math.max(0,a.f.weapon.len-SWORD)*XL.deep);
   const P=W.aim(a,t8+260,tc,tgt,T.w,84,{through:[deep,0],hold:30,blend:70});
   W.contact(tc,'wound',P,{a:{who:a.id,along:P.along,exact:true},part:st.loc,on:d.id,target:T.part});
   if(hurt)W.seq.wounds.push({t:W.r2(tc),who:d.id,part:MARK[st.loc]||'chest',level:st.level||'minor'});
@@ -743,9 +780,11 @@ function write(records,opt){
     const tStart=t;
     // the defence was the shield's: the record says so (a parry with the shield), or the outcome is a ward
     const defence=rec.defence||(/ward/.test(rec.outcome||'')?'shield':null);
+    // a parry that was tried and failed: the record says so (tried), or names a defence for a blow that landed in full
+    const tried=rec.tried||(rec.defence&&/^(wound|armour|zero)$/.test(rec.outcome||'')?rec.defence:null);
     if(rec.strike==='shield'&&!S.F[rec.attacker].shieldR)seq.notes.push({kind:'stand-in',rec,why:'a shield strike by a fighter with no shield'});
     if(defence==='shield'&&!S.F[other(rec.attacker)].shieldR)seq.notes.push({kind:'stand-in',rec,why:'a shield defence by a fighter with no shield'});
-    const r=play(S,p.id,rec.attacker,t,{level:rec.lost>=6?'major':'minor',loc:rec.loc,lost:rec.lost,final:ended(rec),defence,outcome:rec.outcome,
+    const r=play(S,p.id,rec.attacker,t,{level:rec.lost>=6?'major':'minor',loc:rec.loc,lost:rec.lost,final:ended(rec),defence,tried,outcome:rec.outcome,
       prev:seq.exchanges[seq.exchanges.length-1]});
     // a bind holds through the decision until the next movement lifts away from it
     if(S.bind){S.bind.hold=r2(tStart+PHRASES[p.id].lead+120)-S.bind.t;S.bind=null;}

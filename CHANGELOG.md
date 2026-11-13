@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a failed parry still looks tried (owner's request)
+
+- When the record says a parry was tried and failed (`tried:'parry'` or `'shield'`, or a defence named for a blow that landed in full), the defender goes for the parry with the blade or the shield, a beat late and a little short, and the blow lands first.
+- Shown in the thrust and shield studies; covered by the sweep (1,008 more fights) and the CI tests.
+
 ## The Pits: shields in the exchange writer (step 3, second family)
 
 - **Shields** sized by type (buckler to scutum), carried forward on the off hand and drawn in the studies.

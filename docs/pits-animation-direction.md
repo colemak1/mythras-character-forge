@@ -325,4 +325,15 @@ Items 2 and 3 now apply only to the pose stage behind `?stage=poses`; fix them o
 
 **Still weak.** A partial ward is drawn as a blow that lands. The Bash special effect (knockback by damage, Core) is not drawn as its own distance: every landed shield strike knocks back one step. Seen from the side, a shield is a circle, so a kite or scutum looks round.
 
+## A failed parry still looks tried (owner, 2026-11-13)
+
+The owner asked that a parry which fails should still look attempted. In the records: `tried:'parry'` or `tried:'shield'` (the engine's parry roll failed and the blow landed); it is also taken from a record that names a defence for a blow that landed in full. Shown in the thrust study (the swordsman's parry of the stab to the arm) and the shields study (the buckler, too late for the last cut).
+
+**How it moves.** The defender goes for the place a successful parry would have met the blow, with the blade or the shield, but starts 220 ms before the blow and stops a little short of the line, so the blow gets there first: no contact, the blow lands as recorded. The "cover, too late" the landing phrases already had gives way to it.
+- **How much shows** (at the moment of the blow, compared with no attempt): sword against sword, the blade turns from 43° to 91° (to 139° at the head) and the hand moves 25 to 45 units; dagger against dagger, 33° to 56°; low parries, shields and a weapon already inside the point, 12 to 18 units of hand travel.
+- **Special cases**, each found by the sweep: against a weapon already inside the point, or with a blade longer than a longsword, the attempt is made with the strong of the blade near the hilt, upright, driving out and down toward the attacker's line. When the parrying arm (the sword arm, or the shield arm pushing the shield out) is the one hit, it reaches further out (seen from the side, a stab to an arm held against the chest goes through the body), the thrust stops at the arm, and the attempt ends at the hit. A low attempt stops further short (more for longer blades), and after one with the blade the sword stays down. After a late high parry, the attacker's blade comes straight back out instead of up across the raised arm.
+- **Sweep:** failed parries with the blade and with a heater, every pairing of the six weapons, every location, wound or armour (1,008 fights), are part of `tests/sweep/pits-sweep.cjs`.
+
+**Still weak.** A failed shield parry and a weapon inside the point show only a small move in a still; at speed the motion is what reads (not yet watched by the owner). Not added to the shield strike: a failed parry against it is drawn as before.
+
 **Next families**, in the planned order: heavy one-handed (axe, mace, club, hammer), two-handed, long thrust (spear and polearms, their own range), flexible.
