@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-13 by Claude (Pits: fluid flow, declare, hold, resolve; instructions for Opus)_
+_Last updated: 2026-11-13 by Claude (Pits: owner's play notes: order of blows, replay, falls, arm wound)_
 
 ## Where things stand
 
@@ -15,6 +15,15 @@ _Last updated: 2026-11-13 by Claude (Pits: fluid flow, declare, hold, resolve; i
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+0000000000000000000. **Claude, done 2026-11-13 (owner's notes from playing `?stage=spring`):** on branch `claude/fable-combat-fluidity-jus18q` (pushed, no PR). Fixed:
+- a miss was drawn after the next attack's declare and the parry;
+- a parry that won a Trip was drawn as trip-then-swing (now parry, then sweep);
+- the replay was choppy (it now runs on, each exchange from just after the last contact);
+- falls are now a crumble where the fighter stands;
+- a Major arm wound was misread as bleeding and drawn as a hit followed by a separate fall. A Serious arm wound only makes the arm hang.
+
+Details: `docs/pits-animation-direction.md`, "Owner's notes from play". **Owner:** play `https://raw.githack.com/colemak1/mythras-character-forge/claude/fable-combat-fluidity-jus18q/experiments/practice-combat.html?stage=spring` again, watch a replay, and name anything still wrong. **Then Claude:** "Instructions for Opus" in the same document, from item 2 (getting up, lowering, yield, trip and disarm as phrases).
 
 000000000000000000. **Claude, done 2026-11-13 (owner: keep it fluid, fix the bugs, instructions for Opus):** on branch `claude/fable-combat-fluidity-jus18q` (contains `claude/go-wf0bsg`; pushed, no PR). The spring stage now plays as the owner described: an attack is drawn back and held before its dice, a parry or evade is set and held before its dice, both figures are completely still through every choice and roll, the resolved blow lands at once from the held pose, and nobody goes back to guard. Round reset removed. Fixed: prone, up, hit, prone again; Arise; a kill on a fighter already down; the dropped weapon jumping back; the limp-arm snap. Axe, mace, club and pick now run on the spring stage (stand-in). Details, tests, tools and what is weak: `docs/pits-animation-direction.md`, "Fluid flow". **Owner:** play `experiments/practice-combat.html?stage=spring` (branch link: `https://raw.githack.com/colemak1/mythras-character-forge/claude/fable-combat-fluidity-jus18q/experiments/practice-combat.html?stage=spring`) and name anything that looks wrong.
 

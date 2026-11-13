@@ -103,4 +103,40 @@ test('a killing blow on a fighter already down: no getting up, the body goes lim
   let top=0;for(let x=t;x<=r.end+400;x+=20)top=Math.max(top,B.at('b',x,'P')[1]);
   assert(top<45,'stayed down (hips reached '+top.toFixed(0)+')');
 });
+// (owner, 2026-11-13: "it's fine if we take a short cut and just let the body crumble")
+const JN=['P','M','S','Hd','K','F','bK','bF','E','Hn','oE','oHn'];
+test('a fall is the body crumbling where it stands: down onto the knees, folded over, nothing below the floor',()=>{
+  for(const [what,go] of [['a leg wound',B=>{let t=PL.intent(B.M.a,0,'attack',0);t=PL.intent(B.M.b,t,'parry',0);
+      return [t,PL.blow(B.M,'a',t,{outcome:'wound',loc:'rleg',lost:5,fall:true}).end];}],
+    ['a killing blow',B=>{const t=PL.intent(B.M.a,0,'attack',0);return [t,PL.blow(B.M,'a',t,{outcome:'wound',loc:'chest',lost:9,defeated:true}).end+300];}],
+    ['a trip',B=>{const t=PL.intent(B.M.a,0,'attack',0);return [t,PL.blow(B.M,'a',t,{outcome:'armour',loc:'rleg',lost:0,fall:true}).end];}]]){
+    const B=bout('sword','sword'),[t0,end]=go(B),x0=B.at('b',t0,'P')[0];
+    for(let x=t0;x<=end+600;x+=20){const j=B.j('b',x);for(const n of JN)assert(j[n][1]>-3,what+': b.'+n+' below the floor ('+j[n][1].toFixed(0)+')');}
+    const j=B.j('b',end+600);
+    assert(j.P[1]<30,what+': down at the end (hips '+j.P[1].toFixed(0)+')');
+    assert(j.K[1]<24&&j.bK[1]<24,what+': on the knees');
+    assert(j.Hd[1]<60,what+': folded over');
+    assert(Math.abs(B.at('b',end+600,'P')[0]-x0)<40,what+': where it stood, not thrown across the floor');
+  }
+});
+test('a wound to the arm: the fighter reacts and the arm hangs, but stays on its feet (not prone)',()=>{
+  for(const lost of [3,6]){const B=bout('sword','sword');let t=PL.intent(B.M.a,0,'attack',0);t=PL.intent(B.M.b,t,'parry',0);
+    const r=PL.blow(B.M,'a',t,{outcome:'wound',loc:'rarm',lost});let low=1e9;
+    for(let x=t;x<=r.end+1500;x+=20)low=Math.min(low,B.at('b',x,'P')[1]);
+    assert(low>60,'hips stayed up ('+low.toFixed(0)+')');}
+});
+// (owner, 2026-11-13: "the stillness should not come through in the full fight replay")
+test('the replay runs on: each exchange is written from just after the last one\'s contact, with no hold between',()=>{
+  const B=bout('sword','sword');let t=0,prev=null;
+  for(const [a,o,l,lost] of [['a','parried','chest',0],['b','wound','chest',3],['a','miss','abdomen',0],['b','parried','head',0],['a','armour','chest',0]]){
+    const r=PL.blow(B.M,a,t,{outcome:o,loc:l,lost,flow:true});
+    const last=Math.max(...r.contacts.map(c=>c.t));
+    assert(r.end-last<=190,o+': the next exchange may begin within 190 ms of the stage clock after the last contact ('+Math.round(r.end-last)+')');
+    if(prev!=null)assert(r.contacts[0].t-prev<900,o+': the next blow lands soon after the last ('+Math.round(r.contacts[0].t-prev)+')');
+    prev=last;t=r.end;}
+  // and something is moving at every moment between the first and the last contact
+  let still=0,run=0;const q=n=>B.at('a',n,'tip').concat(B.at('b',n,'tip'));
+  for(let x=200;x<t;x+=40){const p0=q(x),p1=q(x+40);const m=Math.max(...p0.map((v,i)=>Math.abs(p1[i]-v)));run=m<.4?run+40:0;still=Math.max(still,run);}
+  assert(still<=240,'no stretch of stillness longer than 240 ms ('+still+')');
+});
 console.log(passed+' passed');

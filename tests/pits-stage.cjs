@@ -218,6 +218,9 @@ test('cues for Press Advantage, a dropped weapon, a disabled limb and how a figh
  assert.equal(cue('FIGHT ENDS','Marek wins. Kethan concedes the training bout.',{}).how,'concede');
  assert.equal(cue('FIGHT ENDS','Marek wins. Kethan has a Major Limb Wound to the Right Leg: incapacitated and prone.',{}).how,'injury');
  assert.equal(cue('FIGHT ENDS','Marek wins. Kethan is incapacitated by blood loss.',{}).how,'fatigue');
+ assert.equal(cue('FIGHT ENDS','Marek wins. Kethan has a Major Limb Wound to the Right Arm: incapacitated and prone. Remains conscious. If the GM rules the limb severed, punctured or ripped off, untreated blood loss becomes fatal after 15 minutes.',{}).how,'injury',
+  'a Major Limb Wound ends the fight by the blow, though its text names blood loss');
+ assert.equal(cue('FIGHT ENDS','Marek wins. Kethan collapses from blood loss (Incapacitated Fatigue; no actions possible).',{}).how,'fatigue');
  assert.equal(cue('FIGHT ENDS','Marek wins. Kethan dies immediately from a Major Wound to Head.',{}).how,'injury','a death is still only "injury": nothing about severing is inferred');
 });
 // The beats of one batch, as the stage sees them.
@@ -248,6 +251,26 @@ test('with nothing to wait for, or no blow yet, nothing is held; a new attack cl
  assert.equal(arrange([atk],[],true).hold.length,0,'no blow yet: the windup plays and holds by itself');
  const next=B('Marek attacks','50 against Combat Style 60% — SUCCESS.',{actor:'b',exid:2}),r=arrange([next],[hit],true);
  assert.deepEqual(r.play.map(e=>e.id),[hit.id,next.id],'the held blow plays before the next attack');assert.equal(r.hold.length,0);
+});
+const DI=l=>({id:++bid,roll:{label:l||'d100'}}),DA=()=>DI('Attack · Combat Style 60%');
+test('a finished exchange is not held back behind the next one: its blow plays before the next attack is declared',()=>{
+ // Kethan misses; Marek attacks at once (an automatic action) and the engine now waits for Kethan's reaction
+ const atk=ATK(),miss=B('No Damaging Hit','Marek does not defend. The attack misses.',{actor:'a'}),d2=DA(),next=B('Marek attacks','50 against Combat Style 60% — SUCCESS.',{actor:'b',exid:2});
+ const r=arrange([DI(),atk,miss,d2,next],[],true);
+ const ids=r.play.map(e=>e.id),at=e=>ids.indexOf(e.id);
+ assert(ids.includes(miss.id),'the miss plays now');assert(at(miss)<at(d2)&&at(miss)<at(next),'the miss before the next attack and its dice');
+ assert.equal(r.hold.length,0);
+ // a blow held for its own exchange, then a batch that starts the next attack with its dice: the held blow first
+ const hit=HIT(),late=DI(),d3=DA(),a3=B('Marek attacks','x',{actor:'b',exid:3});
+ const r2=arrange([late,d3,a3],[hit],true),p2=r2.play.map(e=>e.id);
+ assert(p2.indexOf(hit.id)>p2.indexOf(late.id)&&p2.indexOf(hit.id)<p2.indexOf(d3.id),'the held blow after its own late dice, before the next attack\'s dice');
+});
+test('a parry that wins a Trip or a Disarm: the blocked blow is drawn first, then the sweep',()=>{
+ const atk=ATK(),par=B('Marek parries','x',{actor:'b'}),dt=DI(),trip=B('Trip Opponent','Kethan fails to resist and falls prone.',{actor:'b'}),dh=B('No Damaging Hit','Marek parries the blow.',{actor:'a'});
+ const r=arrange([atk,par,dt,trip,dh],[],false),ids=r.play.map(e=>e.id);
+ assert.deepEqual(ids,[atk.id,par.id,dh.id,dt.id,trip.id]);
+ const dis=B('Disarm Opponent','The weapon lands 2m away.',{actor:'b'}),dh2=B('No Damaging Hit','x',{actor:'a'});
+ assert.deepEqual(arrange([dis,dh2],[],false).play.map(e=>e.id),[dh2.id,dis.id]);
 });
 test('a blow takes its effects and consequences into one record; those beats have no motion of their own',()=>{
  const atk=ATK(),press=B('Press Advantage','Marek cannot attack on the next Turn, but may act otherwise.',{actor:'a'}),hit=HIT(),wnd=WND(),

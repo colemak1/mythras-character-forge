@@ -46,7 +46,8 @@ function pitsStageCue(entry,names){
   if(t==='Impaled Weapon')return {type:'lodge',actor};
   if(t==='FIGHT ENDS'){
     // only what the engine's own wording says: a concession, an injury, or blood loss/exhaustion; nothing is inferred from the damage
-    const how=/concede/i.test(b)?'concede':/blood loss|fatigue|exertion|exhaustion|neither fighter/i.test(b)?'fatigue':'injury';
+    // (a wound is checked first: a Major Limb Wound's text also mentions blood loss, as a deadline after the fight)
+    const how=/concede/i.test(b)?'concede':/\bWound to\b/.test(b)?'injury':/blood loss|fatigue|exertion|exhaustion|neither fighter/i.test(b)?'fatigue':'injury';
     return {type:'end',winner:idOf(b),how};
   }
   return null;
@@ -213,23 +214,27 @@ function pitsStageKind(e,names){
 function pitsStageArrange(events,held,waiting,names){
   events=events||[];held=held||[];
   const kinds=events.map(e=>pitsStageKind(e,names));
+  // where the last exchange of the batch starts: its attack entry, with the dice of that attack just before it
+  // (a new attack's roll must not be shown, and so declared, before the exchange before it has been drawn)
+  let s=-1;kinds.forEach((k,i)=>{if(k==='attack')s=i;});
+  const atkRoll=e=>!!(e&&e.roll&&/^(Attack|Shield strike)/.test(String(e.roll.label||'')));
+  if(s>=0)for(let i=s-1;i>=0&&(events[i].roll||events[i].checkpoint);i--)if(atkRoll(events[i])){s=i;break;}
   const dice=i=>events.filter((e,k)=>i(k)&&e.roll),rest=i=>events.filter((e,k)=>i(k)&&!e.roll);
-  let lastAtk=-1;kinds.forEach((k,i)=>{if(k==='attack')lastAtk=i;});
-  let head=events,tail=[];
-  const play=[];let hold=[];
+  const play=[];let hold=[],list=events;
   if(held.length){
-    if(lastAtk>=0){
-      // the next exchange begins in this batch: the held one is over first
-      const before=i=>i<lastAtk;
-      play.push(...dice(before),...held,...rest(before));
-      tail=events.slice(lastAtk);head=[];
+    if(s>=0){
+      // the next exchange begins in this batch: the held one is over first (its own late dice, then its beats)
+      const before=i=>i<s;
+      play.push(...dice(before),...held,...rest(before));list=events.slice(s);
     }else if(!waiting){
-      return {play:[...dice(()=>true),...held,...rest(()=>true)],hold:[]};
+      return {play:pitsStageOrder([...dice(()=>true),...held,...rest(()=>true)],names),hold:[]};
     }else{
       return {play:dice(()=>true),hold:[...held,...rest(()=>true)]};
     }
+  }else if(waiting&&s>0){
+    // exchanges that are over (a new attack has begun after them) play whole; only the last one can wait
+    play.push(...events.slice(0,s));list=events.slice(s);
   }
-  const list=tail.length?tail:head;
   if(list.length){
     const ks=list.map(e=>pitsStageKind(e,names));
     const b=ks.findIndex(k=>PSTAGE_BLOW.includes(k));
@@ -238,7 +243,21 @@ function pitsStageArrange(events,held,waiting,names){
       hold=list.slice(b).filter(e=>!e.roll);
     }else play.push(...list);
   }
-  return {play,hold};
+  return {play:pitsStageOrder(play,names),hold};
+}
+// The engine logs a defender's Trip or Disarm (a Special Effect won by the defence) before the blow it answered. On the
+// stage the blow comes first: the parry, then the sweep. So within an exchange a blow that follows a trip or a disarm
+// is moved to just before that effect (and the dice of the effect, just before it).
+function pitsStageOrder(list,names){
+  const out=list.slice(),k=e=>pitsStageKind(e,names);
+  for(let i=0;i<out.length;i++){
+    if(!/^(trip|disarm)$/.test(k(out[i])))continue;
+    let j=-1;for(let n=i+1;n<out.length;n++){const kn=k(out[n]);if(kn==='attack')break;if(PSTAGE_BLOW.includes(kn)){j=n;break;}}
+    if(j<0)continue;
+    let at=i;while(at>0&&(out[at-1].roll||out[at-1].checkpoint))at--;
+    const [blow]=out.splice(j,1);out.splice(at,0,blow);i++;
+  }
+  return out;
 }
 // What one beat is, given the beats around it. A blow takes its exchange's effects (Press Advantage) and consequences
 // (wound, disabled limb, dropped weapon, the end of the fight) into one record, and those beats then have no motion of their own.
@@ -1093,7 +1112,7 @@ async function psMotionCue(cue){
     }else if(cue.type==='trip'&&tgt&&me){
       // stand-in until trips have a phrase: a blow at the front leg; if it goes, the fall
       psDom(psWorld(me,me.pts?me.pts.Sh:[0,-60]),'Trip Opponent','fx');PS.intents={};
-      const r=L.blow(PS.M,me.id,PS.clock,{outcome:'armour',loc:'rleg',lost:0,fall:cue.fell});
+      const r=L.blow(PS.M,me.id,PS.clock,{outcome:'armour',loc:'rleg',lost:0,fall:cue.fell,flow:psReplaying()});
       PS.busyUntil=r.end;me.spent=tgt.spent=true;if(cue.fell)tgt.mDown=true;
       const c=r.contacts[r.contacts.length-1],w=psW(c.at);await psUntil(c.t);
       psEmit('contact',{kind:'trip',actor:me.id,target:tgt.id,point:w.map(Math.round)});psBurst(w,'spark',10);psRing(w);
@@ -1104,7 +1123,7 @@ async function psMotionCue(cue){
     }else if(cue.type==='disarm'&&tgt&&me){
       // stand-in until disarms have a phrase: the blow meets the weapon and the weapon goes
       PS.intents={};
-      const r=L.blow(PS.M,me.id,PS.clock,{outcome:'parried',loc:'rarm',lost:0});
+      const r=L.blow(PS.M,me.id,PS.clock,{outcome:'parried',loc:'rarm',lost:0,flow:psReplaying()});
       PS.busyUntil=r.end;me.spent=tgt.spent=true;
       const c=r.contacts[0],w=psW(c.at);await psUntil(c.t);
       psEmit('contact',{kind:'disarm',actor:me.id,target:tgt.id,point:w.map(Math.round)});
@@ -1117,13 +1136,13 @@ async function psMotionCue(cue){
     }else if(cue.type==='wound'||cue.type==='limb'){
       if(cue.type==='wound')psBanner(cue.level==='major'?'Major wound':'Serious wound','red');
       else psBanner(cue.leg?'Legs gone':'Useless arm','red');
-      psSfx('crit');await psSleep(500);
+      psSfx('crit');if(!psReplaying())await psSleep(500);
     }else if(cue.type==='lodge'&&me){
-      psBanner('Weapon lodged','red');psSfx('crit');psEmit('lodge',{actor:me.id});await psSleep(500);
+      psBanner('Weapon lodged','red');psSfx('crit');psEmit('lodge',{actor:me.id});if(!psReplaying())await psSleep(500);
     }else if(cue.type==='press'&&me&&tgt){
       await psMotionPress(me,tgt,{record:{press:cue}});
     }else if(cue.type==='drop'&&me){
-      if(!me.dropEl&&me.look&&!me.look.armed)psFlyWeapon(me,0);await psSleep(300);
+      if(!me.dropEl&&me.look&&!me.look.armed)psFlyWeapon(me,0);if(!psReplaying())await psSleep(300);
     }else if(cue.type==='end'){
       // only what the engine's own wording says: a concession yields; an injury or exhaustion with no finishing contact
       // falls from where the figure stands
@@ -1161,7 +1180,7 @@ async function psMotionBlow(cue){
   const evading=((px.react||ex.react)==='evade'||out==='evaded')&&!px.rangeIntercept&&arise!==def.id;
   const tried=evading&&/^(evaded|miss|fumble)$/.test(out);
   PS.intents={};
-  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried});
+  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying()});
   PS.busyUntil=r.end;atk.spent=def.spent=true;
   if(defeated||leg||evading)def.mDown=true;if(defeated)def.mEnd='lying';
   for(const c of r.contacts){

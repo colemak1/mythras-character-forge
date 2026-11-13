@@ -750,7 +750,10 @@ PHRASES.collapse={ref:{a:68,d:28},gap:null,lead:0,run(W,a,d,t10,st){
   // after the thigh cut the sword goes down in front, along the floor. After a blow at close quarters the other is
   // right there, so the sword is held up, clear of both, until the winner has stepped back, and then lies along the
   // body toward the feet (laid behind, it would lie across the fallen fighter's own head)
+  // live (st.crumble, owner 2026-11-13): the body crumbles where it stands instead (crumble, below)
+  if(st.crumble)crumble(d.f,t10,standAt(d.f));
   const back=!st.inFrame,BW=back?[110,100,20,4]:[-60,-6,0,2];
+  if(!st.crumble){
   d.key(t10,{px:-2,py:44,lean:-16,bend:10,head:4,h:back?[30,-8]:[10,-36],w:BW[0],o:[-14,-30]},'together');
   d.key(t10+260,{px:-20,py:18,lean:-40,bend:12,head:10,h:[30,-30],w:BW[1],o:[-30,-24]});
   d.key(t10+560,{px:-22,py:13,lean:-70,bend:8,head:6,h:[40,-16],w:BW[2],o:[-40,-10]});
@@ -758,6 +761,7 @@ PHRASES.collapse={ref:{a:68,d:28},gap:null,lead:0,run(W,a,d,t10,st){
   // the rear foot is dragged in under the body as the defender sits; the cut leg slides out in front
   d.step('bf',t10+80,t10+260,22,4);
   d.step('ff',t10+300,t10+560,58,4);
+  }
   // the attacker: the follow-through is stopped, the blade drawn out along the line it went in and lifted clear, the
   // hips come back over the feet, then two steps out, guard up, the cut arm still held in
   a.impulse(tc+1,{hx:'stop',hy:'stop',wr:'stop',py:-50});
@@ -771,6 +775,19 @@ PHRASES.collapse={ref:{a:68,d:28},gap:null,lead:0,run(W,a,d,t10,st){
   W.mark(t10+760,a.id,A+' stands off in a cautious guard, the cut forearm still held in close');
   return {end:t10+760,final:true};
 }};
+
+// A fall drawn as the body crumbling where it stands (owner, 2026-11-13: "it's fine if we take a short cut and just let
+// the body crumble"). The knees give, the fighter drops onto them, folds over and slumps; the feet are drawn in under
+// the body (a drag) so the knees reach the floor; the arms hang, the weapon goes down. x: where the fighter stands.
+// Used by the live stage for every fall and for the defeat; the studies keep their written collapse.
+function crumble(f,u,x){
+  f.key(u,{px:x-2,py:56,lean:14,bend:14,head:16,h:[8,-46],w:-60,o:[2,-50]},'together');
+  f.key(u+260,{px:x-16,py:34,lean:30,bend:18,head:26,h:[14,-52],w:-30,o:[8,-54]});
+  // (it sits back as it folds, the knees no further forward than they must be: the other fighter stands close)
+  f.key(u+620,{px:x-22,py:25,lean:58,bend:12,head:24,h:[22,-28],w:-14,o:[16,-30]});
+  f.step('ff',u+80,u+380,x-16,2);f.step('bf',u+160,u+460,x-24,2);
+  return u+760;
+}
 
 // ----- which phrase an exchange gets -----
 // rec: {attacker:'a'|'b', loc, outcome (the stage's words: parried, full-parry, partial-parry, wound, armour, zero,
@@ -935,7 +952,7 @@ function exchange(S,rec,t){
     if(S.bind){S.bind.hold=r2(tStart+PHRASES[p.id].lead+120)-S.bind.t;S.bind=null;}
     if(r.bind)S.bind=r.bind;
     seq.exchanges.push({t:tStart,attacker:rec.attacker,phrase:p.id,end:r.end});
-    if(ended(rec)){const r2_=play(S,'collapse',rec.attacker,r.end,{tc:r.tc,inFrame:p.id==='legCut'},p.id==='legCut'?r.dx:null);S.over=true;
+    if(ended(rec)){const r2_=play(S,'collapse',rec.attacker,r.end,{tc:r.tc,inFrame:p.id==='legCut',crumble:!!S.crumble},p.id==='legCut'?r.dx:null);S.over=true;
       return {t:r2_.end,tc:r.tc,phrase:p.id,ended:true};}
     t=W.settle(r.end);W.pause(t,r.label+' The next decision.');
     return {t,tc:r.tc,phrase:p.id,down:r.down||null};
@@ -970,7 +987,7 @@ function write(records,opt){
   return seq;
 }
 
-const api={calibrate:null,write,create,exchange,intent,variants,pick,PHRASES,ZONE,standAt,gapOf,planned,takeMeasure,profile,shieldR};
+const api={calibrate:null,write,create,exchange,intent,variants,crumble,pick,PHRASES,ZONE,standAt,gapOf,planned,takeMeasure,profile,shieldR};
 root.PitsWriter=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

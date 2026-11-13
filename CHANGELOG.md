@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits trial: owner's notes from play (order of blows, replay, falls, arm wound)
+
+- A miss is drawn before the next attack. When the other fighter attacked at once after a miss and the engine waited for your reaction, the miss was held back behind that attack, so their swing and your parry were drawn before your miss. Now an exchange that is over plays whole before the next one is declared.
+- A parry that wins a Trip or a Disarm is drawn as the parry first, then the sweep (the engine logs the effect before the blow).
+- The fight replay runs on as one movement. Each exchange starts just after the last one's contact, and the wound, limb and weapon beats no longer hold the picture still.
+- Falls are drawn as the body crumbling where it stands: the knees give, the fighter drops onto them and folds over (legs, failed evades, trips and the defeat). Getting up steps the feet back out into a stance.
+- A Major Wound to an arm ends the fight with the blow, so the figure crumbles from the hit. Its end text mentions blood loss, which the stage had read as a fight lost to bleeding: it drew a plain hit and then a separate fall. A Serious Wound to an arm only makes the arm hang.
+
 ## The Pits trial: fluid flow (declare, hold, resolve); the round reset removed
 
 - On the `?stage=spring` trial an exchange now plays the way the owner described it. Choosing Attack draws the weapon back (and brings the attacker in to striking distance) and holds; choosing a parry or an evade sets the blade or shield, or sinks the body, and holds; both figures are completely still while anyone chooses or the dice roll; when the exchange is fully ruled the blow lands at once from the held poses. Fighters no longer go back to a guard after a blow or at a new round: each movement starts from where the last one left them. Declared actions have several variants, picked at random.

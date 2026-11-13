@@ -392,7 +392,7 @@ The owner's description of how a live exchange should play, which is now the rul
 3. **Resolve.** When the whole exchange is ruled, the blow is written from the held pose and lands about 150 to 300 ms later. No walk first: a small difference in measure goes into the attack's own step (`S.absorb` in `PitsWriter.play`), and a stance is only gathered when it is far off.
 4. **No return to guard.** What an exchange had planned for after its hold (its recovery) is dropped when the next movement is written (`S.cut`). A fighter goes from where the blow left it straight into what it does next.
 5. **Variety.** Each declared action has several variants (four chambers for a cut, two for a thrust, three wards, two evades), tried from a random one; the first that holds cleanly is used. Together with starting from wherever the last blow left both fighters, no two fights open or continue the same way.
-6. **The replay** plays each exchange as one movement, with no declared holds.
+6. **The replay** plays each exchange as one movement, with no declared holds, and each exchange starts just after the last one's contact (see "Owner's notes from play").
 
 **Bugs fixed with it.**
 
@@ -416,12 +416,26 @@ The owner's description of how a live exchange should play, which is now the rul
 
 **Still weak.**
 
-- Fall, getting up, lowering, yielding, trip and disarm are stand-ins (a few keys each). The fall is the roughest.
+- Getting up, lowering, yielding, trip and disarm are stand-ins (a few keys each). The fall is a crumble by the owner's choice (see "Owner's notes from play").
 - A fighter on the ground acts with its arms only.
 - The dagger at close quarters overlaps the other figure (the study's measure for a 50-unit blade).
 - Writing a declared action tries its variants, each a short simulation: more work per click than before. Time to write and memory (finding 2 and 3 of the live trial) are not solved, and the lists of keys and pins grow through a bout.
 - Bouts with a long or two-handed weapon use the old movement, which still returns to idle stances.
 - `tests/pits-writer.cjs` still fails on the shield strike (recorded above); CI is red on this branch until that is fixed.
+
+## Owner's notes from play (2026-11-13, after the fluid-flow batch)
+
+The owner played `?stage=spring` and named five things. All five are fixed; each has a test.
+
+1. **A miss was drawn after the next attack.** The cause was in `pitsStageArrange`. When the other fighter attacked at once after a miss (an automatic action) and the engine then waited for the defender's reaction, everything after the miss was held back, the next attack included. The next attacker's declare and the parry were drawn first, and the miss only afterwards. Now an exchange that is over (a new attack has begun after it) plays whole, and only the last exchange of a batch can be held. A blow held from an earlier batch also plays before the new attack's own roll: that roll is found by its label ("Attack…", "Shield strike…"), so it is no longer shown, and so declared, ahead of the held blow. Test: `tests/pits-stage.cjs`, "a finished exchange is not held back".
+2. **A parry that wins a Trip was drawn as the trip, then the swing.** The engine logs the defender's Trip or Disarm before "No Damaging Hit". `pitsStageOrder` moves the blow of the same exchange to just before the effect and its dice: the parry, then the sweep. Test: "a parry that wins a Trip or a Disarm".
+3. **Choppy replay.** In the replay the stage still waited on beats with no motion (wound, limb, lodge and drop banners: 300 to 500 ms each), and every blow ended with a hold chosen for a live decision. Now the replay (`flow` in `PitsSpringLive.blow`) writes the next exchange from `FLOW` (300 ms of writer time, about 180 ms on the stage) after the last contact, into this one's recovery, and those beats do not wait. The live game is unchanged: it still holds at decisions. Test: `tests/pits-spring-live.cjs`, "the replay runs on".
+4. **Falls.** The owner: "it's fine if we take a short cut and just let the body crumble". `PitsWriter.crumble`: the knees give, the fighter drops onto them, folds over and slumps where it stood. The feet are drawn in under the body so the knees reach the floor, and nothing goes below it. It is used for every fall on the live stage (a leg, a failed evade, a trip, a reconciled fall) and for the defeat (`collapse` with `S.crumble`; the studies keep their written collapse). A killing blow on a fighter already down slumps it lower. Getting up from the heap steps the rear foot back and the front foot out into a stance. Test: "a fall is the body crumbling".
+5. **"Serious damage to the arm: it went down and stayed on the floor."** Reproduced with rigged dice. A **Serious** Wound to the arm is drawn correctly: the hips stay up and the arm hangs. A **Major** Wound to an arm ends the fight ("incapacitated and prone", Core p.110), and the end text adds "untreated blood loss becomes fatal". The stage read that as a fight lost to bleeding, so it drew a plain hit and then the generic fall. Now any end text with "Wound to" is a fight ended by the blow, and the body crumbles from the hit. Tests: `tests/pits-stage.cjs` (the end text), `tests/pits-spring-live.cjs` ("a wound to the arm").
+
+**Live sweep** (same 144 fights, run on the code before and after this batch): 139 and 140 with a fault. Held frames: 5 before (4 after getting up, 1 declared parry), 8 after (2 after getting up, 6 declared actions, mostly a weapon through the knees of a fighter in the heap). The heap sits back as it folds to keep its knees out of the way. Attacks against a fighter on the ground need their own declared poses (item 5 below).
+
+**Still weak:** the crumble ends with the dropped blade along the floor toward the other fighter. Getting up from it is still a stand-in of two keys and two steps.
 
 ## Instructions for Opus (written 2026-11-13, after the fluid-flow batch)
 
@@ -447,7 +461,7 @@ Read `AGENTS.md`, `HANDOFF.md` and the section above first. Work on the branch `
 **The work, in order.**
 
 1. **Whatever the owner names** after watching `experiments/practice-combat.html?stage=spring`. Their eye outranks the sweep.
-2. **The stand-ins, as phrases in `pits-writer.js`** (they are a few raw keys in `pits-spring-live.js` now): the fall (from a leg, from a failed evade, each from the blow's direction), getting up (Regain Footing: onto a knee, then up, weapon toward the other), the winner's lowering, the yield, the trip, the disarm, Press Advantage. Then attacks and parries from the ground with more than the arms. Each ends in a hold that passes `holdAt`.
+2. **The stand-ins, as phrases in `pits-writer.js`** (they are a few raw keys in `pits-spring-live.js` now): the fall is settled as a crumble (owner, 2026-11-13; `PitsWriter.crumble`), so the next is getting up (Regain Footing: onto a knee, then up, weapon toward the other), the winner's lowering, the yield, the trip, the disarm, Press Advantage. Then attacks and parries from the ground with more than the arms. Each ends in a hold that passes `holdAt`.
 3. **The shield strike** (`tests/pits-writer.cjs`, the only failing CI test): its raised holds cross the striker's or the defender's head and a parried strike flips the defender's elbow. Nothing merges while this is red.
 4. **The live sweep, by kind,** largest first: blades slow past their own head; blades within 2 units of the other's head or elbow at close quarters; contacts off their point (probably where `S.absorb` asks an arm to reach further than it goes: check `reach` in `play` against the pin's arm limit). Fix in the phrase or in `aim`/`guard`, not by loosening a rule.
 5. **Declared actions that say more.** The chamber does not know the hit location (it is rolled later). When the engine does know more at declare time (a chosen location, a shield strike, a charge), use it. Add variants where a weapon family lacks them. Keep every variant clean at its hold for every weapon length (the CI test checks this).

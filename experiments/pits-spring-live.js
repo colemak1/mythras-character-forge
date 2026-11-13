@@ -22,6 +22,8 @@ const PM=root.PitsMotion||(typeof require==='function'?require('./pits-motion.js
 const PS=root.PitsSpring||(typeof require==='function'?require('./pits-spring.js'):null);
 const PW=root.PitsWriter||(typeof require==='function'?require('./pits-writer.js'):null);
 const L0=PM.LIVE,PACE=1.65,REC=PS.REC;
+// the replay: how long after an exchange's last contact (writer time) the next exchange may begin
+const FLOW=300;
 
 // the stage draws every blade as kind 'blade' with a length: the writer's weapon key for that length
 // (short one-handed swung weapons, axe, club, mace and pick, move with the cut phrases as a stand-in; longer and
@@ -43,7 +45,7 @@ function world(m,t){
   const gap=P.gap||L0.gap(P.a.wk,P.b.wk,'long'),sh=-(gap-PM.SPACING)/2;
   const S=PW.create({weapons:{a:bladeKey(P.a.wk),b:bladeKey(P.b.wk)},shields:{a:P.a.shield?'heater':'none',b:P.b.shield?'heater':'none'},
     hx:{a:P.a.hx,b:P.b.hx},shift:{a:sh,b:sh},id:'live',title:'The Pits (spring trial)'});
-  S.now=0;S.absorb=28;
+  S.now=0;S.absorb=28;S.crumble=true;
   P.world={S,T0:t,next:0,over:false,shown:0};
   return P.world;
 }
@@ -70,7 +72,7 @@ function pose(m,t,limp){
 }
 
 // ----- a blow: the engine's facts as one record for the writer -----
-// s: {outcome (the stage's words), loc, lost, shield (the parry was the shield's), fall, defeated}
+// s: {outcome (the stage's words), loc, lost, shield (the parry was the shield's), fall, defeated, flow (the replay)}
 function blow(F,aid,t,s){
   const A=F[aid],did=aid==='a'?'b':'a',w=world(A,t);
   if(!w)return {tc:t,contacts:[],end:t};
@@ -90,12 +92,16 @@ function blow(F,aid,t,s){
   if(r.ended){w.over=true;
     // defeated while already on the floor: the collapse had nothing to write (grounded), so the body goes limp there
     if(w.down&&w.down[did]){const f=w.S.F[did];f.groundWrite=true;
-      f.key(r.tc||u0+400,{py:12,lean:-80,bend:6,head:2,h:[40,-16],w:4,o:[-40,-10]});f.groundWrite=false;}}
+      f.key(r.tc||u0+400,{py:13,lean:72,bend:10,head:30,h:[34,-20],w:-4,o:[26,-22]});f.groundWrite=false;}}
   if(r.down)(w.down=w.down||{})[r.down]=true;           // an evade that ended on the ground: already down
   else if(s.fall)end=fallAt(w,did,r.t);
   rerun(w,end+500);
   // (the exchange's own recovery plays on to the hold; what it had planned for after that is dropped by the next write)
-  if(!r.ended)end=holdAt(w,end,360,false);
+  // s.flow (the replay): nothing holds between exchanges, so there is no hold to choose, and the next exchange is
+  // written from a moment after the last contact, into this one's recovery: the fight runs on as one movement
+  if(s.flow&&!r.ended&&!s.fall&&!r.down&&out.length){const last=Math.max(...seq.contactList.slice(c0).map(c=>c.t),...seq.misses.slice(m0).map(m=>m.t));
+    end=Math.min(end,last+FLOW);}
+  else if(!r.ended)end=holdAt(w,end,360,false);
   w.next=end;
   return {tc:out.length?out[0].t:clock(w,u0),contacts:out,end:clock(w,end),phrase:r.phrase};
 }
@@ -159,10 +165,11 @@ function declare(w,id,kind,u,pick){
 // ----- stand-ins (kept simple until they have phrases) -----
 function keyAt(m,t,fn){const w=world(m,t);if(!w)return null;const u=Math.max(tau(w,t),w.next);w.S.now=u;const e=fn(w.S.F[m.id],u,w);w.next=Math.max(w.next,e);rerun(w,e);return clock(w,e);}
 function fallAt(w,id,u){const f=w.S.F[id],x=PW.standAt(f);w.S.now=Math.max(w.S.now,u);(w.down=w.down||{})[id]=true;
-  f.key(u,{px:x-6,py:44,lean:-16,bend:10,head:4},'together');f.key(u+300,{px:x-22,py:16,lean:-60,bend:10,head:8});
-  f.key(u+700,{px:x-24,py:12,lean:-80,bend:6,head:2,h:[40,-16],w:4,o:[-40,-10]});return u+800;}
+  return PW.crumble(f,u,x);}
 function fall(m,t){const w=world(m,t);if(!w||w.over||(w.down&&w.down[m.id]))return t;const u=Math.max(tau(w,t),w.next);const e=fallAt(w,m.id,u);w.next=e;rerun(w,e);return clock(w,e);}
 function stand(m,t){const w0=world(m,t);if(w0&&w0.down)w0.down[m.id]=false;if(w0)w0.S.F[m.id].grounded=false;return keyAt(m,t,(f,u)=>{const x=PW.standAt(f);f.key(u,{px:x-6,py:44,lean:24,bend:10,head:-10},'together');
+  // (from the heap the feet are under the body: the rear foot goes back to push up, the front one out into a stance)
+  if(PW.planned(f,'ff')-PW.planned(f,'bf')<40){f.step('bf',u+60,u+260,x-30,4);f.step('ff',u+300,u+480,x+26,6);}
   f.key(u+420,{px:x,py:74,lean:6,bend:4,head:-8,h:[22,-18],w:30,o:[18,-27]});return u+620;})??t;}
 function lower(m,t){const w=world(m,t);if(!w||w.over)return t;
   return keyAt(m,t,(f,u)=>{f.key(u,{lean:3,head:-14,h:[10,-32],w:-66});return u+600;})??t;}
