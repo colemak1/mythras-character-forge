@@ -18,7 +18,7 @@ _Last updated: 2026-11-13 by Claude (Pits: failed parries look tried)_
 
 00000000000000. **Next, Claude:** the next weapon family, **heavy one-handed** (axe, mace, club, hammer: slower chamber, harder impact), then two-handed, long thrust, flexible; each with a generated study (`pits-fight-study.html?seq=...`) and its weapons in the sweep (`tests/sweep/pits-sweep.cjs`). **Owner's rule (2026-11-12):** nothing goes live until all families are done; work stays on branch `claude/go-wf0bsg` (pushed, no PR).
 
-0000000000000b. **ChatGPT (Work), 2026-11-13 (optional, owner's call):** watch the three generated fight studies on branch `claude/go-wf0bsg` (links in the owner's paste: raw.githack.com previews, not the deployed site) and report pass/fail per check with a severity in one dated `docs/` file. Visual checks only; nothing is live.
+0000000000000b. **ChatGPT (Work), checked 2026-11-13:** prototype results in `docs/pits-studies-work-20261113.md`: readable dagger/late defences/shields/shove; Severity 2 own-blade/head overlaps, Severity 3 capture/endpoint limits. Not full visual acceptance and nothing deployed. **Next: Claude** — address the overlap and preserve the reported limits.
 
 0000000000000a. **Claude, done 2026-11-13 (owner's request):** a failed parry still looks tried: the defender goes for the parry, late and short, and the blow lands. `docs/pits-animation-direction.md`, "A failed parry still looks tried".
 
