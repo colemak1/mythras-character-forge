@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: the spring movement on the live stage, as a hidden trial
+
+- `?stage=spring` on the Pits draws bouts between blade fighters with the exchange writer (`experiments/pits-spring-live.js`); everything else, and the Pits without the switch, are unchanged. Nothing released.
+- Findings recorded for the owner (range and the picture, time to write a blow, memory, stand-ins) in `docs/pits-animation-direction.md`, "Live trial".
+- Work's own-blade finding (PR #323): chambers, raised holds and guards now keep a fighter's blade off its own head in the studies, held by a new movement rule; the shield strike still breaks it (one CI test fails, recorded).
+
 ## The Pits: a failed parry still looks tried (owner's request)
 
 - When the record says a parry was tried and failed (`tried:'parry'` or `'shield'`, or a defence named for a blow that landed in full), the defender goes for the parry with the blade or the shield, a beat late and a little short, and the blow lands first.

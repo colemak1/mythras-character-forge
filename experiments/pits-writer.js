@@ -84,8 +84,12 @@ function create(opt){
   const arm=id=>{const p=profile(wk[id]);if(!p)notes.push({kind:'stand-in',weapon:wk[id],who:id});
     return {...WEAPONS.sword,name:wk[id],...(p||profile('sword')),key:wk[id]};};
   // on guard, points threatening but on different lines (A's a little higher, B's lower), so they do not cross
-  const A=new Fighter('a',480,1,arm('a'),{...SWORD_GUARD,h:[27,-28],w:54});
-  const B=new Fighter('b',720,-1,arm('b'),{...SWORD_GUARD,h:[26,-36],w:16});
+  // opt.hx: where each fighter's frame sits on the floor (the live stage's); opt.shift: the stance moved forward (+) or
+  // back in the fighter's own frame (the live stage's station for the engine's range)
+  const hx={a:480,b:720,...(opt.hx||{})},sh={a:0,b:0,...(opt.shift||{})};
+  const G=(id,g)=>({...g,ffx:g.ffx+sh[id],bfx:g.bfx+sh[id],px:g.px+sh[id]});
+  const A=new Fighter('a',hx.a,1,arm('a'),G('a',{...SWORD_GUARD,h:[27,-28],w:54}));
+  const B=new Fighter('b',hx.b,-1,arm('b'),G('b',{...SWORD_GUARD,h:[26,-36],w:16}));
   for(const f of [A,B]){
     f.spring=FIRM;f.minReach=20;
     // smooth: every key is eased into (35 ms; strikes a third of that), so nothing starts from rest with a jolt
@@ -103,9 +107,12 @@ function create(opt){
   // ----- looking ahead: the poses at time t with everything written so far -----
   // Each look carries on from the last run's checkpoint before the earliest thing written since (dirty), so writing
   // the fight exchange by exchange costs about one run rather than one run per look.
-  let last=null,dirty=Infinity;
+  // live (opt.live): nothing may be written before S.now, the moment the stage has already shown; a key or impulse
+  // that would start earlier (a step's weight shift before its phrase) starts then instead
+  let last=null,dirty=Infinity;const S0={now:null};
   for(const f of [A,B])for(const [m,ti] of [['key',0],['step',1],['impulse',0],['pin',3]]){const orig=f[m];
-    f[m]=function(...a){dirty=Math.min(dirty,a[ti]-REC*2);return orig.apply(this,a);};}
+    f[m]=function(...a){if(S0.now!=null&&(m==='key'||m==='impulse')&&a[ti]<S0.now)a[ti]=S0.now;
+      dirty=Math.min(dirty,a[ti]-REC*2);return orig.apply(this,a);};}
   for(const f of [A,B]){const w=f.walk;f.walk=function(foot,t0,...r){dirty=Math.min(dirty,t0-400);return w.call(this,foot,t0,...r);};}
   const run=t=>{const r=simulate(F,t,{from:PS.resumeFrom(last,dirty)});last=r;dirty=Infinity;return r;};
   const look=t=>{t=r2(t);const r=run(t+REC);return {t,out:{a:r.a[t/REC],b:r.b[t/REC]}};};
@@ -240,7 +247,11 @@ function create(opt){
     stop:(t,d)=>seq.stops.push({t:r2(t),d}),
     fx:(t,kind,at,power)=>seq.fx.push({t:r2(t),kind,at,power}),
     nm:f=>names[U(f).id]};
-  return {W,seq,F,t:0,n:0,bind:null,over:false};
+  let nBeat=0;W.n=()=>++nBeat;
+  W.run=run;W.last=()=>last;
+  const S={W,seq,F,t:0,n:0,bind:null,over:false};
+  Object.defineProperty(S,'now',{get:()=>S0.now,set:v=>{S0.now=v;}});
+  return S;
 }
 
 // ===================================================================================================================
@@ -445,7 +456,7 @@ PHRASES.legCut={ref:{a:68,d:28},gap:144,width:{a:64,d:84},lead:0,run(W,a,d,t9,st
   // the sword arm flies up and back (a blade longer than the broadsword, held point down, would sweep its point
   // through the attacker on the way up, so it is flung back with the point going down instead)
   const lng=d.f.weapon.len>SWORD&&(()=>{const c=W.look(tc),j=solve(pose(d.f,c.out[d.id],tc),d.f.weapon.len);return PS.norm(j.w)<0;})();
-  d.key(tc+10,{px:2,py:44,lean:-6,bend:4,head:-6,turn:-6,h:lng?[-10,-12]:[10,40],w:lng?-130:150,o:[24,-8]},'together');
+  d.key(tc+10,{px:2,py:44,lean:-6,bend:4,head:-6,turn:-6,h:lng?[-10,-12]:[24,40],w:lng?-130:80,o:[24,-8]},'together');   // (flung up with the point forward: up and back, it lies across the head)
   W.mark(tc,d.id,'The cut lands on '+D+'\'s forward thigh: the leg gives, the pelvis drops and the chest comes back up over it');
   }
   if(!st.final){
@@ -492,7 +503,7 @@ PHRASES.cutLands={ref:{a:20,d:-11},gap:165,width:{a:64,d:70},lead:20,run(W,a,d,t
   a.key(t2+330,{lean:18,bend:8,head:-14,turn:12,o:[-30,-42]});
   // the defender starts to cover, late: the blade only begins to come across
   // (when a parry was tried, the blade, or the shield, is left to it, below)
-  d.key(tc-140,tryKeep(st,{lean:10,bend:6,head:-12,h:[22,-10],w:70,o:[6,-28]}),'cover');
+  d.key(tc-140,tryKeep(st,{lean:10,bend:6,head:-12,h:[30,-12],w:60,o:[6,-28]}),'cover');
   // a failed parry: the defender goes for where the parry would have met the cut (high: above the head), too late
   if(st.tried){const c=W.look(tc),hi=st.loc==='head',p=W.on(d,hi?'Hd':'S')(tc,c);
     W.tryParry(d,st,tc-220,tc,hi?[p[0]+d.face*40,p[1]+18]:[p[0]+d.face*61,p[1]+4],hi?170:100,hi?30:20);}
@@ -540,7 +551,9 @@ PHRASES.thrustLands={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d,
   const parryArm=(st.tried==='parry'&&st.loc==='rarm')||(st.tried==='shield'&&st.loc==='larm');
   W.beat(W.n(),t8,'Thrust lands',A+' advances with a thrust at '+D+'\'s '+(st.loc||'chest')+'; '+D+'\'s cover is too late');
   thrustIn(W,a,t8);
-  d.key(tc-120,tryKeep(st,{lean:6,bend:8,head:-10,turn:-6,h:[16,-14],w:60,o:[8,-28]}),'cover');
+  // (a weapon already inside the point: the cover stays closer in and more upright, or it points at the attacker's head)
+  const insideCover=d.f.weapon.len>a.f.weapon.len+15;
+  d.key(tc-120,tryKeep(st,{lean:6,bend:8,head:-10,turn:-6,h:insideCover?[16,-14]:[28,-14],w:insideCover?78:56,o:[8,-28]}),'cover');
   // (a short weapon already inside a long blade's point: the attempt is made with the strong of the blade, near the
   // hilt, upright across the chest; brought down with the point, the long blade would come down on the attacker)
   // (and a blade longer than a longsword, which has no room for the point that close in)
@@ -561,14 +574,17 @@ PHRASES.thrustLands={ref:{a:0,d:79},gap:161,width:{a:88,d:86},lead:80,run(W,a,d,
   if(hurt)W.seq.wounds.push({t:W.r2(tc),who:d.id,part:MARK[st.loc]||'chest',level:st.level||'minor'});
   W.stop(tc,hurt?170:100);W.fx(tc,'wound',P,hurt?1.2:.6);
   // (an arm that is hit recoils once the blade lets go of it, or it drags the attacker's arm with it)
-  d.impulse(/arm$/.test(st.loc||'')?tc+31:tc+1,Object.fromEntries(Object.entries(T.react).map(([c,v])=>[c,v*k])));
+  // (and a body that folds over a stab to the belly folds once the blade is out, or its elbow comes onto the blade)
+  d.impulse(/arm$|abdomen/.test(st.loc||'')?tc+31:tc+1,Object.fromEntries(Object.entries(T.react).map(([c,v])=>[c,v*k])));
   // drawn straight back out along the line it went in, then a guard over the front knee
   // (a blade longer than the broadsword is drawn back further and settles with the point higher, clear of the body)
   const xl=Math.max(0,a.f.weapon.len-SWORD);
   // the body's travel stops at the contact too, or it carries the blade further in while the hand draws back
   a.impulse(tc+1,{hx:'stop',hy:'stop',wr:'stop',px:'stop'});
   // (from a stab at the head the hand comes back lower, or the blade is drawn back across its own fighter's head)
-  a.key(tc+40,st.loc==='head'?{h:[-6-xl*XL.back,-34],w:4}:{h:[-6-xl*XL.back,-22]},'together',{snap:2});
+  // (from a stab at the head the hand comes back and down together, the blade keeping its angle: drawn straight back
+  // at head height, a short blade lies across its own fighter's head)
+  a.key(tc+40,{h:[-6-xl*XL.back,st.loc==='head'?-34:-22]},'together',{snap:2});
   a.key(tc+300,{px:24-xl*XL.px,py:72,lean:10,bend:6,head:-12,h:[14-xl*XL.back*.5,-22],w:20+xl*XL.w,o:[16,-24]});
   d.key(tc+260,{lean:10,bend:10,head:-12,turn:-8,h:[16,-16],w:50,o:[10,-26]});
   W.mark(tc,d.id,hurt?'The thrust goes in and is drawn out':'The thrust lands but does not get through');
@@ -630,7 +646,7 @@ PHRASES.shieldStrike={ref:{a:0,d:79},gap:125,width:{a:88,d:86},lead:60,run(W,a,d
     W.aim(d,t0+230,tc,W.fixed(C),80,40,{order:'cover',hold:40,blend:110,snap:1.4});
     W.contact(tc,'parry',C,{a:{who:a.id},b:{who:d.id,along:40},hold:40});
     a.impulse(tc+1,{ox:-160,px:-40});d.impulse(tc+1,{py:-90,lean:-30,head:-30});
-    raiseHigh(d,tc+50,'together');          // the blade comes off the shield into the raised hold
+    raiseHigh(d,tc+50,'cover');          // the blade comes off the shield into the raised hold
     // and both give ground, so they do not stay chest to chest: the striker steps back, the defender pushes off a step
     a.walk('bf',tc+80,tc+240,-44,{py:72,lift:8,settle:.4,load:.4,lead:60});
     a.walk('ff',tc+260,tc+420,40,{py:73,lift:7,settle:.45,load:.3,lead:60});
@@ -657,13 +673,14 @@ PHRASES.shieldStrike={ref:{a:0,d:79},gap:125,width:{a:88,d:86},lead:60,run(W,a,d
     a.walk('ff',tc+420,tc+580,40,{py:73,lift:7,settle:.45,load:.3,lead:60});}
   // (lowered in two steps, the reverse of the raise: the point comes forward while the hand is still high, then down)
   a.key(tc+(parried?440:600),{h:[24,46],w:70},'cover');
-  a.key(tc+(parried?560:720),{h:[16,-20],w:60},'cover');
+  a.key(tc+(parried?520:680),{h:[34,10],w:62},'cover');           // (forward first, then down: past the head, upright, it crosses it)
+  a.key(tc+(parried?620:780),{h:[16,-20],w:60},'cover');
   // the defender settles: while still close, with the striker's sword arm raised, the sword stays hanging behind (a
   // swing to a guard would cross the striker); once both have stepped apart it comes up into an upright hold above
   // the shoulder, which the arm keeps still (the hanging hold, with the hand pressed against the shoulder, sways)
   d.key(tc+300,{lean:8,bend:8,head:-10,turn:-6});
   raiseHigh(d,tc+460,'cover');
-  return {end:tc+(parried?860:900),tc,label:miss?A+'\'s shield strike falls short.':parried?'The shield strike is met.':D+' is knocked back.'};
+  return {end:tc+(parried?920:960),tc,label:miss?A+'\'s shield strike falls short.':parried?'The shield strike is met.':D+' is knocked back.'};
 }};
 
 // ----- the end: the defender goes down on the cut leg and over; the attacker recovers and stands guard -----
@@ -789,13 +806,10 @@ function play(S,id,aid,t,st,keep){
   return r;
 }
 
-// Write a whole fight from records. opt: names, id, title. The first exchange is preceded by the approach.
-function write(records,opt){
-  const S=create(opt),{W,seq}=S;let n=0;W.n=()=>++n;
-  let t=0;
-  const first=records[0];
-  if(first){const r=play(S,'approach',first.attacker,t);t=W.settle(r.end);W.pause(t,r.label);}
-  for(const rec of records){
+// One resolved exchange, written from time t (the last decision boundary). Returns the next boundary, or with
+// ended the end of the fall. The fight studies (write, below) and the live Pits (pits-spring-live.js) both use it.
+function exchange(S,rec,t){
+  const {W,seq}=S;
     seq.records.push(rec);
     const p=pick(rec,seq.exchanges[seq.exchanges.length-1],S.F[rec.attacker].weapon.family);
     if(!p.exact)seq.notes.push({kind:'stand-in',rec,phrase:p.id});
@@ -812,9 +826,18 @@ function write(records,opt){
     if(S.bind){S.bind.hold=r2(tStart+PHRASES[p.id].lead+120)-S.bind.t;S.bind=null;}
     if(r.bind)S.bind=r.bind;
     seq.exchanges.push({t:tStart,attacker:rec.attacker,phrase:p.id,end:r.end});
-    if(ended(rec)){const r2_=play(S,'collapse',rec.attacker,r.end,{tc:r.tc,inFrame:p.id==='legCut'},p.id==='legCut'?r.dx:null);t=r2_.end;S.over=true;break;}
+    if(ended(rec)){const r2_=play(S,'collapse',rec.attacker,r.end,{tc:r.tc,inFrame:p.id==='legCut'},p.id==='legCut'?r.dx:null);S.over=true;
+      return {t:r2_.end,tc:r.tc,phrase:p.id,ended:true};}
     t=W.settle(r.end);W.pause(t,r.label+' The next decision.');
-  }
+    return {t,tc:r.tc,phrase:p.id};
+}
+// Write a whole fight from records. opt: names, id, title. The first exchange is preceded by the approach.
+function write(records,opt){
+  const S=create(opt),{W,seq}=S;
+  let t=0;
+  const first=records[0];
+  if(first){const r=play(S,'approach',first.attacker,t);t=W.settle(r.end);W.pause(t,r.label);}
+  for(const rec of records){const r=exchange(S,rec,t);t=r.t;if(r.ended)break;}
   seq.end=t+(S.over?1900:1200);seq.dur=seq.end+10;
   // played at 1.65 times the fight's own time (owner, 2026-11-12). The movement is written and tested in fight time;
   // the page plays it faster, hit-stops and flashes included (they are shown time)
@@ -838,7 +861,7 @@ function write(records,opt){
   return seq;
 }
 
-const api={calibrate:null,write,pick,PHRASES,ZONE,standAt,gapOf};
+const api={calibrate:null,write,create,exchange,pick,PHRASES,ZONE,standAt,gapOf,planned,takeMeasure,profile,shieldR};
 root.PitsWriter=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

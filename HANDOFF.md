@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-13 by Claude (Pits: own-head fix in progress)_
+_Last updated: 2026-11-13 by Claude (Pits: live trial behind ?stage=spring)_
 
 ## Where things stand
 
@@ -16,9 +16,11 @@ _Last updated: 2026-11-13 by Claude (Pits: own-head fix in progress)_
 
 ## Next
 
-00000000000000. **Next, Claude:** the next weapon family, **heavy one-handed** (axe, mace, club, hammer: slower chamber, harder impact), then two-handed, long thrust, flexible; each with a generated study (`pits-fight-study.html?seq=...`) and its weapons in the sweep (`tests/sweep/pits-sweep.cjs`). **Owner's rule (2026-11-12):** nothing goes live until all families are done; work stays on branch `claude/go-wf0bsg` (pushed, no PR).
+000000000000000. **Owner, decision needed:** the live trial (`experiments/practice-combat.html?stage=spring`) shows the writer moving fighters closer than the engine's range. Should the attacker step back out to the engine's range after every blow (Claude's suggestion), or should the range follow the picture? See `docs/pits-animation-direction.md`, "Live trial".
 
-0000000000000c. **Claude, in progress 2026-11-13:** Work's own-head finding (PR #323, merged into the branch). Studies fixed; the full sweep still has 550 of 4,032 fights with a fault, mostly the shield strike. Details: `docs/pits-animation-direction.md`, "Own blade across own head". Waiting on the owner's answer about integrating the live Pits sooner (see Claude's last message).
+00000000000000. **Next, Claude:** (1) the shield strike's own-head and elbow faults, which fail the shield sample in `tests/pits-writer.cjs` (the only failing test; recorded under "Own blade across own head"); (2) the trial's findings 2 and 3 (write a blow during the dice roll, drop old frames), and finding 1 once the owner decides; then the remaining families. **Owner's rule (2026-11-12):** nothing goes live until it is all done; branch `claude/go-wf0bsg` (pushed, no PR).
+
+0000000000000c. **Claude, in progress 2026-11-13:** Work's own-head finding (PR #323, merged into the branch). Studies fixed; the full sweep still has 550 of 4,032 fights with a fault, mostly the shield strike. Details: `docs/pits-animation-direction.md`, "Own blade across own head". Owner chose the live trial first (2026-11-13); done, see the Next items above.
 
 0000000000000b. **ChatGPT (Work), checked 2026-11-13:** prototype results in `docs/pits-studies-work-20261113.md`: readable dagger/late defences/shields/shove; Severity 2 own-blade/head overlaps, Severity 3 capture/endpoint limits. Not full visual acceptance and nothing deployed. **Next: Claude** — address the overlap and preserve the reported limits.
 

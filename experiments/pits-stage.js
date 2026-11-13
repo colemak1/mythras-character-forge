@@ -270,6 +270,9 @@ function pitsStageBeat(events,step,names){
 const PSTAGE_DUEL=(()=>{try{return /[?&]stage=duel\b/.test(location.search);}catch(e){return false;}})();
 // The movement language of docs/pits-animation-direction.md drives the figures; ?stage=poses keeps the earlier pose
 // library for comparison until the owner has judged the new movement at the table.
+// ?stage=spring: the trial of the spring movement and the exchange writer (pits-spring-live.js), for bouts where both
+// fighters' weapons have a family; any other bout keeps the movement below. Nothing released (owner, 2026-11-13).
+const PS_SPRING=(()=>{try{return /[?&]stage=spring\b/.test(location.search)&&typeof PitsSpringLive!=='undefined';}catch(e){return false;}})();
 const PS_MOTION=(()=>{try{return typeof PitsMotion!=='undefined'&&!/[?&]stage=poses\b/.test(location.search);}catch(e){return false;}})();
 const PS={clock:0,M:{},gap:0,busyUntil:0,paused:false,cuePromise:null,cueFor:0,fig:{},lastId:0,epoch:0,raf:0,ready:false,seeded:false,ex:null,run:null,wasBusy:false,fighters:{},lodge:{},tether:{},events:[]};
 const PS_GROUND=450,PS_SPACING={apart:440,even:300,short:220,long:390},PS_M=22;
@@ -414,11 +417,13 @@ function psDraw(f,now){
 // from the floor; the drawing below has y down, and its weapon angle is measured from straight down.
 function psDrawMotion(f,L,now){
   const m=PS.M[f.id],wLimp=L.swap?L.limp.larm:L.limp.rarm,oLimp=L.swap?L.limp.rarm:L.limp.larm;
-  const j=PitsMotion.LIVE.pose(m,PS.clock,{weapon:wLimp,off:oLimp}),q=p=>[p[0],-p[1]];
+  const j=PL().pose(m,PS.clock,{weapon:wLimp,off:oLimp}),q=p=>[p[0],-p[1]];
   const g={Sh:q(j.S),wSh:q(j.wS),oSh:q(j.oS),M:q(j.M),H:q(j.P),hd:q(j.Hd),E:q(j.E),Hn:q(j.Hn),bE:q(j.oE),bHn:q(j.oHn),K:q(j.K),bK:q(j.bK),F:q(j.F),bF:q(j.bF)};
   f.scale=1;f.hx=m.hx;
   // the shadow lifts with the hips when the figure is on the floor
   psPaint(f,L,g,j.w+90,0,Math.max(0,Math.min(40,(70-j.P[1])*.5)),null,now,j.blen);
+  // the spring trial moves the whole stance (the writer's steps), so the shadow goes under the feet, not the station
+  if(PS.springOn)f.shadow.setAttribute('cx',m.hx+m.face*(j.F[0]+j.bF[0])/2);
 }
 function psPaint(f,L,g,w1,dx,lift,pose,now,blen){
   const e=f.e,c={dx,lift};
@@ -964,7 +969,7 @@ async function psPressFinish(atk,def,cue){
 // ---- The movement language: one exchange is one timeline for both fighters (pits-motion.js) ----
 // Each cue writes phrases from the stage clock, starting from the pose the figure is in. The effects (sparks, numbers,
 // sound, the plates) wait for the clock to reach the contact the phrase was written against.
-const PL=()=>PitsMotion.LIVE;
+const PL=()=>PS.springOn?PitsSpringLive:PitsMotion.LIVE;
 // the point of a fighter's drawn weapon nearest to a world point (where the blades actually met)
 function psOnBlade(f,w){
   if(!f.pts)return w;const a=psWorld(f,f.pts.hand),b=psWorld(f,f.pts.tip),vx=b[0]-a[0],vy=b[1]-a[1];
@@ -984,9 +989,15 @@ function psPlaceM(id){
 }
 // a rig for each fighter, rebuilt (and placed) when the weapon or the weapon hand changes
 function psMotionFigs(){
+  // a new bout chooses its movement once, when neither fighter has been made: the spring trial if it is switched on and
+  // both weapons have a family
+  if(!PS.M.a&&!PS.M.b){const la=PS.fig.a&&PS.fig.a.look,lb=PS.fig.b&&PS.fig.b.look;
+    PS.springOn=!!(PS_SPRING&&la&&lb&&PitsSpringLive.supports(la.wk)&&PitsSpringLive.supports(lb.wk));}
   for(const id of ['a','b']){
     const f=PS.fig[id];if(!f||!f.look)continue;const wk=f.look.wk,m=PS.M[id];
-    if(!m||m.weapon.len!==wk.len||m.weapon.key!==wk.kind||m.swap!==!!f.look.swap){PS.M[id]=PL().fighter(id,wk,f.look.swap);PS.M[id].keep=20000;psPlaceM(id);}
+    // (in the spring trial the pair shares one world: a fighter is not remade mid-bout)
+    if(PS.springOn&&m)continue;
+    if(!m||m.weapon.len!==wk.len||m.weapon.key!==wk.kind||m.swap!==!!f.look.swap){PS.M[id]=PL().fighter(id,wk,f.look.swap,f.look);PS.M[id].keep=20000;psPlaceM(id);}
   }
 }
 // A lull: once nothing has moved for a while, a fighter left spent by the last exchange gets back to its station, and a
