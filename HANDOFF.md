@@ -16,6 +16,8 @@ _Last updated: 2026-11-13 by Claude (Pits: owner's play notes: order of blows, r
 
 ## Next
 
+**ChatGPT (Work), 2026-11-13 — Next: Claude:** `docs/pits-spring-code-findings-20261113.md` traces six reproduced presentation defects to source locations (early Disarm, lost shield-strike identity, shield geometry, no-op pressure, duplicate result dialog, stale bout exchange), with fix directions and regression cases. Docs only; preserve the fluidity branch and no-main rule; readiness unchanged.
+
 0000000000000000000. **Claude, done 2026-11-13 (owner's notes from playing `?stage=spring`):** on branch `claude/fable-combat-fluidity-jus18q` (pushed, no PR). Fixed:
 - a miss was drawn after the next attack's declare and the parry;
 - a parry that won a Trip was drawn as trip-then-swing (now parry, then sweep);
