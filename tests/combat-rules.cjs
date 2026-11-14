@@ -96,20 +96,41 @@ test('skillAtGrade: Hard two thirds, Formidable half, Herculean a tenth, rounded
  assert.deepEqual([0,1,2,3,4].map(g=>C.skillAtGrade(65,g)),[65,44,33,7,0]);
  assert.equal(C.skillAtGrade(65,9),0);
 });
+test('RC-07 gradeAttempt: Hopeless allows no attempt, so 01–05 does not succeed (Core pp.37–38)',()=>{
+ const hopeless=C.skillAtGrade(65,C.HOPELESS_STEPS);assert.equal(hopeless,0);
+ for(const roll of [1,3,5,50,99,100])assert.equal(C.gradeAttempt(roll,hopeless),'failure','roll '+roll);
+ assert.equal(C.gradeRoll(3,0),'success','gradeRoll alone still applies the automatic band to an allowed roll');
+ assert.equal(C.gradeAttempt(3,1),'success','a Herculean 1% is an allowed roll: 01–05 still succeeds');
+ assert.equal(C.gradeAttempt(5,7),'success');assert.equal(C.gradeAttempt(99,7),'fumble');
+});
+test('RC-12 mostSevereGrade: combined situational grades take the most severe, never stack (Core pp.38, 101)',()=>{
+ assert.equal(C.mostSevereGrade(2,1),2,'prone Formidable with a Serious arm Hard is Formidable');
+ assert.equal(C.mostSevereGrade(0,0),0);assert.equal(C.mostSevereGrade(1,3,2),3);assert.equal(C.mostSevereGrade(9),4);
+ assert.equal(C.skillAtGrade(70,C.mostSevereGrade(2,1)),35,'not 70×1/2×2/3 = 24');
+});
 test('impaleGrades: bigger weapons in smaller victims cost more (Core p.97)',()=>{
  assert.deepEqual([1,2,3,4,5].map(s=>C.impaleGrades(10,s)),[2,3,4,4,4]);
  assert.deepEqual([1,2,3,4,5].map(s=>C.impaleGrades(13,s)),[1,2,3,4,4]);
  assert.deepEqual([1,2,3,4,5].map(s=>C.impaleGrades(45,s)),[0,0,0,1,2]);
  assert.equal(C.impaleGrades(60,5),1);
 });
+test('RC-25 impaleIncapacitates: the Impale table cells marked Incapacitated (Core p.98)',()=>{
+ assert.equal(C.IMPALE_INCAPACITATED,4);
+ assert.equal(C.impaleIncapacitates(15,4),true,'SIZ 11–20 with a Huge weapon');
+ assert.equal(C.impaleIncapacitates(15,3),false,'SIZ 11–20 with a Large weapon is Herculean');
+ assert.deepEqual([1,2,3,4,5].map(s=>C.impaleIncapacitates(8,s)),[false,false,true,true,true]);
+ assert.deepEqual([1,2,3,4,5].map(s=>C.impaleIncapacitates(25,s)),[false,false,false,false,true]);
+ assert.equal(C.impaleIncapacitates(35,5),false);
+});
 
 /* ---------- Differential roll ---------- */
-test('effectsWon: the combat differential table, Failure beats Fumble by one (Core p.94, D-CE1)',()=>{
+test('RC-08 effectsWon: the combat differential table; Failure against Fumble wins nothing (Core pp.51, 95)',()=>{
  const levels=['critical','success','failure','fumble'];
  const table=levels.map(m=>levels.map(t=>C.effectsWon(m,t)));
- assert.deepEqual(table,[[0,1,2,3],[-1,0,1,2],[-2,-1,0,1],[-3,-2,-1,0]]);
+ assert.deepEqual(table,[[0,1,2,3],[-1,0,1,2],[-2,-1,0,0],[-3,-2,0,0]]);
  assert.equal(C.effectsWon('Critical','Fumble'),3,'case does not matter');assert.equal(C.effectsWon('x','success'),0);
- assert.equal(C.effectsWon('failure','fumble',{failureBeatsFumble:true}),1,'old Pits option is harmless');
+ assert.equal(C.effectsWon('failure','fumble'),0,'RC-08');assert.equal(C.effectsWon('fumble','failure'),0,'RC-08');
+ assert.equal(C.effectsWon('failure','fumble',{failureBeatsFumble:true}),0,'old Pits option changes nothing');
  assert.equal(C.effectsWon('failure','failure'),0);assert.equal(C.effectsWon('fumble','fumble'),0);
 });
 test('contestLevels: general Differential Roll, two failed rolls gain nothing (Core p.51)',()=>{
@@ -183,10 +204,14 @@ test('strikeWeapon: the weapon\'s AP resists, 0 HP breaks it (Core pp.97, 106)',
  assert.deepEqual(C.strikeWeapon(4,6,8),{lost:0,hp:8,broken:false});
  assert.deepEqual(C.strikeWeapon(20,6,8),{lost:14,hp:0,broken:true});
 });
-test('canDisarm and disarmResistSkill: twice-STR limit, a grade per Size step (Core p.97)',()=>{
+test('canDisarm and disarmResistSkill: twice-STR limit, a grade per Size step, rounded up, no cap (Core pp.37, 97; RC-21)',()=>{
  assert.equal(C.canDisarm(10,20),true);assert.equal(C.canDisarm(10,21),false);
  assert.deepEqual([[2,2],[3,2],[4,2],[5,2],[2,3],[1,3]].map(([own,other])=>C.disarmResistSkill(60,own,other)),[60,40,30,6,90,120]);
- assert.equal(C.disarmResistSkill(150,1,3),200);assert.equal(C.disarmResistSkill(4,5,1),1);
+ assert.equal(C.disarmResistSkill(65,3,2),44,'RC-21: Hard 65 rounds up (D-CE2), not to nearest 43');
+ assert.equal(C.disarmResistSkill(65,3,2),C.skillAtGrade(65,1),'same rounding as every other grade');
+ assert.equal(C.disarmResistSkill(65,5,2),7,'Herculean 6.5 rounds up');assert.equal(C.disarmResistSkill(55,2,3),83,'Easy 82.5 rounds up');
+ assert.equal(C.disarmResistSkill(120,1,3),240,'RC-21: no upper limit (Core p.37)');assert.equal(C.disarmResistSkill(150,1,3),300);
+ assert.equal(C.disarmResistSkill(4,5,1),1);
 });
 
 /* ---------- Special Effects ---------- */

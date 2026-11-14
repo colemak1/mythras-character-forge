@@ -19,7 +19,7 @@ const P={
  range:['a contested change of range',/ \| Change Range · /]
 };
 module.exports=[
- {name:'sword against a two-handed axe',seed:246,covers:[P.halfParry,P.serious,P.effects],
+ {name:'sword against a two-handed axe',seed:250,covers:[P.halfParry,P.serious,P.effects],
   a:{name:'Asha',kind:'human',style:72,weapon:'sword',evade:50,str:14,siz:13,con:12,dex:14,int:13},
   b:{name:'Borik',kind:'ai',style:68,weapon:'battleaxe-2h',armor:2,str:15,siz:15,con:14,dex:11,int:11,extra:{tactic:'patient'}}},
  {name:'spear against a barbed trident',seed:225,covers:[P.impale,P.impalePick,P.withdraw],
