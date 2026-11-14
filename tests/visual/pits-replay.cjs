@@ -30,7 +30,7 @@ async function playToEnd(page){
   const page=await browser.newPage({viewport:{width:1280,height:720}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{window.__psRecord=[];let a=0x2f6e2b1;const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
     window.__pitsDie=n=>n===100?Math.ceil(rnd()*60):Math.ceil(rnd()*n);});
-  await page.goto(URL_);await page.evaluate(c=>{Object.assign(config,c);startRun(false);},CFG);await sleep(400);
+  await page.goto(URL_+'?bottom=current');await page.evaluate(c=>{Object.assign(config,c);startRun(false);},CFG);await sleep(400);
   await click(page,'[data-act=speed]');
   await T('the range meter names the range by weapon length (sword, a Medium reach)',async()=>{
     const txt=await page.evaluate(()=>document.querySelector('#pitsStage .ps-rtext')?.textContent);

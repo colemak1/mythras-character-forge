@@ -9,7 +9,7 @@ const assert=require('node:assert/strict');
 let chromium;try{({chromium}=require('playwright'));}catch(e){console.log('SKIP: playwright is not installed here');process.exit(0);}
 // These checks read the pose library's own state (PS.fig.cur, psPlay), so they run on the earlier pose stage, which stays
 // selectable with ?stage=poses. The movement stage has its own checks in pits-motion-live.cjs.
-const URL_=(process.env.PITS_URL||'http://localhost:8765/experiments/practice-combat.html')+'?stage=poses';
+const URL_=(process.env.PITS_URL||'http://localhost:8765/experiments/practice-combat.html')+'?stage=poses&bottom=current';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const CFG={mode:'pvp',charname:'Aurel',pvpName:'Brann',weapon:'sword',pvpWeapon:'sword',style:80,pvpSkill:60,armor:0,pvpArmor:0,str:11,siz:12,pvpStr:11,pvpSiz:12};
 async function boot(browser,dice){

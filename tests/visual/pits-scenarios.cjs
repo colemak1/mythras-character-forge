@@ -69,7 +69,7 @@ async function boot(browser,sc){
   page.errors=[];page.on('pageerror',e=>page.errors.push(e.message));
   await page.addInitScript(()=>{window.__psRecord=[];window.__psFreeze=true;window.__dq={};
     window.__pitsDie=n=>{const q=window.__dq[n];return q&&q.length?q.shift():Math.ceil(n/2);};});
-  await page.goto(URL_);
+  await page.goto(URL_+'?bottom=current');
   await page.evaluate(sc=>{window.__dq=sc.dice;Object.assign(config,sc.cfg.config);startRun(false);},{dice:sc.dice,cfg:sc.cfg});
   await sleep(300);
   return page;

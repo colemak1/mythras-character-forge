@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: one bottom deck for keeping up with the fight (layout E, reworked)
+
+- **E is the layout.** The owner chose E ("Odds first"); A to D and the Bottom switcher are removed. Phones, and `?bottom=current`, keep the older deck.
+- **Left: your moves.** The actions for your turn and the defences for when you are attacked (Parry with weapon or shield, Evade, Do not defend; Allow, Oppose or Intercept a range change). Whichever matters now is open; the other is a one-line reminder. Defences show their target.
+- **Middle: what's happening.** A tracker shows where the exchange is (Action, Defence, Effects, Location, Damage). Under it, the exchange is told step by step ("Goat attacks: rolled 11, needed 100 or less · Success"), newest line in view. The decision itself is under that.
+- **Special Effects and Choose Location are in the middle,** not in a window over the arena.
+- **Right: details.** Point at (or tab to) any action, defence, effect or hit location to see what it does and its odds. They are counted face by face with the engine's own grading and opposed-roll rule: the grade split for your roll; for a defence, the chance to stop the blow and who earns Special Effects against the roll already made; for an effect that is resisted (Trip, Disarm, Blind, Compel, Stun, Bleed), the chance it works, by skill. History is in the panel's header.
+- Choices are made in two steps: select (click or number key), then Confirm or Enter.
+- Tests: `tests/pits-bottom.cjs` (odds checked against hand-worked cases) and `tests/visual/pits-bottom.cjs`.
+
 ## The Pits: fight study pace fixed at the owner's choice
 
 - The owner chose 1.10 times the previous pace on the slider. The fight now plays at 1.65 times its own time (about 5.7 s), and the slider is removed.

@@ -13,7 +13,7 @@ const CFG={mode:'pvp',charname:'Aurelian Maximilian Thessalonikios the Unyieldin
 async function boot(browser,vp,dice){
   const page=await browser.newPage({viewport:vp});page.errors=[];page.on('pageerror',e=>page.errors.push(e.message));
   await page.addInitScript(d=>{window.__psRecord=[];window.__dq=d;window.__pitsDie=n=>{const q=window.__dq[n];return q&&q.length?q.shift():Math.ceil(n/2);};},dice);
-  await page.goto(URL_);await page.evaluate(c=>{Object.assign(config,c);startRun(false);},CFG);await sleep(300);return page;
+  await page.goto(URL_+'?bottom=current');await page.evaluate(c=>{Object.assign(config,c);startRun(false);},CFG);await sleep(300);return page;
 }
 const st=page=>page.evaluate(()=>{const S=prototypeCombat.state(),V=prototypeCombat.presentation();
   return {phase:S.phase,busy:!!V.busy,pend:S.pending?S.pending.kind:null,hasR:!!prototypeCombat.pendingRoll(),turn:S.order?S.order[S.turnIndex]:null};});
