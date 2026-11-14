@@ -215,4 +215,15 @@ test('presentation only: the live layer reads no rules, dice or page',()=>{
   const src=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','experiments','pits-motion.js'),'utf8').replace(/\/\/.*$/gm,'');
   assert.doesNotMatch(src,/Math\.random|document\.|window\.|\bS\.fighters|\brollSkill|\bCombatRules/);
 });
+// (Work's checks A8 and A9, 2026-11-14: a polearm's or a staff's lead hand let go of the shaft when the grip point
+// up the shaft was out of the arm's reach)
+test('a two-handed weapon: the off hand stays on the shaft, even when the grip point is out of reach',()=>{
+ const seg=(p,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy;let t=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L;t=Math.max(0,Math.min(1,t));return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy);};
+ const base={px:0,py:92,lean:0,bend:0,head:0,ffx:20,ffy:0,bfx:-20,bfy:0,turn:0,o:[10,-40],fs:0,wr:null};
+ let n=0;
+ for(const two of [10,18,40,44])for(const h of [[40,-10],[-30,10],[20,40],[50,30],[-10,-50]])for(const w of [-120,-60,0,40,90,160]){
+  const j=PM.solve({...base,h,w,two},176);n++;
+  assert(seg(j.oHn,j.Hn,j.tip)<=1.5,'off hand off the shaft: two '+two+', hand '+h+', angle '+w+', gap '+seg(j.oHn,j.Hn,j.tip).toFixed(1));}
+ assert.equal(n,120);
+});
 console.log(passed+' passed');

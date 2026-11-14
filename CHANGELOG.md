@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits trial: Work's spring batch (grips, Prone chip, Disarm timing, Keep hold, replay result)
+
+- Work's batch was run on a preview two commits old. Its Severity 1 (C1: against the arena's opponent, the knockout came before the Endurance roll that caused it) was already fixed; a test now replays that exact sequence. The two-handed grips of the battleaxe, greatsword and great hammer (A5 to A7) were also already fixed.
+- Poleaxe and quarterstaff (A8, A9): the lead hand no longer lets go of the shaft when its usual grip point is out of reach; it slides along the shaft to where the arm reaches.
+- Trip (B1): the Prone chip waits until the tripped fighter is sat down. Other falls drawn without a blow also wait until the figure is down.
+- Disarm (B4): when the Disarm is resolved before the throw distance, location or damage rolls, the weapon stays in the hand until the blow is drawn, then lands on the floor once.
+- Impale, Keep hold (B6): the weapon is drawn once, lodged in the wound, with the wielder's hand on its grip; no second blade in the hand.
+- Fight replay (D2): a **Show result** button during the replay stops it and opens the result window.
+- Still open (Severity 2, motion): a held blade or a miss can still pass through the other fighter's head or body on a few beats (A11, A12, B5, C2). Recorded in `docs/pits-animation-direction.md`.
+
 ## The Pits trial: every weapon on the spring stage
 
 - All 35 Pits weapons now fight on the `?stage=spring` trial (owner, 2026-11-14). Until now only blades and short one-handed axes, clubs, maces and picks did; two-handed weapons, polearms, spears, the quarterstaff, flails, whip and net fell back to the older movement.

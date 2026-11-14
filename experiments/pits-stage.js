@@ -483,10 +483,37 @@ function psDrawMotion(f,L,now){
   const j=PL().pose(m,PS.clock,{weapon:wLimp,off:oLimp,unarmed:!L.armed||!!f.dropEl}),q=p=>[p[0],-p[1]];
   const g={Sh:q(j.S),wSh:q(j.wS),oSh:q(j.oS),M:q(j.M),H:q(j.P),hd:q(j.Hd),E:q(j.E),Hn:q(j.Hn),bE:q(j.oE),bHn:q(j.oHn),K:q(j.K),bK:q(j.bK),F:q(j.F),bF:q(j.bF)};
   f.scale=1;f.hx=m.hx;
+  // Impale, "Keep hold": the weapon is in the other's wound and still in this hand. It is drawn once, as the lodged
+  // weapon, and the weapon hand reaches to its grip as far as the arm goes (Work's check B6, 2026-11-14: a second blade
+  // was drawn in the hand, with the arm pulled back)
+  let Lp=L;const held=psHeldLodge(f);
+  if(held){
+    const W=psLocal(f,psBodyPt(held.v,held.loc)),Sh=g.wSh||g.Sh,len=pitsStageWeaponKind(held.weapon,3).len;
+    const d=psUnit([Sh[0]-W[0],Sh[1]-W[1]]),G=[W[0]+d[0]*len,W[1]+d[1]*len];
+    const R=62,u=psUnit([G[0]-Sh[0],G[1]-Sh[1]]),dist=Math.min(Math.hypot(G[0]-Sh[0],G[1]-Sh[1]),R*.98);
+    g.Hn=[Sh[0]+u[0]*dist,Sh[1]+u[1]*dist];g.E=psElbow(Sh,g.Hn,32,30);
+    Lp={...L,armed:false};
+  }
   // the shadow lifts with the hips when the figure is on the floor
-  psPaint(f,L,g,j.w+90,0,Math.max(0,Math.min(40,(70-j.P[1])*.5)),null,now,j.blen);
+  psPaint(f,Lp,g,j.w+90,0,Math.max(0,Math.min(40,(70-j.P[1])*.5)),null,now,j.blen);
+  if(held)f.pts.hand=g.Hn;
   // the spring trial moves the whole stance (the writer's steps), so the shadow goes under the feet, not the station
   if(PS.springOn){f.standX=m.hx+m.face*(j.F[0]+j.bF[0])/2;f.shadow.setAttribute('cx',f.standX);}
+}
+// the held lodged weapon of this fighter on the spring stage, if any: {v (the impaled figure), loc, weapon}
+function psHeldLodge(f){
+  if(!PS.springOn)return null;
+  for(const [vid,list] of Object.entries(PS.fighters.lodged||{}))for(const w of list||[]){
+    if(w.holder!==f.id||!w.held)continue;const v=PS.fig[vid];if(v&&v.pts)return {v,loc:w.loc,weapon:w.weapon};}
+  return null;
+}
+const psUnit=v=>{const l=Math.hypot(v[0],v[1])||1;return [v[0]/l,v[1]/l];};
+// the elbow between a shoulder and a hand (drawing frame, y down): bent downward
+function psElbow(S,H,l1,l2){
+  const dx=H[0]-S[0],dy=H[1]-S[1],d=Math.min(Math.hypot(dx,dy)||1e-6,l1+l2-1e-6);
+  const a=(l1*l1-l2*l2+d*d)/(2*d),h=Math.sqrt(Math.max(0,l1*l1-a*a)),ux=dx/d,uy=dy/d;
+  const m=[S[0]+ux*a,S[1]+uy*a],e1=[m[0]-uy*h,m[1]+ux*h],e2=[m[0]+uy*h,m[1]-ux*h];
+  return e1[1]>=e2[1]?e1:e2;
 }
 function psPaint(f,L,g,w1,dx,lift,pose,now,blen){
   const e=f.e,c={dx,lift};
@@ -1092,14 +1119,14 @@ function psLull(){
     if(PS.clock<PS.busyUntil||typeof V==='undefined'||typeof S==='undefined'||!S||S.phase!=='fight'||V.busy||V.hold||S.pending||(typeof R!=='undefined'&&R)||psReplaying())return;
     for(const id of ['a','b']){
       const f=PS.fig[id],m=PS.M[id],e=S.fighters[id];if(!f||!m||!e||f.end||f.mEnd)continue;
-      if(e.prone&&!f.mDown){f.mDown=true;PS.busyUntil=Math.max(PS.busyUntil,L.fall(m,PS.clock));psEmit('reconcile',{actor:id,kind:'down'});}
+      if(e.prone&&!f.mDown){f.mDown=true;const d=L.fall(m,PS.clock);f.downAt=d;PS.busyUntil=Math.max(PS.busyUntil,d);psEmit('reconcile',{actor:id,kind:'down'});}
       else if(!e.prone&&f.mDown){f.mDown=false;PS.busyUntil=Math.max(PS.busyUntil,L.stand(m,PS.clock,PS.gap));psEmit('reconcile',{actor:id,kind:'up'});}
     }
     return;
   }
   for(const id of ['a','b']){
     const f=PS.fig[id],m=PS.M[id];if(!f||!m||!f.look||PS.clock<PS.busyUntil+300)continue;
-    if(f.look.prone&&!f.mDown){f.mDown=true;f.spent=false;PS.busyUntil=Math.max(PS.busyUntil,L.fall(m,PS.clock));continue;}
+    if(f.look.prone&&!f.mDown){f.mDown=true;f.spent=false;const d=L.fall(m,PS.clock);f.downAt=d;PS.busyUntil=Math.max(PS.busyUntil,d);continue;}
     if(!f.look.prone&&f.mDown&&!f.end&&!f.mEnd){f.mDown=false;PS.busyUntil=Math.max(PS.busyUntil,L.stand(m,PS.clock,PS.gap));continue;}
     if(!f.spent||PS.clock<PS.busyUntil+1300||f.end||f.mEnd||f.mDown||f.pressRole)continue;
     f.spent=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,PS.gap,psHurt(f)));
@@ -1154,7 +1181,9 @@ async function psMotionCue(cue){
       // stand-in until trips have a phrase: a blow at the front leg; if it goes, the fall
       psDom(psWorld(me,me.pts?me.pts.Sh:[0,-60]),'Trip Opponent','fx');PS.intents={};
       const r=L.blow(PS.M,me.id,PS.clock,{outcome:'armour',loc:'rleg',lost:0,fall:cue.fell?'sit':false,flow:psReplaying()});
-      PS.busyUntil=r.end;me.spent=tgt.spent=true;if(cue.fell)tgt.mDown=true;
+      PS.busyUntil=r.end;me.spent=tgt.spent=true;
+      // (the Prone chip waits until the tripped fighter is sat down: Work's check B1, 2026-11-14)
+      if(cue.fell&&!tgt.mDown){tgt.mDown=true;tgt.downAt=r.end;}
       const c=r.contacts[r.contacts.length-1],w=psW(c.at);await psUntil(c.t);
       psEmit('contact',{kind:'trip',actor:me.id,target:tgt.id,point:w.map(Math.round)});psBurst(w,'spark',10);psRing(w);
       await psHitStop(60);
@@ -1193,7 +1222,7 @@ async function psMotionCue(cue){
       let end=PS.clock;
       if(lo){
         if(cue.how==='concede'){lo.mEnd='yield';psEmit('yield',{target:lo.id});end=L.yieldTo(PS.M[lo.id],PS.clock);}
-        else{lo.mEnd='lying';if(!lo.mDown){lo.mDown=true;end=L.fall(PS.M[lo.id],PS.clock);}}
+        else{lo.mEnd='lying';if(!lo.mDown){lo.mDown=true;end=L.fall(PS.M[lo.id],PS.clock);lo.downAt=end;}}
       }
       if(wi){wi.mEnd='low';end=Math.max(end,L.lower(PS.M[wi.id],PS.clock));}
       PS.busyUntil=Math.max(PS.busyUntil,end);await psUntil(Math.min(end,PS.clock+700));
@@ -1375,7 +1404,14 @@ function pitsStageSync(){
     // (not a weapon left in the other fighter's wound: Impale, "leave it in" marks the wielder disarmed, but the weapon
     // is drawn where it is lodged, not thrown to the floor as well)
     const lodgedIn=(view[id==='a'?'b':'a'].impaledWounds||[]).some(w=>w&&w.attacker===id);
-    if(!f.look.armed&&!f.dropEl&&view[id].disarmed&&!lodgedIn)psFlyWeapon(f,view[id].droppedMetres||2);
+    // A Disarm the engine has resolved while its exchange still waits on a person (the throw distance, the hit location,
+    // the damage): the engine marks the weapon lost before those rolls, but the blow that knocks it away has not been
+    // drawn yet. The weapon stays in the hand until it is (Work's check B4, 2026-11-14). Not on a fresh bout.
+    const waitingNow=!V.busy&&S.phase==='fight'&&!!(S.pending||(typeof R!=='undefined'&&R));
+    const heldDisarm=!!(V.hold&&V.hold.events.some(e=>!e.roll&&e.title==='Disarm Opponent'&&e.meta&&e.meta.target===id));
+    if(!f.look.armed&&!f.dropEl&&view[id].disarmed&&!lodgedIn&&!fresh&&f.armedSeen&&(heldDisarm||waitingNow))f.look.armed=true;
+    else if(!f.look.armed&&!f.dropEl&&view[id].disarmed&&!lodgedIn)psFlyWeapon(f,view[id].droppedMetres||2);
+    f.armedSeen=f.look.armed;
     f.end=null;
   }
   // Press Advantage: the effect is active while the engine says the opponent still cannot attack (pressedTurns).

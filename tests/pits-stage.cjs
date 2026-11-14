@@ -341,4 +341,20 @@ test('an automatic fighter\'s wound dice are shown before the blow they follow, 
  const r2=arrange([atk,dmg,hit,B('Round 2','AP refresh.',{}),R('Regain Footing · Marek brawn')],[],false);
  assert.deepEqual(r2.play.map(lab),['Kethan attacks','Damage','Kethan hits Head','Round 2','Regain']);
 });
+// (Work's record C1, 2026-11-14, served from an older build: Gauntlet, the opponent evades, a Major Wound to the
+// Right Arm; the knockout was drawn while the opponent's Endurance dice were still rolling)
+test('Work C1: an automatic opponent\'s Major Wound Endurance roll is shown before the blow and the end',()=>{
+ const R=label=>({roll:{actor:'b',label,values:[77]}});
+ const atk=ATK(),ev=B('Marek evades','5 vs 45% — CRITICAL. 1 AP remaining.',{actor:'b',exid:1});
+ const loc={roll:{actor:'a',label:'Hit Location · d20',values:[14]}},dmg={roll:{actor:'a',label:'Damage · Right Arm',values:[7,1]}};
+ const hit=B('Kethan hits Right Arm','7 weapon (7) +1d2 (+1) = 8 total; 0 parry; 0 armour; 8 HP lost.',{actor:'a',impact:{target:'b',location:'Right Arm',hpLost:8},px:{total:8}});
+ const endu=R('Endurance · major wound to Right Arm');
+ const wnd=B('MAJOR WOUND · Right Arm','Marek Endurance 77/53% (FAILURE) versus the attack 15 (SUCCESS). Fails to resist.',{});
+ const end=B('FIGHT ENDS','Kethan wins. Marek has a Major Limb Wound to the Right Arm: incapacitated and prone.',{});
+ const r=arrange([atk,ev,loc,dmg,hit,endu,wnd,end],[],false);
+ const lab=e=>e.roll?e.roll.label.split(' ')[0]:e.title;
+ const order=r.play.map(lab);
+ assert(order.indexOf('Endurance')<order.indexOf('Kethan hits Right Arm'),'Endurance dice before the blow: '+order.join(' | '));
+ assert(order.indexOf('Kethan hits Right Arm')<order.indexOf('FIGHT ENDS'));
+});
 console.log(passed+' pits stage tests passed');

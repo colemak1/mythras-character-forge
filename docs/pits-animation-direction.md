@@ -473,6 +473,31 @@ Checks: `tests/sweep/pits-weapons-browser.cjs` (a whole bout per weapon, in a br
 
 Next, in the order the owner finds worst from play: each stand-in family gets its own phrases and its own study, as item 6 below describes.
 
+## Work's spring batch (2026-11-14): what was already fixed, what was fixed now, what is left
+
+Work's report (`pits-spring-work-20261114.md`) was run on a preview serving `74a9006`, two commits behind the branch
+(stage `ba22112b8e`, writer `6691a13739`, spring `9b3214dabd`). The two missing commits were `260b59e` (a knockout waits
+for its dice) and `a141ce5` (every weapon, two-handed grips).
+
+- **Already fixed at `ad0023e`:** C1 (Severity 1: the Gauntlet opponent's Major Wound Endurance dice after the
+  knockout; `260b59e`; the exact C1 sequence is now a test in `tests/pits-stage.cjs` that fails on `74a9006`). A5, A6,
+  A7 (battleaxe, greatsword, great hammer off hand; `a141ce5`: off hand within 3 px of the grip in whole browser bouts).
+- **Fixed now:** A8, A9 (poleaxe, quarterstaff: the lead hand let go of the shaft by up to 17 px when the grip point
+  was out of reach; it now slides along the shaft, 0 px at the 99th percentile; `tests/pits-live.cjs`). B1 (the Prone
+  chip waits until a tripped fighter is sat down, and until any other fall is finished). B4 (a Disarm the engine
+  resolved before the throw-distance and location rolls left the weapon on the floor early; it now stays in the hand
+  until the blow is drawn). B6 (Keep hold: one weapon, lodged, with the hand on its grip). D2 (Show result during the
+  replay). Browser tests for B1, B4, B6 in `tests/visual/pits-spring-scripted.cjs`, D2 in `tests/visual/pits-replay.cjs`.
+- **Left, Severity 2, the live sweep's backlog (item 4 below):** A11 (pike miss through the head), A12 and C2 (a held
+  blade across the other's head), B5 (a blade through the lower torso at the defender's Disarm parry). These are the
+  "blade within N of X.Hd / X.K" kinds the live sweep counts; a run of 72 fights over sword, pike, flail, greatsword
+  and halberd still finds them in 71. Driving that count down is the next motion work, not a one-line fix.
+- **Known limit, Severity 3:** A13, the whip's long silhouette is hard to read at the held endpoint (a stand-in on the
+  cut phrase until flexible weapons have their own family).
+- **Pre-existing, not from this batch:** `tests/visual/pits-scenarios.cjs` 04 and 10 fail by 1 px (tip 27 px from the
+  struck part, limit 26) on `ad0023e` too; `tests/visual/pits-replay.cjs` "many beats played" can fail when a random
+  fight is very short.
+
 ## Instructions for Opus (written 2026-11-13, after the fluid-flow batch)
 
 Read `AGENTS.md`, `HANDOFF.md` and the section above first. Work on the branch `claude/fable-combat-fluidity-jus18q` (it contains `claude/go-wf0bsg`), or a session branch started from it. The owner's rule stands: nothing goes to `main` until the spring stage is finished for every weapon; no PR per step.

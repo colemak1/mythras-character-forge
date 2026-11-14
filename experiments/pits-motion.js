@@ -69,7 +69,13 @@ function solve(p,wlen){
   // a two-handed weapon (p.two: how far along it): the off hand holds the weapon that far in front of the weapon hand,
   // wherever the weapon goes (the weapon is drawn from the weapon hand forward: a sword's hands close together, a
   // spear's or a polearm's lead hand well up the shaft); if the arm cannot reach, it reaches as far as it can
-  let ob=oa;if(p.two>0)ob=ik(oS,[Hn[0]+Math.cos(rad(w))*p.two,Hn[1]+Math.sin(rad(w))*p.two],DIM.upper,DIM.fore,1);
+  // if the arm cannot reach that far, the hand slides along the shaft to the nearest point it can reach, so it never
+  // lets go of a staff or a polearm (Work's checks A8 and A9, 2026-11-14)
+  let ob=oa;
+  if(p.two>0){const cw=Math.cos(rad(w)),sw=Math.sin(rad(w)),at=d=>[Hn[0]+cw*d,Hn[1]+sw*d],reach=(DIM.upper+DIM.fore)*.98;
+    let d=p.two;const far=d=>Math.hypot(at(d)[0]-oS[0],at(d)[1]-oS[1]);
+    if(far(d)>reach){let best=d,bf=far(d);for(let x=d;x>=4;x-=2){const f=far(x);if(f<=reach){best=x;bf=f;break;}if(f<bf){best=x;bf=f;}}d=best;}
+    ob=ik(oS,at(d),DIM.upper,DIM.fore,1);}
   return {P:t.P,M:t.M,S,wS,oS,Hd:t.Hd,K:fl.mid,F:fl.end,bK:bl.mid,bF:bl.end,E:wa.mid,Hn,oE:ob.mid,oHn:ob.end,tip,
     w,grip:norm(w-fore),over:{ff:fl.over,bf:bl.over,h:wa.over,o:oa.over}};
 }

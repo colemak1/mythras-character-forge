@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (Pits: every weapon on the spring stage)_
+_Last updated: 2026-11-14 by Claude (Pits: Work's spring batch fixed)_
 
 ## Where things stand
 
@@ -16,7 +16,9 @@ _Last updated: 2026-11-14 by Claude (Pits: every weapon on the spring stage)_
 
 ## Next
 
-0000000000000000000000000. **ChatGPT (Work), checked 2026-11-13 (batch 20261114):** `docs/pits-spring-work-20261114.md` lists all 36 IDs and 15 copied failure records. **Current-branch acceptance blocked:** the preview loaded older writer/spring/stage version tokens than `ad0023e`; observed results (12 pass, 15 fail, 9 blocked) apply only to that served preview. **Next: Claude:** verify served asset versions first, identify already-fixed findings, then resolve remaining failures by severity. Read the report limits; no production changes.
+00000000000000000000000000. **Claude, done 2026-11-14 (Work's spring batch, PR #325):** Work's preview served `74a9006`, two commits old. C1 (Severity 1) and A5 to A7 were already fixed at `ad0023e`; now fixed: A8, A9, B1, B4, B6, D2, each with a test. Left: Severity 2 clearance faults (A11, A12, B5, C2), the live sweep's backlog; A13 is Severity 3. Details: `docs/pits-animation-direction.md`, "Work's spring batch". **Owner:** play `?stage=spring` on the branch preview (hard refresh; the page's `pits-stage.js?v=` must match `experiments/practice-combat.html` on the branch) and send a fight record for anything still wrong. **Then Claude:** the clearance backlog (blades through the other's head or body), then the stand-in families.
+
+0000000000000000000000000. **ChatGPT (Work), checked 2026-11-13 (batch 20261114):** `docs/pits-spring-work-20261114.md` (36 IDs, 15 records), run on a stale preview; dispositions above.
 
 000000000000000000000000. **Claude, done 2026-11-14 (every weapon playable):** all 35 weapons fight on `?stage=spring` (branch `claude/sharp-franklin-mbjthj`, no PR). Weapons without their own family are stand-ins on the cut or thrust phrases, with two-handed grips drawn; list in `docs/pits-animation-direction.md`, "Every weapon on the spring stage". **Owner:** play every weapon and send a **Copy fight record** for anything that looks wrong, with one line naming the moment. **Then Claude:** fix what the records show first; then give the stand-in families their own movement, in the order the owner finds them worst (likely the spear family's reach, then two-handed swings, then flails and the whip).
 
