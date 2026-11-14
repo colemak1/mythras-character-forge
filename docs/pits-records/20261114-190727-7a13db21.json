@@ -1,0 +1,18 @@
+{
+ "id": "7a13db21-530b-4aac-9be7-cb732b98c824",
+ "created_at": "2026-11-14 19:07:27.095606+00",
+ "reporter": null,
+ "note": "[Lost #1 note] Why cant i attack rn and what was his second special effect",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=d9e43ed972;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=bcba3a2354;stage=16f0fafc9e",
+ "record": {
+  "at": "2026-11-14T19:07:05.988Z",
+  "mark": 1,
+  "round": 1,
+  "record": "pits-lost-note",
+  "fighters": [
+   "Kethan Voss",
+   "Border Deserter"
+  ]
+ }
+}

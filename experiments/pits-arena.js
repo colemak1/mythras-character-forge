@@ -76,7 +76,9 @@ function paStripHtml(){
 }
 
 // ---- Exchanges, from the engine's log: the newest is "current", the one before "previous" ----
-const PA_BREAK=/^(Round |Encounter|Regain Footing|Brace|Delay|Dither|Stand Fast|Move to|Ready Weapon|Pick Up|Pin Weapon|Entangle|FIGHT)|changes range/;
+// (Pin Weapon and Entangle chosen as Special Effects belong to their exchange; only the later actions to get free,
+// "Pin Weapon · Escape" and "Entangle · …", start something new: report review FR-01, 2026-11-14)
+const PA_BREAK=/^(Round |Encounter|Regain Footing|Brace|Delay|Dither|Stand Fast|Move to|Ready Weapon|Pick Up|Pin Weapon · |Entangle · |Entangle ends|FIGHT)|changes range/;
 const paVisibleLogs=()=>pitsPresenting()?(S.logs||[]).slice(0,V.visibleCount):(S.logs||[]);
 function paExchanges(){
   const out=[];let cur=null;

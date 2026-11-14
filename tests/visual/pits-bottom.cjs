@@ -101,5 +101,28 @@ const fits=page=>page.evaluate(()=>{const d=document.querySelector('#root .bdeck
     await page.keyboard.press('Enter');await sleep(150);assert.equal((await st(page)).hasR,true,'Enter sent the Attack');
     assert.deepEqual(page.errors,[]);await page.close();
   });
+  await T('a pinned weapon (report FR-01): the Still pinned line and the reasons fit the one screen at 1280x720',async()=>{
+    const page=await boot(browser,{width:1280,height:720},'',DICE);await until(page,myTurn);
+    await page.evaluate(()=>{const S=prototypeCombat.state();S.fighters.a.pinnedGear='weapon';S.fighters.a.pinnedBy='b';render();});await sleep(150);
+    const txt=await page.evaluate(()=>document.querySelector('#root .blasting')?.textContent||'');
+    assert.match(txt,/Still pinned: Goat's .*, by Border Deserter/);
+    if(process.env.PITS_SHOTS){await page.screenshot({path:path.join(process.env.PITS_SHOTS,'pinned-1280.png')});console.log(await page.evaluate(()=>document.querySelector('#root .binfo').innerText));}
+    assert.equal(await fits(page),'','nothing in the deck needs scrolling: '+await fits(page));
+    const d=await dims(page);assert(d.sh<=d.ih+1,'the page does not scroll ('+d.sh+'>'+d.ih+')');
+    assert.deepEqual(page.errors,[]);await page.close();
+  });
+  await T('the hit-location marker stays on the body part while the figure moves (report FR-05)',async()=>{
+    const page=await boot(browser,{width:1280,height:720},'',DICE);await until(page,myTurn);
+    const off=await page.evaluate(async()=>{
+      const f=PS.fig.b,g=psReticle(psBodyPt(f,'head'),f,'head');
+      // the figure steps away while the marker is up: it must go with the head
+      PS.busyUntil=Math.max(PS.busyUntil,PitsMotion.LIVE.walk(PS.M.b,PS.clock,-80));
+      let worst=0;for(let i=0;i<20;i++){await new Promise(r=>requestAnimationFrame(r));if(!g.isConnected)break;
+        const m=/translate\(([-\d.]+),([-\d.]+)\)/.exec(g.getAttribute('transform')),w=psBodyPt(f,'head');
+        worst=Math.max(worst,Math.hypot(+m[1]-w[0],+m[2]-w[1]));}
+      return worst;});
+    assert(off<2,'the marker stayed within 2 px of the drawn head (worst '+off.toFixed(1)+')');
+    assert.deepEqual(page.errors,[]);await page.close();
+  });
   await browser.close();console.log(`${pass} passed, ${fail} failed`);process.exit(fail?1:0);
 })();

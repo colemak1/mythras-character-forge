@@ -1,0 +1,828 @@
+{
+ "id": "9374a0c7-9dc6-44f2-bdf0-b581edc041e9",
+ "created_at": "2026-11-14 19:54:25.322106+00",
+ "reporter": null,
+ "note": "during the actual fight the two characters would reset back to neutral all the time, but in the final replay it didnt show this reset. They should never be resseting so the replay is correct but we need to fix th mid fight animations. the final animation was very choppy and not fluid. FLUIDITY IS KE TO THIS PORJECT.",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=d9e43ed972;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=bcba3a2354;stage=16f0fafc9e",
+ "record": {
+  "at": "2026-11-14T19:52:40.132Z",
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+  "log": [
+   {
+    "b": "Kethan Voss rolls 3 + 13 − 2 armour penalty = 14.",
+    "t": "Kethan Voss · Initiative",
+    "id": 1
+   },
+   {
+    "b": "Border Deserter rolls 5 + 12 − 0 armour penalty = 17.",
+    "t": "Border Deserter · Initiative",
+    "id": 2
+   },
+   {
+    "b": "Kethan Voss: 3+13−2 = 14. Border Deserter: 5+12−0 = 17. Border Deserter acts first.",
+    "t": "Encounter 1 · Initiative",
+    "id": 3
+   },
+   {
+    "b": "2 against Combat Style 45% — CRITICAL.",
+    "t": "Border Deserter attacks",
+    "id": 4
+   },
+   {
+    "b": "69 vs 67% — FAILURE. 2 AP remaining.",
+    "t": "Kethan Voss parries",
+    "id": 5
+   },
+   {
+    "b": "Border Deserter gains 2 Special Effects from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 6
+   },
+   {
+    "b": "Border Deserter pins Kethan Voss's weapon. The item cannot be used until freed with an Action Point and opposed Brawn (Core pp.97–98).",
+    "t": "Pin Weapon",
+    "id": 7
+   },
+   {
+    "b": "Worn armour on the final hit location will not absorb this attack.",
+    "t": "Bypass Armour",
+    "id": 8
+   },
+   {
+    "b": "Border Deserter rolls 17 (d20): Left Arm.",
+    "t": "Hit Location",
+    "id": 9
+   },
+   {
+    "b": "1 weapon (1) +0 (+0) = 1 total; 0 parry; 0 armour; 1 HP lost.",
+    "t": "Border Deserter hits Left Arm",
+    "id": 10
+   },
+   {
+    "b": "Kethan Voss holds an Action Point for a reaction until their next turn.",
+    "t": "Delay",
+    "id": 11
+   },
+   {
+    "b": "15 against Combat Style 45% — SUCCESS.",
+    "t": "Border Deserter attacks",
+    "id": 12
+   },
+   {
+    "b": "Kethan Voss preserves Action Points. The exchange is treated as an undefended attack.",
+    "t": "Kethan Voss does not defend",
+    "id": 13
+   },
+   {
+    "b": "Border Deserter gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 14
+   },
+   {
+    "b": "Kethan Voss Brawn 45/53% (SUCCESS): remains standing.",
+    "t": "Trip Opponent",
+    "id": 15
+   },
+   {
+    "b": "Border Deserter rolls 1 (d20): Right Leg.",
+    "t": "Hit Location",
+    "id": 16
+   },
+   {
+    "b": "1 weapon (1) +0 (+0) = 1 total; 0 parry; 1 armour; 0 HP lost.",
+    "t": "Border Deserter hits Right Leg",
+    "id": 17
+   },
+   {
+    "b": "Kethan Voss did not use the held reaction and loses the Action Point.",
+    "t": "Delay expires",
+    "id": 18
+   },
+   {
+    "b": "Kethan Voss braces: SIZ increases by half for knockback/leaping attacks and doubles against Bash (Core p.91).",
+    "t": "Brace",
+    "id": 19
+   },
+   {
+    "b": "AP refresh. Fatigue and blood loss carry forward.",
+    "t": "Round 2",
+    "id": 20
+   },
+   {
+    "b": "64 against Combat Style 45% — FAILURE.",
+    "t": "Border Deserter attacks",
+    "id": 21
+   },
+   {
+    "b": "Kethan Voss preserves Action Points. The exchange is treated as an undefended attack.",
+    "t": "Kethan Voss does not defend",
+    "id": 22
+   },
+   {
+    "b": "Border Deserter's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 23
+   },
+   {
+    "b": "Kethan Voss Brawn 50/53% versus Border Deserter Brawn 67/49%. Frees weapon.",
+    "t": "Pin Weapon · Escape",
+    "id": 24
+   },
+   {
+    "b": "70 against Combat Style 45% — FAILURE.",
+    "t": "Border Deserter attacks",
+    "id": 25
+   },
+   {
+    "b": "Kethan Voss preserves Action Points. The exchange is treated as an undefended attack.",
+    "t": "Kethan Voss does not defend",
+    "id": 26
+   },
+   {
+    "b": "Border Deserter's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 27
+   },
+   {
+    "b": "71 against Combat Style 67% — FAILURE.",
+    "t": "Kethan Voss attacks",
+    "id": 28
+   },
+   {
+    "b": "Border Deserter preserves Action Points. The exchange is treated as an undefended attack.",
+    "t": "Border Deserter does not defend",
+    "id": 29
+   },
+   {
+    "b": "Kethan Voss's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 30
+   },
+   {
+    "b": "59 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 31
+   },
+   {
+    "b": "Border Deserter preserves Action Points. The exchange is treated as an undefended attack.",
+    "t": "Border Deserter does not defend",
+    "id": 32
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 33
+   },
+   {
+    "b": "Kethan Voss selects Head before damage is rolled.",
+    "t": "Choose Location",
+    "id": 34
+   },
+   {
+    "b": "8 weapon (8) +1d2 (+2) = 10 total; 0 parry; 0 armour; 10 HP lost.",
+    "t": "Kethan Voss hits Head",
+    "id": 35
+   },
+   {
+    "b": "Border Deserter Endurance 97/53% (FAILURE) versus the attack 59 (SUCCESS). Fails to resist.",
+    "t": "MAJOR WOUND · Head",
+    "id": 36
+   },
+   {
+    "b": "Kethan Voss wins. Border Deserter dies immediately from a Major Wound to Head.",
+    "t": "FIGHT ENDS",
+    "id": 37
+   },
+   {
+    "b": "Border Deserter steps forward. Your HP was restored.",
+    "t": "New Opponent",
+    "id": 38
+   },
+   {
+    "b": "Kethan Voss rolls 4 + 13 − 2 armour penalty = 15.",
+    "t": "Kethan Voss · Initiative",
+    "id": 39
+   },
+   {
+    "b": "Border Deserter rolls 3 + 12 − 0 armour penalty = 15.",
+    "t": "Border Deserter · Initiative",
+    "id": 40
+   },
+   {
+    "b": "Kethan Voss: 4+13−2 = 15. Border Deserter: 3+12−0 = 15. Tied: they act concurrently.",
+    "t": "Encounter 2 · Initiative",
+    "id": 41
+   },
+   {
+    "b": "Kethan Voss and Border Deserter both have Initiative 15, so they act concurrently this cycle. Kethan Voss declares first (arena convention, alternating each cycle); nothing done in that turn can stop Border Deserter's action this cycle.",
+    "t": "Tied Initiative",
+    "id": 42
+   },
+   {
+    "b": "31 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 43
+   },
+   {
+    "b": "74 vs 49% — FAILURE. 1 AP remaining.",
+    "t": "Border Deserter parries",
+    "id": 44
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 45
+   },
+   {
+    "b": "Border Deserter cannot attack on the next Turn, but may act otherwise.",
+    "t": "Press Advantage",
+    "id": 46
+   },
+   {
+    "b": "Kethan Voss rolls 17 (d20): Left Arm.",
+    "t": "Hit Location",
+    "id": 47
+   },
+   {
+    "b": "3 weapon (3) +1d2 (+2) = 5 total; 0 parry; 0 armour; 5 HP lost.",
+    "t": "Kethan Voss hits Left Arm",
+    "id": 48
+   },
+   {
+    "b": "Border Deserter cannot attack for the next 2 Turns; other actions remain possible.",
+    "t": "Serious Wound · Stunned",
+    "id": 49
+   },
+   {
+    "b": "Border Deserter Endurance 31/55% (SUCCESS) versus the attack 31 (SUCCESS). Fails to resist.",
+    "t": "SERIOUS WOUND · Left Arm",
+    "id": 50
+   },
+   {
+    "b": "Border Deserter's Left Arm becomes unusable until healed to positive HP. They cannot use that arm.",
+    "t": "Limb Disabled",
+    "id": 51
+   },
+   {
+    "b": "Border Deserter acts at the same moment as Kethan Voss's turn: what that turn did to them takes effect after this action.",
+    "t": "Concurrent turn",
+    "id": 52
+   },
+   {
+    "b": "37 against Combat Style 49% — SUCCESS.",
+    "t": "Border Deserter attacks",
+    "id": 53
+   },
+   {
+    "b": "18 vs 67% — SUCCESS. 1 AP remaining.",
+    "t": "Kethan Voss parries",
+    "id": 54
+   },
+   {
+    "b": "Border Deserter rolls 15 (d20): Right Arm.",
+    "t": "Hit Location",
+    "id": 55
+   },
+   {
+    "b": "7 weapon (6+1) +0 (+0) = 7 total; 7 parry; 0 armour; 0 HP lost.",
+    "t": "Border Deserter hits Right Arm",
+    "id": 56
+   },
+   {
+    "b": "Kethan Voss and Border Deserter both have Initiative 15, so they act concurrently this cycle. Border Deserter declares first (arena convention, alternating each cycle); nothing done in that turn can stop Kethan Voss's action this cycle.",
+    "t": "Tied Initiative",
+    "id": 57
+   },
+   {
+    "b": "Kethan Voss acts at the same moment as Border Deserter's turn: what that turn did to them takes effect after this action.",
+    "t": "Concurrent turn",
+    "id": 58
+   },
+   {
+    "b": "22 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 59
+   },
+   {
+    "b": "Border Deserter preserves Action Points. The exchange is treated as an undefended attack.",
+    "t": "Border Deserter does not defend",
+    "id": 60
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 61
+   },
+   {
+    "b": "Kethan Voss selects Head before damage is rolled.",
+    "t": "Choose Location",
+    "id": 62
+   },
+   {
+    "b": "2 weapon (2) +1d2 (+2) = 4 total; 0 parry; 0 armour; 4 HP lost.",
+    "t": "Kethan Voss hits Head",
+    "id": 63
+   },
+   {
+    "b": "AP refresh. Fatigue and blood loss carry forward.",
+    "t": "Round 2",
+    "id": 64
+   },
+   {
+    "b": "Kethan Voss and Border Deserter both have Initiative 15, so they act concurrently this cycle. Kethan Voss declares first (arena convention, alternating each cycle); nothing done in that turn can stop Border Deserter's action this cycle.",
+    "t": "Tied Initiative",
+    "id": 65
+   },
+   {
+    "b": "57 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 66
+   },
+   {
+    "b": "62 vs 49% — FAILURE. 1 AP remaining.",
+    "t": "Border Deserter parries",
+    "id": 67
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 68
+   },
+   {
+    "b": "Border Deserter cannot attack on the next Turn, but may act otherwise.",
+    "t": "Press Advantage",
+    "id": 69
+   },
+   {
+    "b": "Kethan Voss rolls 19 (d20): Head.",
+    "t": "Hit Location",
+    "id": 70
+   },
+   {
+    "b": "5 weapon (5) +1d2 (+1) = 6 total; 0 parry; 0 armour; 6 HP lost.",
+    "t": "Kethan Voss hits Head",
+    "id": 71
+   },
+   {
+    "b": "Border Deserter Endurance 45/55% (SUCCESS) versus the attack 57 (SUCCESS). Fails to resist.",
+    "t": "MAJOR WOUND · Head",
+    "id": 72
+   },
+   {
+    "b": "Border Deserter is going down, but their concurrent action this cycle still happens first. Border Deserter dies immediately from a Major Wound to Head.",
+    "t": "Falling",
+    "id": 73
+   },
+   {
+    "b": "Border Deserter acts at the same moment as Kethan Voss's turn: what that turn did to them takes effect after this action.",
+    "t": "Concurrent turn",
+    "id": 74
+   },
+   {
+    "b": "Border Deserter holds an Action Point for a reaction until their next turn.",
+    "t": "Delay",
+    "id": 75
+   },
+   {
+    "b": "Kethan Voss wins. Border Deserter dies immediately from a Major Wound to Head.",
+    "t": "FIGHT ENDS",
+    "id": 76
+   }
+  ],
+  "auto": false,
+  "lost": [],
+  "mode": "normal",
+  "page": "",
+  "quick": false,
+  "stage": [],
+  "bottom": "E",
+  "config": {
+   "con": 13,
+   "dex": 13,
+   "int": 13,
+   "siz": 13,
+   "str": 13,
+   "mode": "normal",
+   "armor": 2,
+   "evade": 46,
+   "style": 67,
+   "pvpCon": 12,
+   "pvpDex": 12,
+   "pvpInt": 12,
+   "pvpSiz": 12,
+   "pvpStr": 12,
+   "shield": "none",
+   "weapon": "sword",
+   "pvpName": "Second Player",
+   "charname": "Kethan Voss",
+   "firstAid": 40,
+   "pvpArmor": 1,
+   "pvpEvade": 50,
+   "pvpSkill": 65,
+   "username": "Guest",
+   "pvpShield": "none",
+   "pvpWeapon": "dagger",
+   "willpower": 55,
+   "leftHanded": false,
+   "mixedArmour": false,
+   "pvpMixedArmour": false,
+   "armourByLocation": {
+    "Head": 2,
+    "Chest": 2,
+    "Abdomen": 2,
+    "Left Arm": 2,
+    "Left Leg": 2,
+    "Right Arm": 2,
+    "Right Leg": 2
+   },
+   "pvpArmourByLocation": {}
+  },
+  "record": "pits-spring-1",
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Border Deserter",
+    "shield": "none",
+    "weapon": "spear"
+   }
+  },
+  "guidance": true,
+  "presented": [
+   {
+    "roll": [
+     "a",
+     "Initiative · d10",
+     [
+      4
+     ]
+    ]
+   },
+   {
+    "b": "Kethan Voss rolls 4 + 13 − 2 armour penalty = 15.",
+    "t": "Kethan Voss · Initiative",
+    "id": 39
+   },
+   {
+    "roll": [
+     "b",
+     "Initiative · d10",
+     [
+      3
+     ]
+    ]
+   },
+   {
+    "b": "Border Deserter rolls 3 + 12 − 0 armour penalty = 15.",
+    "t": "Border Deserter · Initiative",
+    "id": 40
+   },
+   {
+    "b": "Kethan Voss: 4+13−2 = 15. Border Deserter: 3+12−0 = 15. Tied: they act concurrently.",
+    "t": "Encounter 2 · Initiative",
+    "id": 41
+   },
+   {
+    "b": "Kethan Voss and Border Deserter both have Initiative 15, so they act concurrently this cycle. Kethan Voss declares first (arena convention, alternating each cycle); nothing done in that turn can stop Border Deserter's action this cycle.",
+    "t": "Tied Initiative",
+    "id": 42
+   },
+   {
+    "roll": [
+     "a",
+     "Attack · Combat Style 67%",
+     [
+      31
+     ]
+    ]
+   },
+   {
+    "b": "31 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 43
+   },
+   {
+    "roll": [
+     "b",
+     "Parry · 49%",
+     [
+      74
+     ]
+    ]
+   },
+   {
+    "b": "74 vs 49% — FAILURE. 1 AP remaining.",
+    "t": "Border Deserter parries",
+    "id": 44
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 45
+   },
+   {
+    "b": "Border Deserter cannot attack on the next Turn, but may act otherwise.",
+    "t": "Press Advantage",
+    "id": 46
+   },
+   {
+    "roll": [
+     "a",
+     "Hit Location · d20",
+     [
+      17
+     ]
+    ]
+   },
+   {
+    "b": "Kethan Voss rolls 17 (d20): Left Arm.",
+    "t": "Hit Location",
+    "id": 47
+   },
+   {
+    "roll": [
+     "a",
+     "Damage · Left Arm",
+     [
+      3,
+      2
+     ]
+    ]
+   },
+   {
+    "roll": [
+     "b",
+     "Serious Wound · 1d3 stunned turns",
+     [
+      2
+     ]
+    ]
+   },
+   {
+    "roll": [
+     "b",
+     "Endurance · serious wound to Left Arm",
+     [
+      31
+     ]
+    ]
+   },
+   {
+    "b": "3 weapon (3) +1d2 (+2) = 5 total; 0 parry; 0 armour; 5 HP lost.",
+    "t": "Kethan Voss hits Left Arm",
+    "id": 48
+   },
+   {
+    "b": "Border Deserter cannot attack for the next 2 Turns; other actions remain possible.",
+    "t": "Serious Wound · Stunned",
+    "id": 49
+   },
+   {
+    "b": "Border Deserter Endurance 31/55% (SUCCESS) versus the attack 31 (SUCCESS). Fails to resist.",
+    "t": "SERIOUS WOUND · Left Arm",
+    "id": 50
+   },
+   {
+    "b": "Border Deserter's Left Arm becomes unusable until healed to positive HP. They cannot use that arm.",
+    "t": "Limb Disabled",
+    "id": 51
+   },
+   {
+    "b": "Border Deserter acts at the same moment as Kethan Voss's turn: what that turn did to them takes effect after this action.",
+    "t": "Concurrent turn",
+    "id": 52
+   },
+   {
+    "cp": 1
+   },
+   {
+    "roll": [
+     "b",
+     "Attack · Combat Style 49%",
+     [
+      37
+     ]
+    ]
+   },
+   {
+    "b": "37 against Combat Style 49% — SUCCESS.",
+    "t": "Border Deserter attacks",
+    "id": 53
+   },
+   {
+    "roll": [
+     "a",
+     "Parry · 67%",
+     [
+      18
+     ]
+    ]
+   },
+   {
+    "b": "18 vs 67% — SUCCESS. 1 AP remaining.",
+    "t": "Kethan Voss parries",
+    "id": 54
+   },
+   {
+    "roll": [
+     "b",
+     "Hit Location · d20",
+     [
+      15
+     ]
+    ]
+   },
+   {
+    "b": "Border Deserter rolls 15 (d20): Right Arm.",
+    "t": "Hit Location",
+    "id": 55
+   },
+   {
+    "roll": [
+     "b",
+     "Damage · Right Arm",
+     [
+      6
+     ]
+    ]
+   },
+   {
+    "b": "7 weapon (6+1) +0 (+0) = 7 total; 7 parry; 0 armour; 0 HP lost.",
+    "t": "Border Deserter hits Right Arm",
+    "id": 56
+   },
+   {
+    "b": "Kethan Voss and Border Deserter both have Initiative 15, so they act concurrently this cycle. Border Deserter declares first (arena convention, alternating each cycle); nothing done in that turn can stop Kethan Voss's action this cycle.",
+    "t": "Tied Initiative",
+    "id": 57
+   },
+   {
+    "b": "Kethan Voss acts at the same moment as Border Deserter's turn: what that turn did to them takes effect after this action.",
+    "t": "Concurrent turn",
+    "id": 58
+   },
+   {
+    "roll": [
+     "a",
+     "Attack · Combat Style 67%",
+     [
+      22
+     ]
+    ]
+   },
+   {
+    "b": "22 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 59
+   },
+   {
+    "b": "Border Deserter preserves Action Points. The exchange is treated as an undefended attack.",
+    "t": "Border Deserter does not defend",
+    "id": 60
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 61
+   },
+   {
+    "b": "Kethan Voss selects Head before damage is rolled.",
+    "t": "Choose Location",
+    "id": 62
+   },
+   {
+    "roll": [
+     "a",
+     "Damage · Head",
+     [
+      2,
+      2
+     ]
+    ]
+   },
+   {
+    "b": "2 weapon (2) +1d2 (+2) = 4 total; 0 parry; 0 armour; 4 HP lost.",
+    "t": "Kethan Voss hits Head",
+    "id": 63
+   },
+   {
+    "b": "AP refresh. Fatigue and blood loss carry forward.",
+    "t": "Round 2",
+    "id": 64
+   },
+   {
+    "b": "Kethan Voss and Border Deserter both have Initiative 15, so they act concurrently this cycle. Kethan Voss declares first (arena convention, alternating each cycle); nothing done in that turn can stop Border Deserter's action this cycle.",
+    "t": "Tied Initiative",
+    "id": 65
+   },
+   {
+    "roll": [
+     "a",
+     "Attack · Combat Style 67%",
+     [
+      57
+     ]
+    ]
+   },
+   {
+    "b": "57 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 66
+   },
+   {
+    "roll": [
+     "b",
+     "Parry · 49%",
+     [
+      62
+     ]
+    ]
+   },
+   {
+    "b": "62 vs 49% — FAILURE. 1 AP remaining.",
+    "t": "Border Deserter parries",
+    "id": 67
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 68
+   },
+   {
+    "b": "Border Deserter cannot attack on the next Turn, but may act otherwise.",
+    "t": "Press Advantage",
+    "id": 69
+   },
+   {
+    "roll": [
+     "a",
+     "Hit Location · d20",
+     [
+      19
+     ]
+    ]
+   },
+   {
+    "b": "Kethan Voss rolls 19 (d20): Head.",
+    "t": "Hit Location",
+    "id": 70
+   },
+   {
+    "roll": [
+     "a",
+     "Damage · Head",
+     [
+      5,
+      1
+     ]
+    ]
+   },
+   {
+    "roll": [
+     "b",
+     "Endurance · major wound to Head",
+     [
+      45
+     ]
+    ]
+   },
+   {
+    "b": "5 weapon (5) +1d2 (+1) = 6 total; 0 parry; 0 armour; 6 HP lost.",
+    "t": "Kethan Voss hits Head",
+    "id": 71
+   },
+   {
+    "b": "Border Deserter Endurance 45/55% (SUCCESS) versus the attack 57 (SUCCESS). Fails to resist.",
+    "t": "MAJOR WOUND · Head",
+    "id": 72
+   },
+   {
+    "b": "Border Deserter is going down, but their concurrent action this cycle still happens first. Border Deserter dies immediately from a Major Wound to Head.",
+    "t": "Falling",
+    "id": 73
+   },
+   {
+    "b": "Border Deserter acts at the same moment as Kethan Voss's turn: what that turn did to them takes effect after this action.",
+    "t": "Concurrent turn",
+    "id": 74
+   },
+   {
+    "cp": 1
+   },
+   {
+    "b": "Border Deserter holds an Action Point for a reaction until their next turn.",
+    "t": "Delay",
+    "id": 75
+   },
+   {
+    "b": "Kethan Voss wins. Border Deserter dies immediately from a Major Wound to Head.",
+    "t": "FIGHT ENDS",
+    "id": 76
+   }
+  ]
+ }
+}

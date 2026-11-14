@@ -40,7 +40,7 @@ function pitsLegalActions(id){
   const add=(act,label,cost,why)=>out.push({act,label,ap:cost,enabled:!why,reason:why||''});
   const needs=cost=>ap<cost?`Needs ${cost} AP`:'';
   const pressed=()=>attackRestrictionTurns(f)>0||cannotAttackDueToStun(f)?'Stunned or pressed':'';
-  add('attack','Attack',1,needs(1)||pressed()||(!canUseWeapon(f)?'Weapon unusable':!(canAttackBody(id)||mustTargetWeapon(id))?'Out of reach':''));
+  add('attack','Attack',1,needs(1)||pressed()||(!canUseWeapon(f)?(typeof weaponBlockedWhy==='function'?weaponBlockedWhy(f):'Weapon unusable'):!(canAttackBody(id)||mustTargetWeapon(id))?'Out of reach':''));
   if(typeof canShieldStrike==='function'&&canShieldStrike(f))
     add('shieldAttack','Shield Strike',1,needs(1)||pressed()||(!shieldReachesBody(id)?'Out of reach':''));
   if(canWithdrawImpale(f))add('withdrawImpale','Withdraw Embedded Weapon',1,needs(1));

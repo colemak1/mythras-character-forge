@@ -42,12 +42,15 @@ function pbDefences(id,live){
     return out;
   }
   const w=ARENA_WEAPONS[f.weapon]||{};
-  out.push({val:'parry',act:'react',label:'Parry ('+(f.disarmed?'weapon':w.name||'weapon')+')',ap:1,pct:effectiveSkill(f,combatTarget(f,'weapon')),
-    enabled:live&&f.ap>0&&canParryAtReach(f.id)&&!unavailableReaction(f,'weapon')});
-  if(f.shield!=='none')out.push({val:'shield',act:'react',label:'Parry ('+(SHIELDS[f.shield]?.name||'shield')+')',ap:1,pct:effectiveSkill(f,combatTarget(f,'shield')),
-    enabled:live&&f.ap>0&&canShieldParry(f)});
-  out.push({val:'evade',act:'react',label:'Evade',ap:1,pct:effectiveSkill(f,evadeTarget(f)),enabled:live&&f.ap>0&&!cannotRespond(f)});
-  out.push({val:'none',act:'react',label:'Do not defend',ap:0,enabled:live});
+  // usable: the defence exists for this fighter now; enabled: it can be chosen now (a reaction is waiting for it).
+  // why: the plain reason an unusable defence is unusable (a pinned weapon, a stunned head, no AP...)
+  const def=(o,why)=>{o.usable=!why;o.why=why||'';o.enabled=live&&o.usable;out.push(o);};
+  const parryWhy=f.ap<=0?'No Action Points remaining.':(unavailableReaction(f,'weapon')||(!canParryAtReach(f.id)?'You cannot parry at this reach.':''));
+  def({val:'parry',act:'react',label:'Parry ('+(f.disarmed?'weapon':w.name||'weapon')+')',ap:1,pct:effectiveSkill(f,combatTarget(f,'weapon'))},parryWhy);
+  if(f.shield!=='none')def({val:'shield',act:'react',label:'Parry ('+(SHIELDS[f.shield]?.name||'shield')+')',ap:1,pct:effectiveSkill(f,combatTarget(f,'shield'))},
+    f.ap<=0?'No Action Points remaining.':!canShieldParry(f)?(unavailableReaction(f,'shield')||'The shield cannot parry now.'):'');
+  def({val:'evade',act:'react',label:'Evade',ap:1,pct:effectiveSkill(f,evadeTarget(f))},f.ap<=0?'No Action Points remaining.':cannotRespond(f)?unavailableReaction(f,'evade'):'');
+  def({val:'none',act:'react',label:'Do not defend',ap:0},'');
   return out;
 }
 
@@ -94,7 +97,7 @@ function pbLeft(c){
     :`<section class="bgrp" aria-label="Actions on your turn"><span class="lbl"><span>Actions · your turn</span>${pbPips(c.me)}</span>${pbActionRows(c)}</section>`;
   const p=c.p,rangeQ=c.reacting&&p?.kind==='range';
   const defs=defFirst?`<section class="bgrp" aria-label="${rangeQ?'Answer the range change':'Defences when attacked'}"><span class="lbl"><span>${rangeQ?'Answer · range change':'Defences · when attacked'}</span>${pbPips(c.me)}</span>${pbDefenceRows(c)}</section>`
-    :`<section class="bgrp shut" aria-label="Defences when attacked"><p class="bsum"><b>When attacked:</b> ${c.defs.map(d=>esc(d.label.replace(/ \(.*\)/,''))+(d.pct!=null?' '+d.pct+'%':'')).join(' · ')}</p></section>`;
+    :`<section class="bgrp shut" aria-label="Defences when attacked"><p class="bsum"><b>When attacked:</b> ${c.defs.map(d=>esc(d.label.replace(/ \(.*\)/,''))+(!d.usable?' <i>(not now)</i>':d.pct!=null?' '+d.pct+'%':'')).join(' · ')}</p></section>`;
   return `<div class="blist" role="group" aria-label="${esc(c.me.name)}: your moves">${defFirst?defs+acts:acts+defs}</div>`;
 }
 
@@ -134,6 +137,21 @@ function pbRollOf(l){
   return m?{roll:+m[1],pct:+m[2],grade:m[3].toLowerCase()}:null;
 }
 const pbClip=(s,n)=>{s=String(s||'').replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n-1).trimEnd()+'…':s;};
+// A Trip in plain words (report review FR-02, 2026-11-14: "looks like he tried to trip me and failed but not really sure"):
+// whose Special Effect it was, the two rolls compared (the resistance and the roll that earned the trip), and the result.
+function pbTripLine(l,g){
+  const m=/^(.+?) (Brawn|Evade|Acrobatics) (\d+)\/(\d+)% \((\w+)\): (remains standing|falls prone)/.exec(String(l.body||''));
+  if(!m)return null;
+  const owner=l.meta?.actor,offensive=!owner||owner===g.atk,target=S.fighters[owner==='a'?'b':owner==='b'?'a':''];
+  const you=target&&pbHuman(target.id)&&!pbHuman(owner),who=you?'You':esc(m[1]);
+  // the roll the resistance had to beat: the attack roll for the attacker's trip, the defence roll for the defender's
+  let vs=null;for(const e of g.entries){const r=pbRollOf(e);if(!r)continue;const atk=/(attacks|strikes with the shield|makes a Remise attack)$/.test(e.title);if(atk===offensive){vs={r,title:e.title};break;}}
+  const stands=m[6]==='remains standing',res=m[5].toLowerCase(),word={critical:'Critical success',success:'Success',failure:'Failure',fumble:'Fumble'}[res]||m[5];
+  const head=stands?(you?'You resist the trip and stay standing':`${who} resists the trip and stays standing`):(you?'You are tripped and fall prone':`${who} is tripped and falls prone`);
+  const from=`${offensive?'the attacker':'the defender'}'s Special Effect from this exchange`;
+  return {cls:stands?'fx':'hurt',html:`<b>${head}</b> (Trip Opponent, ${from}). ${who} rolled <b>${m[3]}</b> on ${m[2]} ${m[4]}% · ${esc(word)}`
+    +(vs?`, against the ${offensive?'attack':'defence'} roll of <b>${vs.r.roll}</b> (${esc(PB_GRADE_WORD[vs.r.grade]||'')})`:'')+'.'};
+}
 // Plain lines for one exchange, oldest first.
 function pbStory(g){
   if(!g)return [];
@@ -141,6 +159,7 @@ function pbStory(g){
   for(const l of g.entries){
     const r=pbRollOf(l);
     if(r){out.push({cls:'roll',g:r.grade,html:`<b>${esc(l.title)}</b>: rolled <b>${r.roll}</b>, needed ${r.pct} or less · <span class="g">${PB_GRADE_WORD[r.grade]}</span>`});continue;}
+    if(l.title==='Trip Opponent'){const t=pbTripLine(l,g);if(t){out.push(t);continue;}}
     if(paBlowLine(l))continue;
     if(/^(Hit Location|Damage|Choose Location)$/i.test(l.title)||l.kind==='hit'||l.kind==='hurt')
       out.push({cls:l.kind==='hurt'?'hurt':'fx',html:`<b>${esc(l.title)}</b>: ${esc(pbClip(l.body,120))}`});
@@ -150,10 +169,26 @@ function pbStory(g){
   return out;
 }
 // Whatever happened after the last exchange that is not part of it (Brace, Change Range, a new round...).
+// (the engine logs an attempt to get free of a pin or an entanglement as a system line; it is an action, so it is told)
+const PB_FREEING=/^(Pin Weapon · |Entangle · |Entangle ends)/;
 function pbSince(g){
   const logs=paVisibleLogs();const last=g?.entries[g.entries.length-1];
-  const at=last?logs.lastIndexOf(last):-1,rest=logs.slice(at+1).filter(l=>l.title&&l.kind!=='system');
+  const at=last?logs.lastIndexOf(last):-1,rest=logs.slice(at+1).filter(l=>l.title&&(l.kind!=='system'||PB_FREEING.test(l.title)));
   return rest.slice(-2).map(l=>({cls:'note',html:`<b>${esc(l.title)}</b>${l.body?': '+esc(pbClip(l.body,110)):''}`}));
+}
+// What is still holding a fighter from an earlier exchange: told from the fighters' state, not the log, so it stays in
+// view for as long as it lasts (report review FR-01: a pin outlived the two exchanges the story keeps).
+function pbLasting(){
+  const out=[],view=pitsPresenting()&&V.shown&&V.shown.a?V.shown:S.fighters;
+  for(const id of ['a','b']){
+    const f=view[id],name=S.fighters[id]?.name||'';if(!f)continue;
+    const by=S.fighters[f.pinnedBy]?.name||'the opponent';
+    if(f.pinnedGear){const item=f.pinnedGear==='shield'?'shield':(ARENA_WEAPONS[f.weapon]?.name||'weapon').toLowerCase();
+      out.push({cls:'last',html:`<b>Still pinned</b>: ${esc(name)}'s ${esc(item)}, by ${esc(by)}. No ${f.pinnedGear==='shield'?'shield parries or strikes':'attacks or parries'} with it until ${esc(name)} frees it (Free Pinned ${f.pinnedGear==='shield'?'Shield':'Weapon'}: 1 AP, opposed Brawn).`});}
+    if(f.entangled&&typeof entangledLoc==='function'&&entangledLoc(f))
+      out.push({cls:'last',html:`<b>Still entangled</b>: ${esc(name)}'s ${esc(f.entangled.loc)}, by ${esc(S.fighters[f.entangled.by]?.name||'the opponent')}. Break Free: 1 AP, opposed Brawn.`});
+  }
+  return out;
 }
 function pbHeadline(c){
   const p=c.p,turn=S.fighters[S.order?.[S.turnIndex]];
@@ -199,11 +234,13 @@ function pbMiddle(c){
   const g=pbExchange(),inProgress=!!(R||c.p||V.busy);
   let lines=pbStory(g);
   if(!inProgress)lines=lines.concat(pbSince(g));
+  // (what still holds a fighter has its own line under the story, so it never scrolls away)
+  const lasting=pbLasting(),still=lasting.length?`<ul class="blasting" aria-label="Still in effect">${lasting.map(l=>`<li>${l.html}</li>`).join('')}</ul>`:'';
   // newest last; the list is drawn reversed in a column-reverse box so it always shows the newest lines
   const story=lines.length?`<ul class="bstory" aria-live="polite">${lines.slice().reverse().map(l=>`<li data-k="${l.cls}"${l.g?` data-g="${l.g}"`:''}>${l.html}</li>`).join('')}</ul>`
     :'<ul class="bstory"><li data-k="note">Nothing yet. Each exchange is told here, step by step.</li></ul>';
   return `<div class="bmid"><header><h4>${esc(pbHeadline(c))}</h4><span class="lbl">${inProgress||!g?'This exchange':'Last exchange'}</span></header>
-    ${pbTracker(c)}${story}${pbDecision(c)}</div>`;
+    ${pbTracker(c)}${story}${still}${pbDecision(c)}</div>`;
 }
 
 // ---- right: details and odds ----
@@ -219,19 +256,30 @@ function pbBar(parts){
 }
 // The chance an opposed resistance fails against a roll already made (the effect lands), face by face.
 function pbResist(pct,origin){
-  const out={land:0,critical:0,beat:0,under:0,fail:0};
+  const out={land:0,critical:0,beat:0,under:0,fail:0,faces:[]};
   for(let v=1;v<=100;v++){
     const r=rollSkill(pct,v),wins=CombatRules.opposedWins(r,origin);
-    if(wins){if(r.grade===3&&origin.grade<3)out.critical++;else out.beat++;}
+    if(wins){out.faces.push(v);if(r.grade===3&&origin.grade<3)out.critical++;else out.beat++;}
     else{out.land++;if(r.grade>=2)out.under++;else out.fail++;}
   }
   return out;
 }
 const pbOriginWord=o=>`${o.roll} · ${PB_GRADE_WORD[['fumble','failure','success','critical'][o.grade]]}`;
+// d100 faces as short ranges: [1,2,3,5] -> "01–03, 05"
+const pbFaces=f=>{const out=[],n=v=>v===100?'00':String(v).padStart(2,'0');
+  for(let i=0;i<f.length;){let j=i;while(j+1<f.length&&f[j+1]===f[j]+1)j++;out.push(i===j?n(f[i]):n(f[i])+'–'+n(f[j]));i=j+1;}return out.join(', ');};
+// Why the chance is what it is (report review FR-04, 2026-11-14: "95% looks implausible"). The roll that earned the
+// effect is already made, so these are odds against that roll, not against the skill in general: a resisting roll must
+// get a better grade, or the same grade with a higher roll (Core p.50, as CombatRules.opposedWins: the higher roll wins between equal successes).
+function pbResistWhy(r,origin){
+  const word=PB_GRADE_WORD[['fumble','failure','success','critical'][origin.grade]].toLowerCase();
+  const how=r.faces.length?`They resist only on <b>${pbFaces(r.faces)}</b> (${r.faces.length} face${r.faces.length===1?'':'s'} of 100)`:'No roll of theirs resists';
+  return `<p class="bsmall">Your roll of <b>${origin.roll}</b> (${esc(word)}) is already made, so these odds are against it. ${how}: a resisting roll must get a better grade than yours, or the same grade with a higher roll.</p>`;
+}
 function pbResistHtml(skillName,pct,origin,who,cond){
   const r=pbResist(pct,origin);
   return `<div class="bwhy"><p>${esc(who)} resists with <b>${esc(skillName)} ${pct}%</b> against your <b>${pbOriginWord(origin)}</b>.</p>
-    <div class="bbig"><strong>${r.land}%</strong><span>chance it works${cond?' '+esc(cond):''}</span></div>${pbBar([['ok',r.land],['no',100-r.land]])}
+    <div class="bbig"><strong>${r.land}%</strong><span>chance it works${cond?' '+esc(cond):''}</span></div>${pbBar([['ok',r.land],['no',100-r.land]])}${pbResistWhy(r,origin)}
     <ul class="bodds bgrades b3"><li class="g-fumble"><span>They resist</span><b>${100-r.land}%</b></li><li title="Same success grade but a roll no higher than yours: the higher roll wins ties"><span>Lose the tie</span><b>${r.under}%</b></li><li><span>They fail</span><b>${r.fail}%</b></li></ul></div>`;
 }
 function pbEffectOdds(id,p){
@@ -293,8 +341,10 @@ function pbDefenceOdds(d,c){
 function pbActionInfo(act,c){
   const a=c.list.find(x=>x.act===act);if(!a)return '';
   const help=typeof actionChoiceHelp==='function'?actionChoiceHelp(act,c.me):'';
+  // an action that cannot be taken now says why, and nothing else (no odds for a roll that cannot be made)
+  if(!a.enabled&&a.reason)return `<header><h4>${esc(a.label)}</h4><span class="btag">${pbCost(a)}</span></header><p>${esc(a.reason)}</p><p class="bsmall">Not available now.</p>`;
   const pct=pitsOddsFor(act);
-  let body=`<p>${esc(a.enabled||!a.reason?help:a.reason)}</p>`;
+  let body=`<p>${esc(help)}</p>`;
   if(pct!=null){
     body+=`<div class="bbig"><strong>${pct}%</strong><span>${act==='attack'||act==='shieldAttack'?'your attack roll':'your roll'}</span></div>${pbGradeLine(pbGrades(pct))}`;
     if(act==='attack'||act==='shieldAttack'){
@@ -329,7 +379,7 @@ function pbInfoHtml(c,key){
   const [kind,val]=String(k).split(/:(.*)/);
   let h='';
   if(kind==='act')h=pbActionInfo(val,c);
-  else if(kind==='def'){const d=c.defs.find(x=>x.val===val);if(d)h=`<header><h4>${esc(d.label)}</h4><span class="btag">${d.ap?d.ap+' AP':'free'}</span></header>${pbDefenceOdds(d,c)}`;}
+  else if(kind==='def'){const d=c.defs.find(x=>x.val===val);if(d)h=`<header><h4>${esc(d.label)}</h4><span class="btag">${d.ap?d.ap+' AP':'free'}</span></header>${d.usable===false?`<p>${esc(d.why)}</p>`:pbDefenceOdds(d,c)}`;}
   else if(kind==='fx')h=pbFxInfo(val,c);
   else if(kind==='loc')h=pbLocInfo(val,c);
   return h||pbDefaultInfo(c);

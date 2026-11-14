@@ -56,19 +56,35 @@ function combatGuideHtml(){
  const g=combatGuidance(),tutorial=S.mode==='tutorial';
  return `<aside class="${tutorial?'tutorial-guide':'combat-guide'}" aria-label="Combat guidance"><div class="${tutorial?'tutorial-guide-main':'combat-guide-main'}"><strong>${esc(g.heading)}</strong><span>${esc(g.prompt)}</span></div><details class="tutorial-guide-details" ${V.guideWhyOpen?'open':''}><summary>Why?</summary><p>${esc(g.reason)}</p><p class="guide-source">${esc(g.source)}</p></details></aside>`;
 }
+// Pin Weapon (Core pp.97–98) in plain words: what is pinned, who holds it, what it blocks and how to free it
+// (report review FR-01, 2026-11-14: players could not tell why Attack and Parry had gone grey).
+function pinnedWhy(f,gear){
+ const holder=S.fighters?.[f.pinnedBy]?.name||'the opponent',item=gear==='shield'?'shield':(ARENA_WEAPONS[f.weapon]?.name||'weapon').toLowerCase();
+ return `Your ${item} is pinned by ${holder}: no ${gear==='shield'?'shield parries or shield strikes':'attacks or parries'} with it until it is freed. `
+  +`Free it on your turn with Free Pinned ${gear==='shield'?'Shield':'Weapon'} (1 AP, your Brawn against ${holder}'s).`;
+}
+// Why the weapon cannot be used at all (the causes canUseWeapon checks), in the order a player can do something about them.
+function weaponBlockedWhy(f){
+ const hand=f.weaponHand||'Right Arm',held=typeof entangledLoc==='function'?entangledLoc(f):null;
+ if(f.pinnedGear==='weapon')return pinnedWhy(f,'weapon');
+ if(f.disarmed)return 'Your weapon is on the ground: recover it first.';
+ if(held&&(held===hand||(ARENA_WEAPONS[f.weapon].twoHanded&&held.endsWith('Arm'))))
+  return `Your ${held} is entangled: no attacks or parries with the weapon until you Break Free (1 AP, opposed Brawn).`;
+ if(f.impaledWeapon&&!String(f.impaledWeapon.weapon||'').startsWith('shield:'))return 'Your weapon is embedded in the opponent: withdraw it first.';
+ if(guardWeapon(f).hp<=0)return 'Your weapon is broken.';
+ if(limbDisabled(f,hand)||f.stunnedLocations?.[hand])return 'Your weapon arm cannot be used.';
+ if(ARENA_WEAPONS[f.weapon].twoHanded)return 'Both arms are needed for this weapon and one cannot be used.';
+ return 'Your weapon cannot be used.';
+}
 function unavailableReaction(f,tool){
  if(f.ap<=0)return 'No Action Points remaining.';
  if(cannotRespond(f))return f.stunnedLocations?.Head?'Your head is stunned; you cannot react.':`Fatigue (${FATIGUE_NAMES[f.fatigue]}) prevents a reaction.`;
  if(tool==='shield'){
   if(ARENA_WEAPONS[f.weapon].twoHanded)return 'Both hands are committed to your weapon.';
-  if(f.pinnedGear==='shield')return 'Your shield is pinned.';
+  if(f.pinnedGear==='shield')return pinnedWhy(f,'shield');
   if(!armUsable(f,shieldArmOf(f)))return 'Your shield arm cannot be used.';
  }else{
-  if(f.pinnedGear==='weapon')return 'Your weapon is pinned.';
-  if(f.disarmed)return 'Your weapon is on the ground.';
-  if(f.impaledWeapon)return 'Your weapon is embedded in the opponent.';
-  if(guardWeapon(f).hp<=0)return 'Your weapon is broken.';
-  if(limbDisabled(f,f.weaponHand||'Right Arm')||f.stunnedLocations?.[f.weaponHand||'Right Arm'])return 'Your weapon arm cannot be used.';
+  if(!canUseWeapon(f))return weaponBlockedWhy(f);
   if(!canParryAtReach(f.id))return 'The opponent is inside your weapon’s parrying reach.';
  }
  return '';
@@ -115,7 +131,7 @@ function actionChoiceHelp(act,f){
   case 'dither':return 'Spend 1 AP without another action. Delay instead if you want to preserve a reaction.';
   case 'recoverWeapon':return f.droppedMetres>3?'Spend 1 AP moving to the dropped weapon.':f.recoveringWeapon?'Spend 1 AP to ready the weapon you picked up.':'Spend 1 AP to pick up the weapon; ready it on a later turn.';
   case 'reengage':return f.prone?'Stand before moving to engage.':S.gapMetres>3?'The arena charges 1 AP to cross this gap.':'Return to melee range; this short arena gap costs no Move AP.';
-  case 'freePin':return 'Contest the pin to free your trapped item.';
+  case 'freePin':return f?.pinnedGear?`Your Brawn against ${S.fighters?.[f.pinnedBy]?.name||'the opponent'}'s: win and your ${f.pinnedGear==='shield'?'shield':'weapon'} is free.`:'Contest the pin to free your trapped item.';
   case 'swapHand':return swapHandReason(f)||'Free. Move the weapon to your other working hand. House policy, not Core RAW.';
   case 'withdrawImpale':return 'Spend 1 AP and test Brawn to withdraw the embedded weapon.';
   default:return '';

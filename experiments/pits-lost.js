@@ -24,7 +24,9 @@ function plRecent(){
     else{const r=paExchangeResult(g);if(r)lines.push({k:'end',text:r.head+' · '+r.math});}
   }
   if(typeof pbSince==='function'){const g=ex[ex.length-1]||null;for(const l of pbSince(g))lines.push({k:'note',text:plText(l.html)});}
-  return lines.slice(-PL_STORY_MAX);
+  // what still holds a fighter (a pin, an entanglement) is kept even when the story is cut to its last lines
+  const lasting=typeof pbLasting==='function'?pbLasting().map(l=>({k:'last',text:plText(l.html)})):[];
+  return lines.slice(-(PL_STORY_MAX-lasting.length)).concat(lasting);
 }
 const plText=html=>String(html).replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim();
 

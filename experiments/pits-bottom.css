@@ -72,6 +72,7 @@ body.pa-on #root .bdeck.bE{display:grid;grid-template-columns:minmax(220px,.8fr)
 .bE .bstory li[data-k^=end]::before{background:var(--pb-accent)}
 .bE .bstory li[data-k$=hurt]::before{background:var(--pb-no)}
 .bE .bstory li[data-k=fx]::before{background:var(--pa-gold)}
+.bE .blasting{flex:none;list-style:none;margin:0;padding:6px 8px;border-left:3px solid var(--pa-gold);background:var(--pa-surface2);font-size:12.5px;line-height:1.35;display:flex;flex-direction:column;gap:3px}
 .bE .bdo{flex:none;display:flex;align-items:center;gap:12px;border-top:1px dashed var(--pa-line2);padding-top:8px;min-height:0}
 .bE .bdo p{flex:1;margin:0;font-size:12.5px;color:var(--pa-dim)}
 .bE .bdo.fx{flex-direction:column;align-items:stretch;gap:8px}
