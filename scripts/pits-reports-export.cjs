@@ -12,15 +12,15 @@ const cell=s=>String(s==null?'':s).replace(/\s+/g,' ').replace(/\|/g,'\\|').repl
 // rows (oldest first, as the database gives them) and the files already there -> {write: {name: text}, index: text}
 function plan(rows,existing){
   const have=new Set(existing||[]),write={};
-  for(const r of rows){const f=fileFor(r);if(!have.has(f))write[f]=JSON.stringify({id:r.id,created_at:r.created_at,note:r.note,page:r.page,build:r.build,record:r.record},null,1)+'\n';}
+  for(const r of rows){const f=fileFor(r);if(!have.has(f))write[f]=JSON.stringify({id:r.id,created_at:r.created_at,reporter:r.reporter||null,note:r.note,page:r.page,build:r.build,record:r.record},null,1)+'\n';}
   const lines=['# Pits fight reports','',
-    'Copied from the site by the "Export Pits fight reports" workflow. One file per report: the owner\'s note, the page and',
+    'Copied from the site by the "Export Pits fight reports" workflow. One file per report: the note and name, the page and',
     'build it came from, and the fight record (dice and rulings in the order shown, the engine\'s log, what the stage drew).',
     'Diagnoses go in `docs/pits-report-ledger.md` on the working branch, not here. How it works: `docs/pits-reports.md`.','',
     rows.length+' report'+(rows.length===1?'':'s')+'.','',
-    '| When (UTC) | Note | Page | Build | File |','|---|---|---|---|---|'];
+    '| When (UTC) | Who | Note | Page | Build | File |','|---|---|---|---|---|---|'];
   for(const r of [...rows].reverse()){const f=fileFor(r),n=cell(r.note);
-    lines.push('| '+new Date(r.created_at).toISOString().slice(0,16).replace('T',' ')+' | '+(n.length>160?n.slice(0,157)+'...':n)+' | '+cell(r.page)+' | '+cell(r.build)+' | ['+f+']('+f+') |');}
+    lines.push('| '+new Date(r.created_at).toISOString().slice(0,16).replace('T',' ')+' | '+(cell(r.reporter)||'-')+' | '+(n.length>160?n.slice(0,157)+'...':n)+' | '+cell(r.page)+' | '+cell(r.build)+' | ['+f+']('+f+') |');}
   return {write,index:lines.join('\n')+'\n'};
 }
 async function fetchRows(url,key,token){

@@ -4,13 +4,14 @@ How "Report fight" in the Pits reaches Claude and ChatGPT (owner, 2026-11-14).
 
 ## How it works
 
-1. In a fight, **Report fight** (top bar) opens a window. The owner types what went wrong and presses **Send report**.
+1. In a fight, **Report fight** (top bar) opens a window. Anyone playing (no sign-in needed) types what went wrong,
+   optionally a name (remembered on that device, so two testers can be told apart), and presses **Send report**.
    The note is saved with the fight record (dice and rulings in the order shown, the engine's log, what the stage drew)
    and the build of the Pits scripts the page was running, so a stale page shows as one.
 2. It is saved in the site's database, table `pits_fight_reports`
-   (`supabase/migrations/20261114120000_pits_fight_reports.sql`). Only a **site admin** (the owner's account,
-   `docs/site-admin-setup.md`) can save one, signed in on the main site in the same browser.
-   Signed out, offline or refused, the report is kept on that device and sent with the next one that goes through.
+   (`supabase/migrations/20261114120000_pits_fight_reports.sql`). Anyone can send one, signed in or not (owner,
+   2026-11-14); nobody can read, change or delete one from the site; at most 200 a day across the site.
+   Offline or refused, the report is kept on that device and sent with the next one that goes through.
    **Copy the fight record** in the same window still copies it by hand.
 3. When the owner says "go through the fight reports", Claude runs the manual workflow **Export Pits fight reports**
    (`.github/workflows/pits-reports-export.yml`). It copies every report to the **`pits-reports` branch**, folder
@@ -20,7 +21,8 @@ How "Report fight" in the Pits reaches Claude and ChatGPT (owner, 2026-11-14).
    and the owner sees what came of each.
 
 The reports are in a **public repository** once exported: notes and fight records (character names, weapons, dice) are
-readable by anyone. Nothing about the reporter's account is exported.
+readable by anyone. The typed name is exported; nothing about an account is. If the site gets other visitors, anyone
+could send a report: the 200-a-day limit caps it, and the owner can ask Claude to restrict sending again.
 
 ## One-time setup
 
@@ -38,7 +40,6 @@ readable by anyone. Nothing about the reporter's account is exported.
 
 3. Give the key to the owner privately (not in a file, a PR or a report). Record only "export key created" in your
    dated `docs/` report.
-4. Check the owner's account is a site admin: `select count(*) from public.site_admins;` should be at least 1.
 
 **Owner**, on GitHub: repository **Settings → Secrets and variables → Actions → New repository secret**, name
 `PITS_REPORTS_TOKEN`, value the key from step 2. (To replace a key: Work deletes the old row from
