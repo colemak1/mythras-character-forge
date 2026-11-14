@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-13 by Claude (Pits: trip fall, impaled weapon, fight record)_
+_Last updated: 2026-11-14 by Claude (Pits: knockout order from the owner's fight record)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-13 by Claude (Pits: trip fall, impaled weapon, fight reco
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+00000000000000000000000. **Claude, done 2026-11-14 (owner's fight record):** against the arena's own opponent, its wound dice (Serious Wound, Endurance) were shown after the blow, so the collapse and Victory came before the roll that caused them. Fixed in `pitsStageOrder`; test in `tests/pits-stage.cjs`. Branch `claude/sharp-franklin-mbjthj`, no PR. **Owner:** keep sending a **Copy fight record** whenever an order looks wrong; it found this one at once. The earlier miss-order report is still unreproduced and may be the same fault (an automatic opponent's dice shown out of place).
 
 0000000000000000000000. **Claude, done 2026-11-13 (owner's play notes):** on `claude/sharp-franklin-mbjthj` (pushed, no PR). A trip now sits the fighter on its backside (`PitsWriter.sit`), and a weapon left in an Impale wound is no longer also thrown to the floor. The miss-order report (my miss drawn after the opponent's next attack and my parry) did **not** reproduce in scripted bouts (two-player and against the computer, every reaction, Trip and Disarm effects, Guidance on and off) or in 20 random bouts. **Owner:** when it happens again, press **Copy fight record** in the top bar straight away and paste it to Claude, with one line on which moment looked wrong. **Then Claude:** replay that record and fix the order; then "Instructions for Opus" item 2 (attacks and defences from the ground).
 

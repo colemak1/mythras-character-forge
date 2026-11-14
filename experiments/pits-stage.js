@@ -262,8 +262,29 @@ function pitsStageOrder(list,names){
     let at=i;while(at>0&&(out[at-1].roll||out[at-1].checkpoint))at--;
     const [blow]=out.splice(j,1);out.splice(at,0,blow);i++;
   }
+  // The dice of a blow's consequences (a Serious Wound's stunned turns, the Endurance roll against it, ...) are shown
+  // before the blow, so the blow lands with its outcome already rolled: the fall and the end follow from what the
+  // dice showed. A person's rolls already come first (the engine waits for them, and the blow is held); an automatic
+  // fighter's rolls arrive in the same batch after the blow, and were shown after the knockout they caused (owner,
+  // 2026-11-14). Only the rolls up to the blow's own consequences move; anything after (a new turn) stays where it is.
+  for(let i=0;i<out.length;i++){
+    if(!PSTAGE_BLOW.includes(k(out[i])))continue;
+    // (dice move only when a consequence of this blow follows them: dice that lead into anything else, such as a
+    // Trip's or the next attack's, belong to that and stay where they are)
+    const moved=[];let pend=[];
+    for(let n=i+1;n<out.length;n++){const e=out[n];
+      if(e.roll){pend.push(n);continue;}
+      if(e.checkpoint)break;
+      if(PSTAGE_AFTER.includes(k(e))||PSTAGE_CONSEQUENCE.test(String(e.title||''))){moved.push(...pend);pend=[];continue;}
+      break;}
+    if(!moved.length)continue;
+    const dice=moved.map(m=>out[m]);for(let m=moved.length-1;m>=0;m--)out.splice(moved[m],1);
+    out.splice(i,0,...dice);i+=dice.length;
+  }
   return out;
 }
+// log entries that are part of a blow's consequences (not a new action): the dice between them belong to the blow
+const PSTAGE_CONSEQUENCE=/^(Serious Wound|Major Wound|Wound Resisted|Stunned|Knockback|Bash|Bleed|Impale|Weapon Dropped|Limb Disabled|Unconscious)/i;
 // What one beat is, given the beats around it. A blow takes its exchange's effects (Press Advantage) and consequences
 // (wound, disabled limb, dropped weapon, the end of the fight) into one record, and those beats then have no motion of their own.
 // Returns {cue, consumed}.

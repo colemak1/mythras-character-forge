@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a knockout waits for the dice that cause it
+
+- Against the arena's own opponent, its Serious Wound and Endurance dice were shown after the blow: the opponent collapsed and Victory appeared before the Endurance roll that knocked it out (owner's fight record, 2026-11-14). The dice of a blow's consequences are now shown before the blow, as they already were when a person rolls them; the blow then lands with its outcome known. Dice that start something new (a Trip, the next attack, a new turn) stay where they were. Also applies to the fight replay.
+
 ## The Pits trial: trips sit you down, an impaled weapon stays put, a fight record to report faults
 
 - A successful Trip now puts the fighter on its backside: the swept foot goes out, the hips drop back onto the floor, a hand goes behind and the weapon stays up toward the other fighter. It is no longer the crumble onto the knees used for a defeat (owner, 2026-11-13). Leg wounds and defeats still crumble.

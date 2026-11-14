@@ -326,4 +326,19 @@ test('every Pits script parses (a syntax error in the browser-only part must not
  const html=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8');
  new vm.Script(html.match(/<script>([\s\S]*?)<\/script>/)[1],{filename:'practice-combat-inline.js'});
 });
+// (owner's fight record, 2026-11-14: against the computer, the opponent's Serious Wound and Endurance dice came after
+// the blow, so the knockout and Victory were drawn before the roll that caused them)
+test('an automatic fighter\'s wound dice are shown before the blow they follow, not after the knockout',()=>{
+ const R=label=>({roll:{actor:'b',label,values:[1]}});
+ const atk=ATK(),dmg={roll:{actor:'a',label:'Damage · Head',values:[8,1]}},hit=B('Kethan hits Head','9 total',{actor:'a',impact:{target:'b',location:'Head',hpLost:9},px:{total:9}});
+ const stun=R('Serious Wound · 1d3 stunned turns'),st=B('Serious Wound · Stunned','Marek cannot attack for the next 3 Turns.',{});
+ const endu=R('Endurance · serious wound to Head'),wnd=B('SERIOUS WOUND · Head','Marek Endurance 44/53% (SUCCESS) versus the attack 3 (CRITICAL). Fails to resist.',{});
+ const end=B('FIGHT ENDS','Kethan wins. Marek loses consciousness from a Serious Wound to Head.',{});
+ const r=arrange([atk,dmg,hit,stun,st,endu,wnd,end],[],false);
+ const lab=e=>e.roll?e.roll.label.split(' ')[0]:e.title;
+ assert.deepEqual(r.play.map(lab),['Kethan attacks','Damage','Serious','Endurance','Kethan hits Head','Serious Wound · Stunned','SERIOUS WOUND · Head','FIGHT ENDS']);
+ // dice after the exchange (a new turn) stay where they are
+ const r2=arrange([atk,dmg,hit,B('Round 2','AP refresh.',{}),R('Regain Footing · Marek brawn')],[],false);
+ assert.deepEqual(r2.play.map(lab),['Kethan attacks','Damage','Kethan hits Head','Round 2','Regain']);
+});
 console.log(passed+' pits stage tests passed');
