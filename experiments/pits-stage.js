@@ -42,6 +42,8 @@ function pitsStageCue(entry,names){
   if((r=new RegExp('^(SERIOUS|MAJOR) WOUND · '+PSTAGE_LOCRE+'$').exec(t)))return {type:'wound',level:r[1].toLowerCase(),loc:PSTAGE_LOCS[r[2]]};
   if(t==='Limb Disabled'){const lr=new RegExp(PSTAGE_LOCRE).exec(b);return {type:'limb',leg:/Leg/.test(b),loc:lr?PSTAGE_LOCS[lr[1]]:null,who:idOf(b)};}
   if(t==='Weapon Dropped')return {type:'drop',actor:m.actor||idOf(b)};
+  // tied Initiative: the fighter this blow has finished still acts once this cycle before it goes down (Core p.90)
+  if(t==='Falling'&&/is going down/.test(b))return {type:'falling',actor:m.actor||idOf(b)};
   if(t==='Press Advantage')return {type:'press',actor,target:other(actor),name:t};
   if(t==='Impaled Weapon')return {type:'lodge',actor};
   if(t==='FIGHT ENDS'){
@@ -206,7 +208,7 @@ function pitsStageAim(base,wk,swap,target,opts){
 // presented only once its whole exchange is resolved: any resistance roll or decision that follows the contact is
 // finished first, so the contact flows straight into its real consequence. Dice are always shown at once.
 const PSTAGE_BLOW=['hit','deflect'];
-const PSTAGE_AFTER=['wound','limb','drop','lodge','end'];
+const PSTAGE_AFTER=['wound','limb','drop','lodge','end','falling'];
 const PSTAGE_EFFECT=['trip','disarm'];
 function pitsStageKind(e,names){
   if(!e)return 'none';if(e.roll)return 'roll';if(e.checkpoint)return 'checkpoint';
@@ -254,12 +256,16 @@ function pitsStageArrange(events,held,waiting,names){
 // The engine logs a defender's Trip or Disarm (a Special Effect won by the defence) before the blow it answered. On the
 // stage the blow comes first: the parry, then the sweep. So within an exchange a blow that follows a trip or a disarm
 // is moved to just before that effect (and the dice of the effect, just before it).
+// The attacker's own Trip is not moved (report review FR-03, 2026-11-14): its resistance roll, the hit location and the
+// damage are all rolled before the blow is drawn, and the blow carries the trip (pitsStageBeat), so the one attack is
+// seen once, after every roll it needs. (The attacker's Disarm keeps the older order: its blow carries the disarm.)
 function pitsStageOrder(list,names){
-  const out=list.slice(),k=e=>pitsStageKind(e,names);
+  const out=list.slice(),k=e=>pitsStageKind(e,names),cue=e=>pitsStageCue(e,names)||{};
   for(let i=0;i<out.length;i++){
     if(!/^(trip|disarm)$/.test(k(out[i])))continue;
     let j=-1;for(let n=i+1;n<out.length;n++){const kn=k(out[n]);if(kn==='attack')break;if(PSTAGE_BLOW.includes(kn)){j=n;break;}}
     if(j<0)continue;
+    if(k(out[i])==='trip'&&cue(out[i]).actor&&cue(out[i]).actor===pitsStageBlowActor(out[j],names))continue;
     let at=i;while(at>0&&(out[at-1].roll||out[at-1].checkpoint))at--;
     const [blow]=out.splice(j,1);out.splice(at,0,blow);i++;
   }
@@ -284,6 +290,8 @@ function pitsStageOrder(list,names){
   }
   return out;
 }
+// who struck a blow (a hit carries the engine's actor; a no-damage blow may carry it in its meta)
+function pitsStageBlowActor(e,names){const c=pitsStageCue(e,names);return c&&(c.actor||(c.target?(c.target==='a'?'b':'a'):null))||null;}
 // log entries that are part of a blow's consequences (not a new action): the dice between them belong to the blow
 const PSTAGE_CONSEQUENCE=/^(Serious Wound|Major Wound|Wound Resisted|Stunned|Knockback|Bash|Bleed|Impale|Weapon Dropped|Limb Disabled|Unconscious)/i;
 // What one beat is, given the beats around it. A blow takes its exchange's effects (Press Advantage) and consequences
@@ -305,7 +313,16 @@ function pitsStageBeat(events,step,names){
     const arise=inEx(a0+1,a1,['arise'])[0];
     // a Disarm won by the attacker is part of its blow: the weapon leaves the hand at the contact, no second swing
     const disarm=attacker?inEx(step+1,a1,['disarm']).find(c=>c.actor===attacker)||null:null;
-    return {cue:{...cue,record:{press:inEx(a0+1,step,['press'])[0]||null,after:inEx(step+1,a1,PSTAGE_AFTER),arise:arise?arise.actor:null,disarm}},consumed:false};
+    // the attacker's Trip (resolved before the location and the damage): the blow carries it, one movement (FR-03)
+    const striker=pitsStageBlowActor(e,names)||attacker;
+    const trip=striker?inEx(a0+1,step,['trip']).find(c=>c.actor===striker)||null:null;
+    return {cue:{...cue,record:{press:inEx(a0+1,step,['press'])[0]||null,after:inEx(step+1,a1,PSTAGE_AFTER),arise:arise?arise.actor:null,disarm,trip}},consumed:false};
+  }
+  // the attacker's Trip has no movement of its own when a blow of its exchange follows: that blow draws it
+  if(cue.type==='trip'){
+    for(let i=step+1;i<a1;i++){const c=pitsStageCue(events[i],names);
+      if(c&&PSTAGE_BLOW.includes(c.type)&&!events[i].roll&&!events[i].checkpoint)return pitsStageBlowActor(events[i],names)===cue.actor?{cue,consumed:true}:{cue,consumed:false};}
+    return {cue,consumed:false};
   }
   if(cue.type==='disarm'&&attacker&&cue.actor===attacker&&inEx(a0+1,step,PSTAGE_BLOW).length)return {cue,consumed:true};
   // Arise has no movement of its own: the blow of its exchange draws it (the evader keeps its feet; a fighter already
@@ -633,7 +650,7 @@ function psFrame(now){
       if(!PS.paused)psLull();
     }
     for(const id of ['a','b'])if(PS.fig[id])psDraw(PS.fig[id],now);
-    psDrawLodged(now);PS.raf=requestAnimationFrame(psFrame);return;
+    psFollowReticles();psDrawLodged(now);PS.raf=requestAnimationFrame(psFrame);return;
   }
   for(const id of ['a','b']){
     const f=PS.fig[id];if(!f)continue;
@@ -660,7 +677,7 @@ function psFrame(now){
     f.vel=f.vel||{};if(dt>0)for(const key of PS_KEYS){const v=(f.cur[key]-before[key])/dt;f.vel[key]=(f.vel[key]||0)*.5+v*.5;}
     psDraw(f,now);
   }
-  psDrawLodged(now);
+  psFollowReticles();psDrawLodged(now);
   PS.raf=requestAnimationFrame(psFrame);
 }
 // psPlay(f,[pose,ms,{trail,out}],[pose,ms],...): one or more frames in order; resolves when
@@ -708,11 +725,21 @@ function psRing(w){
   const c=psSvg('circle',{cx:w[0],cy:w[1],r:6,class:'ps-ring ps-part-fx'},psLayer('ps-fx'));
   c.animate([{r:6,opacity:1},{r:46,opacity:0}],{duration:420/psSpeed(),easing:'ease-out'}).onfinish=()=>c.remove();
 }
-function psReticle(w){
-  const g=psSvg('g',{class:'ps-reticle ps-part-fx'},psLayer('ps-fx'));
-  psSvg('circle',{cx:w[0],cy:w[1],r:20},g);
-  [[-30,0,-12,0],[12,0,30,0],[0,-30,0,-12],[0,12,0,30]].forEach(l=>psSvg('line',{x1:w[0]+l[0],y1:w[1]+l[1],x2:w[0]+l[2],y2:w[1]+l[3]},g));
-  g.animate([{opacity:0},{opacity:1,offset:.25},{opacity:1},{opacity:0}],{duration:psReduced()?500:900/psSpeed()}).onfinish=()=>g.remove();
+// The hit-location marker. Given the fighter and the location it stays on that body part for its whole life, redrawn
+// with the figure every frame (psFrame), so a figure that moves, steps or is rescaled does not leave it behind (FR-05).
+function psReticle(w,f,loc){
+  const g=psSvg('g',{class:'ps-reticle ps-part-fx',transform:'translate('+w[0]+','+w[1]+')'},psLayer('ps-fx'));
+  psSvg('circle',{cx:0,cy:0,r:20},g);
+  [[-30,0,-12,0],[12,0,30,0],[0,-30,0,-12],[0,12,0,30]].forEach(l=>psSvg('line',{x1:l[0],y1:l[1],x2:l[2],y2:l[3]},g));
+  const r={g,f,loc};if(f&&loc)(PS.reticles=PS.reticles||[]).push(r);
+  const done=()=>{g.remove();if(PS.reticles)PS.reticles=PS.reticles.filter(x=>x!==r);};
+  const a=g.animate([{opacity:0},{opacity:1,offset:.25},{opacity:1},{opacity:0}],{duration:psReduced()?500:900/psSpeed()});
+  if(a)a.onfinish=done;else setTimeout(done,900);
+  return g;
+}
+function psFollowReticles(){
+  if(PS.reticles&&PS.reticles.some(r=>!r.g.isConnected))PS.reticles=PS.reticles.filter(r=>r.g.isConnected);
+  for(const r of PS.reticles||[]){if(!r.f||!r.f.pts)continue;const w=psBodyPt(r.f,r.loc);r.g.setAttribute('transform','translate('+w[0].toFixed(1)+','+w[1].toFixed(1)+')');}
 }
 function psDust(f){
   if(psReduced())return;
@@ -895,7 +922,7 @@ async function psRunCue(cue){
       if(PS.ex){PS.ex.react='evade';PS.ex.reactGrade=cue.grade==='fumble'?0:cue.grade==='failure'?1:cue.grade==='success'?2:3;}
       me.exPose=PS_POSE.brace;psPlay(me,[PS_POSE.brace,200]);psEmit('brace',{actor:me.id,grade:cue.grade});await psSleep(260);
     }else if(cue.type==='locate'&&tgt){
-      const w=psBodyPt(tgt,cue.loc);psReticle(w);
+      const w=psBodyPt(tgt,cue.loc);psReticle(w,tgt,cue.loc);
       if(cue.chosen)psDom(psWorld(tgt,tgt.pts?tgt.pts.hd:[0,-120]),'Chosen: '+(PSTAGE_LOCNAME[cue.loc]||''),'fx');
       psEmit('locate',{target:tgt.id,loc:cue.loc,point:w.map(Math.round)});await psSleep(420);
     }else if(cue.type==='hit'||cue.type==='deflect'){
@@ -1129,7 +1156,7 @@ function psLull(){
     if(f.look.prone&&!f.mDown){f.mDown=true;f.spent=false;const d=L.fall(m,PS.clock);f.downAt=d;PS.busyUntil=Math.max(PS.busyUntil,d);continue;}
     if(!f.look.prone&&f.mDown&&!f.end&&!f.mEnd){f.mDown=false;PS.busyUntil=Math.max(PS.busyUntil,L.stand(m,PS.clock,PS.gap));continue;}
     if(!f.spent||PS.clock<PS.busyUntil+1300||f.end||f.mEnd||f.mDown||f.pressRole)continue;
-    f.spent=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,PS.gap,psHurt(f)));
+    f.spent=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,PS.gap,psHurt(f)));psEmit('recover',{actor:id,replay:psReplaying()});
   }
 }
 // The spring stage: a declared action is drawn before its dice (owner, 2026-11-13). Attack chosen: the weapon is
@@ -1172,7 +1199,7 @@ async function psMotionCue(cue){
       psEmit('brace',{actor:me.id,grade:cue.grade});
       if(PS.springOn)await psUntil(psIntent(me.id,'evade'));else await psSleep(200);
     }else if(cue.type==='locate'&&tgt){
-      const w=psBodyPt(tgt,cue.loc);psReticle(w);
+      const w=psBodyPt(tgt,cue.loc);psReticle(w,tgt,cue.loc);
       if(cue.chosen)psDom(psWorld(tgt,tgt.pts?tgt.pts.hd:[0,-120]),'Chosen: '+(PSTAGE_LOCNAME[cue.loc]||''),'fx');
       psEmit('locate',{target:tgt.id,loc:cue.loc,point:w.map(Math.round)});await psSleep(420);
     }else if(cue.type==='hit'||cue.type==='deflect'){
@@ -1238,6 +1265,8 @@ async function psMotionBlow(cue){
   const out=pitsStageOutcome(cue,ex),loc=cue.loc||'chest',lost=cue.lost||0;
   const reactTool=px.reactTool||ex.reactTool||'weapon',shield=out.endsWith('ward')||(reactTool==='shield'&&!!def.look.shield);
   const after=(cue.record&&cue.record.after)||[],endC=after.find(c=>c.type==='end'),limbC=after.find(c=>c.type==='limb'),dropC=after.find(c=>c.type==='drop');
+  // (a fighter this blow has finished, who still acts once before going down: no Press Advantage hold on it, report FR-07)
+  const finishing=after.some(c=>c.type==='falling'&&c.actor===def.id);
   const defeated=lost>0&&!!endC&&endC.winner===atk.id&&endC.how==='injury';
   const leg=lost>0&&!!limbC&&(limbC.leg||/leg/.test(limbC.loc||''));
   psEmit('resolve',{outcome:out,loc,lost,actor:atk.id,target:def.id,px});
@@ -1249,17 +1278,27 @@ async function psMotionBlow(cue){
   const arise=(cue.record&&cue.record.arise)||null;
   const evading=((px.react||ex.react)==='evade'||out==='evaded')&&!px.rangeIntercept&&arise!==def.id;
   const tried=evading&&/^(evaded|miss|fumble)$/.test(out);
+  // the attacker's Trip, carried by this blow (FR-03): one attack, and the defender goes down from it if the trip worked
+  const trip=(cue.record&&cue.record.trip)||null,tripFell=!!(trip&&trip.fell&&!defeated);
   PS.intents={};
   // the attacking tool (the engine's px.tool, or the attack beat's): a shield strike is drawn as one. Kept apart from
   // `shield`, which is the defender's
   const strike=(px.tool==='shield'||(px.tool==null&&ex.shield))&&atk.look&&atk.look.shield?'shield':null;
-  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying()});
+  const fall=tripFell&&!def.mDown?'sit':(leg||(evading&&!tried))&&!defeated;
+  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,strike,fall,defeated,prone:tried,flow:psReplaying()});
   PS.busyUntil=r.end;atk.spent=def.spent=true;
+  // (a blow stopped completely by the parry ends before any fall is drawn: the trip's fall then follows at its end)
+  const fullStop=/^(parried|full-parry|full-ward)$/.test(out);
+  if(tripFell&&!fullStop&&!def.mDown){def.mDown=true;def.downAt=r.contacts.length?r.contacts[0].t:PS.clock;}
   // (downAt: the HUD's Prone chip waits for the blow's contact, when the figure is seen to go down)
   if(defeated||leg||evading){if(!def.mDown)def.downAt=r.contacts.length?r.contacts[0].t:PS.clock;def.mDown=true;}if(defeated)def.mEnd='lying';
-  const disarm=cue.record&&cue.record.disarm;let flown=false;
+  const disarm=cue.record&&cue.record.disarm;let flown=false,tripTold=false;
   for(const c of r.contacts){
     await psUntil(c.t);const w=psW(c.at);psHudConditions();
+    // the trip is told at the blow's first contact: the same blow sweeps the leg (or fails to)
+    if(trip&&!tripTold){tripTold=true;psEmit('contact',{kind:'trip',actor:atk.id,target:def.id,fell:!!trip.fell,point:w.map(Math.round)});
+      if(trip.fell){psBanner('Tripped','crit');psDom(psWorld(def,def.pts?def.pts.hd:[0,-120]),'Tripped!','fx');}
+      else psDom(psWorld(def,def.pts?def.pts.Sh:[0,-100]),'Resists the trip','blk');}
     // the attacker's Disarm: the weapon leaves the defender's hand at the blow's (first) contact
     if(disarm&&!flown&&c.kind!=='miss'){flown=true;def.dropAhead=true;psEmit('contact',{kind:'disarm',actor:atk.id,target:def.id,point:w.map(Math.round)});
       psBanner('Disarmed','crit');psFlyWeapon(def,disarm.metres);}
@@ -1294,6 +1333,7 @@ async function psMotionBlow(cue){
     }
   }
   await psUntil(r.end);
+  if(tripFell&&!def.mDown&&PS.M[def.id]){def.mDown=true;const e2=L.fall(PS.M[def.id],PS.clock,'sit');def.downAt=e2;PS.busyUntil=Math.max(PS.busyUntil,e2);psDust(def);await psUntil(e2);}
   if(arise&&PS.fig[arise]&&PS.fig[arise].mDown&&!PS.fig[arise].mEnd&&PS.M[arise]){
     PS.fig[arise].mDown=false;const e2=L.stand(PS.M[arise],PS.clock,PS.gap);PS.busyUntil=Math.max(PS.busyUntil,e2);psDust(PS.fig[arise]);await psUntil(e2);
   }
@@ -1302,7 +1342,7 @@ async function psMotionBlow(cue){
     atk.mEnd='low';const e2=L.lower(PS.M[atk.id],PS.clock);PS.busyUntil=Math.max(PS.busyUntil,e2);
     await psUntil(Math.min(e2,PS.clock+380));return;
   }
-  await psMotionPress(atk,def,cue);
+  if(!finishing)await psMotionPress(atk,def,cue);
 }
 // Press Advantage: the attacker stays on the blade with the point in the face, held until the engine ends the effect.
 async function psMotionPress(atk,def,cue){
@@ -1395,7 +1435,10 @@ function pitsStageSync(){
     PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};
     PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.mDown=false;f.downAt=0;f.spent=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
   for(const id of ['a','b']){
-    const f=PS.fig[id];f.look=pitsStageLook(view[id]);f.scale=f.look.scale;
+    const f=PS.fig[id];f.look=pitsStageLook(view[id]);
+    // (the movement stage draws its figures at scale 1: a SIZ scale set here would put every marker placed before the next
+    // frame off the drawn body, report review FR-05, 2026-11-14)
+    f.scale=PS_MOTION&&PS.M[id]?1:f.look.scale;
     // a weapon the blow has already knocked from the hand (drawn at the contact, before the engine's own entry for it
     // is shown) stays out of the hand until the shown state has caught up: it does not jump back and drop again
     if(f.dropAhead){if(!f.look.armed)f.dropAhead=false;else if(V.busy||V.hold)f.look.armed=false;else f.dropAhead=false;}

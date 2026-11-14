@@ -512,7 +512,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
 <link rel="stylesheet" href="pits-arena.css?v=476255e3ed">
 <link rel="stylesheet" href="pits-stage.css?v=ccb5857e29">
-<link rel="stylesheet" href="pits-bottom.css?v=b8710cbc06">
+<link rel="stylesheet" href="pits-bottom.css?v=6aa1a95308">
 <link rel="stylesheet" href="../sitota-theme.css?v=a47f8d5bd9">
 </head>
 <body class="pits-page">
@@ -549,18 +549,18 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="../js/combat-rules.js?v=30ed5a5732"></script>
 <script src="../js/data.js?v=e863ceddbb"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
-<script src="practice-guidance.js?v=c187d04720"></script>
-<script src="pits-view.js?v=d94d8e0612"></script>
+<script src="practice-guidance.js?v=9147351641"></script>
+<script src="pits-view.js?v=a614e73283"></script>
 <script src="pits-game.js?v=3769cec741"></script>
 <script src="pits-report.js?v=b9697de8e7"></script>
-<script src="pits-arena.js?v=d9e43ed972"></script>
-<script src="pits-bottom.js?v=b2ce1283a4"></script>
-<script src="pits-lost.js?v=883f16bf86"></script>
+<script src="pits-arena.js?v=2de8fc67a5"></script>
+<script src="pits-bottom.js?v=d7ba95d905"></script>
+<script src="pits-lost.js?v=f385014ea5"></script>
 <script src="pits-motion.js?v=5c6cf25c54"></script>
 <script src="pits-spring.js?v=d6e69e0c95"></script>
 <script src="pits-writer.js?v=e371f2e1b2"></script>
 <script src="pits-spring-live.js?v=bcba3a2354"></script>
-<script src="pits-stage.js?v=16f0fafc9e"></script>
+<script src="pits-stage.js?v=5aa666ede3"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -2226,7 +2226,8 @@ function conditionInsightsHtml(f){
    add(loc+' stunned',turns+' turn'+(turns===1?'':'s')+' left.'+consequence);
  }
  if(f.disarmed)add('Disarmed',f.droppedMetres>3?'Weapon out of reach; move to recover it.':'Recover and ready your weapon before attacking.');
- if(f.pinnedGear)add('Pinned '+f.pinnedGear,'Spend 1 AP to free the pinned item.');
+ if(f.pinnedGear)add('Pinned '+f.pinnedGear,'Held by '+(S.fighters[f.pinnedBy]?.name||'the opponent')+(f.pinnedGear==='shield'?': no shield parries or strikes':': no attacks or parries with it')+
+  ' until freed. Free Pinned '+(f.pinnedGear==='shield'?'Shield':'Weapon')+': 1 AP, opposed Brawn (Core pp.97–98).');
  if(entangledLoc(f))add('Entangled '+f.entangled.loc,'Spend 1 AP on opposed Brawn to break free, or win Slip Free, Damage Weapon or Disarm.');
  if(f.impaledWeapon)add('Weapon embedded','Your weapon is lodged in an opponent; withdraw it before using it again.');
  if(f.impaledWounds?.length){
