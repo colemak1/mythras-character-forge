@@ -3,7 +3,11 @@
 // The picture is a function of the time on the bar, so any moment can be stopped on, stepped through and replayed.
 (function(){
 const PS=window.PitsSpring,$=id=>document.getElementById(id),G=PS.GROUND,FRAME=1000/60;
-const seq=PS.build(document.body.dataset.seq),total=PS.shownDur(seq);
+// the fight page can show any registered fight (?seq=thrust); its heading and description come from the fight
+const asked=(location.search.match(/[?&]seq=([\w-]+)/)||[])[1];
+const seq=PS.build(asked&&PS.has(asked)&&document.body.dataset.seq==='fight'?asked:document.body.dataset.seq),total=PS.shownDur(seq);
+if(seq.lead){const h=document.querySelector('h1'),p=document.querySelector('.pc-lead');if(h)h.textContent='Fight study: '+seq.title;
+  if(p)p.textContent=seq.lead+' A prototype only; the live Pits does not use it.';document.title=seq.title;}
 const st={td:0,playing:false,last:0,held:null,passed:{}};
 const reduced=()=>typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 const Y=y=>G-y,dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);

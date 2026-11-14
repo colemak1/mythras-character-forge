@@ -91,6 +91,13 @@ async function playToEnd(page){
     assert(await page.evaluate(()=>/stop replay/i.test(document.body.innerText)),'a Stop replay button is shown');
     await click(page,'[data-act=skip]');await sleep(200);const s=await st(page);assert(!s.busy&&!s.replaying);
   });
+  // (Work's check D2, 2026-11-14: during the replay, Show result stops it and opens the result window in one step)
+  await T('Show result during the replay stops it and opens the result window',async()=>{
+    await click(page,'[data-act=replayFight]');await sleep(80);assert((await st(page)).replaying);
+    assert(await click(page,'[data-act=replayShowResult]'),'a Show result button is shown during the replay');await sleep(200);
+    const s=await st(page);assert(!s.busy&&!s.replaying,'the replay stopped');
+    assert(await page.evaluate(()=>!!prototypeCombat.state().showEndModal),'the result window is open');
+  });
   assert.deepEqual(errors,[]);
   await browser.close();console.log(`${pass} passed, ${fail} failed`);process.exit(fail?1:0);
 })();

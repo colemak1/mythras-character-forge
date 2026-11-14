@@ -1,0 +1,41 @@
+name: Export Pits fight reports
+# Manual only. Copies the Pits fight reports from the site's database onto the `pits-reports` branch, where Claude and
+# ChatGPT read them (docs/pits-reports.md). It never touches main and never publishes the site.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: pits-reports-export
+  cancel-in-progress: false
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Keep the export script and the site's public settings from main
+        run: cp scripts/pits-reports-export.cjs js/cloud.js "$RUNNER_TEMP/"
+      - name: Open the reports branch (created empty the first time)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch --depth=1 origin pits-reports; then
+            git checkout -B pits-reports FETCH_HEAD
+          else
+            git checkout --orphan pits-reports
+            git rm -rfq .
+          fi
+      - name: Export
+        env:
+          PITS_REPORTS_TOKEN: ${{ secrets.PITS_REPORTS_TOKEN }}
+        run: node "$RUNNER_TEMP/pits-reports-export.cjs" --cloud "$RUNNER_TEMP/cloud.js" --out reports
+      - name: Commit and push
+        run: |
+          git add reports
+          if git diff --cached --quiet; then echo "No new reports."; exit 0; fi
+          git commit -qm "Pits fight reports: export $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push origin pits-reports

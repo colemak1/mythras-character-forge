@@ -342,7 +342,8 @@ function pbRight(c){
 function pitsBottomDeckHtml(){
   if(!pbOn())return '';
   const c=pbCtx();
-  return `<div class="bdeck bE" aria-label="Command deck">${pbLeft(c)}${pbMiddle(c)}${pbRight(c)}</div>${resultModalHtml()}`;
+  // the result dialog is appended once, by render() in practice-combat.html
+  return `<div class="bdeck bE" aria-label="Command deck">${pbLeft(c)}${pbMiddle(c)}${pbRight(c)}</div>`;
 }
 function pbPaintInfo(){
   const el=typeof document!=='undefined'&&document.querySelector('#root .binfo-body');

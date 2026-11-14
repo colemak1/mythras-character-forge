@@ -136,6 +136,9 @@ test('aim: a shield bash uses the off arm; a left-handed wielder keeps role-base
  const l=J(`pitsStageLook({weapon:'sword',weaponHand:'Left Arm',hp:{'Right Arm':5,'Left Arm':0,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},maxHp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},shield:'none',siz:13})`);
  assert.equal(l.swap,true);assert.equal(l.armed,true,'a resisted Serious Wound leaves the weapon in the hand: the engine says when it drops (disarmed)');
  assert.equal(J(`pitsStageLook({weapon:'sword',weaponHand:'Left Arm',disarmed:true,hp:{'Right Arm':5,'Left Arm':0,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},maxHp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6}})`).armed,false,'a weapon the engine dropped is not drawn in the hand');
+ const HP="hp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},maxHp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6}";
+ assert.equal(J(`pitsStageLook({weapon:'sword',${HP},shield:'buckler'})`).shieldKey,'buckler','the shield keeps its kind (Work, 2026-11-13)');
+ assert.equal(J(`pitsStageLook({weapon:'sword',${HP},shield:'none'})`).shieldKey,null);
 });
 test('lodged weapons and entanglement are read from engine state: held, abandoned, withdrawn',()=>{
  const f=(a,b)=>JSON.stringify({a,b});
@@ -218,6 +221,9 @@ test('cues for Press Advantage, a dropped weapon, a disabled limb and how a figh
  assert.equal(cue('FIGHT ENDS','Marek wins. Kethan concedes the training bout.',{}).how,'concede');
  assert.equal(cue('FIGHT ENDS','Marek wins. Kethan has a Major Limb Wound to the Right Leg: incapacitated and prone.',{}).how,'injury');
  assert.equal(cue('FIGHT ENDS','Marek wins. Kethan is incapacitated by blood loss.',{}).how,'fatigue');
+ assert.equal(cue('FIGHT ENDS','Marek wins. Kethan has a Major Limb Wound to the Right Arm: incapacitated and prone. Remains conscious. If the GM rules the limb severed, punctured or ripped off, untreated blood loss becomes fatal after 15 minutes.',{}).how,'injury',
+  'a Major Limb Wound ends the fight by the blow, though its text names blood loss');
+ assert.equal(cue('FIGHT ENDS','Marek wins. Kethan collapses from blood loss (Incapacitated Fatigue; no actions possible).',{}).how,'fatigue');
  assert.equal(cue('FIGHT ENDS','Marek wins. Kethan dies immediately from a Major Wound to Head.',{}).how,'injury','a death is still only "injury": nothing about severing is inferred');
 });
 // The beats of one batch, as the stage sees them.
@@ -249,6 +255,57 @@ test('with nothing to wait for, or no blow yet, nothing is held; a new attack cl
  const next=B('Marek attacks','50 against Combat Style 60% — SUCCESS.',{actor:'b',exid:2}),r=arrange([next],[hit],true);
  assert.deepEqual(r.play.map(e=>e.id),[hit.id,next.id],'the held blow plays before the next attack');assert.equal(r.hold.length,0);
 });
+const DI=l=>({id:++bid,roll:{label:l||'d100'}}),DA=()=>DI('Attack · Combat Style 60%');
+test('a finished exchange is not held back behind the next one: its blow plays before the next attack is declared',()=>{
+ // Kethan misses; Marek attacks at once (an automatic action) and the engine now waits for Kethan's reaction
+ const atk=ATK(),miss=B('No Damaging Hit','Marek does not defend. The attack misses.',{actor:'a'}),d2=DA(),next=B('Marek attacks','50 against Combat Style 60% — SUCCESS.',{actor:'b',exid:2});
+ const r=arrange([DI(),atk,miss,d2,next],[],true);
+ const ids=r.play.map(e=>e.id),at=e=>ids.indexOf(e.id);
+ assert(ids.includes(miss.id),'the miss plays now');assert(at(miss)<at(d2)&&at(miss)<at(next),'the miss before the next attack and its dice');
+ assert.equal(r.hold.length,0);
+ // a blow held for its own exchange, then a batch that starts the next attack with its dice: the held blow first
+ const hit=HIT(),late=DI(),d3=DA(),a3=B('Marek attacks','x',{actor:'b',exid:3});
+ const r2=arrange([late,d3,a3],[hit],true),p2=r2.play.map(e=>e.id);
+ assert(p2.indexOf(hit.id)>p2.indexOf(late.id)&&p2.indexOf(hit.id)<p2.indexOf(d3.id),'the held blow after its own late dice, before the next attack\'s dice');
+});
+test('a parry that wins a Trip or a Disarm: the blocked blow is drawn first, then the sweep',()=>{
+ const atk=ATK(),par=B('Marek parries','x',{actor:'b'}),dt=DI(),trip=B('Trip Opponent','Kethan fails to resist and falls prone.',{actor:'b'}),dh=B('No Damaging Hit','Marek parries the blow.',{actor:'a'});
+ const r=arrange([atk,par,dt,trip,dh],[],false),ids=r.play.map(e=>e.id);
+ assert.deepEqual(ids,[atk.id,par.id,dh.id,dt.id,trip.id]);
+ const dis=B('Disarm Opponent','The weapon lands 2m away.',{actor:'b'}),dh2=B('No Damaging Hit','x',{actor:'a'});
+ assert.deepEqual(arrange([dis,dh2],[],false).play.map(e=>e.id),[dh2.id,dis.id]);
+});
+test('an offensive Disarm waits for its whole exchange, then is part of the one blow (Work, 2026-11-13)',()=>{
+ const beat=(ev,i)=>JSON.parse(A.run(`JSON.stringify(pitsStageBeat(${JSON.stringify(ev)},${i},${JSON.stringify(names)}))`));
+ for(const body of ["Marek's weapon lands 2m away.","Marek drops the weapon at their feet."]){
+  // the attack, the effect chosen and resolved (with its distance roll) while location and damage are still to come
+  const atk=ATK(),dd=DI('Disarm distance · d4'),dis=B('Disarm Opponent',body,{actor:'a',target:'b'});
+  let r=arrange([atk,dd,dis],[],true);
+  assert(!r.play.some(e=>e.id===dis.id),'the Disarm is not drawn while the engine still waits');assert.deepEqual(r.hold.map(e=>e.id),[dis.id]);
+  assert(r.play.some(e=>e.id===dd.id),'its dice still show at once');
+  // location, damage, then the Endurance roll: still held
+  const loc=B('Hit Location','x',{actor:'a',target:'b',location:'Chest'}),dl=DI('Hit Location · d20');
+  r=arrange([dl,loc],r.hold,true);assert(!r.play.some(e=>!e.roll),'nothing but dice while waiting');
+  const hit=B('Kethan hits Chest','x',{actor:'a',impact:{target:'b',location:'Chest',hpLost:4},px:{total:4}}),dm=DI('Damage · Chest');
+  r=arrange([dm,hit],r.hold,true);assert(!r.play.some(e=>!e.roll));
+  const wnd=WND(),de=DI('Endurance');
+  r=arrange([de,wnd],r.hold,false);
+  const ids=r.play.map(e=>e.id),at=e=>ids.indexOf(e.id);
+  assert(at(hit)>=0&&at(dis)>=0&&at(hit)<at(dis),'the blow first, then the Disarm');
+  // one attack and its effect: the Disarm is folded into the blow, which knows where the weapon goes
+  const ev=r.play,bi=at(hit),di=at(dis),hb=beat([atk,...ev],bi+1),db=beat([atk,...ev],di+1);
+  assert.equal(hb.cue.record.disarm.type,'disarm');assert.equal(db.consumed,true,'no second swing for the Disarm');
+  // and so in play, where the attack entry was in an earlier batch than its blow
+  const hb2=beat(ev,bi),db2=beat(ev,di);
+  assert.equal(hb2.cue.record.disarm&&hb2.cue.record.disarm.type,'disarm','without the attack entry: still part of the blow');assert.equal(db2.consumed,true);
+ }
+ // a defensive Disarm (the defender's, after a parry): drawn after the parry, with its own movement
+ const atk=ATK(),par=B('Marek parries','x',{actor:'b'}),dis=B('Disarm Opponent',"Kethan's weapon lands 1m away.",{actor:'b',target:'a'}),dh=B('No Damaging Hit','x',{actor:'a'});
+ const r=arrange([atk,par,dis,dh],[],false),ids=r.play.map(e=>e.id);
+ assert.deepEqual(ids,[atk.id,par.id,dh.id,dis.id]);
+ const db=JSON.parse(A.run(`JSON.stringify(pitsStageBeat(${JSON.stringify(r.play)},3,${JSON.stringify(names)}))`));
+ assert.equal(db.consumed,false,'the defender\'s Disarm keeps its own movement');
+});
 test('a blow takes its effects and consequences into one record; those beats have no motion of their own',()=>{
  const atk=ATK(),press=B('Press Advantage','Marek cannot attack on the next Turn, but may act otherwise.',{actor:'a'}),hit=HIT(),wnd=WND(),
   limb=B('Limb Disabled',"Marek's Right Leg becomes unusable until healed to positive HP. They fall prone.",{}),end=B('FIGHT ENDS','Kethan wins. Marek is incapacitated.',{});
@@ -268,5 +325,36 @@ test('every Pits script parses (a syntax error in the browser-only part must not
   new vm.Script(fs.readFileSync(path.join(root,'experiments',f),'utf8'),{filename:f});
  const html=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8');
  new vm.Script(html.match(/<script>([\s\S]*?)<\/script>/)[1],{filename:'practice-combat-inline.js'});
+});
+// (owner's fight record, 2026-11-14: against the computer, the opponent's Serious Wound and Endurance dice came after
+// the blow, so the knockout and Victory were drawn before the roll that caused them)
+test('an automatic fighter\'s wound dice are shown before the blow they follow, not after the knockout',()=>{
+ const R=label=>({roll:{actor:'b',label,values:[1]}});
+ const atk=ATK(),dmg={roll:{actor:'a',label:'Damage · Head',values:[8,1]}},hit=B('Kethan hits Head','9 total',{actor:'a',impact:{target:'b',location:'Head',hpLost:9},px:{total:9}});
+ const stun=R('Serious Wound · 1d3 stunned turns'),st=B('Serious Wound · Stunned','Marek cannot attack for the next 3 Turns.',{});
+ const endu=R('Endurance · serious wound to Head'),wnd=B('SERIOUS WOUND · Head','Marek Endurance 44/53% (SUCCESS) versus the attack 3 (CRITICAL). Fails to resist.',{});
+ const end=B('FIGHT ENDS','Kethan wins. Marek loses consciousness from a Serious Wound to Head.',{});
+ const r=arrange([atk,dmg,hit,stun,st,endu,wnd,end],[],false);
+ const lab=e=>e.roll?e.roll.label.split(' ')[0]:e.title;
+ assert.deepEqual(r.play.map(lab),['Kethan attacks','Damage','Serious','Endurance','Kethan hits Head','Serious Wound · Stunned','SERIOUS WOUND · Head','FIGHT ENDS']);
+ // dice after the exchange (a new turn) stay where they are
+ const r2=arrange([atk,dmg,hit,B('Round 2','AP refresh.',{}),R('Regain Footing · Marek brawn')],[],false);
+ assert.deepEqual(r2.play.map(lab),['Kethan attacks','Damage','Kethan hits Head','Round 2','Regain']);
+});
+// (Work's record C1, 2026-11-14, served from an older build: Gauntlet, the opponent evades, a Major Wound to the
+// Right Arm; the knockout was drawn while the opponent's Endurance dice were still rolling)
+test('Work C1: an automatic opponent\'s Major Wound Endurance roll is shown before the blow and the end',()=>{
+ const R=label=>({roll:{actor:'b',label,values:[77]}});
+ const atk=ATK(),ev=B('Marek evades','5 vs 45% — CRITICAL. 1 AP remaining.',{actor:'b',exid:1});
+ const loc={roll:{actor:'a',label:'Hit Location · d20',values:[14]}},dmg={roll:{actor:'a',label:'Damage · Right Arm',values:[7,1]}};
+ const hit=B('Kethan hits Right Arm','7 weapon (7) +1d2 (+1) = 8 total; 0 parry; 0 armour; 8 HP lost.',{actor:'a',impact:{target:'b',location:'Right Arm',hpLost:8},px:{total:8}});
+ const endu=R('Endurance · major wound to Right Arm');
+ const wnd=B('MAJOR WOUND · Right Arm','Marek Endurance 77/53% (FAILURE) versus the attack 15 (SUCCESS). Fails to resist.',{});
+ const end=B('FIGHT ENDS','Kethan wins. Marek has a Major Limb Wound to the Right Arm: incapacitated and prone.',{});
+ const r=arrange([atk,ev,loc,dmg,hit,endu,wnd,end],[],false);
+ const lab=e=>e.roll?e.roll.label.split(' ')[0]:e.title;
+ const order=r.play.map(lab);
+ assert(order.indexOf('Endurance')<order.indexOf('Kethan hits Right Arm'),'Endurance dice before the blow: '+order.join(' | '));
+ assert(order.indexOf('Kethan hits Right Arm')<order.indexOf('FIGHT ENDS'));
 });
 console.log(passed+' pits stage tests passed');

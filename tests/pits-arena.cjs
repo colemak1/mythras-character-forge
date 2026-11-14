@@ -7,7 +7,7 @@ function arena(search=''){
  const output={innerHTML:'',addEventListener(){}};
  const ctx={console,URLSearchParams,setTimeout:()=>0,clearTimeout(){},setInterval:()=>0,clearInterval(){},location:{search},
   sessionStorage:{getItem:()=>null},localStorage:{getItem:()=>null,setItem(){}},alert(){},
-  document:{querySelector:s=>s==='#root'?output:s==='#homeLink'?{addEventListener(){}}:null,querySelectorAll:()=>[],getElementById:()=>null},
+  document:{addEventListener(){},querySelector:s=>s==='#root'?output:s==='#homeLink'?{addEventListener(){}}:null,querySelectorAll:()=>[],getElementById:()=>null},
   window:{matchMedia:()=>({matches:false}),requestAnimationFrame(){}}};
  vm.createContext(ctx);
  for(const f of ['js/combat-rules.js','js/data.js','experiments/practice-character.js','experiments/practice-guidance.js','experiments/pits-view.js','experiments/pits-game.js','experiments/pits-stage.js','experiments/pits-arena.js'])
@@ -17,7 +17,7 @@ function arena(search=''){
  run(`(()=>{startRun();R=null;V.busy=false;const a=S.fighters.a,b=S.fighters.b;
   for(const f of [a,b]){f.weapon='sword';f.shield='none';f.weaponGuard=null;ensureEffectState(f);f.ap=2;f.apMax=2;f.prone=false;f.disarmed=false;f.braced=false;f.stunnedLocations={};f.skipAttack=0;f.pressedTurns=0;f.overextendedTurns=0;}
   S.phase='fight';S.pending=null;S.order=['a','b'];S.turnIndex=0;S.disengaged=false;S.engagement='equal';S.tie=null;})()`);
- return {run,out:output};
+ return {run,out:output,ctx};
 }
 let passed=0;const test=(n,f)=>{f();passed++;console.log('PASS '+n);};
 const A=arena();
@@ -125,5 +125,23 @@ test('blocked and armoured blows are worded truthfully, never as an injury',()=>
  assert.match(line({total:6,blocked:6,blockedBy:'parry',afterParry:0,armour:0,wound:0,before:7,after:7,loc:'Chest'}).head,/^Parried/);
  assert.match(line({total:3,blocked:0,blockedBy:'',afterParry:3,armour:3,wound:0,before:7,after:7,loc:'Chest'}).head,/^Armour held/);
  assert.match(line({total:9,blocked:4,blockedBy:'parry',afterParry:5,armour:2,wound:3,before:7,after:4,loc:'Chest'}).math,/9 damage − 4 parry − 2 armour = 3 HP lost/);
+});
+test('the result dialog is drawn once, in the current layout and in each alternative bottom layout',()=>{
+ const B=arena();vm.runInContext(fs.readFileSync(path.join(root,'experiments/pits-bottom.js'),'utf8'),B.ctx);
+ B.run(`S.phase='over';S.winnerId='a';S.winner='a';S.showEndModal=true;V.busy=false;V.hold=null;render()`);
+ const count=()=>(B.out.innerHTML.match(/class="result-backdrop"/g)||[]).length;
+ assert.equal(count(),1,'current layout');
+ for(const L of ['A','B','C','D','E']){B.run(`PB.layout='${L}';render()`);assert.equal(count(),1,'layout '+L);
+  assert.equal((B.out.innerHTML.match(/id="resultTitle"/g)||[]).length,1,'one resultTitle in layout '+L);}
+});
+test('a new opponent starts with an empty Current exchange: the last bout\'s blows are history only',()=>{
+ const B=arena();
+ B.run(`S.logs=[{id:1,title:'Kethan attacks',body:'x',meta:{exid:1,actor:'a'}},{id:2,title:'Kethan hits Chest',body:'x',meta:{actor:'a'}},
+  {id:3,title:'FIGHT ENDS',body:'Kethan wins.',meta:{}},{id:4,title:'New Opponent',body:'x',meta:{}},{id:5,title:'Encounter 2 · Initiative',body:'x',meta:{}}];V.busy=false`);
+ assert.equal(B.run('paExchanges().length'),0);
+ const html=B.run('pitsArenaDeckHtml()'),cur=html.slice(html.indexOf('Current exchange'),html.indexOf('Combat chronicle'));
+ assert(!/hits Chest|Chest/.test(cur),'no old injury as the current result');
+ B.run(`S.logs.push({id:6,title:'Marek attacks',body:'x',meta:{exid:2,actor:'b'}})`);
+ assert.equal(B.run('paExchanges().length'),1);
 });
 console.log(passed+' pits arena tests passed');

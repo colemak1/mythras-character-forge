@@ -71,6 +71,10 @@ const box=(page,sel)=>page.evaluate(s=>{const e=document.querySelector(s);if(!e)
       const one=()=>page.evaluate(()=>({sh:document.documentElement.scrollHeight,ih:innerHeight}));
       await until(page,s=>s.phase==='fight'&&!s.pend&&!s.hasR&&s.turn==='a',{name:'turn'});
       let m=await one();assert.equal(m.sh,m.ih,`page height ${m.sh} equals window ${m.ih} (turn)`);
+      // (Work, 2026-11-13: Switch Weapon Hand, Change Range and Regain Footing were cut off with an ellipsis)
+      const cut=await page.evaluate(()=>[...document.querySelectorAll('#root .act b')].filter(b=>{const r=b.getBoundingClientRect(),q=b.closest('.act').getBoundingClientRect();
+        return b.scrollWidth>b.clientWidth+1||(getComputedStyle(b).overflow!=='visible'&&b.scrollHeight>b.clientHeight+1)||r.bottom>q.bottom||r.right>q.right;}).map(b=>b.textContent));
+      assert.deepEqual(cut,[],'action names shown whole');
       const acts=await page.evaluate(()=>[...document.querySelectorAll('#root .act')].map(e=>{const r=e.getBoundingClientRect();return {t:r.top,b:r.bottom,l:r.left,r:r.right};}));
       assert(acts.length>0,'actions are drawn');
       for(const a of acts)assert(a.t>=0&&a.b<=vp.height&&a.l>=0&&a.r<=vp.width,'every action inside the viewport');
