@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (Pits: rules check list for Chat)_
+_Last updated: 2026-11-14 by Claude (Pits: five rules fixes from #333)_
 
 ## Where things stand
 
@@ -16,9 +16,7 @@ _Last updated: 2026-11-14 by Claude (Pits: rules check list for Chat)_
 
 ## Next
 
-0000000000000000000000000000001. **ChatGPT (Chat), checked 2026-11-14 (Pits Core rules):** docs-only PR #333 adds the `Core says` column to PR #331's 27-row checklist: 22 OK; five WRONG (RC-07, RC-08, RC-12, RC-21, RC-25). **RC-11 (Evade prone) is OK for humanoids** (Core p.103). **Next: Claude** — merge #333 into #331's branch and implement/test the five wrong rows; correct the mistaken D-CE1 attribution in `docs/decisions.md`.
-
-0000000000000000000000000000000. **Claude, 2026-11-14 (rules check before beta):** the owner wants the Pits rules right before beta testing (tempo is judged with the Lost? button instead). `docs/pits-rules-check-20261114.md` lists what the Pits does today on the common path (27 rows), each with code and claimed page. Main suspect: RC-11 (every Evade leaves the defender prone). **Next: ChatGPT (Chat)** checks each row against Core, OK or the case with page. **Then Claude** fixes every WRONG row with a test.
+0000000000000000000000000000001. **Claude, done 2026-11-14 (Pits rules fixes):** Chat's check (#333, merged into this PR) found 5 WRONG of 27; all five fixed with tests (RC-07 Hopeless, RC-08 Failure vs Fumble, RC-12 most severe grade, RC-21 Disarm rounding and cap, RC-25 Impale Incapacitated). D-CE1 corrected in `docs/decisions.md` (the earlier ruling misattributed its source; Failure vs Fumble gives nothing). RC-08 also changes Play Mode. **Next: ChatGPT (Chat)**, three short questions under Known limits in `docs/pits-rules-check-20261114.md` (do Fatigue/Impale/Entangle grades also take the most severe instead of stacking; two Serious legs; hiding Hopeless actions). **Owner:** beta testing can start on the rules side.
 
 000000000000000000000000000000. **Claude, done 2026-11-14 (Lost? button):** next to Report fight, **Lost?** (or `?`) marks the moment a player stops following the fight and saves it at once with the fight record (`[Lost #n]` reports); the window tells the player the last few actions. How to read one: `docs/pits-reports.md`, "Lost?". Needs Report fight's one-time setup (Work and owner, below). **Owner:** press it whenever you or a tester lose the thread, then say "go through the fight reports".
 

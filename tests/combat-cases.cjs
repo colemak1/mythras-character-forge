@@ -52,11 +52,11 @@ test('C5-A01..A23 the action list follows Core pp.91-93 names and costs',()=>{
  for(const n of ['Delay','Assess Situation','Drop Weapon','Signal','Speak','Use Luck Point','Ward Location'])assert.match(src,new RegExp('\\["'+n+'"'),n+' is a free (0 AP) entry');
  assert.doesNotMatch(src,/Change Combat Stance|Shove \/ Grapple|Dodge \/ Evade/,'non-Core action labels are gone');
 });
-test('C5-P03..P10, E01, E02 Differential table (Core pp.51, 94; D-CE1)',()=>{
+test('C5-P03..P10, E01, E02 Differential table (Core pp.51, 94–95; D-CE1 as corrected, RC-08)',()=>{
  const t=(a,b)=>run(`playEffectsWon("${a}","${b}")`);
  assert.equal(t('Success','Failure'),1);assert.equal(t('Critical','Failure'),2);assert.equal(t('Success','Fumble'),2);assert.equal(t('Critical','Fumble'),3);
  assert.equal(t('Success','Success'),0);assert.equal(t('Critical','Critical'),0);assert.equal(t('Failure','Failure'),0);
- assert.equal(t('Failure','Fumble'),1,'D-CE1 (Core p.94)');assert.equal(t('Fumble','Failure'),-1);assert.equal(t('Fumble','Fumble'),0);assert.equal(t('Failure','Success'),-1);
+ assert.equal(t('Failure','Fumble'),0,'RC-08: No Benefit (Core pp.51, 95)');assert.equal(t('Fumble','Failure'),0);assert.equal(t('Fumble','Fumble'),0);assert.equal(t('Failure','Success'),-1);
 });
 test('C5-P09 no parry counts as a failed defence',()=>{
  run('S=freshState();S.rollLog=[{label:"Sword",pct:60,roll:30,tier:"Success",combat:true,combatKind:"style",combatRole:"attack",oppTier:null}];APP.playNoParry(0);');

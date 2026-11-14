@@ -3,7 +3,7 @@
 **Asked by:** the owner, before beta testing: "not all the rules are 100% accurate". **For:** ChatGPT (Chat), with the
 Core rulebook. **Claude:** builds each fix with a test.
 
-**Audit result:** 22 OK; 5 WRONG (RC-07, RC-08, RC-12, RC-21, RC-25). Compared against the owner-uploaded *Mythras Core Rulebook*, printed pages cited below; Core-table claims were checked against rendered PDF pages as well as extracted text. This is a **rule/code check**, not a live fight test.
+**Audit result:** 22 OK; 5 WRONG (RC-07, RC-08, RC-12, RC-21, RC-25). **All five fixed 2026-11-14 (Claude), each with a test; see "Fixes" at the end.** Compared against the owner-uploaded *Mythras Core Rulebook*, printed pages cited below; Core-table claims were checked against rendered PDF pages as well as extracted text. This is a **rule/code check**, not a live fight test.
 
 The last full review (`docs/the-pits-combat-procedure-review.md`) is from before PR #181; most of its NEEDS CODE rows
 were built since. This pass covers only what happens in **ordinary fights**, as the code does it **today**. For each
@@ -72,3 +72,21 @@ Code: `js/combat-rules.js` (shared rules), `experiments/practice-combat.html` (t
 
 **Reply format:** a docs-only PR adding a column "Core says" to this file (OK or the case), or a short chat answer the
 owner pastes to Claude. Claude then fixes every WRONG row with a test, and lists anything not changed under Known limits.
+
+## Fixes (Claude, 2026-11-14)
+
+| ID | Change | Test |
+|---|---|---|
+| RC-07 | `CombatRules.gradeAttempt`: a target of 0 (Hopeless) is a plain Failure, never the 01–05 automatic success or a fumble. The Pits' `rollSkill` uses it (result carries `hopeless:true`). Play Mode already skipped Hopeless rolls. | `combat-rules.cjs`, `practice-procedure.cjs` RC-07 |
+| RC-08 | `CombatRules.effectsWon`: Failure against Fumble wins 0 (both directions), in Play Mode and the Pits. D-CE1 corrected in `docs/decisions.md`. | `combat-rules.cjs`, `combat-cases.cjs`, `practice-procedure.cjs` RC-08 |
+| RC-12 | `combatTarget` and `evadeTarget` take the most severe of prone (Formidable), a Serious weapon arm or leg (Hard per leg, as before), and blinded (Herculean) via `CombatRules.mostSevereGrade`, instead of multiplying them. Prone with a Serious arm, Combat Style 70: 35%, was 24%. | `combat-rules.cjs`, `practice-procedure.cjs` RC-12, `practice-combat-ux.cjs` |
+| RC-21 | `disarmResistSkill` rounds up (D-CE2) and has no 200% cap (Core p.37): 65 at Hard is 44 (was 43); 120 at Very Easy is 240 (was 200). | `combat-rules.cjs` |
+| RC-25 | `CombatRules.impaleIncapacitates`: an Impale Effects cell reading Incapacitated (value 4) incapacitates the victim; the fight ends once that hit's wound is resolved. It no longer counts as a Hopeless grade in `impaleGrade`. | `combat-rules.cjs`, `practice-procedure.cjs` RC-25 |
+
+Golden bouts (`tests/fixtures/pits-golden.json`) regenerated: only bout 1 changed, because of RC-08 (a Failure parry against a fumbled attack no longer wins Disarm). Its seed moved 246 → 250 so it still shows a half-blocked parry.
+
+**Known limits (question for ChatGPT (Chat), Severity 3):**
+
+- **Condition grades still stack with situational ones.** `effectiveSkill` adds Fatigue, a lodged weapon and an entangled torso as steps (Wearied plus a Formidable impale = Hopeless), and applies them on top of `combatTarget`/`evadeTarget` (prone and Wearied = Formidable then Formidable). RC-12 ruled only on prone with a Serious arm. Does "most severe grade" (Core pp.38, 101) cover Fatigue, Impale and Entangle too? Play Mode already treats Fatigue as a floor (the harsher of it and Encumbrance). If yes, Claude makes the Pits take the most severe of all of them.
+- **Two Serious legs** count as two grades (Formidable) for Evade, read as Core p.110 "each" leg imposing a grade. Before this fix they multiplied (Hard of Hard, about 4/9). Confirm two legs is Formidable, or one grade only.
+- **Hopeless actions are still offered.** A fighter at 0% can press Parry or Evade (spending 1 AP) and always fails; Core p.38 says no attempt can be made. Hiding those buttons is a UI change for a later batch.

@@ -170,4 +170,47 @@ test('a parrying Entangle (arena convention) stores the winning parry roll for t
  run(`applyEffect('entangle')`);
  assert.equal(run('S.fighters.b.entangled.loc'),'Right Arm');assert.equal(run('S.fighters.b.entangled.origin.roll'),33);
 });
+// Rules check 2026-11-14 (docs/pits-rules-check-20261114.md, PR #333): the five WRONG rows.
+test('RC-07: a Hopeless target allows no attempt; 01–05 is a Failure, not a success (Core pp.37–38)',()=>{
+ setup('sword');
+ for(const roll of [1,5,50,100])assert.equal(run(`rollSkill(0,${roll}).name`),'failure','roll '+roll);
+ assert.equal(run('rollSkill(0,3).hopeless'),true);
+ run('S.fighters.b.fatigue=7');                         // Semi-Conscious: Hopeless grade
+ assert.equal(run('effectiveSkill(S.fighters.b,60)'),0);
+ assert.equal(run('rollSkill(effectiveSkill(S.fighters.b,60),2).name'),'failure');
+ assert.equal(run('rollSkill(1,3).name'),'success','a 1% target is still an allowed roll');
+});
+test('RC-08: Failure against Fumble wins no Special Effect in the Pits (Core pp.51, 95)',()=>{
+ assert.equal(run('effectsWonBy(1,0)'),0);assert.equal(run('effectsWonBy(0,1)'),0);
+ assert.equal(run('effectsWonBy(2,0)'),2);assert.equal(run('effectsWonBy(2,1)'),1);
+});
+test('RC-12: prone with a Serious weapon arm is Formidable, not Formidable then Hard (Core pp.38, 101)',()=>{
+ setup('sword');
+ run(`(()=>{const a=S.fighters.a;a.style=70;a.evade=60;a.weaponHand='Right Arm';a.prone=true;a.blindedTurns=0;a.hp['Right Arm']=0;})()`);
+ assert.equal(run(`zoneClass(S.fighters.a,'Right Arm')`),'serious');
+ assert.equal(run('combatTarget(S.fighters.a)'),35,'70 at Formidable, not 24');
+ run(`S.fighters.a.prone=false`);assert.equal(run('combatTarget(S.fighters.a)'),47,'the arm alone is Hard');
+ run(`S.fighters.a.prone=true;S.fighters.a.hp['Right Arm']=100;`);assert.equal(run('combatTarget(S.fighters.a)'),35,'prone alone is Formidable');
+ run(`S.fighters.a.blindedTurns=2;S.fighters.a.hp['Right Arm']=0;`);assert.equal(run('combatTarget(S.fighters.a)'),7,'blinded Herculean is the most severe');
+ run(`(()=>{const a=S.fighters.a;a.blindedTurns=0;a.prone=true;a.hp['Right Leg']=0;})()`);
+ assert.equal(run('evadeTarget(S.fighters.a)'),30,'prone with a Serious leg: Formidable 60 → 30');
+});
+test('RC-25: a lodged weapon in an Incapacitated Impale cell ends the fight (Core p.98)',()=>{
+ const impale=siz=>{
+  setup('longspear');run(`S.fighters.b.siz=${siz}`);hit({impale:true});
+  answer(...Array(run('R.defs.length')).fill(2));
+  run('chooseImpaleDamage(1)');
+  if(run('S.pending&&S.pending.kind')==='impaleLeave')run('chooseImpaleLeave(false)');
+ };
+ impale(10);                                             // SIZ 1–10, Large weapon: Incapacitated
+ assert.equal(run('S.fighters.b.impaledWounds.length'),1);
+ assert(['over','between'].includes(run('S.phase')),'the fight ends');
+ assert.equal(run('S.winnerId'),'a');
+ assert.match(run('S.endReason'),/incapacitated by the weapon lodged in the Chest/);
+ assert.equal(run('impaleGrade(S.fighters.b)'),0,'Incapacitated is not counted as a Hopeless grade');
+ impale(13);                                             // SIZ 11–20, Large weapon: Herculean
+ assert.equal(run('S.phase'),'fight','a Herculean impale does not end the fight');
+ assert.equal(run('impaleGrade(S.fighters.b)'),3);
+ assert.equal(run('effectiveSkill(S.fighters.b,60)'),6);
+});
 console.log(passed+' practice procedure tests passed');

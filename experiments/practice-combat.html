@@ -546,7 +546,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <div class="pits-subbar"><a href="../index.html#/the-pits">&larr; Choose a character</a><a href="#" id="homeLink">Reset bout</a></div>
 <main class="main" id="root"></main>
 
-<script src="../js/combat-rules.js?v=ae609fd04d"></script>
+<script src="../js/combat-rules.js?v=30ed5a5732"></script>
 <script src="../js/data.js?v=e863ceddbb"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
 <script src="practice-guidance.js?v=c187d04720"></script>
@@ -680,9 +680,17 @@ const fatigueRow=f=>FATIGUE_TABLE[Math.min(9,f.fatigue||0)];
 // Past Incapacitated the table bars all action; the arena keeps the last penalties.
 function fatigueAPLoss(f){return -(fatigueRow(f).ap??-3)||0;}
 function fatigueInitLoss(f){return -(fatigueRow(f).init??-8)||0;}
+// Core p.98: the grade a lodged weapon imposes. A table "Incapacitated" cell
+// is not a grade (RC-25): it ends the fight (impaleIncapacitated), so it
+// adds no difficulty to the rolls still made in that exchange.
 function impaleGrade(f){
  ensureEffectState(f);
- return Math.max(0,...f.impaledWounds.map(w=>CombatRules.impaleGrades(f.siz,w.weaponSize)));
+ return Math.max(0,...f.impaledWounds.map(w=>CombatRules.impaleGrades(f.siz,w.weaponSize))
+  .filter(g=>g<CombatRules.IMPALE_INCAPACITATED));
+}
+function impaleIncapacitated(f){
+ ensureEffectState(f);
+ return f.impaledWounds.find(w=>CombatRules.impaleIncapacitates(f.siz,w.weaponSize))||null;
 }
 function effectiveSkill(f,pct){
  if(!f)return pct;ensureEffectState(f);
@@ -2635,15 +2643,17 @@ function log(title,body,kind='system',detail='',meta=null){
  if(V.capturing)V.queue.push(entry);
  if(S.logs.length>110)S.logs.shift();
 }
-// A d100 against a skill: the level of success is CombatRules.gradeRoll.
+// A d100 against a skill: the level of success is CombatRules.gradeAttempt.
+// A target of 0 is Hopeless (Core p.38, RC-07): no attempt can succeed, so
+// 01–05 is not an automatic success; the result is a plain Failure.
 function rollSkill(pct,forcedRoll=null){
- const r=forcedRoll==null?d100():forcedRoll,grade=CombatRules.gradeRoll(r,pct);
- return {roll:r,grade:CombatRules.GRADE_VALUE[grade],label:grade.toUpperCase(),name:grade};
+ const r=forcedRoll==null?d100():forcedRoll,grade=CombatRules.gradeAttempt(r,pct);
+ return {roll:r,grade:CombatRules.GRADE_VALUE[grade],label:grade.toUpperCase(),name:grade,hopeless:pct<=0};
 }
 function opposedBetter(x,y){return CombatRules.opposedWins(x,y);}
 // Special Effects won by one numeric grade over another (negative: the other
-// side wins them). The arena counts Failure against Fumble as one effect; the
-// Core table gives none. Kept until ruled on (docs/decisions.md, D-CE1).
+// side wins them). Failure against Fumble wins none (Core pp.51, 95; RC-08,
+// docs/decisions.md D-CE1 as corrected 2026-11-14).
 const GRADE_NAMES=['fumble','failure','success','critical'];
 function effectsWonBy(mine,theirs){
  return CombatRules.effectsWon(GRADE_NAMES[mine],GRADE_NAMES[theirs]);
@@ -2652,24 +2662,22 @@ function weaponRoll(w,maxDie,cramped=false,forcedRolls=null){let v=cramped?{dice
  let arr=forcedRolls??Array.from({length:v.dice[0]},(_,i)=>i===0&&maxDie?v.dice[1]:die(v.dice[1]));
  return {total:arr.reduce((a,b)=>a+b,0)+v.bonus,detail:`${arr.join('+')}${v.bonus?`+${v.bonus}`:''}`,rolls:arr,sides:v.dice[1],bonus:v.bonus,count:v.dice[0]}}
 // Verified Mythras Core: page 101 (prone = Formidable), page 51 (over-100 differential rolls).
+// Several situational grades (prone, a seriously wounded arm, blinded) do not
+// multiply: the most severe one applies (Core pp.38, 101; RC-12).
 function combatTarget(f,tool='weapon'){
- let pct=f.style;
- if(f.prone)pct=CombatRules.skillAtGrade(pct,2);
  const arm=tool==='shield'?shieldArmOf(f):f.weaponHand;
- if(arm&&zoneClass(f,arm)==='serious')pct=CombatRules.skillAtGrade(pct,1);
- if(f.blindedTurns>0)pct=Math.max(1,CombatRules.skillAtGrade(pct,3));
- return pct;
+ const steps=CombatRules.mostSevereGrade(f.prone?2:0,arm&&zoneClass(f,arm)==='serious'?1:0,f.blindedTurns>0?3:0);
+ return steps>=3?Math.max(1,CombatRules.skillAtGrade(f.style,steps)):CombatRules.skillAtGrade(f.style,steps);
 }
 // Core p.110: a usable but seriously injured leg makes leg-dependent tasks
 // one difficulty grade harder until healed to a Minor Wound. Two injured legs
 // each impose a grade. Partial function after First Aid does not double-count.
+// Prone and blinded are separate grades: the most severe applies (RC-12).
 function evadeTarget(f){
- let pct=f.prone?CombatRules.skillAtGrade(f.evade,2):f.evade;
- for(const loc of ['Right Leg','Left Leg']){
-  if(zoneClass(f,loc)==='serious'||f.partialLimbs?.[loc])pct=CombatRules.skillAtGrade(pct,1);
- }
- if(f.blindedTurns>0)pct=Math.max(1,CombatRules.skillAtGrade(pct,3));
- return pct;
+ let legs=0;
+ for(const loc of ['Right Leg','Left Leg'])if(zoneClass(f,loc)==='serious'||f.partialLimbs?.[loc])legs++;
+ const steps=CombatRules.mostSevereGrade(f.prone?2:0,legs,f.blindedTurns>0?3:0);
+ return steps>=3?Math.max(1,CombatRules.skillAtGrade(f.evade,steps)):CombatRules.skillAtGrade(f.evade,steps);
 }
 function limbDisabled(f,loc){return f.disabled.includes(loc)&&!f.partialLimbs?.[loc];}
 function releasePinnedBy(f){
@@ -3627,11 +3635,19 @@ function resolveHit(){
           }else log('Impale blocked',`Armour/parry prevents a wound; the weapon does not lodge.`,'system');
         }
         const cls=zoneClass(def,loc);
+        // Core p.98: a lodged weapon whose Impale Effects cell reads
+        // Incapacitated incapacitates the victim; the fight ends (RC-25).
+        const afterWound=()=>{
+          const lodged=['over','between'].includes(S.phase)?null:impaleIncapacitated(def);
+          if(lodged){endFight(atk.id,`${def.name} is incapacitated by the weapon lodged in the ${lodged.loc} `
+            +`(Core p.98, Impale Effects: SIZ ${def.siz} against a ${SIZE_WORD[lodged.weaponSize]||'larger'} weapon).`);return;}
+          endAction();
+        };
         const followingWound=()=>{
           if(p.impaleLeaveChoice){p.impaleLeaveChoice=false;p.kind='impaleLeave';p.impaleLeaveFinish=followingWound;render();return;}
           if(wound>0&&(cls==='serious'||cls==='major')){
-            resolveWound(atk,def,loc,cls,wound,p.attackRoll,()=>endAction());
-          }else endAction();
+            resolveWound(atk,def,loc,cls,wound,p.attackRoll,afterWound);
+          }else afterWound();
         };
         // Core p.104: damage before reductions above the target's SIZ knocks
         // them back 1m per 5 points (or part) of the excess, no extra metre;
@@ -3850,7 +3866,7 @@ function endFight(winnerId,reason){
   S.pending=null;for(const f of Object.values(S.fighters||{})){f.pinnedGear=null;f.pinnedBy=null;}
   const winner=S.fighters[winnerId],loser=S.fighters[winnerId==='a'?'b':'a'];
   loser.status='Defeated';S.endReason=reason;S.winner=winner.name;S.winnerId=winnerId;
-  const woundEnding=/(?:serious|major)(?: limb)? wound|loses consciousness from|dies from a major wound/i.test(reason);
+  const woundEnding=/(?:serious|major)(?: limb)? wound|loses consciousness from|dies from a major wound|incapacitated by the weapon lodged/i.test(reason);
   const hit=woundEnding?loser.lastDamage:null;
   S.finalCause=hit&&HIT_LOCS.includes(hit.loc)?{
     type:'injury',location:hit.loc,severity:zoneClass(loser,hit.loc),hpLost:hit.wound,
