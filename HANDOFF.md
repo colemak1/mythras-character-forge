@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (Pits: Report fight)_
+_Last updated: 2026-11-14 by Claude (Pits: first fight report fixed)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-14 by Claude (Pits: Report fight)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+00000000000000000000000000000. **Claude, done 2026-11-14 (first fight report):** Report fight works end to end (Work's setup and the owner's secret are in place; the export runs). Report `20261114-045813` ("blade isnt actually hitting body"): blows to a fighter on the floor stopped above the body; fixed (attacker aims low). Ledger: `docs/pits-report-ledger.md`. **Owner:** keep reporting; say "go through the fight reports" for the next batch.
 
 0000000000000000000000000000. **Claude, done 2026-11-14 (Report fight):** the Pits top bar has **Report fight** in place of Copy fight record: a note plus the fight record, saved to the site's database (no sign-in needed; optional name), exported on request to the `pits-reports` branch for Claude and ChatGPT; diagnoses in `docs/pits-report-ledger.md`. How it works: `docs/pits-reports.md`. **Next: ChatGPT (Work)**, once this is merged: the one-time setup in `docs/pits-reports.md` (run the migration, make the export key, give it to the owner privately). **Owner:** add the key as the repository secret `PITS_REPORTS_TOKEN`. Then report fights while playing, and say "go through the fight reports".
 
