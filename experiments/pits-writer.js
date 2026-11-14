@@ -142,6 +142,9 @@ function create(opt){
     f[m]=function(...a){if(S0.now!=null&&(m==='key'||m==='impulse')&&a[ti]<S0.now)a[ti]=S0.now;
       if(f.grounded&&!f.groundWrite){if(m==='step')return this;
         if(m==='key'||m==='impulse'){const g=ground(a[1]);if(!g)return this;a[1]=g;}}
+      // aiming low (lowAim, set by play while this fighter strikes one on the floor): the phrase's keys are written
+      // leaning and bending into it, the hips lower (owner's fight report, 2026-11-14)
+      else if(m==='key'&&f.lowAim){const v={...a[1]};for(const k in f.lowAim)if(v[k]!=null)v[k]+=f.lowAim[k];a[1]=v;}
       dirty=Math.min(dirty,a[ti]-REC*2);return orig.apply(this,a);};}
   for(const f of [A,B]){const w=f.walk;f.walk=function(foot,t0,...r){if(f.grounded&&!f.groundWrite)return this;dirty=Math.min(dirty,t0-400);return w.call(this,foot,t0,...r);};}
   const run=t=>{const r=simulate(F,t,{from:PS.resumeFrom(last,dirty)});last=r;dirty=Infinity;return r;};
@@ -915,12 +918,14 @@ function intent(S,id,kind,u,o){
   o=o||{};const f=S.F[id],pk=o.pick==null?0:o.pick,n=arr=>o.index!=null?arr[o.index%arr.length]:pk<.5||arr.length<2?arr[0]:arr[Math.min(arr.length-1,1+Math.floor((pk-.5)*2*(arr.length-1)))];
   if(kind==='attack'){
     S.chambered=id;
-    const c=n(CHAMBERS[f.weapon.family==='thrust'?'thrust':'cut']);
+    const c=n(CHAMBERS[f.weapon.family==='thrust'?'thrust':'cut']),D=S.F[id==='a'?'b':'a'];
     // the off hand: the shield stays forward; an empty hand comes forward to balance the drawn-back weapon
-    f.key(u,{...c,h:c.h.slice(),...(f.shieldR?{}:{o:[26,-12]})},'together');
+    // (against a fighter on the floor the wind-up is already low, so the blow does not have to get down as it goes in)
+    const lowC=D.grounded&&!f.grounded?lowAimFor(f):null,cc={...c};if(lowC)for(const k in lowC)if(cc[k]!=null)cc[k]+=lowC[k];
+    f.key(u,{...cc,h:c.h.slice(),...(f.shieldR?{}:{o:[26,-12]})},'together');
     // too far out to attack from here (the first exchange, or after the range opened): the attacker comes in to
     // striking distance now, with the weapon drawn back, so the resolved blow needs no walk first
-    const D=S.F[id==='a'?'b':'a'],G=(f.weapon.family==='thrust'?161:170)+(f.weapon.len-SWORD)*REACH,e=gapOf(f,D)-G;
+    const G=(f.weapon.family==='thrust'?161:170)+(f.weapon.len-SWORD)*REACH,e=gapOf(f,D)-G;
     if(e>8&&!f.grounded)return takeMeasure(f,u+60,e,G,S.W.look,{chambered:true});
     return u+260;
   }
@@ -936,6 +941,10 @@ const variants=(S,id,kind)=>kind==='attack'?CHAMBERS[S.F[id].weapon.family==='th
 
 // one phrase, played from wherever the two stand. keep: the frames of the phrase before (a phrase that carries on
 // from it, like the collapse after the wound, is written in the same frame)
+// how much further an attacker leans (degrees), bends (degrees) and sinks (units) to strike a fighter on the floor
+const LOW_AIM={lean:18,bend:14,py:-12};
+// (a short weapon has to go further down for it: half as much again under 70 units long)
+const lowAimFor=f=>{const k=f.weapon.len<70?1.5:1,o={};for(const c in LOW_AIM)o[c]=LOW_AIM[c]*k;return o;};
 function play(S,id,aid,t,st,keep){
   const P=PHRASES[id],F=S.F,A=F[aid],D=F[aid==='a'?'b':'a'];let reach=0;
   const width=f=>planned(f,'ff')-planned(f,'bf');
@@ -967,7 +976,11 @@ function play(S,id,aid,t,st,keep){
     if(Math.abs(e)>(S.absorb?8:1)){S.seq.notes.push({kind:'measure',t,who:aid,by:Math.round(e)});t=takeMeasure(A,t,e,gapOf(A,D)-e,S.W.look,{chambered:S.chambered===aid});}
   }
   const a=placed(A,keep?keep.a:standAt(A)-P.ref.a+reach),d=placed(D,keep?keep.d:standAt(D)-P.ref.d);
-  const r=P.run(S.W,a,d,t+P.lead,st||{});
+  // striking a fighter on the floor (not from the floor): the whole phrase aims low (see lowAim above)
+  // (only a blow that lands on the body: a miss, a parry or an evade must clear the body, not dip into it)
+  const low=!keep&&id!=='collapse'&&id!=='approach'&&D.grounded&&!A.grounded&&/^(wound|armour|zero|partial-parry)$/.test((st&&st.outcome)||'');
+  if(low)A.lowAim=lowAimFor(A);
+  let r;try{r=P.run(S.W,a,d,t+P.lead,st||{});}finally{A.lowAim=null;}
   r.dx={a:a.dx,d:d.dx};
   return r;
 }

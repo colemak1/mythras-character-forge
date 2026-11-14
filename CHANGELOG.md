@@ -14,6 +14,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 - **Right: details.** Point at (or tab to) any action, defence, effect or hit location to see what it does and its odds. They are counted face by face with the engine's own grading and opposed-roll rule: the grade split for your roll; for a defence, the chance to stop the blow and who earns Special Effects against the roll already made; for an effect that is resisted (Trip, Disarm, Blind, Compel, Stun, Bleed), the chance it works, by skill. History is in the panel's header.
 - Choices are made in two steps: select (click or number key), then Confirm or Enter.
 - Tests: `tests/pits-bottom.cjs` (odds checked against hand-worked cases) and `tests/visual/pits-bottom.cjs`.
+## The Pits trial: blows reach a fighter on the floor (first fight report)
+
+- From the owner's first fight report ("blade isnt actually hitting body"): a blow to a fighter sitting or lying on the floor stopped in the air about half a body above them; the attacker stood upright and the arm could not reach down. Now the attacker's wind-up and blow aim low against a fighter on the floor (leaning, bending and sinking into it, more for a short weapon), so the blade meets the body. Misses, parries and evades are not lowered, so they still clear the body. Checked for sword, dagger, greatsword and spear to the chest, abdomen and head; jumps and blade-through-body counts are unchanged.
+- Test: `tests/pits-spring-live.cjs`. Report and finding: `docs/pits-report-ledger.md`.
 
 ## The Pits: Report fight (in place of Copy fight record)
 

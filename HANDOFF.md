@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (Pits: bottom deck E reworked; Report fight)_
+_Last updated: 2026-11-14 by Claude (Pits: bottom deck E reworked; first fight report fixed)_
 
 ## Where things stand
 
@@ -17,6 +17,8 @@ _Last updated: 2026-11-14 by Claude (Pits: bottom deck E reworked; Report fight)
 ## Next
 
 00000000000000000000000000000. **Claude, done 2026-11-14 (Pits bottom deck, PR #328):** the owner chose layout E and asked for it to help new players keep up. A to D and the switcher are gone. Left: actions and defences. Middle: exchange tracker, the exchange told line by line, and the decision (Special Effects and Choose Location moved here from the window). Right: details and exact odds for whatever is pointed at. See `docs/pits-bottom-layouts.md`. **Owner:** play a bout and say what still gets lost. **Then (owner's order):** tempo (how fast beats come and what holds), then a rules accuracy pass on the Pits. Note: `tests/visual/pits-motion-live.cjs` has one failure that also fails on `main` before this change (longspear bout never pauses for a decision); not yet looked at.
+
+00000000000000000000000000000. **Claude, done 2026-11-14 (first fight report):** Report fight works end to end (Work's setup and the owner's secret are in place; the export runs). Report `20261114-045813` ("blade isnt actually hitting body"): blows to a fighter on the floor stopped above the body; fixed (attacker aims low). Ledger: `docs/pits-report-ledger.md`. **Owner:** keep reporting; say "go through the fight reports" for the next batch.
 
 0000000000000000000000000000. **Claude, done 2026-11-14 (Report fight):** the Pits top bar has **Report fight** in place of Copy fight record: a note plus the fight record, saved to the site's database (no sign-in needed; optional name), exported on request to the `pits-reports` branch for Claude and ChatGPT; diagnoses in `docs/pits-report-ledger.md`. How it works: `docs/pits-reports.md`. **Next: ChatGPT (Work)**, once this is merged: the one-time setup in `docs/pits-reports.md` (run the migration, make the export key, give it to the owner privately). **Owner:** add the key as the repository secret `PITS_REPORTS_TOKEN`. Then report fights while playing, and say "go through the fight reports".
 
