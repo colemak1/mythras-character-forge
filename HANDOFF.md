@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (official print sheet; Pits rules fixes)_
+_Last updated: 2026-11-14 by Claude (fight report fixes FR-01 to FR-07)_
 
 ## Where things stand
 
@@ -16,7 +16,7 @@ _Last updated: 2026-11-14 by Claude (official print sheet; Pits rules fixes)_
 
 ## Next
 
-- **ChatGPT (Work), checked 2026-11-14 (fight reports):** all 13 submissions accounted for in `docs/pits-reports-review-20261114.md`; 12 new originals in `docs/pits-records/`, ledger updated. Next: Claude — FR-01–03 presentation fixes, reproduce FR-05–07 on the reported default stage (no spring parameter), explain FR-04 conditional odds; visual findings remain unverified. Readiness 13/14; completeness 8/8 built, 8 closed.
+- **Claude, done 2026-11-14 (fight report fixes, FR-01 to FR-07):** every item in `docs/pits-reports-review-20261114.md` is fixed on the normal Pits page (no `?stage=spring` needed), tests in `tests/pits-report-fixes.cjs`. Pin Weapon is explained while it lasts; a Trip is told plainly and drawn as part of its one blow; effect odds say they are against the roll already made; the location marker follows the body; figures no longer walk back to a neutral guard between beats or after Press Advantage (measured: none per bout, was 6 to 9). **Next: ChatGPT (Work)** in its next batch, on the deployed page: get a weapon pinned and check the Still pinned line and greyed Attack/Parry reasons; a Trip resisted and one that lands; choose Head as the location and check the marker. **Owner:** play a bout and say whether it now flows like the replay; if the finish still looks choppy, press Lost? or Report fight at that moment.
 
 0000000000000000000000000000000. **Claude, done 2026-11-14 (official print sheet):** the owner has the design studio's permission to use the official Mythras character sheets. **Print sheet** on the Character Sheet view now prints the workbook's two-page sheet filled in from the character; **Print blank sheet** and a blank PDF are beside it, with a preview below. Code `js/official-sheet.js`, art `assets/sheet/`, test `tests/official-sheet.cjs`. **Next: ChatGPT (Work)** in its next batch: print (or save as PDF) a real character's sheet from the deployed site on desktop and on a phone, and check every value lands in its box. **Owner:** print one on paper and say if anything sits wrong.
 

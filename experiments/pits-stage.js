@@ -1134,7 +1134,7 @@ function psMotionFigs(){
     if(!m||m.weapon.len!==wk.len||m.weapon.key!==wk.kind||m.swap!==!!f.look.swap){PS.M[id]=PL().fighter(id,wk,f.look.swap,f.look);PS.M[id].keep=20000;psPlaceM(id);}
   }
 }
-// A lull: once nothing has moved for a while, footwork the engine asked for (a new range, the end of Press Advantage) is drawn, and a
+// A lull: once nothing has moved for a while, footwork the engine asked for (a new range) is drawn, and a
 // figure the engine has put on (or taken off) the floor without a motion of its own goes down or gets up.
 function psLull(){
   const L=PL();
@@ -1158,8 +1158,7 @@ function psLull(){
     // No neutral reset between beats (report review FR-06, 2026-11-14: "they should never be resetting; the replay is
     // correct"): a fighter keeps the pose its last movement ended in, through every choice and roll, and the next
     // movement starts from it (liveBlow gathers the stance first), as in the replay. Only footwork the engine asks for
-    // is drawn here: the new range after a range change that came while something was playing, and leaving Press
-    // Advantage once the engine ends it.
+    // is drawn here: the new range after a range change that came while something was playing.
     if(!f.relocate||PS.clock<PS.busyUntil+300||f.end||f.mEnd||f.mDown||f.pressRole)continue;
     const why=f.relocate;f.relocate=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,PS.gap,psHurt(f)));psEmit('recover',{actor:id,why,replay:psReplaying()});
   }
@@ -1465,8 +1464,9 @@ function pitsStageSync(){
   // Press Advantage: the effect is active while the engine says the opponent still cannot attack (pressedTurns).
   {const pr=['a','b'].filter(i=>view[i]&&(view[i].pressedTurns||0)>0),active=S.phase==='fight'&&pr.length===1?pr[0]:null;
    for(const id of ['a','b']){const f=PS.fig[id];f.pressRole=active?(id===active?'cover':'press'):null;
-     // released: the pair gets out of it at the next lull
-     if(f.pressWas&&!f.pressRole)f.relocate='press';f.pressWas=f.pressRole;}}
+     // released: the pair stays where the press left it, and the next movement starts from there, as in the replay
+     // (it used to walk both back to a neutral guard at the next lull: report review FR-06)
+     f.pressWas=f.pressRole;}}
   PS.fighters.lodged={a:pitsStageLodged(view,'a'),b:pitsStageLodged(view,'b')};
   PS.fighters.tether={a:pitsStageEntangle(view,'a'),b:pitsStageEntangle(view,'b')};
   const over=(S.phase==='over'||S.phase==='between')&&S.winnerId&&!V.busy;
