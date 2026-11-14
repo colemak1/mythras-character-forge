@@ -6,9 +6,12 @@
 // The studies' sweep (pits-sweep.cjs) checks single exchanges from guard; this one checks what real play does.
 // Not in CI (minutes). Run by hand after changing the writer, the phrases or the live layer:
 //   node tests/sweep/pits-live-sweep.cjs [fights per pairing=6] [exchanges per fight=6] [weapon,weapon,...]
-// It prints each fault and a count by kind. The count is the number to drive down; it is not zero yet.
+// It prints each fault, a count by kind, and frame counts (FRAMES). The counts are the numbers to drive down; not zero yet.
+// COLLIDE=1 runs it with the collision rule on (blades cannot pass through the other fighter).
 const PL=require('../../experiments/pits-spring-live.js'),PS=require('../../experiments/pits-spring.js');
 const {fault}=require('../lib/pits-motion-rules.cjs');
+// COLLIDE=1: with the collision rule on (blades cannot pass through the other fighter; pits-spring.js, api.collide)
+if(process.env.COLLIDE==='1')PS.collide=true;
 const N=+(process.argv[2]||6),X=+(process.argv[3]||6);
 const WK={dagger:{kind:'blade',len:50},shortsword:{kind:'blade',len:68},rapier:{kind:'blade',len:112,thin:1},sword:{kind:'blade',len:92},
   longsword:{kind:'blade',len:104},falchion:{kind:'blade',len:84},mace:{kind:'club',len:70},axe:{kind:'axe',len:84},
@@ -55,10 +58,21 @@ function fight(wa,wb,shield,seed){
   const end=Math.round(tau(t)/2)*2+400;
   w.S.W.run(end+20);
   const q={fighters:F,rec:w.S.W.last(),contactList:w.S.seq.contactList,pauses:[],dur:end};
-  let e=null;try{e=fault(q,8);}catch(err){e='error: '+err.message;}
+  let e=null;const inC=t=>q.contactList.some(c=>t>=c.t-90&&t<=c.t+(c.hold||0)+90);
+  for(let u=0;u<=end;u+=8){if(inC(u))continue;for(const id of ['a','b']){const o=id==='a'?'b':'a',P=n=>PS.world(q,id,u,n),O=n=>PS.world(q,o,u,n),hn=P('Hn'),tip=P('tip');
+    if(seg(O('Hd'),hn,tip)<13)FR.head++;else if(['S','M','P','K','F','bK','bF'].some(n=>seg(O(n),hn,tip)<2))FR.body++;else if(['E','oE'].some(n=>seg(O(n),hn,tip)<2))FR.arm++;
+    if(seg(P('Hd'),hn,tip)<17)FR.own++;FR.n++;}}
+  for(const id of ['a','b']){let pj=null;for(let u=0;u<=end;u+=2){const j={};for(const n of ['E','Hn','tip'])j[n]=PS.world(q,id,u,n);
+    if(pj)for(const n of ['E','Hn','tip']){const d=Math.hypot(j[n][0]-pj[n][0],j[n][1]-pj[n][1]);if(d>(n==='tip'?20:6)){FR.snaps++;FR['s_'+n]=(FR['s_'+n]||0)+1;}}pj=j;}}
+  for(const id of ['a','b']){let prev=null;const f=F[id];for(let u=0;u<=end;u+=2){const p=PS.pose(f,PS.sample(q,id,u),u);
+    if(prev)for(const ft of ['ff','bf']){const d=Math.abs(p[ft+'x']-prev[ft+'x']);if(d>.01&&p[ft+'y']<1.5&&prev[ft+'y']<1.5){FR.slides++;FR.slideMax=Math.max(FR.slideMax,d);}}prev=p;}}
+  try{e=fault(q,8);}catch(err){e='error: '+err.message;}
   return {e,frozen:[...new Set(frozen)],log};
 }
-const kinds={};let n=0,bad=0,seed=1;
+// frame counts (every 8 ms outside a real contact, every 2 ms for snaps and feet): head, a blade inside the other's head;
+// body/arm, on the other's body or arm joints; own, across its own head; snaps, a hand, elbow or point jumping; slides, a
+// planted foot moving. Unlike the fault list (the first fault of each fight), these count every frame.
+const kinds={};let n=0,bad=0,seed=1;const FR={n:0,head:0,body:0,arm:0,own:0,slides:0,slideMax:0,snaps:0};
 const kind=e=>e.replace(/-?\d+(\.\d+)?/g,'N').replace(/\b[ab]\b(?=[.'])/g,'X').replace(/ at N.*$/,'');
 for(let i=0;i<W.length;i++)for(let j=i;j<W.length;j++)for(const sh of [false,true]){
   if(sh&&(i+j)%2)continue;                                     // (half the pairings also with shields)
@@ -69,3 +83,5 @@ for(let i=0;i<W.length;i++)for(let j=i;j<W.length;j++)for(const sh of [false,tru
 }
 console.log('\n'+n+' fights of up to '+X+' exchanges, '+bad+' with a fault. By kind:');
 for(const [k,v] of Object.entries(kinds).sort((a,b)=>b[1]-a[1]))console.log(String(v).padStart(5)+'  '+k);
+
+console.log('FRAMES '+JSON.stringify(FR));

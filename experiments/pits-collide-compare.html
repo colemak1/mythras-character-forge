@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script>/* Light/Dark before first paint: saved choice, else the device setting. */
+try{(function(){var m=null;try{m=localStorage.getItem("sitota-mode")}catch(e){}
+if(m!=="light"&&m!=="dark")m=typeof matchMedia==="function"&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
+document.documentElement.setAttribute("data-mode",m);})();}catch(e){}</script>
+<title>The Pits: collision comparison</title>
+<link rel="stylesheet" href="pits-stage.css?v=ccb5857e29">
+<link rel="stylesheet" href="../sitota-theme.css?v=c8b123e401">
+<link rel="stylesheet" href="pits-choreography.css?v=008ad7a1bc">
+<style>
+.cc-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:800px){.cc-pair{grid-template-columns:1fr}}
+.cc-pair h2{font-size:1rem;margin:0 0 4px}
+.cc-pair .cc-count{margin:4px 0 0;font-size:.9rem}
+.cc-hit{fill:none;stroke:var(--danger,#b3261e);stroke-width:2.5}
+</style>
+</head>
+<body class="pc-page">
+<main class="pc-main">
+  <p class="pc-back"><a href="pits-fight-study.html">&larr; Fight study</a> &middot; <a href="practice-combat.html?stage=spring">The Pits (spring trial)</a></p>
+  <h1>Collision: the same fight, without and with</h1>
+  <p class="pc-lead">Both sides play the <b>same fight</b>: the same weapons, the same exchanges and outcomes, written by the same
+    movement. On the right, a blade cannot pass through the other fighter: when one would, the hand is pushed back out (the
+    blade slides, it does not turn), or, if the arm cannot go there, the wrist turns it away. Real contacts (parries, wounds)
+    are left alone. A <b>red ring</b> marks a frame where a blade is inside the other fighter, outside a real contact. The
+    outcomes are random test fights, not rolled Mythras; a prototype only. In the live trial, add <code>&amp;collide=on</code>
+    to the address to try it there.</p>
+  <div class="pc-controls">
+    <label>Weapons <select id="ccPair">
+      <option value="sword,sword">Broadsword against broadsword</option>
+      <option value="greatsword,sword">Greatsword against broadsword</option>
+      <option value="rapier,axe">Rapier against axe</option>
+      <option value="spear,sword">Spear against broadsword</option>
+      <option value="pike,sword">Pike against broadsword</option>
+      <option value="halberd,greatsword">Halberd against greatsword</option>
+    </select></label>
+    <label>Fight <select id="ccSeed"></select></label>
+  </div>
+  <div class="cc-pair">
+    <section class="ps-wrap pc-wrap" aria-label="Without collision"><h2>Without collision (today)</h2>
+      <div class="ps-stage pc-stage"><svg class="ps-scene" id="ccOff" preserveAspectRatio="xMidYMax meet" role="img" aria-label="The fight without collision"></svg></div>
+      <p class="cc-count" id="ccOffN"></p></section>
+    <section class="ps-wrap pc-wrap" aria-label="With collision"><h2>With collision</h2>
+      <div class="ps-stage pc-stage"><svg class="ps-scene" id="ccOn" preserveAspectRatio="xMidYMax meet" role="img" aria-label="The fight with collision"></svg></div>
+      <p class="cc-count" id="ccOnN"></p></section>
+  </div>
+  <div class="pc-controls">
+    <button type="button" id="ccPlay" class="pc-primary">Play</button>
+    <button type="button" id="ccBack" aria-label="Back one frame">&minus; frame</button>
+    <button type="button" id="ccFwd" aria-label="Forward one frame">+ frame</button>
+    <label>Speed <select id="ccSpeed"><option value="1">Normal</option><option value="0.5">Half</option><option value="0.25">Quarter</option></select></label>
+    <label><input type="checkbox" id="ccLoop" checked> Loop</label>
+  </div>
+  <div class="pc-scrub"><input type="range" id="ccScrub" min="0" max="1000" value="0" step="1" aria-label="Position in the fight"></div>
+  <p class="pc-readout" id="ccReadout"></p>
+  <p class="pc-keys">Space: play or pause. Left and right arrows: one frame. Drag the bar to stop on any moment.</p>
+</main>
+<script src="pits-motion.js?v=5c6cf25c54"></script>
+<script src="pits-spring.js?v=d6e69e0c95"></script>
+<script src="pits-writer.js?v=85e63d4e55"></script>
+<script src="pits-spring-live.js?v=bcba3a2354"></script>
+<script src="pits-collide-compare.js?v=15914f28a9"></script>
+</body>
+</html>

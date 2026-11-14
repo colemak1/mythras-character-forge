@@ -498,6 +498,40 @@ for its dice) and `a141ce5` (every weapon, two-handed grips).
   struck part, limit 26) on `ad0023e` too; `tests/visual/pits-replay.cjs` "many beats played" can fail when a random
   fight is very short.
 
+## Collision: blades cannot pass through the other fighter (owner, 2026-11-14)
+
+The owner asked whether a physics engine would make the movement look more natural. Answer given: not a whole engine
+(it does not know how to fence, the dice decide outcomes the picture must show, and replays must match exactly), but
+physics where it helps: collisions first, then limp falls and dropped weapons. This is the first step.
+
+**The rule** (`pits-spring.js`, `collideBlades`, switch `PitsSpring.collide`, off by default): in the simulation step,
+after the springs and contacts and before the arm's limits, each blade (hand to point) is tested against the other
+fighter's body as capsules (head with its stroke, torso, legs, both arms). Outside a contact of that fighter (a pin, with
+90 ms either side), a blade inside pushes its hand out along the way out, with the wrist keeping the blade's angle, and
+loses its speed into the body. A push never brings the blade across its owner's head or the hand into its own shoulder.
+One budget of 1.5 units a millisecond per hand. After the arm's limits, what the hand could not do the wrist does, turning
+the blade at most 4 units of point travel a millisecond.
+
+**Measured** (`COLLIDE=1 node tests/sweep/pits-live-sweep.cjs 3 6 <weapons>`, frames every 8 ms outside contacts; off → on):
+
+| Weapons | Other's head | Other's body | Other's arms | Own head | Snaps |
+|---|---|---|---|---|---|
+| sword, pike, flail, greatsword, halberd | 5140 → 262 | 2071 → 409 | 364 → 36 | 7796 → 9111 | 1803 → 1776 |
+| spear, longspear, quarterstaff, great axe, axe | 2804 → 214 | 1639 → 256 | 265 → 58 | 6529 → 8075 | 1500 → 1574 |
+| sword, dagger, rapier, longsword, mace | 2888 → 121 | 884 → 146 | 195 → 32 | 6103 → 7671 | 127 → 144 |
+
+Foot slides are the same with and without it (they are older: at most 0.7 units, under a pixel).
+
+**Tried and dropped:** turning the wrist only where it does not cross its own head (own head better, the other's head and
+body worse: 282 → 373 and 115 → 260); a push capped per pass rather than per step (snaps up sevenfold).
+
+**Weak points:** blades across their owner's own head rise by about 20% (the pushed blade has to go somewhere; that kind
+was already the biggest on the backlog). What is left inside the other is mostly at the edges of contacts and on long
+weapons, whose points the wrist turns slowly.
+
+**Comparison page:** `experiments/pits-collide-compare.html`. In the trial: `practice-combat.html?stage=spring&collide=on`.
+**Next, if the owner approves:** turn it on by default in the trial; then the own-head kind; then limp falls.
+
 ## Instructions for Opus (written 2026-11-13, after the fluid-flow batch)
 
 Read `AGENTS.md`, `HANDOFF.md` and the section above first. Work on the branch `claude/fable-combat-fluidity-jus18q` (it contains `claude/go-wf0bsg`), or a session branch started from it. The owner's rule stands: nothing goes to `main` until the spring stage is finished for every weapon; no PR per step.

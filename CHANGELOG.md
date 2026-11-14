@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits trial: collision, a blade cannot pass through the other fighter (comparison)
+
+- New rule in the spring movement: the other fighter's head, body and arms are solid. When a blade would pass into them outside a real contact (a parry, a wound), the hand is pushed back out with the blade keeping its angle, or, where the arm cannot go, the wrist turns it away. It eases out over a few frames and never jumps. Off by default; the trial is unchanged unless opened with `&collide=on`.
+- New page `experiments/pits-collide-compare.html`: the same test fight played side by side without and with the rule, with a red ring wherever a blade is inside the other fighter, and a count of those frames.
+- Measured over 216 test fights (the motion check, all weapon families): frames with a blade inside the other's head fall by 90 to 96%, inside the body by 80 to 87%, through an arm by about 85%. No new jumps. Frames with a blade across its owner's own head rise by about 20% (that was already on the motion backlog).
+- Tests: `tests/pits-collide.cjs` (in CI). The motion check `tests/sweep/pits-live-sweep.cjs` now also prints frame counts, and runs with the rule on with `COLLIDE=1`.
+
 ## The Pits trial: Work's spring batch (grips, Prone chip, Disarm timing, Keep hold, replay result)
 
 - Work's batch was run on a preview two commits old. Its Severity 1 (C1: against the arena's opponent, the knockout came before the Endurance roll that caused it) was already fixed; a test now replays that exact sequence. The two-handed grips of the battleaxe, greatsword and great hammer (A5 to A7) were also already fixed.

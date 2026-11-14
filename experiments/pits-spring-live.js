@@ -22,6 +22,9 @@ const PM=root.PitsMotion||(typeof require==='function'?require('./pits-motion.js
 const PS=root.PitsSpring||(typeof require==='function'?require('./pits-spring.js'):null);
 const PW=root.PitsWriter||(typeof require==='function'?require('./pits-writer.js'):null);
 const L0=PM.LIVE,PACE=1.65,REC=PS.REC;
+// Collision (owner, 2026-11-14): blades cannot pass through the other fighter (pits-spring.js, collide). A comparison
+// for now, off unless the page is opened with ?collide=on, so the same fight can be watched both ways.
+try{if(typeof location!=='undefined'&&/(^|[?&])collide=on\b/.test(location.search||''))PS.collide=true;}catch(e){}
 // the replay: how long after an exchange's last contact (writer time) the next exchange may begin
 const FLOW=300;
 

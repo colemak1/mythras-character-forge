@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (Pits: Work's spring batch fixed)_
+_Last updated: 2026-11-14 by Claude (Pits: collision comparison)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-14 by Claude (Pits: Work's spring batch fixed)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+000000000000000000000000000. **Claude, done 2026-11-14 (collision, a comparison):** the owner asked about a physics engine; built the first physics piece instead: blades cannot pass through the other fighter. Off by default. Frames with a blade inside the other's head fall about 93%, inside the body about 83%, no new jumps; blades across their own head rise about 20%. Details: `docs/pits-animation-direction.md`, "Collision". **Owner:** open `experiments/pits-collide-compare.html` on the branch preview (same fight, without and with, side by side; try several weapons and fights), and the trial with `&collide=on`. Say whether the right-hand side looks better. **Then Claude:** if yes, collision on by default in the trial, then the own-head kind, then limp falls.
 
 00000000000000000000000000. **Claude, done 2026-11-14 (Work's spring batch, PR #325):** Work's preview served `74a9006`, two commits old. C1 (Severity 1) and A5 to A7 were already fixed at `ad0023e`; now fixed: A8, A9, B1, B4, B6, D2, each with a test. Left: Severity 2 clearance faults (A11, A12, B5, C2), the live sweep's backlog; A13 is Severity 3. Details: `docs/pits-animation-direction.md`, "Work's spring batch". **Owner:** play `?stage=spring` on the branch preview (hard refresh; the page's `pits-stage.js?v=` must match `experiments/practice-combat.html` on the branch) and send a fight record for anything still wrong. **Then Claude:** the clearance backlog (blades through the other's head or body), then the stand-in families.
 

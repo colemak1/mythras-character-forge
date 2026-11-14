@@ -209,6 +209,10 @@ function simulate(F,dur,opt){
       }
       out[id]=o;
     }
+    // a blade cannot pass through the other fighter (opt-in, api.collide): the other's head, torso and legs are solid.
+    // Outside a contact (a pin of either fighter, with a margin), a blade that would enter them pushes its hand back out
+    // and loses the speed it had into the body, like a solid object; a real contact is the pins' job and is left alone.
+    if(api.collide&&ids.length===2)collideBlades(F,st,out,ids,t);
     // an arm is only so long: a hand carried past its reach stops there (a joint limit, like the wrist's)
     for(const id of ids){const f=F[id],s=st[id],o=out[id],tq=torso(pose(f,o,t));
       for(const [kx,ky,sh] of [['hx','hy',tq.wS],['ox','oy',tq.oS]]){
@@ -232,6 +236,8 @@ function simulate(F,dur,opt){
         const ny=fy+Math.sqrt(Math.max(0,R*R-(o.px-fx)*(o.px-fx)));
         if(ny<o.py){o.py=s.x.py=ny;if(s.v.py>0)s.v.py=0;}
       }}
+    // (what the arm's limits would not let the hand do, the wrist does)
+    if(api.collide&&ids.length===2)collideBlades(F,st,out,ids,t,'wrist');
     // a blade cannot go through the floor: one that would, rests on it (the wrist gives, the hand stays)
     for(const id of ids){const f=F[id],s=st[id],o=out[id],j=solve(pose(f,o,t),f.weapon.len),L=f.weapon.len*(1-Math.min(.8,0));
       if(j.tip[1]>=0)continue;
@@ -249,6 +255,71 @@ function simulate(F,dur,opt){
   }
   Object.defineProperty(rec,'_snaps',{value:snaps,enumerable:false});
   return rec;
+}
+// ----- collision: blades against the other fighter's body (owner, 2026-11-14: "a blade must not pass through") -----
+// The body as capsules (segments with a radius), in world units with y up: the head is the drawn head and its stroke,
+// the torso and legs their drawn strokes with a little room. A blade is its centre line from the hand to the point.
+const BODY_CAPS=[['Hd','Hd',DIM.headR+4],['S','M',7],['M','P',7],['P','K',5],['K','F',4],['P','bK',5],['bK','bF',4],
+  // the arms: upper arm and forearm of both (the weapon arm's hand is where its own blade starts, so short of it)
+  ['wS','E',4],['E','Hn',3],['oS','oE',4],['oE','oHn',3]];
+const COLLIDE_MARGIN=90;   // ms either side of a contact in which a blade may touch (the motion rules' own window)
+const segPt=(p,a,b)=>{const vx=b[0]-a[0],vy=b[1]-a[1],L=vx*vx+vy*vy,u=L?Math.max(0,Math.min(1,((p[0]-a[0])*vx+(p[1]-a[1])*vy)/L)):0;
+  return [a[0]+vx*u,a[1]+vy*u];};
+// the closest points between two segments (sampled along the first: blades and limbs are short, 9 samples is enough
+// at this scale, then refined around the best)
+function segSeg(a0,a1,b0,b1){
+  let best=null;
+  const at=u=>{const p=[a0[0]+(a1[0]-a0[0])*u,a0[1]+(a1[1]-a0[1])*u],q=segPt(p,b0,b1),d=Math.hypot(p[0]-q[0],p[1]-q[1]);return {u,p,q,d};};
+  for(let i=0;i<=8;i++){const r=at(i/8);if(!best||r.d<best.d)best=r;}
+  for(let k=0,h=1/16;k<4;k++,h/=2)for(const u of [best.u-h,best.u+h])if(u>=0&&u<=1){const r=at(u);if(r.d<best.d)best=r;}
+  return best;
+}
+const pinNear=(f,t)=>f.pins.some(p=>t>=p.t0-COLLIDE_MARGIN&&t<=p.t2+COLLIDE_MARGIN);
+function collideBlades(F,st,out,ids,t,mode){
+  for(const id of ids){
+    const f=F[id],o=out[id],s=st[id],oid=ids[0]===id?ids[1]:ids[0],g=F[oid];
+    // (a fighter whose hand is in a contact is the pins' business; the other's blade still cannot pass through it)
+    if(f.noCollide||f.weapon.len<=0||pinNear(f,t))continue;
+    const jo=solve(pose(g,out[oid],t),g.weapon.len),Wo=n=>g.W(jo[n]);
+    const worstAt=oo=>{const j=solve(pose(f,oo,t),f.weapon.len),H=f.W(j.Hn),T=f.W(j.tip);let worst=null;
+      for(const [a,b,r] of BODY_CAPS){const c=segSeg(H,T,Wo(a),Wo(b)),pen=r-c.d;if(pen>0&&(!worst||pen>worst.pen))worst={pen,c};}
+      return worst;};
+    // wrist pass (after the arm's limits): the hand stays, the blade turns in it, as little as clears the body
+    if(mode==='wrist'){const w0=worstAt(o);if(!w0)continue;let best={pen:w0.pen,wr:o.wr};
+      // (at most 3 degrees a millisecond, and less for a long weapon: its point moves no more than 4 units a
+      // millisecond, so it eases round, never jumps)
+      const dmax=Math.min(3,deg(4/Math.max(1,f.weapon.len)));
+      for(let d=dmax/3;d<=dmax+1e-9&&best.pen>0;d+=dmax/3)for(const sg of [1,-1]){const wr=o.wr+sg*d;if(wr<WRIST[0]||wr>WRIST[1])continue;
+        const w=worstAt({...o,wr}),pen=w?w.pen:0;if(pen<best.pen)best={pen,wr};}
+      if(best.wr!==o.wr){o.wr=s.x.wr=best.wr;s.v.wr=0;}
+      continue;}
+    // a few passes (pushing clear of one part can touch another), sharing one budget of 1.5 a millisecond
+    let budget=1.5;
+    for(let pass=0;pass<3&&budget>0;pass++){
+      const worst=worstAt(o);
+      if(!worst)break;
+      // the way out: from the body point to the blade point (if they coincide, away from the other's hips)
+      let nx=worst.c.p[0]-worst.c.q[0],ny=worst.c.p[1]-worst.c.q[1],nl=Math.hypot(nx,ny);
+      if(nl<1e-6){const P=Wo('P');nx=worst.c.p[0]-P[0];ny=worst.c.p[1]-P[1];nl=Math.hypot(nx,ny)||1;}
+      nx/=nl;ny/=nl;
+      // the hand moves (in the fighter's own frame, where x is mirrored by its facing); a bit past, so it stays out
+      // (at most 1.5 a millisecond: a deep crossing is cleared over a few frames, so the hand eases out, never jumps)
+      const lx=f.face*nx,ly=ny,k=Math.min(worst.pen+.5,budget);budget-=k;
+      // not into its own face: a push that would bring the blade across its owner's head is left to the wrist
+      const ownD=oo=>{const j=solve(pose(f,oo,t),f.weapon.len);return Math.hypot(...((p=>[p[0]-j.Hd[0],p[1]-j.Hd[1]])(segPt(j.Hd,j.Hn,j.tip))));};
+      const moved={...o,hx:o.hx+lx*k,hy:o.hy+ly*k};
+      if(ownD(moved)<DIM.headR+4&&ownD(o)>=DIM.headR+4)break;
+      // nor in toward its own shoulder, where the elbow would flip over: that too is left to the wrist
+      {const tq=torso(pose(f,moved,t)),sh=tq.wS,r=Math.hypot(tq.S[0]+moved.hx-sh[0],tq.S[1]+moved.hy-sh[1]);
+        if(r<ARM*.45&&r<Math.hypot(tq.S[0]+o.hx-sh[0],tq.S[1]+o.hy-sh[1]))break;}
+      // the weapon slides out, it does not turn: the wrist keeps the blade at the angle it had (as far as a wrist turns)
+      const w0=solve(pose(f,o,t),f.weapon.len).w,j1=solve(pose(f,moved,t),f.weapon.len);
+      const wr=Math.max(WRIST[0],Math.min(WRIST[1],moved.wr+norm(w0-j1.w)));
+      o.hx=moved.hx;o.hy=moved.hy;o.wr=wr;s.x.hx=o.hx;s.x.hy=o.hy;s.x.wr=wr;
+      // inelastic: the hand keeps its speed along the body, not into it
+      const vin=s.v.hx*lx+s.v.hy*ly;if(vin<0){s.v.hx-=vin*lx;s.v.hy-=vin*ly;}
+    }
+  }
 }
 // carry on from the last checkpoint of an earlier run that is before `dirty` (the earliest time anything was added)
 function resumeFrom(prev,dirty){
@@ -421,7 +492,7 @@ function frame(seq,t){
 // Other sequences (pits-fight.js) register here and are built with build(id); the short exchange is the default.
 const SEQS={};
 function buildAny(id){return id&&SEQS[id]?SEQS[id]():build();}
-const api={build:buildAny,register:(id,fn)=>{SEQS[id]=fn;},has:id=>!!SEQS[id],frame,joints,world,sample,simulate,Fighter,SPRING,LAG,CH,REC,GROUND,
+const api={collide:false,build:buildAny,register:(id,fn)=>{SEQS[id]=fn;},has:id=>!!SEQS[id],frame,joints,world,sample,simulate,Fighter,SPRING,LAG,CH,REC,GROUND,
   // the pieces a sequence is written with
   pose,solve,torso,handAt,offFor,footX,footY,sm,rad,norm,WRIST,ARM,PM,resumeFrom,
   seqTime:PM.seqTime,shownDur:PM.shownDur,shownAt:PM.shownAt};
