@@ -13,6 +13,8 @@
   --card-shadow:0 1px 0 #dcdad4, 0 8px 24px -12px #3a383340;
   --hero-filter:saturate(.9) contrast(.97);
   --grain-page:.05; --grain-paper:.15;
+  /* The printed official sheet is paper in both modes: never redefined. */
+  --sheet-paper:#ffffff; --sheet-ink:#1c2a4a; --sheet-rule:#b3392a;
   --font-display:"Fraunces",Georgia,serif;
   --font-ui:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;

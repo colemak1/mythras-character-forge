@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Print sheet: the official Mythras character sheet
+
+- **Print sheet** on the Character Sheet view now prints the official two-page Mythras character sheet (from the Character Creation Workbook, design and layout by Evelyn H.; used with the design studio's permission, owner 2026-11-14), filled in from the character: identity, characteristics and attributes, every skill, languages, magical skills, Magic Points (maximum ringed), passions, cult and devotional pool, magic, current Fatigue, hit locations, armour by location, equipment and ENC limits, combat styles, melee and ranged weapons. Ctrl+P on the sheet view prints the same.
+- **Print blank sheet** and **Blank sheet (PDF)** for players who want to fill one in by hand. A preview of the printed pages sits under the buttons.
+- Rows that don't fit on paper (more than 15 professional skills, 6 passions, 20 items, and so on) end with "+ N more (see the site)" instead of being dropped silently.
+- New: `js/official-sheet.js`, page art in `assets/sheet/`, tests in `tests/official-sheet.cjs`.
+
 ## The Pits: "Lost?" button (What just happened?)
 
 - New **Lost?** button in the Pits top bar (or press `?`). One press marks that moment and saves it at once to the fight reports (`[Lost #n]`), with the whole fight record and a snapshot of what the screen showed: round, the beat being played, the decision waiting, the deck's headline, step and story, the dice tray. No typing needed. Every mark in the bout is also in the record, so Report fight carries them too.

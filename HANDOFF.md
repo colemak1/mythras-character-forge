@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (Pits: Lost? button)_
+_Last updated: 2026-11-14 by Claude (official print sheet)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-14 by Claude (Pits: Lost? button)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+0000000000000000000000000000000. **Claude, done 2026-11-14 (official print sheet):** the owner has the design studio's permission to use the official Mythras character sheets. **Print sheet** on the Character Sheet view now prints the workbook's two-page sheet filled in from the character; **Print blank sheet** and a blank PDF are beside it, with a preview below. Code `js/official-sheet.js`, art `assets/sheet/`, test `tests/official-sheet.cjs`. **Next: ChatGPT (Work)** in its next batch: print (or save as PDF) a real character's sheet from the deployed site on desktop and on a phone, and check every value lands in its box. **Owner:** print one on paper and say if anything sits wrong.
 
 000000000000000000000000000000. **Claude, done 2026-11-14 (Lost? button):** next to Report fight, **Lost?** (or `?`) marks the moment a player stops following the fight and saves it at once with the fight record (`[Lost #n]` reports); the window tells the player the last few actions. How to read one: `docs/pits-reports.md`, "Lost?". Needs Report fight's one-time setup (Work and owner, below). **Owner:** press it whenever you or a tester lose the thread, then say "go through the fight reports".
 
