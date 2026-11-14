@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: "Lost?" button (What just happened?)
+
+- New **Lost?** button in the Pits top bar (or press `?`). One press marks that moment and saves it at once to the fight reports (`[Lost #n]`), with the whole fight record and a snapshot of what the screen showed: round, the beat being played, the decision waiting, the deck's headline, step and story, the dice tray. No typing needed. Every mark in the bout is also in the record, so Report fight carries them too.
+- The window that opens tells the player the last few actions in plain words (only what has been shown so far), with an optional "What confused you?" note, saved with the same mark.
+- Same pipeline as Report fight, so no database change; it works once Report fight's setup is done (`docs/pits-reports.md`).
+- Tests: `tests/pits-lost.cjs`.
+
 ## The Pits: one bottom deck for keeping up with the fight (layout E, reworked)
 
 - **E is the layout.** The owner chose E ("Odds first"); A to D and the Bottom switcher are removed. Phones, and `?bottom=current`, keep the older deck.

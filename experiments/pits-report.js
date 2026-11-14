@@ -100,7 +100,7 @@ function open(recordText,copy){
   });
   note.focus();
 }
-const api={open,send,message,buildOf,readQueue,QUEUE_KEY,SUPABASE_URL,SUPABASE_ANON_KEY};
+const api={open,send,message,buildOf,readQueue,client,QUEUE_KEY,NAME_KEY,SUPABASE_URL,SUPABASE_ANON_KEY};
 root.PitsReport=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

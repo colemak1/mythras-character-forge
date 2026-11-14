@@ -287,6 +287,7 @@ function pitsArenaBarHtml(){
     <div class="pa-tools">${guidanceToggleHtml()}<button type="button" class="toolbutton" data-pa="auto" aria-pressed="${PA.auto}">Auto-roll ${PA.auto?'on':'off'}</button>
     <button type="button" class="toolbutton" data-act="help">Rules</button>
     <button type="button" class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Standard pace'}</button>
+    ${typeof pitsLostButtonHtml==='function'?pitsLostButtonHtml():''}
     ${typeof PitsReport!=='undefined'?'<button type="button" class="toolbutton" data-pa="report" title="Say what went wrong; it is saved with this fight\'s record for Claude and ChatGPT">Report fight</button>':''}
     <button type="button" class="toolbutton" data-pa="fs" aria-pressed="${!!document.fullscreenElement}">Full screen</button>
     <button type="button" class="toolbutton" data-act="reset">Exit battle</button></div>${bout}`;
@@ -311,7 +312,9 @@ function pitsFightRecord(){
   return JSON.stringify({record:'pits-spring-1',at:new Date().toISOString(),page:location.search,ua:navigator.userAgent,
     config,mode:S.mode,guidance:!!V.guidance,quick:!!V.quick,auto:!!PA.auto,bottom:document.body.dataset.bottom||'',
     fighters:{a:{name:S.fighters.a.name,weapon:S.fighters.a.weapon,shield:S.fighters.a.shield},b:{name:S.fighters.b.name,weapon:S.fighters.b.weapon,shield:S.fighters.b.shield}},
-    presented:(V.tape||[]).map(sh),log:(S.logs||[]).map(l=>({id:l.id,t:l.title,b:l.body})),stage});
+    presented:(V.tape||[]).map(sh),log:(S.logs||[]).map(l=>({id:l.id,t:l.title,b:l.body})),stage,
+    // the moments a player pressed "What just happened?" in this bout (pits-lost.js)
+    lost:typeof plMarks==='function'?plMarks():[]});
 }
 // (text: the record taken when the report window opened; the button shows Copied for a moment)
 function pitsCopyRecord(text){
