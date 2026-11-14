@@ -508,9 +508,9 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 .recovery-options small{font:11px/1.5 system-ui;color:var(--accent);max-width:330px}
 
 </style>
-<link rel="stylesheet" href="pits-stone.css?v=ef71caae46">
+<link rel="stylesheet" href="pits-stone.css?v=a495935cd5">
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
-<link rel="stylesheet" href="pits-arena.css?v=64b8700ee9">
+<link rel="stylesheet" href="pits-arena.css?v=476255e3ed">
 <link rel="stylesheet" href="pits-stage.css?v=ccb5857e29">
 <link rel="stylesheet" href="pits-bottom.css?v=a6dcea5a45">
 <link rel="stylesheet" href="../sitota-theme.css?v=c8b123e401">
@@ -552,10 +552,14 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="practice-guidance.js?v=c187d04720"></script>
 <script src="pits-view.js?v=d94d8e0612"></script>
 <script src="pits-game.js?v=3769cec741"></script>
-<script src="pits-arena.js?v=b25a43c6b6"></script>
-<script src="pits-bottom.js?v=ffba0d016b"></script>
-<script src="pits-motion.js?v=e51da43e1a"></script>
-<script src="pits-stage.js?v=892bf8a609"></script>
+<script src="pits-report.js?v=e81f95124d"></script>
+<script src="pits-arena.js?v=1549c55588"></script>
+<script src="pits-bottom.js?v=32d0eb300a"></script>
+<script src="pits-motion.js?v=5c6cf25c54"></script>
+<script src="pits-spring.js?v=d6e69e0c95"></script>
+<script src="pits-writer.js?v=85e63d4e55"></script>
+<script src="pits-spring-live.js?v=bcba3a2354"></script>
+<script src="pits-stage.js?v=16f0fafc9e"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -1716,9 +1720,11 @@ function presentationControlsHtml(){
   return `<div class="presentation-controls" role="group" aria-label="Combat playback">
     ${V.awaitingContinue?`<button class="cta continue-combat" data-act="continue">Continue</button><span class="playback-status">${esc(name||
      'Opponent')} acts next</span>`:`<span class="playback-status">${V.replaying?'Replaying the fight…':V.roll&&!V.roll.settled?'Rolling dice…':'Resolving the exchange…'}</span>`}
-    <button class="toolbutton" data-act="skip">${V.replaying?'Stop replay':'Show results'}</button>
+    <button class="toolbutton" data-act="skip">${V.replaying?'Stop replay':'Show results'}</button>${replayResultButtonHtml()}
   </div>`;
 }
+// During the end-of-fight replay: stop it and open the result window in one step (Work's check D2, 2026-11-14)
+const replayResultButtonHtml=()=>V.replaying?'<button class="toolbutton" data-act="replayShowResult">Show result</button>':'';
 function skipPresentation(){
   if(!V.busy)return;
   clearPresentationTimers();
@@ -2514,7 +2520,7 @@ const endExtraButtonsHtml=()=>`<button type="button" class="cta alt" data-act="s
 function actionHtml(){if(
  V.busy)return (`<div class="resolving"><span class="resolving-icon">✦</span><div><strong>${V.replaying?'REPLAYING THE FIGHT':'RESOLVING THE EXCHANGE'}</strong>`
  +`<small>${V.replaying?'The whole fight again, without stops.':'Player rolls are prompted; enemy dice resolve automatically.'}</small></div>`
- +`<button data-act="skip" class="toolbutton">${V.replaying?'Stop replay':'Show results'}</button></div>`);
+ +`<button data-act="skip" class="toolbutton">${V.replaying?'Stop replay':'Show results'}</button>${replayResultButtonHtml()}</div>`);
  if(S.phase==='between')return (`<div class="endpanel"><span class="eyebrow">Victory</span><h3>Opponent `
  +`Defeated</h3><p>${S.mode==='normal'?'Your character will be restored to full health for the next encounter.':
  'Your wounds and injuries will carry into the next encounter. Action Points will refresh.'} Your next opponent will be stronger.</p><div `
@@ -3968,6 +3974,7 @@ function decoratedClick(e){
   if(act==='togglelog'){V.showLog=!V.showLog;render();document.querySelector('.history-toggle')?.focus?.({preventScroll:true});return;}
   if(act==='continue'){continuePresentation();return;}
   if(act==='skip'){skipPresentation();return;}
+  if(act==='replayShowResult'){const was=V.replaying;skipPresentation();if(was&&['between','over'].includes(S.phase)){S.showEndModal=true;render();}return;}
   if(act==='roll'){if(!V.busy&&R)playCaptured(performManualRoll);return;}
   if(V.busy)return;
   if(R&&act!=='reset'&&act!=='selectloc'&&act!=='help')return;

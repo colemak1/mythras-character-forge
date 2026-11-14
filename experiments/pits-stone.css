@@ -195,7 +195,7 @@ body.pits-stone #root .footer-notes,body.pits-stone #root .footer-notes summary,
 body.pits-stone #root .setup h2,body.pits-stone #root .setup h3{font-family:var(--p-display);letter-spacing:.04em;color:var(--p-text)}
 body.pits-stone #root .mode{background:var(--p-surface-2);border:1px solid var(--p-line-strong);color:var(--p-text);border-radius:1px}
 body.pits-stone #root .mode.on{border-color:var(--p-accent);background:color-mix(in srgb,var(--p-accent) 12%,var(--p-surface-2))}
-body.pits-stone #root .cta{background:var(--p-accent);color:var(--p-on-accent);border:1px solid var(--p-accent);border-radius:1px;font:700 13px var(--p-body);letter-spacing:.06em;text-transform:uppercase;min-height:44px}
+body.pits-stone #root .cta,body.pits-stone .pa-report .cta{background:var(--p-accent);color:var(--p-on-accent);border:1px solid var(--p-accent);border-radius:1px;font:700 13px var(--p-body);letter-spacing:.06em;text-transform:uppercase;min-height:44px}
 
 /* ---------- Narrower screens ---------- */
 @media(max-width:1180px){

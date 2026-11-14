@@ -205,7 +205,7 @@ function pitsBottomDeckHtml(){
   if(layout==='current')return '';
   const c=pbCtx(),last=pbLast();
   const body={A:pbA,B:pbB,C:pbC,D:pbD,E:pbE}[layout](c,last);
-  return `${body}${resultModalHtml()}`;
+  return body;   // (the result dialog is appended once, by render() in practice-combat.html)
 }
 
 // The history list opens in a window (the chronicle panel is gone from these layouts).

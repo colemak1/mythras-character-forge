@@ -5,6 +5,126 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: Report fight (in place of Copy fight record)
+
+- New **Report fight** button in the Pits top bar (every stage). It opens a window to type what went wrong; **Send report** saves the note with the fight record and the build the page was running to the site's database. No sign-in needed (owner: testers may play too); an optional name tells testers apart. Offline, the report is kept on the device and sent with the next one. At most 200 reports a day across the site; nobody can read reports from the site. **Copy the fight record** is still in the window.
+- A manual workflow, **Export Pits fight reports**, copies the reports to the `pits-reports` branch, where Claude and ChatGPT both read them; diagnoses go in `docs/pits-report-ledger.md`. Setup and use: `docs/pits-reports.md` (a database migration for Work, one repository secret for the owner).
+- Fixed: the Pits windows (Rules, and the new report window) had see-through boxes; the fight showed through the text.
+- Tests: `tests/pits-report.cjs`; database permissions for the new table in `tests/db/permissions.cjs`.
+
+## The Pits trial: collision, a blade cannot pass through the other fighter (comparison)
+
+- New rule in the spring movement: the other fighter's head, body and arms are solid. When a blade would pass into them outside a real contact (a parry, a wound), the hand is pushed back out with the blade keeping its angle, or, where the arm cannot go, the wrist turns it away. It eases out over a few frames and never jumps. Off by default; the trial is unchanged unless opened with `&collide=on`.
+- New page `experiments/pits-collide-compare.html`: the same test fight played side by side without and with the rule, with a red ring wherever a blade is inside the other fighter, and a count of those frames.
+- Measured over 216 test fights (the motion check, all weapon families): frames with a blade inside the other's head fall by 90 to 96%, inside the body by 80 to 87%, through an arm by about 85%. No new jumps. Frames with a blade across its owner's own head rise by about 20% (that was already on the motion backlog).
+- Tests: `tests/pits-collide.cjs` (in CI). The motion check `tests/sweep/pits-live-sweep.cjs` now also prints frame counts, and runs with the rule on with `COLLIDE=1`.
+
+## The Pits trial: Work's spring batch (grips, Prone chip, Disarm timing, Keep hold, replay result)
+
+- Work's batch was run on a preview two commits old. Its Severity 1 (C1: against the arena's opponent, the knockout came before the Endurance roll that caused it) was already fixed; a test now replays that exact sequence. The two-handed grips of the battleaxe, greatsword and great hammer (A5 to A7) were also already fixed.
+- Poleaxe and quarterstaff (A8, A9): the lead hand no longer lets go of the shaft when its usual grip point is out of reach; it slides along the shaft to where the arm reaches.
+- Trip (B1): the Prone chip waits until the tripped fighter is sat down. Other falls drawn without a blow also wait until the figure is down.
+- Disarm (B4): when the Disarm is resolved before the throw distance, location or damage rolls, the weapon stays in the hand until the blow is drawn, then lands on the floor once.
+- Impale, Keep hold (B6): the weapon is drawn once, lodged in the wound, with the wielder's hand on its grip; no second blade in the hand.
+- Fight replay (D2): a **Show result** button during the replay stops it and opens the result window.
+- Still open (Severity 2, motion): a held blade or a miss can still pass through the other fighter's head or body on a few beats (A11, A12, B5, C2). Recorded in `docs/pits-animation-direction.md`.
+
+## The Pits trial: every weapon on the spring stage
+
+- All 35 Pits weapons now fight on the `?stage=spring` trial (owner, 2026-11-14). Until now only blades and short one-handed axes, clubs, maces and picks did; two-handed weapons, polearms, spears, the quarterstaff, flails, whip and net fell back to the older movement.
+- The new ones are stand-ins on the existing phrases: two-handed swords, axes and hammers, polearms, the quarterstaff, flails, whip and net use the cut phrases; the shortspear, trident, longspear, xyston and pike use the thrust phrases. Longer weapons stand further apart (the measure grows with length).
+- Two-handed weapons are drawn with the off hand on the weapon: close to the weapon hand on swords, axes and hammers, well up the shaft on staves, spears and polearms. It lets go when the arm is disabled or the weapon is lost.
+- New: `tests/sweep/pits-weapons-browser.cjs` plays a whole bout with every weapon in a browser (all 35 end with no errors).
+
+## The Pits: a knockout waits for the dice that cause it
+
+- Against the arena's own opponent, its Serious Wound and Endurance dice were shown after the blow: the opponent collapsed and Victory appeared before the Endurance roll that knocked it out (owner's fight record, 2026-11-14). The dice of a blow's consequences are now shown before the blow, as they already were when a person rolls them; the blow then lands with its outcome known. Dice that start something new (a Trip, the next attack, a new turn) stay where they were. Also applies to the fight replay.
+
+## The Pits trial: trips sit you down, an impaled weapon stays put, a fight record to report faults
+
+- A successful Trip now puts the fighter on its backside: the swept foot goes out, the hips drop back onto the floor, a hand goes behind and the weapon stays up toward the other fighter. It is no longer the crumble onto the knees used for a defeat (owner, 2026-11-13). Leg wounds and defeats still crumble.
+- Impale, "Leave it in the wound": the weapon is drawn lodged in the wound only. The engine marks the wielder unarmed, and the stage had also thrown a weapon to the floor behind them as if they had been disarmed.
+- New on the `?stage=spring` trial: a **Copy fight record** button in the top bar. It copies the fight's dice and rulings in the order they were shown, the engine's log, and what the stage drew, so a fault seen in play can be replayed exactly.
+- The reported miss order (my miss drawn only after the opponent's next attack and my parry) did not reproduce in scripted or random bouts against either opponent type; a check for it is in the new `tests/visual/pits-spring-scripted.cjs`, with the Impale and Trip cases.
+
+## The Pits trial: the Prone chip waits for the figure; action names shown whole
+
+- On the `?stage=spring` trial a fighter's plate no longer says Prone before the figure is seen to go down. After an Evade the engine has the evader prone from the roll, but the dodge to the ground is drawn only when the exchange is resolved; through the hit location and damage rolls the plate said Prone over a standing figure. The chip now appears at the blow's contact, when the figure goes down (the opponent panel in the bottom layouts too). Rules and state are unchanged; other stages are unchanged.
+- In the two-column action list, long names (Switch Weapon Hand, Change Range, Regain Footing) wrap onto a second line instead of being cut off. The list still fits without scrolling at 1024x768 and up.
+- Checks added to `tests/visual/pits-spring-live.cjs` (plate against figure, every frame) and `tests/visual/pits-layout.cjs` (no clipped action name).
+
+## The Pits: Work's code findings (Disarm, shield strikes, shield sizes, Press Advantage, result dialog, current exchange)
+
+- A Disarm is no longer drawn before its exchange is resolved: it waits with the blow until location, damage and any Endurance roll are done. A Disarm won by the attacker is part of that one blow, and the weapon leaves the hand at its contact. A defender's Disarm is drawn after the parry.
+- On the spring trial a shield strike is drawn as a shield strike, not a sword cut. A strike met by the blade is drawn at a longer measure, so there is room for the blade on the shield.
+- Each shield keeps its own size (buckler, heater, kite, scutum, ...), both in the drawing and in where blows meet it.
+- Press Advantage is drawn on the spring trial: the point stays in the other's face while the other covers.
+- The result window is drawn once, in every bottom layout (it was drawn twice, with duplicate ids).
+- A new opponent starts with an empty Current exchange; the last bout's blows stay in the chronicle.
+- Movement fixes found once the shield-strike test passed: a failed shield parry against a thigh cut, and a long blade's failed parry against a stab to the sword arm.
+
+## The Pits trial: owner's notes from play (order of blows, replay, falls, arm wound)
+
+- A miss is drawn before the next attack. When the other fighter attacked at once after a miss and the engine waited for your reaction, the miss was held back behind that attack, so their swing and your parry were drawn before your miss. Now an exchange that is over plays whole before the next one is declared.
+- A parry that wins a Trip or a Disarm is drawn as the parry first, then the sweep (the engine logs the effect before the blow).
+- The fight replay runs on as one movement. Each exchange starts just after the last one's contact, and the wound, limb and weapon beats no longer hold the picture still.
+- Falls are drawn as the body crumbling where it stands: the knees give, the fighter drops onto them and folds over (legs, failed evades, trips and the defeat). Getting up steps the feet back out into a stance.
+- A Major Wound to an arm ends the fight with the blow, so the figure crumbles from the hit. Its end text mentions blood loss, which the stage had read as a fight lost to bleeding: it drew a plain hit and then a separate fall. A Serious Wound to an arm only makes the arm hang.
+
+## The Pits trial: fluid flow (declare, hold, resolve); the round reset removed
+
+- On the `?stage=spring` trial an exchange now plays the way the owner described it. Choosing Attack draws the weapon back (and brings the attacker in to striking distance) and holds; choosing a parry or an evade sets the blade or shield, or sinks the body, and holds; both figures are completely still while anyone chooses or the dice roll; when the exchange is fully ruled the blow lands at once from the held poses. Fighters no longer go back to a guard after a blow or at a new round: each movement starts from where the last one left them. Declared actions have several variants, picked at random.
+- Fixed: a fighter going prone early, standing up to be hit and going prone again (evades and killing blows); the Arise effect; a killing blow on a fighter already on the ground; a knocked-away weapon jumping back into the hand; a disabled arm snapping to its hang; a wind-up undone by an older movement's late parts; the range marker left behind the fighters.
+- Axe, hatchet, club, mace and military pick bouts run on the trial with the sword's cut phrases as a stand-in. Longer and two-handed weapons still use the earlier movement.
+- New: `tests/pits-spring-live.cjs` (CI), `tests/sweep/pits-live-sweep.cjs` (random whole fights through the live flow against the movement rules), `tests/visual/pits-film.cjs` (slow-motion film strips for review). `docs/pits-animation-direction.md` has "Fluid flow" and "Instructions for Opus". Nothing released; `tests/pits-writer.cjs` still fails on the shield strike, as recorded.
+
+## The Pits trial: round reset; fighters on the ground stay down
+
+- In the `?stage=spring` trial, at each new round both fighters walk back to their places and settle into guard together (owner's idea, to judge by eye).
+- An evade tried against a blow that missed anyway also ends in the dodge to the ground (the engine leaves the evader prone then too), and a fighter the engine has prone stays down while it attacks or defends from the floor, until it regains footing.
+
+## The Pits: evade drawn as a dodge; the trial keeps the flow
+
+- An evade that the engine ends prone is drawn as a dodge: the evader ducks out of the line, steps back long and goes down under control, propped on one hand with the head up and the weapon toward the attacker, instead of the knockout fall (spring movement and the `?stage=spring` trial; the default stage is unchanged).
+- The trial no longer walks fighters back to their stations after every lull (owner: fluidity over strict range); real range changes still walk.
+
+## The Pits: the spring movement on the live stage, as a hidden trial
+
+- `?stage=spring` on the Pits draws bouts between blade fighters with the exchange writer (`experiments/pits-spring-live.js`); everything else, and the Pits without the switch, are unchanged. Nothing released.
+- Findings recorded for the owner (range and the picture, time to write a blow, memory, stand-ins) in `docs/pits-animation-direction.md`, "Live trial".
+- Work's own-blade finding (PR #323): chambers, raised holds and guards now keep a fighter's blade off its own head in the studies, held by a new movement rule; the shield strike still breaks it (one CI test fails, recorded).
+
+## The Pits: a failed parry still looks tried (owner's request)
+
+- When the record says a parry was tried and failed (`tried:'parry'` or `'shield'`, or a defence named for a blow that landed in full), the defender goes for the parry with the blade or the shield, a beat late and a little short, and the blow lands first.
+- Shown in the thrust and shield studies; covered by the sweep (1,008 more fights) and the CI tests.
+
+## The Pits: shields in the exchange writer (step 3, second family)
+
+- **Shields** sized by type (buckler to scutum), carried forward on the off hand and drawn in the studies.
+- **Shield parry and ward:** every parry meets the blow on the shield's face (low blows on the lower rim, or as low as the shield reaches).
+- **Shield strike:** the shield driven onto the target; it knocks the defender back a step, is met by the blade, or stops short.
+- **Generated study:** `pits-fight-study.html?seq=shields`, broadsword and heater against broadsword and buckler.
+- **Sweep:** the 36 weapon pairings again with shields on both sides; CI runs a sample. General fixes found on the way: contact records use the point of the blade actually used; decision boundaries only wait, never cut a movement short; stepping back keeps the blade's angle until the step is made.
+- Still not wired into the live Pits (owner: everything lands at once).
+
+## The Pits: weapon profiles and the thrust family (step 3 of the path to the live Pits)
+
+- **Weapon profiles in the exchange writer.** Each fighter's weapon gives a blade length and a family: short blades and the rapier thrust, the swords cut. The sword phrases fit any blade (contact points, measure, a long point lifted when a short weapon comes inside it).
+- **Thrust family:** a thrust that lands (any location), one that falls short, and the deflection for a parried thrust. The collapse now follows any blow that ends the fight.
+- **Generated study:** `pits-fight-study.html?seq=thrust`, a dagger against a broadsword, built from scripted records.
+- **The sweep:** `tests/sweep/pits-sweep.cjs` checks 1,008 one-exchange fights (six weapons against each other, every location, four results) against the movement rules; all pass. CI runs a sample.
+- **Fixes:** the parried cut, turned down, no longer passes close to the defender's sword elbow; a fighter stepping back out of a too-close measure lifts the point away instead of lowering it through the other.
+- Still not wired into the live Pits (owner: everything lands at once).
+
+## The Pits: the exchange writer (step 1 of the path to the live Pits)
+
+- **New `experiments/pits-writer.js`.** It turns resolved exchanges, in the engine's terms (attacker, hit location, outcome, damage, what follows), into the spring movement, one exchange after another, each starting from wherever the last one left both fighters. Phrases are written for an attacker and a defender, relative to where each stands; the attacker takes the measure first when the gap is not the phrase's, and either fighter gathers a stance left too wide or too narrow.
+- **The ten-beat fight study is now the writer fed eight fixture records** (`experiments/pits-fixtures.js`). It is the same fight, and passes all 19 checks in `tests/pits-fight.cjs`. One change: the decision boundary after the deflection is 80 ms later, so a hold freezes a pose rather than a swing (every exchange now ends on a decision).
+- **New phrase "cut lands"** (head, chest, belly, either arm) and a withdrawal for a thigh cut that does not end the fight, so every result at every hit location can be drawn from an ordinary exchange.
+- **Tests:** `tests/pits-writer.cjs`: the records and the phrase table; the fight with the roles swapped; another order from other places; all 84 single exchanges (either fighter, seven locations, six outcomes) against the movement rules.
+- Not wired into the live Pits (owner, 2026-11-12: everything lands at once when all weapon families are done).
+
 ## The Pits: fight study pace fixed at the owner's choice
 
 - The owner chose 1.10 times the previous pace on the slider. The fight now plays at 1.65 times its own time (about 5.7 s), and the slider is removed.

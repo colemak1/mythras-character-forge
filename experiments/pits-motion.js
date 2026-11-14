@@ -66,7 +66,17 @@ function solve(p,wlen){
   // Between keys the blade therefore rides with the forearm; it can only swing as far as a wrist can turn.
   const Hn=wa.end,fore=deg(Math.atan2(Hn[1]-wa.mid[1],Hn[0]-wa.mid[0])),w=p.wr==null?p.w:fore+p.wr;
   const bln=wlen*(1-clamp(p.fs||0,0,.8)),tip=[Hn[0]+Math.cos(rad(w))*bln,Hn[1]+Math.sin(rad(w))*bln];
-  return {P:t.P,M:t.M,S,wS,oS,Hd:t.Hd,K:fl.mid,F:fl.end,bK:bl.mid,bF:bl.end,E:wa.mid,Hn,oE:oa.mid,oHn:oa.end,tip,
+  // a two-handed weapon (p.two: how far along it): the off hand holds the weapon that far in front of the weapon hand,
+  // wherever the weapon goes (the weapon is drawn from the weapon hand forward: a sword's hands close together, a
+  // spear's or a polearm's lead hand well up the shaft); if the arm cannot reach, it reaches as far as it can
+  // if the arm cannot reach that far, the hand slides along the shaft to the nearest point it can reach, so it never
+  // lets go of a staff or a polearm (Work's checks A8 and A9, 2026-11-14)
+  let ob=oa;
+  if(p.two>0){const cw=Math.cos(rad(w)),sw=Math.sin(rad(w)),at=d=>[Hn[0]+cw*d,Hn[1]+sw*d],reach=(DIM.upper+DIM.fore)*.98;
+    let d=p.two;const far=d=>Math.hypot(at(d)[0]-oS[0],at(d)[1]-oS[1]);
+    if(far(d)>reach){let best=d,bf=far(d);for(let x=d;x>=4;x-=2){const f=far(x);if(f<=reach){best=x;bf=f;break;}if(f<bf){best=x;bf=f;}}d=best;}
+    ob=ik(oS,at(d),DIM.upper,DIM.fore,1);}
+  return {P:t.P,M:t.M,S,wS,oS,Hd:t.Hd,K:fl.mid,F:fl.end,bK:bl.mid,bF:bl.end,E:wa.mid,Hn,oE:ob.mid,oHn:ob.end,tip,
     w,grip:norm(w-fore),over:{ff:fl.over,bf:bl.over,h:wa.over,o:oa.over}};
 }
 
@@ -539,8 +549,11 @@ function figureSvg(fig,j,wounds){
   // the hand closes round the grip: a little of the hilt shows behind it, the guard sits just in front
   const d=[Math.cos(rad(j.w)),Math.sin(rad(j.w))],g=[j.Hn[0]+d[0]*8,j.Hn[1]+d[1]*8],pm=[j.Hn[0]-d[0]*8,j.Hn[1]-d[1]*8];
   const hc=X(j.Hd).split(',');
+  // a shield (the studies: fig.shieldR) is carried on the off hand, behind the body, as the stage draws it
+  const sh=fig.shieldR?X(j.oHn).split(','):null;
   return '<g class="ps-fig ps-'+(fig.id==='a'?'left':'right')+'"><g class="ps-back">'
-    +bone(j.P,j.bK,j.bF,9,cls('lleg'))+bone(j.oS||j.S,j.oE,j.oHn,8,cls('larm'))+'</g>'
+    +bone(j.P,j.bK,j.bF,9,cls('lleg'))+bone(j.oS||j.S,j.oE,j.oHn,8,cls('larm'))
+    +(sh?'<circle cx="'+sh[0]+'" cy="'+sh[1]+'" r="'+fig.shieldR+'" class="ps-shield"/>':'')+'</g>'
     +line(j.M,j.P,12,cls('abdomen'))+line(j.S,j.M,12,cls('chest'))+bone(j.P,j.K,j.F,10,cls('rleg'))
     // a wound to one segment (the studies): only that segment is marked
     +(wounds&&wounds.rthigh?line(j.P,j.K,10,cls('rthigh')):'')

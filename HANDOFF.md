@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-12 by Claude (Pits: fight study, heavier and faster)_
+_Last updated: 2026-11-14 by Claude (Pits: Report fight)_
 
 ## Where things stand
 
@@ -16,7 +16,58 @@ _Last updated: 2026-11-12 by Claude (Pits: fight study, heavier and faster)_
 
 ## Next
 
-00000000000. **Next, Claude (after the owner says go):** steps 1 and 2 of "Path to the live Pits" in `docs/pits-animation-direction.md`: an exchange writer that builds spring movement from the engine's resolved exchanges (proved by rebuilding the ten-beat fight from fixtures), then the live stage behind `?stage=spring` for broadsword against broadsword. Then weapon families one PR at a time: thrust, shields, heavy one-handed, two-handed, long thrust, flexible, each with a generated study and an automated sweep. Pace fixed at the owner's choice (1.65 times fight time).
+0000000000000000000000000000. **Claude, done 2026-11-14 (Report fight):** the Pits top bar has **Report fight** in place of Copy fight record: a note plus the fight record, saved to the site's database (no sign-in needed; optional name), exported on request to the `pits-reports` branch for Claude and ChatGPT; diagnoses in `docs/pits-report-ledger.md`. How it works: `docs/pits-reports.md`. **Next: ChatGPT (Work)**, once this is merged: the one-time setup in `docs/pits-reports.md` (run the migration, make the export key, give it to the owner privately). **Owner:** add the key as the repository secret `PITS_REPORTS_TOKEN`. Then report fights while playing, and say "go through the fight reports".
+
+000000000000000000000000000. **Claude, done 2026-11-14 (collision, a comparison):** the owner asked about a physics engine; built the first physics piece instead: blades cannot pass through the other fighter. Off by default. Frames with a blade inside the other's head fall about 93%, inside the body about 83%, no new jumps; blades across their own head rise about 20%. Details: `docs/pits-animation-direction.md`, "Collision". **Owner:** open `experiments/pits-collide-compare.html` on the branch preview (same fight, without and with, side by side; try several weapons and fights), and the trial with `&collide=on`. Say whether the right-hand side looks better. **Then Claude:** if yes, collision on by default in the trial, then the own-head kind, then limp falls.
+
+00000000000000000000000000. **Claude, done 2026-11-14 (Work's spring batch, PR #325):** Work's preview served `74a9006`, two commits old. C1 (Severity 1) and A5 to A7 were already fixed at `ad0023e`; now fixed: A8, A9, B1, B4, B6, D2, each with a test. Left: Severity 2 clearance faults (A11, A12, B5, C2), the live sweep's backlog; A13 is Severity 3. Details: `docs/pits-animation-direction.md`, "Work's spring batch". **Owner:** play `?stage=spring` on the branch preview (hard refresh; the page's `pits-stage.js?v=` must match `experiments/practice-combat.html` on the branch) and send a fight record for anything still wrong. **Then Claude:** the clearance backlog (blades through the other's head or body), then the stand-in families.
+
+0000000000000000000000000. **ChatGPT (Work), checked 2026-11-13 (batch 20261114):** `docs/pits-spring-work-20261114.md` (36 IDs, 15 records), run on a stale preview; dispositions above.
+
+000000000000000000000000. **Claude, done 2026-11-14 (every weapon playable):** all 35 weapons fight on `?stage=spring` (branch `claude/sharp-franklin-mbjthj`, no PR). Weapons without their own family are stand-ins on the cut or thrust phrases, with two-handed grips drawn; list in `docs/pits-animation-direction.md`, "Every weapon on the spring stage". **Owner:** play every weapon and send a **Copy fight record** for anything that looks wrong, with one line naming the moment. **Then Claude:** fix what the records show first; then give the stand-in families their own movement, in the order the owner finds them worst (likely the spear family's reach, then two-handed swings, then flails and the whip).
+
+00000000000000000000000. **Claude, done 2026-11-14 (owner's fight record):** against the arena's own opponent, its wound dice (Serious Wound, Endurance) were shown after the blow, so the collapse and Victory came before the roll that caused them. Fixed in `pitsStageOrder`; test in `tests/pits-stage.cjs`. Branch `claude/sharp-franklin-mbjthj`, no PR. **Owner:** keep sending a **Copy fight record** whenever an order looks wrong; it found this one at once. The earlier miss-order report is still unreproduced and may be the same fault (an automatic opponent's dice shown out of place).
+
+0000000000000000000000. **Claude, done 2026-11-13 (owner's play notes):** on `claude/sharp-franklin-mbjthj` (pushed, no PR). A trip now sits the fighter on its backside (`PitsWriter.sit`), and a weapon left in an Impale wound is no longer also thrown to the floor. The miss-order report (my miss drawn after the opponent's next attack and my parry) did **not** reproduce in scripted bouts (two-player and against the computer, every reaction, Trip and Disarm effects, Guidance on and off) or in 20 random bouts. **Owner:** when it happens again, press **Copy fight record** in the top bar straight away and paste it to Claude, with one line on which moment looked wrong. **Then Claude:** replay that record and fix the order; then "Instructions for Opus" item 2 (attacks and defences from the ground).
+
+000000000000000000000. **Claude, done 2026-11-13 (Work's check of the spring preview):** on branch `claude/sharp-franklin-mbjthj` (contains `claude/fable-combat-fluidity-jus18q`; pushed, no PR). The plate's Prone chip now waits for the figure to go down (it was ahead after an Evade), and long action names wrap instead of being cut off. Still not done: attacks and defences from the ground (only the arms move), next in "Instructions for Opus" item 2. Still to be seen by eye: replay, shield strike, Disarm and the finishing blow. **Owner:** play `https://raw.githack.com/colemak1/mythras-character-forge/claude/sharp-franklin-mbjthj/experiments/practice-combat.html?stage=spring`.
+
+00000000000000000000. **Claude, done 2026-11-13 (Work's six code findings, `docs/pits-spring-code-findings-20261113.md`):** all six fixed on `claude/fable-combat-fluidity-jus18q` (pushed, no PR), each with a regression test:
+- a Disarm waits for its whole exchange and is part of the attacker's one blow;
+- shield strikes reach the writer as shield strikes;
+- each shield keeps its own size;
+- Press Advantage is drawn;
+- one result dialog;
+- a new opponent starts with an empty Current exchange.
+
+Also fixed: the shield-strike phrase (parried) and two failures that had been hidden behind it, so `tests/pits-writer.cjs` and the whole suite now pass. Not done (from the same report): attacks and defence from the ground, and the clipped action names. Details: `docs/pits-animation-direction.md`, "Work's code findings". **Owner:** play the branch link below with a shield, try a shield strike, a Disarm and a replay, and name anything wrong.
+
+0000000000000000000. **Claude, done 2026-11-13 (owner's notes from playing `?stage=spring`):** on branch `claude/fable-combat-fluidity-jus18q` (pushed, no PR). Fixed:
+- a miss was drawn after the next attack's declare and the parry;
+- a parry that won a Trip was drawn as trip-then-swing (now parry, then sweep);
+- the replay was choppy (it now runs on, each exchange from just after the last contact);
+- falls are now a crumble where the fighter stands;
+- a Major arm wound was misread as bleeding and drawn as a hit followed by a separate fall. A Serious arm wound only makes the arm hang.
+
+Details: `docs/pits-animation-direction.md`, "Owner's notes from play". **Owner:** play `https://raw.githack.com/colemak1/mythras-character-forge/claude/fable-combat-fluidity-jus18q/experiments/practice-combat.html?stage=spring` again, watch a replay, and name anything still wrong. **Then Claude:** "Instructions for Opus" in the same document, from item 2 (getting up, lowering, yield, trip and disarm as phrases).
+
+000000000000000000. **Claude, done 2026-11-13 (owner: keep it fluid, fix the bugs, instructions for Opus):** on branch `claude/fable-combat-fluidity-jus18q` (contains `claude/go-wf0bsg`; pushed, no PR). The spring stage now plays as the owner described: an attack is drawn back and held before its dice, a parry or evade is set and held before its dice, both figures are completely still through every choice and roll, the resolved blow lands at once from the held pose, and nobody goes back to guard. Round reset removed. Fixed: prone, up, hit, prone again; Arise; a kill on a fighter already down; the dropped weapon jumping back; the limp-arm snap. Axe, mace, club and pick now run on the spring stage (stand-in). Details, tests, tools and what is weak: `docs/pits-animation-direction.md`, "Fluid flow". **Owner:** play `experiments/practice-combat.html?stage=spring` (branch link: `https://raw.githack.com/colemak1/mythras-character-forge/claude/fable-combat-fluidity-jus18q/experiments/practice-combat.html?stage=spring`) and name anything that looks wrong.
+
+00000000000000000. **Next, Claude (Opus):** follow "Instructions for Opus" in `docs/pits-animation-direction.md`: the owner's notes first, then the stand-ins as phrases (fall, getting up, lowering, yield, trip, disarm), the shield strike (the only failing CI test, `tests/pits-writer.cjs`), the live sweep by kind (`tests/sweep/pits-live-sweep.cjs`: 139 of 144 fights with a fault, 5 in held frames), the remaining weapon families, cost, then release. Owner's rule: nothing goes to `main` until it is all done.
+
+0000000000000000. **Claude, done 2026-11-13 (owner's notes on the trial):** evade drawn as a dodge to the ground, not a fall; the trial keeps the flow (no walk back after a lull; range changes still walk). Owner decided: natural over technically accurate on range. **Owner:** try an evade on `experiments/practice-combat.html?stage=spring`.
+
+0000000000000c. **Claude, in progress 2026-11-13:** Work's own-head finding (PR #323, merged into the branch). Studies fixed; the full sweep still has 550 of 4,032 fights with a fault, mostly the shield strike. Details: `docs/pits-animation-direction.md`, "Own blade across own head". Owner chose the live trial first (2026-11-13); done, see the Next items above.
+
+0000000000000b. **ChatGPT (Work), checked 2026-11-13:** prototype results in `docs/pits-studies-work-20261113.md`: readable dagger/late defences/shields/shove; Severity 2 own-blade/head overlaps, Severity 3 capture/endpoint limits. Not full visual acceptance and nothing deployed. **Next: Claude** — address the overlap and preserve the reported limits.
+
+0000000000000a. **Claude, done 2026-11-13 (owner's request):** a failed parry still looks tried: the defender goes for the parry, late and short, and the blow lands. `docs/pits-animation-direction.md`, "A failed parry still looks tried".
+
+0000000000000. **Claude, done 2026-11-12 (shields, step 3):** shield sizes, shield parry and ward on the shield's face, shield strike; study `pits-fight-study.html?seq=shields`; the sweep covers shields. **Owner (optional):** watch it on the branch and say whether the shield blocks and the shove look right. Details: `docs/pits-animation-direction.md`, "Shields".
+
+000000000000. **Claude, done 2026-11-12 (weapon profiles and the thrust family, step 3):** weapon lengths and families in the writer; thrust lands, falls short, deflected; collapse after any lethal blow; the two open faults fixed. Sweep: 1,008 fights (dagger, shortsword, rapier, broadsword, longsword, falchion against each other) all within the movement rules. **Owner (optional):** watch `experiments/pits-fight-study.html?seq=thrust` (on the branch, not deployed) and say whether the dagger looks right. Details: `docs/pits-animation-direction.md`, "Weapon families".
+
+00000000000. **Claude, done 2026-11-12 (exchange writer, step 1):** `experiments/pits-writer.js` turns engine-shaped records into the spring movement from wherever both fighters stand (measure and stance handled). The fight study is now the writer fed eight fixture records (`experiments/pits-fixtures.js`) and passes all 19 checks unchanged. New phrase "cut lands" for hits from an ordinary exchange. `tests/pits-writer.cjs`: roles swapped, another order, all 84 single exchanges. Details and weak points: `docs/pits-animation-direction.md`, "Exchange writer". **Owner:** nothing to watch; the fight study looks the same (one decision boundary is 80 ms later).
 
 0000000000. **Claude, done 2026-11-12 (fight study, heavier and faster):** the owner liked the flow. Now 1.5 times faster, with longer hit-stops, bigger impact jolts, screen shake and heavier flashes (`docs/pits-animation-direction.md`, "Crunch and pace"). **Owner:** watch `experiments/pits-fight-study.html`, set the **Pace** slider where it feels right and tell Claude the number shown, and say whether the parries feel heavy and the hits brutal enough. If yes, Claude starts the live integration (sword cut, parry and miss from the engine's resolved results), keeping the no-gap rule and this crunch.
 

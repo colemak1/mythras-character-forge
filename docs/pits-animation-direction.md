@@ -257,7 +257,27 @@ The fight study is hand-written: every beat's timing and every clearance was tun
 5. **Special effects and hit locations:** reactions per location (head, each arm, each leg, chest, abdomen), then trip, disarm, impale (blade lodged), bash and the rest, in the order they come up at the table.
 6. **Retire the old stages** (the pose stage and the keyframe `PitsMotion.LIVE`) once the owner approves the spring stage in play.
 
-Steps 1 and 2 are the next batch (one PR). Each later family is one PR with its study page and its share of the sweep.
+**Changed by the owner (2026-11-12):** step 2 is not done on its own. Everything (the writer, every weapon family, the sweep) is built first and lands in the live Pits at once. Work stays on one branch until then; no PR per family.
+
+## Exchange writer (step 1, done 2026-11-12)
+
+**Code:** `experiments/pits-writer.js` (`PitsWriter.write(records)`), fixtures in `experiments/pits-fixtures.js`. `pits-fight.js` is now three lines: the writer fed the fixtures. **Tests:** `tests/pits-fight.cjs` (the study, unchanged, 19 checks) and `tests/pits-writer.cjs`.
+
+**A record** is what the stage already has after an exchange: `{attacker, loc, outcome, lost, after}`. `outcome` uses the stage's words (`parried`, `full-parry`, `partial-parry`, `wound`, `armour`, `zero`, `miss`, `evaded`, `fumble`); `after` holds the cues that follow (an `end` with `how:'injury'` for the attacker means the blow ended the fight). `action` (`cut` or `thrust`) is optional; a sword thrusts at the abdomen unless told.
+
+**How it works.**
+- The phrases are the study's beats, written for an attacker and a defender. Every foot and hip position is relative to where that fighter stands (the midpoint of its planned feet) when the phrase starts, so a phrase plays from anywhere, by either fighter. Each phrase records the stance, measure and stance width the study had.
+- **Measure:** if the gap is not the phrase's, the attacker first steps in (blade up into a middle guard) or out (point low until the step is made). **Stance:** a fighter whose stance is more than 16 wider or narrower than the phrase's gathers it with the rear foot. In the study's own order neither happens, so the study is unchanged.
+- **Which phrase:** a parry at the body → cut parried; at the head → high parry; at a leg → low bind; a thrust parried → deflection; a miss, evade or fumble → the slipped counter; a hit to a leg → thigh cut (collapse if the record says the fight ended); a hit to the weapon forearm just after the other's high cut was parried → the short arm cut; any other hit or armour stop → **cut lands** (new: the study's first cut, with the cover too late, the blade drawn out back and up, and a reaction by location). A partial parry is drawn as a blow that lands and is noted as a stand-in (`seq.notes`, kind `stand-in`).
+- **Decision boundaries:** every exchange ends on one. If the movement is still fast there, the boundary moves to the nearest quiet moment with both feet down (earlier only, up to 80 ms, so no decision falls after the next movement has started; the last one of an unfinished fight may also wait). Notes of kind `measure`, `gather` and `boundary` say when any of this happened.
+
+**What the tests hold.** The study rebuilt from the records passes all of `tests/pits-fight.cjs` with no measure, gather, stand-in or moved boundary. With the roles swapped, with another order from other places, and for all 84 single exchanges (either fighter; head, chest, abdomen, both arms, both legs; parried, partial parry, wound, armour, miss, evaded): limbs within length, contacts exact, no blade into a body outside the contacts, feet down and no jump at each boundary, no sliding foot, no snap.
+
+**Still weak.** The two faults first found by trying other orders are fixed (2026-11-12, second batch) and held by `tests/pits-writer.cjs`: the parried cut, turned down, passed 2.5 units from the defender's sword elbow even in the study (now 4.5), and a fighter stepping back out of a too-close measure lowered the blade through the other (it now lifts the point up and back). Open:
+- A partial parry has no clash of its own yet; it is drawn as a blow that lands.
+- Beat labels are the study's wording ("Disengage high", "Counter, slipped"), even where the phrase is not a disengage or a counter.
+- **For the live stage (step 2, later):** a phrase's weight shift can start up to 170 ms before its first step, so before the decision boundary when the phrase starts at one. Written ahead (the study) that is fine; the live stage writes after the hold and cannot write into the past. Clamping it there spoils the weight transfer before the step (tried); the live stage will need the preparation folded into the phrase start instead.
+- The parry clearance in the study's low bind is at the limit (3.0 units against a minimum of 3): a 1 ms shift in the phrase start breaks it. The study's numbers are kept exactly for that reason.
 
 ## For Sonnet: routine defects in the pose stage
 
@@ -267,3 +287,281 @@ Items 2 and 3 now apply only to the pose stage behind `?stage=poses`; fix them o
 2. **Confirmed (code): three motions still end in the idle stance,** against the no-idle rule: the step-in in `psSetSpacing`, "Stays up" in the trip cue, and the stand cue. Use `psReady()`; extend the idle check in `pits-flow.cjs` to these.
 3. **Suspected (code, not reproduced): a pose snap before a blow.** `psResolveBlow` sets the defender straight to its rest pose when no motion is playing (`def.cur={...psRest(def)}`), which can jump a figure that was holding a lull pose.
 4. **Done 2026-11-12:** the study page was not in `scripts/stamp-assets.py` (it loads its files without `?v=`). Add it to the stamped pages and to `tests/asset-versions.cjs` if it stays.
+
+## Weapon families: profiles and the thrust family (step 3, 2026-11-12)
+
+**Watch it (optional; nothing is live):** `experiments/pits-fight-study.html?seq=thrust`, a dagger against a broadsword, generated by the writer from scripted records (`PitsFixtures.THRUST`). The page's top line links the fights.
+
+**Profiles.** Each fighter's weapon key (the stage's keys, as `pitsStageWeaponKind`) gives a length and a family: `thrust` for dagger, knife, main-gauche (50), shortsword (68) and rapier (112); `cut` for broadsword (92), longsword (104), falchion, sabre and scimitar (84). Any other weapon is drawn as a broadsword and noted as a stand-in. `PitsWriter.write(records,{weapons:{a,b}})`.
+
+**How the sword phrases fit other blades.**
+- A contact point written for the broadsword sits at the same fraction of a shorter blade, and with the same length of blade beyond it on a longer one (so a long point does not reach past a parry into the other's body).
+- The attacker's measure moves by three quarters of its blade's difference from the broadsword.
+- If no blade angle fits at the contact point (a long blade, close in), the aim tries a point a little further out or nearer the hilt; the contact records the point used.
+- A defender whose weapon is more than 15 longer lifts the point as the shorter weapon comes inside it (the side view cannot show it carried off the line).
+- Longer blades: a low cover is steeper; a thigh wound flings the sword arm back with the point going down when it was down (up would sweep it through the attacker).
+
+**The thrust family's phrases.** Thrust lands (any location; drawn out along its line, the body's travel stopped at the contact; a longer blade goes less deep and settles with the point higher), thrust falls short (the defender gives two steps), and a parried thrust is the deflection. A parried thrust at the legs is met low like a cut (stand-in). The collapse now follows any blow that ends the fight; after a blow at close quarters the falling fighter's weapon goes up and back over its own side.
+
+**The sweep (step 4, started).** `node tests/sweep/pits-sweep.cjs` (about 3 minutes): the six weapons with a family against each other, 36 pairings, each with every hit location and four results (parried, wound, armour, miss): 1,008 fights, all within the movement rules on 2026-11-12. CI runs a sample (six pairings) in `tests/pits-writer.cjs`; the rules are in `tests/lib/pits-motion-rules.cjs`.
+
+**Checked how.** Numbers (the sweep and the tests), and two stills of the generated study (the short thrust, the stab to the sword arm). Not watched at speed: whether a dagger fighter looks right is for the owner.
+
+## Shields (step 3, second family, 2026-11-12)
+
+**Watch it (optional; nothing is live):** `experiments/pits-fight-study.html?seq=shields`, broadsword and heater against broadsword and buckler (`PitsFixtures.SHIELDS`).
+
+**In the records.** `write(records,{shields:{a,b}})` with the engine's shield keys (buckler, target, heater, kite, hoplite, scutum). A parry made with the shield is `defence:'shield'` on the record; a ward (`full-ward`, `partial-ward`) is the shield's without it. A shield strike is `strike:'shield'`. A shield defence or strike by a fighter with no shield is drawn with the blade (or as a cut) and noted as a stand-in.
+
+**How it moves.**
+- **Carried:** a circle on the off hand, sized by type (buckler 13 to scutum 26), drawn behind the body as the stage draws it. A shield-bearer keeps it forward in front of the chest wherever a phrase would swing the empty arm.
+- **Shield parry and ward:** every parry phrase (at the body, at the head, low, against a thrust) meets the blow on the shield's face instead of the blade: the off hand is pinned on the shield's centre, set back from the contact toward the defender, and the blow knocks the arm back. Low blows take the lower rim if the front does not reach; if no rim reaches, the shield meets the blow higher, at the lowest point it can reach, and the attacker's cut is aimed there (noted `shield-higher`).
+- **Shield strike:** the weapon is laid back over the shoulder, the shield shoulder turns in, two steps, and the face is driven onto the target (if it cannot reach the location hit, the nearest point toward the chest; the wound mark still goes on the location). Lands: the defender is knocked back a step. Parried: the defender's blade meets the face where the striker's shield comfortably reaches, then both give ground. Missed: the defender gives two steps and the face stops short. Either way the striker steps out of the clinch before lowering the weapon.
+- **The defender against a shield strike** brings the hand back to the shoulder as the striker comes in, so the blade goes up and over and hangs behind, out of the way; once they are apart it comes up into an upright hold above the shoulder (the hanging hold sways: the hand is pressed against the shoulder).
+
+**Found and fixed on the way** (they affect everything, not only shields): a contact record now carries the point of the blade the aim actually used; a decision boundary chosen while writing only ever waits for the movement to settle, never cuts it short; a fighter stepping back keeps the blade's angle until the step is made; closing to a measure shorter than the blade's reach carries the point up.
+
+**The sweep** now also runs the 36 weapon pairings with shields on both sides (a different pair of sizes each time): shield parries, wards, hits and misses against a shield-bearer, and shield strikes that land, are stopped by armour, are parried and miss. `node tests/sweep/pits-sweep.cjs` (about ten minutes; `--attacker=dagger` runs one weapon's share). CI runs a sample of three shield pairings.
+
+**Still weak.** A partial ward is drawn as a blow that lands. The Bash special effect (knockback by damage, Core) is not drawn as its own distance: every landed shield strike knocks back one step. Seen from the side, a shield is a circle, so a kite or scutum looks round.
+
+## A failed parry still looks tried (owner, 2026-11-13)
+
+The owner asked that a parry which fails should still look attempted. In the records: `tried:'parry'` or `tried:'shield'` (the engine's parry roll failed and the blow landed); it is also taken from a record that names a defence for a blow that landed in full. Shown in the thrust study (the swordsman's parry of the stab to the arm) and the shields study (the buckler, too late for the last cut).
+
+**How it moves.** The defender goes for the place a successful parry would have met the blow, with the blade or the shield, but starts 220 ms before the blow and stops a little short of the line, so the blow gets there first: no contact, the blow lands as recorded. The "cover, too late" the landing phrases already had gives way to it.
+- **How much shows** (at the moment of the blow, compared with no attempt): sword against sword, the blade turns from 43° to 91° (to 139° at the head) and the hand moves 25 to 45 units; dagger against dagger, 33° to 56°; low parries, shields and a weapon already inside the point, 12 to 18 units of hand travel.
+- **Special cases**, each found by the sweep: against a weapon already inside the point, or with a blade longer than a longsword, the attempt is made with the strong of the blade near the hilt, upright, driving out and down toward the attacker's line. When the parrying arm (the sword arm, or the shield arm pushing the shield out) is the one hit, it reaches further out (seen from the side, a stab to an arm held against the chest goes through the body), the thrust stops at the arm, and the attempt ends at the hit. A low attempt stops further short (more for longer blades), and after one with the blade the sword stays down. After a late high parry, the attacker's blade comes straight back out instead of up across the raised arm.
+- **Sweep:** failed parries with the blade and with a heater, every pairing of the six weapons, every location, wound or armour (1,008 fights), are part of `tests/sweep/pits-sweep.cjs`.
+
+**Still weak.** A failed shield parry and a weapon inside the point show only a small move in a still; at speed the motion is what reads (not yet watched by the owner). Not added to the shield strike: a failed parry against it is drawn as before.
+
+**Next families**, in the planned order: heavy one-handed (axe, mace, club, hammer), two-handed, long thrust (spear and polearms, their own range), flexible.
+
+## Own blade across own head (Work's check, PR #323; in progress 2026-11-13)
+
+Work's visual check (`docs/pits-studies-work-20261113.md`) found a fighter's own weapon held across its own head (Severity 2): the dagger held overhead after a deflection, the sword laid back over the shoulder in the shield strike. Work's other results stay as recorded there: screenshots, not a continuous recording, so the Severity 3 "unverified" items are evidence missing, not confirmed faults, and the report is not full visual acceptance.
+
+**Rule added** (`tests/lib/pits-motion-rules.cjs`): a blade within 17 units of its own head's centre (the drawn head and blade touching) may only be sweeping past (tip path at least 0.5 units per ms, at most 250 ms); slower, or over 250 ms, is a hold and a fault. Crossings under 60 ms (two frames at normal speed) do not count. From the side, a cut from over the shoulder must pass the head; in depth it passes beside it.
+
+**Changed:** the cut's chamber lies flatter behind the shoulder (hand [12,-8], 160°); raised holds put the hilt above the head ([20,48], 140°), reached in two steps (hand up first, then the blade back), and lowered the same way; upright guards stand further out in front; a step back chooses where the hand goes by the blade's angle; a short blade parries a head cut higher; a stab to the head is drawn back lower; the fall after a stab at close quarters holds the sword up until the winner steps back, then lays it along the body.
+
+**State (2026-11-13, end of batch):** the three generated studies pass the rule, and the ten-beat fight still passes all its checks. Cuts, thrusts, parries, misses and failed parries are clean except 6 belly stabs between short blades (dagger or shortsword against a dagger or shortsword: the attacker's blade within 1.5 of the defender's elbow just after; not the fold, not the guard after). **The shield strike is not fixed:** its raised holds and the ways into and out of them still cross the striker's or the defender's head across many pairings, and a parried shield strike flips the defender's elbow as its sword comes down from the raised hold. That fails one CI test, the shield sample in `tests/pits-writer.cjs` (all its other tests pass). Tried and not enough: raised holds in two steps, lowering forward first, the parry without a snap.
+
+## Live trial: the spring movement on the live Pits (step 2, 2026-11-13)
+
+The owner agreed to Claude's recommendation: wire one family into the live Pits behind a hidden switch to find the integration problems before building more families. Nothing is released.
+
+**Try it:** the Pits with `?stage=spring` (`experiments/practice-combat.html?stage=spring`). It is used when both fighters carry a blade with a family (dagger, shortsword, rapier, broadsword, longsword, falchion, sabre, scimitar); any other bout, or no switch, keeps today's movement. Code: `experiments/pits-spring-live.js` answers the stage's movement interface from the writer; `PitsWriter.write` is now `create` plus one `exchange` per record (the studies are unchanged); the stage chooses the movement per bout and draws shadows under the feet in the trial. Test: `tests/visual/pits-spring-live.cjs` (local, Playwright): three whole bouts (sword against dagger, rapier against shortsword, sword and heater against sword and buckler) play with no errors, contacts land, decisions pause with nothing moving, the replay plays, and a longspear bout falls back. The existing live-stage test is unchanged and still flaky in the same way without these changes (its "paused at least once" depends on timing).
+
+**What works:** the engine's facts go in as they are; each blow's contacts come back with stage times, so the sparks, numbers and sounds land with the drawn weapon; decisions hold the scene; the replay rebuilds the fight from the same blows; nothing is written before the moment already shown (a step's weight shift that would start earlier starts then).
+
+**What the trial found (each needs a decision or more work before release):**
+1. **Range. Decided (owner, 2026-11-13): what feels natural over what is technically accurate.** "It is a rough visualization of the fight; fighters don't swing, step back and wait. Fluidity is what matters most, and range changes should be obvious, so it doesn't break the game." So the writer keeps its flow: the attacker steps in for the blow and the next exchange carries on from there. The trial no longer walks fighters back to their stations after a lull; when the engine changes the range, they still walk to the new places, so the change is visible. Still to do: the range marker under the fighters stays where the stations are, and over a long bout the pair can drift away from the centre.
+2. **Time to write a blow:** 50 to 220 ms per blow on a desktop, blocking the page; a phone will be slower. Options: write during the dice roll (the facts are known then), or in a Web Worker.
+3. **Memory:** the simulation keeps every frame of the bout (about 12 MB a minute). It has to drop old frames before release.
+4. **Stand-ins** in the trial: fall, stand, lower, yield, recover (a plain walk), Press Advantage (nothing drawn), trip and disarm (the blow only). Shields are drawn as a heater: the stage only says "has a shield".
+5. **Not looked at in play** by the owner: whether the timing feels right next to the stage's own hit-stops, at the writer's pace (1.65 times the stage clock).
+
+## Evade: a dodge, not a fall (owner, 2026-11-13)
+
+The owner: the evade "just looks like they fall, not like they're dodging". The engine ends a successful evade prone (its log: "evades the incoming strike, ending prone"; not when the evade was made while changing range). Before, the slip was drawn and then, a moment later, the stage's generic fall: the same limp collapse as a knockout.
+
+**Now** (records: `outcome:'evaded'` with `prone:true`; the stage sets it from the engine's facts): the evader's knees drop and the body ducks back out of the line, the rear foot goes back long (36), the body sits back over it with the empty hand reaching for the floor, and ends propped on that hand, head up, the weapon still pointing toward the attacker. The attacker's blow misses as before. In the trial the stage's later fall is then a no-op (already down), and getting up is the existing stand-in. An evade without `prone` is the plain slip, as before. Rendered as a strip of frames and checked; held by a test in `tests/pits-writer.cjs` (down at the end, head above the hips, weapon toward the attacker, a miss) and in the sweep; the trial's browser test now includes an evade.
+
+**Still weak:** getting up afterwards is a plain stand-in; the default stage (without `?stage=spring`) still draws the old fall.
+
+## Round reset, and fighters on the ground (trial, 2026-11-13)
+
+**Round reset: tried and removed (owner, 2026-11-13).** Both fighters walked back to their places at each new round. The owner: "it doesn't really work ... I want the combat to all remain fluid". Gone; see "Fluid flow" below.
+
+**On the ground.** The engine also leaves a fighter prone after an evade *tried* against a blow that missed anyway, not only after a successful one: both are now drawn as the dodge to the ground. And a fighter on the floor can act (attack, parry) before regaining footing: the writer had no phrases for that and stood them up. Now, in the trial, a fighter the engine has down stays down through an exchange: only its arms and head move, until it regains footing (a stand-in until there are phrases on the ground). The same goes for a fall written for a trip.
+
+**Movement faults in live play (recorded, not yet fixed).** Short trial fights checked against the movement rules (six weapon pairings, three short sequences each) show faults the studies do not: 7 of 18 without round resets (blades near a head or an elbow in close exchanges, a parry missing its point when the defender is down, a snap) and 12 of 18 with them (blades passing near a head while one fighter walks back past the other). The live trial needs its own sweep before release.
+
+## Fluid flow: declare, hold, resolve (owner, 2026-11-13)
+
+The owner's description of how a live exchange should play, which is now the rule for the spring stage (`?stage=spring`):
+
+> I press attack, the blade begins its swing and then pauses, then the dice roll and prio goes to the other party, then the opponent selects parry, the parry blade positions itself to block the blow, then the dice rolls for them. When I need to select an action or the opponent does or the dice are rolling the stick figures should be completely still. Then once the hit is rolled and the parry is rolled and all other things needed are ruled, then everything starts moving and we show the results of the attack, then back to pause again when there's a decision to be made. This should all flow and be fluid, they aren't moving back to base poses after every strike, no two fights should look the same.
+
+**How it works.**
+
+1. **Declare.** When an attack roll is asked for (a person's, waiting for the click) or shown (the dice of an automatic action), the attacker commits before the dice: the weapon is drawn back, and if the fighter is too far out it comes in to striking distance with it. A parry, shield parry or evade does the same for the defender: the blade or shield comes across, or the body sinks back. Code: `psIntent` and `psIntentForRoll` in `pits-stage.js` (read from the engine's own roll label), `intent` and `declare` in `pits-spring-live.js`, `PitsWriter.intent` (the poses: `CHAMBERS`, `WARDS`).
+2. **Hold.** The stage clock runs only while written movement is owed (`PS.go`, `PS.busyUntil`); otherwise both figures are completely still: no breathing drift, nothing. That covers choosing an action, choosing a reaction or an effect, and the dice. The moment of each hold is chosen so it reads (`holdAt`: no weapon across its owner's head or through the other fighter, feet down).
+3. **Resolve.** When the whole exchange is ruled, the blow is written from the held pose and lands about 150 to 300 ms later. No walk first: a small difference in measure goes into the attack's own step (`S.absorb` in `PitsWriter.play`), and a stance is only gathered when it is far off.
+4. **No return to guard.** What an exchange had planned for after its hold (its recovery) is dropped when the next movement is written (`S.cut`). A fighter goes from where the blow left it straight into what it does next.
+5. **Variety.** Each declared action has several variants (four chambers for a cut, two for a thrust, three wards, two evades), tried from a random one; the first that holds cleanly is used. Together with starting from wherever the last blow left both fighters, no two fights open or continue the same way.
+6. **The replay** plays each exchange as one movement, with no declared holds, and each exchange starts just after the last one's contact (see "Owner's notes from play").
+
+**Bugs fixed with it.**
+
+- **Prone, up, hit, prone again.** The engine marks an evader prone at its roll, before the blow is drawn, and the stage's shown state flips between older and newer views while a blow is held back. The stage put the figure down early, stood it up when an older view came back, drew the blow, and put it down again. Now going down and getting up are drawn only by the movement that causes them (the evade's dodge, a leg, a trip, the end, Regain Footing, the Arise effect); the engine's state is compared only at a true rest. An evade that fails goes down from the blow, in the same movement.
+- **Arise** (Core p.96) is part of its exchange: the evader keeps its feet (a slip, not a dodge to the ground); a fighter already down gets up as the exchange ends.
+- **A killing blow on a fighter already down** no longer needs it to stand: the body goes limp where it lies.
+- **A weapon knocked from the hand** jumped back into the hand and dropped again when the shown state lagged. It now stays out.
+- **A disabled arm** snapped to hanging in one frame; it eases there.
+- **An older key's slower parts arrived late and overrode new movement** (a wind-up undone a moment after it started). A key cut at a hold no longer reaches parts it had not reached by then (`k.until`, `targets` in `pits-spring.js`).
+- **The simulation was not always run again** after the stand-ins wrote keys, so a fall or a lowering could start late.
+- The range marker sits between where the two actually stand. The winner lowers the point by its own foot, not into the loser.
+
+**Also:** short one-handed swung weapons (hatchet, club, mace, military pick, axe) run on the spring stage with the cut phrases, as a stand-in, so the arena's own opponents are not left on the old movement. Longer and two-handed weapons still fall back to it.
+
+**Tests and tools.**
+
+- `tests/pits-spring-live.cjs` (CI): the flow without a browser: declared actions move and hold cleanly, the blow lands within 420 ms of the stage clock with no measure step, no return to the opening guard, the cut, the three prone cases.
+- `tests/visual/pits-spring-live.cjs` (local, Playwright): whole bouts; every attack is declared before its dice; nothing moves while the clock is stopped; the clock never runs through a wait beyond a declared movement; nobody the engine has prone gets up; the replay.
+- `tests/sweep/pits-live-sweep.cjs` (by hand, about 90 s): random whole fights through the live interface against the movement rules, plus the held frames. **State: 144 fights of six exchanges, 139 with at least one fault; 5 of those faults are in a held frame** (4 after getting up, 1 declared parry). The rest are passing moments in motion: a blade slow past its own head (46), within 2 units of the other's head, elbow, body or knee (82), a contact a little off its point (10), one snap. The rules are strict, and the owner chose natural over technically accurate, so this number is a guide, not a gate. It is the number to drive down.
+- `tests/visual/pits-film.cjs` (local): a slow-motion film strip of a real bout as contact sheets, held frames outlined. For looking at a change before saying it looks right.
+
+**Still weak.**
+
+- Getting up, lowering, yielding, trip and disarm are stand-ins (a few keys each). The fall is a crumble by the owner's choice (see "Owner's notes from play").
+- A fighter on the ground acts with its arms only.
+- The dagger at close quarters overlaps the other figure (the study's measure for a 50-unit blade).
+- Writing a declared action tries its variants, each a short simulation: more work per click than before. Time to write and memory (finding 2 and 3 of the live trial) are not solved, and the lists of keys and pins grow through a bout.
+- Bouts with a long or two-handed weapon use the old movement, which still returns to idle stances.
+- `tests/pits-writer.cjs` passes since Work's code findings were fixed.
+
+## Owner's notes from play (2026-11-13, after the fluid-flow batch)
+
+The owner played `?stage=spring` and named five things. All five are fixed; each has a test.
+
+1. **A miss was drawn after the next attack.** The cause was in `pitsStageArrange`. When the other fighter attacked at once after a miss (an automatic action) and the engine then waited for the defender's reaction, everything after the miss was held back, the next attack included. The next attacker's declare and the parry were drawn first, and the miss only afterwards. Now an exchange that is over (a new attack has begun after it) plays whole, and only the last exchange of a batch can be held. A blow held from an earlier batch also plays before the new attack's own roll: that roll is found by its label ("Attack…", "Shield strike…"), so it is no longer shown, and so declared, ahead of the held blow. Test: `tests/pits-stage.cjs`, "a finished exchange is not held back".
+2. **A parry that wins a Trip was drawn as the trip, then the swing.** The engine logs the defender's Trip or Disarm before "No Damaging Hit". `pitsStageOrder` moves the blow of the same exchange to just before the effect and its dice: the parry, then the sweep. Test: "a parry that wins a Trip or a Disarm".
+3. **Choppy replay.** In the replay the stage still waited on beats with no motion (wound, limb, lodge and drop banners: 300 to 500 ms each), and every blow ended with a hold chosen for a live decision. Now the replay (`flow` in `PitsSpringLive.blow`) writes the next exchange from `FLOW` (300 ms of writer time, about 180 ms on the stage) after the last contact, into this one's recovery, and those beats do not wait. The live game is unchanged: it still holds at decisions. Test: `tests/pits-spring-live.cjs`, "the replay runs on".
+4. **Falls.** The owner: "it's fine if we take a short cut and just let the body crumble". `PitsWriter.crumble`: the knees give, the fighter drops onto them, folds over and slumps where it stood. The feet are drawn in under the body so the knees reach the floor, and nothing goes below it. It is used for every fall on the live stage (a leg, a failed evade, a trip, a reconciled fall) and for the defeat (`collapse` with `S.crumble`; the studies keep their written collapse). A killing blow on a fighter already down slumps it lower. Getting up from the heap steps the rear foot back and the front foot out into a stance. Test: "a fall is the body crumbling".
+5. **"Serious damage to the arm: it went down and stayed on the floor."** Reproduced with rigged dice. A **Serious** Wound to the arm is drawn correctly: the hips stay up and the arm hangs. A **Major** Wound to an arm ends the fight ("incapacitated and prone", Core p.110), and the end text adds "untreated blood loss becomes fatal". The stage read that as a fight lost to bleeding, so it drew a plain hit and then the generic fall. Now any end text with "Wound to" is a fight ended by the blow, and the body crumbles from the hit. Tests: `tests/pits-stage.cjs` (the end text), `tests/pits-spring-live.cjs` ("a wound to the arm").
+
+**Live sweep** (same 144 fights, run on the code before and after this batch): 139 and 140 with a fault. Held frames: 5 before (4 after getting up, 1 declared parry), 8 after (2 after getting up, 6 declared actions, mostly a weapon through the knees of a fighter in the heap). The heap sits back as it folds to keep its knees out of the way. Attacks against a fighter on the ground need their own declared poses (item 5 below).
+
+**Still weak:** the crumble ends with the dropped blade along the floor toward the other fighter. Getting up from it is still a stand-in of two keys and two steps.
+
+## Work's code findings (2026-11-13)
+
+ChatGPT (Work) traced six presentation defects to the code (`docs/pits-spring-code-findings-20261113.md`). All six are fixed, each with a regression test:
+
+1. **Disarm drawn early.** `pitsStageArrange` now also holds the last exchange from its first Trip or Disarm (`PSTAGE_EFFECT`), not only from its blow, while the engine waits. A Disarm won by the attacker is folded into that attacker's blow (`record.disarm` from `pitsStageBeat`; the beat itself is consumed): the weapon flies at the blow's first contact, with no second swing. When the attack entry was in an earlier batch, the attacker is the blow's own actor. A defender's Disarm keeps its own movement after the parry (`pitsStageOrder`). The screen keeps the state from before the held exchange (`V.hold.shown`), so the sync does not drop the weapon early either. Checked in the browser: one blow in the Disarm's exchange, one disarm contact. Tests: `tests/pits-stage.cjs`.
+2. **Shield strikes drawn as cuts.** `psMotionBlow` passes `strike` from the engine's `px.tool` (or the attack beat), kept apart from `shield` (the defender's), and `PitsSpringLive.blow` puts it in the record. A strike met by the blade is now `shieldStrikeMet`: the same movement at a measure of 160 instead of 125. Chest to chest, any blade on the shield reached the striker's head or arm. The defender's blade also leaves its raised hold earlier and unhurried (`aim` at t0+100, no snap), which removes the elbow flip the contact pin caused when it pulled in late. Tests: `tests/pits-spring-live.cjs`, `tests/pits-writer.cjs`.
+3. **Shield sizes.** `pitsStageLook` carries `shieldKey`; the adapter passes it to the writer (`SHIELD_R`, with peltast and viking added); the stage draws the shield at the same radius (`psShieldR`).
+4. **Press Advantage.** `PitsSpringLive.press` writes a short movement for both: the presser's point at the other's face, the other covering. The first of three variants that holds cleanly is kept. Still a stand-in for a phrase in the writer.
+5. **Two result dialogs.** `render()` is the only owner: the deck and the bottom layouts no longer append it.
+6. **Old exchange as Current.** `paExchanges` starts a new list at "New Opponent" and "Encounter N".
+
+**Hidden failures, now fixed.** With the shield strike passing, `tests/pits-writer.cjs` ran on to two tests that had never run, and both failed at the branch head as well:
+- a failed shield parry against a thigh cut flung the sword point into the attacker's head (it now goes up upright, the hand forward);
+- a longsword's failed parry against a stab to its sword arm stood upright past its own head (it now falls forward as the arm comes in).
+
+The whole suite passes.
+
+**Not done (same report):** attacks and defence from the ground (only the arms move); action names clipped in the deck's two narrow columns (`pits-arena.css`).
+
+**Owner's play notes, 2026-11-13 (second set):** trips now use `PitsWriter.sit` (on the backside, legs out, weapon up; `fall:'sit'` through `PitsSpringLive.blow`), not the crumble. A weapon left in an Impale wound is not thrown by the sync (`lodgedIn`). The miss order did not reproduce; the trial now has a **Copy fight record** button (`pitsFightRecord` in `pits-arena.js`: presented order, engine log, stage record with clock) so the owner's next case can be replayed. Scripted checks: `tests/visual/pits-spring-scripted.cjs`.
+
+**Work's check of the preview, 2026-11-13 (done):** the plate said Prone before the figure went down (after an Evade, through the location and damage rolls). The HUD now asks the stage (`pitsStageShownProne`): the chip follows `mDown` and the blow's first contact (`downAt`), and the stage rewrites only the chips at that contact (`pitsArenaConditions`). The clipped action names now wrap. Attacks and defence from the ground are still not done.
+
+## Every weapon on the spring stage (2026-11-14)
+
+The owner asked for every weapon to be playable on the spring trial before a long play-test. `PitsSpringLive.supports` is now true for every Pits weapon; `bladeKey` maps each stage kind to a writer key and `PitsWriter.profile` has one for each. Weapons without a family of their own are stand-ins (`standIn: true`, noted by the writer):
+
+- **cut phrases:** battleaxe (2H), longsword (2H), greatsword, great axe, great club, great hammer, quarterstaff, halberd/poleaxe, glaive/rhomphaia, flail, ball and chain, chain, military flail, whip, net (as well as the earlier hatchet, club, mace, axe, military pick);
+- **thrust phrases:** shortspear, trident, longspear, xyston, pike/sarissa.
+
+The measure grows with length (`(len - 92) * 0.75`), so long weapons fight from further out. Two-handed weapons (`profile.two`) are drawn with the off hand that far along the weapon in front of the weapon hand (`solve` in `pits-motion.js`, `p.two`), and let go when the arm is disabled or the weapon is lost. The flexible weapons are drawn rigid; the net is swung like a cut.
+
+Checks: `tests/sweep/pits-weapons-browser.cjs` (a whole bout per weapon, in a browser: all 35 end, no page or cue errors; five bouts, old weapons among them, show one frame moving with the clock stopped). The headless live sweep now takes the new weapons; its fault count is not a guide yet (sword against sword fails it too).
+
+Next, in the order the owner finds worst from play: each stand-in family gets its own phrases and its own study, as item 6 below describes.
+
+## Work's spring batch (2026-11-14): what was already fixed, what was fixed now, what is left
+
+Work's report (`pits-spring-work-20261114.md`) was run on a preview serving `74a9006`, two commits behind the branch
+(stage `ba22112b8e`, writer `6691a13739`, spring `9b3214dabd`). The two missing commits were `260b59e` (a knockout waits
+for its dice) and `a141ce5` (every weapon, two-handed grips).
+
+- **Already fixed at `ad0023e`:** C1 (Severity 1: the Gauntlet opponent's Major Wound Endurance dice after the
+  knockout; `260b59e`; the exact C1 sequence is now a test in `tests/pits-stage.cjs` that fails on `74a9006`). A5, A6,
+  A7 (battleaxe, greatsword, great hammer off hand; `a141ce5`: off hand within 3 px of the grip in whole browser bouts).
+- **Fixed now:** A8, A9 (poleaxe, quarterstaff: the lead hand let go of the shaft by up to 17 px when the grip point
+  was out of reach; it now slides along the shaft, 0 px at the 99th percentile; `tests/pits-live.cjs`). B1 (the Prone
+  chip waits until a tripped fighter is sat down, and until any other fall is finished). B4 (a Disarm the engine
+  resolved before the throw-distance and location rolls left the weapon on the floor early; it now stays in the hand
+  until the blow is drawn). B6 (Keep hold: one weapon, lodged, with the hand on its grip). D2 (Show result during the
+  replay). Browser tests for B1, B4, B6 in `tests/visual/pits-spring-scripted.cjs`, D2 in `tests/visual/pits-replay.cjs`.
+- **Left, Severity 2, the live sweep's backlog (item 4 below):** A11 (pike miss through the head), A12 and C2 (a held
+  blade across the other's head), B5 (a blade through the lower torso at the defender's Disarm parry). These are the
+  "blade within N of X.Hd / X.K" kinds the live sweep counts; a run of 72 fights over sword, pike, flail, greatsword
+  and halberd still finds them in 71. Driving that count down is the next motion work, not a one-line fix.
+- **Known limit, Severity 3:** A13, the whip's long silhouette is hard to read at the held endpoint (a stand-in on the
+  cut phrase until flexible weapons have their own family).
+- **Pre-existing, not from this batch:** `tests/visual/pits-scenarios.cjs` 04 and 10 fail by 1 px (tip 27 px from the
+  struck part, limit 26) on `ad0023e` too; `tests/visual/pits-replay.cjs` "many beats played" can fail when a random
+  fight is very short.
+
+## Collision: blades cannot pass through the other fighter (owner, 2026-11-14)
+
+The owner asked whether a physics engine would make the movement look more natural. Answer given: not a whole engine
+(it does not know how to fence, the dice decide outcomes the picture must show, and replays must match exactly), but
+physics where it helps: collisions first, then limp falls and dropped weapons. This is the first step.
+
+**The rule** (`pits-spring.js`, `collideBlades`, switch `PitsSpring.collide`, off by default): in the simulation step,
+after the springs and contacts and before the arm's limits, each blade (hand to point) is tested against the other
+fighter's body as capsules (head with its stroke, torso, legs, both arms). Outside a contact of that fighter (a pin, with
+90 ms either side), a blade inside pushes its hand out along the way out, with the wrist keeping the blade's angle, and
+loses its speed into the body. A push never brings the blade across its owner's head or the hand into its own shoulder.
+One budget of 1.5 units a millisecond per hand. After the arm's limits, what the hand could not do the wrist does, turning
+the blade at most 4 units of point travel a millisecond.
+
+**Measured** (`COLLIDE=1 node tests/sweep/pits-live-sweep.cjs 3 6 <weapons>`, frames every 8 ms outside contacts; off → on):
+
+| Weapons | Other's head | Other's body | Other's arms | Own head | Snaps |
+|---|---|---|---|---|---|
+| sword, pike, flail, greatsword, halberd | 5140 → 262 | 2071 → 409 | 364 → 36 | 7796 → 9111 | 1803 → 1776 |
+| spear, longspear, quarterstaff, great axe, axe | 2804 → 214 | 1639 → 256 | 265 → 58 | 6529 → 8075 | 1500 → 1574 |
+| sword, dagger, rapier, longsword, mace | 2888 → 121 | 884 → 146 | 195 → 32 | 6103 → 7671 | 127 → 144 |
+
+Foot slides are the same with and without it (they are older: at most 0.7 units, under a pixel).
+
+**Tried and dropped:** turning the wrist only where it does not cross its own head (own head better, the other's head and
+body worse: 282 → 373 and 115 → 260); a push capped per pass rather than per step (snaps up sevenfold).
+
+**Weak points:** blades across their owner's own head rise by about 20% (the pushed blade has to go somewhere; that kind
+was already the biggest on the backlog). What is left inside the other is mostly at the edges of contacts and on long
+weapons, whose points the wrist turns slowly.
+
+**Comparison page:** `experiments/pits-collide-compare.html`. In the trial: `practice-combat.html?stage=spring&collide=on`.
+**Next, if the owner approves:** turn it on by default in the trial; then the own-head kind; then limp falls.
+
+## Instructions for Opus (written 2026-11-13, after the fluid-flow batch)
+
+Read `AGENTS.md`, `HANDOFF.md` and the section above first. Work on the branch `claude/fable-combat-fluidity-jus18q` (it contains `claude/go-wf0bsg`), or a session branch started from it. The owner's rule stands: nothing goes to `main` until the spring stage is finished for every weapon; no PR per step.
+
+**The contract. Do not break these; the tests named above hold them.**
+
+1. The picture moves only for written movement: a declared action getting to its hold, a resolved exchange, a fall or a getting-up. Never add a timer, an idle drift or a walk that runs while a person chooses or the dice roll.
+2. Nothing is written before the moment already shown (`S.now`), and writing never changes the past. If you remove written movement, do it through `S.cut` or `S.rollback`.
+3. No return to a common stance: not after a blow, not at a new round, not after a lull. If a pose looks wrong at a hold, fix the hold (`holdAt`, the variants) or the phrase's ending, not by sending fighters back to guard.
+4. Down and up are drawn by the movement that causes them. Do not read `look.prone` or the engine's `prone` to move a figure while anything is playing, held back or pending; `psLull` shows the one place it may be read.
+5. The stage is presentation only. Rules, dice and state stay in `practice-combat.html` and `js/combat-rules.js`. Read the engine's facts (`px`, the log entries, the roll labels); change none.
+6. The studies (`pits-fight-study.html` and its tests) are the reference for how a phrase should look. Live-only behaviour is switched by `S.absorb`, `S.chambered`, `grounded`; keep the studies' output unchanged unless a study is what you are fixing.
+
+**How to work.**
+
+- Start a static server (`python3 -m http.server 8765` at the repository root). After each change run `node tests/pits-spring-live.cjs`, `node tests/pits-writer.cjs`, `node tests/pits-fight.cjs`, then `node tests/visual/pits-spring-live.cjs`, then the live sweep, and compare its count by kind with the last one recorded here.
+- Look before you claim. Run `tests/visual/pits-film.cjs` on a bout that shows the change and read the sheets frame by frame, the held (red) frames first. A passing test does not mean it looks right.
+- One thing at a time, each with a test or a sweep number that moved. Record the new sweep count in this document when it changes.
+- Lines in these files are long; read with `cut -c1-300` or by function, not whole files.
+- After changing any JS or CSS: `python3 scripts/stamp-assets.py`. Release notes at the top of `CHANGELOG.md`. Update `HANDOFF.md` before ending.
+
+**The work, in order.**
+
+1. **Whatever the owner names** after watching `experiments/practice-combat.html?stage=spring`. Their eye outranks the sweep.
+2. **The stand-ins, as phrases in `pits-writer.js`** (they are a few raw keys in `pits-spring-live.js` now): the fall is settled as a crumble (owner, 2026-11-13; `PitsWriter.crumble`), so the next is getting up (Regain Footing: onto a knee, then up, weapon toward the other), the winner's lowering, the yield, the trip, the disarm, Press Advantage. Then attacks and parries from the ground with more than the arms. Each ends in a hold that passes `holdAt`.
+3. **The shield strike:** fixed (see "Work's code findings"); `tests/pits-writer.cjs` passes.
+4. **The live sweep, by kind,** largest first: blades slow past their own head; blades within 2 units of the other's head or elbow at close quarters; contacts off their point (probably where `S.absorb` asks an arm to reach further than it goes: check `reach` in `play` against the pin's arm limit). Fix in the phrase or in `aim`/`guard`, not by loosening a rule.
+5. **Declared actions that say more.** The chamber does not know the hit location (it is rolled later). When the engine does know more at declare time (a chosen location, a shield strike, a charge), use it. Add variants where a weapon family lacks them. Keep every variant clean at its hold for every weapon length (the CI test checks this).
+6. **The remaining weapon families,** one at a time, each with its profile in `profile`, its phrases, a generated study, the studies' sweep and the live sweep: heavy one-handed (replace the stand-in: slower chamber, harder impact), two-handed swing, long thrust (spear, pike, polearms, at their own range), flexible. Until a family exists its bouts stay on the old movement; when all exist, `supports` returns true for everything.
+7. **Cost.** Measure the time to write a declared action and a blow on a slow phone profile. Drop frames, keys and pins older than the last checkpoint the stage can still need (the replay rebuilds the fight from the tape, so nothing old is needed live). Keep a pin's place in its list or the checkpoints mismatch (see `cut`).
+8. **Release, when the owner says so:** the spring stage becomes the default, `?stage=spring` goes, the pose stage and `PitsMotion.LIVE` are retired with their tests, Work checks it live once (a batch: decisions hold still, phones, reduced motion, Quick pace).
+
+If something here conflicts with what the owner says in the session, the owner wins; write the change into this section.
