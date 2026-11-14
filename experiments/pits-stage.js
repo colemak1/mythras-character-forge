@@ -1288,12 +1288,10 @@ async function psMotionBlow(cue){
   // the attacking tool (the engine's px.tool, or the attack beat's): a shield strike is drawn as one. Kept apart from
   // `shield`, which is the defender's
   const strike=(px.tool==='shield'||(px.tool==null&&ex.shield))&&atk.look&&atk.look.shield?'shield':null;
-  const fall=tripFell&&!def.mDown?'sit':(leg||(evading&&!tried))&&!defeated;
-  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,strike,fall,defeated,prone:tried,flow:psReplaying()});
+  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying()});
   PS.busyUntil=r.end;atk.spent=def.spent=true;
-  // (a blow stopped completely by the parry ends before any fall is drawn: the trip's fall then follows at its end)
-  const fullStop=/^(parried|full-parry|full-ward)$/.test(out);
-  if(tripFell&&!fullStop&&!def.mDown){def.mDown=true;def.downAt=r.contacts.length?r.contacts[0].t:PS.clock;}
+  // (the trip's fall is drawn when the blow's own movement has played out, from the pose it left: written into the blow
+  // it overlapped the struck fighter's reaction and the head jumped, measured 47 px in one frame)
   // (downAt: the HUD's Prone chip waits for the blow's contact, when the figure is seen to go down)
   if(defeated||leg||evading){if(!def.mDown)def.downAt=r.contacts.length?r.contacts[0].t:PS.clock;def.mDown=true;}if(defeated)def.mEnd='lying';
   const disarm=cue.record&&cue.record.disarm;let flown=false,tripTold=false;
