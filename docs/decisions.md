@@ -84,3 +84,5 @@ Found while moving both onto `js/combat-rules.js` (2026-11-09, Claude). The refa
 | D-CE5: armour Initiative penalty in The Pits | Arena convention | The Pits has one Armour Points number per fighter, so it estimates ENC from AP (`ARMOUR_ENC_BY_AP`). Play Mode uses the real armour worn. Saved characters sent to The Pits already bring their real penalty. |
 
 Also kept on purpose: Play Mode's `SPECIAL_EFFECTS` table in `play.js` still lists each effect's role, weapon restriction and roll requirement beside its rules text, because `tests/rules-smoke.cjs` reads that layout. `tests/combat-rules.cjs` fails if it and the shared table disagree.
+
+**Official character sheet (owner, 2026-11-14).** The design studio gave permission to use the official Mythras character sheets; the owner chose them for the print option. Print uses the two sheet pages from the Character Creation Workbook (design and layout by Evelyn H.), with the credit kept on the page and in the site's note under the print buttons.

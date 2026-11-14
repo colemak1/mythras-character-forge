@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (Pits: five rules fixes from #333)_
+_Last updated: 2026-11-14 by Claude (official print sheet; Pits rules fixes)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-14 by Claude (Pits: five rules fixes from #333)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+0000000000000000000000000000000. **Claude, done 2026-11-14 (official print sheet):** the owner has the design studio's permission to use the official Mythras character sheets. **Print sheet** on the Character Sheet view now prints the workbook's two-page sheet filled in from the character; **Print blank sheet** and a blank PDF are beside it, with a preview below. Code `js/official-sheet.js`, art `assets/sheet/`, test `tests/official-sheet.cjs`. **Next: ChatGPT (Work)** in its next batch: print (or save as PDF) a real character's sheet from the deployed site on desktop and on a phone, and check every value lands in its box. **Owner:** print one on paper and say if anything sits wrong.
 
 0000000000000000000000000000001. **Claude, done 2026-11-14 (Pits rules fixes):** Chat's check (#333, merged into this PR) found 5 WRONG of 27; all five fixed with tests (RC-07 Hopeless, RC-08 Failure vs Fumble, RC-12 most severe grade, RC-21 Disarm rounding and cap, RC-25 Impale Incapacitated). D-CE1 corrected in `docs/decisions.md` (the earlier ruling misattributed its source; Failure vs Fumble gives nothing). RC-08 also changes Play Mode. **Next: ChatGPT (Chat)**, three short questions under Known limits in `docs/pits-rules-check-20261114.md` (do Fatigue/Impale/Entangle grades also take the most severe instead of stacking; two Serious legs; hiding Hopeless actions). **Owner:** beta testing can start on the rules side.
 

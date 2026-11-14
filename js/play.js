@@ -2204,6 +2204,12 @@ function conditionsSummary(){
 // needs during a session, this is instead a standalone reference/printout
 // reachable from Play Mode, the Finish step, and each My Characters card
 // (see APPVIEW "sheet" / APP.toSheet / renderSheetView below).
+// Print buttons: the official two-page sheet (js/official-sheet.js) when it
+// is loaded, else the browser's print of this page.
+function sheetPrintControls(){
+  return typeof officialSheetControls==="function"?officialSheetControls()
+    :'<div class="exportrow"><button class="nav" onclick="window.print()">Print sheet</button></div>';
+}
 function characterSheetBody(){
   const c=effectiveChars(),es=allEntries();
   const grp=g=>es.filter(e=>e.grp===g).sort((a,b)=>a.label.localeCompare(b.label));
@@ -2243,7 +2249,7 @@ function characterSheetBody(){
   if(!charsReady()){
     h+='<p class="warn">Set characteristics first to build the sheet.</p></div>';
     h+=campaignCard();
-    h+='<div class="exportrow"><button class="nav" onclick="window.print()">Print sheet</button></div>';
+    h+=sheetPrintControls();
     return h+rulesNotes();
   }
   const initPenalty=armourPenaltyToInit();
@@ -2361,7 +2367,7 @@ function characterSheetBody(){
   if(S.inventory.length)h+='<div class="mbox" style="margin-top:8px"><div class="mbox-t">Other Equipment</div>'
    +S.inventory.map(it=>mkv(esc(it.name)+' ×'+it.qty,'ENC '+inventoryItemEnc(it))).join("")+'</div>';
   h+='</div>';
-  h+='<div class="exportrow"><button class="nav" onclick="window.print()">Print sheet</button></div>';
+  h+=sheetPrintControls();
   h+=rulesNotes();
   return h;
 }

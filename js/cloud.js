@@ -2286,6 +2286,7 @@ function renderSheetView(){
   const backLabel=SHEET_RETURN_VIEW==="play"?"&#8592; Back to Play Mode":SHEET_RETURN_VIEW==="library"?"&#8592; Back to My Characters":"&#8592; Back";
   let h='<div class="sheetview-wrap"><p><button class="nav" onclick="APP.backFromSheet()">'+backLabel+'</button></p>';
   h+=characterSheetBody();
+  if(typeof officialSheetPrintHtml==="function")h+=officialSheetPrintHtml();
   h+='</div>';
   $("#main").innerHTML=h;
 }
