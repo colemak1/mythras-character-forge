@@ -16,7 +16,7 @@ _Last updated: 2026-11-14 by Claude (Pits: every weapon on the spring stage)_
 
 ## Next
 
-0000000000000000000000000. **ChatGPT (Work), now (while the owner plays):** the test batch in `docs/pits-spring-work-batch-20261114.md` (36 checks: every weapon family, special effects and falls, ordering, replay, screen) on the branch preview. Report in `docs/pits-spring-work-20261114.md`, fight records in `docs/pits-records/`. **Then Claude:** fix the failures by severity, using the records.
+0000000000000000000000000. **ChatGPT (Work), checked 2026-11-13 (batch 20261114):** `docs/pits-spring-work-20261114.md` lists all 36 IDs and 15 copied failure records. **Current-branch acceptance blocked:** the preview loaded older writer/spring/stage version tokens than `ad0023e`; observed results (12 pass, 15 fail, 9 blocked) apply only to that served preview. **Next: Claude:** verify served asset versions first, identify already-fixed findings, then resolve remaining failures by severity. Read the report limits; no production changes.
 
 000000000000000000000000. **Claude, done 2026-11-14 (every weapon playable):** all 35 weapons fight on `?stage=spring` (branch `claude/sharp-franklin-mbjthj`, no PR). Weapons without their own family are stand-ins on the cut or thrust phrases, with two-handed grips drawn; list in `docs/pits-animation-direction.md`, "Every weapon on the spring stage". **Owner:** play every weapon and send a **Copy fight record** for anything that looks wrong, with one line naming the moment. **Then Claude:** fix what the records show first; then give the stand-in families their own movement, in the order the owner finds them worst (likely the spear family's reach, then two-handed swings, then flails and the whip).
 
