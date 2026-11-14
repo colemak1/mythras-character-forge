@@ -1,214 +1,356 @@
-// The Pits: five alternative layouts for the bottom third of the battle screen
-// (owner request 2026-11-11; mockups: A Command bar, B Duel table, C Ground dock,
-// D Step flow, E Odds first). PRESENTATION ONLY, like pits-arena.js: every number
-// comes from the engine (pitsLegalActions, combatTarget, evadeTarget, the exchange
-// log) and every button that does something carries the engine's own data-act.
-// The two-step layouts (D, E) keep a local "selected action" and only the confirm
-// button sends the real act. The old layout stays the default ("current").
-// The switcher is temporary: the owner removes it once one layout is picked.
-// Choose with the Bottom list in the top bar, or open the page with ?bottom=A.
+// The Pits: the bottom third of the battle screen (layout E "Odds first", chosen by the owner 2026-11-14,
+// then reworked for new players: "so much just happened and I don't know what's going on").
+//
+//   left    Your moves: the actions for your turn AND the defences for when you are attacked
+//   middle  What's happening: where the exchange is (Action, Defence, Special Effects, Location, Damage),
+//           what has happened so far in plain words, and the decision itself. Special Effects and Choose
+//           Location are chosen here instead of in a window over the arena.
+//   right   Details: whatever the pointer (or keyboard focus) is on, with its odds; otherwise the selection.
+//
+// PRESENTATION ONLY, like pits-arena.js: every number comes from the engine (pitsLegalActions,
+// combatTarget, evadeTarget, effectiveSkill, rollSkill, CombatRules.opposedWins, effectsWonBy, the log)
+// and every button that does something carries the engine's own data-act. Choices are made in two steps
+// (select, then Confirm or Enter) so the details can be read first.
+// Phones (<=900px) and ?bottom=current keep the older deck in pits-arena.js.
 
-const PB_LAYOUTS=[['current','Current'],['A','A · Command bar'],['B','B · Duel table'],['C','C · Ground dock'],['D','D · Step flow'],['E','E · Odds first']];
-const PB_KEY='sitota-pits-bottom-layout';
-const PB={sel:null,turnKey:'',layout:null,wired:false};
-const PB_ICON={
-  attack:'M5 19L18 6M18 6h-5M18 6v5M4 16l4 4',shieldAttack:'M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z M9 11h6',
-  brace:'M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z',dither:'M3 12c3-5 6 5 9 0s6 5 9 0',delay:'M8 5v14M16 5v14',
-  changeRange:'M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4',stand:'M12 20V5M6 11l6-6 6 6',yield:'M6 21V4M6 4h11l-2 4 2 4H6'};
-const pbIcon=act=>`<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${PB_ICON[act]||'M12 5v14M5 12h14'}"/></svg>`;
+const PB={sel:null,def:null,fx:null,hover:null,key:'',wired:false};
 
-// The layout in use: a choice made in this page, then ?bottom=, then the saved choice. Phones keep the current layout.
 function pitsBottomLayout(){
   try{if(window.matchMedia&&matchMedia('(max-width:900px)').matches)return 'current';}catch(e){}
-  if(PB.layout)return PB.layout;
-  let v='current';
-  try{
-    const q=/[?&]bottom=([A-Ea-e]|current)\b/.exec(location.search);
-    if(q)v=q[1].length===1?q[1].toUpperCase():'current';
-    else{const s=localStorage.getItem(PB_KEY);if(PB_LAYOUTS.some(l=>l[0]===s))v=s;}
-  }catch(e){}
-  return v;
+  try{if(/[?&]bottom=current\b/.test(location.search))return 'current';}catch(e){}
+  return 'E';
 }
-function pitsBottomSelectHtml(){
-  const cur=pitsBottomLayout();
-  return `<label class="pa-bl"><span>Bottom</span><select data-pa="layout" aria-label="Bottom layout">${PB_LAYOUTS.map(([k,n])=>`<option value="${k}"${k===cur?' selected':''}>${esc(n)}</option>`).join('')}</select></label>`;
-}
+const pbOn=()=>pitsBottomLayout()==='E';
 
-// ---- what every layout shows ----
-// Number keys follow this order (the mockups': Attack first, Concede last), not the engine's list order.
+// ---- what is being decided, and by whom ----
+// Number keys follow this order (Attack first, Concede last), not the engine's list order.
 const PB_ORDER=['attack','shieldAttack','brace','dither','delay','changeRange','stand'];
 const pbRank=a=>{const i=PB_ORDER.indexOf(a.act);return a.act==='yield'?999:i<0?100:i;};
 const pbOrder=list=>list.map((a,i)=>[a,i]).sort((x,y)=>pbRank(x[0])-pbRank(y[0])||x[1]-y[1]).map(x=>x[0]);
-const PB_MSG={action:'Choose an action',opponent:'Opponent acts',reaction:'Choose your defense',rolling:'Roll the dice',effects:'Choose a Special Effect',
-  resist:'Resist',resolving:'Resolving the exchange',recap:'Bout over',intro:'Next opponent'};
-function pbCtx(){
-  const phase=pitsPhase(),turn=S.order?.[S.turnIndex];
-  const id=phase==='action'&&paHuman(turn)?turn:'a',me=S.fighters[id],foe=S.fighters[id==='a'?'b':'a'];
-  const list=pbOrder(pitsLegalActions(id)),live=phase==='action'&&!V.busy;
-  // a new turn forgets the last selection; the default is Attack, then the first action that can be taken
-  const key=S.round+':'+S.cycle+':'+S.turnIndex+':'+id;
-  if(PB.turnKey!==key){PB.turnKey=key;PB.sel=null;}
-  const on=list.filter(a=>a.enabled);
-  const sel=on.find(a=>a.act===PB.sel)||on.find(a=>a.act==='attack')||on[0]||null;
-  return {phase,id,me,foe,list,live,sel,showPrompt:!!V.busy||!['action','opponent'].includes(phase)};
-}
+const pbHuman=id=>S.fighters?.[id]?.kind==='human';
+const pbOther=id=>id==='a'?'b':'a';
 const pbCost=a=>a.ap?a.ap+' AP':'free';
-const pbHelp=(a,c)=>{
-  const help=typeof actionChoiceHelp==='function'?actionChoiceHelp(a.act,c.me):'';
-  return c.live&&!a.enabled&&a.reason?a.reason:help;
-};
+const pbPct=n=>Math.round(n)+'%';
+
+// The defences the engine offers the defender now (or would offer: shown greyed outside a reaction).
+function pbDefences(id,live){
+  const f=S.fighters[id],p=S.pending,out=[];
+  if(live&&p?.kind==='range'){
+    out.push({val:'permit',act:'rangeRespond',label:'Allow the move',ap:0,enabled:true});
+    out.push({val:'oppose',act:'rangeRespond',label:'Oppose (Evade)',ap:1,pct:effectiveSkill(f,evadeTarget(f)),enabled:canOpposeRange(f)});
+    out.push({val:'intercept',act:'rangeRespond',label:'Intercept (attack)',ap:1,pct:effectiveSkill(f,combatTarget(f)),enabled:canInterceptRange(f)});
+    return out;
+  }
+  const w=ARENA_WEAPONS[f.weapon]||{};
+  out.push({val:'parry',act:'react',label:'Parry ('+(f.disarmed?'weapon':w.name||'weapon')+')',ap:1,pct:effectiveSkill(f,combatTarget(f,'weapon')),
+    enabled:live&&f.ap>0&&canParryAtReach(f.id)&&!unavailableReaction(f,'weapon')});
+  if(f.shield!=='none')out.push({val:'shield',act:'react',label:'Parry ('+(SHIELDS[f.shield]?.name||'shield')+')',ap:1,pct:effectiveSkill(f,combatTarget(f,'shield')),
+    enabled:live&&f.ap>0&&canShieldParry(f)});
+  out.push({val:'evade',act:'react',label:'Evade',ap:1,pct:effectiveSkill(f,evadeTarget(f)),enabled:live&&f.ap>0&&!cannotRespond(f)});
+  out.push({val:'none',act:'react',label:'Do not defend',ap:0,enabled:live});
+  return out;
+}
+
+function pbCtx(){
+  const phase=pitsPhase(),p=S.pending,turn=S.order?.[S.turnIndex];
+  const reacting=!V.busy&&!R&&p&&((p.kind==='reaction'&&pbHuman(p.def))||(p.kind==='range'&&pbHuman(p.defender)));
+  const choosingFx=!V.busy&&!R&&p&&['effect','location'].includes(p.kind)&&pbHuman(p.owner);
+  // whose moves the left column shows: the decision's owner, else the human whose turn it is, else player one
+  const id=reacting?(p.kind==='range'?p.defender:p.def):choosingFx?p.owner:pbHuman(turn)?turn:'a';
+  const me=S.fighters[id],foe=S.fighters[pbOther(id)];
+  const live=phase==='action'&&!V.busy&&!p&&!R;
+  const list=pbOrder(pitsLegalActions(id)),defs=pbDefences(id,!!reacting);
+  const key=[S.round,S.cycle,S.turnIndex,id,p?.kind||'',p?.effectsLeft??''].join(':');
+  if(PB.key!==key){PB.key=key;PB.sel=null;PB.def=null;PB.fx=null;}
+  const on=list.filter(a=>a.enabled);
+  const sel=live?(on.find(a=>a.act===PB.sel)||on.find(a=>a.act==='attack')||on[0]||null):null;
+  const donD=defs.filter(d=>d.enabled);
+  const def=reacting?(donD.find(d=>d.val===PB.def)||null):null;
+  const fxList=choosingFx&&p.kind==='effect'?availableEffects(p):[];
+  const fx=fxList.find(([fid])=>fid===PB.fx)||null;
+  return {phase,p,id,me,foe,live,list,sel,defs,def,reacting:!!reacting,choosingFx:!!choosingFx,fxList,fx};
+}
+
+// ---- left: your moves ----
 const pbPips=f=>`<span class="bpips" aria-label="${f.ap} of ${f.apMax} action points">${Array.from({length:f.apMax},(_,i)=>`<i class="${i<f.ap?'on':''}"></i>`).join('')}</span>`;
-const pbPrompt=()=>`<div class="bprompt">${paPromptHtml()}</div>`;
-const pbCount=()=>paVisibleLogs().length;
-const pbHistBtn=(label)=>`<button type="button" class="toolbutton bhist" data-pa="history">${label} · ${pbCount()}</button>`;
-function pbHead(c,{history=true,title}={}){
-  const pill=PITS_PHASE_PILL[c.phase]||'';
-  return `<div class="b-head"><span class="turnpill${c.phase==='action'?'':' idle'}"><i></i>${esc(pill)}</span>${pbPips(c.me)}<span class="b-ap">${c.me.ap} AP left</span>
-    <span class="b-msg">${esc(title||(S.mode==='pvp'&&c.phase==='action'?c.me.name+': ':'')+(PB_MSG[c.phase]||''))}</span><span class="spacer"></span>${history?pbHistBtn('Full history'):''}</div>`;
+function pbActionRows(c){
+  return c.list.map((a,i)=>{
+    const on=c.live&&a.enabled,picked=c.sel&&a.act===c.sel.act;
+    return `<button type="button" class="brow${picked?' sel':''}${on?'':' off'}" data-pa="sel" data-val="${a.act}" data-pb-info="act:${a.act}" ${on?'':'aria-disabled="true"'}>
+      <kbd>${c.live&&i<9?i+1:''}</kbd><span class="nm">${esc(a.label)}</span><span class="co">${pbCost(a)}</span></button>`;
+  }).join('');
+}
+function pbDefenceRows(c){
+  return c.defs.map((d,i)=>{
+    const picked=c.def&&d.val===c.def.val;
+    return `<button type="button" class="brow def${picked?' sel':''}${d.enabled?'':' off'}" data-pa="def" data-val="${d.val}" data-pb-info="def:${d.val}" ${d.enabled?'':'aria-disabled="true"'}>
+      <kbd>${c.reacting&&i<9?i+1:''}</kbd><span class="nm">${esc(d.label)}</span>${d.pct!=null?`<span class="pc">${d.pct}%</span>`:''}<span class="co">${d.ap?d.ap+' AP':'free'}</span></button>`;
+  }).join('');
+}
+function pbLeft(c){
+  // The group that matters now is open; the other stays as a one-line reminder of what exists.
+  const defFirst=c.reacting||c.phase==='opponent';
+  const acts=defFirst?`<section class="bgrp shut" aria-label="Actions on your turn"><p class="bsum"><b>Your turn:</b> ${c.list.filter(a=>a.enabled).slice(0,4).map(a=>esc(a.label)).join(' · ')||'none'}</p></section>`
+    :`<section class="bgrp" aria-label="Actions on your turn"><span class="lbl"><span>Actions · your turn</span>${pbPips(c.me)}</span>${pbActionRows(c)}</section>`;
+  const p=c.p,rangeQ=c.reacting&&p?.kind==='range';
+  const defs=defFirst?`<section class="bgrp" aria-label="${rangeQ?'Answer the range change':'Defences when attacked'}"><span class="lbl"><span>${rangeQ?'Answer · range change':'Defences · when attacked'}</span>${pbPips(c.me)}</span>${pbDefenceRows(c)}</section>`
+    :`<section class="bgrp shut" aria-label="Defences when attacked"><p class="bsum"><b>When attacked:</b> ${c.defs.map(d=>esc(d.label.replace(/ \(.*\)/,''))+(d.pct!=null?' '+d.pct+'%':'')).join(' · ')}</p></section>`;
+  return `<div class="blist" role="group" aria-label="${esc(c.me.name)}: your moves">${defFirst?defs+acts:acts+defs}</div>`;
 }
 
-// One action as a card (A, B).
-function pbCard(a,i,c){
-  const on=c.live&&a.enabled,txt=pbHelp(a,c);
-  return `<button type="button" class="bact${a.act==='attack'?' primary':''}${a.act==='yield'?' danger':''}${a.act==='delay'?' hold':''}" data-act="${a.act}" title="${esc(txt)}" ${on?'':'disabled'}>
-    <span class="bt"><kbd>${i<9?i+1:''}</kbd><span class="chip">${pbCost(a)}</span></span><span class="bn">${esc(a.label)}</span><span class="bd">${esc(txt)}</span></button>`;
+// ---- middle: what's happening ----
+const PB_STEPS=[['act','Action'],['def','Defence'],['fx','Effects'],['loc','Location'],['dmg','Damage']];
+function pbStepOf(label){
+  const l=String(label||'');
+  if(/^(Parry|Evade)\b/i.test(l))return 'def';
+  if(/^(Hit Location|Choose Location)/i.test(l))return 'loc';
+  if(/^(Damage|Impale|Bleed|Stun|Endurance|Bash)/i.test(l))return 'dmg';
+  if(/^(Trip|Resist|Blind|Disarm|Damage Weapon|Accidental|Pin)/i.test(l))return 'fx';
+  return 'act';
 }
-
-// ---- the last exchange, from the engine's log ----
+function pbStepNow(c){
+  const p=c.p,roll=V.busy?V.roll:R;
+  if(roll)return pbStepOf(roll.label);
+  if(V.busy){const g=pbExchange();const last=g?.entries[g.entries.length-1];return last?pbStepOf(last.title):'act';}
+  if(p){
+    if(p.kind==='reaction'||p.kind==='range')return 'def';
+    if(p.kind==='location')return 'loc';
+    if(['impalePick','impaleLeave'].includes(p.kind))return 'dmg';
+    return 'fx';
+  }
+  return 'act';
+}
+function pbTracker(c){
+  const now=pbStepNow(c),i=PB_STEPS.findIndex(s=>s[0]===now);
+  return `<ol class="btrack" aria-label="Where the exchange is">${PB_STEPS.map(([k,n],j)=>`<li class="${j<i?'done':j===i?'now':''}"${j===i?' aria-current="step"':''}>${esc(n)}</li>`).join('')}</ol>`;
+}
+// The exchange on screen: the one in progress, else the last one.
+function pbExchange(){const ex=paExchanges();return ex[ex.length-1]||null;}
 const PB_ROLL=/(attacks|strikes with the shield|makes a Remise attack|parries( with shield)?|evades)$/;
-function pbLast(){
-  const ex=paExchanges(),g=ex[ex.length-1];
-  if(!g)return null;
-  const rolls=[];
+const PB_GRADE_WORD={critical:'Critical success',success:'Success',failure:'Failure',fumble:'Fumble'};
+function pbRollOf(l){
+  if(!PB_ROLL.test(l.title))return null;
+  const m=/^(\d+)\s+(?:against|vs)\s+[^0-9]*?(\d+)%[^A-Za-z]*(CRITICAL|SUCCESS|FAILURE|FUMBLE)/i.exec(String(l.body||''));
+  return m?{roll:+m[1],pct:+m[2],grade:m[3].toLowerCase()}:null;
+}
+const pbClip=(s,n)=>{s=String(s||'').replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n-1).trimEnd()+'…':s;};
+// Plain lines for one exchange, oldest first.
+function pbStory(g){
+  if(!g)return [];
+  const out=[];
   for(const l of g.entries){
-    if(!PB_ROLL.test(l.title))continue;
-    const m=/^(\d+)\s+(?:against|vs)\s+[^0-9]*?(\d+)%[^A-Za-z]*(CRITICAL|SUCCESS|FAILURE|FUMBLE)/i.exec(String(l.body||''));
-    if(m)rolls.push({side:l.meta&&l.meta.actor,title:l.title,roll:+m[1],pct:+m[2],grade:m[3].toLowerCase()});
+    const r=pbRollOf(l);
+    if(r){out.push({cls:'roll',g:r.grade,html:`<b>${esc(l.title)}</b>: rolled <b>${r.roll}</b>, needed ${r.pct} or less · <span class="g">${PB_GRADE_WORD[r.grade]}</span>`});continue;}
+    if(paBlowLine(l))continue;
+    if(/^(Hit Location|Damage|Choose Location)$/i.test(l.title)||l.kind==='hit'||l.kind==='hurt')
+      out.push({cls:l.kind==='hurt'?'hurt':'fx',html:`<b>${esc(l.title)}</b>: ${esc(pbClip(l.body,120))}`});
   }
-  const last=g.entries[g.entries.length-1]||{};
-  return {g,rolls,res:paExchangeResult(g),round:last.round,cycle:last.cycle};
+  const res=paExchangeResult(g);
+  if(res)out.push({cls:'end'+(/Wounded/.test(res.head)?' hurt':''),html:`<b>${esc(res.head)}</b> · ${esc(res.math)}`});
+  return out;
 }
-const pbGradeChip=r=>`<span class="chip g-${r.grade}">${esc(r.grade)}</span>`;
-const pbNone='<p class="bnone">Nothing yet. The first exchange appears here.</p>';
-
-// ---- A · Command bar ----
-function pbA(c,last){
-  const steps=last?last.rolls.map(r=>`<span class="bstep">${esc(r.title)} <em>${r.roll} vs ${r.pct}%</em>${pbGradeChip(r)}</span>`).join('<span class="arr">→</span>'):'';
-  const res=last?(last.res?`<span class="bres"><b>${esc(last.res.head)}</b> · ${esc(last.res.math)}</span>`:'<span class="bres">In progress…</span>'):'';
-  return `<div class="bdeck bA" aria-label="Command deck">${pbHead(c)}
-    <div class="bA-row" role="group" aria-label="Your actions">${c.showPrompt?pbPrompt():c.list.map((a,i)=>pbCard(a,i,c)).join('')}</div>
-    <div class="bA-last" aria-live="polite"><span class="lbl">Last</span>${last?steps+(steps?'<span class="arr">→</span>':'')+res:'<span class="bnone">Nothing yet. The first exchange appears here.</span>'}</div></div>`;
+// Whatever happened after the last exchange that is not part of it (Brace, Change Range, a new round...).
+function pbSince(g){
+  const logs=paVisibleLogs();const last=g?.entries[g.entries.length-1];
+  const at=last?logs.lastIndexOf(last):-1,rest=logs.slice(at+1).filter(l=>l.title&&l.kind!=='system');
+  return rest.slice(-2).map(l=>({cls:'note',html:`<b>${esc(l.title)}</b>${l.body?': '+esc(pbClip(l.body,110)):''}`}));
 }
-
-// ---- B · Duel table ----
-function pbRollRow(r){
-  return `<div class="broll"><div class="brt"><b>${esc(r.title)}</b><span class="g-${r.grade}">${esc(r.grade)} · need ≤ ${r.pct}</span></div>${pitsBandHtml(r.pct,r.roll)}</div>`;
+function pbHeadline(c){
+  const p=c.p,turn=S.fighters[S.order?.[S.turnIndex]];
+  const who=f=>f?esc(f.name):'';
+  if(V.busy)return V.replaying?'Replaying the fight':'Watch the exchange play out';
+  if(S.phase==='between'||S.phase==='over')return 'The bout is over';
+  if(R)return pbHuman(R.actor)?`${who(S.fighters[R.actor])}: roll the dice`:`${who(S.fighters[R.actor])} is rolling`;
+  if(p?.kind==='reaction')return pbHuman(p.def)?`${who(S.fighters[p.atk])} attacks ${who(S.fighters[p.def])}: choose a defence`:`${who(S.fighters[p.def])} is choosing a defence`;
+  if(p?.kind==='range')return `${who(S.fighters[p.mover])} tries to change range`;
+  if(p?.kind==='effect')return `${who(S.fighters[p.owner])} earned ${p.effectsLeft} Special Effect${p.effectsLeft===1?'':'s'} to choose`;
+  if(p?.kind==='location')return `${who(S.fighters[p.owner])}: choose where the blow lands`;
+  if(p)return pbHuman(p.owner||p.other||p.def)?'A decision is waiting':'The opponent is deciding';
+  return pbHuman(turn?.id)?`${who(turn)}'s turn: ${turn.ap} AP to spend`:`${who(turn)} is acting`;
 }
-function pbB(c,last){
-  const right=last?`<header><span class="lbl">Last exchange</span>${last.round?`<span class="chip">R${last.round} · C${last.cycle||1}</span>`:''}</header>
-      ${last.rolls.map(pbRollRow).join('')||'<p class="bnone">No dice rolled yet.</p>'}
-      <div class="bverdict">${last.res?`<b>${esc(last.res.head)}</b><span>${esc(last.res.math)}</span>`:'<b>In progress</b><span>Rolls are being resolved.</span>'}</div>`
-    :`<header><span class="lbl">Last exchange</span></header>${pbNone}`;
-  return `<div class="bdeck bB" aria-label="Command deck"><div class="bB-l">${pbHead(c,{history:false})}
-      <div class="bB-grid" role="group" aria-label="Your actions">${c.showPrompt?pbPrompt():c.list.map((a,i)=>pbCard(a,i,c)).join('')}</div></div>
-    <div class="bB-r" aria-live="polite">${right}</div></div>`;
-}
-
-// ---- C · Ground dock ----
-function pbDk(a,i,c,big){
-  const on=c.live&&a.enabled,txt=pbHelp(a,c);
-  return `<button type="button" class="bdk${big?' big':''}${a.act==='yield'?' danger':''}${on?'':' off'}" data-act="${a.act}" title="${esc(txt)}" aria-label="${esc(a.label+', '+pbCost(a))}" ${on?'':'disabled'}>
-    <kbd>${i<9?i+1:''}</kbd><span class="ic">${pbIcon(a.act)}</span><span class="dn">${esc(a.label)}</span>
-    <span class="tip"><b>${esc(a.label)} · ${pbCost(a)}</b>${esc(txt)}</span></button>`;
-}
-function pbCorner(r,side,res){
-  if(!r)return `<div class="bcorner ${side}"><h5><span>${side==='l'?S.fighters.a.name:S.fighters.b.name}</span></h5><p class="bnone">No roll yet.</p></div>`;
-  return `<div class="bcorner ${side}"><h5><span>${esc(r.title)}</span>${pbGradeChip(r)}</h5>
-    <div class="bbig"><strong>${r.roll}</strong><em>needed ≤ ${r.pct}</em></div>${res?`<p>${esc(res)}</p>`:''}</div>`;
-}
-function pbC(c,last){
-  const idx=a=>c.list.indexOf(a),left=c.list.filter(a=>['brace','dither','delay'].includes(a.act)),mid=c.list.filter(a=>['attack','shieldAttack'].includes(a.act));
-  const rest=c.list.filter(a=>!left.includes(a)&&!mid.includes(a));
-  const side=id=>last?last.rolls.find(r=>r.side===id):null;
-  const dock=c.showPrompt?`<div class="bC-prompt">${pbPrompt()}</div>`
-    :`<div class="bdock" role="group" aria-label="Your actions">${left.map(a=>pbDk(a,idx(a),c)).join('')}${mid.map(a=>pbDk(a,idx(a),c,true)).join('')}${rest.map((a,k)=>pbDk(a,idx(a),c)).join('')}</div>`;
-  return `<div class="bdeck bC" aria-label="Command deck"><div class="bC-cap"><b>${esc(PB_MSG[c.phase]||'')}</b><span>${pbPips(c.me)} ${c.me.ap} AP left</span></div>
-    ${pbCorner(side('a'),'l',last&&last.res?last.res.head:'')}${dock}${pbCorner(side('b'),'r',last&&last.res?last.res.math:'')}
-    <button type="button" class="bhist link" data-pa="history">View full history · ${pbCount()}</button></div>`;
-}
-
-// ---- D · Step flow ----
-function pbStepStrip(c,last){
-  const a=c.sel,aimed=a&&['attack','shieldAttack'].includes(a.act);
-  let s;
-  if(c.live)s=[a?'done':'now',aimed?'now':(a?'done':''),aimed?'':(a?'now':'')];
-  else if(c.phase==='opponent')s=['now','',''];
-  else s=['done','done','now'];
-  const lbl=[c.live&&a?'Action: '+a.label:'Choose action',c.live&&a&&!aimed?'No target needed':'Check the target','Confirm &amp; resolve'];
-  const tail=last?last.rolls.map(r=>`${esc(r.title)} <em>${r.roll}</em>`).join(' → ')+(last.res?` → <strong>${esc(last.res.head)}</strong>`:' → in progress'):'Nothing yet';
-  return `<div class="bsteps" role="list">${s.map((st,i)=>`<div class="${st}" role="listitem"><b>${st==='done'?'✓':i+1}</b>${lbl[i]}</div>`).join('')}<div class="blastline" role="listitem" aria-live="polite" title="${last?esc(last.rolls.map(r=>r.title+' '+r.roll+' vs '+r.pct+'%, '+r.grade).join('; ')+(last.res?'. '+last.res.math:'')):''}"><span class="lbl">Last</span><span class="bltext">${tail}</span></div></div>`;
-}
-function pbFoeBody(foe){
-  const total=HIT_LOCS.reduce((n,l)=>n+Math.max(0,foe.hp[l]),0),max=HIT_LOCS.reduce((n,l)=>n+foe.maxHp[l],0),w=ARENA_WEAPONS[foe.weapon]||{};
-  return `<div class="btgt"><svg class="body-svg" viewBox="0 0 120 200" role="group" aria-label="${esc(foe.name)} hit locations">${paZonesSvg(foe)}</svg>
-    <div class="binfo"><span class="lbl">Opponent</span><h4>${esc(foe.name)}</h4>
-    <dl><dt>Hit points</dt><dd>${total}/${max}</dd><dt>Weapon</dt><dd>${esc(foe.disarmed?'Unarmed':(w.name||foe.weapon))}</dd><dt>Evade</dt><dd>${evadeTarget(foe)}%</dd></dl>
-    <div class="chips">${paConditions(foe)}</div></div></div>`;
-}
-function pbD(c,last){
-  if(c.showPrompt||c.phase==='opponent'){
-    return `<div class="bdeck bD" aria-label="Command deck">${pbStepStrip(c,last)}<div class="bD-main one"><div class="bcard focus">${c.showPrompt?pbPrompt():`<p class="bnone">${esc(S.fighters[S.order?.[S.turnIndex]]?.name||'The opponent')} acts. Your reactions appear here.</p>`}</div></div></div>`;
+function pbDecision(c){
+  const p=c.p;
+  if(c.live){
+    const a=c.sel;
+    return a?`<div class="bdo"><p>Pick an action on the left. Point at anything to see its odds on the right.</p>
+      <button type="button" class="bgo" data-act="${a.act}">${esc(a.label)} · ${pbCost(a)} <kbd>Enter</kbd></button></div>`
+      :'<div class="bdo"><p class="bnone">No action available.</p></div>';
   }
-  const a=c.sel,aimed=a&&['attack','shieldAttack'].includes(a.act);
-  const others=c.list.filter(x=>!a||x.act!==a.act).map(x=>`<button type="button" class="bmini${x.enabled?'':' off'}" data-pa="sel" data-val="${x.act}" title="${esc(pbHelp(x,c))}" ${x.enabled?'':'disabled'}>${esc(x.label)}</button>`).join('');
-  const odds=a?pitsOddsFor(a.act):null;
-  const sum=a?(aimed?`${a.label} ${esc(c.foe.name)}`:a.label):'No action available';
-  const need=odds!=null?`<div class="bneed"><span>You need</span><b>≤ ${odds}% on d100</b></div>`:`<div class="bneed"><span>Roll</span><b>none</b></div>`;
-  return `<div class="bdeck bD" aria-label="Command deck">${pbStepStrip(c,last)}<div class="bD-main">
-    <div class="bcard"><span class="lbl">1 · Action</span>${a?`<div class="bpick"><kbd>${c.list.indexOf(a)+1}</kbd><span class="bn">${esc(a.label)}</span><span class="chip">${pbCost(a)}</span></div>`:''}<div class="bminis" role="group" aria-label="Other actions">${others}</div></div>
-    <div class="bcard focus"><span class="lbl">2 · Target</span>${aimed?pbFoeBody(c.foe):`<p class="bnone">${esc(a?pbHelp(a,c):'')}</p><p class="bnone">No target needed.</p>`}</div>
-    <div class="bcard conf"><span class="lbl">3 · Resolve</span><div class="bsum">${sum}</div>${need}
-      <button type="button" class="bgo" ${a?`data-act="${a.act}"`:'disabled'}>${a?`${esc(a.label)} · ${pbCost(a)} <kbd>Enter</kbd>`:'—'}</button></div></div></div>`;
+  if(c.reacting){
+    const d=c.def;
+    return `<div class="bdo"><p>${p.kind==='range'?'Answer on the left.':'Pick a defence on the left; each one shows its odds against this roll.'}</p>
+      ${d?`<button type="button" class="bgo" data-act="${d.act}" data-val="${d.val}">${esc(d.label)}${d.ap?' · '+d.ap+' AP':''} <kbd>Enter</kbd></button>`:'<button type="button" class="bgo" disabled>Choose first</button>'}</div>`;
+  }
+  if(c.choosingFx&&p.kind==='effect'){
+    const chips=c.fxList.map(([id,name],i)=>`<button type="button" class="bfx${c.fx&&c.fx[0]===id?' sel':''}" data-pa="fx" data-val="${id}" data-pb-info="fx:${id}"><kbd>${i<9?i+1:''}</kbd>${esc(name)}</button>`).join('');
+    return `<div class="bdo fx"><div class="bfxs" role="group" aria-label="Special Effects">${chips}</div>
+      <div class="bfxgo"><button type="button" class="toolbutton bskip" data-act="skipEffect">Skip</button>
+      ${c.fx?`<button type="button" class="bgo" data-act="effect" data-val="${c.fx[0]}">${esc(c.fx[1])} <kbd>Enter</kbd></button>`:'<button type="button" class="bgo" disabled>Choose an effect</button>'}</div></div>`;
+  }
+  if(c.choosingFx&&p.kind==='location'){
+    const t=S.fighters[p.def];
+    return `<div class="bdo bloc"><svg class="body-svg" viewBox="0 0 120 200" role="group" aria-label="Choose where the blow lands on ${esc(t.name)}">${paZonesSvg(t,true)}</svg>
+      <p>Click a location on ${esc(t.name)}. Each shows its hit points and armour (A). Point at one for details.</p></div>`;
+  }
+  if(c.phase==='opponent'&&!V.busy&&!R&&!p)return `<div class="bdo"><p class="bnone">${esc(S.fighters[S.order?.[S.turnIndex]]?.name||'The opponent')} is choosing. If they attack, your defences light up on the left.</p></div>`;
+  return `<div class="bdo bprompt">${paPromptHtml()}</div>`;
+}
+function pbMiddle(c){
+  const g=pbExchange(),inProgress=!!(R||c.p||V.busy);
+  let lines=pbStory(g);
+  if(!inProgress)lines=lines.concat(pbSince(g));
+  // newest last; the list is drawn reversed in a column-reverse box so it always shows the newest lines
+  const story=lines.length?`<ul class="bstory" aria-live="polite">${lines.slice().reverse().map(l=>`<li data-k="${l.cls}"${l.g?` data-g="${l.g}"`:''}>${l.html}</li>`).join('')}</ul>`
+    :'<ul class="bstory"><li data-k="note">Nothing yet. Each exchange is told here, step by step.</li></ul>';
+  return `<div class="bmid"><header><h4>${esc(pbHeadline(c))}</h4><span class="lbl">${inProgress||!g?'This exchange':'Last exchange'}</span></header>
+    ${pbTracker(c)}${story}${pbDecision(c)}</div>`;
 }
 
-// ---- E · Odds first ----
-function pbOdds(a,c){
-  const f=c.me,foe=c.foe,after=Math.max(0,f.ap-a.ap),cost=pbCost(a),help=pbHelp(a,c);
-  if(a.act==='attack'||a.act==='shieldAttack'){
-    return {lead:(a.act==='attack'?'Strike at ':'Shield strike at ')+foe.name,note:help,
-      m:[[pitsOddsFor(a.act)+'%','Your target'],[evadeTarget(foe)+'%','Their Evade'],[combatTarget(foe,'weapon')+'%','Their Parry',1]]};
-  }
-  const roll=pitsOddsFor(a.act);
-  return {lead:help,note:'',m:[roll!=null?[roll+'%','Your target']:['—','No roll'],[cost,'Cost'],[String(after),'AP left after',1]]};
+// ---- right: details and odds ----
+// Count the d100 faces 1..100 for a skill with the engine's own grading.
+function pbGrades(pct){
+  const n={critical:0,success:0,failure:0,fumble:0};
+  for(const b of pitsRollBands(pct))n[b.kind]+=b.to-b.from+1;
+  return n;
 }
-function pbE(c,last){
-  const a=c.sel;
-  const list=c.list.map((x,i)=>`<button type="button" class="brow${a&&x.act===a.act&&c.live?' sel':''}${c.live&&x.enabled?'':' off'}" data-pa="sel" data-val="${x.act}" title="${esc(pbHelp(x,c))}" ${c.live&&x.enabled?'':'disabled'}><kbd>${i<9?i+1:''}</kbd><span class="nm">${esc(x.label)}</span><span class="co">${pbCost(x)}</span></button>`).join('');
-  let mid;
-  if(c.showPrompt)mid=`<div class="bodds">${pbPrompt()}</div>`;
-  else if(!a)mid='<div class="bodds"><p class="bnone">No action available.</p></div>';
-  else{
-    const o=pbOdds(a,c);
-    mid=`<div class="bodds"><header><h4>${esc(a.label)}</h4><span>${esc(o.lead)}</span></header>
-      <div class="bmeters">${o.m.map(([v,l,hot])=>`<div class="bm${hot?' hot':''}"><span class="lbl">${esc(l)}</span><strong>${esc(v)}</strong></div>`).join('')}</div>
-      <footer><p>${esc(o.note)}</p>${c.live?`<button type="button" class="bgo" data-act="${a.act}">Confirm ${esc(a.label)} <kbd>Enter</kbd></button>`:''}</footer></div>`;
+const pbGradeLine=n=>`<ul class="bodds bgrades"><li class="g-critical"><span>Critical</span><b>${n.critical}%</b></li><li class="g-success"><span>Success</span><b>${n.success}%</b></li><li class="g-failure"><span>Failure</span><b>${n.failure}%</b></li><li class="g-fumble"><span>Fumble</span><b>${n.fumble}%</b></li></ul>`;
+function pbBar(parts){
+  return `<div class="bbar" aria-hidden="true">${parts.filter(p=>p[1]>0).map(([cls,v])=>`<i class="${cls}" style="flex:${v}"></i>`).join('')}</div>`;
+}
+// The chance an opposed resistance fails against a roll already made (the effect lands), face by face.
+function pbResist(pct,origin){
+  const out={land:0,critical:0,beat:0,under:0,fail:0};
+  for(let v=1;v<=100;v++){
+    const r=rollSkill(pct,v),wins=CombatRules.opposedWins(r,origin);
+    if(wins){if(r.grade===3&&origin.grade<3)out.critical++;else out.beat++;}
+    else{out.land++;if(r.grade>=2)out.under++;else out.fail++;}
   }
-  const items=last?[...last.rolls.map(r=>`<li><b>${esc(r.title)}</b><span class="g-${r.grade}">${r.roll} · ${esc(r.grade)}</span><em>Needed ≤ ${r.pct} on d100</em></li>`),
-    last.res?`<li class="end"><b>${esc(last.res.head)}</b><em>${esc(last.res.math)}</em></li>`:'<li class="end"><b>In progress</b></li>'].join(''):'';
-  return `<div class="bdeck bE" aria-label="Command deck"><div class="blist" role="group" aria-label="Your actions"><span class="lbl">Actions ${pbPips(c.me)}</span>${list}</div>${mid}
-    <div class="btl" aria-live="polite"><header><span class="lbl">Last exchange</span>${pbHistBtn('History')}</header>${last?`<ol>${items}</ol>`:pbNone}</div></div>`;
+  return out;
+}
+const pbOriginWord=o=>`${o.roll} · ${PB_GRADE_WORD[['fumble','failure','success','critical'][o.grade]]}`;
+function pbResistHtml(skillName,pct,origin,who,cond){
+  const r=pbResist(pct,origin);
+  return `<div class="bwhy"><p>${esc(who)} resists with <b>${esc(skillName)} ${pct}%</b> against your <b>${pbOriginWord(origin)}</b>.</p>
+    <div class="bbig"><strong>${r.land}%</strong><span>chance it works${cond?' '+esc(cond):''}</span></div>${pbBar([['ok',r.land],['no',100-r.land]])}
+    <ul class="bodds bgrades b3"><li class="g-fumble"><span>They resist</span><b>${100-r.land}%</b></li><li title="Same success grade but a roll no higher than yours: the higher roll wins ties"><span>Lose the tie</span><b>${r.under}%</b></li><li><span>They fail</span><b>${r.fail}%</b></li></ul></div>`;
+}
+function pbEffectOdds(id,p){
+  const target=S.fighters[p.other],origin=p.owner===p.atk?p.attackRoll:p.defenseRoll;
+  if(!target||!origin)return '';
+  if(p.forceFailure&&['trip','disarm','blind','compel','stun','bleed'].includes(id))
+    return '<div class="bwhy"><div class="bbig"><strong>100%</strong><span>Force Failure is active: their resistance fails automatically.</span></div></div>';
+  const eff=pct=>effectiveSkill(target,pct);
+  if(id==='trip'){
+    const opts=tripResistOptions(target);
+    const best=opts.reduce((b,k)=>tripResistPct(target,k)>tripResistPct(target,b)?k:b);
+    const rows=opts.map(k=>`${TRIP_SKILL_NAMES[k]} ${eff(tripResistPct(target,k))}% → <b>${pbResist(eff(tripResistPct(target,k)),origin).land}%</b>`).join(' · ');
+    return pbResistHtml(TRIP_SKILL_NAMES[best],eff(tripResistPct(target,best)),origin,target.name,'')
+      +`<p class="bsmall">${pbHuman(target.id)?'They choose the skill':'They use their best skill'}: ${rows}</p>`;
+  }
+  if(id==='disarm'){
+    const actor=S.fighters[p.owner];
+    const own=(p.owner===p.atk?arenaProfile(attackKeyOf(p)):p.parryTool==='shield'?SHIELDS[actor.shield]:ARENA_WEAPONS[actor.weapon]).size;
+    const pct=CombatRules.disarmResistSkill(target.style,own,ARENA_WEAPONS[target.weapon].size);
+    return pbResistHtml('Combat Style (adjusted for weapon Size)',eff(pct),origin,target.name,'');
+  }
+  if(id==='blind'){
+    const shield=target.shield!=='none'&&!ARENA_WEAPONS[target.weapon].twoHanded&&canShieldParry(target);
+    const ev=eff(evadeTarget(target)),sh=shield?eff(combatTarget(target,'shield')):0;
+    return pbResistHtml(shield&&sh>ev?'Shield style':'Evade',Math.max(ev,sh),origin,target.name,'');
+  }
+  if(id==='compel')return pbResistHtml('Willpower',eff(target.willpower),origin,target.name,'');
+  if(id==='stun'||id==='bleed')return pbResistHtml('Endurance',eff(target.endurance),p.attackRoll,target.name,'if the blow wounds')
+    +'<p class="bsmall">Tested only if damage gets past parry and armour.</p>';
+  return '<p class="bsmall">No roll: it happens as soon as you choose it.</p>';
+}
+// Effects outcome of a defence roll against the attack roll already made.
+function pbDefenceOdds(d,c){
+  const p=c.p;
+  if(p?.kind==='range'){
+    if(d.val==='permit')return '<p>The range changes. You keep your AP.</p>';
+    return `<p>${d.val==='oppose'?'Opposed Evade rolls: if you win, the range stays as it is.':'You attack the mover against their Evade. The range changes whether or not you hit.'}</p>
+      <p class="bsmall">Your ${d.val==='oppose'?'Evade':'attack'} ${d.pct}%:</p>${pbGradeLine(pbGrades(d.pct))}`;
+  }
+  const atk=p?.attackRoll,f=c.me,attacker=S.fighters[p?.atk];
+  if(d.val==='none')return `<p>${esc(atk&&atk.grade<2?'Their attack missed. Not defending keeps your AP but gives up the chance to earn defensive Special Effects.':'You keep your AP. If their attack succeeded it hits you, and they may earn Special Effects.')}</p>`;
+  if(!atk)return `<p>${d.pct}% to succeed.</p>${pbGradeLine(pbGrades(d.pct))}`;
+  const n={you:{},them:{},even:0,stop:0};
+  for(let v=1;v<=100;v++){
+    const r=rollSkill(d.pct,v),k=effectsWonBy(r.grade,atk.grade);
+    if(r.grade>=2)n.stop++;
+    if(k>0)n.you[k]=(n.you[k]||0)+1;else if(k<0)n.them[-k]=(n.them[-k]||0)+1;else n.even++;
+  }
+  const sum=o=>Object.values(o).reduce((a,b)=>a+b,0),you=sum(n.you),them=sum(n.them);
+  const rows=[...Object.entries(n.you).sort((a,b)=>b[0]-a[0]).map(([k,v])=>`<li class="ok"><span>You earn ${k} Special Effect${k>1?'s':''}</span><b>${v}%</b></li>`),
+    n.even?`<li><span>No Special Effects either way</span><b>${n.even}%</b></li>`:'',
+    ...Object.entries(n.them).sort((a,b)=>a[0]-b[0]).map(([k,v])=>`<li class="no"><span>${esc(attacker?.name||'They')} earns ${k}</span><b>${v}%</b></li>`)].join('');
+  const what=d.val==='evade'?'get out of the way (you end up prone)':'parry';
+  const block=d.val==='evade'?'':`<p class="bsmall">${esc(pbClip((parryChoiceHelp(f,attacker,d.val==='shield'?'shield':'weapon').split('. ')[1]||''),110))}</p>`;
+  return `<p>Their attack: <b>${pbOriginWord(atk)}</b>.${atk.grade<2?' It already missed; defending can still earn you Special Effects.':''}</p>
+    <div class="bbig"><strong>${n.stop}%</strong><span>chance to ${what}</span></div>${block}
+    ${pbBar([['ok',you],['even',n.even],['no',them]])}<ul class="bodds">${rows}</ul>`;
+}
+function pbActionInfo(act,c){
+  const a=c.list.find(x=>x.act===act);if(!a)return '';
+  const help=typeof actionChoiceHelp==='function'?actionChoiceHelp(act,c.me):'';
+  const pct=pitsOddsFor(act);
+  let body=`<p>${esc(a.enabled||!a.reason?help:a.reason)}</p>`;
+  if(pct!=null){
+    body+=`<div class="bbig"><strong>${pct}%</strong><span>${act==='attack'||act==='shieldAttack'?'your attack roll':'your roll'}</span></div>${pbGradeLine(pbGrades(pct))}`;
+    if(act==='attack'||act==='shieldAttack'){
+      const foe=c.foe,par=effectiveSkill(foe,combatTarget(foe,'weapon')),ev=effectiveSkill(foe,evadeTarget(foe));
+      body+=`<p class="bsmall">${esc(foe.name)} can then parry (${par}%${foe.shield!=='none'?', shield '+effectiveSkill(foe,combatTarget(foe,'shield'))+'%':''}), evade (${ev}%) or not defend. Beat their grade and you earn Special Effects.</p>`;
+    }
+  }else body+='<p class="bsmall">No roll.</p>';
+  return `<header><h4>${esc(a.label)}</h4><span class="btag">${pbCost(a)}</span></header>${body}`;
+}
+function pbFxInfo(id,c){
+  const p=c.p,e=CombatRules.specialEffect(id);if(!e||!p)return '';
+  const text=(p.owner!==p.atk&&EFFECT_CHOICE_TEXT_DEFENSIVE[id])||EFFECT_CHOICE_TEXT[id]||'';
+  const needs=[e.weapon,e.requirement,e.stackable?'can be chosen more than once':''].filter(Boolean).join(' · ');
+  return `<header><h4>${esc(e.name)}</h4><span class="btag">${e.offensive&&e.defensive?'attack or defence':e.offensive?'attacker':'defender'}</span></header>
+    <p>${esc(text)}</p>${needs?`<p class="bsmall">Needs: ${esc(needs)}</p>`:''}${pbEffectOdds(id,p)}<p class="bsrc">Core pp.95–101</p>`;
+}
+function pbLocInfo(loc,c){
+  const t=S.fighters[c.p?.def];if(!t||!HIT_LOCS.includes(loc))return '';
+  return `<header><h4>${esc(loc)}</h4></header><p><b>${t.hp[loc]}</b> of ${t.maxHp[loc]} hit points · armour <b>${armourAt(t,loc)}</b></p>
+    <p class="bsmall">Damage beyond the armour comes off these hit points. At 0 or less it is a Serious Wound; at minus its starting hit points, a Major Wound.</p>`;
+}
+function pbDefaultInfo(c){
+  const g=pbExchange(),res=g?paExchangeResult(g):null;
+  if(c.choosingFx&&c.p.kind==='location')return `<header><h4>Choose Location</h4></header><p>Point at a location to see its hit points and armour, then click it.</p>`;
+  if(c.choosingFx)return `<header><h4>Special Effects</h4></header><p>Point at an effect to see what it does and, if it needs a roll, the chance it works.</p>`;
+  return `<header><h4>How an exchange works</h4></header>
+    <ol class="bhow"><li>The attacker rolls Combat Style.</li><li>The defender may parry or evade (1 AP).</li><li>The better grade earns Special Effects.</li><li>If the blow lands: hit location, then damage minus parry and armour.</li></ol>
+    ${res?`<p class="bsmall">Last result: <b>${esc(res.head)}</b>. ${esc(res.math)}</p>`:''}`;
+}
+function pbInfoHtml(c,key){
+  const k=key||(c.choosingFx&&c.fx?'fx:'+c.fx[0]:c.reacting&&c.def?'def:'+c.def.val:c.live&&c.sel?'act:'+c.sel.act:'');
+  const [kind,val]=String(k).split(/:(.*)/);
+  let h='';
+  if(kind==='act')h=pbActionInfo(val,c);
+  else if(kind==='def'){const d=c.defs.find(x=>x.val===val);if(d)h=`<header><h4>${esc(d.label)}</h4><span class="btag">${d.ap?d.ap+' AP':'free'}</span></header>${pbDefenceOdds(d,c)}`;}
+  else if(kind==='fx')h=pbFxInfo(val,c);
+  else if(kind==='loc')h=pbLocInfo(val,c);
+  return h||pbDefaultInfo(c);
+}
+function pbRight(c){
+  return `<div class="binfo" aria-live="polite"><span class="lbl"><span>Details</span><button type="button" class="toolbutton bhist" data-pa="history">History · ${paVisibleLogs().length}</button></span><div class="binfo-body">${pbInfoHtml(c,PB.hover)}</div></div>`;
 }
 
-// The deck, drawn in place of the current one. Returns '' for the current layout so the caller keeps its own.
+// The deck, drawn in place of the older one. Returns '' when the older deck is in use.
 function pitsBottomDeckHtml(){
-  const layout=pitsBottomLayout();
-  if(layout==='current')return '';
-  const c=pbCtx(),last=pbLast();
-  const body={A:pbA,B:pbB,C:pbC,D:pbD,E:pbE}[layout](c,last);
-  return body;   // (the result dialog is appended once, by render() in practice-combat.html)
+  if(!pbOn())return '';
+  const c=pbCtx();
+  // the result dialog is appended once, by render() in practice-combat.html
+  return `<div class="bdeck bE" aria-label="Command deck">${pbLeft(c)}${pbMiddle(c)}${pbRight(c)}</div>`;
+}
+function pbPaintInfo(){
+  const el=typeof document!=='undefined'&&document.querySelector('#root .binfo-body');
+  if(el&&S?.phase==='fight')el.innerHTML=pbInfoHtml(pbCtx(),PB.hover);
 }
 
-// The history list opens in a window (the chronicle panel is gone from these layouts).
+// The history list opens in a window.
 function pbOpenHistory(){
   document.getElementById('paHistory')?.remove();
   const box=document.createElement('div');box.id='paHistory';box.className='modal pa-rules';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','Combat history');
@@ -219,31 +361,44 @@ function pbOpenHistory(){
   document.body.append(box);box.querySelector('button').focus({preventScroll:true});
 }
 
-// Switcher, selection, history and number keys (wired once).
+// Selection, hover details, history and number keys (wired once).
 function pbWire(){
   if(PB.wired||typeof document==='undefined')return;PB.wired=true;
-  document.addEventListener('change',e=>{
-    const s=e.target.closest?.('[data-pa="layout"]');if(!s)return;
-    PB.layout=PB_LAYOUTS.some(l=>l[0]===s.value)?s.value:'current';
-    try{localStorage.setItem(PB_KEY,PB.layout);}catch(err){}
-    PB.sel=null;render();
-  });
   document.addEventListener('click',e=>{
-    const t=e.target.closest?.('[data-pa]');if(!t)return;
-    if(t.dataset.pa==='sel'){PB.sel=t.dataset.val;render();}
-    else if(t.dataset.pa==='history')pbOpenHistory();
+    const t=e.target.closest?.('[data-pa]');if(!t||!t.closest('#root'))return;
+    const c=pbOn()&&S?.phase==='fight'?pbCtx():null;
+    if(t.dataset.pa==='history'){pbOpenHistory();return;}
+    if(!c)return;
+    if(t.dataset.pa==='sel'&&c.live&&c.list.some(a=>a.act===t.dataset.val&&a.enabled)){PB.sel=t.dataset.val;render();}
+    else if(t.dataset.pa==='def'&&c.reacting&&c.defs.some(d=>d.val===t.dataset.val&&d.enabled)){PB.def=t.dataset.val;render();}
+    else if(t.dataset.pa==='fx'&&c.choosingFx){PB.fx=t.dataset.val;render();}
   });
+  const hover=e=>{
+    if(!pbOn()||!document.body.classList.contains('pa-on'))return;
+    const t=e.target.closest?.('#root [data-pb-info],#root .bdo.bloc [data-act="pickloc"]');
+    const key=t?(t.dataset.pbInfo||'loc:'+t.dataset.val):null;
+    if(key===PB.hover)return;
+    // leaving an item for empty space inside the details panel keeps what is shown, so it can be read
+    if(!key&&e.target.closest?.('#root .binfo'))return;
+    PB.hover=key;pbPaintInfo();
+  };
+  document.addEventListener('mouseover',hover);
+  document.addEventListener('focusin',hover);
   document.addEventListener('keydown',e=>{
-    if(e.ctrlKey||e.metaKey||e.altKey||pitsBottomLayout()==='current'||!document.body.classList.contains('pa-on'))return;
+    if(e.ctrlKey||e.metaKey||e.altKey||!pbOn()||!document.body.classList.contains('pa-on'))return;
     if(/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName||'')||document.querySelector('.modal'))return;
-    const c=pbCtx();if(!c.live)return;
-    const layout=pitsBottomLayout();
+    if(S?.phase!=='fight'||V.busy)return;
+    const c=pbCtx();
     if(/^[1-9]$/.test(e.key)){
-      const a=c.list[+e.key-1];if(!a||!a.enabled)return;e.preventDefault();
-      if(layout==='D'||layout==='E'){PB.sel=a.act;render();}
-      else document.querySelector(`#root [data-act="${a.act}"]:not(:disabled)`)?.click();
-    }else if(e.key==='Enter'&&(layout==='D'||layout==='E')&&!/^(BUTTON|A|SUMMARY)$/.test(e.target.tagName||'')&&c.sel){
-      e.preventDefault();document.querySelector(`#root .bgo[data-act="${c.sel.act}"]`)?.click();
+      const i=+e.key-1;
+      if(c.live){const a=c.list[i];if(!a||!a.enabled)return;PB.sel=a.act;}
+      else if(c.reacting){const d=c.defs[i];if(!d||!d.enabled)return;PB.def=d.val;}
+      else if(c.choosingFx&&c.fxList[i]){PB.fx=c.fxList[i][0];}
+      else return;
+      e.preventDefault();PB.hover=null;render();
+    }else if(e.key==='Enter'&&!/^(BUTTON|A|SUMMARY)$/.test(e.target.tagName||'')){
+      const go=document.querySelector('#root .bdeck .bgo[data-act]:not(:disabled)');
+      if(go){e.preventDefault();go.click();}
     }
   });
 }

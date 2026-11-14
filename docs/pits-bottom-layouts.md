@@ -1,24 +1,21 @@
-# The Pits: bottom-third layouts (owner request, 2026-11-11)
+# The Pits: the bottom deck
 
-Five designs for the area under the arena, from the owner's mockups (`the-pits-bottom-layouts.zip`, not committed). Built as options so they can be tried in play. The owner removes the switcher once one is chosen.
+**Chosen 2026-11-14:** layout E ("Odds first"), reworked to help new players keep up (a tester: "so much just happened and I don't know what's going on"). A to D and the switcher are deleted. Phones (<=900px) and `?bottom=current` keep the older deck.
 
-**Choosing:** the **Bottom** list in the top bar, or `?bottom=A` to `E` (`current` for the old layout). The choice is saved in `localStorage` (`sitota-pits-bottom-layout`). Phones (<=900px) always use the current layout.
+**Code:** `experiments/pits-bottom.js` and `experiments/pits-bottom.css` (Stone tokens only); hooks in `pits-arena.js` (`pitsArenaDeckHtml`, `paModalHtml` returns nothing on desktop, `paFocus`). Tests: `tests/pits-bottom.cjs` (CI), `tests/visual/pits-bottom.cjs` (local, Playwright).
 
-**Code:** `experiments/pits-bottom.js` (markup, selection, keys, history window), `experiments/pits-bottom.css` (Stone tokens only), small hooks in `pits-arena.js` (`pitsArenaDeckHtml`, the bar, `paFocus`). Tests: `tests/visual/pits-bottom.cjs`.
+| Column | Shows |
+|---|---|
+| Left: your moves | Actions for your turn, and defences for when you are attacked (or the three answers to a range change). The one that matters now is open; the other is a one-line reminder. |
+| Middle: what's happening | Headline (who is doing what), exchange tracker (Action, Defence, Effects, Location, Damage), the exchange told line by line, then the decision: Confirm, Special Effect chips, the Choose Location body map, or the engine's own prompt (rolls, resist choices, recap). |
+| Right: details | Whatever is pointed at or focused, else the selection, else "how an exchange works". History button in its header. |
 
-| | Layout | Selects first? | History button |
-|---|---|---|---|
-| A | Command bar: status row, one row of action cards, last exchange as one line | no | yes |
-| B | Duel table: card grid (Attack double width), last exchange as a roll face-off with the real roll bands | no | no |
-| C | Ground dock: icon dock under the fighters, each fighter's last roll in the corner on their side, hover for help | no | yes |
-| D | Step flow: Action, Target, Resolve strip with a "Last" line | yes | no |
-| E | Odds first: action list, odds panel, last exchange timeline | yes | yes |
+**Odds (presentation only).** Every figure is counted over the 100 faces with the engine's `rollSkill` and `CombatRules.opposedWins` / `effectsWonBy`, using `effectiveSkill` for penalties. Nothing is estimated:
+- an action with a roll: chance of each grade;
+- a defence: chance to stop the blow, and how many Special Effects each side earns against the attack roll already made;
+- a resisted Special Effect (Trip, Disarm, Blind, Compel, Stun, Bleed): chance it works against the roll that earned it, with the split; Trip by each resisting skill; Stun and Bleed only if the blow wounds; Force Failure shows 100%.
+- An attack's chance to land is not combined with the foe's defence, because their choice of defence is unknown.
 
-**Shared:** one primary area (the actions, or the engine's own prompt when a decision is waiting: reactions, rolls, effects, resolving, bout over) and one result area (the last exchange). The chronicle panel is not in any of them. Action order follows the mockups (Attack, Shield Strike, Brace, Dither, Delay, Change Range, Regain Footing, others, Concede last); number keys follow it.
+**Known limits:** the opponent's defence choice is not predicted; a long Special Effect card can scroll at 720px tall; phone not designed (falls back).
 
-**Decisions (not rules):**
-- D's target step cannot be a hit-location picker: attackers do not choose a location before rolling here (location choice is a Special Effect, drawn in the existing window). D shows the opponent's real body map, HP, armour, weapon and Evade instead.
-- E's third meter is the foe's Parry target, not the mockup's "chance it lands", because a combined chance would be invented maths.
-- "View full history" opens the existing chronicle list in a window.
-
-**Known limits:** phone not designed (falls back); the toast for Pit Marks overlays the bottom for a few seconds, as before.
+**Next (owner, 2026-11-14):** tempo, then the rules accuracy pass.

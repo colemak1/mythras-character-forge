@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (Pits: first fight report fixed)_
+_Last updated: 2026-11-14 by Claude (Pits: bottom deck E reworked; first fight report fixed)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-14 by Claude (Pits: first fight report fixed)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+00000000000000000000000000000. **Claude, done 2026-11-14 (Pits bottom deck, PR #328):** the owner chose layout E and asked for it to help new players keep up. A to D and the switcher are gone. Left: actions and defences. Middle: exchange tracker, the exchange told line by line, and the decision (Special Effects and Choose Location moved here from the window). Right: details and exact odds for whatever is pointed at. See `docs/pits-bottom-layouts.md`. **Owner:** play a bout and say what still gets lost. **Then (owner's order):** tempo (how fast beats come and what holds), then a rules accuracy pass on the Pits. Note: `tests/visual/pits-motion-live.cjs` has one failure that also fails on `main` before this change (longspear bout never pauses for a decision); not yet looked at.
 
 00000000000000000000000000000. **Claude, done 2026-11-14 (first fight report):** Report fight works end to end (Work's setup and the owner's secret are in place; the export runs). Report `20261114-045813` ("blade isnt actually hitting body"): blows to a fighter on the floor stopped above the body; fixed (attacker aims low). Ledger: `docs/pits-report-ledger.md`. **Owner:** keep reporting; say "go through the fight reports" for the next batch.
 
@@ -95,7 +97,7 @@ Details: `docs/pits-animation-direction.md`, "Owner's notes from play". **Owner:
 
 0b. **Claude, done 2026-11-12:** Pits end-of-fight batch. **Replay fight** (whole fight, uninterrupted; tape recorded in `playCaptured`, played by `startFightReplay`), **Show result** to reopen the Victory/Defeat window, range meter named by weapon length, Glory/Momentum/Pit Marks/recap and win-streak lines removed (Sound and hit shake kept; the Gauntlet leaderboard is untouched). Tests: `tests/visual/pits-replay.cjs`. Known limit: the log keeps only the last 110 entries, so a very long fight's chronicle list can lag during a replay (the stage and plates are right).
 
-0a. **Owner:** try the five bottom layouts in the Pits (top bar, **Bottom** list; or `?bottom=A` to `E`) and tell Claude which to keep. Claude then deletes the other four and the switcher. See `docs/pits-bottom-layouts.md`.
+0a. **Done 2026-11-14:** the owner chose layout E (see the top item).
 
 0. **Claude, done 2026-11-11:** the Pits visual review batch (`docs/pits-visual-review-20261111.md`, VIS-01 to VIS-08) and `docs/pits-one-screen-plan.md` items 1 to 10 (one-screen layout checks, short windows, chronicle header, prompt cap, shorter beat timing, no Continue stop with Guidance off, HUD patching, glow and step-in). Item 5 (phone) skipped by the owner: phones are not a priority and the Pits may leave mobile. Item 11 (one timeline per exchange) waits for the owner to judge the feel. Scripts `tests/visual/pits-scenarios.cjs` and `pits-layout.cjs` (run locally with Playwright).
 

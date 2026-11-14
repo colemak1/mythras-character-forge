@@ -165,6 +165,8 @@ function paTrayHtml(){
 // Modals: Special Effects and Choose Location, only when it is a person's decision.
 function paModalHtml(){
   const p=S.pending;if(V.busy||!p||pitsPhase()!=='effects')return '';
+  // the desktop deck (pits-bottom.js) shows these choices in its middle column instead of a window
+  if(typeof pbOn==='function'&&pbOn())return '';
   if(p.kind==='effect'){
     const owner=S.fighters[p.owner];
     return `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="paModalT"><div class="mbox">
@@ -230,7 +232,7 @@ function paFocus(){
   requestAnimationFrame(()=>{
     if(S.phase!=='fight'||V.busy)return;
     const modal=document.querySelector('#pitsStage .modal');
-    const pick=['#root .prompt .choice:not(:disabled)','#root .act:not(:disabled)','#root .bact.primary:not(:disabled)','#root .bdk.big:not(:disabled)','#root .brow:not(:disabled)','#root .bact:not(:disabled)','#root .bdk:not(:disabled)'];
+    const pick=['#root .prompt .choice:not(:disabled)','#root .act:not(:disabled)','#root .bfx','#root .brow.def:not(.off)','#root .brow.sel','#root .brow:not(.off)'];
     const target=modal?null:R?document.querySelector('#pitsStage [data-act="roll"]'):pick.map(q=>document.querySelector(q)).find(Boolean);
     if(!target)return;
     target.focus({preventScroll:true});
@@ -282,7 +284,7 @@ function pitsArenaDeckHtml(){
 function pitsArenaBarHtml(){
   const bout=typeof pitsBoutBarHtml==='function'?pitsBoutBarHtml():'';
   return `<div class="pa-title"><h1>The Pits</h1><span class="pill">${esc(modeName(S.mode))}</span></div>
-    <div class="pa-tools">${typeof pitsBottomSelectHtml==='function'?pitsBottomSelectHtml():''}${guidanceToggleHtml()}<button type="button" class="toolbutton" data-pa="auto" aria-pressed="${PA.auto}">Auto-roll ${PA.auto?'on':'off'}</button>
+    <div class="pa-tools">${guidanceToggleHtml()}<button type="button" class="toolbutton" data-pa="auto" aria-pressed="${PA.auto}">Auto-roll ${PA.auto?'on':'off'}</button>
     <button type="button" class="toolbutton" data-act="help">Rules</button>
     <button type="button" class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Standard pace'}</button>
     ${typeof PitsReport!=='undefined'?'<button type="button" class="toolbutton" data-pa="report" title="Say what went wrong; it is saved with this fight\'s record for Claude and ChatGPT">Report fight</button>':''}

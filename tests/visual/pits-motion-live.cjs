@@ -20,7 +20,7 @@ async function bout(browser,cfg,seed,shots){
   const page=await browser.newPage({viewport:{width:1280,height:800}});page.errors=[];page.on('pageerror',e=>page.errors.push(e.message));
   await page.addInitScript(s=>{window.__psRecord=[];let a=s;const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
     window.__pitsDie=n=>Math.ceil(rnd()*n);},seed);
-  await page.goto(URL_);await page.evaluate(c=>{Object.assign(config,c);startRun(false);},cfg);await sleep(300);
+  await page.goto(URL_+'?bottom=current');await page.evaluate(c=>{Object.assign(config,c);startRun(false);},cfg);await sleep(300);
   const out={paused:0,frozenMoves:0,stalls:0,page};let prev=null,busySince=0,shot={};
   for(let i=0;i<4000;i++){
     const s=await st(page);assert(s.finite,'a figure has a non-finite joint');
@@ -76,7 +76,7 @@ async function bout(browser,cfg,seed,shots){
     assert(!rec.includes('cue-error'));assert.deepEqual(page.errors,[]);await page.close();
   });
   await T('?stage=poses still opens the earlier pose stage',async()=>{
-    const page=await browser.newPage();await page.goto(URL_+'?stage=poses');
+    const page=await browser.newPage();await page.goto(URL_+'?stage=poses&bottom=current');
     assert.equal(await page.evaluate(()=>PS_MOTION),false);await page.close();
   });
   await browser.close();console.log(`${pass} passed, ${fail} failed`);process.exit(fail?1:0);
