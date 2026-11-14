@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (Pits: bottom deck E reworked; first fight report fixed)_
+_Last updated: 2026-11-14 by Claude (Pits: Lost? button)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-14 by Claude (Pits: bottom deck E reworked; first fight r
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+000000000000000000000000000000. **Claude, done 2026-11-14 (Lost? button):** next to Report fight, **Lost?** (or `?`) marks the moment a player stops following the fight and saves it at once with the fight record (`[Lost #n]` reports); the window tells the player the last few actions. How to read one: `docs/pits-reports.md`, "Lost?". Needs Report fight's one-time setup (Work and owner, below). **Owner:** press it whenever you or a tester lose the thread, then say "go through the fight reports".
 
 00000000000000000000000000000. **Claude, done 2026-11-14 (Pits bottom deck, PR #328):** the owner chose layout E and asked for it to help new players keep up. A to D and the switcher are gone. Left: actions and defences. Middle: exchange tracker, the exchange told line by line, and the decision (Special Effects and Choose Location moved here from the window). Right: details and exact odds for whatever is pointed at. See `docs/pits-bottom-layouts.md`. **Owner:** play a bout and say what still gets lost. **Then (owner's order):** tempo (how fast beats come and what holds), then a rules accuracy pass on the Pits. Note: `tests/visual/pits-motion-live.cjs` has one failure that also fails on `main` before this change (longspear bout never pauses for a decision); not yet looked at.
 

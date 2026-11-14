@@ -24,6 +24,25 @@ The reports are in a **public repository** once exported: notes and fight record
 readable by anyone. The typed name is exported; nothing about an account is. If the site gets other visitors, anyone
 could send a report: the 200-a-day limit caps it, and the owner can ask Claude to restrict sending again.
 
+## "Lost?" (What just happened?)
+
+Next to Report fight, **Lost?** (or the `?` key) is for the moment a player no longer follows the fight (owner,
+2026-11-14). One press, no typing:
+
+1. It marks the moment and saves it at once as a report whose note starts `[Lost #n]` (n counts the presses in that
+   bout), with the whole fight record. The record's `lost` list holds every mark in the bout, and `lostMark` says which
+   one this report is. A mark holds where the fight was (round, cycle, whose turn, the phase, a beat being played and
+   which one, the dice or decision waiting), indexes into the record (`logShown`, `lastLogShown`, `tape`,
+   `stageClock`), what the screen showed (headline, exchange step, story, dice tray, strip, details panel) and the last
+   actions as the player was told them.
+2. A window tells the player the last few actions in plain words (only what the screen has shown so far). An optional
+   "What confused you?" note is saved as a second report, `[Lost #n note] ...`, with a small record naming the mark.
+
+**Diagnosing a Lost press:** read the mark's `screen` and `recent` (what the player saw and was told), then find
+`lastLogShown` in `log` and `tape` in `presented` to see what had just happened and what came next. The question is
+why the screen did not make it clear; the answer is usually a presentation fix (tempo, wording, what is shown), not a
+rule.
+
 ## One-time setup
 
 **ChatGPT (Work)**, in the Supabase SQL editor:
