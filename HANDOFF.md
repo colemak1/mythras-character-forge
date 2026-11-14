@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (Pits: collision comparison)_
+_Last updated: 2026-11-14 by Claude (Pits: Report fight)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-14 by Claude (Pits: collision comparison)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+0000000000000000000000000000. **Claude, done 2026-11-14 (Report fight):** the Pits top bar has **Report fight** in place of Copy fight record: a note plus the fight record, saved to the site's database (owner's account only), exported on request to the `pits-reports` branch for Claude and ChatGPT; diagnoses in `docs/pits-report-ledger.md`. How it works: `docs/pits-reports.md`. **Next: ChatGPT (Work)**, once this is merged: the one-time setup in `docs/pits-reports.md` (run the migration, make the export key, give it to the owner privately, confirm the owner is a site admin). **Owner:** add the key as the repository secret `PITS_REPORTS_TOKEN`. Then report fights while playing, and say "go through the fight reports".
 
 000000000000000000000000000. **Claude, done 2026-11-14 (collision, a comparison):** the owner asked about a physics engine; built the first physics piece instead: blades cannot pass through the other fighter. Off by default. Frames with a blade inside the other's head fall about 93%, inside the body about 83%, no new jumps; blades across their own head rise about 20%. Details: `docs/pits-animation-direction.md`, "Collision". **Owner:** open `experiments/pits-collide-compare.html` on the branch preview (same fight, without and with, side by side; try several weapons and fights), and the trial with `&collide=on`. Say whether the right-hand side looks better. **Then Claude:** if yes, collision on by default in the trial, then the own-head kind, then limp falls.
 

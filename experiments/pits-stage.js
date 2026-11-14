@@ -391,7 +391,7 @@ const psSfx=k=>{try{if(typeof pitsSfx==='function')pitsSfx(k);}catch(e){}};
 const psLayer=c=>document.querySelector('#pitsStage .'+c);
 // Test and review hook: every stage event is recorded when a page asks for it.
 function psEmit(type,data){
-  // (the spring trial keeps its own record for the Copy fight record button: what was drawn, in order, on the stage clock)
+  // (the spring trial keeps its own record for the Report fight button (pits-report.js): what was drawn, in order, on the stage clock)
   try{if(PS_SPRING&&!window.__psRecord)window.__psRecord=[];}catch(e){}
   try{if(window.__psRecord){window.__psRecord.push({t:Math.round(performance.now()),c:Math.round(PS.clock),type,...data});
     if(window.__psRecord.length>6000)window.__psRecord.splice(0,1000);

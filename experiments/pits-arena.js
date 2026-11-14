@@ -285,15 +285,16 @@ function pitsArenaBarHtml(){
     <div class="pa-tools">${typeof pitsBottomSelectHtml==='function'?pitsBottomSelectHtml():''}${guidanceToggleHtml()}<button type="button" class="toolbutton" data-pa="auto" aria-pressed="${PA.auto}">Auto-roll ${PA.auto?'on':'off'}</button>
     <button type="button" class="toolbutton" data-act="help">Rules</button>
     <button type="button" class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Standard pace'}</button>
-    ${typeof PS_SPRING!=='undefined'&&PS_SPRING?'<button type="button" class="toolbutton" data-pa="record" title="Copies this fight (dice, rulings and what the stage drew, in order) to paste to Claude">Copy fight record</button>':''}
+    ${typeof PitsReport!=='undefined'?'<button type="button" class="toolbutton" data-pa="report" title="Say what went wrong; it is saved with this fight\'s record for Claude and ChatGPT">Report fight</button>':''}
     <button type="button" class="toolbutton" data-pa="fs" aria-pressed="${!!document.fullscreenElement}">Full screen</button>
     <button type="button" class="toolbutton" data-act="reset">Exit battle</button></div>${bout}`;
 }
 function pitsArenaBarWire(){
   const b=document.querySelector('[data-pa="auto"]');
   if(b&&!b.dataset.wired){b.dataset.wired='1';b.addEventListener('click',()=>{PA.auto=!PA.auto;render();});}
-  const rec=document.querySelector('[data-pa="record"]');
-  if(rec&&!rec.dataset.wired){rec.dataset.wired='1';rec.addEventListener('click',()=>pitsCopyRecord(rec));}
+  // Report fight (owner, 2026-11-14): replaces Copy fight record; copying stays inside the report window
+  const rep=document.querySelector('[data-pa="report"]');
+  if(rep&&!rep.dataset.wired){rep.dataset.wired='1';rep.addEventListener('click',()=>PitsReport.open(pitsFightRecord(),pitsCopyRecord));}
   const fs=document.querySelector('[data-pa="fs"]');
   if(fs&&!fs.dataset.wired){fs.dataset.wired='1';fs.addEventListener('click',()=>{
     try{const p=document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();if(p&&p.then)p.then(render,()=>{});}catch(e){}
@@ -310,8 +311,10 @@ function pitsFightRecord(){
     fighters:{a:{name:S.fighters.a.name,weapon:S.fighters.a.weapon,shield:S.fighters.a.shield},b:{name:S.fighters.b.name,weapon:S.fighters.b.weapon,shield:S.fighters.b.shield}},
     presented:(V.tape||[]).map(sh),log:(S.logs||[]).map(l=>({id:l.id,t:l.title,b:l.body})),stage});
 }
-function pitsCopyRecord(btn){
-  const text=pitsFightRecord(),done=()=>{btn.textContent='Copied';setTimeout(()=>{btn.textContent='Copy fight record';},2000);};
+// (text: the record taken when the report window opened; the button shows Copied for a moment)
+function pitsCopyRecord(text){
+  const btn=document.querySelector('#paReport [data-r=copy]');text=text||pitsFightRecord();
+  const done=()=>{if(!btn)return;btn.textContent='Copied';setTimeout(()=>{btn.textContent='Copy the fight record';},2000);};
   const box=()=>{document.getElementById('paRecord')?.remove();const d=document.createElement('div');d.id='paRecord';d.className='modal pa-rules';
     d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-label','Fight record');
     d.innerHTML='<div class="mbox"><h2>Fight record</h2><p>Copy all of this and paste it to Claude.</p><textarea readonly rows="12" style="width:100%"></textarea><p class="pa-rules-close"><button type="button" class="toolbutton">Close</button></p></div>';

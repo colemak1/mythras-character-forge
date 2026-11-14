@@ -163,5 +163,35 @@ await test('Site admins: the list is unreadable and nobody joins it from the sit
  assert.equal(ok(await as('A','select is_site_admin() as a'))[0].a,false);
  assert.equal(ok(await as(null,'select is_site_admin() as a'))[0].a,false);
 });
+// Pits fight reports (owner, 2026-11-14). E is a site admin (above); A is not.
+const TOKEN='pits-export-test-token-0123456789abcdef0123456789';
+await db.exec(`insert into pits_report_readers(token_sha256,label) values (encode(sha256(convert_to('${TOKEN}','UTF8')),'hex'),'test')`);
+const REP="insert into pits_fight_reports(note,record,page,build) values ($1,$2,'experiments/practice-combat.html?stage=spring','abc') returning id";
+await test('Pits reports: a site admin saves one, as themselves; others and signed-out visitors cannot',async()=>{
+ assert.equal(ok(await as('E',REP,['The parry went through his head','{"record":"pits-spring-1"}'])).length,1);
+ denied(await as('A',REP,['x','{"record":"pits-spring-1"}']));
+ denied(await as(null,REP,['x','{"record":"pits-spring-1"}']));
+ denied(await as('E',`insert into pits_fight_reports(user_id,note,record) values ('${U.A}','x','{}') returning id`));
+});
+await test('Pits reports: an empty note, a record that is not an object, or a huge note is refused',async()=>{
+ denied(await as('E',REP,['   ','{"record":"pits-spring-1"}']));
+ denied(await as('E',REP,['x','[1,2]']));
+ denied(await as('E',REP,['x'.repeat(4001),'{}']));
+});
+await test('Pits reports: the reporter reads their own; nobody else does; nobody changes or deletes one',async()=>{
+ assert.equal(ok(await as('E','select note from pits_fight_reports')).length,1);
+ assert.equal(ok(await as('A','select note from pits_fight_reports')).length,0);
+ denied(await as(null,'select note from pits_fight_reports'));
+ denied(await as('E',"update pits_fight_reports set note='changed' returning id"));
+ denied(await as('E','delete from pits_fight_reports returning id'));
+});
+await test('Pits reports: the export reads every report with the token, and nothing without it; the readers stay hidden',async()=>{
+ const rows=ok(await as(null,'select note,page from pits_reports_export($1)',[TOKEN]));
+ assert.deepEqual(rows.map(r=>r.note),['The parry went through his head']);
+ assert.match(denied(await as(null,'select * from pits_reports_export($1)',['wrong-token-wrong-token-wrong-token-xx'])),/not allowed/);
+ assert.match(denied(await as('A','select * from pits_reports_export($1)',[null])),/not allowed/);
+ for(const w of [null,'A','E'])denied(await as(w,'select * from pits_report_readers'));
+ denied(await as('E',"insert into pits_report_readers(token_sha256) values (repeat('a',64))"));
+});
 console.log(passed+' database permission tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

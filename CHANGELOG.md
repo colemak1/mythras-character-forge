@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: Report fight (in place of Copy fight record)
+
+- New **Report fight** button in the Pits top bar (every stage). It opens a window to type what went wrong; **Send report** saves the note with the fight record and the build the page was running to the site's database. Only the site owner's account can send; signed out or offline, the report is kept on the device and sent with the next one. **Copy the fight record** is still in the window.
+- A manual workflow, **Export Pits fight reports**, copies the reports to the `pits-reports` branch, where Claude and ChatGPT both read them; diagnoses go in `docs/pits-report-ledger.md`. Setup and use: `docs/pits-reports.md` (a database migration for Work, one repository secret for the owner).
+- Fixed: the Pits windows (Rules, and the new report window) had see-through boxes; the fight showed through the text.
+- Tests: `tests/pits-report.cjs`; database permissions for the new table in `tests/db/permissions.cjs`.
+
 ## The Pits trial: collision, a blade cannot pass through the other fighter (comparison)
 
 - New rule in the spring movement: the other fighter's head, body and arms are solid. When a blade would pass into them outside a real contact (a parry, a wound), the hand is pushed back out with the blade keeping its angle, or, where the arm cannot go, the wrist turns it away. It eases out over a few frames and never jumps. Off by default; the trial is unchanged unless opened with `&collide=on`.
