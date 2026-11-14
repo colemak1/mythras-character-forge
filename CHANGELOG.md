@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits trial: blows reach a fighter on the floor (first fight report)
+
+- From the owner's first fight report ("blade isnt actually hitting body"): a blow to a fighter sitting or lying on the floor stopped in the air about half a body above them; the attacker stood upright and the arm could not reach down. Now the attacker's wind-up and blow aim low against a fighter on the floor (leaning, bending and sinking into it, more for a short weapon), so the blade meets the body. Misses, parries and evades are not lowered, so they still clear the body. Checked for sword, dagger, greatsword and spear to the chest, abdomen and head; jumps and blade-through-body counts are unchanged.
+- Test: `tests/pits-spring-live.cjs`. Report and finding: `docs/pits-report-ledger.md`.
+
 ## The Pits: Report fight (in place of Copy fight record)
 
 - New **Report fight** button in the Pits top bar (every stage). It opens a window to type what went wrong; **Send report** saves the note with the fight record and the build the page was running to the site's database. No sign-in needed (owner: testers may play too); an optional name tells testers apart. Offline, the report is kept on the device and sent with the next one. At most 200 reports a day across the site; nobody can read reports from the site. **Copy the fight record** is still in the window.

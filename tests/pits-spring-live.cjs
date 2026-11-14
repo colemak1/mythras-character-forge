@@ -207,4 +207,24 @@ test('a trip puts the fighter on its backside: hips on the floor, torso up, legs
   assert(c.S[1]-c.P[1]<s.S[1]-s.P[1]-15,'the trip is not the defeat crumble');
   cleanHold(s.B,s.t,'after the trip');
 });
+// (owner's fight report 20261114-045813, 2026-11-14: "blade isnt actually hitting body". Broadsword against a dagger
+// fighter tripped onto the floor: both chest wounds stopped about 50 units above the seated chest, the arm out of reach)
+test('a blow to a fighter on the floor reaches the body: the attacker aims low, for every weapon and the upper body',()=>{
+  const PS=require('../experiments/pits-spring.js');
+  const WK={sword:{kind:'blade',len:92},dagger:{kind:'blade',len:50},greatsword:{kind:'blade',len:130},spear:{kind:'spear',len:150}};
+  const segD=(p,a,b)=>{const vx=b[0]-a[0],vy=b[1]-a[1],u=Math.max(0,Math.min(1,((p[0]-a[0])*vx+(p[1]-a[1])*vy)/(vx*vx+vy*vy||1)));return Math.hypot(p[0]-(a[0]+vx*u),p[1]-(a[1]+vy*u));};
+  for(const wa of Object.keys(WK))for(const [loc,part,tol] of [['chest','chest',1],['abdomen','abdomen',1],['head','Hd',13]]){
+    const M={a:PL.fighter('a',WK[wa],false,{}),b:PL.fighter('b',WK.dagger,false,{})};let t=0;
+    for(const id of ['a','b'])PL.place(M[id],t,PL.gap(WK[wa],WK.dagger,'long'),'guard');PL.pose(M.a,t);
+    const w=PL.world(M.a);
+    t=PL.intent(M.b,t,'attack',.5);t=PL.intent(M.a,t,'parry',.5);t=PL.blow(M,'b',t,{outcome:'parried',loc:'chest'}).end;
+    t=PL.blow(M,'a',t,{outcome:'armour',loc:'rleg',lost:0,fall:'sit'}).end;     // the Trip: B sits on the floor
+    t=PL.intent(M.a,t,'attack',.5);
+    const r=PL.blow(M,'a',t,{outcome:'wound',loc,lost:8});
+    const u=Math.round((r.contacts[0].t-w.T0)*PL.PACE/2)*2;w.S.W.run(u+400);
+    const q={fighters:w.S.F,rec:w.S.W.last()},d=segD(PS.world(q,'b',u,part),PS.world(q,'a',u,'Hn'),PS.world(q,'a',u,'tip'));
+    assert(PS.world(q,'b',u,'P')[1]<30,'B is on the floor');
+    assert(d<=tol,wa+' to the seated '+loc+': the blade ends '+d.toFixed(1)+' from it');
+  }
+});
 console.log(passed+' passed');
