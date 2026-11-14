@@ -177,7 +177,7 @@ function keyAt(m,t,fn){const w=world(m,t);if(!w)return null;const u=Math.max(tau
 // how: 'sit' for a trip (the fighter is put on its backside), otherwise the crumble
 function fallAt(w,id,u,how){const f=w.S.F[id],x=PW.standAt(f);w.S.now=Math.max(w.S.now,u);(w.down=w.down||{})[id]=true;
   return how==='sit'?PW.sit(f,u,x):PW.crumble(f,u,x);}
-function fall(m,t){const w=world(m,t);if(!w||w.over||(w.down&&w.down[m.id]))return t;const u=Math.max(tau(w,t),w.next);const e=fallAt(w,m.id,u);w.next=e;rerun(w,e);return clock(w,e);}
+function fall(m,t,how){const w=world(m,t);if(!w||w.over||(w.down&&w.down[m.id]))return t;const u=Math.max(tau(w,t),w.next);const e=fallAt(w,m.id,u,how);w.next=e;rerun(w,e);return clock(w,e);}
 function stand(m,t){const w0=world(m,t);if(w0&&w0.down)w0.down[m.id]=false;if(w0)w0.S.F[m.id].grounded=false;return keyAt(m,t,(f,u)=>{const x=PW.standAt(f);f.key(u,{px:x-6,py:44,lean:24,bend:10,head:-10},'together');
   // (from the heap the feet are under the body: the rear foot goes back to push up, the front one out into a stance)
   if(PW.planned(f,'ff')-PW.planned(f,'bf')<40){f.step('bf',u+60,u+260,x-30,4);f.step('ff',u+300,u+480,x+26,6);}

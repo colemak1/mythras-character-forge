@@ -1153,7 +1153,8 @@ function psLull(){
   }
   for(const id of ['a','b']){
     const f=PS.fig[id],m=PS.M[id];if(!f||!m||!f.look||PS.clock<PS.busyUntil+300)continue;
-    if(f.look.prone&&!f.mDown){f.mDown=true;f.spent=false;const d=L.fall(m,PS.clock);f.downAt=d;PS.busyUntil=Math.max(PS.busyUntil,d);continue;}
+    if(f.look.prone&&!f.mDown&&f.tripAhead&&(V.busy||V.hold))continue;
+    if(f.look.prone&&!f.mDown){f.tripAhead=false;f.mDown=true;f.spent=false;const d=L.fall(m,PS.clock);f.downAt=d;PS.busyUntil=Math.max(PS.busyUntil,d);continue;}
     if(!f.look.prone&&f.mDown&&!f.end&&!f.mEnd){f.mDown=false;PS.busyUntil=Math.max(PS.busyUntil,L.stand(m,PS.clock,PS.gap));continue;}
     // No neutral reset between beats (report review FR-06, 2026-11-14: "they should never be resetting; the replay is
     // correct"): a fighter keeps the pose its last movement ended in, through every choice and roll, and the next
@@ -1283,7 +1284,7 @@ async function psMotionBlow(cue){
   const evading=((px.react||ex.react)==='evade'||out==='evaded')&&!px.rangeIntercept&&arise!==def.id;
   const tried=evading&&/^(evaded|miss|fumble)$/.test(out);
   // the attacker's Trip, carried by this blow (FR-03): one attack, and the defender goes down from it if the trip worked
-  const trip=(cue.record&&cue.record.trip)||null,tripFell=!!(trip&&trip.fell&&!defeated);
+  const trip=(cue.record&&cue.record.trip)||null,tripFell=!!(trip&&trip.fell&&!defeated);def.tripAhead=false;
   PS.intents={};
   // the attacking tool (the engine's px.tool, or the attack beat's): a shield strike is drawn as one. Kept apart from
   // `shield`, which is the defender's
@@ -1435,7 +1436,7 @@ function pitsStageSync(){
   if(fresh){psSettle();for(const k of Object.keys(PS.lodge)){PS.lodge[k].remove();delete PS.lodge[k];}
     for(const id of ['a','b']){const f=PS.fig[id];if(f.dropEl){f.dropEl.remove();f.dropEl=null;}f.look=null;}
     PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};
-    PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
+    PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.tripAhead=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
   for(const id of ['a','b']){
     const f=PS.fig[id];f.look=pitsStageLook(view[id]);
     // (the movement stage draws its figures at scale 1: a SIZ scale set here would put every marker placed before the next
@@ -1488,6 +1489,9 @@ function pitsStageSync(){
       const b=pitsStageBeat(V.events,V.step,names);
       PS.cueFor=e.id;
       if(b.consumed)PS.cuePromise=null;      // part of the blow's own motion: nothing to start, and nothing to cancel
+      // (a trip that worked: the blow still to come draws the fall, so the lull must not lay the figure down first,
+      // while the location and damage dice play)
+      if(b.consumed&&b.cue&&b.cue.type==='trip'&&b.cue.fell&&PS.fig[b.cue.target])PS.fig[b.cue.target].tripAhead=true;
       else{PS.epoch++;PS.cuePromise=b.cue?psRunCue(b.cue):null;}
     }
   }else{

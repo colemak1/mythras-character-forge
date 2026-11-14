@@ -131,7 +131,7 @@ function actionChoiceHelp(act,f){
   case 'dither':return 'Spend 1 AP without another action. Delay instead if you want to preserve a reaction.';
   case 'recoverWeapon':return f.droppedMetres>3?'Spend 1 AP moving to the dropped weapon.':f.recoveringWeapon?'Spend 1 AP to ready the weapon you picked up.':'Spend 1 AP to pick up the weapon; ready it on a later turn.';
   case 'reengage':return f.prone?'Stand before moving to engage.':S.gapMetres>3?'The arena charges 1 AP to cross this gap.':'Return to melee range; this short arena gap costs no Move AP.';
-  case 'freePin':return f?.pinnedGear?pinnedWhy(f,f.pinnedGear).replace(/ Free it on your turn.*/,'')+' This action: 1 AP, your Brawn against theirs; win and the item is free.':'Contest the pin to free your trapped item.';
+  case 'freePin':return f?.pinnedGear?`Your Brawn against ${S.fighters?.[f.pinnedBy]?.name||'the opponent'}'s: win and your ${f.pinnedGear==='shield'?'shield':'weapon'} is free.`:'Contest the pin to free your trapped item.';
   case 'swapHand':return swapHandReason(f)||'Free. Move the weapon to your other working hand. House policy, not Core RAW.';
   case 'withdrawImpale':return 'Spend 1 AP and test Brawn to withdraw the embedded weapon.';
   default:return '';

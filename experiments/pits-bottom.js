@@ -341,8 +341,10 @@ function pbDefenceOdds(d,c){
 function pbActionInfo(act,c){
   const a=c.list.find(x=>x.act===act);if(!a)return '';
   const help=typeof actionChoiceHelp==='function'?actionChoiceHelp(act,c.me):'';
+  // an action that cannot be taken now says why, and nothing else (no odds for a roll that cannot be made)
+  if(!a.enabled&&a.reason)return `<header><h4>${esc(a.label)}</h4><span class="btag">${pbCost(a)}</span></header><p>${esc(a.reason)}</p><p class="bsmall">Not available now.</p>`;
   const pct=pitsOddsFor(act);
-  let body=`<p>${esc(a.enabled||!a.reason?help:a.reason)}</p>`;
+  let body=`<p>${esc(help)}</p>`;
   if(pct!=null){
     body+=`<div class="bbig"><strong>${pct}%</strong><span>${act==='attack'||act==='shieldAttack'?'your attack roll':'your roll'}</span></div>${pbGradeLine(pbGrades(pct))}`;
     if(act==='attack'||act==='shieldAttack'){
