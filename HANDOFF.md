@@ -16,6 +16,8 @@ _Last updated: 2026-11-14 by Claude (Pits: rules check list for Chat)_
 
 ## Next
 
+00000000000000000000000000000000. **ChatGPT (Work), 2026-11-14 (official print sheet):** `docs/official-sheet-live-332-20261114.md`: desktop and real-phone output BLOCKED, Severity 3; #332 is still open/unmerged, main lacks the script, deployed cloud Chrome is signed out, and no real phone is available. **Next: Claude** — resolve/merge #332, confirm deployment and retain the unverified limits; owner checks real-phone print output. Readiness 13/14; completeness 8/8 built, 8 closed, unchanged.
+
 0000000000000000000000000000000. **Claude, 2026-11-14 (rules check before beta):** the owner wants the Pits rules right before beta testing (tempo is judged with the Lost? button instead). `docs/pits-rules-check-20261114.md` lists what the Pits does today on the common path (27 rows), each with code and claimed page. Main suspect: RC-11 (every Evade leaves the defender prone). **Next: ChatGPT (Chat)** checks each row against Core, OK or the case with page. **Then Claude** fixes every WRONG row with a test.
 
 000000000000000000000000000000. **Claude, done 2026-11-14 (Lost? button):** next to Report fight, **Lost?** (or `?`) marks the moment a player stops following the fight and saves it at once with the fight record (`[Lost #n]` reports); the window tells the player the last few actions. How to read one: `docs/pits-reports.md`, "Lost?". Needs Report fight's one-time setup (Work and owner, below). **Owner:** press it whenever you or a tester lose the thread, then say "go through the fight reports".
