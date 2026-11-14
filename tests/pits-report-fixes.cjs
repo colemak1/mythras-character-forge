@@ -164,4 +164,30 @@ test('FR-04: conditional odds name the roll already made and the faces that resi
  assert.equal(A.run('CombatRules.opposedWins({roll:45,grade:2},{roll:15,grade:2})'),true,'opposed rule unchanged');
 });
 
+// FR-07: the end of report 19:54:25 (docs/pits-records/20261114-195425-9374a0c7.json), logs 66 to 76: a head hit with a
+// Major Wound under tied Initiative; the loser still acts once (Delay), then the fight ends.
+test('FR-07: a blow that finishes a fighter who still acts once carries that, so the stage holds no Press Advantage on it',()=>{
+ const A=arena();
+ const ev=`[
+  {id:66,title:'Kethan Voss attacks',body:'57 against Combat Style 67% — SUCCESS.',kind:'roll',meta:{exid:9,actor:'a'}},
+  {id:67,title:'Border Deserter parries',body:'62 vs 49% — FAILURE. 1 AP remaining.',kind:'roll',meta:{actor:'b'}},
+  {id:69,title:'Press Advantage',body:'Border Deserter cannot attack on the next Turn, but may act otherwise.',kind:'hit',meta:{actor:'a'}},
+  {id:70,title:'Hit Location',body:'Kethan Voss rolls 19 (d20): Head.',kind:'hit',meta:{actor:'a',target:'b',location:'Head'}},
+  {roll:{actor:'b',label:'Endurance · major wound to Head'}},
+  {id:71,title:'Kethan Voss hits Head',body:'5 weapon (5) +1d2 (+1) = 6 total; 0 parry; 0 armour; 6 HP lost.',kind:'hurt',meta:{actor:'a',impact:{target:'b',location:'Head',hpLost:6},px:{total:6,wound:6,loc:'Head'}}},
+  {id:72,title:'MAJOR WOUND · Head',body:'Border Deserter Endurance 45/55% (SUCCESS) versus the attack 57 (SUCCESS). Fails to resist.',kind:'hurt',meta:{actor:'b'}},
+  {id:73,title:'Falling',body:'Border Deserter is going down, but their concurrent action this cycle still happens first. Border Deserter dies immediately from a Major Wound to Head.',kind:'hurt',meta:{actor:'b'}},
+  {id:74,title:'Concurrent turn',body:'x',kind:'system',meta:{actor:'b'}},
+  {checkpoint:1},
+  {id:75,title:'Delay',body:'Border Deserter holds an Action Point for a reaction until their next turn.',kind:'system',meta:{actor:'b'}},
+  {id:76,title:'FIGHT ENDS',body:'Kethan Voss wins. Border Deserter dies immediately from a Major Wound to Head.',kind:'system',meta:{}}]`;
+ const play=JSON.parse(A.run(`JSON.stringify(pitsStageArrange(${ev},[],false,${JSON.stringify(NAMES)}).play)`));
+ const i=play.findIndex(e=>e.id===71),beat=JSON.parse(A.run(`JSON.stringify(pitsStageBeat(${JSON.stringify(play)},${i},${JSON.stringify(NAMES)}))`));
+ assert.deepEqual(beat.cue.record.after.map(c=>c.type),['wound','falling','end'],'the wound, the fall to come and the end belong to the blow');
+ assert.equal(beat.cue.record.press.type,'press');
+ const fallBeat=JSON.parse(A.run(`JSON.stringify(pitsStageBeat(${JSON.stringify(play)},${play.findIndex(e=>e.id===73)},${JSON.stringify(NAMES)}))`));
+ assert.equal(fallBeat.consumed,true,'Falling has no movement of its own');
+ assert(play.findIndex(e=>e.roll)<i,'the Endurance roll is shown before the blow it decides');
+});
+
 console.log(passed+' passed');

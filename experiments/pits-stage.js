@@ -1134,7 +1134,7 @@ function psMotionFigs(){
     if(!m||m.weapon.len!==wk.len||m.weapon.key!==wk.kind||m.swap!==!!f.look.swap){PS.M[id]=PL().fighter(id,wk,f.look.swap,f.look);PS.M[id].keep=20000;psPlaceM(id);}
   }
 }
-// A lull: once nothing has moved for a while, a fighter left spent by the last exchange gets back to its station, and a
+// A lull: once nothing has moved for a while, footwork the engine asked for (a new range, the end of Press Advantage) is drawn, and a
 // figure the engine has put on (or taken off) the floor without a motion of its own goes down or gets up.
 function psLull(){
   const L=PL();
@@ -1155,8 +1155,13 @@ function psLull(){
     const f=PS.fig[id],m=PS.M[id];if(!f||!m||!f.look||PS.clock<PS.busyUntil+300)continue;
     if(f.look.prone&&!f.mDown){f.mDown=true;f.spent=false;const d=L.fall(m,PS.clock);f.downAt=d;PS.busyUntil=Math.max(PS.busyUntil,d);continue;}
     if(!f.look.prone&&f.mDown&&!f.end&&!f.mEnd){f.mDown=false;PS.busyUntil=Math.max(PS.busyUntil,L.stand(m,PS.clock,PS.gap));continue;}
-    if(!f.spent||PS.clock<PS.busyUntil+1300||f.end||f.mEnd||f.mDown||f.pressRole)continue;
-    f.spent=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,PS.gap,psHurt(f)));psEmit('recover',{actor:id,replay:psReplaying()});
+    // No neutral reset between beats (report review FR-06, 2026-11-14: "they should never be resetting; the replay is
+    // correct"): a fighter keeps the pose its last movement ended in, through every choice and roll, and the next
+    // movement starts from it (liveBlow gathers the stance first), as in the replay. Only footwork the engine asks for
+    // is drawn here: the new range after a range change that came while something was playing, and leaving Press
+    // Advantage once the engine ends it.
+    if(!f.relocate||PS.clock<PS.busyUntil+300||f.end||f.mEnd||f.mDown||f.pressRole)continue;
+    const why=f.relocate;f.relocate=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,PS.gap,psHurt(f)));psEmit('recover',{actor:id,why,replay:psReplaying()});
   }
 }
 // The spring stage: a declared action is drawn before its dice (owner, 2026-11-13). Attack chosen: the weapon is
@@ -1404,7 +1409,7 @@ function psSetSpacing(snap){
     psMotionFigs();
     for(const id of ['a','b']){const f=PS.fig[id],m=PS.M[id];
       if(moved&&snap)psPlaceM(id);
-      else if(moved&&!f.mDown&&!f.mEnd){if(PS.clock>=PS.busyUntil){f.spent=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,gap,psHurt(f)));}else f.spent=true;}
+      else if(moved&&!f.mDown&&!f.mEnd){if(PS.clock>=PS.busyUntil){f.relocate=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,gap,psHurt(f)));}else f.relocate='range';}
       f.tx=m.hx+m.face*(L.station(m,gap)-m.guard.ffx+m.guard.px);}
     psDrawRange(key);return;
   }
@@ -1433,7 +1438,7 @@ function pitsStageSync(){
   if(fresh){psSettle();for(const k of Object.keys(PS.lodge)){PS.lodge[k].remove();delete PS.lodge[k];}
     for(const id of ['a','b']){const f=PS.fig[id];if(f.dropEl){f.dropEl.remove();f.dropEl=null;}f.look=null;}
     PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};
-    PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.mDown=false;f.downAt=0;f.spent=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
+    PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
   for(const id of ['a','b']){
     const f=PS.fig[id];f.look=pitsStageLook(view[id]);
     // (the movement stage draws its figures at scale 1: a SIZ scale set here would put every marker placed before the next
@@ -1461,7 +1466,7 @@ function pitsStageSync(){
   {const pr=['a','b'].filter(i=>view[i]&&(view[i].pressedTurns||0)>0),active=S.phase==='fight'&&pr.length===1?pr[0]:null;
    for(const id of ['a','b']){const f=PS.fig[id];f.pressRole=active?(id===active?'cover':'press'):null;
      // released: the pair gets out of it at the next lull
-     if(f.pressWas&&!f.pressRole)f.spent=true;f.pressWas=f.pressRole;}}
+     if(f.pressWas&&!f.pressRole)f.relocate='press';f.pressWas=f.pressRole;}}
   PS.fighters.lodged={a:pitsStageLodged(view,'a'),b:pitsStageLodged(view,'b')};
   PS.fighters.tether={a:pitsStageEntangle(view,'a'),b:pitsStageEntangle(view,'b')};
   const over=(S.phase==='over'||S.phase==='between')&&S.winnerId&&!V.busy;
