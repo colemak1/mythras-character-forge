@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (Pits: Lost? button)_
+_Last updated: 2026-11-14 by Claude (Pits: rules check list for Chat)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-14 by Claude (Pits: Lost? button)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+0000000000000000000000000000000. **Claude, 2026-11-14 (rules check before beta):** the owner wants the Pits rules right before beta testing (tempo is judged with the Lost? button instead). `docs/pits-rules-check-20261114.md` lists what the Pits does today on the common path (27 rows), each with code and claimed page. Main suspect: RC-11 (every Evade leaves the defender prone). **Next: ChatGPT (Chat)** checks each row against Core, OK or the case with page. **Then Claude** fixes every WRONG row with a test.
 
 000000000000000000000000000000. **Claude, done 2026-11-14 (Lost? button):** next to Report fight, **Lost?** (or `?`) marks the moment a player stops following the fight and saves it at once with the fight record (`[Lost #n]` reports); the window tells the player the last few actions. How to read one: `docs/pits-reports.md`, "Lost?". Needs Report fight's one-time setup (Work and owner, below). **Owner:** press it whenever you or a tester lose the thread, then say "go through the fight reports".
 
