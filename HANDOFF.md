@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-14 by Claude (Pits: knockout order from the owner's fight record)_
+_Last updated: 2026-11-14 by Claude (Pits: every weapon on the spring stage)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-14 by Claude (Pits: knockout order from the owner's fight
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+000000000000000000000000. **Claude, done 2026-11-14 (every weapon playable):** all 35 weapons fight on `?stage=spring` (branch `claude/sharp-franklin-mbjthj`, no PR). Weapons without their own family are stand-ins on the cut or thrust phrases, with two-handed grips drawn; list in `docs/pits-animation-direction.md`, "Every weapon on the spring stage". **Owner:** play every weapon and send a **Copy fight record** for anything that looks wrong, with one line naming the moment. **Then Claude:** fix what the records show first; then give the stand-in families their own movement, in the order the owner finds them worst (likely the spear family's reach, then two-handed swings, then flails and the whip).
 
 00000000000000000000000. **Claude, done 2026-11-14 (owner's fight record):** against the arena's own opponent, its wound dice (Serious Wound, Endurance) were shown after the blow, so the collapse and Victory came before the roll that caused them. Fixed in `pitsStageOrder`; test in `tests/pits-stage.cjs`. Branch `claude/sharp-franklin-mbjthj`, no PR. **Owner:** keep sending a **Copy fight record** whenever an order looks wrong; it found this one at once. The earlier miss-order report is still unreproduced and may be the same fault (an automatic opponent's dice shown out of place).
 

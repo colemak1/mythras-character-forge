@@ -47,6 +47,23 @@ function profile(key){
   if(k==='mace')return {key:k,len:70,family:'cut',standIn:true};
   if(k==='military-pick')return {key:k,len:82,family:'cut',standIn:true};
   if(k==='axe'||k==='battleaxe')return {key:k,len:84,family:'cut',standIn:true};
+  // every other weapon in the Pits, as a stand-in on the cut or thrust phrases until its family has its own movement
+  // (owner, 2026-11-14: every weapon playable on the spring stage). two: how far up the weapon, in front of the weapon hand, the off hand holds a
+  // two-handed weapon (drawn only; the phrases still move the weapon hand)
+  if(k==='battleaxe-2h')return {key:k,len:90,family:'cut',standIn:true,two:14};
+  if(k==='longsword-2h')return {key:k,len:118,family:'cut',standIn:true,two:9};
+  if(k==='greatsword')return {key:k,len:130,family:'cut',standIn:true,two:10};
+  if(k==='great-axe')return {key:k,len:120,family:'cut',standIn:true,two:18};
+  if(k==='great-club'||k==='great-hammer')return {key:k,len:118,family:'cut',standIn:true,two:18};
+  if(k==='quarterstaff')return {key:k,len:132,family:'cut',standIn:true,two:40};
+  if(k==='halberd'||k==='glaive')return {key:k,len:176,family:'cut',standIn:true,two:44};
+  if(k==='flail'||k==='ball-chain'||k==='chain')return {key:k,len:84,family:'cut',standIn:true};
+  if(k==='military-flail')return {key:k,len:110,family:'cut',standIn:true,two:14};
+  if(k==='whip')return {key:k,len:150,family:'cut',standIn:true};
+  if(k==='net')return {key:k,len:70,family:'cut',standIn:true};
+  if(k==='spear'||k==='trident')return {key:k,len:150,family:'thrust',standIn:true};
+  if(k==='longspear')return {key:k,len:190,family:'thrust',standIn:true,two:40};
+  if(k==='pike')return {key:k,len:230,family:'thrust',standIn:true,two:44};
   return null;
 }
 // shields (Core p.63 sizes): the radius it is drawn with. Carried on the off hand.
@@ -88,7 +105,7 @@ function create(opt){
   opt=opt||{};
   const names=opt.names||{a:'A',b:'B'};
   const wk={a:'sword',b:'sword',...(opt.weapons||{})},sk={a:'none',b:'none',...(opt.shields||{})},notes=[];
-  const arm=id=>{const p=profile(wk[id]);if(!p)notes.push({kind:'stand-in',weapon:wk[id],who:id});
+  const arm=id=>{const p=profile(wk[id]);if(!p||p.standIn)notes.push({kind:'stand-in',weapon:wk[id],who:id});   // (no profile, or one marked as a stand-in)
     return {...WEAPONS.sword,name:wk[id],...(p||profile('sword')),key:wk[id]};};
   // on guard, points threatening but on different lines (A's a little higher, B's lower), so they do not cross
   // opt.hx: where each fighter's frame sits on the floor (the live stage's); opt.shift: the stance moved forward (+) or

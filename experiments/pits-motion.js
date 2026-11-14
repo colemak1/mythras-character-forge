@@ -66,7 +66,11 @@ function solve(p,wlen){
   // Between keys the blade therefore rides with the forearm; it can only swing as far as a wrist can turn.
   const Hn=wa.end,fore=deg(Math.atan2(Hn[1]-wa.mid[1],Hn[0]-wa.mid[0])),w=p.wr==null?p.w:fore+p.wr;
   const bln=wlen*(1-clamp(p.fs||0,0,.8)),tip=[Hn[0]+Math.cos(rad(w))*bln,Hn[1]+Math.sin(rad(w))*bln];
-  return {P:t.P,M:t.M,S,wS,oS,Hd:t.Hd,K:fl.mid,F:fl.end,bK:bl.mid,bF:bl.end,E:wa.mid,Hn,oE:oa.mid,oHn:oa.end,tip,
+  // a two-handed weapon (p.two: how far along it): the off hand holds the weapon that far in front of the weapon hand,
+  // wherever the weapon goes (the weapon is drawn from the weapon hand forward: a sword's hands close together, a
+  // spear's or a polearm's lead hand well up the shaft); if the arm cannot reach, it reaches as far as it can
+  let ob=oa;if(p.two>0)ob=ik(oS,[Hn[0]+Math.cos(rad(w))*p.two,Hn[1]+Math.sin(rad(w))*p.two],DIM.upper,DIM.fore,1);
+  return {P:t.P,M:t.M,S,wS,oS,Hd:t.Hd,K:fl.mid,F:fl.end,bK:bl.mid,bF:bl.end,E:wa.mid,Hn,oE:ob.mid,oHn:ob.end,tip,
     w,grip:norm(w-fore),over:{ff:fl.over,bf:bl.over,h:wa.over,o:oa.over}};
 }
 

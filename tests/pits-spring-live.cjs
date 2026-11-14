@@ -8,7 +8,8 @@ const assert=require('node:assert/strict');
 const PL=require('../experiments/pits-spring-live.js'),PS=require('../experiments/pits-spring.js'),PW=require('../experiments/pits-writer.js');
 let passed=0;const test=(n,f)=>{f();passed++;console.log('PASS '+n);};
 const WK={sword:{kind:'blade',len:92},dagger:{kind:'blade',len:50},rapier:{kind:'blade',len:112,thin:1},mace:{kind:'club',len:70},
-  spear:{kind:'spear',len:150},greatsword:{kind:'blade',len:130}};
+  spear:{kind:'spear',len:150},greatsword:{kind:'blade',len:130},pike:{kind:'spear',len:230},halberd:{kind:'polearm',len:176},
+  quarterstaff:{kind:'staff',len:132},flail:{kind:'chain',len:84},whip:{kind:'whip',len:150},net:{kind:'net',len:70},'battleaxe-2h':{kind:'axe',len:90,two:1}};
 const seg=(p,a,b)=>{const vx=b[0]-a[0],vy=b[1]-a[1],u=Math.max(0,Math.min(1,((p[0]-a[0])*vx+(p[1]-a[1])*vy)/(vx*vx+vy*vy||1)));
   return Math.hypot(p[0]-(a[0]+vx*u),p[1]-(a[1]+vy*u));};
 function bout(wa,wb,shield){
@@ -23,10 +24,22 @@ const cleanHold=(B,t,what)=>{for(const id of ['a','b']){const o=id==='a'?'b':'a'
   assert(seg(B.at(id,t,'Hd'),hn,tip)>=17,what+': '+id+'\'s weapon is held across its own head');
   for(const n of BODY)assert(seg(B.at(o,t,n),hn,tip)>=2,what+': '+id+'\'s weapon is held through '+o+'.'+n);}};
 
-test('which weapons the spring stage takes: blades, and short one-handed swung weapons as a stand-in',()=>{
-  for(const k of ['sword','dagger','rapier','mace'])assert(PL.supports(WK[k]),k);
-  for(const k of ['spear','greatsword'])assert(!PL.supports(WK[k]),k+' has no family yet');
+// (owner, 2026-11-14: every weapon playable on the spring stage; weapons without a family of their own are stand-ins)
+test('the spring stage takes every weapon: blades with their own phrases, the rest on the cut or thrust phrases as stand-ins',()=>{
+  for(const k of Object.keys(WK))assert(PL.supports(WK[k]),k);
   assert.equal(PW.profile('mace').family,'cut');assert(PW.profile('mace').standIn);
+  assert.equal(PW.profile('spear').family,'thrust');assert(PW.profile('pike').two>0,'a pike is held in both hands');
+  assert.equal(PW.profile('greatsword').family,'cut');assert(PW.profile('greatsword').two>0);
+  assert(!PW.profile('sword').standIn&&!PW.profile('sword').two,'the broadsword keeps its own phrases, in one hand');
+});
+test('a two-handed weapon is drawn with the off hand on it, in front of the weapon hand',()=>{
+  for(const k of ['greatsword','pike']){const wk=WK[k];
+    const M={a:PL.fighter('a',wk,false,{}),b:PL.fighter('b',WK.sword,false,{})};
+    for(const id of ['a','b'])PL.place(M[id],0,PL.gap(wk,WK.sword,'long'),'guard');
+    const j=PL.pose(M.a,300),two=PW.profile(k).two,dir=[j.tip[0]-j.Hn[0],j.tip[1]-j.Hn[1]],L=Math.hypot(...dir);
+    const want=[j.Hn[0]+dir[0]/L*two,j.Hn[1]+dir[1]/L*two],d=Math.hypot(j.oHn[0]-want[0],j.oHn[1]-want[1]);
+    assert(d<12,k+': the off hand is on the weapon ('+d.toFixed(1)+' from its grip)');
+    const free=PL.pose(M.a,300,{unarmed:true});assert(Math.hypot(free.oHn[0]-want[0],free.oHn[1]-want[1])>3,k+': unarmed, the off hand lets go');}
 });
 test('a declared attack draws the weapon back and comes in to striking distance, then holds cleanly',()=>{
   for(const [wa,wb] of [['sword','sword'],['sword','dagger'],['rapier','sword'],['mace','sword']])for(const pick of [0,.55,.8,.99]){

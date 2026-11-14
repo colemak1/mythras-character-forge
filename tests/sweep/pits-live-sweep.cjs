@@ -11,7 +11,12 @@ const PL=require('../../experiments/pits-spring-live.js'),PS=require('../../expe
 const {fault}=require('../lib/pits-motion-rules.cjs');
 const N=+(process.argv[2]||6),X=+(process.argv[3]||6);
 const WK={dagger:{kind:'blade',len:50},shortsword:{kind:'blade',len:68},rapier:{kind:'blade',len:112,thin:1},sword:{kind:'blade',len:92},
-  longsword:{kind:'blade',len:104},falchion:{kind:'blade',len:84},mace:{kind:'club',len:70},axe:{kind:'axe',len:84}};
+  longsword:{kind:'blade',len:104},falchion:{kind:'blade',len:84},mace:{kind:'club',len:70},axe:{kind:'axe',len:84},
+  // every other weapon in the Pits (stand-ins on the cut and thrust phrases, 2026-11-14)
+  'battleaxe-2h':{kind:'axe',len:90,two:1},'longsword-2h':{kind:'blade',len:118},greatsword:{kind:'blade',len:130},
+  'great-axe':{kind:'axe',len:120},'great-hammer':{kind:'club',len:118},quarterstaff:{kind:'staff',len:132},
+  halberd:{kind:'polearm',len:176},flail:{kind:'chain',len:84},'military-flail':{kind:'chain',len:110},whip:{kind:'whip',len:150},
+  net:{kind:'net',len:70},spear:{kind:'spear',len:150},trident:{kind:'trident',len:150},longspear:{kind:'spear',len:190},pike:{kind:'spear',len:230}};
 const W=(process.argv[4]||'sword,dagger,rapier,longsword,mace').split(',');
 const LOCS=['head','chest','abdomen','rarm','larm','rleg','lleg'];
 const rng=s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};

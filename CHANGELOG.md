@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits trial: every weapon on the spring stage
+
+- All 35 Pits weapons now fight on the `?stage=spring` trial (owner, 2026-11-14). Until now only blades and short one-handed axes, clubs, maces and picks did; two-handed weapons, polearms, spears, the quarterstaff, flails, whip and net fell back to the older movement.
+- The new ones are stand-ins on the existing phrases: two-handed swords, axes and hammers, polearms, the quarterstaff, flails, whip and net use the cut phrases; the shortspear, trident, longspear, xyston and pike use the thrust phrases. Longer weapons stand further apart (the measure grows with length).
+- Two-handed weapons are drawn with the off hand on the weapon: close to the weapon hand on swords, axes and hammers, well up the shaft on staves, spears and polearms. It lets go when the arm is disabled or the weapon is lost.
+- New: `tests/sweep/pits-weapons-browser.cjs` plays a whole bout with every weapon in a browser (all 35 end with no errors).
+
 ## The Pits: a knockout waits for the dice that cause it
 
 - Against the arena's own opponent, its Serious Wound and Endurance dice were shown after the blow: the opponent collapsed and Victory appeared before the Endurance roll that knocked it out (owner's fight record, 2026-11-14). The dice of a blow's consequences are now shown before the blow, as they already were when a person rolls them; the blow then lands with its outcome known. Dice that start something new (a Trip, the next attack, a new turn) stay where they were. Also applies to the fight replay.

@@ -119,10 +119,11 @@ async function bout(browser,cfg,seed,shots){
     assert(rec.filter(t=>t==='contact').length>=3,'the replay drew the contacts again');
     assert(!rec.includes('cue-error'));assert.deepEqual(page.errors,[]);await page.close();
   });
-  await T('a pairing without a family (longspear) keeps the movement stage',async()=>{
+  // (owner, 2026-11-14: every weapon playable on the spring stage; tests/sweep/pits-weapons-browser.cjs plays each one)
+  await T('a longspear against a sword runs on the spring trial too',async()=>{
     const page=await browser.newPage();await page.goto(URL_);
     await page.evaluate(c=>{Object.assign(config,c);startRun(false);},{...base,weapon:'longspear',pvpWeapon:'sword'});await sleep(800);
-    const s=await st(page);assert.equal(s.spring,false);assert.equal(s.motion,true);await page.close();
+    const s=await st(page);assert.equal(s.spring,true);await page.close();
   });
   await browser.close();console.log(`${pass} passed, ${fail} failed`);process.exit(fail?1:0);
 })();

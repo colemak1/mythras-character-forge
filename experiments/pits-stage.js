@@ -85,6 +85,7 @@ function pitsStageWeaponKind(key,reach){
   if(/^rapier$/.test(k))return {kind:'blade',len:112,thin:1};
   if(/^(sword|longsword)$/.test(k))return {kind:'blade',len:k==='sword'?92:104};
   if(/^(greatsword|longsword-2h)$/.test(k))return {kind:'blade',len:k==='greatsword'?130:118};
+  if(k==='battleaxe-2h')return {kind:'axe',len:90,two:1};
   if(/axe/.test(k)&&!/halberd/.test(k))return {kind:'axe',len:/great/.test(k)?120:84};
   if(/^(halberd-poleaxe|glaive-rhomphaia)$/.test(k))return {kind:'polearm',len:176};
   if(/^trident$/.test(k))return {kind:'trident',len:150};
@@ -478,7 +479,8 @@ function psDraw(f,now){
 // from the floor; the drawing below has y down, and its weapon angle is measured from straight down.
 function psDrawMotion(f,L,now){
   const m=PS.M[f.id],wLimp=L.swap?L.limp.larm:L.limp.rarm,oLimp=L.swap?L.limp.rarm:L.limp.larm;
-  const j=PL().pose(m,PS.clock,{weapon:wLimp,off:oLimp}),q=p=>[p[0],-p[1]];
+  // (unarmed: a two-handed grip lets go too)
+  const j=PL().pose(m,PS.clock,{weapon:wLimp,off:oLimp,unarmed:!L.armed||!!f.dropEl}),q=p=>[p[0],-p[1]];
   const g={Sh:q(j.S),wSh:q(j.wS),oSh:q(j.oS),M:q(j.M),H:q(j.P),hd:q(j.Hd),E:q(j.E),Hn:q(j.Hn),bE:q(j.oE),bHn:q(j.oHn),K:q(j.K),bK:q(j.bK),F:q(j.F),bF:q(j.bF)};
   f.scale=1;f.hx=m.hx;
   // the shadow lifts with the hips when the figure is on the floor

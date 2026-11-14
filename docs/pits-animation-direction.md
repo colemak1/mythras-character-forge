@@ -460,6 +460,19 @@ The whole suite passes.
 
 **Work's check of the preview, 2026-11-13 (done):** the plate said Prone before the figure went down (after an Evade, through the location and damage rolls). The HUD now asks the stage (`pitsStageShownProne`): the chip follows `mDown` and the blow's first contact (`downAt`), and the stage rewrites only the chips at that contact (`pitsArenaConditions`). The clipped action names now wrap. Attacks and defence from the ground are still not done.
 
+## Every weapon on the spring stage (2026-11-14)
+
+The owner asked for every weapon to be playable on the spring trial before a long play-test. `PitsSpringLive.supports` is now true for every Pits weapon; `bladeKey` maps each stage kind to a writer key and `PitsWriter.profile` has one for each. Weapons without a family of their own are stand-ins (`standIn: true`, noted by the writer):
+
+- **cut phrases:** battleaxe (2H), longsword (2H), greatsword, great axe, great club, great hammer, quarterstaff, halberd/poleaxe, glaive/rhomphaia, flail, ball and chain, chain, military flail, whip, net (as well as the earlier hatchet, club, mace, axe, military pick);
+- **thrust phrases:** shortspear, trident, longspear, xyston, pike/sarissa.
+
+The measure grows with length (`(len - 92) * 0.75`), so long weapons fight from further out. Two-handed weapons (`profile.two`) are drawn with the off hand that far along the weapon in front of the weapon hand (`solve` in `pits-motion.js`, `p.two`), and let go when the arm is disabled or the weapon is lost. The flexible weapons are drawn rigid; the net is swung like a cut.
+
+Checks: `tests/sweep/pits-weapons-browser.cjs` (a whole bout per weapon, in a browser: all 35 end, no page or cue errors; five bouts, old weapons among them, show one frame moving with the clock stopped). The headless live sweep now takes the new weapons; its fault count is not a guide yet (sword against sword fails it too).
+
+Next, in the order the owner finds worst from play: each stand-in family gets its own phrases and its own study, as item 6 below describes.
+
 ## Instructions for Opus (written 2026-11-13, after the fluid-flow batch)
 
 Read `AGENTS.md`, `HANDOFF.md` and the section above first. Work on the branch `claude/fable-combat-fluidity-jus18q` (it contains `claude/go-wf0bsg`), or a session branch started from it. The owner's rule stands: nothing goes to `main` until the spring stage is finished for every weapon; no PR per step.

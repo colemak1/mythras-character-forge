@@ -25,12 +25,16 @@ const L0=PM.LIVE,PACE=1.65,REC=PS.REC;
 // the replay: how long after an exchange's last contact (writer time) the next exchange may begin
 const FLOW=300;
 
-// the stage draws every blade as kind 'blade' with a length: the writer's weapon key for that length
-// (short one-handed swung weapons, axe, club, mace and pick, move with the cut phrases as a stand-in; longer and
-// two-handed weapons have no family yet and keep the earlier movement)
-const bladeKey=wk=>wk.kind==='axe'?(wk.len<=60?'hatchet':'axe'):wk.kind==='club'?(wk.len<=66?'club':'mace'):wk.kind==='pick'?'military-pick':
-  wk.thin?'rapier':wk.len<=55?'dagger':wk.len<=72?'shortsword':wk.len<=88?'falchion':wk.len<=98?'sword':wk.len<=106?'longsword':'rapier';
-function supports(wk){return !!(wk&&(wk.kind==='blade'&&wk.len<=112||/^(axe|club|pick)$/.test(wk.kind)&&wk.len<=90)&&PW.profile(bladeKey(wk)));}
+// the stage draws every weapon as a kind with a length: the writer's weapon key for it. Weapons whose family has no
+// movement of its own yet move with the cut or thrust phrases as a stand-in (PitsWriter.profile marks them).
+const bladeKey=wk=>wk.kind==='spear'?(wk.len<=160?'spear':wk.len<=200?'longspear':'pike'):wk.kind==='trident'?'trident':
+  wk.kind==='polearm'?'halberd':wk.kind==='staff'?'quarterstaff':wk.kind==='chain'?(wk.len>100?'military-flail':'flail'):
+  wk.kind==='whip'?'whip':wk.kind==='net'?'net':
+  wk.kind==='axe'?(wk.two?'battleaxe-2h':wk.len>100?'great-axe':wk.len<=60?'hatchet':'axe'):
+  wk.kind==='club'?(wk.len>100?'great-hammer':wk.len<=66?'club':'mace'):wk.kind==='pick'?'military-pick':
+  wk.thin?'rapier':wk.len<=55?'dagger':wk.len<=72?'shortsword':wk.len<=88?'falchion':wk.len<=98?'sword':wk.len<=106?'longsword':
+  wk.len<=122?'longsword-2h':'greatsword';
+function supports(wk){return !!(wk&&PW.profile(bladeKey(wk)));}
 
 // ----- fighters: the stage makes them one at a time; the world is made once both exist -----
 let pend=null;
@@ -68,6 +72,8 @@ function pose(m,t,limp){
   const kw=k('w',limp&&limp.weapon),ko=k('o',limp&&limp.off),mix=(a,b,x)=>a+(b-a)*x;
   if(kw){p.h=[mix(p.h[0],4,kw),mix(p.h[1],-58,kw)];p.wr=mix(p.wr,-8,kw);}
   if(ko)p.o=[mix(p.o[0],-3,ko),mix(p.o[1],-59,ko)];
+  // (a two-handed weapon is drawn with the off hand on its grip, unless that arm is disabled and hangs)
+  const two=(PW.profile(bladeKey(m.wk))||{}).two;if(two&&!ko&&!(limp&&(limp.off||limp.weapon||limp.unarmed)))p.two=two;
   const j=PS.solve(p,f.weapon.len);j.blen=f.weapon.len;return j;
 }
 
