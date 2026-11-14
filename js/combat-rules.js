@@ -114,13 +114,31 @@ function opposedTargets(a,b){
 }
 // Core p.38: difficulty grades as steps harder than Standard: Hard two
 // thirds, Formidable half, Herculean a tenth, Hopeless no chance.
+// Rounding up is project policy D-CE2, not printed in Core.
 const HARDER_GRADE_MULTIPLIER=[1,2/3,1/2,1/10,0];
+const HOPELESS_STEPS=4;
 function skillAtGrade(percent,stepsHarder){
   const step=Math.max(0,Math.min(4,stepsHarder));
   return Math.max(0,Math.ceil(percent*HARDER_GRADE_MULTIPLIER[step]));
 }
-// Core p.97 Impale: the difficulty grades an embedded weapon costs its
-// victim, by the victim's SIZ and the weapon's Size step (1 Small … 5 Enormous).
+// Core p.38: at Hopeless no attempt can be made, so the 01–05 automatic
+// success of Core p.37 never applies (RC-07). A target of 0 or less is
+// treated as Hopeless: the result is a plain Failure, never a success or a
+// fumble. Every other target is graded by gradeRoll as usual.
+function gradeAttempt(roll,skill,tierSkill=skill){
+  return skill<=0?"failure":gradeRoll(roll,skill,tierSkill);
+}
+// Core pp.38, 101: when several situational difficulty grades apply, use the
+// most severe one; they do not multiply or add (RC-12). Takes steps harder.
+function mostSevereGrade(...steps){
+  return Math.min(HOPELESS_STEPS,Math.max(0,...steps.flat().map(n=>+n||0)));
+}
+// Core p.98 Impale Effects table: the difficulty grades an embedded weapon
+// costs its victim, by the victim's SIZ and the weapon's Size step (1 Small …
+// 5 Enormous). The value 4 (IMPALE_INCAPACITATED) is the table's
+// "Incapacitated", not Hopeless: the victim is incapacitated (RC-25).
+const IMPALE_INCAPACITATED=4;
+function impaleIncapacitates(siz,weaponSize){return impaleGrades(siz,weaponSize)>=IMPALE_INCAPACITATED;}
 function impaleGrades(siz,weaponSize){
   const row=siz<=10?[2,3,4,4,4]:siz<=20?[1,2,3,4,4]:siz<=30?[0,1,2,3,4]:siz<=40?[0,0,1,2,3]:siz<=50?[0,0,0,1,2]:[0,0,0,0,1];
   return row[Math.min(5,Math.max(1,weaponSize))-1];
@@ -130,19 +148,22 @@ function impaleGrades(siz,weaponSize){
 const DIFFERENTIAL={
   critical:{critical:0,success:1,failure:2,fumble:3},
   success:{critical:-1,success:0,failure:1,fumble:2},
-  failure:{critical:-2,success:-1,failure:0,fumble:1},
-  fumble:{critical:-3,success:-2,failure:-1,fumble:0}
+  failure:{critical:-2,success:-1,failure:0,fumble:0},
+  fumble:{critical:-3,success:-2,failure:0,fumble:0}
 };
 // Special Effects won by "mine" over "theirs" (negative: theirs wins that
-// many). In combat a Failure against a Fumble wins one (ruling D-CE1, Core
-// p.94); two Failures or two Fumbles win nothing. The old options argument
-// (failureBeatsFumble) is still accepted and no longer changes anything.
+// many). A Failure against a Fumble wins nothing: Core p.51's Differential
+// Roll Results table gives No Benefit, and p.95 says a failed combat roll
+// cannot exploit a foe's fumble (RC-08; D-CE1 corrected 2026-11-14). Two
+// Failures or two Fumbles win nothing either. The old options argument
+// (failureBeatsFumble) is still accepted and changes nothing.
 function effectsWon(mine,theirs){
   const m=String(mine).toLowerCase(),t=String(theirs).toLowerCase();
   return DIFFERENTIAL[m]?.[t]??0;
 }
 // The general Differential Roll for non-combat contests (Core p.51): when
-// both sides fail, neither gains a level, Fumble or not.
+// both sides fail, neither gains a level, Fumble or not. Since RC-08 this is
+// the same table as effectsWon; kept as its own name for the contest tools.
 function contestLevels(mine,theirs){
   const m=String(mine).toLowerCase(),t=String(theirs).toLowerCase();
   if((m==="failure"||m==="fumble")&&(t==="failure"||t==="fumble"))return 0;
@@ -237,11 +258,14 @@ function strikeWeapon(damage,armourPoints,hitPoints){
 // Core p.97 Disarm Opponent: each step of Size difference shifts the
 // defender's Combat Style a difficulty grade (bigger disarming weapon: harder
 // to resist). Only works on a foe of at most twice the disarmer's STR.
+// Core does not say how to round; the result rounds up like every other
+// grade (D-CE2), and has no upper limit (Core p.37), so 120% made Very Easy
+// is 240% (RC-21).
 function canDisarm(disarmerStr,targetStr){return targetStr<=disarmerStr*2;}
 function disarmResistSkill(style,ownSize,otherSize){
   const steps=ownSize-otherSize;
   const shift=steps>=3?.1:steps===2?.5:steps===1?2/3:steps===-1?1.5:steps<=-2?2:1;
-  return Math.min(200,Math.max(1,Math.round(style*shift)));
+  return Math.max(0,Math.ceil(style*shift));
 }
 
 /* ---------- Special Effects (Core pp.95–101, summary table p.100) ---------- */
@@ -384,7 +408,8 @@ return {
   actionPoints,initiativeBonus,healingRate,locationHitPoints,
   DAMAGE_MODIFIER_STEPS,damageModifier,damageModifierValue,totalDamage,
   HUMAN_HIT_LOCATIONS,HUMAN_LOCATION_ORDER,hitLocation,hitLocationFaces,hitLocationRanges,hitPointsByLocation,isLimb,
-  GRADE_VALUE,gradeRoll,opposedWins,opposedTargets,skillAtGrade,contestLevels,impaleGrades,
+  GRADE_VALUE,gradeRoll,gradeAttempt,opposedWins,opposedTargets,skillAtGrade,mostSevereGrade,HOPELESS_STEPS,
+  contestLevels,impaleGrades,impaleIncapacitates,IMPALE_INCAPACITATED,
   effectsWon,
   SIZE_STEP,SIZE_NAMES,REACH_STEP,REACH_NAMES,parryReduction,crampedSize,
   resolveBlow,woundLevel,woundOutcome,canBash,bashDistance,knockbackDistance,withdrawalDamage,strikeWeapon,

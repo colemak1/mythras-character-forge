@@ -622,7 +622,9 @@ check('An isolated serious weapon-arm modifier shows before and after targets',
  root.innerHTML.includes(normalStyle+'% → '+hardTarget+'%') &&
  root.innerHTML.includes('Serious Right Arm wound · Standard → Hard'));
 attacker.prone=true;
-const combinedTarget=Math.ceil(Math.ceil(normalStyle/2)*2/3);
+// RC-12 (Core pp.38, 101): prone Formidable and a Serious arm's Hard do not
+// stack; the most severe grade applies, so the target is Formidable.
+const combinedTarget=Math.ceil(normalStyle/2);
 api.setRoll({id:3404,actor:'a',label:'Attack · Combat Style '+combinedTarget+'%',
  defs:[{sides:100,label:'d100'}]});
 api.render();
@@ -711,11 +713,11 @@ check('Fatigue modifier is named specifically on a reduced target',
 causalFighter.fatigue=0;
 causalFighter.hp['Right Arm']=0;
 causalFighter.prone=true;
-const proneSerious=Math.ceil(Math.ceil(causalFighter.style/2)*2/3);
+const proneSerious=Math.ceil(causalFighter.style/2);   // RC-12: most severe grade, not stacked
 api.setRoll({id:3613,actor:'a',label:'Attack · Combat Style '+proneSerious+'%',
  defs:[{sides:100,label:'d100'}]});
 api.render();
-check('Stacking a prone penalty and serious wound names both causes',
+check('A prone penalty with a serious wound names both causes (most severe grade applies, RC-12)',
  root.innerHTML.includes('Prone · Serious Right Arm wound') &&
  root.innerHTML.includes(causalFighter.style+'% → '+proneSerious+'%'));
 causalFighter.prone=false;

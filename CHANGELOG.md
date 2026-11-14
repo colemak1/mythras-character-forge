@@ -5,6 +5,18 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat rules: five fixes from the Pits rules check (PR #333)
+
+ChatGPT (Chat) checked the 27 common-path rows of `docs/pits-rules-check-20261114.md` against Core: 22 OK, 5 wrong. All five are fixed, each with a test.
+
+- **Hopeless means no attempt (RC-07, Core pp.37–38).** A 0% (Hopeless) roll in the Pits is a plain Failure; 01–05 no longer succeeds.
+- **Failure against Fumble gives no Special Effect (RC-08, Core pp.51, 95).** In both Play Mode and the Pits. Ruling D-CE1 is corrected in `docs/decisions.md`: the earlier "one effect to the Failure side" was misattributed to Core.
+- **Situational grades don't stack (RC-12, Core pp.38, 101).** Prone, a Serious weapon arm or leg, and blinded: the most severe applies. Prone with a Serious arm at 70% is now 35%, not 24%.
+- **Disarm resistance (RC-21, Core pp.37, 97).** Rounds up like every other grade (65 at Hard is 44, not 43) and has no 200% cap.
+- **Impale "Incapacitated" (RC-25, Core p.98).** A lodged weapon whose Impale Effects cell reads Incapacitated now incapacitates the victim and ends the fight, instead of acting as a Hopeless grade.
+- New shared helpers: `CombatRules.gradeAttempt`, `mostSevereGrade`, `impaleIncapacitates`. Golden bout 1 re-seeded (246 → 250) so it keeps its half-blocked parry.
+- Tests: `tests/combat-rules.cjs`, `tests/combat-cases.cjs`, `tests/practice-procedure.cjs`, `tests/practice-combat-ux.cjs`, `tests/pits-golden.cjs`.
+
 ## The Pits: "Lost?" button (What just happened?)
 
 - New **Lost?** button in the Pits top bar (or press `?`). One press marks that moment and saves it at once to the fight reports (`[Lost #n]`), with the whole fight record and a snapshot of what the screen showed: round, the beat being played, the decision waiting, the deck's headline, step and story, the dice tray. No typing needed. Every mark in the bout is also in the record, so Report fight carries them too.
