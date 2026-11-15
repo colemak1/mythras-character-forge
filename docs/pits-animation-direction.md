@@ -1,5 +1,38 @@
 # The Pits: animation direction (2026-11-12)
 
+## The cinematic stage (owner, 2026-11-15): this is the Pits now
+
+The owner, after watching a hand-animated stick-figure fight: "I'm really not liking the fluidity of the movement ... right now it looks gimmicky and a bit stupid ... make it cooler, meatier, sexier ... Walk back whatever you need." The watched-back fight is the product. Everything below this section is the earlier work; it is kept for reference and stays reachable (`?stage=spring`, `?stage=classic`), but the Pits page now runs the cinematic stage.
+
+**Sheets (replay, 40 ms a frame):** `docs/pits-visual-checks/cine-replay.jpg` (parry, leap, clash, a hit with its impact frame), `docs/pits-visual-checks/cine-finish.jpg` (the blow that ends a fight).
+
+**What was walked back.**
+- *Physical correctness as the goal.* The spring stage was built to rules such as "no blade within 2 units of a head" and "a planted foot never slides". They made every movement small and careful. The cinematic stage has four rules only (tests below): the weapon really is where the sparks and the number appear, bodies are possible, the two never stand in each other, and the dice decide who is down and who has lost.
+- *"Kicks, flips and one-off choreography are out"* (2026-11-12). Leaps, dashes, skids, handsprings and thrown bodies are in. They never change a result: they only draw the result the engine gave.
+- *"Nothing is hidden behind shake, flashes or particles."* The impact frame, the shake, the dust and the blood are part of the hit now.
+- *Thin neutral figures on paper.* Solid silhouettes with a headband in each fighter's colour, in a lit hall. The scene keeps its own palette in Light and Dark.
+
+**What was kept.** Declare, hold, resolve (the scene is still while a person chooses or the dice roll); no return to one common stance; down and up are drawn by the movement that causes them; the stage is presentation only; a replay is the same fight again.
+
+**How it works.** Three files, loaded by `practice-combat.html`:
+- `experiments/pits-cine.js` (`PitsCine`, pure, no page): the movement. Pose to pose: an exchange is a handful of whole-body key poses with strong easing between them, feet keyed in the world (a foot that is not moved stays planted; a foot that moves is lifted or skids), arms and weapon as angles so they swing in arcs, the head and the empty arm arriving a little late. `blow()` reads the engine's facts and picks: the swing (overhead, rising, whirl, lunge, overhand stab, shield strike, a leap for a big wound), the defence (ward by height, shield, a bounce, a shove or a slide off the guard), the dodge (duck, hop, handspring, slide, or the dive that ends on the ground when the rules leave the evader prone), the hit (a recoil by location, a skid by wound size, off the feet for 7 or more, down for a leg or a trip) and the finish (cut through and past with a held beat before the fall, run through, slammed down, or launched). `aimed()` places the attacker so the chosen point of the weapon is exactly on the target with the arm that long. Choices come from a seed made per bout, so no two bouts are alike and a replay repeats.
+- `experiments/pits-cine-fx.js` (`PitsCineFx`): the picture. The hall with parallax; a camera that follows the pair, frames them clear of the plates and the dice, creeps in while the scene is held and punches in on a hit; the smear of a fast blade; afterimages on a dash; headbands; dust, sparks, blood; the impact frame (black hall, white fighters, rays); slow motion and film bars for the last blow. In the replay the plates and dice are put away and the fight has the whole picture.
+- `experiments/pits-cine.css`: the look.
+- `pits-stage.js` is the same driver as before: `PL()` returns `PitsCine`; contacts call `PitsCineFx.impact`; hit-stops are longer (a parry 120 ms, a wound 90 to 220, the last blow 300).
+
+**Tests.** `tests/pits-cine.cjs` (CI): every weapon, outcome and location (1,309 exchanges): bodies possible, nothing under the floor, the weapon within 3 units of every contact at its time; hips never nearer than 80 and nothing jumps; a bigger wound throws further; the last blow leaves the loser flat and the winner standing; a declared action moves, then holds without drift; the evade to the ground, fighting from the ground, getting up; a bout replays identically and nobody takes the same stance twice running; range, Press Advantage, yield, the snap to a result.
+
+**Checked how.** Frame by frame from a real browser with the clock stepped (sword, spear against sword and shield, greatsword against dagger; live and replay; 1600 and 1280 wide, a 390 phone, Light and Dark). Nobody but Claude has watched it at speed: **the owner's eye is the test.**
+
+**Known limits.**
+- Flexible weapons (flail, whip, net) are swung as rigid cuts; a shield is a disc.
+- On the ground a fighter has two poses (propped, flat) and attacks from one knee.
+- Trip, Disarm and Press Advantage have no choreography of their own yet (a blow at the leg, a parried blow, a point held at the face).
+- A thrust leaves a curved smear when the point swings into line.
+- On a short screen with a tall dice tray the heads can touch the tray while the scene is held.
+- With reduced motion the effects are off and movements jump to their ends, as before.
+- The local browser tests in `tests/visual/` were written for the earlier stages; run them with `?stage=spring` or rewrite them for this one.
+
 Goal (owner): keep the stick figures; make them fighters with balance, momentum and intent, so that a replay reads as one continuous fight. Decisions pause the scene; the resolved exchange then plays without interruption, and each movement starts where the last one ended.
 
 **Watch it:** `experiments/pits-choreography.html` (on the site after merge: `/experiments/pits-choreography.html`). One fight of five connected exchanges (plus Press Advantage), broadsword against dagger, with pause, frame step, quarter speed, a scrub bar, weapon paths and planted feet; a button starts from any exchange. A filmstrip of the fight: `docs/pits-visual-checks/movement-study-exchange.png`.

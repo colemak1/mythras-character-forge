@@ -1,0 +1,116 @@
+/* The Pits: the look of the cinematic stage (pits-cine.js, pits-cine-fx.js). A lit hall, two bold silhouettes, bright
+   steel. The scene is a picture, so it keeps its own palette in Light and in Dark (Dark is the same hall at night);
+   everything around it still takes the Stone tokens. Loaded after pits-stage.css. */
+.ps-cine{
+  --pc-wall-top:#a2a9b8;--pc-wall-bot:#666c7c;
+  --pc-floor-top:#d9dce3;--pc-floor-bot:#9aa0ae;
+  --pc-pillar:#4b505e;--pc-pillar-lit:#6b7181;
+  --pc-ink-a:#0e1014;--pc-ink-b:#17223a;
+  --pc-acc-a:#e0392d;--pc-acc-b:#35bfe0;
+  --pc-steel:#fbfcfe;--pc-wood:#2a221d;
+  --pc-blood:#b5121d;--pc-spark:#fff4c8;
+  --ps-hurt:#e23a2e;--ps-serious:#b5121d;--ps-major:#6f0b12;
+}
+html[data-mode="dark"] .ps-cine{
+  --pc-wall-top:#5d6475;--pc-wall-bot:#2d313c;
+  --pc-floor-top:#8e94a4;--pc-floor-bot:#4f5462;
+  --pc-pillar:#22252d;--pc-pillar-lit:#3a3e4a;
+  --pc-ink-a:#07080a;--pc-ink-b:#16233f;
+}
+.ps-cine .ps-stage{background:var(--pc-wall-bot);border-color:var(--ps-line)}
+.ps-cine .ps-stage::before{display:none}
+/* a soft darkening toward the corners, like a lens */
+.ps-cine .ps-stage::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(ellipse 75% 85% at 50% 55%,transparent 55%,rgba(8,10,16,.42) 100%)}
+.ps-cine .ps-floorfill,.ps-cine .ps-floor,.ps-cine .ps-ring-line{display:none}
+.pc-s-wall-top{stop-color:var(--pc-wall-top)}.pc-s-wall-bot{stop-color:var(--pc-wall-bot)}
+.pc-s-floor-top{stop-color:var(--pc-floor-top)}.pc-s-floor-bot{stop-color:var(--pc-floor-bot)}
+.pc-s-pillar-a{stop-color:var(--pc-pillar)}.pc-s-pillar-b{stop-color:var(--pc-pillar-lit)}
+.pc-s-glow-in{stop-color:#fff;stop-opacity:.5}.pc-s-glow-out{stop-color:#fff;stop-opacity:0}
+.pc-window{fill:#fff;opacity:.94}
+.pc-pillar-foot{fill:var(--pc-pillar)}
+.pc-floor-edge{fill:#fff;opacity:.5}
+html[data-mode="dark"] .pc-window{opacity:.8}
+html[data-mode="dark"] .pc-s-glow-in{stop-opacity:.3}
+
+/* the fighters: solid, thick, round */
+.ps-cine .ps-fig.ps-left,.ps-cine .ps-fig.ps-right{filter:none}
+.ps-cine .ps-left .ps-part{stroke:var(--pc-ink-a)}
+.ps-cine .ps-right .ps-part{stroke:var(--pc-ink-b)}
+.ps-cine .ps-left circle.ps-part{fill:var(--pc-ink-a)}
+.ps-cine .ps-right circle.ps-part{fill:var(--pc-ink-b)}
+.ps-cine .ps-back{opacity:1}
+.ps-cine .ps-fig .ps-part.ps-w-minor{stroke:color-mix(in srgb,var(--ps-hurt) 62%,var(--pc-ink-a))}
+.ps-cine .ps-fig .ps-part.ps-w-serious{stroke:var(--ps-hurt)}
+.ps-cine .ps-fig .ps-part.ps-w-major{stroke:var(--ps-serious)}
+.ps-cine .ps-fig circle.ps-part.ps-w-minor{fill:color-mix(in srgb,var(--ps-hurt) 62%,var(--pc-ink-a))}
+.ps-cine .ps-fig circle.ps-part.ps-w-serious{fill:var(--ps-hurt)}
+.ps-cine .ps-fig circle.ps-part.ps-w-major{fill:var(--ps-serious)}
+.ps-cine .ps-fig .ps-part.ps-flash{stroke:#fff}
+.ps-cine .ps-fig circle.ps-part.ps-flash{fill:#fff}
+.ps-cine .ps-shadow{fill:#0a0c12}
+.ps-cine .ps-shaft{stroke:var(--pc-steel);stroke-width:5;filter:drop-shadow(0 0 1.2px rgba(0,0,0,.95))}
+.ps-cine .ps-shaft.thin{stroke-width:3.4}
+.ps-cine .ps-shaft.ps-wood{stroke:var(--pc-wood);filter:none}
+.ps-cine .ps-guard{stroke:var(--pc-ink-a);stroke-width:5}
+.ps-cine .ps-left .ps-guard{stroke:var(--pc-acc-a)}.ps-cine .ps-right .ps-guard{stroke:var(--pc-acc-b)}
+.ps-cine .ps-head-blade{fill:var(--pc-steel);stroke:#11141a;stroke-width:1.5}
+.ps-cine .ps-knob{fill:#3a3f4b;stroke:#0d0f14}
+.ps-cine .ps-shield{fill:#39404f;stroke:#0d0f14;stroke-width:4}
+.ps-cine .ps-left .ps-shield{stroke:var(--pc-acc-a)}.ps-cine .ps-right .ps-shield{stroke:var(--pc-acc-b)}
+.ps-cine .ps-trail{display:none}
+.ps-cine .ps-rline{stroke:#fff;opacity:.55}
+.ps-cine .ps-rtext{fill:#fff;opacity:.75}
+.ps-cine .ps-reticle{stroke:#fff}
+.ps-cine .ps-dropped .ps-shaft,.ps-cine .ps-lodged .ps-shaft{filter:none}
+
+/* headbands: each fighter's colour, streaming behind the head */
+.pc-scarf{fill:none;stroke-width:6.5;stroke-linecap:round;stroke-linejoin:round}
+.pc-scarf.pc-scarf2{stroke-width:5;opacity:.85}
+.pc-scarf.pc-a{stroke:var(--pc-acc-a)}.pc-scarf.pc-b{stroke:var(--pc-acc-b)}
+/* the smear of a fast blade */
+.pc-smear{fill:#fff}
+/* afterimages */
+.pc-ghost polyline{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.pc-ghost .pc-g-leg{stroke-width:13}.pc-ghost .pc-g-arm{stroke-width:11}.pc-ghost .pc-g-body{stroke-width:17}
+.pc-ghost .pc-g-blade{stroke:#fff;stroke-width:4;stroke-linecap:round}
+.pc-ghost.pc-a polyline{stroke:var(--pc-ink-a)}.pc-ghost.pc-a circle{fill:var(--pc-ink-a)}
+.pc-ghost.pc-b polyline{stroke:var(--pc-ink-b)}.pc-ghost.pc-b circle{fill:var(--pc-ink-b)}
+/* dust, sparks, blood */
+.pc-dust{fill:#eef0f4}
+.pc-spark{stroke:var(--pc-spark);stroke-width:3;stroke-linecap:round}
+.pc-spark.hot{stroke:#fff;stroke-width:4}
+.pc-blood{fill:var(--pc-blood)}
+.pc-chip{fill:#d7dae2}
+.pc-line{stroke:#fff;stroke-width:3;stroke-linecap:round}
+.pc-ring{fill:none;stroke:#fff}
+.pc-star{fill:#fff}
+.pc-slash{fill:#fff;stroke:var(--pc-blood);stroke-width:2}
+.pc-flash{fill:#fff;pointer-events:none}
+.pc-black{fill:#050608;pointer-events:none}
+.pc-rays polygon{fill:#fff;opacity:.9}
+/* the impact frame: the hall goes black, the fighters and their weapons white */
+.ps-cine.pc-impact .ps-fig .ps-part{stroke:#fff!important}
+.ps-cine.pc-impact .ps-fig circle.ps-part{fill:#fff!important}
+.ps-cine.pc-impact .ps-shaft,.ps-cine.pc-impact .ps-shaft.ps-wood{stroke:#fff;filter:none}
+.ps-cine.pc-impact .ps-shield{fill:#fff;stroke:#fff}
+.ps-cine.pc-impact .ps-shadow,.ps-cine.pc-impact .ps-range,.ps-cine.pc-impact .pc-dustl{opacity:0}
+.ps-cine.pc-impact .pc-smear{fill:#fff;opacity:1}
+
+/* numbers and the banner read over the picture */
+.ps-cine .ps-num{color:#fff;text-shadow:0 2px 0 #06070a,0 0 10px rgba(0,0,0,.55);z-index:4}
+.ps-cine .ps-num.dmg{color:#ff5a48;font-size:42px}
+.ps-cine .ps-num.blk,.ps-cine .ps-num.miss{color:#e9ebf0}
+.ps-cine .ps-num.fx{color:#ffd76a}
+.ps-cine .ps-banner{top:23%;font-size:clamp(26px,3.6vw,50px);color:#fff;text-shadow:0 3px 0 #06070a,0 0 22px rgba(0,0,0,.6)}
+.ps-cine .ps-banner.crit{color:#ffd76a}.ps-cine .ps-banner.bad,.ps-cine .ps-banner.red{color:#ff5a48}.ps-cine .ps-banner.vd{color:#fff}
+.ps-cine .ps-shake{animation:none}
+
+/* the bars of a film: the last blow, and the replay */
+.pc-bar{position:absolute;left:0;right:0;height:0;background:#050608;z-index:2;pointer-events:none;transition:height .28s cubic-bezier(.2,.8,.2,1)}
+.pc-bar-top{top:0}.pc-bar-bot{bottom:0}
+.pc-letter .pc-bar{height:9%}
+@media (prefers-reduced-motion:reduce){.pc-bar{transition:none}}
+/* the replay is a film: the plates and the dice are put away and the fight has the whole picture */
+.ps-cine .ps-hud{transition:opacity .25s}
+.ps-cine .pc-film .ps-hud{opacity:0;pointer-events:none}
