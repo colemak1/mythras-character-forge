@@ -1,0 +1,302 @@
+{
+  "ground": [
+    {
+      "actor": "a",
+      "outcome": "wound",
+      "down": "prop",
+      "maxHip": 36,
+      "endHip": 12
+    },
+    {
+      "actor": "a",
+      "outcome": "armour",
+      "down": "prop",
+      "maxHip": 60,
+      "endHip": 12
+    },
+    {
+      "actor": "a",
+      "outcome": "zero",
+      "down": "prop",
+      "maxHip": 60,
+      "endHip": 12
+    },
+    {
+      "actor": "a",
+      "outcome": "parried",
+      "down": "prop",
+      "maxHip": 60,
+      "endHip": 12
+    },
+    {
+      "actor": "a",
+      "outcome": "partial-parry",
+      "down": "prop",
+      "maxHip": 57,
+      "endHip": 12
+    },
+    {
+      "actor": "a",
+      "outcome": "full-ward",
+      "down": "prop",
+      "maxHip": 60,
+      "endHip": 12
+    },
+    {
+      "actor": "a",
+      "outcome": "partial-ward",
+      "down": "prop",
+      "maxHip": 36,
+      "endHip": 12
+    },
+    {
+      "actor": "a",
+      "outcome": "miss",
+      "down": "prop",
+      "maxHip": 56,
+      "endHip": 12
+    },
+    {
+      "actor": "a",
+      "outcome": "fumble",
+      "down": "prop",
+      "maxHip": 36,
+      "endHip": 12
+    },
+    {
+      "actor": "a",
+      "outcome": "evaded",
+      "down": "prop",
+      "maxHip": 56,
+      "endHip": 12
+    },
+    {
+      "actor": "b",
+      "outcome": "wound",
+      "down": "prop",
+      "maxHip": 12,
+      "endHip": 12
+    },
+    {
+      "actor": "b",
+      "outcome": "armour",
+      "down": "prop",
+      "maxHip": 12,
+      "endHip": 12
+    },
+    {
+      "actor": "b",
+      "outcome": "zero",
+      "down": "prop",
+      "maxHip": 12,
+      "endHip": 12
+    },
+    {
+      "actor": "b",
+      "outcome": "parried",
+      "down": "prop",
+      "maxHip": 30,
+      "endHip": 12
+    },
+    {
+      "actor": "b",
+      "outcome": "partial-parry",
+      "down": "prop",
+      "maxHip": 12,
+      "endHip": 12
+    },
+    {
+      "actor": "b",
+      "outcome": "full-ward",
+      "down": "prop",
+      "maxHip": 30,
+      "endHip": 12
+    },
+    {
+      "actor": "b",
+      "outcome": "partial-ward",
+      "down": "prop",
+      "maxHip": 12,
+      "endHip": 12
+    },
+    {
+      "actor": "b",
+      "outcome": "miss",
+      "down": "prop",
+      "maxHip": 12,
+      "endHip": 12
+    },
+    {
+      "actor": "b",
+      "outcome": "fumble",
+      "down": "prop",
+      "maxHip": 12,
+      "endHip": 12
+    },
+    {
+      "actor": "b",
+      "outcome": "evaded",
+      "down": "prop",
+      "maxHip": 16,
+      "endHip": 12
+    }
+  ],
+  "fallNoDamage": [
+    {
+      "outcome": "armour",
+      "down": false,
+      "hip": 60
+    },
+    {
+      "outcome": "zero",
+      "down": false,
+      "hip": 60
+    },
+    {
+      "outcome": "parried",
+      "down": false,
+      "hip": 64
+    },
+    {
+      "outcome": "full-parry",
+      "down": false,
+      "hip": 64
+    },
+    {
+      "outcome": "full-ward",
+      "down": false,
+      "hip": 64
+    }
+  ],
+  "grip": [
+    {
+      "w": "spear",
+      "two": 48,
+      "distance": 11.9858201577029,
+      "perpendicular": 11.9858201577029,
+      "along": -8.389902395441709,
+      "t": 18485
+    },
+    {
+      "w": "staff",
+      "two": 44,
+      "distance": 17.583672706860533,
+      "perpendicular": 17.583672706860533,
+      "along": -17.1171919880271,
+      "t": 12410
+    },
+    {
+      "w": "greatsword",
+      "two": 20,
+      "distance": 24.727180288356497,
+      "perpendicular": 18.959358452561215,
+      "along": -15.873757339715818,
+      "t": 16535
+    }
+  ],
+  "shield": [
+    {
+      "outcome": "wound",
+      "kind": "hit",
+      "shieldCentreToContact": 54.95,
+      "radius": 19,
+      "weaponToContact": 115.26
+    },
+    {
+      "outcome": "armour",
+      "kind": "hit",
+      "shieldCentreToContact": 54.95,
+      "radius": 19,
+      "weaponToContact": 115.26
+    },
+    {
+      "outcome": "parried",
+      "kind": "clash",
+      "shieldCentreToContact": 45.68,
+      "radius": 19,
+      "weaponToContact": 130.76
+    },
+    {
+      "outcome": "partial-parry",
+      "kind": "clash",
+      "shieldCentreToContact": 45.68,
+      "radius": 19,
+      "weaponToContact": 130.76
+    },
+    {
+      "outcome": "partial-parry",
+      "kind": "hit",
+      "shieldCentreToContact": 70.98,
+      "radius": 19,
+      "weaponToContact": 151.83
+    }
+  ],
+  "groundShield": [
+    {
+      "outcome": "full-ward",
+      "shieldCentreToContact": 126.17
+    },
+    {
+      "outcome": "partial-ward",
+      "shieldCentreToContact": 119.43
+    }
+  ],
+  "method": {
+    "source_commit": "21e202a617ac687f7bc1c2018280b87831fef175",
+    "units": "stage world units, not screen pixels",
+    "seed_setup": "Math.random=()=>0.001 for pair(); C.keep(0); see report for pair and inputs",
+    "ground": "fall(actor,100), then blow(a,end+100); max sampled every 5ms",
+    "grip": "10 alternating wound/head and parried/rleg blows at 100+i*2000, lost=3; sampled every 5ms; nearest point on RENDERED shaft: spear -36..blen, staff -30..blen-30, blade 0..blen",
+    "shield": "blow(a,100,{outcome,loc:chest,lost:3,strike:shield}); distance from off hand (shield centre) to contact"
+  },
+  "additional": {
+    "same_seed_replay": {
+      "seed": 2000000,
+      "live": "spin",
+      "replay": "over",
+      "live_intents": [
+        "a:attack@100",
+        "b:parry@400"
+      ],
+      "blow_time": 1000,
+      "blow": {
+        "outcome": "wound",
+        "loc": "head",
+        "lost": 9,
+        "defeated": true
+      }
+    },
+    "blood_lifetime": {
+      "vm_seconds": 12,
+      "particles_remaining": 1,
+      "lifetime_ms": 12884,
+      "age_ms": 12000
+    },
+    "weapon_metadata_mismatches": [
+      "Shortspear and Trident forced two-handed although one-handed in ARENA_WEAPONS",
+      "Military flail drawn one-handed although two-handed in ARENA_WEAPONS"
+    ],
+    "grid": {
+      "weapon_profiles": 35,
+      "outcomes": 11,
+      "locations": 7,
+      "exchanges": 2695,
+      "nonfinite_joint_coordinates": 0
+    },
+    "shield_strike_spear": {
+      "shield_radius": 19,
+      "centre_to_contact": 123.72503623244646
+    },
+    "staff_contact": {
+      "contact_along_weapon": 110.86690456851342,
+      "visible_shaft_end": 102,
+      "distance_beyond_visible_end": 8.86690456851342
+    },
+    "floor": {
+      "seed": 1000000,
+      "loser_head_min_centre": 2.0105301120887287,
+      "head_radius": 13,
+      "head_bottom": -10.989469887911271
+    }
+  }
+}
