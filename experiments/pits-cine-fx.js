@@ -95,6 +95,12 @@ function ring(w,big){
   const el=mk('circle',{class:'pc-ring',cx:w[0],cy:w[1],r:4},L.over);
   spawn({el,k:'ring',x:w[0],y:w[1],vx:0,vy:0,g:0,life:big?380:260,age:0,r1:big?120:60});
 }
+// a ring of dust thrown out along the floor where something heavy lands
+function gring(x,power){
+  if(!ready||reduced())return;
+  const el=mk('ellipse',{class:'pc-ring',cx:x,cy:G-2,rx:6,ry:2},L.dust);
+  spawn({el,k:'gring',x,y:G-2,vx:0,vy:0,g:0,life:340,age:0,r1:90+power*50});
+}
 function star(w,size){
   const el=mk('polygon',{class:'pc-star'},L.over);
   spawn({el,k:'star',x:w[0],y:w[1],vx:0,vy:0,g:0,life:150,age:0,size:size||60,rot:rnd(0,90)});
@@ -122,6 +128,7 @@ function stepParts(dt){
       el.setAttribute('cx',p.x);el.setAttribute('cy',p.y);el.setAttribute('opacity',(1-u*u*u).toFixed(3));}
     else if(p.k==='line'){const l=p.len*(1-u);el.setAttribute('x1',p.x);el.setAttribute('y1',p.y);el.setAttribute('x2',p.x-p.dir*l);el.setAttribute('y2',p.y);el.setAttribute('opacity',(.8*(1-u)).toFixed(3));}
     else if(p.k==='ring'){el.setAttribute('r',4+(p.r1-4)*(1-Math.pow(1-u,3)));el.setAttribute('opacity',(1-u).toFixed(3));el.setAttribute('stroke-width',(7*(1-u)+1).toFixed(1));}
+    else if(p.k==='gring'){const r=6+(p.r1-6)*(1-Math.pow(1-u,3));el.setAttribute('rx',r);el.setAttribute('ry',r*.16);el.setAttribute('opacity',(.8*(1-u)).toFixed(3));el.setAttribute('stroke-width',(5*(1-u)+1).toFixed(1));}
     else if(p.k==='star'){const s=p.size*(.5+u*1.1),t=s*.13,P=[];
       for(let k=0;k<8;k++){const a=(p.rot+k*45)*Math.PI/180,r=k%2?t:s*(k%4?0.62:1);P.push([p.x+Math.cos(a)*r,p.y+Math.sin(a)*r]);}
       el.setAttribute('points',pts(P));el.setAttribute('opacity',(1-u*u).toFixed(3));}
@@ -136,8 +143,8 @@ let film_=false;
 // What covers the picture: the fighters' plates at the sides and the dice in the middle (pits-arena.js draws them over
 // the stage). The camera frames the fight in what is left. In the replay they are put away and the whole picture is used.
 function measure(){
-  box.w=stage.clientWidth||1200;box.h=stage.clientHeight||520;box.side=0;box.top=box.h*.04;box.zoom=1.75;
-  if(film_){box.top=box.h*.1;return;}
+  box.w=stage.clientWidth||1200;box.h=stage.clientHeight||520;box.side=0;box.top=box.h*.04;box.zoom=1.32;
+  if(film_){box.top=box.h*.1;box.zoom=1.55;return;}
   const R=stage.getBoundingClientRect(),mid=R.left+R.width/2;
   for(const el of stage.querySelectorAll('.ps-hud > *')){
     const r=el.getBoundingClientRect();if(!r.width||!r.height||r.bottom<R.top+4)continue;
@@ -237,7 +244,7 @@ function fire(e,now){
   else if(e.kind==='skid'||e.kind==='ghost'||e.kind==='grind')active.push({...e,next:0});
   else if(e.kind==='jump')dust(e.x,6,0,20);
   else if(e.kind==='land'){dust(e.x-14,Math.round(5+e.power*4),-1,10);dust(e.x+14,Math.round(5+e.power*4),1,10);shake(e.power*.9);
-    if(e.power>=1)ring([e.x,G-4],true);}
+    if(e.power>=1)gring(e.x,e.power);}
   else if(e.kind==='thump'){ring([e.at[0],Y(e.at[1])]);shake(e.power);}
   else if(e.kind==='launch'&&j){lines(j.P[0],Y(j.P[1])+40,m.face,5,80);}
   else if(e.kind==='burst'&&m){

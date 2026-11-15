@@ -5,6 +5,19 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a fight worth watching back
+
+The owner asked for the fight itself to be the main thing: "cooler, meatier, sexier", something to show someone afterwards. The Pits now draws its fights on a new cinematic stage. The rules, the dice and the choices are unchanged.
+
+- **The look.** Solid silhouettes with a headband in each fighter's colour, bright steel, a lit hall behind them. The same scene at night in Dark.
+- **The movement.** Big key poses snapped between: a wind-up held while the dice roll, then a dash, a leap or a lunge with the blade whipping in last. Parries clash and throw both fighters back, or lock and shove. Dodges duck, hop, handspring or dive. A wound throws the struck fighter back by its size; a big one takes them off their feet.
+- **The hit.** A hit-stop, an impact frame (black hall, white fighters), a smear behind the blade, sparks, dust, blood, and a camera that follows the fight and punches in.
+- **The last blow** plays in slow motion with film bars: cut through and past with a held beat before the fall, run through, slammed down, or launched.
+- **The replay is a film.** The plates and dice are put away and the fight has the whole picture, start to finish without stops.
+- The dice still decide everything: a fighter is only on the ground, or beaten, when the rules say so. With reduced motion the effects are off.
+- The earlier movement stays for comparison at `?stage=spring` and `?stage=classic`.
+- New: `experiments/pits-cine.js`, `pits-cine-fx.js`, `pits-cine.css`; tests in `tests/pits-cine.cjs`. How it works and its known limits: `docs/pits-animation-direction.md`, first section.
+
 ## The Pits: Idea button
 
 - **Idea** sits in the Pits top bar beside Lost? and Report fight. It opens a window to suggest something for the Pits, with an optional name. The idea is saved with the fight reports as `[Idea] ...`, with a small record of where the fight was; offline, it waits on the device and goes with the next report. Code `experiments/pits-idea.js`, test `tests/pits-idea.cjs`, how to read them in `docs/pits-reports.md`.

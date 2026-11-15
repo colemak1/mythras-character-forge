@@ -15,7 +15,7 @@ html[data-mode="dark"] .ps-cine{
   --pc-wall-top:#5d6475;--pc-wall-bot:#2d313c;
   --pc-floor-top:#8e94a4;--pc-floor-bot:#4f5462;
   --pc-pillar:#22252d;--pc-pillar-lit:#3a3e4a;
-  --pc-ink-a:#07080a;--pc-ink-b:#0f1a30;
+  --pc-ink-a:#07080a;--pc-ink-b:#16233f;
 }
 .ps-cine .ps-stage{background:var(--pc-wall-bot);border-color:var(--ps-line)}
 .ps-cine .ps-stage::before{display:none}

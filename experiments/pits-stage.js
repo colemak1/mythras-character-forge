@@ -1327,7 +1327,7 @@ async function psMotionBlow(cue){
       else psDom(w,(out.endsWith('ward')?'Ward':'Parry')+' −'+px.blocked,'blk');
       await psHitStop(PS.cine?(full?120:80):(full?70:50));
     }else{
-      def.flash=lost>0?loc:null;def.flashUntil=performance.now()+900;
+      def.flash=lost>0?loc:null;def.flashUntil=performance.now()+(PS.cine?240:900);
       psEmit('contact',{kind:out,actor:atk.id,target:def.id,loc,point:w.map(Math.round),tip:psWorld(atk,atk.pts.tip).map(Math.round),lost});
       if(lost>0){
         psBurst(w,'spark',10);psRing(w);psShake(1+lost/6);psBurst(w,'blood',10+lost*2);
