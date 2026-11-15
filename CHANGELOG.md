@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: Idea button
+
+- **Idea** sits in the Pits top bar beside Lost? and Report fight. It opens a window to suggest something for the Pits, with an optional name. The idea is saved with the fight reports as `[Idea] ...`, with a small record of where the fight was; offline, it waits on the device and goes with the next report. Code `experiments/pits-idea.js`, test `tests/pits-idea.cjs`, how to read them in `docs/pits-reports.md`.
+
 ## The Pits: fixes from the 2026-11-14 fight reports (FR-01 to FR-07)
 
 ChatGPT (Work) compiled 13 reports and Lost? presses (`docs/pits-reports-review-20261114.md`, PR #337, merged here). Every case has a test in `tests/pits-report-fixes.cjs`. All the new reports used the normal Pits page (no `?stage=spring`), so the fixes are on that page; the spring trial shares them.
