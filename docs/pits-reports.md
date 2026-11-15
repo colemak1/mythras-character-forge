@@ -43,6 +43,15 @@ Next to Report fight, **Lost?** (or the `?` key) is for the moment a player no l
 why the screen did not make it clear; the answer is usually a presentation fix (tempo, wording, what is shown), not a
 rule.
 
+## "Idea"
+
+Beside Lost? and Report fight, **Idea** opens a window where a player suggests something for the Pits (owner,
+2026-11-15): a feature, a change, something they would like to see. It is saved in the same table as a report whose note
+starts `[Idea]`, with the optional name and a small record (`record: "pits-idea"`: mode, round, phase, fighters and their
+weapons, and the screen's headline and exchange step), not the whole fight. Offline or refused, it waits on the device
+like a report. When going through the fight reports, list ideas under "Ideas" in `docs/pits-report-ledger.md` for the
+owner to choose from; they are not faults to diagnose.
+
 ## One-time setup
 
 **ChatGPT (Work)**, in the Supabase SQL editor:

@@ -20,3 +20,10 @@ write here; take a report by putting your name in **Who** before diagnosing it. 
 | [`20261114-190727-7a13db21.json`](pits-records/20261114-190727-7a13db21.json) | Lost #1 note | ChatGPT (Work), Claude | fixed | FR-01: cannot attack / missing second effect; paired with a3bff8a7. | Pin kept in its exchange; Still pinned line; reasons on Attack/Parry; escape told. This PR; tests `tests/pits-report-fixes.cjs`. |
 | [`20261114-190707-a3bff8a7.json`](pits-records/20261114-190707-a3bff8a7.json) | Lost #1 | ChatGPT (Work), Claude | fixed | FR-01: Pin Weapon missing from recap; Attack restriction has a recorded cause. | Pin kept in its exchange; Still pinned line; reasons on Attack/Parry; escape told. This PR; tests `tests/pits-report-fixes.cjs`. |
 | `20261114-045813-120c8f7f.json` | blade isnt actually hitting body | Claude | fixed | Both chest wounds were to a fighter sat on the floor by a Trip. The cut was written for a standing target, so the arm could not reach down: the blade stopped about 57 units above the chest (the arm's reach limit). | The attacker's wind-up and blow aim low against a fighter on the floor (`pits-writer.js`, `LOW_AIM`); test in `tests/pits-spring-live.cjs` (fails at 56.6 before). |
+
+## Ideas
+
+Suggestions sent with the Pits **Idea** button (`[Idea]` notes). One row each: date, who, the idea, and what the owner decided.
+
+| Date | From | Idea | Decision |
+|---|---|---|---|

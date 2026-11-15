@@ -290,6 +290,7 @@ function pitsArenaBarHtml(){
     <button type="button" class="toolbutton" data-act="help">Rules</button>
     <button type="button" class="toolbutton pacebutton" data-act="speed" aria-label="Toggle combat presentation pace" aria-pressed="${V.quick}">${V.quick?'Quick pace':'Standard pace'}</button>
     ${typeof pitsLostButtonHtml==='function'?pitsLostButtonHtml():''}
+    ${typeof pitsIdeaButtonHtml==='function'?pitsIdeaButtonHtml():''}
     ${typeof PitsReport!=='undefined'?'<button type="button" class="toolbutton" data-pa="report" title="Say what went wrong; it is saved with this fight\'s record for Claude and ChatGPT">Report fight</button>':''}
     <button type="button" class="toolbutton" data-pa="fs" aria-pressed="${!!document.fullscreenElement}">Full screen</button>
     <button type="button" class="toolbutton" data-act="reset">Exit battle</button></div>${bout}`;
