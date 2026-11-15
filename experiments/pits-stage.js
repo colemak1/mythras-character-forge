@@ -349,6 +349,8 @@ const PSTAGE_DUEL=(()=>{try{return /[?&]stage=duel\b/.test(location.search);}cat
 // ?stage=spring: the trial of the spring movement and the exchange writer (pits-spring-live.js), for bouts where both
 // fighters' weapons have a family; any other bout keeps the movement below. Nothing released (owner, 2026-11-13).
 const PS_SPRING=(()=>{try{return /[?&]stage=spring\b/.test(location.search)&&typeof PitsSpringLive!=='undefined';}catch(e){return false;}})();
+// the cinematic movement (pits-cine.js) is the Pits' own; ?stage=spring and ?stage=classic keep the earlier two for comparison
+const PS_CINE=(()=>{try{return typeof PitsCine!=='undefined'&&!/[?&]stage=(spring|classic|poses)\b/.test(location.search);}catch(e){return false;}})();
 const PS_MOTION=(()=>{try{return typeof PitsMotion!=='undefined'&&!/[?&]stage=poses\b/.test(location.search);}catch(e){return false;}})();
 const PS={clock:0,M:{},gap:0,busyUntil:0,paused:false,cuePromise:null,cueFor:0,fig:{},lastId:0,epoch:0,raf:0,ready:false,seeded:false,ex:null,run:null,wasBusy:false,fighters:{},lodge:{},tether:{},events:[]};
 const PS_GROUND=450,PS_SPACING={apart:440,even:300,short:220,long:390},PS_M=22;
@@ -409,7 +411,7 @@ const psLayer=c=>document.querySelector('#pitsStage .'+c);
 // Test and review hook: every stage event is recorded when a page asks for it.
 function psEmit(type,data){
   // (the spring trial keeps its own record for the Report fight button (pits-report.js): what was drawn, in order, on the stage clock)
-  try{if(PS_SPRING&&!window.__psRecord)window.__psRecord=[];}catch(e){}
+  try{if((PS_SPRING||PS_CINE)&&!window.__psRecord)window.__psRecord=[];}catch(e){}
   try{if(window.__psRecord){window.__psRecord.push({t:Math.round(performance.now()),c:Math.round(PS.clock),type,...data});
     if(window.__psRecord.length>6000)window.__psRecord.splice(0,1000);
     // a review page may freeze the picture at the moment of contact (window.__psFreeze) and thaw it after the screenshot
@@ -451,6 +453,8 @@ function psBuildFig(id,svg){
   const f={id,g,shadow,e,cur:{...PS_IDLE},anim:null,done:null,hx:600,tx:600,face:id==='a'?1:-1,scale:1,
     look:null,pts:null,flash:null,flashUntil:0,dropEl:null,dropping:false,end:null,classes:{},trailOn:false,trailPts:[],holdPose:null,slide:null,X:600};
   f.trail=psSvg('polyline',{class:'ps-trail',opacity:0},svg.querySelector('.ps-fx'));
+  if(PS_CINE){for(const k of ['lleg','rleg'])e[k].setAttribute('stroke-width',14);for(const k of ['larm','rarm'])e[k].setAttribute('stroke-width',11);
+    for(const k of ['abdomen','chest'])e[k].setAttribute('stroke-width',18);e.head.setAttribute('r',15);e.head.setAttribute('stroke-width',2);}
   return f;
 }
 // Supporting feet stay planted while the body travels; a foot steps (one at a time, with a small lift) only when the
@@ -499,7 +503,7 @@ function psDrawMotion(f,L,now){
   // (unarmed: a two-handed grip lets go too)
   const j=PL().pose(m,PS.clock,{weapon:wLimp,off:oLimp,unarmed:!L.armed||!!f.dropEl}),q=p=>[p[0],-p[1]];
   const g={Sh:q(j.S),wSh:q(j.wS),oSh:q(j.oS),M:q(j.M),H:q(j.P),hd:q(j.Hd),E:q(j.E),Hn:q(j.Hn),bE:q(j.oE),bHn:q(j.oHn),K:q(j.K),bK:q(j.bK),F:q(j.F),bF:q(j.bF)};
-  f.scale=1;f.hx=m.hx;
+  f.scale=1;f.hx=m.hx;if(PS.cine)f.face=m.face;
   // Impale, "Keep hold": the weapon is in the other's wound and still in this hand. It is drawn once, as the lodged
   // weapon, and the weapon hand reaches to its grip as far as the arm goes (Work's check B6, 2026-11-14: a second blade
   // was drawn in the hand, with the arm pulled back)
@@ -516,6 +520,7 @@ function psDrawMotion(f,L,now){
   if(held)f.pts.hand=g.Hn;
   // the spring trial moves the whole stance (the writer's steps), so the shadow goes under the feet, not the station
   if(PS.springOn){f.standX=m.hx+m.face*(j.F[0]+j.bF[0])/2;f.shadow.setAttribute('cx',f.standX);}
+  if(PS.cine){const up=Math.min(j.F[1],j.bF[1]),k=Math.max(.35,1-up/160);f.shadow.setAttribute('cx',m.hx);f.shadow.setAttribute('rx',52*k);f.shadow.setAttribute('opacity',.34*k);}
 }
 // the held lodged weapon of this fighter on the spring stage, if any: {v (the impaled figure), loc, weapon}
 function psHeldLodge(f){
@@ -641,15 +646,16 @@ function psFrame(now){
       // hold, a resolved exchange playing to its end). Otherwise both figures are completely still: while a person
       // chooses an action or a reaction, and while the dice roll. The clock stops exactly where the movement ends.
       const owed=Math.max(PS.go||0,PS.busyUntil),moving=PS.clock<owed;
-      if(!stopped&&moving)PS.clock=Math.min(owed,PS.clock+dt*psSpeed());
+      if(!stopped&&moving)PS.clock=Math.min(owed,PS.clock+dt*psSpeed()*(PS.rate||1));
       // (when the movement comes to rest, the range marker is drawn where the two now stand)
       if(PS.wasMoving&&!moving){try{psDrawRange(psRangeKey());}catch(e){}}PS.wasMoving=moving;
       psLull();
     }else{
-      if(!PS.paused&&!stopped)PS.clock+=dt*psSpeed();
+      if(!PS.paused&&!stopped)PS.clock+=dt*psSpeed()*(PS.rate||1);
       if(!PS.paused)psLull();
     }
     for(const id of ['a','b'])if(PS.fig[id])psDraw(PS.fig[id],now);
+    {const X=psFx();if(X)try{X.film(psReplaying());X.frame(now,dt,!!stopped);}catch(e){psEmit('cue-error',{cue:'fx',message:String(e&&e.message||e)});}}
     psFollowReticles();psDrawLodged(now);PS.raf=requestAnimationFrame(psFrame);return;
   }
   for(const id of ['a','b']){
@@ -710,7 +716,7 @@ function psDom(w,text,cls){
   d.style.left=(s.x-r.left)+'px';d.style.top=(s.y-r.top)+'px';psLayer('ps-nums').appendChild(d);setTimeout(()=>d.remove(),1600);
 }
 function psBurst(w,kind,n){
-  if(psReduced())return;
+  if(psReduced())return;if(psFx()){psFx().burst(w,kind,n);return;}
   const fx=psLayer('ps-fx');n=n||(kind==='blood'?10:8);
   for(let i=0;i<n;i++){
     const c=psSvg('circle',{cx:w[0],cy:w[1],r:2+Math.random()*3,class:'ps-'+kind+' ps-part-fx'},fx);
@@ -721,7 +727,7 @@ function psBurst(w,kind,n){
   }
 }
 function psRing(w){
-  if(psReduced())return;
+  if(psReduced())return;if(psFx()){psFx().ring(w);return;}
   const c=psSvg('circle',{cx:w[0],cy:w[1],r:6,class:'ps-ring ps-part-fx'},psLayer('ps-fx'));
   c.animate([{r:6,opacity:1},{r:46,opacity:0}],{duration:420/psSpeed(),easing:'ease-out'}).onfinish=()=>c.remove();
 }
@@ -742,7 +748,7 @@ function psFollowReticles(){
   for(const r of PS.reticles||[]){if(!r.f||!r.f.pts)continue;const w=psBodyPt(r.f,r.loc);r.g.setAttribute('transform','translate('+w[0].toFixed(1)+','+w[1].toFixed(1)+')');}
 }
 function psDust(f){
-  if(psReduced())return;
+  if(psReduced())return;if(psFx()){psFx().dust(f.standX!=null?f.standX:f.X,7,0);return;}
   for(let i=0;i<5;i++){const c=psSvg('circle',{cx:f.X+(Math.random()-.5)*50,cy:PS_GROUND-4,r:5+Math.random()*4,class:'ps-dust ps-part-fx'},psLayer('ps-fx'));
     c.animate([{transform:'translate(0,0) scale(.6)',opacity:.5},{transform:'translate('+((Math.random()-.5)*60)+'px,-26px) scale(1.8)',opacity:0}],
       {duration:650/psSpeed(),easing:'ease-out'}).onfinish=()=>c.remove();}
@@ -753,8 +759,8 @@ function psGhost(f){
   g.setAttribute('transform',f.g.getAttribute('transform'));wrap.style.opacity=.5;
   wrap.animate([{opacity:.5},{opacity:0}],{duration:500/psSpeed()}).onfinish=()=>wrap.remove();
 }
-function psShake(){
-  if(psReduced())return;const b=psLayer('ps-stage');if(!b)return;
+function psShake(k){
+  if(psReduced())return;if(psFx()){psFx().shake(k||1);return;}const b=psLayer('ps-stage');if(!b)return;
   b.classList.remove('ps-shake');void b.offsetWidth;b.classList.add('ps-shake');
 }
 // Resolves when the first frame of a figure's current motion is complete (the strike has fully arrived), so contact is
@@ -766,7 +772,7 @@ function psHitStop(ms){
   PS.stopUntil=performance.now()+ms/psSpeed();return psSleep(ms);
 }
 function psPunch(power){
-  if(psReduced())return;const sc=document.querySelector('#pitsStage .ps-scene');if(!sc||!sc.animate)return;
+  if(psReduced())return;if(psFx()){psFx().punch(power);return;}const sc=document.querySelector('#pitsStage .ps-scene');if(!sc||!sc.animate)return;
   const k=1+Math.min(.05,.012+power*.004);
   sc.animate([{transform:'scale(1)'},{transform:'scale('+k+')',offset:.25},{transform:'scale(1)'}],{duration:260/psSpeed(),easing:'ease-out'});
 }
@@ -794,7 +800,7 @@ function psSettle(keepExchange){
     if(f.dropEl&&f.look&&f.look.armed){f.dropEl.remove();f.dropEl=null;}
     f.cur={...psRest(f)};}
   if(PS_MOTION){PS.busyUntil=PS.clock;for(const id of ['a','b']){const f=PS.fig[id];if(!f)continue;f.mEnd=null;if(PS.M[id]&&f.look)psPlaceM(id);}}
-  psClearEffects();{const b=psLayer('ps-banner');if(b)b.className='ps-banner';}psEmit('settle',{});
+  psClearEffects();{const b=psLayer('ps-banner');if(b)b.className='ps-banner';}if(psFx())psFx().reset();PS.rate=1;psEmit('settle',{});
 }
 // Weapon knocked away or dropped: fly it in an arc, then leave it on the floor
 // until the engine says it was picked up again.
@@ -1102,7 +1108,8 @@ async function psPressFinish(atk,def,cue){
 // ---- The movement language: one exchange is one timeline for both fighters (pits-motion.js) ----
 // Each cue writes phrases from the stage clock, starting from the pose the figure is in. The effects (sparks, numbers,
 // sound, the plates) wait for the clock to reach the contact the phrase was written against.
-const PL=()=>PS.springOn?PitsSpringLive:PitsMotion.LIVE;
+const PL=()=>PS.cine?PitsCine:PS.springOn?PitsSpringLive:PitsMotion.LIVE;
+const psFx=()=>PS.cine&&typeof PitsCineFx!=='undefined'?PitsCineFx:null;
 // the point of a fighter's drawn weapon nearest to a world point (where the blades actually met)
 function psOnBlade(f,w){
   if(!f.pts)return w;const a=psWorld(f,f.pts.hand),b=psWorld(f,f.pts.tip),vx=b[0]-a[0],vy=b[1]-a[1];
@@ -1126,7 +1133,8 @@ function psMotionFigs(){
   // a new bout chooses its movement once, when neither fighter has been made: the spring trial if it is switched on and
   // both weapons have a family
   if(!PS.M.a&&!PS.M.b){const la=PS.fig.a&&PS.fig.a.look,lb=PS.fig.b&&PS.fig.b.look;
-    PS.springOn=!!(PS_SPRING&&la&&lb&&PitsSpringLive.supports(la.wk)&&PitsSpringLive.supports(lb.wk));}
+    PS.cine=PS_CINE;
+    PS.springOn=PS.cine||!!(PS_SPRING&&la&&lb&&PitsSpringLive.supports(la.wk)&&PitsSpringLive.supports(lb.wk));}
   for(const id of ['a','b']){
     const f=PS.fig[id];if(!f||!f.look)continue;const wk=f.look.wk,m=PS.M[id];
     // (in the spring trial the pair shares one world: a fighter is not remade mid-bout)
@@ -1307,30 +1315,32 @@ async function psMotionBlow(cue){
       psBanner('Disarmed','crit');psFlyWeapon(def,disarm.metres);}
     if(c.kind==='miss'){
       psEmit('contact',{kind:out,actor:atk.id,target:def.id,point:w.map(Math.round)});
-      psBurst(w,'gray',5);psSfx('miss');
+      psBurst(w,'gray',5);psSfx('miss');if(psFx())psFx().impact(w,'miss',1,atk.face);
       if(out==='evaded'){psRing(w);psDom(psWorld(def,def.pts.Sh),'Evaded','blk');}
       else psDom(w,out==='fumble'?'Fumble!':'Miss','miss');
     }else if(c.kind==='clash'){
       const full=out==='parried'||out==='full-parry'||out==='full-ward';
       psEmit('contact',{kind:full?out:'deflect',actor:atk.id,target:def.id,point:w.map(Math.round),tip:psOnBlade(atk,w).map(Math.round)});
       psBurst(w,'spark',full?16:12);psRing(w);psSfx('pick');
+      if(psFx())psFx().impact(w,'clash',full?1:.7,atk.face);
       if(full){psShake();psDom(w,out.endsWith('ward')?'Shield ward':'Parried','blk');if(cue.type==='hit'&&px.blocked)psDom([w[0],w[1]+26],'−'+px.blocked,'blk');}
       else psDom(w,(out.endsWith('ward')?'Ward':'Parry')+' −'+px.blocked,'blk');
-      await psHitStop(full?70:50);
+      await psHitStop(PS.cine?(full?120:80):(full?70:50));
     }else{
       def.flash=lost>0?loc:null;def.flashUntil=performance.now()+900;
       psEmit('contact',{kind:out,actor:atk.id,target:def.id,loc,point:w.map(Math.round),tip:psWorld(atk,atk.pts.tip).map(Math.round),lost});
       if(lost>0){
-        psBurst(w,'spark',10);psRing(w);psShake();psBurst(w,'blood',10+lost*2);
+        psBurst(w,'spark',10);psRing(w);psShake(1+lost/6);psBurst(w,'blood',10+lost*2);
+        if(psFx())psFx().impact(w,defeated?'finish':'hit',lost,atk.face);
         psDom(w,'−'+lost,'dmg');psSfx(lost>=6?'crit':'hit');
         if(px.armour>0)psDom([w[0],w[1]+28],'Armour −'+px.armour,'blk');
         // a disabled arm hangs from the blow on, and a dropped weapon leaves the hand
         const arm=limbC&&!leg&&(limbC.loc==='larm'||limbC.loc==='rarm')?limbC.loc:null;
         if(arm){def.forceLimp=arm;if(dropC&&!def.dropEl){def.dropAhead=true;psSleep(60).then(()=>{if(!def.dropEl)psFlyWeapon(def,0);}).catch(()=>{});}}
         if(defeated)psEmit('collapse',{target:def.id,actor:atk.id,how:endC.how});
-        await psHitStop(45+Math.min(70,lost*9));psPunch(lost);
+        await psHitStop(PS.cine?(defeated?300:90+Math.min(130,lost*14)):45+Math.min(70,lost*9));psPunch(lost);
       }else{
-        psBurst(w,'gray',8);psRing(w);psSfx('pick');
+        psBurst(w,'gray',8);psRing(w);psSfx('pick');if(psFx())psFx().impact(w,'clash',.5,atk.face);
         psDom(w,out==='armour'?'Armour −'+px.armour:'No damage','blk');
       }
     }
@@ -1369,6 +1379,7 @@ function psMount(){
   root.parentNode.insertBefore(sec,root);
   const svg=sec.querySelector('svg');
   PS.fig={a:psBuildFig('a',svg),b:psBuildFig('b',svg)};
+  if(PS_CINE&&typeof PitsCineFx!=='undefined'){sec.classList.add('ps-cine');PitsCineFx.mount(sec,svg,PS,PS_GROUND);}
   PS.ready=true;PS.raf=requestAnimationFrame(psFrame);
   return true;
 }
@@ -1428,7 +1439,7 @@ function pitsStageSync(){
   if(typeof document==='undefined'||!psMount())return;
   const box=document.getElementById('pitsStage');box.hidden=false;
   // Frame the figures tighter on a phone.
-  box.querySelector('svg').setAttribute('viewBox',window.innerWidth<=900?'250 0 700 520':'0 0 1200 520');
+  if(!PS_CINE)box.querySelector('svg').setAttribute('viewBox',window.innerWidth<=900?'250 0 700 520':'0 0 1200 520');
   const view=pitsPresenting()&&V.shown&&V.shown.a?V.shown:S.fighters;
   const names={a:S.fighters.a.name,b:S.fighters.b.name};
   // A new bout or a new opponent: forget the old one completely.
