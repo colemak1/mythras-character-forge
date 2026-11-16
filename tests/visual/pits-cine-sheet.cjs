@@ -5,7 +5,8 @@
 //
 //   node tests/visual/pits-cine-sheet.cjs '<cases json>' [out folder]
 //   a case: {name, phrase ('trip'|'disarm'|'press'; fell, after for a trip), weapon, pvpWeapon, shield, pvpShield, outcome, loc, lost, strike, shieldWard, down:'a'|'b', u (fixed
-//   choice, 0..1), from, to (ms after the blow), focus ('a' or 'b': crop to that fighter, for looking at a grip)}
+//   choice, 0..1), from, to (ms after the blow), focus ('a' or 'b': crop to that fighter, for looking at a grip), defeated, fx (the
+//   final blow's Special Effects: 'bash','stun','bleed','choose'), impale, held}
 //   env: PITS_URL (default http://localhost:8765/experiments/practice-combat.html), STEP (40), COLS (8), DARK (1)
 // Needs playwright and a static server at the repository root (python3 -m http.server 8765).
 const path=require('node:path'),fs=require('node:fs'),os=require('node:os');
@@ -30,7 +31,7 @@ const OUT=process.argv[3]||fs.mkdtempSync(path.join(os.tmpdir(),'pits-cine-sheet
       let t=PS.clock+50;
       if(c.down){t=L.fall(PS.M[c.down],t)+200;PS.fig[c.down].mDown=true;}
       const r=c.phrase==='trip'?L.trip(PS.M,'a',t,{fell:c.fell!==false,after:!!c.after}):c.phrase==='disarm'?L.disarm(PS.M,'a',t,{}):
-        c.phrase==='press'?{end:L.press(PS.M.a,PS.M.b,t),contacts:[],move:'press'}:c.withdraw?L.withdraw(PS.M,'a',t,{loc:c.loc||'chest',lost:c.lost||0,defeated:!!c.defeated}):L.blow(PS.M,'a',t,{outcome:c.outcome||'wound',loc:c.loc||'chest',lost:c.lost||0,strike:c.strike||null,shield:!!c.shieldWard,fall:c.fall||false});
+        c.phrase==='press'?{end:L.press(PS.M.a,PS.M.b,t),contacts:[],move:'press'}:c.withdraw?L.withdraw(PS.M,'a',t,{loc:c.loc||'chest',lost:c.lost||0,defeated:!!c.defeated}):L.blow(PS.M,'a',t,{outcome:c.outcome||'wound',loc:c.loc||'chest',lost:c.lost||0,strike:c.strike||null,shield:!!c.shieldWard,fall:c.fall||false,defeated:!!c.defeated,fx:c.fx||[],impale:!!c.impale,held:!!c.held});
       if(L.fixChoices)L.fixChoices(null);
       window.__sheet={t,r};
       return {t,end:r.end,move:r.move,contacts:r.contacts.map(k=>[k.t-t,k.kind]),w:S.fighters.a.weapon+' / '+S.fighters.b.weapon};

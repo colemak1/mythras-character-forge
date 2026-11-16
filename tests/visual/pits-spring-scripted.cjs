@@ -5,6 +5,7 @@
 //   - a miss, then the other's attack: the miss is drawn before the next attack is declared
 //   - a Disarm won on a parry, or an attacker's Disarm against a parry: the weapon leaves once, at the parry
 //   - Impale on the cinematic stage: the weapon is in the wound from the blow's contact
+//   - a finishing blow with Choose Location: its own finish (the arm: the weapon falls and stays down)
 //
 //   node tests/visual/pits-spring-scripted.cjs
 const assert=require('node:assert/strict');
@@ -44,7 +45,7 @@ async function bout(browser,sc){
     else{if(attacks++>=(sc.attacks||1))break;await click('[data-act=attack]');}
     await sleep(100);}
   await sleep(1200);
-  const out=await p.evaluate(()=>({rec:window.__psRecord.map(r=>({type:r.type,kind:r.kind||r.outcome||'',actor:r.actor,c:Math.round(r.c||0)})),
+  const out=await p.evaluate(()=>({rec:window.__psRecord.map(r=>({type:r.type,kind:r.kind||r.outcome||r.finish||'',actor:r.actor,c:Math.round(r.c||0)})),
     lodged:document.querySelectorAll('#pitsStage .ps-lodged').length,dropped:document.querySelectorAll('#pitsStage .ps-dropped').length,
     prone:{a:!!prototypeCombat.state().fighters.a.prone,b:!!prototypeCombat.state().fighters.b.prone},
     hips:{a:PS.fig.a.pts&&PS.fig.a.pts.P?Math.round(PS.fig.a.pts.P[1]):null,b:PS.fig.b.pts&&PS.fig.b.pts.P?Math.round(PS.fig.b.pts.P[1]):null}}));
@@ -109,6 +110,19 @@ async function bout(browser,sc){
       if(how==='leave')assert(rel&&rel.c>hit.c,'the hand opens after the contact');else assert(!rel,'kept hold: the hand stays');
       assert.equal(r.lodged,1,'one weapon in the wound');
       assert.deepEqual(r.rec.filter(x=>x.type==='fly'),[],'no weapon thrown');
+    });
+  // (owner, 2026-11-16: finishes by the final blow's Special Effect). Choose Location is picked by a person, so it is
+  // shown in an earlier batch than the blow: the finish still follows it. An arm: the weapon falls and stays down.
+  for(const [loc,want] of [['Right Arm','armdrop'],['Head','headshot']])
+    await T('a finishing blow with Choose Location ('+loc+') has its own finish (cinematic stage)',async()=>{
+      const r=await bout(browser,{url:BASE,config:{str:18,siz:18,pvpCon:3,pvpSiz:3,weapon:'greatsword'},react:['none'],effect:'choose',rolls:{'a:Attack':1},
+        pick:{location:'[data-act=pickloc][data-val="'+loc+'"]'},attacks:1});
+      assert.deepEqual(r.errors,[]);
+      const mv=r.rec.find(x=>x.type==='move'),hit=r.rec.find(x=>x.type==='contact'&&x.kind==='wound');
+      assert(hit&&r.rec.some(x=>x.type==='collapse'),'the blow finished the fight: '+JSON.stringify(r.rec));
+      assert.equal(mv&&mv.kind,want,'the finish');
+      if(want==='armdrop'){const fly=r.rec.filter(x=>x.type==='fly');assert.equal(fly.length,1,'the weapon falls once');assert(fly[0].c>hit.c,'after the blow');
+        assert.equal(r.dropped,1,'and stays on the floor');}
     });
   // (Work's check B6, 2026-11-14: Keep hold drew two blades, one in the wound and one in the hand, the arm pulled back)
   await T('Impale, Keep hold: one weapon, lodged in the wound, with the hand on its grip',async()=>{

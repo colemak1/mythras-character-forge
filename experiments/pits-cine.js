@@ -674,7 +674,7 @@ function blow(M,aid,t,s){
       key(D,th+90,{hip:[D.lastP.hip[0]-10,D.lastP.hip[1]-4],lean:D.lastP.lean-10,head:10},{at:D.base+away*16,e:'out5',slide:true});
       ready(A,th+420);ready(D,th+380);end=th+420;
     }else{
-      end=struck(A,D,r,th,{loc,lost,H,move,f,away,wHit,aim,defeated:!!s.defeated,fall:s.fall,prone:!!s.prone,bash,big,leap,impale:!!s.impale&&!bash,held:!!s.held});
+      end=struck(A,D,r,th,{loc,lost,H,move,f,away,wHit,aim,defeated:!!s.defeated,fall:s.fall,prone:!!s.prone,bash,big,leap,impale:!!s.impale&&!bash,held:!!s.held,fx:s.fx||[]});
     }
   }
   // the two never end an exchange standing in each other: the attacker gives ground
@@ -684,7 +684,7 @@ function blow(M,aid,t,s){
   }
   // the replay runs straight on: the next exchange is written into this one's recovery
   const out={tc:contacts.length?contacts[0].t:tc,contacts,end:s.flow&&!s.defeated?Math.min(end,tHit+(dodge?250:290)):end,move,
-    ward:warded,leap,...chosen,finish:A.finished||null,release:A.release||null};A.finished=null;A.release=null;
+    ward:warded,leap,...chosen,finish:A.finished||null,release:A.release||null,drop:A.dropAt||null};A.finished=null;A.release=null;A.dropAt=null;
   return out;
 }
 
@@ -903,7 +903,13 @@ function finish(A,D,r,th,o){
   let kind=D.down&&D.lastP.hip[1]<30?'ground':thrust?'run':pick(r,o.leap?['slam','slam','through']:['through','launch','through','slam']);
   if(bash)kind='launch';
   if(sample(D,th,true).py<30)kind='ground';
+  // the final blow's Special Effect chooses the finish (owner, 2026-11-16); a fighter already on the floor keeps 'ground'
+  if(kind!=='ground'){const fxs=o.fx||[];
+    const byFx=fxs.includes('bash')?'bashed':fxs.includes('stun')?'stunned':fxs.includes('bleed')?'bled':
+      fxs.includes('choose')?(loc==='head'?'headshot':/leg/.test(loc)?'legout':/arm/.test(loc)?'armdrop':null):null;
+    if(byFx)kind=byFx;}
   A.finished=kind;
+  if(FX_FINISH[kind])return FX_FINISH[kind](A,D,r,th,o);
   if(kind==='ground'){
     keyA(A,th+140,{hip:[aim.P.hip[0]+8,aim.P.hip[1]-4]},{e:'out',plant:'both'});
     key(D,th+120,{...POSE.flat},{at:x+away*30,e:'out5',slide:true});
@@ -976,6 +982,103 @@ function finish(A,D,r,th,o){
   keyA(A,th+1400,POSE.victory,{e:'io'});
   return th+1400;
 }
+
+// ----- finishes chosen by the final blow's Special Effect (owner, 2026-11-16; docs/pits-animation-direction.md) -----
+// Each draws only what the engine says: the blow landed and ended the fight, with this effect chosen. A.dropAt (Choose
+// Location, an arm): when the struck fighter's weapon falls, for the stage.
+// the attacker after a finishing blow that is not its own show: the blade carried on past, the guard down, the win
+// (back: how far the winner gives ground, so a fighter falling forward on its face does not land at its feet)
+function carryOn(A,th,o,tWin,back){
+  const {move,f,wHit,aim}=o,P0=aim.P;
+  if(move==='lunge'||move==='stab'){
+    keyA(A,th+70,{hip:[P0.hip[0]+6,P0.hip[1]-2]},{e:'out',plant:'both'});
+    keyA(A,th+240,{hip:[-18,58],lean:8,h:[-10,-16],eb:-1,w:wHit+6,o:[30,-10]},{at:A.base-f*24,e:'out',slide:true});
+  }else{
+    const wEnd=move==='rise'?wHit+100:wHit-88;
+    keyA(A,th+110,{hip:[8,P0.hip[1]-2],ff:[50,0],bf:[-46,0],lean:(P0.lean||30)+8,head:-26,h:move==='rise'?[30,36]:[30,-40],eb:move==='rise'?1:0,w:wEnd,o:[-46,0]},
+      {at:A.base+f*14,e:'out',spin:move==='rise'?{w:1}:{w:-1},slide:true});
+  }
+  keyA(A,th+460,{hip:[-4,60],lean:12,head:-6,h:[24,-34],w:-40,ff:[38,0],bf:[-44,0]},{at:A.base-f*(back||20),e:'io'});
+  keyA(A,tWin,POSE.victory,{e:'io'});
+}
+// the off hand pressed to a wound (offset from the shoulder, up positive)
+const CLUTCH={head:[14,22],chest:[16,-22],abdomen:[20,-46],larm:[22,-30],rarm:[22,-30],lleg:[22,-62],rleg:[22,-62]};
+const FX_FINISH={
+  // Bash: knocked off the feet and thrown back through the air, a heavy landing on the back, a skid, a bounce, still
+  bashed(A,D,r,th,o){
+    const {f,away,aim}=o,x=D.base,d=280,P0=aim.P;
+    keyA(A,th+110,{hip:[P0.hip[0]+14,P0.hip[1]-4],lean:(P0.lean||30)+10,head:-20},{at:A.base+f*26,e:'out',plant:'bf'});
+    keyA(A,th+600,{hip:[0,60],lean:16,h:[24,-34],w:-40,ff:[38,0],bf:[-44,0]},{e:'io',plant:'both'});
+    keyA(A,th+1500,POSE.victory,{e:'io'});
+    key(D,th+70,{hip:[-14,84],lean:-44,bend:-20,head:30,ff:[40,34],bf:[0,24],h:[-30,30],eb:1,w:150,o:[-36,30],oeb:1},{at:x+away*d*.2,e:'out'});
+    key(D,th+300,{hip:[-10,90],lean:-76,bend:-10,head:20,ff:[50,70],bf:[30,60],h:[-30,14],w:170,o:[-30,14]},{at:x+away*d*.62,e:'lin',arc:24});
+    key(D,th+440,{...POSE.flat,hip:[-40,16]},{at:x+away*d*.85,e:'in'});
+    // the skid, a bounce off the floor, still
+    key(D,th+600,{...POSE.flat,hip:[-36,26],head:10},{at:x+away*(d+30),e:'out'});
+    key(D,th+760,POSE.flat,{at:x+away*(d+44),e:'in'});
+    fx(D,{t:th,kind:'launch',id:D.id});fx(D,{t:th+10,kind:'ghost',id:D.id,t1:th+440});
+    fx(D,{t:th+440,kind:'land',x:x+away*d*.85,power:1.5});fx(D,{t:th+440,kind:'skid',id:D.id,t1:th+640});
+    fx(D,{t:th+760,kind:'land',x:x+away*(d+44),power:.7});
+    D.down='flat';return th+1500;
+  },
+  // Stun Location: the struck part snaps away, a dazed sway with the arms hanging, then straight down like a puppet
+  // with its strings cut: the knees, then the face
+  stunned(A,D,r,th,o){
+    const {loc,away}=o,x=D.base;carryOn(A,th,o,th+1500,70);
+    key(D,th+70,recoil(loc),{at:x+away*14,e:'out5',slide:true});
+    key(D,th+330,{hip:[-6,66],lean:-8,bend:-4,head:24,ff:[30,0],bf:[-40,0],h:[10,-58],w:-96,o:[6,-56]},{at:x+away*18,e:'io'});
+    key(D,th+560,{hip:[4,64],lean:10,bend:4,head:-14,h:[14,-58],w:-90,o:[10,-58]},{e:'io',plant:'both'});
+    key(D,th+760,{hip:[-2,66],lean:-4,head:18},{e:'io',plant:'both'});
+    key(D,th+900,{...POSE.kneel,head:22,h:[16,-34],w:-90,o:[12,-34]},{e:'in',plant:'both'});
+    key(D,th+1120,POSE.face,{at:x+away*30,e:'in'});
+    fx(D,{t:th+900,kind:'land',x,power:.6});fx(D,{t:th+1120,kind:'land',x:x+away*30,power:1.1});
+    D.down='flat';return th+1500;
+  },
+  // Bleed: a cut that does not drop the fighter at once; it stands, the hand pressed to the wound, bleeding, then goes to
+  // its knees and over
+  bled(A,D,r,th,o){
+    const {loc,away}=o,x=D.base,c=CLUTCH[loc]||CLUTCH.chest;carryOn(A,th,o,th+1900,70);
+    const rec=recoil(loc);
+    key(D,th+70,{...rec,hip:[rec.hip[0]*.5,Math.max(54,rec.hip[1])],lean:rec.lean*.5},{at:x+away*10,e:'out5',slide:true});
+    key(D,th+320,{hip:[-8,64],lean:12,bend:14,head:20,ff:[30,0],bf:[-40,0],h:[16,-56],w:-80,o:c,oeb:1},{e:'io',plant:'bf'});
+    key(D,th+760,{hip:[-6,62],lean:18,bend:18,head:28,o:c},{e:'lin',plant:'both'});
+    for(const dt of [320,700,1080,1400])fx(D,{t:th+dt,kind:'burst',id:D.id,loc});
+    key(D,th+1100,{...POSE.kneel,o:c,oeb:1,head:26,lean:20},{e:'io',plant:'both'});
+    key(D,th+1320,{lean:24,head:32},{e:'lin',plant:'both'});
+    key(D,th+1580,POSE.face,{at:x+away*30,e:'in'});
+    fx(D,{t:th+1100,kind:'land',x,power:.5});fx(D,{t:th+1580,kind:'land',x:x+away*30,power:1});
+    D.down='flat';return th+1900;
+  },
+  // Choose Location, the head: it snaps back, the body turns away and drops
+  headshot(A,D,r,th,o){
+    const {away}=o,x=D.base;carryOn(A,th,o,th+1300);
+    key(D,th+70,{...recoil('head'),turn:-24},{at:x+away*22,e:'out5',slide:true});
+    key(D,th+260,{hip:[-20,52],lean:-40,bend:-10,head:-40,ff:[40,10],bf:[-30,0],h:[-20,30],w:150,o:[-30,30],turn:-40},{at:x+away*42,e:'io'});
+    key(D,th+480,POSE.flat,{at:x+away*62,e:'in'});
+    fx(D,{t:th+480,kind:'land',x:x+away*62,power:1.2});
+    D.down='flat';return th+1300;
+  },
+  // Choose Location, a leg: the leg goes out from under, down onto the backside, then flat
+  legout(A,D,r,th,o){
+    const {loc,away}=o,x=D.base;carryOn(A,th,o,th+1300);
+    key(D,th+80,recoil(loc),{at:x+away*10,e:'out5',slide:true});
+    key(D,th+300,{hip:[-30,26],lean:-20,bend:20,head:20,ff:[50,24],bf:[10,4],h:[10,10],w:60,o:[-34,-20]},{at:x+away*20,e:'in'});
+    key(D,th+520,POSE.prop,{e:'out',slide:true});
+    key(D,th+900,POSE.flat,{at:x+away*28,e:'io'});
+    fx(D,{t:th+300,kind:'land',x:x+away*20,power:1});
+    D.down='flat';return th+1300;
+  },
+  // Choose Location, an arm: the weapon falls from the hand first, the arm clutched, then the knees and the face
+  armdrop(A,D,r,th,o){
+    const {loc,away}=o,x=D.base,c=CLUTCH[loc]||CLUTCH.rarm;carryOn(A,th,o,th+1400,70);
+    key(D,th+70,recoil(loc),{at:x+away*16,e:'out5',slide:true});A.dropAt=th+140;
+    key(D,th+360,{hip:[-12,62],lean:14,bend:16,head:20,ff:[30,0],bf:[-44,0],h:[10,-58],w:-90,o:c,oeb:1},{at:x+away*24,e:'io'});
+    key(D,th+700,{...POSE.kneel,o:c,oeb:1,head:24},{e:'io',plant:'both'});
+    key(D,th+1000,POSE.face,{at:x+away*40,e:'in'});
+    fx(D,{t:th+700,kind:'land',x:x+away*24,power:.5});fx(D,{t:th+1000,kind:'land',x:x+away*40,power:1});
+    D.down='flat';return th+1400;
+  },
+};
 
 // ----- an Impale withdrawn, and a self-inflicted hit (audit CA-08, CL-04) -----
 // The wielder takes hold of the weapon in the wound and tears it out, as a thrust is torn out after a hit (struck): the

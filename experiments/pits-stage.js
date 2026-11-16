@@ -221,6 +221,8 @@ function pitsStageAim(base,wk,swap,target,opts){
 // finished first, so the contact flows straight into its real consequence. Dice are always shown at once.
 const PSTAGE_BLOW=['hit','deflect','weapon','withdrawHit'];
 const PSTAGE_AFTER=['wound','limb','drop','lodge','end','falling'];
+// the engine's names of the Special Effects that choose a finishing blow's finish
+const PSTAGE_FX={'Bash':'bash','Stun Location':'stun','Bleed':'bleed','Choose Location':'choose'};
 const PSTAGE_EFFECT=['trip','disarm'];
 function pitsStageKind(e,names){
   if(!e)return 'none';if(e.roll)return 'roll';if(e.checkpoint)return 'checkpoint';
@@ -337,7 +339,11 @@ function pitsStageBeat(events,step,names){
       let left=false;for(let i=a0+1;i<a1;i++){const x=events[i];if(x&&!x.roll&&!x.checkpoint&&x.title==='Impale · Left in the wound')left=true;}
       impale={held:!left};
     }
-    return {cue:{...cue,record:{press:inEx(a0+1,step,['press'])[0]||null,after:inEx(step+1,a1,PSTAGE_AFTER),arise:arise?arise.actor:null,disarm,trip,impale}},consumed:false};
+    // the Special Effects the striker chose for this blow (they choose its finish, if it ends the fight)
+    const fx=[];
+    for(let i=a0+1;i<a1;i++){const x=events[i];if(!x||x.roll||x.checkpoint||!x.meta||x.meta.actor!==striker)continue;
+      const k=PSTAGE_FX[x.title];if(k&&!fx.includes(k))fx.push(k);}
+    return {cue:{...cue,record:{press:inEx(a0+1,step,['press'])[0]||null,after:inEx(step+1,a1,PSTAGE_AFTER),arise:arise?arise.actor:null,disarm,trip,impale,fx}},consumed:false};
   }
   // the attacker's Trip has no movement of its own when a blow of its exchange follows: that blow draws it
   if(cue.type==='trip'){
@@ -547,6 +553,18 @@ function psDrawMotion(f,L,now){
   // the spring trial moves the whole stance (the writer's steps), so the shadow goes under the feet, not the station
   if(PS.springOn){f.standX=m.hx+m.face*(j.F[0]+j.bF[0])/2;f.shadow.setAttribute('cx',f.standX);}
   if(PS.cine){const up=Math.min(j.F[1],j.bF[1]),k=Math.max(.35,1-up/160);f.shadow.setAttribute('cx',m.hx);f.shadow.setAttribute('rx',52*k);f.shadow.setAttribute('opacity',.34*k);}
+}
+// The Special Effects the striker chose in this blow's exchange. The blow's batch may not hold them all: an effect the
+// engine waited on a person for (Choose Location) was shown in an earlier batch, so the fight's log is read back from
+// the blow's own entry to its exchange's attack.
+function psExchangeFx(cue,striker){
+  const fx=((cue.record&&cue.record.fx)||[]).slice();
+  if(typeof S==='undefined'||!S||!S.logs||!S.fighters)return fx;
+  const logs=S.logs,names={a:S.fighters.a.name,b:S.fighters.b.name};
+  let i=logs.findIndex(l=>l.id===PS.cueFor);if(i<0)return fx;
+  for(i=i-1;i>=0;i--){const l=logs[i];if(pitsStageKind(l,names)==='attack')break;
+    const k=l.meta&&l.meta.actor===striker&&PSTAGE_FX[l.title];if(k&&!fx.includes(k))fx.push(k);}
+  return fx;
 }
 // the stage's own lodged weapon (an Impale drawn at its contact, before the engine's state is shown) merged into the
 // engine's list: one entry per wielder; the stage's let-go wins over the engine's hold
@@ -836,7 +854,7 @@ function psSettle(keepExchange){
     f.anim=null;f.mom=null;f.vel=null;f.plant=null;f.relaxAt=0;f.endPose=null;f.forceLimp=null;if(!keepExchange)f.exPose=null;f.trailOn=false;f.trailPts=[];f.flash=null;f.dropping=false;f.slide=null;f.hx=f.tx;
     if(f.dropEl&&f.look&&f.look.armed){f.dropEl.remove();f.dropEl=null;}
     f.cur={...psRest(f)};}
-  if(PS_MOTION){PS.busyUntil=PS.clock;for(const id of ['a','b']){const f=PS.fig[id];if(!f)continue;f.mEnd=null;f.flag=false;if(PS.M[id]&&f.look)psPlaceM(id);}}
+  if(PS_MOTION){PS.busyUntil=PS.clock;for(const id of ['a','b']){const f=PS.fig[id];if(!f)continue;f.mEnd=null;f.flag=false;f.finishDrop=false;if(PS.M[id]&&f.look)psPlaceM(id);}}
   psClearEffects();{const b=psLayer('ps-banner');if(b)b.className='ps-banner';}if(psFx())psFx().reset();PS.rate=1;psEmit('settle',{});
 }
 // Weapon knocked away or dropped: fly it in an arc, then leave it on the floor
@@ -1409,7 +1427,7 @@ async function psMotionBlow(cue){
   // the move and the defence declared live are kept on the tape and given again.
   const r=pulled?L.withdraw(PS.M,atk.id,PS.clock,{loc,lost,defeated,flow:psReplaying()}):
     psCineBlow(atk.id,{outcome:out,loc,lost,shield:weaponHit?false:shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying(),
-      impale:!!impale&&lost>0&&!strike,held:!!(impale&&impale.held)});
+      impale:!!impale&&lost>0&&!strike,held:!!(impale&&impale.held),fx:psExchangeFx(cue,atk.id)});
   PS.busyUntil=r.end;atk.spent=def.spent=true;
   // (the trip's fall is drawn when the blow's own movement has played out, from the pose it left: written into the blow
   // it overlapped the struck fighter's reaction and the head jumped, measured 47 px in one frame)
@@ -1474,6 +1492,9 @@ async function psMotionBlow(cue){
       }
     }
   }
+  // a finish to the arm (Choose Location): the struck fighter's weapon falls from the hand first, and stays down
+  if(r.drop&&def.look&&def.look.armed&&!def.dropEl){const td=r.drop;
+    psUntil(td).then(()=>{if(def.dropEl)return;def.finishDrop=true;def.look.armed=false;psFlyWeapon(def,0);psEmit('drop',{target:def.id,at:'finish'});}).catch(()=>{});}
   // Impale, let go (left in the wound, or the finishing blow): the hand opens; the weapon stays where it is
   if(r.release&&PS.lodgeAhead[def.id]){await psUntil(r.release);const la=PS.lodgeAhead[def.id];la.held=false;
     PS.fighters.lodged[def.id]=psMergeLodge(PS.fighters.lodged[def.id],la);atk.look.armed=false;psEmit('release',{actor:atk.id});}
@@ -1593,7 +1614,7 @@ function pitsStageSync(){
   if(fresh){psSettle();for(const k of Object.keys(PS.lodge)){PS.lodge[k].remove();delete PS.lodge[k];}
     for(const id of ['a','b']){const f=PS.fig[id];if(f.dropEl){f.dropEl.remove();f.dropEl=null;}f.look=null;}
     PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};if(!psReplaying())PS.cineTape=null;
-    PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.flag=false;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.tripAhead=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
+    PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.flag=false;f.finishDrop=false;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.tripAhead=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
   for(const id of ['a','b']){
     const f=PS.fig[id];f.look=pitsStageLook(view[id]);
     // (the movement stage draws its figures at scale 1: a SIZ scale set here would put every marker placed before the next
@@ -1601,6 +1622,8 @@ function pitsStageSync(){
     f.scale=PS_MOTION&&PS.M[id]?1:f.look.scale;
     // a weapon the blow has already knocked from the hand (drawn at the contact, before the engine's own entry for it
     // is shown) stays out of the hand until the shown state has caught up: it does not jump back and drop again
+    // (a finish to the arm dropped the weapon; the engine does not mark it, the picture keeps it on the floor)
+    if(f.finishDrop)f.look.armed=false;
     if(f.dropAhead){if(!f.look.armed)f.dropAhead=false;else if(V.busy||V.hold)f.look.armed=false;else f.dropAhead=false;}
     if(f.look.armed&&f.dropEl){f.dropEl.remove();f.dropEl=null;}
     // A weapon already on the floor (for example after Show results) stays there.

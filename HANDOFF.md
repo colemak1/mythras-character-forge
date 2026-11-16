@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-16 by Claude (Pits: Impale sticks at the blow; plan for Special Effect finishes)_
+_Last updated: 2026-11-16 by Claude (Pits: finishing blows by Special Effect)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-16 by Claude (Pits: Impale sticks at the blow; plan for S
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+- **Claude, done 2026-11-16 (owner: "go for it"):** finishing blows by Special Effect: Bash, Stun Location, Bleed, and Choose Location by the part (head, leg, arm). Table and status: `docs/pits-animation-direction.md`, "Finishing blows by Special Effect". **Owner:** watch a few finishes and OK the look, or name the moment that looks wrong; then pick the next ones from the table. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): finish a bout with each of Bash, Bleed, Stun Location and Choose Location (Head, an arm, a leg); each has its own finish, and after the arm finish the weapon stays on the floor.
 
 - **Claude, done 2026-11-16 (owner report):** Impale sticks in the wound at the blow's contact (kept hold: hand on the grip; left in: the hand opens), and a finishing Impale has its own finish. **Owner:** choose which Special Effect finishes to build next from the table in `docs/pits-animation-direction.md`, "Finishing blows by Special Effect"; one PR each with a frame sheet. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): an Impale left in, one kept hold of, and a finishing Impale; the weapon is in the wound as the blow lands, never swung through and then placed.
 
