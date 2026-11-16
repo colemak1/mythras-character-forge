@@ -1268,28 +1268,38 @@ async function psMotionCue(cue){
       if(cue.lost>0){psBurst(w,'blood',8+cue.lost*2);psDom(w,'−'+cue.lost,'dmg');psSfx('hit');if(psFx())psFx().impact(w,'hit',cue.lost,me.face);}
       psDom(psWorld(me,me.pts?me.pts.hd:[0,-120]),'Accidental Injury','fx');await psUntil(end);
     }else if(cue.type==='trip'&&tgt&&me){
-      // stand-in until trips have a phrase: a blow at the front leg; if it goes, the fall
+      // the defender's Trip (won on its parry): its own phrase on the cinematic stage, a hook behind the ankle or a sweep
+      // along the floor (L.trip); the spring stage keeps the stand-in, a blow at the front leg
       psDom(psWorld(me,me.pts?me.pts.Sh:[0,-60]),'Trip Opponent','fx');PS.intents={};
-      const r=psCineBlow(me.id,{outcome:'armour',loc:'rleg',lost:0,fall:cue.fell?'sit':false,flow:psReplaying()});
+      const r=L.trip?L.trip(PS.M,me.id,PS.clock,{fell:!!cue.fell,key:PS.cueFor}):
+        psCineBlow(me.id,{outcome:'armour',loc:'rleg',lost:0,fall:cue.fell?'sit':false,flow:psReplaying()});
       PS.busyUntil=r.end;me.spent=tgt.spent=true;
+      if(L.trip)psEmit('move',{actor:me.id,key:PS.cueFor||null,move:r.move,replay:psReplaying()});
       // (the Prone chip waits until the tripped fighter is sat down: Work's check B1, 2026-11-14)
       // (and only if the figure really goes down: the HUD follows the picture, audit CA-01)
       if(cue.fell&&!tgt.mDown&&(!PS.cine||PS.M[tgt.id].down)){tgt.mDown=true;tgt.downAt=r.end;}
-      const c=r.contacts[r.contacts.length-1],w=psW(c.at);await psUntil(c.t);
-      psEmit('contact',{kind:'trip',actor:me.id,target:tgt.id,point:w.map(Math.round)});psBurst(w,'spark',10);psRing(w);
-      await psHitStop(60);
-      if(cue.fell){await psUntil(c.t+380);psDust(tgt);psShake();psPunch(4);psSfx('hit');psBanner('Tripped','crit');psDom(psWorld(tgt,tgt.pts.hd),'Tripped!','fx');}
-      else psDom(psWorld(tgt,tgt.pts.Sh),'Stays up','blk');
+      const c=r.contacts[r.contacts.length-1];
+      if(c){const w=psW(c.at);await psUntil(c.t);
+        psEmit('contact',{kind:'trip',actor:me.id,target:tgt.id,point:w.map(Math.round)});psBurst(w,'spark',10);psRing(w);
+        await psHitStop(60);
+        if(cue.fell){await psUntil(c.t+360);psDust(tgt);psShake();psPunch(4);psSfx('hit');psBanner('Tripped','crit');psDom(psWorld(tgt,tgt.pts.hd),'Tripped!','fx');}
+        else psDom(psWorld(tgt,tgt.pts.Sh),'Stays up','blk');}
       await psUntil(r.end);
     }else if(cue.type==='disarm'&&tgt&&me){
-      // stand-in until disarms have a phrase: the blow meets the weapon and the weapon goes
+      // the defender's Disarm: on the cinematic stage a bind and a wrench (L.disarm), the weapon thrown at the wrench;
+      // the spring stage keeps the stand-in, a blow that meets the weapon
       PS.intents={};
-      const r=psCineBlow(me.id,{outcome:'parried',loc:'rarm',lost:0,flow:psReplaying()});
+      const r=L.disarm?L.disarm(PS.M,me.id,PS.clock,{key:PS.cueFor}):psCineBlow(me.id,{outcome:'parried',loc:'rarm',lost:0,flow:psReplaying()});
       PS.busyUntil=r.end;me.spent=tgt.spent=true;
-      const c=r.contacts[0],w=psW(c.at);await psUntil(c.t);
-      psEmit('contact',{kind:'disarm',actor:me.id,target:tgt.id,point:w.map(Math.round)});
-      psBurst(w,'spark',14);psRing(w);psShake();psSfx('pick');
-      await psHitStop(70);psPunch(5);psBanner('Disarmed','crit');psFlyWeapon(tgt,cue.metres);
+      if(L.disarm)psEmit('move',{actor:me.id,key:PS.cueFor||null,move:r.move,replay:psReplaying()});
+      const cs=r.contacts.length>1?r.contacts:r.contacts.concat(r.contacts);
+      for(let i=0;i<cs.length;i++){
+        const c=cs[i],w=psW(c.at),last=i===cs.length-1;await psUntil(c.t);
+        if(!last){psBurst(w,'spark',10);psSfx('pick');if(psFx())psFx().impact(w,'clash',.6,me.face);continue;}
+        psEmit('contact',{kind:'disarm',actor:me.id,target:tgt.id,point:w.map(Math.round)});
+        psBurst(w,'spark',14);psRing(w);psShake();psSfx('pick');
+        await psHitStop(70);psPunch(5);psBanner('Disarmed','crit');psFlyWeapon(tgt,cue.metres);
+      }
       await psUntil(r.end);
     }else if(cue.type==='stand'&&me){
       me.mDown=false;const end=L.stand(PS.M[me.id],PS.clock,PS.gap);PS.busyUntil=Math.max(PS.busyUntil,end);
@@ -1364,10 +1374,12 @@ async function psMotionBlow(cue){
   else if(defeated||leg||evading){if(!def.mDown)def.downAt=r.contacts.length?r.contacts[0].t:PS.clock;def.mDown=true;}
   if(defeated)def.mEnd='lying';
   const disarm=cue.record&&cue.record.disarm;let flown=false,tripTold=false;
+  // (on the cinematic stage the attacker's Trip is its own hook, straight after the blow: told at the ankle, not here)
+  const hookAfter=!!(trip&&L.trip&&!defeated);
   for(const c of r.contacts){
     await psUntil(c.t);const w=psW(c.at);psHudConditions();
     // the trip is told at the blow's first contact: the same blow sweeps the leg (or fails to)
-    if(trip&&!tripTold){tripTold=true;psEmit('contact',{kind:'trip',actor:atk.id,target:def.id,fell:!!trip.fell,point:w.map(Math.round)});
+    if(trip&&!tripTold&&!hookAfter){tripTold=true;psEmit('contact',{kind:'trip',actor:atk.id,target:def.id,fell:!!trip.fell,point:w.map(Math.round)});
       if(trip.fell){psBanner('Tripped','crit');psDom(psWorld(def,def.pts?def.pts.hd:[0,-120]),'Tripped!','fx');}
       else psDom(psWorld(def,def.pts?def.pts.Sh:[0,-100]),'Resists the trip','blk');}
     // the attacker's Disarm: the weapon leaves the defender's hand at the blow's (first) contact
@@ -1410,6 +1422,20 @@ async function psMotionBlow(cue){
     }
   }
   await psUntil(r.end);
+  if(hookAfter&&PS.M[def.id]&&!PS.M[def.id].down&&!(tripFell&&def.mDown)){
+    // the attacker's Trip: the hook behind the ankle, out of the blow's follow-through
+    const h=L.trip(PS.M,atk.id,PS.clock,{fell:tripFell,after:true,key:PS.cueFor});PS.busyUntil=Math.max(PS.busyUntil,h.end);
+    const c=h.contacts[0];
+    if(c){const w=psW(c.at);await psUntil(c.t);
+      psEmit('contact',{kind:'trip',actor:atk.id,target:def.id,fell:!!trip.fell,point:w.map(Math.round)});psBurst(w,'spark',8);psRing(w);
+      if(tripFell){def.mDown=true;def.downAt=h.end;await psUntil(c.t+360);psDust(def);psShake();psPunch(4);psBanner('Tripped','crit');psDom(psWorld(def,def.pts?def.pts.hd:[0,-120]),'Tripped!','fx');}
+      else psDom(psWorld(def,def.pts?def.pts.Sh:[0,-100]),'Resists the trip','blk');}
+    await psUntil(h.end);
+  }else if(hookAfter&&!tripTold){
+    // (already on the ground from the blow itself: the trip is told, nothing more is drawn)
+    tripTold=true;psEmit('contact',{kind:'trip',actor:atk.id,target:def.id,fell:!!trip.fell,point:psBodyPt(def,'rleg').map(Math.round)});
+    if(trip.fell)psBanner('Tripped','crit');
+  }
   if(tripFell&&!def.mDown&&PS.M[def.id]){def.mDown=true;const e2=L.fall(PS.M[def.id],PS.clock,'sit');def.downAt=e2;PS.busyUntil=Math.max(PS.busyUntil,e2);psDust(def);await psUntil(e2);}
   if(arise&&PS.fig[arise]&&PS.fig[arise].mDown&&!PS.fig[arise].mEnd&&PS.M[arise]){
     PS.fig[arise].mDown=false;const e2=L.stand(PS.M[arise],PS.clock,PS.gap);PS.busyUntil=Math.max(PS.busyUntil,e2);psDust(PS.fig[arise]);await psUntil(e2);

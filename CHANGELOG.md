@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: Trip, Disarm and Press Advantage have their own moves
+
+- **Trip** is drawn as a trip: a hook of the foot behind the ankle, or a low sweep of the weapon along the floor (long weapons, or from the ground). If it works the foot goes out and the fighter sits down hard; if it is resisted, a hop and a catching step. The attacker's Trip is a hook straight out of its blow.
+- **Disarm** (won on a parry) binds on the other weapon, drops under it and flicks it out of the hand; the empty hand is thrown up.
+- **Press Advantage** beats the other's guard aside and drives it back two steps, the point ending at its face.
+- Rules and dice are unchanged. Test: `tests/pits-cine-moves.cjs`. Frame sheets: `docs/pits-visual-checks/cine-trip-*.jpg`, `cine-disarm.jpg`, `cine-press.jpg`.
+
 ## The Pits: result in the arena, recommended move
 
 - The end of a bout is no longer a window over the arena. The dice tray says **Victory**, **Defeat** or **Draw** and who won; the middle box of the command deck shows the finishing injury (figure and words), the round, and the buttons (Rematch or Next opponent, Replay fight, Back to Modes, First Aid in Hardcore). Phones show the same panel in their deck. `?layout=classic` keeps the old window.

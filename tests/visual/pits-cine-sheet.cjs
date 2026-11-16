@@ -4,7 +4,7 @@
 // (psDraw), one frame every STEP ms of the stage clock, into one sheet per case.
 //
 //   node tests/visual/pits-cine-sheet.cjs '<cases json>' [out folder]
-//   a case: {name, weapon, pvpWeapon, shield, pvpShield, outcome, loc, lost, strike, shieldWard, down:'a'|'b', u (fixed
+//   a case: {name, phrase ('trip'|'disarm'|'press'; fell, after for a trip), weapon, pvpWeapon, shield, pvpShield, outcome, loc, lost, strike, shieldWard, down:'a'|'b', u (fixed
 //   choice, 0..1), from, to (ms after the blow), focus ('a' or 'b': crop to that fighter, for looking at a grip)}
 //   env: PITS_URL (default http://localhost:8765/experiments/practice-combat.html), STEP (40), COLS (8), DARK (1)
 // Needs playwright and a static server at the repository root (python3 -m http.server 8765).
@@ -29,7 +29,8 @@ const OUT=process.argv[3]||fs.mkdtempSync(path.join(os.tmpdir(),'pits-cine-sheet
       for(const id of ['a','b'])L.place(PS.M[id],PS.clock,PS.gap,'guard');
       let t=PS.clock+50;
       if(c.down){t=L.fall(PS.M[c.down],t)+200;PS.fig[c.down].mDown=true;}
-      const r=c.withdraw?L.withdraw(PS.M,'a',t,{loc:c.loc||'chest',lost:c.lost||0,defeated:!!c.defeated}):L.blow(PS.M,'a',t,{outcome:c.outcome||'wound',loc:c.loc||'chest',lost:c.lost||0,strike:c.strike||null,shield:!!c.shieldWard,fall:c.fall||false});
+      const r=c.phrase==='trip'?L.trip(PS.M,'a',t,{fell:c.fell!==false,after:!!c.after}):c.phrase==='disarm'?L.disarm(PS.M,'a',t,{}):
+        c.phrase==='press'?{end:L.press(PS.M.a,PS.M.b,t),contacts:[],move:'press'}:c.withdraw?L.withdraw(PS.M,'a',t,{loc:c.loc||'chest',lost:c.lost||0,defeated:!!c.defeated}):L.blow(PS.M,'a',t,{outcome:c.outcome||'wound',loc:c.loc||'chest',lost:c.lost||0,strike:c.strike||null,shield:!!c.shieldWard,fall:c.fall||false});
       if(L.fixChoices)L.fixChoices(null);
       window.__sheet={t,r};
       return {t,end:r.end,move:r.move,contacts:r.contacts.map(k=>[k.t-t,k.kind]),w:S.fighters.a.weapon+' / '+S.fighters.b.weapon};
@@ -50,7 +51,7 @@ const OUT=process.argv[3]||fs.mkdtempSync(path.join(os.tmpdir(),'pits-cine-sheet
       const hit=info.contacts.find(k=>k[0]===dt);shots.push({f,label:(dt>=0?'+':'')+dt+' ms'+(hit?' · '+hit[1]:'')});
     }
     const sheet=await b.newPage({viewport:{width:COLS*240,height:600}});
-    await sheet.setContent('<body style="margin:0;background:#fff;font:12px sans-serif"><div style="padding:6px 8px;font-weight:bold">'+c.name+' — '+info.w+' — '+(c.outcome||'wound')+' at the '+(c.loc||'chest')+' — move '+info.move+'</div><div style="display:grid;grid-template-columns:repeat('+COLS+',240px)">'+
+    await sheet.setContent('<body style="margin:0;background:#fff;font:12px sans-serif"><div style="padding:6px 8px;font-weight:bold">'+c.name+' — '+info.w+' — '+(c.phrase||((c.outcome||'wound')+' at the '+(c.loc||'chest')))+' — move '+info.move+'</div><div style="display:grid;grid-template-columns:repeat('+COLS+',240px)">'+
       shots.map(s=>'<figure style="margin:0;border:1px solid #ccc"><img src="data:image/png;base64,'+fs.readFileSync(s.f).toString('base64')+'" style="width:240px;display:block"><figcaption style="padding:2px 4px'+(s.label.includes('·')?';background:#fde68a':'')+'">'+s.label+'</figcaption></figure>').join('')+'</div></body>');
     const out=path.join(OUT,c.name+'.png');await sheet.screenshot({path:out,fullPage:true});await sheet.close();
     for(const s of shots)fs.unlinkSync(s.f);

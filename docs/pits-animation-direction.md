@@ -22,7 +22,12 @@ The owner, after watching a hand-animated stick-figure fight: "I'm really not li
 
 **Tests.** `tests/pits-cine.cjs` (CI): every weapon, outcome and location (1,309 exchanges): bodies possible, nothing under the floor, the weapon within 3 units of every contact at its time; hips never nearer than 80 and nothing jumps; a bigger wound throws further; the last blow leaves the loser flat and the winner standing; a declared action moves, then holds without drift; the evade to the ground, fighting from the ground, getting up; a bout replays identically and nobody takes the same stance twice running; range, Press Advantage, yield, the snap to a result.
 
-**Checked how.** Frame by frame from a real browser with the clock stepped (sword, spear against sword and shield, greatsword against dagger; live and replay; 1600 and 1280 wide, a 390 phone, Light and Dark). Nobody but Claude has watched it at speed: **the owner's eye is the test.**
+**Checked how.** Frame by frame from a real browser with the clock stepped (sword, spear against sword and shield, greatsword against dagger; live and replay; 1600 and 1280 wide, Light and Dark; phone width is not a target for the Pits, owner 2026-11-16). Nobody but Claude has watched it at speed: **the owner's eye is the test.**
+
+**Trip, Disarm and Press Advantage (batch (a), 2026-11-16; waiting for the owner's OK on the sheets).** Each is now a phrase of its own in `pits-cine.js`, not a stand-in blow; tests `tests/pits-cine-moves.cjs`. Sheets: `docs/pits-visual-checks/cine-trip-hook.jpg`, `cine-trip-sweep-longspear.jpg`, `cine-trip-resisted.jpg`, `cine-disarm.jpg`, `cine-press.jpg`.
+- *Trip* (`trip()`): a **hook** (knee up, the foot whips round behind the other's front ankle) or a **sweep** (dropped low, the weapon scythes along the floor; always for a long shaft or from the ground). Worked: the foot is kicked up, the body tips back and sits down hard. Resisted: a hop on the planted leg, arms out, a catching step back. The defender's Trip (won on a parry) is this phrase; the attacker's Trip is a hook straight out of its blow's follow-through, told at the ankle.
+- *Disarm* (`disarm()`): a small cock, the blade binds on the other's weapon near the hand, drops under it and flicks up hard; the weapon leaves at the flick, the empty hand is thrown up and back, a step back to guard.
+- *Press Advantage* (`press()`): a beat knocks the other's guard off line, then two steps of drive; the other backs off, guard low on the first step and back up on the second, the point ending at its face.
 
 **The look is locked (owner, 2026-11-16).** `tests/pits-cine-look.cjs` records every move's joints, contact times and end in the cases the audit (`docs/pits-cinematic-bug-audit-20261115.md`) does not call wrong. A change to it needs the owner's OK, stated in the PR.
 
@@ -34,7 +39,7 @@ The owner, after watching a hand-animated stick-figure fight: "I'm really not li
 **Known limits.**
 - Flexible weapons (flail, whip, net) are swung as rigid cuts; a shield is a disc.
 - On the ground a fighter has two poses (propped, flat) and attacks from one knee.
-- Trip, Disarm and Press Advantage have no choreography of their own yet (a blow at the leg, a parried blow, a point held at the face).
+- The attacker's Disarm is still drawn by its blow (the weapon leaves the hand at the contact); only the defender's Disarm has the bind and wrench.
 - A thrust leaves a curved smear when the point swings into line.
 - On a short screen with a tall dice tray the heads can touch the tray while the scene is held.
 - With reduced motion the effects are off and movements jump to their ends, as before.
