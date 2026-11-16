@@ -253,7 +253,9 @@ function toV(m,Q,base,f){
 }
 const other=m=>m.pair[m.id==='a'?'b':'a'];
 // deterministic choices: the same bout replays the same way, and no two bouts are alike
-function rng(pair){let a=(pair.seed+pair.n*0x9E3779B1)|0;pair.n++;
+// (tests only: every choice made with one fixed value, so a move can be found by name whatever the seed schedule)
+let FIXED=null;
+function rng(pair){if(FIXED!=null){pair.n++;const u=FIXED;return ()=>u;}let a=(pair.seed+pair.n*0x9E3779B1)|0;pair.n++;
   return ()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 const pick=(r,list)=>list[Math.min(list.length-1,Math.floor(r()*list.length))];
 
@@ -907,7 +909,7 @@ function speed(m,t){
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
 const api={supports,fighter,gap,station,place,recover,intent,blow,fall,stand,lower,yieldTo,press,react,pose,
-  joints,sample,speed,sliding,takeFx,profile,key,cut,POSE,keep:n=>{KEEP=n;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
+  joints,sample,speed,sliding,takeFx,profile,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
