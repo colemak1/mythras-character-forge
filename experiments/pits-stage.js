@@ -120,7 +120,8 @@ function pitsStageLook(f){
   const out=loc=>(f.disabled||[]).includes(loc)&&!(f.partialLimbs&&f.partialLimbs[loc]);
   const parts={};
   for(const [name,key] of Object.entries(PSTAGE_LOCS))parts[key]=level(name);
-  const wk=pitsStageWeaponKind(f.weapon,w.reach);
+  // (with the engine's handedness: the movement holds the weapon in one hand or two as the rules say, CA-05)
+  const wk={...pitsStageWeaponKind(f.weapon,w.reach),hands:w.twoHanded?2:1};
   return {weapon:wk.kind,wk,swap:hand==='Left Arm',
     armed:!f.disarmed,prone:!!f.prone,parts,shield:!!f.shield&&f.shield!=='none'&&!f.shieldLost,
     // which shield (the engine's key: buckler, heater, kite...), so it is drawn and meets blows at its own size
@@ -573,14 +574,17 @@ function psPaint(f,L,g,w1,dx,lift,pose,now,blen){
   const show=L.armed&&!f.dropping;
   for(const k of ['shaft','guard','knob','wh','wh2','wire'])e[k].style.display='none';
   if(show){
-    const kind=L.wk.kind,len=blen||L.wk.len;tip=psAdd(hand,psDir(w1,len));
+    // (what is drawn of the weapon: the extent the movement aims and lands with, PitsCine.extent; blen is the drawn end
+    // the movement gives, shorter where the point rests on the floor)
+    const kind=L.wk.kind,ex=typeof PitsCine!=='undefined'&&PitsCine.extent?PitsCine.extent(L.wk):{from:kind==='staff'?-30:/spear|trident|polearm/.test(kind)?-36:0,to:kind==='staff'?L.wk.len-30:L.wk.len};
+    const len=blen||ex.to;tip=psAdd(hand,psDir(w1,len));
     const perp=psDir(w1+90,1),at=(d)=>psAdd(hand,psDir(w1,d));
     e.shaft.style.display='';e.shaft.setAttribute('class','ps-shaft'+(L.wk.thin?' thin':''));
     if(kind==='blade'){
-      ln(e.shaft,hand,tip);const g1=at(10);
+      ln(e.shaft,at(ex.from),tip);const g1=at(10);
       ln(e.guard,[g1[0]-perp[0]*9,g1[1]-perp[1]*9],[g1[0]+perp[0]*9,g1[1]+perp[1]*9]);e.guard.style.display='';
     }else if(kind==='spear'||kind==='trident'||kind==='polearm'){
-      ln(e.shaft,at(-36),tip);e.shaft.setAttribute('class','ps-shaft ps-wood');
+      ln(e.shaft,at(ex.from),tip);e.shaft.setAttribute('class','ps-shaft ps-wood');
       const a=psAdd(tip,psDir(w1,kind==='polearm'?20:24));
       e.wh.setAttribute('points',psPts([a,[tip[0]+perp[0]*6,tip[1]+perp[1]*6],[tip[0]-perp[0]*6,tip[1]-perp[1]*6]]));e.wh.style.display='';
       if(kind==='trident'){const p1=at(len-26),p2=psAdd(p1,psDir(w1,26));
@@ -588,12 +592,12 @@ function psPaint(f,L,g,w1,dx,lift,pose,now,blen){
         e.wh2.setAttribute('points',psPts([psAdd(p2,[-perp[0]*9,-perp[1]*9]),[p1[0]-perp[0]*9,p1[1]-perp[1]*9],[p1[0]-perp[0]*7,p1[1]-perp[1]*7]]));e.wh2.style.display='';}
       if(kind==='polearm'){const a2=psAdd(at(len-26),[perp[0]*18,perp[1]*18]);
         e.wh2.setAttribute('points',psPts([at(len-4),at(len-34),a2]));e.wh2.style.display='';}
-    }else if(kind==='staff'){ln(e.shaft,at(-30),at(len-30));e.shaft.setAttribute('class','ps-shaft ps-wood');}
+    }else if(kind==='staff'){ln(e.shaft,at(ex.from),tip);e.shaft.setAttribute('class','ps-shaft ps-wood');}
     else if(kind==='axe'){
-      ln(e.shaft,hand,tip);e.shaft.setAttribute('class','ps-shaft ps-wood');
+      ln(e.shaft,at(ex.from),tip);e.shaft.setAttribute('class','ps-shaft ps-wood');
       const a=at(len-4);e.wh.setAttribute('points',psPts([a,[a[0]+perp[0]*20,a[1]+perp[1]*20],at(len-26)]));e.wh.style.display='';
     }else if(kind==='club'||kind==='pick'){
-      ln(e.shaft,hand,tip);e.shaft.setAttribute('class','ps-shaft ps-wood');
+      ln(e.shaft,at(ex.from),tip);e.shaft.setAttribute('class','ps-shaft ps-wood');
       if(kind==='club'){e.knob.setAttribute('cx',tip[0]);e.knob.setAttribute('cy',tip[1]);e.knob.setAttribute('r',len>100?13:9);e.knob.style.display='';}
       else{e.wh.setAttribute('points',psPts([psAdd(tip,psDir(w1,12)),[tip[0]+perp[0]*8,tip[1]+perp[1]*8],[tip[0]-perp[0]*8,tip[1]-perp[1]*8]]));e.wh.style.display='';}
     }else if(kind==='chain'||kind==='whip'||kind==='net'){
@@ -1167,7 +1171,7 @@ function psMotionFigs(){
     // (the cinematic stage keeps each figure, but what the engine changed is passed on: a switched weapon hand, so
     // arm targets are the drawn arms, CL-01; another weapon, so aim and contact use the drawn one)
     if(PS.springOn&&m){
-      if(PS.cine){m.swap=!!f.look.swap;if(m.weapon.len!==wk.len||m.weapon.key!==wk.kind){m.weapon={key:wk.kind,len:wk.len};m.wk=wk;m.prof=PL().profile(wk);}
+      if(PS.cine){m.swap=!!f.look.swap;if(m.weapon.len!==wk.len||m.weapon.key!==wk.kind||(m.wk&&m.wk.hands)!==wk.hands||m.shield!==!!f.look.shield){m.weapon={key:wk.kind,len:wk.len};m.wk=wk;m.shield=!!f.look.shield;m.prof=PL().profile(wk);if(m.shield)m.prof.two=0;}
         m.shield=!!f.look.shield;if(f.look.shieldKey)m.shieldKey=f.look.shieldKey;}
       continue;
     }
