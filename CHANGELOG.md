@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a failed parry you can see
+
+- When a parry is rolled and fails, the defender is now seen trying it (HANDOFF batch (c)). It used to keep its guard where it was and only flinch, so the hit didn't look earned.
+- Three ways, chosen per blow; the replay repeats the same one:
+  - **Late:** the guard sweeps toward the blow and is still on its way when the blow lands.
+  - **Wrong line:** the guard has gone high for a blow to the legs, or low for one to the head, and only starts back as the blow lands.
+  - **Shield short:** the shield is thrust out on the other line and the blow comes in round its rim.
+- No steel meets: the attempt always stays clear of the attacking weapon, so it never looks like a parry that worked. On the ground, the arm or shield comes up late.
+- Rules and dice are unchanged. Tests: `tests/pits-cine-parry.cjs` (1,680 failed parries); browser check in `tests/visual/pits-spring-scripted.cjs`.
+
 ## The Pits: withdrawing an Impale
 
 - Pulling a weapon out of a wound is now one pull (owner, 2026-11-16: "Withdraw weapon looks horrible"). It used to look like a second stab: the weapon was pushed right through the body, and the tear-out flashed like a new hit with blood thrown out the far side.
