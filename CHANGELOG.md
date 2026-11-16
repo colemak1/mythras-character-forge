@@ -16,6 +16,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 - Weapons of equal Reach are unchanged. Rules and dice are unchanged; the tags follow the engine's engagement rules (Core p.106).
 - The range label under the feet is now dark ink, so it can be read on the light floor.
 - Tests: `tests/pits-cine-range.cjs`.
+## The Pits: a failed parry you can see
+
+- When a parry is rolled and fails, the defender is now seen trying it (HANDOFF batch (c)). It used to keep its guard where it was and only flinch, so the hit didn't look earned.
+- Three ways, chosen per blow; the replay repeats the same one:
+  - **Late:** the guard sweeps toward the blow and is still on its way when the blow lands.
+  - **Wrong line:** the guard has gone high for a blow to the legs, or low for one to the head, and only starts back as the blow lands.
+  - **Shield short:** the shield is thrust out on the other line and the blow comes in round its rim.
+- No steel meets: the attempt always stays clear of the attacking weapon, so it never looks like a parry that worked. On the ground, the arm or shield comes up late.
+- Rules and dice are unchanged. Tests: `tests/pits-cine-parry.cjs` (1,680 failed parries); browser check in `tests/visual/pits-spring-scripted.cjs`.
 
 ## The Pits: withdrawing an Impale
 

@@ -7,6 +7,7 @@
 //   - Impale on the cinematic stage: the weapon is in the wound from the blow's contact
 //   - a finishing blow with Choose Location: its own finish (the arm: the weapon falls and stays down)
 //   - a finishing blow with the attacker's Trip or Disarm: its own finish (the Disarm's weapon stuck in the floor)
+//   - a parry rolled and failed, the blow landing: drawn as a parry tried (late or on the wrong line), on the cinematic stage
 //
 //   node tests/visual/pits-spring-scripted.cjs
 const assert=require('node:assert/strict');
@@ -47,7 +48,7 @@ async function bout(browser,sc){
     else{if(attacks++>=(sc.attacks||1))break;await click('[data-act=attack]');}
     await sleep(100);}
   await sleep(1200);
-  const out=await p.evaluate(()=>({rec:window.__psRecord.map(r=>({type:r.type,kind:r.kind||r.outcome||r.finish||'',actor:r.actor,c:Math.round(r.c||0)})),
+  const out=await p.evaluate(()=>({rec:window.__psRecord.map(r=>({type:r.type,kind:r.kind||r.outcome||r.finish||'',actor:r.actor,c:Math.round(r.c||0),tried:r.tried||null})),
     lodged:document.querySelectorAll('#pitsStage .ps-lodged').length,dropped:document.querySelectorAll('#pitsStage .ps-dropped').length,
     dropT:(document.querySelector('#pitsStage .ps-dropped')||{getAttribute:()=>''}).getAttribute('transform'),
     prone:{a:!!prototypeCombat.state().fighters.a.prone,b:!!prototypeCombat.state().fighters.b.prone},
@@ -182,6 +183,14 @@ async function bout(browser,sc){
     const i=r.rec.findIndex(x=>x.type==='contact'&&x.kind==='miss'&&x.actor==='a'),j=r.rec.findIndex(x=>x.type==='intent'&&x.actor==='b'&&x.kind==='attack');
     assert(i>=0&&j>=0,'both were drawn');assert(i<j,'the miss came first');
     assert(r.rec[i].c<=r.rec[j].c,'and earlier on the stage clock');
+  });
+  // (batch (c), owner 2026-11-16: "a visible failed parry")
+  await T('a failed parry is drawn tried, and the blow lands (cinematic stage)',async()=>{
+    const r=await bout(browser,{url:BASE,react:['parry'],rolls:{'a:Attack':10,'b:Parry':99},attacks:1});
+    assert.deepEqual(r.errors,[]);
+    const mv=r.rec.find(x=>x.type==='move'&&x.actor==='a');
+    assert(r.rec.some(x=>x.type==='contact'&&x.kind==='wound'),'the blow landed: '+JSON.stringify(r.rec));
+    assert(mv&&['late','wrong'].includes(mv.tried),'the parry is drawn tried: '+JSON.stringify(mv));
   });
   await browser.close();console.log(pass+' passed, '+fail+' failed');process.exit(fail?1:0);
 })();

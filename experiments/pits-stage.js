@@ -1229,7 +1229,7 @@ function psCineBlow(id,s){
   const key=PS.cueFor||null,tape=psCineTape(),kept=key!=null&&psReplaying()?tape.by[key]:null;
   const r=L.blow(PS.M,id,PS.clock,{...s,key:key==null?undefined:key,move:kept?kept.move:undefined,ward:kept?kept.ward:undefined});
   if(key!=null&&!psReplaying())tape.by[key]={move:r.move,ward:r.ward||null};
-  psEmit('move',{actor:id,key,move:r.move,ward:r.ward||null,style:r.style||null,finish:r.finish||null,replay:psReplaying()});
+  psEmit('move',{actor:id,key,move:r.move,ward:r.ward||null,style:r.style||null,finish:r.finish||null,tried:r.tried||null,replay:psReplaying()});
   return r;
 }
 // Range stances on the cinematic stage (owner, 2026-11-16): who the range favours, from the engine's engagement
@@ -1439,6 +1439,9 @@ async function psMotionBlow(cue){
   const arise=(cue.record&&cue.record.arise)||null;
   const evading=((px.react||ex.react)==='evade'||out==='evaded')&&!px.rangeIntercept&&arise!==def.id;
   const tried=evading&&/^(evaded|miss|fumble)$/.test(out);
+  // a parry that was rolled and failed, the blow landing (batch (c)): drawn tried, late or on the wrong line
+  const pReact=px.react||ex.react,pGrade=px.reactGrade!=null?px.reactGrade:ex.reactGrade;
+  const parryTried=!weaponHit&&!pulled&&pReact==='parry'&&pGrade!=null&&pGrade<2&&/^(wound|armour|zero)$/.test(out)?(reactTool==='shield'&&def.look.shield?'shield':'parry'):null;
   // the attacker's Trip, carried by this blow (FR-03): one attack, and the defender goes down from it if the trip worked
   const impale=(!pulled&&!weaponHit&&cue.record&&cue.record.impale)||null;
   const trip=(cue.record&&cue.record.trip)||null,tripFell=!!(trip&&trip.fell&&!defeated);def.tripAhead=false;
@@ -1451,7 +1454,7 @@ async function psMotionBlow(cue){
   // (a weapon left in the wound is taken hold of first; one kept hold of is pulled at once)
   const lodgedBy=pulled?((PS.fighters.lodged&&PS.fighters.lodged[def.id])||[]).find(w=>w.holder===atk.id):null;
   const r=pulled?L.withdraw(PS.M,atk.id,PS.clock,{loc,lost,defeated,flow:psReplaying(),held:lodgedBy?!!lodgedBy.held:true}):
-    psCineBlow(atk.id,{outcome:out,loc,lost,shield:weaponHit?false:shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying(),
+    psCineBlow(atk.id,{outcome:out,loc,lost,shield:weaponHit?false:shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,tried:parryTried,flow:psReplaying(),
       impale:!!impale&&lost>0&&!strike,held:!!(impale&&impale.held),fx:psExchangeFx(cue,atk.id).concat(
         trip&&trip.fell?['trip']:[],cue.record&&cue.record.disarm&&cue.record.disarm.actor===atk.id?['disarm']:[],
         // (Blind Opponent is a defender's effect: a blinded loser is drawn blind on the blow that ends it)

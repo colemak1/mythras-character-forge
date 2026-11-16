@@ -574,6 +574,11 @@ function blow(M,aid,t,s){
     key(D,t0+200,{...wardPose(D,H==='high'?'wardLow':'wardHigh'),hip:[D.lastP.hip[0]-4,D.lastP.hip[1]]},{e:'out5',plant:'bf'});
     hold(D,tc);
     T=partAt(D,tc,loc);
+  }else if(s.tried&&!dodge&&!stopped){
+    // a parry that failed (batch (c), owner 2026-11-16): it is seen tried, late or on the wrong line, and the blow
+    // gets there first; no steel meets
+    const tr=parryTried(D,r,t,tc,{H,loc,move,shield:s.tried==='shield'&&!!D.shield,warded:s.ward||warded});chosen.tried=tr;
+    T=partAt(D,tc,loc);
   }else{
     // (the replay: a parry that was declared and failed is still seen tried, as it was live: CL-02)
     if(s.flow&&s.ward&&!D.down)key(D,t+100,wardPose(D,s.ward),{e:'out',plant:'bf'});
@@ -738,6 +743,55 @@ function blow(M,aid,t,s){
   const out={tc:contacts.length?contacts[0].t:tc,contacts,end:s.flow&&!s.defeated?Math.min(end,tHit+(dodge?250:290)):end,move,
     ward:warded,leap,...chosen,finish:A.finished||null,release:A.release||null,drop:A.dropAt||null};A.finished=null;A.release=null;A.dropAt=null;
   return out;
+}
+
+// A failed parry (batch (c), owner 2026-11-16: "a visible failed parry"). The defender goes for the blow, but the
+// blow gets there first and no steel meets. Seen from the side, a guard set straight in front of the body would
+// cross any blow to the body (and read as a parry), so the attempt is made from the line the blow is not on: above
+// a blow that comes up or along to the legs, below one that comes down. Three ways, chosen per blow (the replay
+// repeats them):
+//  late:  a sweep from the far line toward the blow, still travelling, fast, at the contact.
+//  wrong: the guard has gone to the other line and is set there; it only starts back as the blow lands.
+//  short: the shield is thrust out on the other line and the blow comes in round its rim.
+// On the ground the arm (or the shield) comes up late. Returns the way chosen.
+function parryTried(D,r,t,tc,o){
+  const {H,shield,move}=o;
+  // part of the way from one pose to another; the arms as angles (the poses written so far keep angles, not hands)
+  const angles=P=>{const Q={...P};if(P.h){const a=armAngles(P.h,P.eb||0);Q.ua=a.ua;Q.fa=a.fa;}
+    if(P.o){const a=armAngles(P.o,P.oeb||0);Q.oua=a.ua;Q.ofa=a.fa;}delete Q.h;delete Q.o;delete Q.eb;delete Q.oeb;return Q;};
+  const lerpP=(A0,B0,u)=>{const A=angles(A0),B=angles(B0),out={};for(const k of Object.keys(B)){const a=A[k],b=B[k];
+    out[k]=Array.isArray(b)?b.map((v,i)=>lerp(Array.isArray(a)?a[i]:v,v,u)):typeof b==='number'&&typeof a==='number'?
+      (ANG.includes(k)?lerp(a,near(b,a),u):lerp(a,b,u)):b;}return out;};
+  if(D.down){
+    hold(D,tc-130);
+    // (the arm propping the body comes off the floor and forward, low: the blow lands above it as it arrives)
+    const up=shield?{o:[28,2],head:-8}:{h:[30,H==='low'?-8:4],eb:1,w:H==='low'?-30:70,head:-8};
+    key(D,tc,up,{e:'in',plant:'both'});
+    return 'late';
+  }
+  // the far line: high over a blow to the legs or one that rises; low under a blow that comes down to the head or body
+  // (a lunge comes along the line, so the guard goes over it, except at the head; an overhand stab comes down)
+  const high=H==='low'||(H!=='high'&&(move==='rise'||move==='lunge'));
+  const right=shield?'wardShield':H==='high'?'wardHigh':H==='low'?'wardLow':'wardMid';
+  // (further off the line than a ward: the hand up by the head and the blade back over it, or dropped by the hip
+  // and pointed at the floor)
+  let far=high?{...wardPose(D,'wardHigh'),h:[22,40],eb:1,w:D.prof.two?160:150}:{...wardPose(D,'wardLow'),h:[18,-38],w:-100,lean:16};
+  if(shield)far={...wardPose(D,'wardShield'),o:high?[24,30]:[30,-40],head:high?-14:-2};
+  // a declared guard already on the far line stays there
+  const set=o.warded&&o.warded===(high?'wardHigh':'wardLow');
+  const way=shield?'short':set||r()<.34?'wrong':'late';
+  if(way==='wrong'){
+    hold(D,tc-240);
+    key(D,tc-60,{...far,hip:[D.lastP.hip[0]-4,D.lastP.hip[1]-2]},{e:'out5',plant:'bf'});
+    // the eyes see it too late: the guard starts back to the open line as the blow lands
+    key(D,tc,lerpP(D.lastP,wardPose(D,right),.12),{e:'in',plant:'both'});
+    return 'wrong';
+  }
+  // late (or a shield thrust out short): a sweep through the far line toward the blow, still on its way at the contact
+  hold(D,tc-170);
+  key(D,tc-80,far,{e:'io',plant:'bf'});
+  key(D,tc,lerpP(D.lastP,wardPose(D,right),.2),{e:'in',plant:'bf'});
+  return way;
 }
 
 // the defender gets out of the way
