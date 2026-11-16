@@ -316,6 +316,12 @@ test('an Impale is carried by its blow, with whether the weapon is kept hold of 
  hb=beat([atk,lod,hit,left],2);assert.deepEqual(hb.cue.record.impale,{held:false},'left in the wound');
  assert.equal(beat([atk,hit],1).cue.record.impale,null,'no Impale, nothing lodged');
 });
+test('a blow carries the Special Effects its striker chose (they choose a finish)',()=>{
+ const atk=ATK(),bl=B('Bleed','Bleeding is tested after penetrating damage.',{actor:'a'}),ch=B('Choose Location','Kethan selects Head before damage is rolled.',{actor:'a',target:'b',location:'Head'}),
+  other=B('Stun Location','x',{actor:'b'}),hit=B('Kethan hits Head','x',{actor:'a',impact:{target:'b',location:'Head',hpLost:9},px:{total:9}});
+ assert.deepEqual(beat([atk,bl,ch,other,hit],4).cue.record.fx,['bleed','choose'],'the striker\'s own, in order, not the other fighter\'s');
+ assert.deepEqual(beat([atk,hit],1).cue.record.fx,[]);
+});
 test('a beat folded into a blow starts no movement of its own (owner, 2026-11-16: disarms drawn twice)',()=>{
  const st=fs.readFileSync(path.join(root,'experiments/pits-stage.js'),'utf8');
  // (the else used to belong to the trip test only, so a consumed Disarm ran its own cue after the blow)

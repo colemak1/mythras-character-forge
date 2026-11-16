@@ -141,4 +141,25 @@ test('the stage draws the Impale at its contact and lets go at the release',()=>
   assert(/if\(r\.release&&PS\.lodgeAhead\[def\.id\]\)\{await psUntil\(r\.release\);/.test(st),'and let go at the release');
 });
 
+// Finishes chosen by the final blow's Special Effect (owner, 2026-11-16: "go for it" on Bash, Stun Location, Bleed and
+// Choose Location by the part). Each: bodies stay possible and on the floor, nothing jumps, the struck fighter ends down,
+// and the effect names the finish.
+test('a finishing blow takes its finish from the Special Effect',()=>{
+  const cases=[[['bash'],'chest','bashed'],[['stun'],'head','stunned'],[['bleed'],'abdomen','bled'],[['choose'],'head','headshot'],
+    [['choose'],'rleg','legout'],[['choose'],'larm','armdrop'],[['choose'],'chest',null],[['bleed','bash'],'chest','bashed']];
+  for(const w of ['sword','rapier','greatsword','mace','spear'])for(const [fx,loc,want] of cases){
+    const M=pair(w,'sword',.4),what=w+' '+fx.join('+')+' at the '+loc;
+    const r=C.blow(M,'a',100,{outcome:'wound',loc,lost:12,defeated:true,fx});C.fixChoices(null);
+    if(want)assert.equal(r.finish,want,what);else assert(!/bashed|stunned|bled|headshot|legout|armdrop/.test(r.finish),what+': no effect finish');
+    assert(M.b.down,what+': the struck fighter ends down');
+    if(want==='armdrop')assert(r.drop>r.contacts[0].t,what+': the weapon falls after the blow');else assert.equal(r.drop,null,what);
+    let prev=null;
+    for(let t=100;t<=r.end;t+=4){possible(M.a,t,what);possible(M.b,t,what);
+      const b=C.joints(M.b,t);if(prev)for(const k of ['P','Hd'])assert(dist(b[k],prev[k])<46,what+': '+k+' jumps at '+t);prev=b;}
+    // the two do not end in each other
+    const ja=C.joints(M.a,r.end),jb=C.joints(M.b,r.end);
+    assert(Math.abs(jb.Hd[0]-ja.F[0])>30&&Math.abs(jb.Hd[0]-ja.bF[0])>20,what+': the fallen head is not at the winner\'s feet');
+  }
+});
+
 console.log(passed+' passed');

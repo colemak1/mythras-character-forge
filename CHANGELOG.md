@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: finishing blows by Special Effect
+
+- A blow that ends the fight now finishes differently depending on the Special Effect chosen for it (owner, 2026-11-16):
+  - **Bash:** thrown back through the air, a heavy landing, a skid and a bounce.
+  - **Stun Location:** the struck part snaps, a dazed sway, then down to the knees and onto the face.
+  - **Bleed:** the fighter stays up a moment, hand pressed to the wound and bleeding, then kneels and falls.
+  - **Choose Location:** the head snaps back and the body turns and drops; a leg goes out from under; an arm drops the weapon first.
+- Without one of these effects, the usual finishes stay. Rules and dice are unchanged.
+- Tests: `tests/pits-cine-moves.cjs`, `tests/pits-stage.cjs`; browser checks in `tests/visual/pits-spring-scripted.cjs`.
+
 ## The Pits: Impale sticks at the blow
 
 - An Impale stays in the wound from the moment it lands. Kept hold, the hand stays on the grip; left in, the hand lets go and the fighter steps back. Before, the blow swung through and the weapon then appeared in the wound (owner, 2026-11-16).

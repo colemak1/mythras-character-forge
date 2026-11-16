@@ -30,19 +30,19 @@ The owner, after watching a hand-animated stick-figure fight: "I'm really not li
 
 | Effect on the final blow | Finish |
 |---|---|
-| Bash | knocked off the feet: thrown back through the air, a heavy landing and a roll to a stop |
-| Bleed | a quick draw-cut across; the fighter stands holding the wound, then kneels, then topples |
-| Stun Location | the struck part snaps, a dazed wobble, and the fighter drops straight down, limp |
+| Bash (**built**, `bashed`) | knocked off the feet: thrown back through the air, a heavy landing on the back, a skid and a bounce (a roll was tried; the rig turned the head through the floor) |
+| Bleed (**built**, `bled`) | the cut does not drop the fighter at once: it stands with the off hand pressed to the wound, bleeding, then kneels, then falls on its face |
+| Stun Location (**built**, `stunned`) | the struck part snaps, a dazed sway with the arms hanging, then straight down to the knees and onto the face |
 | Blind Opponent | a hand to the eyes, a staggering half-step, a wild swing at nothing, then a fall |
 | Maximise Damage, Bypass Armour, Sunder | one heavy blow; armour cracks (sparks, a piece flies) and the fighter is driven to the knees, then over |
-| Choose Location | by the part: head, a spin and a drop; leg, the leg goes and the fighter falls sideways; arm, the weapon falls first |
+| Choose Location (**built**: `headshot`, `legout`, `armdrop`) | by the part: head, it snaps back, the body turns and drops; leg, the leg goes, down on the backside, then flat; arm, the weapon falls from the hand first (the stage drops it), the arm clutched, knees, face. Chest and abdomen keep the usual finishes |
 | Circumvent Parry | the blade slips round the raised guard (a feint, a turn of the wrist), the guard still up as the fighter falls |
 | Trip Opponent | the sweep, then a downward blow to the fighter on the floor |
 | Disarm Opponent | the weapon spins away and sticks in the floor; the finishing blow comes as the fighter looks after it |
 | Damage Weapon | the fighter's weapon or shield breaks in two as it falls |
 | Entangle | yanked off the feet by the caught limb |
 
-**Owner:** pick the three or four that matter most; one PR each, with a frame sheet for your OK.
+Built 2026-11-16 (owner: "go for it"): Bash, Stun Location, Bleed, Choose Location. One effect wins if several were chosen: Bash, then Stun, then Bleed, then Choose Location (Impale before all). The effects come from the blow's exchange (`record.fx`, and the fight's log back to the exchange's attack, `psExchangeFx`, since a location picked by a person is shown in an earlier batch). A fighter already on the floor keeps the 'ground' finish. Tests: `tests/pits-cine-moves.cjs` (every finish on five weapons: possible bodies, no jumps, ends down, not at the winner's feet); browser: `tests/visual/pits-spring-scripted.cjs`. Frame sheets: `docs/pits-visual-checks/cine-finish-*.jpg` (bash, stun, bleed, head, leg, arm; the arm sheet does not show the weapon falling, which the stage draws); made with `node tests/visual/pits-cine-sheet.cjs '[{"name":"fin-bleed","fx":["bleed"],"defeated":true,"lost":12,"loc":"abdomen","to":2400}]'`. **Owner:** OK the look or name what is wrong; the rest of the table waits for your pick.
 
 **Trip, Disarm and Press Advantage (batch (a), 2026-11-16; waiting for the owner's OK on the sheets).** Each is now a phrase of its own in `pits-cine.js`, not a stand-in blow; tests `tests/pits-cine-moves.cjs`. Sheets: `docs/pits-visual-checks/cine-trip-hook.jpg`, `cine-trip-sweep-longspear.jpg`, `cine-trip-resisted.jpg`, `cine-disarm.jpg`, `cine-press.jpg`.
 - *Trip* (`trip()`): a **hook** (knee up, the foot whips round behind the other's front ankle) or a **sweep** (dropped low, the weapon scythes along the floor; always for a long shaft or from the ground). Worked: the foot is kicked up, the body tips back and sits down hard. Resisted: a hop on the planted leg, arms out, a catching step back. The defender's Trip (won on a parry) is this phrase; the attacker's Trip is a hook straight out of its blow's follow-through, told at the ankle.
