@@ -542,7 +542,7 @@ function psDrawMotion(f,L,now){
   let Lp=L;const held=psHeldLodge(f);
   if(held){
     const W=psLocal(f,psBodyPt(held.v,held.loc)),Sh=g.wSh||g.Sh,len=pitsStageWeaponKind(held.weapon,3).len;
-    const d=psUnit([Sh[0]-W[0],Sh[1]-W[1]]),G=[W[0]+d[0]*len,W[1]+d[1]*len];
+    const d=psUnit([Sh[0]-W[0],Sh[1]-W[1]]),G=[W[0]+d[0]*(len-PS_LODGE_IN),W[1]+d[1]*(len-PS_LODGE_IN)];
     const R=62,u=psUnit([G[0]-Sh[0],G[1]-Sh[1]]),dist=Math.min(Math.hypot(G[0]-Sh[0],G[1]-Sh[1]),R*.98);
     g.Hn=[Sh[0]+u[0]*dist,Sh[1]+u[1]*dist];g.E=psElbow(Sh,g.Hn,32,30);
     Lp={...L,armed:false};
@@ -870,23 +870,28 @@ function psWeaponShape(parent,wk){
   else psSvg('line',{x1:0,y1:0,x2:len,y2:0,class:'ps-shaft ps-wood','stroke-width':4},inner);
   return inner;
 }
-function psFlyWeapon(f,metres){
+// opt.stick: lands point down, stuck in the floor (the Disarm finish)
+function psFlyWeapon(f,metres,opt){
+  const stick=!!(opt&&opt.stick);
   const from=f.pts?psWorld(f,f.pts.hand):[f.X,PS_GROUND-80];
   const to=[f.X-f.face*Math.max(60,metres*PS_M+50),PS_GROUND+2];
   const g=psSvg('g',{class:'ps-dropped'},psLayer('ps-fx'));psWeaponShape(g,f.look.wk);
   if(f.dropEl)f.dropEl.remove();
   f.dropEl=g;f.dropping=true;
-  const t0=performance.now(),d=psReduced()?1:780/psSpeed(),spin=(Math.random()<.5?-1:1)*540,tok=PS.epoch;
+  const t0=performance.now(),d=psReduced()?1:(stick?900:780)/psSpeed(),spin=stick?(Math.random()<.5?-630:810):(Math.random()<.5?-1:1)*540,tok=PS.epoch;
+  // (stuck: the shape runs grip to point along x, so 90 degrees puts the point down; its middle sits half a length up)
+  if(stick){const len=f.look.wk.len;to[1]=PS_GROUND+8-len/2;}
   const step=now=>{
     if(!g.isConnected){f.dropping=false;return;}
     const p=Math.min(1,(now-t0)/d),x=from[0]+(to[0]-from[0])*p,y=from[1]+(to[1]-from[1])*p-Math.sin(p*Math.PI)*190;
     g.setAttribute('transform','translate('+x+','+y+') rotate('+(spin*p%360)+')');
-    if(p<1)requestAnimationFrame(step);else{g.setAttribute('transform','translate('+to[0]+','+to[1]+') rotate(-4)');f.dropping=false;}
+    if(p<1)requestAnimationFrame(step);else{g.setAttribute('transform','translate('+to[0]+','+to[1]+') rotate('+(stick?90:-4)+')');f.dropping=false;}
   };
   requestAnimationFrame(step);
 }
 
 // ---- Lodged weapons and entanglement: drawn every frame from engine state ----
+const PS_LODGE_IN=10;   // how far the point of a lodged weapon is drawn inside the body
 function psDrawLodged(now){
   const fx=psLayer('ps-fx');if(!fx||!PS.fig.a||!PS.fig.a.look)return;
   const keep=new Set();
@@ -904,7 +909,10 @@ function psDrawLodged(now){
       // (let go: it stays at the angle it had in the hand, it does not swing to a new one, owner 2026-11-16)
       let ang=Math.atan2(H[1]-P[1],H[0]-P[0]);
       if(held)el.ang=ang;else if(el.ang!=null)ang=el.ang;
-      el.setAttribute('transform','translate('+(P[0]+Math.cos(ang)*len/2)+','+(P[1]+Math.sin(ang)*len/2)+') rotate('+psDeg(ang)+')');
+      // the point in the wound (a little way in), the grip toward the wielder: the shape runs grip (0) to point (len), so
+      // it is turned half round (it used to put the grip in the wound, owner 2026-11-16)
+      const half=len/2-PS_LODGE_IN;
+      el.setAttribute('transform','translate('+(P[0]+Math.cos(ang)*half)+','+(P[1]+Math.sin(ang)*half)+') rotate('+(psDeg(ang)+180)+')');
     }
     const t=PS.fighters.tether&&PS.fighters.tether[id];
     if(t){
@@ -1427,7 +1435,8 @@ async function psMotionBlow(cue){
   // the move and the defence declared live are kept on the tape and given again.
   const r=pulled?L.withdraw(PS.M,atk.id,PS.clock,{loc,lost,defeated,flow:psReplaying()}):
     psCineBlow(atk.id,{outcome:out,loc,lost,shield:weaponHit?false:shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying(),
-      impale:!!impale&&lost>0&&!strike,held:!!(impale&&impale.held),fx:psExchangeFx(cue,atk.id)});
+      impale:!!impale&&lost>0&&!strike,held:!!(impale&&impale.held),fx:psExchangeFx(cue,atk.id).concat(
+        trip&&trip.fell?['trip']:[],cue.record&&cue.record.disarm&&cue.record.disarm.actor===atk.id?['disarm']:[])});
   PS.busyUntil=r.end;atk.spent=def.spent=true;
   // (the trip's fall is drawn when the blow's own movement has played out, from the pose it left: written into the blow
   // it overlapped the struck fighter's reaction and the head jumped, measured 47 px in one frame)
@@ -1451,7 +1460,7 @@ async function psMotionBlow(cue){
     if(disarm&&!flown&&(c.kind!=='miss'||disarm.actor===def.id)){flown=true;
       const loser=disarm.target===atk.id?atk:def,winner=loser===atk?def:atk;loser.dropAhead=true;
       psEmit('contact',{kind:'disarm',actor:winner.id,target:loser.id,point:w.map(Math.round)});
-      psBanner('Disarmed','crit');psFlyWeapon(loser,disarm.metres);}
+      psBanner('Disarmed','crit');psFlyWeapon(loser,disarm.metres,{stick:r.finish==='disarmed'&&loser===def});}
     if(c.kind==='miss'){
       psEmit('contact',{kind:out,actor:atk.id,target:def.id,point:w.map(Math.round)});
       psBurst(w,'gray',5);psSfx('miss');if(psFx())psFx().impact(w,'miss',1,atk.face);
@@ -1624,7 +1633,9 @@ function pitsStageSync(){
     // is shown) stays out of the hand until the shown state has caught up: it does not jump back and drop again
     // (a finish to the arm dropped the weapon; the engine does not mark it, the picture keeps it on the floor)
     if(f.finishDrop)f.look.armed=false;
-    if(f.dropAhead){if(!f.look.armed)f.dropAhead=false;else if(V.busy||V.hold)f.look.armed=false;else f.dropAhead=false;}
+    // (nor once the bout is over: a blow that disarms and ends the fight is resolved before the engine marks the weapon
+    // dropped, and the weapon came back to the hand at the end, owner 2026-11-16, the Disarm finish)
+    if(f.dropAhead){if(!f.look.armed)f.dropAhead=false;else if(V.busy||V.hold||S.phase!=='fight')f.look.armed=false;else f.dropAhead=false;}
     if(f.look.armed&&f.dropEl){f.dropEl.remove();f.dropEl=null;}
     // A weapon already on the floor (for example after Show results) stays there.
     // (not a weapon left in the other fighter's wound: Impale, "leave it in" marks the wielder disarmed, but the weapon

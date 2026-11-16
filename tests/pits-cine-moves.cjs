@@ -142,11 +142,12 @@ test('the stage draws the Impale at its contact and lets go at the release',()=>
 });
 
 // Finishes chosen by the final blow's Special Effect (owner, 2026-11-16: "go for it" on Bash, Stun Location, Bleed and
-// Choose Location by the part). Each: bodies stay possible and on the floor, nothing jumps, the struck fighter ends down,
+// Choose Location by the part; then "do disarm and trip finishes next"). Each: bodies stay possible and on the floor, nothing jumps, the struck fighter ends down,
 // and the effect names the finish.
 test('a finishing blow takes its finish from the Special Effect',()=>{
   const cases=[[['bash'],'chest','bashed'],[['stun'],'head','stunned'],[['bleed'],'abdomen','bled'],[['choose'],'head','headshot'],
-    [['choose'],'rleg','legout'],[['choose'],'larm','armdrop'],[['choose'],'chest',null],[['bleed','bash'],'chest','bashed']];
+    [['choose'],'rleg','legout'],[['choose'],'larm','armdrop'],[['choose'],'chest',null],[['bleed','bash'],'chest','bashed'],
+    [['trip'],'chest','tripped'],[['disarm'],'chest','disarmed'],[['choose','disarm'],'head','disarmed'],[['trip','stun'],'head','tripped']];
   for(const w of ['sword','rapier','greatsword','mace','spear'])for(const [fx,loc,want] of cases){
     const M=pair(w,'sword',.4),what=w+' '+fx.join('+')+' at the '+loc;
     const r=C.blow(M,'a',100,{outcome:'wound',loc,lost:12,defeated:true,fx});C.fixChoices(null);
@@ -159,6 +160,10 @@ test('a finishing blow takes its finish from the Special Effect',()=>{
     // the two do not end in each other
     const ja=C.joints(M.a,r.end),jb=C.joints(M.b,r.end);
     assert(Math.abs(jb.Hd[0]-ja.F[0])>30&&Math.abs(jb.Hd[0]-ja.bF[0])>20,what+': the fallen head is not at the winner\'s feet');
+    // nor does the winner stand on the fallen body (owner, 2026-11-16, the trip finish)
+    for(const dt of [600,900,1200])if(100+dt<r.end){const a2=C.joints(M.a,r.contacts[0].t+dt),b2=C.joints(M.b,r.contacts[0].t+dt);
+      if(b2.P[1]>30)continue;const xs=[b2.F[0],b2.bF[0],b2.Hd[0],b2.P[0]],lo=Math.min(...xs)+8,hi=Math.max(...xs)-8;
+      for(const k of ['F','bF'])assert(!(a2[k][0]>lo&&a2[k][0]<hi),what+': the winner\'s foot is on the fallen body at +'+dt);}
   }
 });
 

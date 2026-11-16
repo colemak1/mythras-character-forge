@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: Impale point first; Trip and Disarm finishes
+
+- An Impale now goes in point first. The weapon was drawn the wrong way round, with the grip in the wound (owner, 2026-11-16).
+- **Trip** on the final blow: the blow takes the legs, the fighter lands flat on its back, and the winner stands over it with the point held down.
+- **Disarm** on the final blow: the weapon spins away and sticks point down in the floor. The fighter watches it go, then finds the wound and goes down.
+- A weapon knocked away by the blow that ends the fight no longer comes back to the hand once the bout is over.
+- Rules and dice are unchanged. Tests: `tests/pits-cine-moves.cjs` (also checks the winner never stands on the fallen body); browser checks in `tests/visual/pits-spring-scripted.cjs`.
+
 ## The Pits: finishing blows by Special Effect
 
 - A blow that ends the fight now finishes differently depending on the Special Effect chosen for it (owner, 2026-11-16):
