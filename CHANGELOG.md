@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: the last finishing blows
+
+- The rest of the finishes by Special Effect (owner, 2026-11-16: "continue the finisher animations"):
+  - **Circumvent Parry:** a feint draws the guard to the other line and the blow comes in round it. The guard is still up as the fighter sinks to its knees and falls.
+  - **Entangle:** the winner hauls on the caught limb; the feet go first, the fighter slams down on its back and is dragged.
+  - **Maximise Damage, Bypass Armour, Sunder:** one heavy blow; the armour cracks (sparks, pieces of plate fly off) and the fighter is driven to its knees, then over.
+  - **Blinded:** a fighter still blinded by an earlier Blind Opponent puts a hand to its eyes, staggers, swings at nothing, and falls.
+- Damage Weapon has no finish: it strikes the weapon, not the body, so it never ends a fight.
+- Rules and dice are unchanged. Tests: `tests/pits-cine-moves.cjs`; browser checks in `tests/visual/pits-spring-scripted.cjs`.
+
 ## The Pits: Impale point first; Trip and Disarm finishes
 
 - An Impale now goes in point first. The weapon was drawn the wrong way round, with the grip in the wound (owner, 2026-11-16).

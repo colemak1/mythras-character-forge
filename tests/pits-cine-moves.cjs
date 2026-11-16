@@ -147,11 +147,15 @@ test('the stage draws the Impale at its contact and lets go at the release',()=>
 test('a finishing blow takes its finish from the Special Effect',()=>{
   const cases=[[['bash'],'chest','bashed'],[['stun'],'head','stunned'],[['bleed'],'abdomen','bled'],[['choose'],'head','headshot'],
     [['choose'],'rleg','legout'],[['choose'],'larm','armdrop'],[['choose'],'chest',null],[['bleed','bash'],'chest','bashed'],
-    [['trip'],'chest','tripped'],[['disarm'],'chest','disarmed'],[['choose','disarm'],'head','disarmed'],[['trip','stun'],'head','tripped']];
+    [['trip'],'chest','tripped'],[['disarm'],'chest','disarmed'],[['choose','disarm'],'head','disarmed'],[['trip','stun'],'head','tripped'],
+    // (owner, 2026-11-16: "continue the finisher animations")
+    [['circumvent'],'chest','slipped'],[['circumvent'],'head','slipped'],[['entangle'],'rleg','yanked'],[['entangle'],'larm','yanked'],
+    [['maximise'],'chest','cracked'],[['bypass'],'abdomen','cracked'],[['sunder'],'head','cracked'],[['blind'],'chest','blinded'],
+    [['choose','maximise'],'head','headshot'],[['choose','sunder'],'chest','cracked'],[['bleed','blind'],'chest','bled']];
   for(const w of ['sword','rapier','greatsword','mace','spear'])for(const [fx,loc,want] of cases){
     const M=pair(w,'sword',.4),what=w+' '+fx.join('+')+' at the '+loc;
     const r=C.blow(M,'a',100,{outcome:'wound',loc,lost:12,defeated:true,fx});C.fixChoices(null);
-    if(want)assert.equal(r.finish,want,what);else assert(!/bashed|stunned|bled|headshot|legout|armdrop/.test(r.finish),what+': no effect finish');
+    if(want)assert.equal(r.finish,want,what);else assert(!/bashed|stunned|bled|headshot|legout|armdrop|slipped|yanked|cracked|blinded/.test(r.finish),what+': no effect finish');
     assert(M.b.down,what+': the struck fighter ends down');
     if(want==='armdrop')assert(r.drop>r.contacts[0].t,what+': the weapon falls after the blow');else assert.equal(r.drop,null,what);
     let prev=null;
@@ -165,6 +169,39 @@ test('a finishing blow takes its finish from the Special Effect',()=>{
       if(b2.P[1]>30)continue;const xs=[b2.F[0],b2.bF[0],b2.Hd[0],b2.P[0]],lo=Math.min(...xs)+8,hi=Math.max(...xs)-8;
       for(const k of ['F','bF'])assert(!(a2[k][0]>lo&&a2[k][0]<hi),what+': the winner\'s foot is on the fallen body at +'+dt);}
   }
+});
+
+// Circumvent Parry: the feint draws the guard to the other line before the blow lands, and the guard is still up as
+// the fighter goes down. Drawn only for a hit straight in, both standing; otherwise another finish.
+test('Circumvent Parry: the guard is drawn to the other line, and stays up as the fighter falls',()=>{
+  for(const w of ['sword','greatsword','mace','spear'])for(const loc of ['head','chest','rleg']){
+    const M=pair(w,'sword',.4),what=w+' at the '+loc;
+    const r=C.blow(M,'a',100,{outcome:'wound',loc,lost:12,defeated:true,fx:['circumvent']});C.fixChoices(null);
+    assert.equal(r.finish,'slipped',what);
+    const tc=r.contacts[0].t,b=C.joints(M.b,tc),hip=b.P[1],hand=b.Hn[1];
+    // a high blow: the guard is low (the hand near the hips' height); otherwise it is high (by the head)
+    if(loc==='head')assert(hand<hip+30,what+': the guard is low at the contact ('+hand.toFixed(0)+' vs hip '+hip.toFixed(0)+')');
+    else assert(hand>b.Hd[1]-40,what+': the guard is high at the contact ('+hand.toFixed(0)+' vs head '+b.Hd[1].toFixed(0)+')');
+    // still up on the knees (the weapon hand above the hip)
+    const k=C.joints(M.b,tc+800);assert(k.Hn[1]-k.P[1]>-20,what+': the guard is still up on the knees');
+  }
+  // not for a fighter already down
+  const M=pair('sword','sword',.4);C.fall(M.b,50);
+  const r=C.blow(M,'a',900,{outcome:'wound',loc:'chest',lost:12,defeated:true,fx:['circumvent']});C.fixChoices(null);
+  assert.notEqual(r.finish,'slipped','a fighter already down');
+});
+test('a heavy blow (Maximise, Bypass Armour, Sunder) asks for the armour to crack at the blow',()=>{
+  const M=pair('mace','sword',.4);
+  const r=C.blow(M,'a',100,{outcome:'wound',loc:'chest',lost:12,defeated:true,fx:['sunder']});C.fixChoices(null);
+  const got=C.takeFx(M.a).filter(e=>e.kind==='crack');
+  assert.equal(got.length,1,'one crack');assert.equal(got[0].id,'b');assert(Math.abs(got[0].t-r.contacts[0].t)<2,'at the contact');
+});
+test("the stage maps the engine's effect names and a blinded loser",()=>{
+  const st=fs.readFileSync(path.join(__dirname,'../experiments/pits-stage.js'),'utf8');
+  for(const n of ['Circumvent Parry','Entangle','Maximise Damage','Bypass Armour','Sunder'])assert(st.includes("'"+n+"':"),n);
+  assert(/psBlinded\(def\.id\)\?\['blind'\]/.test(st),'a blinded loser');
+  const fxs=fs.readFileSync(path.join(__dirname,'../experiments/pits-cine-fx.js'),'utf8');
+  assert(/e\.kind==='crack'/.test(fxs),'the picture draws the crack');
 });
 
 console.log(passed+' passed');

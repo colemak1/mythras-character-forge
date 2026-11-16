@@ -146,6 +146,16 @@ async function bout(browser,sc){
       if(eff==='disarm'){assert.equal(r.rec.filter(x=>x.type==='fly').length,1,'the weapon flies once');assert.equal(r.dropped,1);
         assert(/rotate\(90\)/.test(r.dropT||''),'stuck point down: '+r.dropT);}
     });
+  // (owner, 2026-11-16: "continue the finisher animations"). A heavy blow (Maximise Damage) cracks the armour; Circumvent
+  // Parry beats a parry that succeeded and draws its own finish (the guard drawn to the other line, still up as it falls).
+  for(const [eff,react,rolls,want] of [['maximize',['none'],{'a:Attack':1},'cracked'],['circumventParry',['parry'],{'a:Attack':1,'b:Parry':40},'slipped']])
+    await T('a finishing blow with '+eff+' has its own finish (cinematic stage)',async()=>{
+      const r=await bout(browser,{url:BASE,config:{str:18,siz:18,pvpCon:3,pvpSiz:3,weapon:'greatsword'},react,effect:eff,rolls,attacks:1});
+      assert.deepEqual(r.errors,[]);
+      const mv=r.rec.find(x=>x.type==='move');
+      assert(r.rec.some(x=>x.type==='collapse'),'the blow finished the fight: '+JSON.stringify(r.rec));
+      assert.equal(mv&&mv.kind,want,'the finish');
+    });
   // (Work's check B6, 2026-11-14: Keep hold drew two blades, one in the wound and one in the hand, the arm pulled back)
   await T('Impale, Keep hold: one weapon, lodged in the wound, with the hand on its grip',async()=>{
     const r=await bout(browser,{config:{weapon:'rapier'},react:['none'],effect:'impale',rolls:{'a:Attack':1},

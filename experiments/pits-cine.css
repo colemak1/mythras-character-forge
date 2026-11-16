@@ -82,6 +82,7 @@ html[data-mode="dark"] .pc-s-glow-in{stop-opacity:.3}
 .pc-spark.hot{stroke:#fff;stroke-width:4}
 .pc-blood{fill:var(--pc-blood)}
 .pc-chip{fill:#d7dae2}
+.pc-shard{fill:var(--pc-steel);stroke:var(--pc-spark);stroke-width:1}
 .pc-line{stroke:#fff;stroke-width:3;stroke-linecap:round}
 .pc-ring{fill:none;stroke:#fff}
 .pc-star{fill:#fff}

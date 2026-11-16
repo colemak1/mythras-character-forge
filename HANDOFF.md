@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-16 by Claude (Pits: Impale point first; Trip and Disarm finishes)_
+_Last updated: 2026-11-16 by Claude (Pits: the last finishing blows)_
 
 ## Where things stand
 
@@ -16,7 +16,9 @@ _Last updated: 2026-11-16 by Claude (Pits: Impale point first; Trip and Disarm f
 
 ## Next
 
-- **Claude, done 2026-11-16 (owner):** Impale goes in point first (it was drawn grip first); Trip and Disarm finishes built (sheets `docs/pits-visual-checks/cine-finish-trip.jpg`, `cine-finish-disarm.jpg`). Still to pick from the table in `docs/pits-animation-direction.md`: Blind, Maximise/Bypass Armour/Sunder, Circumvent Parry, Damage Weapon, Entangle. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): an Impale (the point in the wound, the grip toward the attacker); a bout ended with the attacker's Trip, and one with its Disarm (the weapon sticks in the floor and stays there after Victory).
+- **Claude, done 2026-11-16 (owner: "continue the finisher animations"):** the finisher table is finished: Circumvent Parry, Entangle, Maximise/Bypass Armour/Sunder and Blind (a loser still blinded) each have their own finish; Damage Weapon cannot end a fight, so it has none. Sheets `docs/pits-visual-checks/cine-finish-{circumvent,entangle,armour,blind}.jpg`; table in `docs/pits-animation-direction.md`. **Owner:** OK the look or name the moment that looks wrong. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): end a bout with Maximise Damage (sparks and plate fly at the blow) and one with Circumvent Parry against a parry (the guard goes to the wrong line and stays up as the fighter falls). **Then Claude:** batch (b), more ground poses and attacks from the ground.
+
+- **Claude, done 2026-11-16 (owner):** Impale goes in point first (it was drawn grip first); Trip and Disarm finishes built (sheets `docs/pits-visual-checks/cine-finish-trip.jpg`, `cine-finish-disarm.jpg`). **ChatGPT (Work)**, next batch, deployed Pits page (desktop): an Impale (the point in the wound, the grip toward the attacker); a bout ended with the attacker's Trip, and one with its Disarm (the weapon sticks in the floor and stays there after Victory).
 
 - **Claude, done 2026-11-16 (owner: "go for it"):** finishing blows by Special Effect: Bash, Stun Location, Bleed, and Choose Location by the part (head, leg, arm). Table and status: `docs/pits-animation-direction.md`, "Finishing blows by Special Effect". **Owner:** watch a few finishes and OK the look, or name the moment that looks wrong; then pick the next ones from the table. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): finish a bout with each of Bash, Bleed, Stun Location and Choose Location (Head, an arm, a leg); each has its own finish, and after the arm finish the weapon stays on the floor.
 

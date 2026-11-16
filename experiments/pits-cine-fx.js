@@ -127,6 +127,10 @@ function stepParts(dt){
     else if(p.k==='blood'){if(!p.landed&&p.y>G+rnd(2,14)){p.landed=true;p.y=Math.min(p.y,G+14);p.vx=0;p.vy=0;p.g=0;p.life=Math.max(p.life,p.age+900);}  // (one fade deadline, set when it lands: CA-11)
       el.setAttribute('cx',p.x);el.setAttribute('cy',p.y);el.setAttribute('opacity',(1-u*u*u).toFixed(3));}
     else if(p.k==='line'){const l=p.len*(1-u);el.setAttribute('x1',p.x);el.setAttribute('y1',p.y);el.setAttribute('x2',p.x-p.dir*l);el.setAttribute('y2',p.y);el.setAttribute('opacity',(.8*(1-u)).toFixed(3));}
+    else if(p.k==='shard'){if(p.y>G-2){p.y=G-2;p.vx*=.5;p.vy=0;p.g=0;p.vr=0;}else p.rot+=p.vr*dt;
+      const c=Math.cos(p.rot*Math.PI/180),q=Math.sin(p.rot*Math.PI/180),s=p.s;
+      el.setAttribute('points',pts([[-s,-s*.5],[s,-s*.3],[s*.4,s*.6]].map(([x,y])=>[p.x+x*c-y*q,p.y+x*q+y*c])));
+      el.setAttribute('opacity',(u<.7?1:(1-u)/.3).toFixed(3));p.vx*=.995;}
     else if(p.k==='ring'){el.setAttribute('r',4+(p.r1-4)*(1-Math.pow(1-u,3)));el.setAttribute('opacity',(1-u).toFixed(3));el.setAttribute('stroke-width',(7*(1-u)+1).toFixed(1));}
     else if(p.k==='gring'){const r=6+(p.r1-6)*(1-Math.pow(1-u,3));el.setAttribute('rx',r);el.setAttribute('ry',r*.16);el.setAttribute('opacity',(.8*(1-u)).toFixed(3));el.setAttribute('stroke-width',(5*(1-u)+1).toFixed(1));}
     else if(p.k==='star'){const s=p.size*(.5+u*1.1),t=s*.13,P=[];
@@ -256,6 +260,16 @@ function fire(e,now){
     if(!reduced()){blood(p,26,-m.face);blood(p,10,m.face);slash(p,-m.face,190);star(p,70);shake(1.6);punch(4);flash(.5,90,now);}
   }
   else if(e.kind==='finish'){letterUntil=now+3600;stage.classList.add('pc-letter');}
+  else if(e.kind==='crack'&&m)crack(PitsCine.partAt(m,PS.clock,e.loc||'chest'),e.dir||0);
+}
+// armour cracks under a heavy blow (Maximise Damage, Bypass Armour, Sunder): a spray of sparks, pieces of plate fly off
+// and tumble to the floor
+function crack(w,dir){
+  if(!ready||reduced())return;
+  const p=[w[0],Y(w[1])];
+  sparks(p,22,dir,true);ring(p,true);
+  for(let i=0;i<4;i++){const el=mk('polygon',{class:'pc-shard'},L.over),s=rnd(5,10);
+    spawn({el,k:'shard',x:p[0],y:p[1],vx:dir*rnd(.15,.5)+rnd(-.15,.15),vy:-rnd(.3,.75),g:.0024,life:rnd(1300,1800),age:0,s,rot:rnd(0,360),vr:rnd(-.9,.9)});}
 }
 function runActive(clock,dt){
   for(let i=active.length-1;i>=0;i--){
