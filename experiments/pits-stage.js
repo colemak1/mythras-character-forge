@@ -1556,7 +1556,11 @@ function pitsStageSync(){
     // drawn yet. The weapon stays in the hand until it is (Work's check B4, 2026-11-14). Not on a fresh bout.
     const waitingNow=!V.busy&&S.phase==='fight'&&!!(S.pending||(typeof R!=='undefined'&&R));
     const heldDisarm=!!(V.hold&&V.hold.events.some(e=>!e.roll&&e.title==='Disarm Opponent'&&e.meta&&e.meta.target===id));
-    if(!f.look.armed&&!f.dropEl&&view[id].disarmed&&!lodgedIn&&!fresh&&f.armedSeen&&(heldDisarm||waitingNow))f.look.armed=true;
+    // A Disarm still to be drawn in this playback: the engine logs a defender's Disarm before the blow it answered and
+    // the stage draws the blow first, so the blow's shown state already says disarmed. The weapon stays in the hand
+    // until the Disarm's own wrench throws it; it used to fly at the parry and again at the wrench (owner, 2026-11-16).
+    const comingDisarm=!!(V.busy&&Array.isArray(V.events)&&V.events.slice(V.step||0).some(e=>e&&!e.roll&&e.title==='Disarm Opponent'&&e.meta&&e.meta.target===id));
+    if(!f.look.armed&&!f.dropEl&&view[id].disarmed&&!lodgedIn&&!fresh&&f.armedSeen&&(heldDisarm||waitingNow||comingDisarm))f.look.armed=true;
     else if(!f.look.armed&&!f.dropEl&&view[id].disarmed&&!lodgedIn)psFlyWeapon(f,view[id].droppedMetres||2);
     f.armedSeen=f.look.armed;
     f.end=null;

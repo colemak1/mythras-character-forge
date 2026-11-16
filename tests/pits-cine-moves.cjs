@@ -107,4 +107,14 @@ test('the stage uses the phrases on the cinematic stage and keeps the stand-ins 
   assert(/L\.trip\(PS\.M,atk\.id,PS\.clock,\{fell:tripFell,after:true/.test(st),'the attacker\'s Trip is a hook after its blow');
 });
 
+// owner, 2026-11-16: "parry into disarm disarms twice": the blow's shown state already said disarmed, so the weapon
+// flew at the parry, came back to the hand for the wrench and flew again. The sync keeps it in the hand while the
+// Disarm is still to be drawn. (Browser check: tests/visual/pits-spring-scripted.cjs, "a parry that wins a Disarm".)
+test('a Disarm still to be drawn keeps the weapon in the hand (it is thrown once, at the wrench)',()=>{
+  const st=fs.readFileSync(path.join(__dirname,'..','experiments','pits-stage.js'),'utf8');
+  assert(/comingDisarm=!!\(V\.busy&&Array\.isArray\(V\.events\)&&V\.events\.slice\(V\.step\|\|0\)\.some\(e=>e&&!e\.roll&&e\.title==='Disarm Opponent'&&e\.meta&&e\.meta\.target===id\)\)/.test(st),
+    'the sync looks ahead for a Disarm of this fighter in the playback');
+  assert(/f\.armedSeen&&\(heldDisarm\|\|waitingNow\|\|comingDisarm\)\)f\.look\.armed=true/.test(st),'and keeps the weapon drawn until then');
+});
+
 console.log(passed+' passed');
