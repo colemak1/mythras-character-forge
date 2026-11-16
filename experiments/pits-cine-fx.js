@@ -260,6 +260,9 @@ function fire(e,now){
     if(!reduced()){blood(p,26,-m.face);blood(p,10,m.face);slash(p,-m.face,190);star(p,70);shake(1.6);punch(4);flash(.5,90,now);}
   }
   else if(e.kind==='finish'){letterUntil=now+3600;stage.classList.add('pc-letter');}
+  else if(e.kind==='spurt'&&m&&e.n&&!reduced()){
+    // a weapon torn out: the blood follows the blade out of the wound, toward the one pulling it
+    const w=PitsCine.partAt(m,PS.clock,e.loc||'chest'),p=[w[0],Y(w[1])];blood(p,e.n,e.dir||0);blood(p,Math.round(e.n/3),0);}
   else if(e.kind==='crack'&&m)crack(PitsCine.partAt(m,PS.clock,e.loc||'chest'),e.dir||0);
 }
 // armour cracks under a heavy blow (Maximise Damage, Bypass Armour, Sunder): a spray of sparks, pieces of plate fly off
@@ -290,6 +293,11 @@ function impact(w,kind,power,dir){
   if(kind==='clash'){
     sparks(w,Math.round(16+power*14),0,true);star(w,46+power*30);ring(w);punch(1+power*2);shake(.7+power*.7);
     if(power>=1)flash(.28,70,now);
+  }else if(kind==='tear'||kind==='tearFinish'){
+    // a weapon torn out of a wound (dir: the way the blade travels): no impact frame, no star; a short jolt, and for the
+    // last one the slow look and the bars
+    ring(w);punch(1+Math.min(3,(power||1)*.3));shake(.6+Math.min(1.2,(power||1)/6));
+    if(kind==='tearFinish'){slowUntil=now+900;slowRate=.4;cam.hold=.7;cam.holdUntil=now+1300;letterUntil=now+3600;stage.classList.add('pc-letter');}
   }else if(kind==='miss'){
     lines(w[0],w[1]+30,dir,4,70);
   }else{

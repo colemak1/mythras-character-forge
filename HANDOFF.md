@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-16 by Claude (Pits: the last finishing blows)_
+_Last updated: 2026-11-16 by Claude (Pits: withdrawing an Impale)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-16 by Claude (Pits: the last finishing blows)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+- **Claude, done 2026-11-16 (owner: "Withdraw weapon looks horrible for both normal attacks and especially the finisher"):** a withdrawal is now one pull along the shaft, with no second thrust and no impact flash. The finishing one folds the loser round the wound and lays it down. Details: `docs/pits-animation-direction.md`, "Withdrawing an Impale". Sheets `docs/pits-visual-checks/cine-withdraw-live.jpg`, `cine-withdraw-finish.jpg`. **Owner:** withdraw a weapon in play (kept hold, and left in) and say if it still looks wrong. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): an Impale kept hold of, then Withdraw Embedded Weapon on the next turn. The point should come straight out, the weapon never goes through the body, and the wielder stays at its weapon until then.
 
 - **Claude, done 2026-11-16 (owner: "continue the finisher animations"):** the finisher table is finished: Circumvent Parry, Entangle, Maximise/Bypass Armour/Sunder and Blind (a loser still blinded) each have their own finish; Damage Weapon cannot end a fight, so it has none. Sheets `docs/pits-visual-checks/cine-finish-{circumvent,entangle,armour,blind}.jpg`; table in `docs/pits-animation-direction.md`. **Owner:** OK the look or name the moment that looks wrong. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): end a bout with Maximise Damage (sparks and plate fly at the blow) and one with Circumvent Parry against a parry (the guard goes to the wrong line and stays up as the fighter falls). **Then Claude:** batch (b), more ground poses and attacks from the ground.
 

@@ -567,6 +567,8 @@ function psExchangeFx(cue,striker){
     const k=l.meta&&l.meta.actor===striker&&PSTAGE_FX[l.title];if(k&&!fx.includes(k))fx.push(k);}
   return fx;
 }
+// a weapon in a wound with its wielder's hand still on it: the two are joined by it
+function psTiedByLodge(){for(const list of Object.values(PS.fighters.lodged||{}))for(const w of list||[])if(w.held)return true;return false;}
 // a fighter still blinded by an earlier Blind Opponent (engine state)
 function psBlinded(id){const f=PS.fighters&&PS.fighters[id];return !!(f&&f.blindedTurns>0);}
 // the stage's own lodged weapon (an Impale drawn at its contact, before the engine's state is shown) merged into the
@@ -1278,6 +1280,7 @@ function psLull(){
     // movement starts from it (liveBlow gathers the stance first), as in the replay. Only footwork the engine asks for
     // is drawn here: the new range after a range change that came while something was playing.
     if(!f.relocate||PS.clock<PS.busyUntil+300||f.end||f.mEnd||f.mDown||f.pressRole)continue;
+    if(psTiedByLodge())continue;
     const why=f.relocate;f.relocate=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,PS.gap,psHurt(f)));psEmit('recover',{actor:id,why,replay:psReplaying()});
   }
 }
@@ -1436,7 +1439,9 @@ async function psMotionBlow(cue){
   const strike=(px.tool==='shield'||(px.tool==null&&ex.shield))&&atk.look&&atk.look.shield?'shield':null;
   // The replay repeats the live move (CA-09): each blow draws its choices from a stream keyed by its log entry, and
   // the move and the defence declared live are kept on the tape and given again.
-  const r=pulled?L.withdraw(PS.M,atk.id,PS.clock,{loc,lost,defeated,flow:psReplaying()}):
+  // (a weapon left in the wound is taken hold of first; one kept hold of is pulled at once)
+  const lodgedBy=pulled?((PS.fighters.lodged&&PS.fighters.lodged[def.id])||[]).find(w=>w.holder===atk.id):null;
+  const r=pulled?L.withdraw(PS.M,atk.id,PS.clock,{loc,lost,defeated,flow:psReplaying(),held:lodgedBy?!!lodgedBy.held:true}):
     psCineBlow(atk.id,{outcome:out,loc,lost,shield:weaponHit?false:shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying(),
       impale:!!impale&&lost>0&&!strike,held:!!(impale&&impale.held),fx:psExchangeFx(cue,atk.id).concat(
         trip&&trip.fell?['trip']:[],cue.record&&cue.record.disarm&&cue.record.disarm.actor===atk.id?['disarm']:[],
@@ -1490,7 +1495,12 @@ async function psMotionBlow(cue){
         PS.lodgeAhead[def.id]={loc,weapon:(S.fighters[atk.id]||{}).weapon||'sword',holder:atk.id,held:true};
         PS.fighters.lodged[def.id]=psMergeLodge(PS.fighters.lodged[def.id],PS.lodgeAhead[def.id]);psEmit('lodge',{actor:atk.id,target:def.id,at:'contact'});}
       psEmit('contact',{kind:out,actor:atk.id,target:def.id,loc,point:w.map(Math.round),tip:psWorld(atk,atk.pts.tip).map(Math.round),lost});
-      if(lost>0){
+      if(lost>0&&c.kind==='tear'){
+        // torn out, not struck: no sparks or impact frame; the movement's own spurt carries the blood (owner, 2026-11-16)
+        psShake(.6+lost/10);if(psFx())psFx().impact(w,defeated?'tearFinish':'tear',lost,-atk.face);
+        psDom(w,'−'+lost,'dmg');psSfx('hit');
+        if(defeated)psEmit('collapse',{target:def.id,actor:atk.id,how:endC.how});
+      }else if(lost>0){
         psBurst(w,'spark',10);psRing(w);psShake(1+lost/6);psBurst(w,'blood',10+lost*2);
         if(psFx())psFx().impact(w,defeated?'finish':'hit',lost,atk.face);
         psDom(w,'−'+lost,'dmg');psSfx(lost>=6?'crit':'hit');
@@ -1599,7 +1609,8 @@ function psSetSpacing(snap){
     psMotionFigs();
     for(const id of ['a','b']){const f=PS.fig[id],m=PS.M[id];
       if(moved&&snap)psPlaceM(id);
-      else if(moved&&!f.mDown&&!f.mEnd){if(PS.clock>=PS.busyUntil){f.relocate=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,gap,psHurt(f)));}else f.relocate='range';}
+      // (not while a weapon held in a wound joins the two: they do not step apart round it, owner 2026-11-16)
+      else if(moved&&!f.mDown&&!f.mEnd&&!psTiedByLodge()){if(PS.clock>=PS.busyUntil){f.relocate=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,gap,psHurt(f)));}else f.relocate='range';}
       f.tx=m.hx+m.face*(L.station(m,gap)-m.guard.ffx+m.guard.px);}
     psDrawRange(key);return;
   }

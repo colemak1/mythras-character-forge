@@ -74,6 +74,38 @@ test('CA-08: a withdrawal tears the weapon out and lands its own injury; one tha
   assert(seg(c.at,j.Hn,j.tip)<3,'the weapon is '+seg(c.at,j.Hn,j.tip).toFixed(1)+' from the wound it is torn out of');
 });
 
+// (owner, 2026-11-16: "Withdraw weapon looks horrible for both normal attacks and especially the finisher"). The
+// withdrawal is one pull, never a second thrust: the point is never driven further into the body than the lodged point
+// (10 in), the shaft keeps its line while it comes out, the point is clear of the wound at the end of the pull, nothing
+// jumps, a finishing one ends with the loser down. The stage draws it as a tear (no impact frame), and two fighters
+// joined by a weapon held in a wound do not step apart round it.
+test('a withdrawal pulls the point straight back out of the wound',()=>{
+  const C2=require('../experiments/pits-cine.js');C2.keep(0);
+  const WK={sword:{kind:'blade',len:92},rapier:{kind:'blade',len:112,thin:1},spear:{kind:'spear',len:150},dagger:{kind:'blade',len:50},
+    halberd:{kind:'polearm',len:176},greatsword:{kind:'blade',len:130,hands:2}};
+  for(const w in WK)for(const loc of ['chest','abdomen','head','rleg','larm'])for(const held of [true,false])for(const defeated of [false,true]){
+    C2.fixChoices(.4);const M={a:C2.fighter('a',WK[w],false,{}),b:C2.fighter('b',sword,false,{})};const g=C2.gap(WK[w],sword,'long');
+    C2.place(M.a,0,g,'guard');C2.place(M.b,0,g,'guard');
+    const r=C2.withdraw(M,'a',100,{loc,lost:5,held,defeated});C2.fixChoices(null);
+    const what=w+' '+loc+(held?' held':' left in')+(defeated?' finishing':''),tc=r.contacts[0].t;
+    assert.equal(r.contacts[0].kind,'tear',what);
+    let prev=null;const angs=[];
+    for(let t=100;t<=r.end;t+=4){const a=C2.joints(M.a,t),b=C2.joints(M.b,t);
+      if(prev)for(const [x,y] of [[a,prev.a],[b,prev.b]])for(const k of ['P','Hd'])assert(Math.hypot(x[k][0]-y[k][0],x[k][1]-y[k][1])<46,what+': '+k+' jumps at '+t);
+      prev={a,b};
+      if(t>=tc-80&&t<=tc){const T=C2.partAt(M.b,t,loc),u=[a.tip[0]-a.Hn[0],a.tip[1]-a.Hn[1]],l=Math.hypot(...u);
+        assert(((a.tip[0]-T[0])*u[0]+(a.tip[1]-T[1])*u[1])/l<16,what+': the point is driven in past the wound at '+(t-tc));}
+      if(t>=tc&&t<=tc+120)angs.push(Math.atan2(a.tip[1]-a.Hn[1],a.tip[0]-a.Hn[0])*180/Math.PI);}
+    assert(Math.max(...angs)-Math.min(...angs)<12,what+': the shaft turns as it comes out');
+    const a=C2.joints(M.a,tc+120),T=C2.partAt(M.b,tc,loc);
+    assert(Math.hypot(a.tip[0]-T[0],a.tip[1]-T[1])>30,what+': the point is still in the wound after the pull');
+    if(defeated)assert(M.b.down,what+': the loser ends down');
+  }
+  const st=fs.readFileSync(path.join(__dirname,'../experiments/pits-stage.js'),'utf8');
+  assert(/c\.kind==='tear'\)\{[\s\S]{0,300}impact\(w,defeated\?'tearFinish':'tear'/.test(st),'the stage draws a tear, not a hit');
+  assert((st.match(/psTiedByLodge\(\)/g)||[]).length>=2,'no stepping apart round a held weapon');
+});
+
 test('CA-08: the deck tells the withdrawal as the end of its exchange, and a struck weapon ends its exchange',()=>{
   const output={innerHTML:'',addEventListener(){}};
   const ctx={console,URLSearchParams,JSON,setTimeout:()=>0,clearTimeout(){},setInterval:()=>0,clearInterval(){},location:{search:'',pathname:'/experiments/practice-combat.html'},
