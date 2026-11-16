@@ -5,6 +5,21 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: contacts, the replay and lasting state (audit CA-08, CA-09, CA-12, CL-01 to CL-04)
+
+The second batch from the cinematic audit (`docs/pits-cinematic-bug-audit-20261115.md`). The approved look is unchanged (`tests/pits-cine-look.cjs` passes as recorded).
+
+- **A struck weapon, a withdrawn Impale and its injury are drawn (CA-08).** Damage Weapon (and attacking a longer weapon) is drawn as the blow meeting the weapon, with "Weapon struck" and no body damage, and the exchange is released. Pulling an Impale out shows the weapon torn from the wound and lands its own injury; if that injury ends the fight, the loser goes down. The deck now ends such an exchange with the withdrawal's injury, or with "Weapon struck", instead of the earlier blow or "In progress".
+- **The replay repeats the fight as it was played (CA-09).** Each blow draws its choices from its own exchange, and the bout's seed, each blow's swing and the defence declared live are kept for the replay.
+- **A pinned weapon or shield is held down while the pin lasts (CA-12).**
+- **Fight reports say which stage drew the fight** and carry its seed and choices. The build line includes both cinematic scripts.
+- The four unconfirmed concerns were all reproduced, then fixed:
+  - **CL-01:** after a hand switch or a new weapon, blows aim at the arms as drawn.
+  - **CL-02:** in the replay, a failed parry is still seen being tried.
+  - **CL-03:** afterimages carry no blade the fighter does not hold, and none appear with reduced motion.
+  - **CL-04:** an Accidental Injury is drawn on the fighter who hurt itself.
+- Tests: `tests/pits-cine-contact.cjs` (each check failed before the fix). Rules and dice untouched.
+
 ## The Pits: what the figures show matches the fight (audit CA-01 to CA-04)
 
 ChatGPT (Work)'s audit of the cinematic stage (`docs/pits-cinematic-bug-audit-20261115.md`) found pictures that disagreed with the fight. The look is unchanged: the owner approved it, and a new test holds it.

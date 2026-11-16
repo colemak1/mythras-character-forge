@@ -16,7 +16,7 @@ const QUEUE_KEY='sitota-pits-reports-pending-v1',NAME_KEY='sitota-pits-reporter-
 // ----- the parts that do not need a browser (tested in tests/pits-report.cjs) -----
 // which build of the Pits scripts the page is running (their ?v= stamps), so a report from a stale page shows as one
 function buildOf(scripts){
-  const want=['pits-stage','pits-spring','pits-writer','pits-spring-live','pits-motion','pits-arena'],out=[];
+  const want=['pits-stage','pits-cine','pits-cine-fx','pits-spring','pits-writer','pits-spring-live','pits-motion','pits-arena'],out=[];
   for(const src of scripts||[]){const m=/([a-z-]+)\.js\?v=([0-9a-f]+)/.exec(src||'');if(m&&want.includes(m[1]))out.push(m[1].replace('pits-','')+'='+m[2]);}
   return out.join(';').slice(0,200);
 }

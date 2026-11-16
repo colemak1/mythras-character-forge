@@ -28,6 +28,14 @@ function pitsStageCue(entry,names){
   if(/ evades$/.test(t))return {type:'evade',actor,grade,good,exid:m.exid||0};
   if((r=new RegExp(' hits '+PSTAGE_LOCRE+'$').exec(t))&&m.impact)
     return {type:'hit',actor:m.actor||actor,target:m.impact.target,loc:PSTAGE_LOCS[m.impact.location]||PSTAGE_LOCS[r[1]],lost:m.impact.hpLost||0,px:m.px||null};
+  // contacts that are not a blow to the body (audit CA-08): the weapon is struck (Damage Weapon, or a longer weapon
+  // attacked, Core p.106), an Impale is withdrawn and the withdrawal's own injury; and a fighter's own Accidental
+  // Injury (CL-04)
+  if(t==='Weapon struck')return {type:'weapon',actor:m.actor||null,px:m.px||null};
+  if(t==='Withdraw Impale')return {type:'withdraw',actor,ok:/weapon withdrawn/.test(b)};
+  if(t==='Withdrawal injury'&&m.impact)
+    return {type:'withdrawHit',actor:m.actor||actor,target:m.impact.target,loc:PSTAGE_LOCS[m.impact.location]||'chest',lost:m.impact.hpLost||0};
+  if(t==='Accidental Injury'&&m.impact)return {type:'selfhit',actor:m.impact.target,target:m.impact.target,loc:PSTAGE_LOCS[m.impact.location]||'chest',lost:m.impact.hpLost||0};
   if(t==='No Damaging Hit')return {type:'deflect',actor:m.actor||null,evaded:/evades/.test(b),px:m.px||null};
   if((t==='Hit Location'||t==='Choose Location')&&m.location)
     return {type:'locate',target:m.target||other(actor),loc:PSTAGE_LOCS[m.location],chosen:t==='Choose Location'};
@@ -73,7 +81,7 @@ function pitsStageOutcome(cue,ex){
 // How long the replay should stay on a beat so its animation can finish (ms).
 // Windup and guard are held through the dice (exPose), so a beat only needs its own motion plus a short read;
 // the dice tray is the reading pause. Targets follow the prototype: strike ~120ms, hit 100+170ms, recover ~250ms.
-const PSTAGE_HOLD={attack:350,parry:350,evade:650,hit:1100,deflect:1100,locate:500,trip:900,disarm:1000,stand:500,wound:600,limb:600,lodge:600,end:1800};
+const PSTAGE_HOLD={weapon:1100,withdraw:600,withdrawHit:1100,selfhit:900,attack:350,parry:350,evade:650,hit:1100,deflect:1100,locate:500,trip:900,disarm:1000,stand:500,wound:600,limb:600,lodge:600,end:1800};
 function pitsStageHold(entry,names,fallback){
   const c=pitsStageCue(entry,names);return c&&PSTAGE_HOLD[c.type]?PSTAGE_HOLD[c.type]:fallback;
 }
@@ -118,7 +126,9 @@ function pitsStageLook(f){
     // which shield (the engine's key: buckler, heater, kite...), so it is drawn and meets blows at its own size
     shieldKey:f.shield&&f.shield!=='none'?String(f.shield):null,
     // an arm hangs limp only when the engine has disabled it (a failed Endurance test), not just because its hit points are low
-    limp:{rarm:out('Right Arm'),larm:out('Left Arm')},pressed:(f.pressedTurns||0)>0,scale:Math.max(.92,Math.min(1.1,.95+((+f.siz||13)-13)*.012))};
+    limp:{rarm:out('Right Arm'),larm:out('Left Arm')},
+    // a weapon or shield the other has pinned (Pin Weapon, Core p.97): held down until freed (audit CA-12)
+    pinned:f.pinnedGear==='weapon'||f.pinnedGear==='shield'?f.pinnedGear:null,pressed:(f.pressedTurns||0)>0,scale:Math.max(.92,Math.min(1.1,.95+((+f.siz||13)-13)*.012))};
 }
 // What the engine says is stuck in, or wrapped around, a fighter right now (pure).
 // lodged: [{loc,weapon,holder,held}] from impaledWounds; held when the wielder
@@ -207,7 +217,7 @@ function pitsStageAim(base,wk,swap,target,opts){
 // The beats of a batch (log entries, dice and checkpoints) arrive in the order the engine produced them. A blow is
 // presented only once its whole exchange is resolved: any resistance roll or decision that follows the contact is
 // finished first, so the contact flows straight into its real consequence. Dice are always shown at once.
-const PSTAGE_BLOW=['hit','deflect'];
+const PSTAGE_BLOW=['hit','deflect','weapon','withdrawHit'];
 const PSTAGE_AFTER=['wound','limb','drop','lodge','end','falling'];
 const PSTAGE_EFFECT=['trip','disarm'];
 function pitsStageKind(e,names){
@@ -498,10 +508,15 @@ function psDraw(f,now){
 }
 // The movement language (pits-motion.js): the figure is a function of the stage clock. Its joints are measured with y up
 // from the floor; the drawing below has y down, and its weapon angle is measured from straight down.
+// what the rig is told about the fighter's arms and equipment (also used for the afterimages, CL-03)
+function psPoseOpt(f,L){
+  const wLimp=L.swap?L.limp.larm:L.limp.rarm,oLimp=L.swap?L.limp.rarm:L.limp.larm,armed=!!L.armed&&!f.dropEl;
+  return {weapon:wLimp,off:oLimp,unarmed:!armed,pinW:L.pinned==='weapon'&&armed,pinS:L.pinned==='shield'&&!!L.shield};
+}
 function psDrawMotion(f,L,now){
   const m=PS.M[f.id],wLimp=L.swap?L.limp.larm:L.limp.rarm,oLimp=L.swap?L.limp.rarm:L.limp.larm;
   // (unarmed: a two-handed grip lets go too)
-  const j=PL().pose(m,PS.clock,{weapon:wLimp,off:oLimp,unarmed:!L.armed||!!f.dropEl}),q=p=>[p[0],-p[1]];
+  const j=PL().pose(m,PS.clock,psPoseOpt(f,L)),q=p=>[p[0],-p[1]];
   const g={Sh:q(j.S),wSh:q(j.wS),oSh:q(j.oS),M:q(j.M),H:q(j.P),hd:q(j.Hd),E:q(j.E),Hn:q(j.Hn),bE:q(j.oE),bHn:q(j.oHn),K:q(j.K),bK:q(j.bK),F:q(j.F),bF:q(j.bF)};
   f.scale=1;f.hx=m.hx;if(PS.cine)f.face=m.face;
   // Impale, "Keep hold": the weapon is in the other's wound and still in this hand. It is drawn once, as the lodged
@@ -1129,6 +1144,17 @@ function psPlaceM(id){
   const st=psStateOf(f);PL().place(m,PS.clock,PS.gap,st);f.spent=false;f.mDown=st==='lying';
 }
 // a rig for each fighter, rebuilt (and placed) when the weapon or the weapon hand changes
+// What the replay needs to repeat the live picture (CA-09): the bout's seed and, per blow (by its log entry), the move
+// and the defence declared live. Kept for the bout; a replay rebuilds the figures and reads it back.
+function psCineTape(){if(!PS.cineTape)PS.cineTape={seed:null,by:{}};return PS.cineTape;}
+function psCineBlow(id,s){
+  const L=PL();if(!PS.cine)return L.blow(PS.M,id,PS.clock,s);
+  const key=PS.cueFor||null,tape=psCineTape(),kept=key!=null&&psReplaying()?tape.by[key]:null;
+  const r=L.blow(PS.M,id,PS.clock,{...s,key:key==null?undefined:key,move:kept?kept.move:undefined,ward:kept?kept.ward:undefined});
+  if(key!=null&&!psReplaying())tape.by[key]={move:r.move,ward:r.ward||null};
+  psEmit('move',{actor:id,key,move:r.move,ward:r.ward||null,style:r.style||null,finish:r.finish||null,replay:psReplaying()});
+  return r;
+}
 function psMotionFigs(){
   // a new bout chooses its movement once, when neither fighter has been made: the spring trial if it is switched on and
   // both weapons have a family
@@ -1138,9 +1164,17 @@ function psMotionFigs(){
   for(const id of ['a','b']){
     const f=PS.fig[id];if(!f||!f.look)continue;const wk=f.look.wk,m=PS.M[id];
     // (in the spring trial the pair shares one world: a fighter is not remade mid-bout)
-    if(PS.springOn&&m)continue;
+    // (the cinematic stage keeps each figure, but what the engine changed is passed on: a switched weapon hand, so
+    // arm targets are the drawn arms, CL-01; another weapon, so aim and contact use the drawn one)
+    if(PS.springOn&&m){
+      if(PS.cine){m.swap=!!f.look.swap;if(m.weapon.len!==wk.len||m.weapon.key!==wk.kind){m.weapon={key:wk.kind,len:wk.len};m.wk=wk;m.prof=PL().profile(wk);}
+        m.shield=!!f.look.shield;if(f.look.shieldKey)m.shieldKey=f.look.shieldKey;}
+      continue;
+    }
     if(!m||m.weapon.len!==wk.len||m.weapon.key!==wk.kind||m.swap!==!!f.look.swap){PS.M[id]=PL().fighter(id,wk,f.look.swap,f.look);PS.M[id].keep=20000;psPlaceM(id);}
   }
+  // (the bout's seed: kept live, given back to the figures a replay rebuilds)
+  if(PS.cine&&PS.M.a&&PS.M.a.pair){const tape=psCineTape();if(psReplaying()&&tape.seed!=null)PS.M.a.pair.seed=tape.seed;else if(tape.seed==null)tape.seed=PS.M.a.pair.seed;}
 }
 // A lull: once nothing has moved for a while, footwork the engine asked for (a new range) is drawn, and a
 // figure the engine has put on (or taken off) the floor without a motion of its own goes down or gets up.
@@ -1216,12 +1250,23 @@ async function psMotionCue(cue){
       const w=psBodyPt(tgt,cue.loc);psReticle(w,tgt,cue.loc);
       if(cue.chosen)psDom(psWorld(tgt,tgt.pts?tgt.pts.hd:[0,-120]),'Chosen: '+(PSTAGE_LOCNAME[cue.loc]||''),'fx');
       psEmit('locate',{target:tgt.id,loc:cue.loc,point:w.map(Math.round)});await psSleep(420);
-    }else if(cue.type==='hit'||cue.type==='deflect'){
+    }else if(PSTAGE_BLOW.includes(cue.type)){
       await psMotionBlow(cue);psReleaseExchange();
+    }else if(cue.type==='withdraw'&&me){
+      // a withdrawal that worked is drawn by its injury (the blow that follows); one that failed: the weapon stays in
+      psDom(psWorld(me,me.pts?me.pts.Sh:[0,-60]),cue.ok?'Withdraws the weapon':'The weapon stays in','fx');psEmit('withdraw',{actor:me.id,ok:!!cue.ok});
+      if(!psReplaying())await psSleep(300);
+    }else if(cue.type==='selfhit'&&me&&PS.M[me.id]){
+      // Accidental Injury: the fighter's own blow, drawn on that fighter (CL-04)
+      const m=PS.M[me.id],end=L.flinch(m,PS.clock,cue.loc);PS.busyUntil=Math.max(PS.busyUntil,end);
+      const w=psW(PL().partAt(m,PS.clock+80,cue.loc));await psUntil(PS.clock+80);
+      psEmit('contact',{kind:'self',actor:me.id,target:me.id,loc:cue.loc,point:w.map(Math.round),lost:cue.lost});
+      if(cue.lost>0){psBurst(w,'blood',8+cue.lost*2);psDom(w,'−'+cue.lost,'dmg');psSfx('hit');if(psFx())psFx().impact(w,'hit',cue.lost,me.face);}
+      psDom(psWorld(me,me.pts?me.pts.hd:[0,-120]),'Accidental Injury','fx');await psUntil(end);
     }else if(cue.type==='trip'&&tgt&&me){
       // stand-in until trips have a phrase: a blow at the front leg; if it goes, the fall
       psDom(psWorld(me,me.pts?me.pts.Sh:[0,-60]),'Trip Opponent','fx');PS.intents={};
-      const r=L.blow(PS.M,me.id,PS.clock,{outcome:'armour',loc:'rleg',lost:0,fall:cue.fell?'sit':false,flow:psReplaying()});
+      const r=psCineBlow(me.id,{outcome:'armour',loc:'rleg',lost:0,fall:cue.fell?'sit':false,flow:psReplaying()});
       PS.busyUntil=r.end;me.spent=tgt.spent=true;
       // (the Prone chip waits until the tripped fighter is sat down: Work's check B1, 2026-11-14)
       // (and only if the figure really goes down: the HUD follows the picture, audit CA-01)
@@ -1235,7 +1280,7 @@ async function psMotionCue(cue){
     }else if(cue.type==='disarm'&&tgt&&me){
       // stand-in until disarms have a phrase: the blow meets the weapon and the weapon goes
       PS.intents={};
-      const r=L.blow(PS.M,me.id,PS.clock,{outcome:'parried',loc:'rarm',lost:0,flow:psReplaying()});
+      const r=psCineBlow(me.id,{outcome:'parried',loc:'rarm',lost:0,flow:psReplaying()});
       PS.busyUntil=r.end;me.spent=tgt.spent=true;
       const c=r.contacts[0],w=psW(c.at);await psUntil(c.t);
       psEmit('contact',{kind:'disarm',actor:me.id,target:tgt.id,point:w.map(Math.round)});
@@ -1277,7 +1322,9 @@ async function psMotionBlow(cue){
   const ex=PS.ex||{},px=cue.px||{},L=PL();
   const atkId=cue.actor||ex.atk||(cue.target?(cue.target==='a'?'b':'a'):null);
   const atk=PS.fig[atkId],def=atk&&psOther(atk);if(!atk||!def||!PS.M[atk.id]||!PS.M[def.id])return;
-  const out=pitsStageOutcome(cue,ex),loc=cue.loc||'chest',lost=cue.lost||0;
+  // (the weapon struck, not the body: drawn as the blow meeting the weapon, and no body damage, CA-08)
+  const weaponHit=cue.type==='weapon',pulled=cue.type==='withdrawHit';
+  const out=weaponHit?'parried':pulled?(cue.lost>0?'wound':'zero'):pitsStageOutcome(cue,ex),loc=weaponHit?'rarm':cue.loc||'chest',lost=weaponHit?0:cue.lost||0;
   const reactTool=px.reactTool||ex.reactTool||'weapon',shield=out.endsWith('ward')||(reactTool==='shield'&&!!def.look.shield);
   const after=(cue.record&&cue.record.after)||[],endC=after.find(c=>c.type==='end'),limbC=after.find(c=>c.type==='limb'),dropC=after.find(c=>c.type==='drop');
   // (a fighter this blow has finished, who still acts once before going down: no Press Advantage hold on it, report FR-07)
@@ -1299,7 +1346,10 @@ async function psMotionBlow(cue){
   // the attacking tool (the engine's px.tool, or the attack beat's): a shield strike is drawn as one. Kept apart from
   // `shield`, which is the defender's
   const strike=(px.tool==='shield'||(px.tool==null&&ex.shield))&&atk.look&&atk.look.shield?'shield':null;
-  const r=L.blow(PS.M,atk.id,PS.clock,{outcome:out,loc,lost,shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying()});
+  // The replay repeats the live move (CA-09): each blow draws its choices from a stream keyed by its log entry, and
+  // the move and the defence declared live are kept on the tape and given again.
+  const r=pulled?L.withdraw(PS.M,atk.id,PS.clock,{loc,lost,defeated,flow:psReplaying()}):
+    psCineBlow(atk.id,{outcome:out,loc,lost,shield:weaponHit?false:shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying()});
   PS.busyUntil=r.end;atk.spent=def.spent=true;
   // (the trip's fall is drawn when the blow's own movement has played out, from the pose it left: written into the blow
   // it overlapped the struck fighter's reaction and the head jumped, measured 47 px in one frame)
@@ -1324,6 +1374,10 @@ async function psMotionBlow(cue){
       psBurst(w,'gray',5);psSfx('miss');if(psFx())psFx().impact(w,'miss',1,atk.face);
       if(out==='evaded'){psRing(w);psDom(psWorld(def,def.pts.Sh),'Evaded','blk');}
       else psDom(w,out==='fumble'?'Fumble!':'Miss','miss');
+    }else if(c.kind==='clash'&&weaponHit){
+      psEmit('contact',{kind:'weapon',actor:atk.id,target:def.id,point:w.map(Math.round)});
+      psBurst(w,'spark',14);psRing(w);psSfx('pick');if(psFx())psFx().impact(w,'clash',.8,atk.face);
+      psDom(w,'Weapon struck','blk');await psHitStop(PS.cine?100:60);
     }else if(c.kind==='clash'){
       const full=out==='parried'||out==='full-parry'||out==='full-ward';
       psEmit('contact',{kind:full?out:'deflect',actor:atk.id,target:def.id,point:w.map(Math.round),tip:psOnBlade(atk,w).map(Math.round)});
@@ -1452,7 +1506,7 @@ function pitsStageSync(){
   const fresh=PS.run!==S||PS.fighters.b!==S.fighters.b;
   if(fresh){psSettle();for(const k of Object.keys(PS.lodge)){PS.lodge[k].remove();delete PS.lodge[k];}
     for(const id of ['a','b']){const f=PS.fig[id];if(f.dropEl){f.dropEl.remove();f.dropEl=null;}f.look=null;}
-    PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};
+    PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};if(!psReplaying())PS.cineTape=null;
     PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.tripAhead=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
   for(const id of ['a','b']){
     const f=PS.fig[id];f.look=pitsStageLook(view[id]);

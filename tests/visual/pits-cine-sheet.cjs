@@ -29,7 +29,7 @@ const OUT=process.argv[3]||fs.mkdtempSync(path.join(os.tmpdir(),'pits-cine-sheet
       for(const id of ['a','b'])L.place(PS.M[id],PS.clock,PS.gap,'guard');
       let t=PS.clock+50;
       if(c.down){t=L.fall(PS.M[c.down],t)+200;PS.fig[c.down].mDown=true;}
-      const r=L.blow(PS.M,'a',t,{outcome:c.outcome||'wound',loc:c.loc||'chest',lost:c.lost||0,strike:c.strike||null,shield:!!c.shieldWard,fall:c.fall||false});
+      const r=c.withdraw?L.withdraw(PS.M,'a',t,{loc:c.loc||'chest',lost:c.lost||0,defeated:!!c.defeated}):L.blow(PS.M,'a',t,{outcome:c.outcome||'wound',loc:c.loc||'chest',lost:c.lost||0,strike:c.strike||null,shield:!!c.shieldWard,fall:c.fall||false});
       if(L.fixChoices)L.fixChoices(null);
       window.__sheet={t,r};
       return {t,end:r.end,move:r.move,contacts:r.contacts.map(k=>[k.t-t,k.kind]),w:S.fighters.a.weapon+' / '+S.fighters.b.weapon};

@@ -155,12 +155,13 @@ function pbTripLine(l,g){
 // Plain lines for one exchange, oldest first.
 function pbStory(g){
   if(!g)return [];
-  const out=[];
+  const out=[],last=[...g.entries].reverse().find(l=>paBlowLine(l))||null;
   for(const l of g.entries){
     const r=pbRollOf(l);
     if(r){out.push({cls:'roll',g:r.grade,html:`<b>${esc(l.title)}</b>: rolled <b>${r.roll}</b>, needed ${r.pct} or less · <span class="g">${PB_GRADE_WORD[r.grade]}</span>`});continue;}
     if(l.title==='Trip Opponent'){const t=pbTripLine(l,g);if(t){out.push(t);continue;}}
-    if(paBlowLine(l))continue;
+    // (an earlier blow of the same exchange, an Impale before its withdrawal, is told where it happened; the last is the result)
+    {const b=paBlowLine(l);if(b){if(l!==last)out.push({cls:'end'+(/Wounded/.test(b.head)?' hurt':''),html:`<b>${esc(b.head)}</b> · ${esc(b.math)}`});continue;}}
     if(/^(Hit Location|Damage|Choose Location)$/i.test(l.title)||l.kind==='hit'||l.kind==='hurt')
       out.push({cls:l.kind==='hurt'?'hurt':'fx',html:`<b>${esc(l.title)}</b>: ${esc(pbClip(l.body,120))}`});
   }
