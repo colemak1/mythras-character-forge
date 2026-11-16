@@ -28,7 +28,9 @@ const EASE={
   skid:u=>1-Math.pow(1-u,2.4),
   // up and down again within one key (jump heights are written with `arc`, not with this)
 };
-const CH=['px','py','ffx','ffy','bfx','bfy','lean','bend','head','ua','fa','oua','ofa','w','turn'];
+// kd: the back knee down on the floor (0: the leg as the feet put it; 1: kneeling on it; between, the leg turns
+// from one to the other with every bone its own length: batch (b), on one knee from the ground)
+const CH=['px','py','ffx','ffy','bfx','bfy','lean','bend','head','ua','fa','oua','ofa','w','turn','kd'];
 const ANG=['lean','bend','head','ua','fa','oua','ofa','w'];
 // parts that arrive a little after the body: the head, the empty arm, the upper spine
 const LAG={head:34,oua:36,ofa:48,bend:14,turn:8};
@@ -143,7 +145,32 @@ function solve(v,f,m,opt){
   }
   const kneeWay=[f*.9,.45];
   const fl=ik2(P,[v.ffx,Math.max(0,v.ffy)],DIM.thigh,DIM.shin,kneeWay),bl=ik2(P,[v.bfx,Math.max(0,v.bfy)],DIM.thigh,DIM.shin,kneeWay);
-  return {P,M,S,wS,oS,Hd,E,Hn,oE,oHn,K:fl.mid,F:fl.end,bK:bl.mid,bF:bl.end,tip,w,blen,grip};
+  let bK=bl.mid,bF=bl.end;
+  if(v.kd>.001)({bK,bF}=kneelLeg(P,f,bK,bF,Math.min(1,v.kd)));
+  return {P,M,S,wS,oS,Hd,E,Hn,oE,oHn,K:fl.mid,F:fl.end,bK,bF,tip,w,blen,grip};
+}
+// The back leg kneeling (batch (b)): the knee on the floor behind the hips, the shin along the floor behind it. The
+// thigh and the shin turn from the leg the feet asked for to this one by angle (u), so the bones keep their length and
+// nothing jumps; the foot is wherever the leg puts it, never under the floor.
+function kneelLeg(P,f,K0,F0,u){
+  // (in the fighter's own frame: x forward, angles from forward, up positive)
+  const L=p=>[f*(p[0]-P[0]),p[1]-P[1]],W=q=>[P[0]+f*q[0],P[1]+q[1]],at=(a,b)=>Math.atan2(b[1]-a[1],b[0]-a[0]);
+  const mix=(a,b,w)=>{let d=(b-a)%(2*Math.PI);if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;return a+d*w;};
+  const dh=Math.max(2,P[1]-2),kx=dh<DIM.thigh?Math.sqrt(DIM.thigh*DIM.thigh-dh*dh):6;
+  // the leg on the way: the knee drawn up in front, the shin hanging (the foot never passes through the floor or
+  // swaps the knee to the other side, whatever the feet do meanwhile)
+  const TUCK=[rad(80),rad(-110)];
+  const k0=L(K0),f0=L(F0);
+  let ta,sa;
+  if(u<.25){const w=u/.25;ta=mix(at([0,0],k0),TUCK[0],w);sa=mix(at(k0,f0),TUCK[1],w);}
+  else{const w=(u-.25)/.75;ta=mix(TUCK[0],Math.atan2(-dh,-kx),w);sa=mix(TUCK[1],Math.PI,w);}
+  let k=[Math.cos(ta)*DIM.thigh,Math.sin(ta)*DIM.thigh];
+  // (nor the knee: it rests on it)
+  if(k[1]<1-P[1]){const sy=(1-P[1])/DIM.thigh;k=[Math.sign(k[0]||-1)*Math.sqrt(Math.max(0,1-sy*sy))*DIM.thigh,1-P[1]];}
+  let fo=[k[0]+Math.cos(sa)*DIM.shin,k[1]+Math.sin(sa)*DIM.shin];
+  // (the shin does not go through the floor on the way: it turns up off it, the same length)
+  if(fo[1]<-P[1]){const dy=Math.min(DIM.shin,k[1]+P[1]),dx=Math.sqrt(DIM.shin*DIM.shin-dy*dy);fo=[k[0]+Math.sign(fo[0]-k[0]||-1)*dx,k[1]-dy];}
+  return {bK:W(k),bF:W(fo)};
 }
 
 // ----- the track: whole-pose keys, sampled per channel -----
@@ -199,10 +226,12 @@ function key(m,t,P,o){
   if(t<=last.t)t=last.t+1;
   const base=o.at!=null?o.at:m.base;
   const Q=fill(m,P||{});
+  // (the knee stays down through a hold or a lean; a pose that places the feet says whether it kneels)
+  Q.kd=P&&P.kd!=null?P.kd:P&&(P.ff||P.bf)?0:(m.lastP.kd||0);
   if(P&&P.h){const a=armAngles(P.h,P.eb||0);Q.ua=a.ua;Q.fa=a.fa;}
   if(P&&P.o){const a=armAngles(P.o,P.oeb||0);Q.oua=a.ua;Q.ofa=a.fa;}
   delete Q.h;delete Q.o;delete Q.eb;delete Q.oeb;
-  const v={px:base+f*Q.hip[0],py:Q.hip[1],ffx:base+f*Q.ff[0],ffy:Q.ff[1],bfx:base+f*Q.bf[0],bfy:Q.bf[1],turn:Q.turn||0};
+  const v={px:base+f*Q.hip[0],py:Q.hip[1],ffx:base+f*Q.ff[0],ffy:Q.ff[1],bfx:base+f*Q.bf[0],bfy:Q.bf[1],turn:Q.turn||0,kd:Q.kd};
   const pl=o.plant;
   if(pl==='ff'||pl==='both'){v.ffx=pv.ffx;v.ffy=pv.ffy;Q.ff=[f*(v.ffx-base),v.ffy];}
   if(pl==='bf'||pl==='both'){v.bfx=pv.bfx;v.bfy=pv.bfy;Q.bf=[f*(v.bfx-base),v.bfy];}
@@ -218,7 +247,9 @@ function key(m,t,P,o){
     if(lift[k]!=null)continue;const d=Math.abs(v[k+'x']-pv[k+'x']);
     if(d>5&&v[k+'y']<2&&pv[k+'y']<2)lift[k]=Math.min(20,5+d*.14);
   }
-  const k={t,v,e:o.e||'out',ec:o.ec||null,fe:o.fe||null,lift,arc:o.arc||0,face:f,slide:!!o.slide,tag:o.tag||null};
+  let ec=o.ec||null;
+  if(v.kd!==pv.kd)ec={...(ec||{}),kd:v.kd>pv.kd?'out5':'in'};
+  const k={t,v,e:o.e||'out',ec,fe:o.fe||null,lift,arc:o.arc||0,face:f,slide:!!o.slide,tag:o.tag||null};
   if(o.lead)k.lead=true;
   m.keys.push(k);
   m.base=base;m.lastP=Q;
@@ -237,7 +268,7 @@ function cut(m,t){
   // the local pose that matches, around the base under the hips
   const L=m.lastP,base=m.base=(v.ffx+v.bfx)/2;
   m.lastP={...L,hip:[f*(v.px-base),v.py],ff:[f*(v.ffx-base),v.ffy],bf:[f*(v.bfx-base),v.bfy],
-    lean:v.lean,bend:v.bend,head:v.head,ua:v.ua,fa:v.fa,oua:v.oua,ofa:v.ofa,w:v.w,turn:v.turn};
+    lean:v.lean,bend:v.bend,head:v.head,ua:v.ua,fa:v.fa,oua:v.oua,ofa:v.ofa,w:v.w,turn:v.turn,kd:v.kd};
 }
 
 // ----- the pose library (cut family unless a name says otherwise) -----
@@ -267,6 +298,20 @@ const POSE={
   kneel:    {hip:[-6,36],lean:16,bend:8,head:-10,ff:[30,0],bf:[-34,0],h:[30,-12],w:50,o:[-8,-42],turn:2},
   prop:     {hip:[-30,12],lean:-38,bend:14,head:20,ff:[34,0],bf:[10,0],h:[28,6],w:30,o:[-30,-46],turn:0},
   flat:     {hip:[-40,7],lean:-88,bend:-2,head:-4,ff:[50,2],bf:[36,2],h:[-30,-6],w:176,o:[-34,-10],turn:0},
+  // more ways to wait on the ground (batch (b)): sitting up with the weapon out in front, a hand behind; rolled back on
+  // a hip with the weapon up across the body
+  sit:      {hip:[-20,12],lean:-14,bend:16,head:-6,ff:[44,0],bf:[26,0],h:[34,-2],w:26,o:[-30,-52],turn:0},
+  side:     {hip:[-26,10],lean:-52,bend:30,head:22,ff:[28,0],bf:[10,0],h:[26,16],eb:1,w:104,o:[-18,-44],turn:-4},
+  // attacking from the ground (batch (b)), always from one knee (the back knee on the floor): a rising cut; a hand
+  // on the floor driving the body behind the point; the weapon over the top and chopped down at a leg
+  gUpRise:  {hip:[-6,34],lean:6,bend:4,head:-6,ff:[38,0],bf:[-76,0],kd:1,h:[-22,-34],w:-150,o:[26,-30],turn:-6},
+  gUpThrust:{hip:[-12,26],lean:40,bend:10,head:-24,ff:[40,0],bf:[-70,0],kd:1,h:[-30,-6],eb:-1,w:4,o:[8,-66],turn:-8},
+  gUpChop:  {hip:[-10,34],lean:-6,bend:-4,head:-2,ff:[38,0],bf:[-76,0],kd:1,h:[-6,36],eb:1,w:150,o:[24,-36],turn:-4},
+  // parrying from the ground, by where the blow comes: lying back on the elbow with the weapon across above the face;
+  // sitting up with it upright in front; sitting forward with it down across the legs
+  gWardHigh:{hip:[-30,12],lean:-46,bend:22,head:14,h:[18,38],eb:1,w:168,o:[-28,-34]},
+  gWardMid: {hip:[-24,14],lean:-18,bend:16,head:-6,h:[36,8],eb:1,w:100,o:[-30,-50]},
+  gWardLow: {hip:[-18,14],lean:8,bend:14,head:-14,h:[36,-16],w:-50,o:[-30,-50]},
   face:     {hip:[30,8],lean:86,bend:4,head:6,ff:[-52,2],bf:[-38,2],h:[36,-2],w:-4,o:[30,-10],turn:0},
   yield:    {hip:[-8,40],lean:10,bend:8,head:18,ff:[30,0],bf:[-30,0],h:[6,-56],w:-80,o:[26,20],oeb:1,turn:0},
   // Compel Surrender: the weapon lowered, the off hand up and out with the white flag (the stage draws the flag)
@@ -274,6 +319,14 @@ const POSE={
   victory:  {hip:[0,82],lean:2,bend:-2,head:-4,ff:[18,0],bf:[-20,0],h:[20,-48],w:-64,o:[-6,-54],turn:2},
 };
 const READY=['guard','guardLow','guardHigh','guardPoint'];
+const GROUND_READY=['prop','sit','side'];
+// the body of each attack from the ground (no arm: aimed() puts the weapon on the target), its wind-up, and the
+// standing move it swings like (the swing's angles, spin and follow-through)
+const GROUND={
+  gRise:  {body:{hip:[8,36],lean:22,bend:6,head:-12,ff:[46,0],bf:[-70,0],kd:1,turn:10,o:[-30,-44]},up:'gUpRise',like:'rise'},
+  gThrust:{body:{hip:[10,30],lean:36,bend:6,head:-20,ff:[52,0],bf:[-64,0],kd:1,turn:12,o:[-34,-36]},up:'gUpThrust',like:'lunge'},
+  gChop:  {body:{hip:[6,34],lean:34,bend:10,head:-18,ff:[46,0],bf:[-70,0],kd:1,turn:10,o:[-30,-40]},up:'gUpChop',like:'over'},
+};
 
 // ----- on the ground -----
 // A fighter the rules have on the ground acts from there (audit CA-02): the highest it goes is the one knee it attacks
@@ -306,7 +359,7 @@ function fighter(id,wk,swap,look){
   return m;
 }
 function toV(m,Q,base,f){
-  const v={px:base+f*Q.hip[0],py:Q.hip[1],ffx:base+f*Q.ff[0],ffy:Q.ff[1],bfx:base+f*Q.bf[0],bfy:Q.bf[1],turn:Q.turn||0};
+  const v={px:base+f*Q.hip[0],py:Q.hip[1],ffx:base+f*Q.ff[0],ffy:Q.ff[1],bfx:base+f*Q.bf[0],bfy:Q.bf[1],turn:Q.turn||0,kd:Q.kd||0};
   for(const c of ANG)v[c]=Q[c];return v;
 }
 const other=m=>m.pair[m.id==='a'?'b':'a'];
@@ -342,7 +395,8 @@ function takeFx(m){const p=m.pair,l=p.fx;p.fx=[];return l;}
 
 // the ready stance a fighter comes back to: never twice the same in a row, lower and closed when hurt
 function readyPose(m,r){
-  if(m.down)return m.down==='flat'?'flat':'prop';
+  if(m.down){if(m.down==='flat')return 'flat';
+    m.gready=pick(r,GROUND_READY.filter(n=>n!==m.gready));return m.gready;}
   if(m.hurt)return 'hurt';
   const list=READY.filter(n=>n!==m.ready&&(m.prof.fam!=='thrust'||n!=='guardLow')&&!(m.prof.two&&n==='guardPoint'));
   m.ready=pick(r,list);return m.ready;
@@ -458,7 +512,7 @@ const dustAt=(m,t,x,n,dir)=>fx(m,{t,kind:'dust',x,n:n||5,dir:dir||0});
 const CHAMBER={cut:['upHigh','upSide','upLow'],thrust:['upThrust','upThrust','upStab']};
 function chamberFor(m,r,strike){
   if(strike==='shield')return 'upBash';
-  if(m.down)return 'kneel';
+  if(m.down)return m.prof.fam==='thrust'?'gUpThrust':pick(r,['gUpRise','gUpRise','gUpThrust','gUpChop']);
   let list=CHAMBER[m.prof.fam];
   if(m.prof.fam==='thrust'&&(m.prof.two||m.weapon.len>80))list=['upThrust'];
   if(m.prof.two&&m.prof.fam==='cut')list=['upHigh','upLow','upSide'];
@@ -468,7 +522,7 @@ function windUp(m,name){
   const P={...POSE[name]};
   if(m.prof.two&&name==='upThrust'){P.h=[-30,-22];P.w=2;}
   if(m.prof.two&&name==='upHigh'){P.h=[-10,36];P.w=140;}
-  if(m.down){P.hip=[-10,34];P.ff=[30,0];P.bf=[-30,0];P.lean=4;}
+  if(m.down&&!name.startsWith('g')){P.hip=[-10,34];P.ff=[30,0];P.bf=[-30,0];P.lean=4;}
   return P;
 }
 function intent(m,t,kind,pk){
@@ -477,14 +531,15 @@ function intent(m,t,kind,pk){
   cut(m,t);
   if(kind==='attack'||kind==='shield-strike'){
     const name=chamberFor(m,r,kind==='shield-strike'?'shield':null);m.chamber={name,t};
-    key(m,t+90,{...windUp(m,name)},{e:'out',plant:m.down?'both':'ff'});
+    key(m,t+90,{...windUp(m,name)},m.down?{e:'out',slide:true}:{e:'out',plant:'ff'});
     // a moving hold: it keeps sinking a little, so the pause is tense, not dead
     key(m,t+230,{hip:[m.lastP.hip[0]-4,m.lastP.hip[1]-3],lean:m.lastP.lean+2},{e:'out',plant:'both'});
     if(!m.down)dustAt(m,t+60,sample(m,t,true).bfx,3,-faceOf(m));
     return t+230;
   }
   if(m.down){
-    key(m,t+120,{h:kind==='evade'?[10,-20]:[34,10],w:kind==='evade'?40:112,head:-6},{e:'out',plant:'both'});
+    if(kind==='evade')key(m,t+120,{h:[10,-20],w:40,head:-6},{e:'out',plant:'both'});
+    else key(m,t+120,POSE.gWardMid,{e:'out',plant:'both'});
     return t+120;
   }
   if(kind==='evade'){
@@ -525,10 +580,17 @@ function blow(M,aid,t,s){
   const warded=s.ward||(!s.flow&&D.ward&&t-D.ward.t<60000?D.ward.name:null);D.ward=null;
   const H=heightOf(loc),P=A.prof,bash=s.strike==='shield'&&A.shield;
   // --- the attack: which swing ---
-  let move;
+  // From the ground (batch (b)), up onto one knee: a rising cut, a hand on the floor and a drive behind the point, or
+  // a chop over the top at a leg. gm is that move; `move` is the standing swing it swings like.
+  let move,gm=null;
   if(bash)move='bash';
+  else if(A.down){
+    gm=s.move&&GROUND[s.move]?s.move:chambered==='gUpThrust'?'gThrust':chambered==='gUpRise'?'gRise':chambered==='gUpChop'?'gChop':
+      P.fam==='thrust'?'gThrust':H==='low'?pick(r,['gChop','gChop','gRise']):pick(r,['gRise','gRise','gThrust']);
+    move=GROUND[gm].like;
+  }
   // (s.move: the move the live blow chose, given again by the replay: CA-09)
-  else if(s.move&&s.move!=='bash')move=s.move;
+  else if(s.move&&s.move!=='bash'&&!GROUND[s.move])move=s.move;
   else if(P.fam==='thrust')move=chambered==='upStab'?'stab':chambered?'lunge':(!P.two&&A.weapon.len<=80&&H!=='low'&&r()<.4?'stab':'lunge');
   else move=chambered==='upHigh'?'over':chambered==='upLow'?'rise':chambered==='upSide'?'spin':
     H==='low'?pick(r,['over','rise','rise','spin']):H==='high'?pick(r,['over','over','over','spin','rise']):pick(r,['over','rise','over','rise','spin']);
@@ -556,7 +618,8 @@ function blow(M,aid,t,s){
     hold(D,tc-150);
     // (on the ground with a shield: the shield arm comes up into the blow, audit CA-04)
     if(D.down&&useShield)key(D,tc-30,{o:[34,H==='low'?-10:16],oeb:1,head:-8},{e:'out',plant:'both'});
-    else if(D.down)key(D,tc-30,{h:[34,H==='low'?-10:16],eb:1,w:H==='low'?-40:118,head:-8},{e:'out',plant:'both'});
+    // (on the ground: the body comes up into the parry too, by where the blow comes; batch (b))
+    else if(D.down)key(D,tc-30,POSE[H==='high'?'gWardHigh':H==='low'?'gWardLow':'gWardMid'],{e:'out',plant:'both'});
     else key(D,tc-30,wardPose(D,wname),{e:'out5',plant:'bf'});
     const jd=joints(D,tc+60);
     // where the steel meets: the middle of a blade held across, nearer the hand when it is laid back over the head,
@@ -595,7 +658,8 @@ function blow(M,aid,t,s){
   const wHit=move==='over'||move==='spin'?(H==='high'?-22:H==='mid'?-38:-58):move==='rise'?(H==='high'?38:H==='mid'?8:-30):
     move==='stab'?(H==='high'?-34:-48):(H==='high'?12:H==='mid'?-4:-30);
   let body;
-  if(down)body={hip:[6,36],lean:30,bend:8,head:-14,ff:[40,0],bf:[-36,0],turn:10,o:[-30,-30]};
+  if(gm)body={...GROUND[gm].body};
+  else if(down)body={hip:[6,36],lean:30,bend:8,head:-14,ff:[40,0],bf:[-36,0],turn:10,o:[-30,-30]};
   else if(bash)body={hip:[16,56],lean:26,bend:8,head:-12,ff:[52,0],bf:[-46,0],turn:-12,w:150,h:[-24,-26]};
   else if(move==='lunge')body={hip:[22,H==='low'?44:52],lean:H==='low'?40:30,bend:6,head:-22,ff:[70,0],bf:[-58,0],turn:14,o:[-44,-12]};
   else if(move==='stab')body={hip:[16,56],lean:34,bend:10,head:-20,ff:[58,0],bf:[-50,0],turn:12,o:[-36,-20]};
@@ -629,8 +693,8 @@ function blow(M,aid,t,s){
   }
   // wind-up
   if(!chambered){
-    const name=down?'kneel':bash?'upBash':move==='lunge'?'upThrust':move==='stab'?'upStab':move==='rise'?'upLow':move==='spin'?'upSide':'upHigh';
-    keyA(A,tw,windUp(A,name),{e:'out',plant:down?'both':'ff'});
+    const name=gm?GROUND[gm].up:down?'kneel':bash?'upBash':move==='lunge'?'upThrust':move==='stab'?'upStab':move==='rise'?'upLow':move==='spin'?'upSide':'upHigh';
+    keyA(A,tw,windUp(A,name),down?{e:'out',slide:true}:{e:'out',plant:'ff'});
     if(!down)dustAt(A,t0+40,sample(A,t,true).bfx,3,-f);
   }else keyA(A,tw,{hip:[A.lastP.hip[0]-3,A.lastP.hip[1]-2]},{e:'out',plant:'both'});
   // the strike: the body is thrown in first, the weapon whips in last
@@ -638,6 +702,8 @@ function blow(M,aid,t,s){
   const ec={px:'out',py:'out',ffx:'out',bfx:'out',lean:'out',w:move==='lunge'?'in':'in3',ua:'in',fa:'in',turn:'out'};
   // (a shield strike: the shield arrives with the body, not after it, so it is where the blow lands; audit CA-03)
   const kopt={at:aim.at,e:'in',ec,spin,tag:'strike',fe:'out',lead:bash};
+  // (from the ground the body is dragged over the floor on the knee or the backside, never stepped)
+  if(down){kopt.slide=true;if(Math.abs(travel)>24){fx(A,{t:tw,kind:'skid',id:A.id,t1:tc});dustAt(A,tw+20,xa0-f*20,4,-f);}}
   if(move==='spin')kopt.turns={w:-1,oua:-1,ofa:-1};
   if(leap){
     // up and over: the blade comes down with the whole body behind it
@@ -655,6 +721,9 @@ function blow(M,aid,t,s){
   // --- what the blow meets ---
   let end=tc+500,tHit=tc;
   const ready=(m,tt,opt)=>{const n=readyPose(m,r);return key(m,tt,fit(m,n),{e:'io',...(opt||{})});};
+  // the weapon jars off armour: thrown back a little (from the ground, onto the off hand)
+  const jar=th=>A.down?key(A,th+90,gAfter(A,gm,'jar',move,wHit),{at:A.base-f*18,e:'out5',slide:true,spin:{w:move==='rise'?-1:1}}):
+    keyA(A,th+90,{hip:[-8,60],lean:4,h:[10,30],eb:1,w:move==='rise'?-50:104,o:[-30,-10]},{at:A.base-f*26,e:'out5',slide:true,spin:{w:move==='rise'?-1:1}});
   if(stopped){
     contacts.push({t:tc,at:Tc,kind:'clash'});
     if(groundShield)hold(D,tc);       // (the shield stays on the blow until it lands)
@@ -680,22 +749,38 @@ function blow(M,aid,t,s){
       ready(A,tc+560);ready(D,tc+440);end=tc+560;
     }else{
       // thrown back off each other: both skid
+      if(A.down){
+        // from the ground: knocked back onto the off hand, then down into a ground guard
+        key(A,tc+90,gAfter(A,gm,'jar',move,wHit),{at:A.base-f*push*.6,e:'out5',slide:true,spin:{w:move==='rise'?-1:1}});
+        fx(A,{t:tc+5,kind:'skid',id:A.id,t1:tc+200});
+      }else{
       keyA(A,tc+90,{hip:[-16,60],lean:-10,bend:-8,head:10,h:[4,36],eb:1,w:move==='rise'?-60:112,o:[-34,-6],ff:[26,0],bf:[-48,0]},
         {at:A.base-f*push,e:'out5',slide:true,spin:{w:move==='rise'?-1:1}});
       key(D,tc+100,{hip:[D.lastP.hip[0]-14,Math.max(30,D.lastP.hip[1]-8)],lean:D.lastP.lean-12,head:8},{at:D.base+away*(push*.8),e:'out5',slide:true});
       fx(A,{t:tc+5,kind:'skid',id:A.id,t1:tc+240});fx(D,{t:tc+5,kind:'skid',id:D.id,t1:tc+240});
       keyA(A,tc+300,{hip:[-10,56],lean:16,h:[22,-26],w:30},{at:A.base-f*14,e:'out',slide:true});
+      }
       ready(A,tc+540);ready(D,tc+460,{plant:'bf'});end=tc+540;
     }
   }else if(dodge){
     contacts.push({t:tc,at:Tc,kind:'miss'});
     // the swing carries on through the empty air
     const wEnd=move==='rise'?wHit+110:move==='lunge'?wHit-6:wHit-95;
-    if(o==='fumble'){
+    if(o==='fumble'&&A.down){
+      // from the ground: overreached, the weapon hand and the face nearly on the floor, the off hand catching it
+      key(A,tc+130,{hip:[20,30],lean:62,bend:14,head:-30,h:[40,-36],w:wEnd,o:[30,-56]},{at:A.base+f*20,e:'out',spin,slide:true});
+      key(A,tc+420,{hip:[14,28],lean:56,head:-18},{e:'io',plant:'both'});
+      fx(A,{t:tc+60,kind:'skid',id:A.id,t1:tc+220});
+      ready(A,tc+760);end=tc+760;
+    }else if(o==='fumble'){
       keyA(A,tc+130,{hip:[40,34],lean:66,bend:14,head:-34,ff:[78,0],bf:[-30,0],h:[40,-36],w:wEnd,o:[44,-40]},{at:A.base+f*30,e:'out',spin,slide:true});
       keyA(A,tc+420,{hip:[30,30],lean:60,head:-20,o:[40,-52]},{e:'io',plant:'both'});
       fx(A,{t:tc+60,kind:'skid',id:A.id,t1:tc+220});
       ready(A,tc+760);end=tc+760;
+    }else if(A.down){
+      // from the ground: carried on past, then back down into a ground guard
+      key(A,tc+110,gAfter(A,gm,'through',move,wHit),{at:A.base+f*4,e:'out',spin,slide:true});
+      ready(A,tc+460);end=tc+460;
     }else{
       keyA(A,tc+110,{hip:[10,aim.P.hip[1]-4],ff:[52,0],bf:[-46,0],lean:(aim.P.lean||30)+14,head:-28,h:move==='lunge'?aim.P.h:[36,-38],w:wEnd,o:[-46,6]},
         {at:A.base+f*(D.down?0:22),e:'out',spin,slide:true});
@@ -722,16 +807,16 @@ function blow(M,aid,t,s){
     if(light&&(s.fall||s.prone)&&!D.down){
       // nothing got through, but the engine has the fighter on the ground (a Trip, a failed evade): the weapon jars off
       // as below and the fighter goes down as from a blow to the legs (audit CA-01)
-      keyA(A,th+90,{hip:[-8,60],lean:4,h:[10,30],eb:1,w:move==='rise'?-50:104,o:[-30,-10]},{at:A.base-f*26,e:'out5',slide:true,spin:{w:move==='rise'?-1:1}});
+      jar(th);
       goDown(D,th,recoil(loc),KB(0),D.base,away,s.fall==='sit'||/leg/.test(loc));
       ready(A,th+420);end=th+640;
     }else if(light){
       // armour, or nothing got through: the weapon jars off and the struck fighter barely gives
-      keyA(A,th+90,{hip:[-8,60],lean:4,h:[10,30],eb:1,w:move==='rise'?-50:104,o:[-30,-10]},{at:A.base-f*26,e:'out5',slide:true,spin:{w:move==='rise'?-1:1}});
+      jar(th);
       key(D,th+90,{hip:[D.lastP.hip[0]-10,D.lastP.hip[1]-4],lean:D.lastP.lean-10,head:10},{at:D.base+away*16,e:'out5',slide:true});
       ready(A,th+420);ready(D,th+380);end=th+420;
     }else{
-      end=struck(A,D,r,th,{loc,lost,H,move,f,away,wHit,aim,defeated:!!s.defeated,fall:s.fall,prone:!!s.prone,bash,big,leap,impale:!!s.impale&&!bash,held:!!s.held,fx:s.fx||[],slip});
+      end=struck(A,D,r,th,{loc,lost,H,move,f,away,wHit,aim,defeated:!!s.defeated,fall:s.fall,prone:!!s.prone,bash,big,leap,impale:!!s.impale&&!bash,held:!!s.held,fx:s.fx||[],slip,gm});
     }
   }
   // the two never end an exchange standing in each other: the attacker gives ground
@@ -740,7 +825,7 @@ function blow(M,aid,t,s){
     if(sep<want){const d=f*(want-sep);la.v.px-=d;la.v.ffx-=d;la.v.bfx-=d;A.base-=d;}
   }
   // the replay runs straight on: the next exchange is written into this one's recovery
-  const out={tc:contacts.length?contacts[0].t:tc,contacts,end:s.flow&&!s.defeated?Math.min(end,tHit+(dodge?250:290)):end,move,
+  const out={tc:contacts.length?contacts[0].t:tc,contacts,end:s.flow&&!s.defeated?Math.min(end,tHit+(dodge?250:290)):end,move:gm||move,
     ward:warded,leap,...chosen,finish:A.finished||null,release:A.release||null,drop:A.dropAt||null};A.finished=null;A.release=null;A.dropAt=null;
   return out;
 }
@@ -794,6 +879,14 @@ function parryTried(D,r,t,tc,o){
   return way;
 }
 
+// After an attack from the ground (batch (b)): 'through', the swing carried on past the target; 'jar', thrown back
+// off a parry or armour onto the off hand. Still on the knee (if it was) or seated; the hips no higher than the knee.
+function gAfter(A,gm,how,move,wHit){
+  if(how==='jar')return {hip:[-20,24],lean:-22,bend:10,head:12,h:[4,30],eb:1,w:move==='rise'?-60:112,o:[-30,-50]};
+  if(gm==='gThrust')return {hip:[-4,30],lean:16,bend:6,head:-10,h:[-10,-16],eb:-1,w:wHit+6,o:[2,-58]};
+  if(gm==='gChop')return {hip:[8,32],lean:38,bend:12,head:-20,h:[30,-40],w:wHit-70,o:[-30,-46]};
+  return {hip:[10,36],lean:14,bend:-4,head:-8,h:[30,36],eb:1,w:wHit+100,o:[-40,-30]};
+}
 // the defender gets out of the way
 function evade(D,r,tc,o){
   const away=o.away,x=D.base;
@@ -885,7 +978,11 @@ function struck(A,D,r,th,o){
   if(o.defeated){
     return finish(A,D,r,th,o);
   }
-  if(thrust){
+  if(A.down&&!bash){
+    // from the ground: the blade carries on (a thrust is held a moment, then drawn back), still on the knee or seated
+    if(thrust)keyA(A,th+70,{hip:[aim.P.hip[0]+4,aim.P.hip[1]-2]},{e:'out',plant:'both'});
+    key(A,th+(thrust?220:110),gAfter(A,o.gm,'through',move,wHit),{at:A.base+f*(thrust?-14:4),e:'out',spin:thrust?null:spinA,slide:true});
+  }else if(thrust){
     // driven in, held, torn back out
     keyA(A,th+70,{hip:[aim.P.hip[0]+6,aim.P.hip[1]-2]},{e:'out',plant:'both'});
     keyA(A,th+220,{hip:[-18,58],lean:8,h:[-10,-16],eb:-1,w:wHit+6,o:[30,-10]},{at:A.base-f*24,e:'out',slide:true});
@@ -902,7 +999,7 @@ function struck(A,D,r,th,o){
   if(D.down){
     key(D,th+90,{...POSE.flat,hip:[-44,7]},{at:x+away*kb*.5,e:'out5',slide:true});
     fx(D,{t:th,kind:'skid',id:D.id,t1:th+240});
-    key(D,th+520,POSE.prop,{e:'io'});
+    key(D,th+520,fit(D,readyPose(D,r)),{e:'io'});
     keyA(A,tA+330,fit(A,readyPose(A,r)),{e:'io'});
     return th+560;
   }
@@ -919,8 +1016,8 @@ function struck(A,D,r,th,o){
     fx(D,{t:th+10,kind:'ghost',id:D.id,t1:th+400});fx(D,{t:th+400,kind:'land',x:x+away*d,power:1});
     fx(D,{t:th+400,kind:'skid',id:D.id,t1:th+600});fx(D,{t:th,kind:'launch',id:D.id});
     key(D,th+860,fit(D,'hurt'),{e:'io'});
-    // the attacker comes after it
-    keyA(A,tA+250,{hip:[0,58],lean:18,h:[20,-30],w:-30,ff:[36,0],bf:[-42,0]},{at:A.base+f*(d*.55),e:'io'});
+    // the attacker comes after it (not from the ground)
+    if(!A.down)keyA(A,tA+250,{hip:[0,58],lean:18,h:[20,-30],w:-30,ff:[36,0],bf:[-42,0]},{at:A.base+f*(d*.55),e:'io'});
     keyA(A,tA+520,fit(A,readyPose(A,r)),{e:'io'});
     return th+880;
   }
@@ -936,7 +1033,7 @@ function struck(A,D,r,th,o){
   fx(D,{t:th+5,kind:'skid',id:D.id,t1:th+300});
   key(D,th+540,fit(D,'hurt'),{e:'io',plant:'bf'});
   // the attacker presses after the retreating fighter
-  keyA(A,tA+300,fit(A,readyPose(A,r)),{at:A.base+f*Math.max(0,kb-50),e:'io'});
+  keyA(A,tA+300,fit(A,readyPose(A,r)),{at:A.base+f*(A.down?0:Math.max(0,kb-50)),e:'io'});
   return Math.max(th+560,tA+320);
 }
 

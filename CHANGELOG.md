@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: fighting from the ground
+
+- A fighter on the ground now fights from there (HANDOFF batch (b)). It used to attack from a squat and scuttle across the floor, parry with the arm alone, and always wait propped on one hand.
+- **Attacks** come up onto one knee, the back knee and shin on the floor, and the body is dragged over the floor on the knee, not stepped. Three moves: a rising cut off the knee; a drive behind the point, crouched with the off hand pushing off the floor (thrusting weapons always use this); and a chop over the top at a leg. Each has its own follow-through, a knock back onto the off hand off a parry or armour, and a fumble that sprawls forward.
+- **Parries** from the ground bring the body up too: lying back on an elbow with the weapon across above the face for a blow to the head, sitting up for the body, sitting forward with the weapon down for the legs.
+- **Waiting** on the ground: propped on a hand, sitting up with the weapon out in front, or rolled back on a hip, never the same twice running.
+- The fighter still never rises above the one knee until Regain Footing. Rules and dice are unchanged; standing fighters look exactly as before (the locked look).
+- Tests: `tests/pits-cine-ground.cjs` (616 blows from the ground). Frame sheets: `docs/pits-visual-checks/cine-ground-*.jpg`.
+
 ## The Pits: range you can see
 
 - When the two weapons' Reach differs (dagger against spear, for example), the stage now shows who the range favours (owner, 2026-11-16: "it's really hard to tell when you have an advantage or disadvantage because of range").
