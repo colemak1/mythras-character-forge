@@ -58,7 +58,9 @@ test('when attacked: the defences are live, the actions fold to one line, and Co
  let html=A.run('pitsArenaDeckHtml()');
  for(const v of ['parry','evade','none'])assert(tags(html,`data-pa="def" data-val="${v}"`).length===1,v+' offered');
  assert.match(html,/Your turn:/,'actions fold to a reminder');
- assert.match(html,/class="bgo" disabled/,'nothing is sent before a defence is chosen');
+ // (owner, 2026-11-16) the recommended defence starts selected, so Confirm is ready at once
+ assert.match(html,/class="bgo" data-act="react" data-val="parry"/,'the recommended defence is selected');
+ assert.match(html,/data-val="parry"[^>]*>[\s\S]*?<span class="brec">Recommended</,'and marked Recommended');
  A.run(`PB.def='evade'`);html=A.run('pitsArenaDeckHtml()');
  assert.match(html,/class="bgo" data-act="react" data-val="evade"/);
  assert.equal(A.run('paModalHtml()'),'','no window over the arena');

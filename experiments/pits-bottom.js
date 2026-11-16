@@ -66,12 +66,14 @@ function pbCtx(){
   const key=[S.round,S.cycle,S.turnIndex,id,p?.kind||'',p?.effectsLeft??''].join(':');
   if(PB.key!==key){PB.key=key;PB.sel=null;PB.def=null;PB.fx=null;}
   const on=list.filter(a=>a.enabled);
-  const sel=live?(on.find(a=>a.act===PB.sel)||on.find(a=>a.act==='attack')||on[0]||null):null;
+  // the recommended move starts selected; the player can pick another before confirming
+  const rec=live?pitsRecommendedAction(id):null,recD=reacting?pitsRecommendedDefence(id,defs):null;
+  const sel=live?(on.find(a=>a.act===PB.sel)||on.find(a=>a.act===rec?.act)||on.find(a=>a.act==='attack')||on[0]||null):null;
   const donD=defs.filter(d=>d.enabled);
-  const def=reacting?(donD.find(d=>d.val===PB.def)||null):null;
+  const def=reacting?(donD.find(d=>d.val===PB.def)||donD.find(d=>d.val===recD?.val)||null):null;
   const fxList=choosingFx&&p.kind==='effect'?availableEffects(p):[];
   const fx=fxList.find(([fid])=>fid===PB.fx)||null;
-  return {phase,p,id,me,foe,live,list,sel,defs,def,reacting:!!reacting,choosingFx:!!choosingFx,fxList,fx};
+  return {phase,p,id,me,foe,live,list,sel,defs,def,rec,recD,reacting:!!reacting,choosingFx:!!choosingFx,fxList,fx};
 }
 
 // ---- left: your moves ----
@@ -80,14 +82,14 @@ function pbActionRows(c){
   return c.list.map((a,i)=>{
     const on=c.live&&a.enabled,picked=c.sel&&a.act===c.sel.act;
     return `<button type="button" class="brow${picked?' sel':''}${on?'':' off'}" data-pa="sel" data-val="${a.act}" data-pb-info="act:${a.act}" ${on?'':'aria-disabled="true"'}>
-      <kbd>${c.live&&i<9?i+1:''}</kbd><span class="nm">${esc(a.label)}</span><span class="co">${pbCost(a)}</span></button>`;
+      <kbd>${c.live&&i<9?i+1:''}</kbd><span class="nm">${esc(a.label)}</span>${c.rec?.act===a.act?'<span class="brec">Recommended</span>':''}<span class="co">${pbCost(a)}</span></button>`;
   }).join('');
 }
 function pbDefenceRows(c){
   return c.defs.map((d,i)=>{
     const picked=c.def&&d.val===c.def.val;
     return `<button type="button" class="brow def${picked?' sel':''}${d.enabled?'':' off'}" data-pa="def" data-val="${d.val}" data-pb-info="def:${d.val}" ${d.enabled?'':'aria-disabled="true"'}>
-      <kbd>${c.reacting&&i<9?i+1:''}</kbd><span class="nm">${esc(d.label)}</span>${d.pct!=null?`<span class="pc">${d.pct}%</span>`:''}<span class="co">${d.ap?d.ap+' AP':'free'}</span></button>`;
+      <kbd>${c.reacting&&i<9?i+1:''}</kbd><span class="nm">${esc(d.label)}</span>${c.recD?.val===d.val?'<span class="brec">Recommended</span>':''}${d.pct!=null?`<span class="pc">${d.pct}%</span>`:''}<span class="co">${d.ap?d.ap+' AP':'free'}</span></button>`;
   }).join('');
 }
 function pbLeft(c){
@@ -208,13 +210,13 @@ function pbDecision(c){
   const p=c.p;
   if(c.live){
     const a=c.sel;
-    return a?`<div class="bdo"><p>Pick an action on the left. Point at anything to see its odds on the right.</p>
+    return a?`<div class="bdo"><p>${c.rec?.act===a.act?`<b>Recommended.</b> ${esc(c.rec.why)}`:'Pick an action on the left. Point at anything to see its odds on the right.'}</p>
       <button type="button" class="bgo" data-act="${a.act}">${esc(a.label)} · ${pbCost(a)} <kbd>Enter</kbd></button></div>`
       :'<div class="bdo"><p class="bnone">No action available.</p></div>';
   }
   if(c.reacting){
     const d=c.def;
-    return `<div class="bdo"><p>${p.kind==='range'?'Answer on the left.':'Pick a defence on the left; each one shows its odds against this roll.'}</p>
+    return `<div class="bdo"><p>${c.recD&&d?.val===c.recD.val?`<b>Recommended.</b> ${esc(c.recD.why)}`:p.kind==='range'?'Answer on the left.':'Pick a defence on the left; each one shows its odds against this roll.'}</p>
       ${d?`<button type="button" class="bgo" data-act="${d.act}" data-val="${d.val}">${esc(d.label)}${d.ap?' · '+d.ap+' AP':''} <kbd>Enter</kbd></button>`:'<button type="button" class="bgo" disabled>Choose first</button>'}</div>`;
   }
   if(c.choosingFx&&p.kind==='effect'){
@@ -232,6 +234,8 @@ function pbDecision(c){
   return `<div class="bdo bprompt">${paPromptHtml()}</div>`;
 }
 function pbMiddle(c){
+  // the bout is over: how it ended and what next, in place of the exchange (no dialog over the arena)
+  if((S.phase==='between'||S.phase==='over')&&!V.busy)return `<div class="bmid bend">${paEndHtml()}</div>`;
   const g=pbExchange(),inProgress=!!(R||c.p||V.busy);
   let lines=pbStory(g);
   if(!inProgress)lines=lines.concat(pbSince(g));
@@ -339,6 +343,7 @@ function pbDefenceOdds(d,c){
     <div class="bbig"><strong>${n.stop}%</strong><span>chance to ${what}</span></div>${block}
     ${pbBar([['ok',you],['even',n.even],['no',them]])}<ul class="bodds">${rows}</ul>`;
 }
+const pbRecWhy=(rec,key)=>rec&&(rec.act??rec.val)===key?'<span class="btag brec-tag">Recommended</span>':'';
 function pbActionInfo(act,c){
   const a=c.list.find(x=>x.act===act);if(!a)return '';
   const help=typeof actionChoiceHelp==='function'?actionChoiceHelp(act,c.me):'';
@@ -353,7 +358,7 @@ function pbActionInfo(act,c){
       body+=`<p class="bsmall">${esc(foe.name)} can then parry (${par}%${foe.shield!=='none'?', shield '+effectiveSkill(foe,combatTarget(foe,'shield'))+'%':''}), evade (${ev}%) or not defend. Beat their grade and you earn Special Effects.</p>`;
     }
   }else body+='<p class="bsmall">No roll.</p>';
-  return `<header><h4>${esc(a.label)}</h4><span class="btag">${pbCost(a)}</span></header>${body}`;
+  return `<header><h4>${esc(a.label)}</h4>${pbRecWhy(c.rec,act)}<span class="btag">${pbCost(a)}</span></header>${body}`;
 }
 function pbFxInfo(id,c){
   const p=c.p,e=CombatRules.specialEffect(id);if(!e||!p)return '';
@@ -380,7 +385,7 @@ function pbInfoHtml(c,key){
   const [kind,val]=String(k).split(/:(.*)/);
   let h='';
   if(kind==='act')h=pbActionInfo(val,c);
-  else if(kind==='def'){const d=c.defs.find(x=>x.val===val);if(d)h=`<header><h4>${esc(d.label)}</h4><span class="btag">${d.ap?d.ap+' AP':'free'}</span></header>${d.usable===false?`<p>${esc(d.why)}</p>`:pbDefenceOdds(d,c)}`;}
+  else if(kind==='def'){const d=c.defs.find(x=>x.val===val);if(d)h=`<header><h4>${esc(d.label)}</h4>${pbRecWhy(c.recD,val)}<span class="btag">${d.ap?d.ap+' AP':'free'}</span></header>${d.usable===false?`<p>${esc(d.why)}</p>`:pbDefenceOdds(d,c)}`;}
   else if(kind==='fx')h=pbFxInfo(val,c);
   else if(kind==='loc')h=pbLocInfo(val,c);
   return h||pbDefaultInfo(c);

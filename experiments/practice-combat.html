@@ -510,10 +510,10 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 </style>
 <link rel="stylesheet" href="pits-stone.css?v=a495935cd5">
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
-<link rel="stylesheet" href="pits-arena.css?v=476255e3ed">
+<link rel="stylesheet" href="pits-arena.css?v=c1678cf44d">
 <link rel="stylesheet" href="pits-stage.css?v=ccb5857e29">
 <link rel="stylesheet" href="pits-cine.css?v=fd5cbed7a9">
-<link rel="stylesheet" href="pits-bottom.css?v=6aa1a95308">
+<link rel="stylesheet" href="pits-bottom.css?v=df3db0042a">
 <link rel="stylesheet" href="../sitota-theme.css?v=a47f8d5bd9">
 </head>
 <body class="pits-page">
@@ -551,11 +551,11 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="../js/data.js?v=e863ceddbb"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
 <script src="practice-guidance.js?v=d151386d20"></script>
-<script src="pits-view.js?v=a614e73283"></script>
+<script src="pits-view.js?v=bddcdd1b22"></script>
 <script src="pits-game.js?v=3769cec741"></script>
 <script src="pits-report.js?v=78c28f1bb3"></script>
-<script src="pits-arena.js?v=db405bb258"></script>
-<script src="pits-bottom.js?v=be260f7faf"></script>
+<script src="pits-arena.js?v=87ea7842f6"></script>
+<script src="pits-bottom.js?v=9cdcd8a5a6"></script>
 <script src="pits-lost.js?v=f385014ea5"></script>
 <script src="pits-idea.js?v=e1791930b7"></script>
 <script src="pits-motion.js?v=5c6cf25c54"></script>
@@ -1972,8 +1972,9 @@ function finishingLocationSvg(loc){
   part=>`<g class="${part===loc?'struck':'unstruck'}">${SHAPES[part]}</g>`).join('')}</svg>`;
 }
 
-function resultModalHtml(){
-  if(!S.showEndModal||V.busy||!['between','over'].includes(S.phase))return '';
+// The bout's result, in words. Drawn as a dialog in the classic layout; The Pits arena (pits-arena.js, paEndHtml) draws the same
+// parts in the dice tray and the command deck instead (owner, 2026-11-16: "not a popup").
+function resultParts(){
   const draw=S.winnerId===null,victory=S.winnerId==='a',result=draw?'DRAW':victory?'VICTORY':'DEFEAT';
   const cause=S.finalCause||{type:'concession'};
   const injury=cause.type==='injury';
@@ -1985,21 +1986,30 @@ function resultModalHtml(){
   const urgent=injury&&cause.criticalWindow?`Urgent treatment: within ${cause.criticalWindow.value} ${cause.criticalWindow.unit} to prevent fatal blood loss/shock.`:'';
   const consequence=injury?cause.consequence:cause.type==='fatigue'?'Bleeding continued into successive combat rounds.':cause.type==='exhaustion'?
    'Both exhausted fighters lack the AP to act; the training bout is scored as a draw.':'Fight ended without a finishing wound';
-  const next=S.phase==='between';
-  const nextButton=next?`<button type="button" class="result-primary" data-act="next">Next opponent</button>`:
-    `<button type="button" class="result-primary" data-act="retry">${S.mode==='pvp'?'Rematch':'Try again'}</button>`;
-  return `<div class="result-backdrop"><section class="result-modal ${victory?'won':
-   'lost'}" role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultCause">
-    <button type="button" class="result-close" data-act="dismissResult" aria-label="Close result">×</button>
-    <div class="result-eyebrow">${S.mode==='pvp'?'DUEL':S.mode==='tutorial'?'TRAINING':'GAUNTLET'} · ROUND ${S.round}</div>
-    <h2 id="resultTitle">${result}</h2><div class="result-winner">${esc(draw?"Neither combatant can continue":S.winner+" wins")}</div>
-    <div class="result-rule"></div>
-    <div class="result-finish ${injury?'has-location':''}" id="resultCause">
+  const eyebrow=`${S.mode==='pvp'?'DUEL':S.mode==='tutorial'?'TRAINING':'GAUNTLET'} · ROUND ${S.round}`;
+  const winnerLine=draw?'Neither combatant can continue':S.winner+' wins';
+  const finish=`<div class="result-finish ${injury?'has-location':''}" id="resultCause">
       ${injury?`<div class="result-figure">${finishingLocationSvg(cause.location)}</div>`:''}
       <div class="result-why"><div class="result-eyebrow">${injury?'FINISHING INJURY':'BOUT ENDED BY'}</div>
         <strong>${esc(injuryTitle)}</strong><span>${esc(injuryDetail)}</span><small>${esc(consequence)}</small>${urgent?`<small>${esc(urgent)}</small>`:''}</div>
-    </div>
-    <div class="result-meta">Encounter ended in round ${S.round}${injury?' · Final hit to '+esc(cause.location):''}</div>
+    </div>`;
+  const meta=`Encounter ended in round ${S.round}${injury?' · Final hit to '+esc(cause.location):''}`;
+  return {draw,victory,result,injury,eyebrow,winnerLine,finish,meta,next:S.phase==='between'};
+}
+function resultModalHtml(){
+  if(!S.showEndModal||V.busy||!['between','over'].includes(S.phase))return '';
+  if(typeof paOn==='function'&&paOn())return '';
+  const r=resultParts(),next=r.next;
+  const nextButton=next?`<button type="button" class="result-primary" data-act="next">Next opponent</button>`:
+    `<button type="button" class="result-primary" data-act="retry">${S.mode==='pvp'?'Rematch':'Try again'}</button>`;
+  return `<div class="result-backdrop"><section class="result-modal ${r.victory?'won':
+   'lost'}" role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultCause">
+    <button type="button" class="result-close" data-act="dismissResult" aria-label="Close result">×</button>
+    <div class="result-eyebrow">${r.eyebrow}</div>
+    <h2 id="resultTitle">${r.result}</h2><div class="result-winner">${esc(r.winnerLine)}</div>
+    <div class="result-rule"></div>
+    ${r.finish}
+    <div class="result-meta">${r.meta}</div>
     <div class="result-actions">${next&&S.mode==='hardcore'&&fieldAidCandidates(S.fighters.a).length?
      '<button type="button" class="result-secondary" data-act="openAid">First Aid</button>':
      ''}${nextButton}<button type="button" class="result-secondary" data-act="dismissResult">View battlefield</button>${replayButtonHtml('result-secondary')}</div>

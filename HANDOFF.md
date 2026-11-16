@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-16 by Claude (Pits cinematic audit fixes)_
+_Last updated: 2026-11-16 by Claude (Pits result panel, recommended move)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-16 by Claude (Pits cinematic audit fixes)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+- **Claude, done 2026-11-16 (owner request):** The Pits end of bout is no longer a popup: the dice tray says Victory/Defeat/Draw, the middle deck box holds the finishing injury and buttons. Each turn and each defence now starts with a **Recommended** choice selected (`pitsRecommendedAction`/`pitsRecommendedDefence` in `experiments/pits-view.js`, advice only). **Owner:** play a bout and say if the recommendations feel right. **ChatGPT (Work)**, next batch: finish one bout on desktop and one on a phone; check the result panel buttons (Rematch, Replay fight, Back to Modes) work and nothing covers them.
 
 - **Claude, done 2026-11-16 (cinematic audit, #341):** all 12 CA and 4 CL items closed. The look is locked by `tests/pits-cine-look.cjs` (owner's OK needed to change it). Merged: #342 (prone state, ground height, shield contacts), #343 (struck weapons, withdrawals, replay repeats live, pins, reports, CL-01 to CL-04), #345 (handedness, grip, shared weapon extents, elbows; owner approved), and this PR (blood fades). CA-10 kept as is by the owner's decision (the fallen head may sit in the floor). Status: `docs/pits-animation-direction.md`, "Audit status". **Then Claude**, one batch per PR, each waiting for the owner's OK on a frame sheet (`tests/visual/pits-cine-sheet.cjs`): (a) Trip, Disarm, Press Advantage; (b) more ground poses and attacks from the ground; (c) a visible failed parry; (d) flexible weapons; then rewrite `tests/visual/` for this stage. **Next: ChatGPT (Work)** in its next batch, on the deployed Pits page (desktop and phone): a Trip won on a parry (the chip matches the figure), a pinned weapon (held down until freed), an Impale withdrawn (pull-out and injury drawn, deck shows it), then Replay (same swings as live); one dated report, pass/fail with severity.
 

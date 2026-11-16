@@ -326,3 +326,27 @@ body.pits-stone #root .pa-chron .combat-history{display:block;border:1px solid v
 .pa-rules .mbox h3{margin:14px 0 6px;font:700 13px var(--st-body,var(--font-ui));letter-spacing:.14em;text-transform:uppercase}
 .pa-rules .mbox p{font-size:13px;line-height:1.5}
 .pa-rules .pa-rules-close{text-align:center;margin:16px 0 0}
+
+/* The end of a bout (owner, 2026-11-16): no dialog. The dice tray says Victory, Defeat or Draw; the deck shows how it ended. */
+body.pa-on .roll.end{padding:10px 14px 12px}
+body.pa-on .roll.end .r-t{font-size:40px;line-height:1;letter-spacing:.16em;text-transform:uppercase}
+body.pa-on .roll.end.won{border-top-color:var(--pa-gold)}body.pa-on .roll.end.won .r-t{color:var(--pa-gold)}
+body.pa-on .roll.end.lost{border-top-color:var(--st-fumble,var(--accent))}body.pa-on .roll.end.lost .r-t{color:var(--st-fumble,var(--accent))}
+body.pa-on .roll.end .r-s{font-size:14px;margin-top:5px;color:var(--st-text,var(--bone))}
+body.pa-on #root .pa-end{display:flex;flex-direction:column;gap:6px;padding:8px 12px 10px;text-align:left;min-height:0;box-sizing:border-box}
+body.pa-on #root .pa-end header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+body.pa-on #root .pa-end header h4{margin:0;font:700 20px/1.1 var(--st-display,var(--font-display))}
+body.pa-on #root .pa-end .result-finish{margin:0;gap:14px}
+body.pa-on #root .pa-end .result-finish.has-location{grid-template-columns:auto minmax(0,1fr)}
+body.pa-on #root .pa-end .result-figure{min-height:0;padding:4px}
+body.pa-on #root .pa-end .finish-location-figure{width:52px;height:80px}
+body.pa-on #root .pa-end .result-why{display:flex;flex-direction:column;gap:2px}
+body.pa-on #root .pa-end .result-why strong{font-size:20px;line-height:1.15}
+body.pa-on #root .pa-end .result-why span,body.pa-on #root .pa-end .result-why small{line-height:1.35}
+body.pa-on #root .pa-end .result-meta{margin:0;font-size:12px}
+body.pa-on #root .pa-end .pa-end-note{margin:0;font-size:12.5px;color:var(--st-text-dim,var(--bone-dim))}
+body.pa-on #root .pa-end .endbuttons{display:flex;flex-wrap:wrap;gap:8px;margin:auto 0 0}
+body.pa-on #root .pa-end .endbuttons button{flex:1 1 auto;min-height:38px;padding:0 14px;margin:0}
+/* the recommended action (phones and ?bottom=current) */
+.act.recommended{border-left-color:var(--pa-gold)}
+.act .rec{font-style:normal;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pa-gold)}
