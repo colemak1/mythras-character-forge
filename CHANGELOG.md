@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: cramped haft blows follow the blow, not the blade
+
+- Chat's source review (#362, D-PR3, Core pp.95–100, 106) is applied. A longer weapon striking from inside a shorter one's reach (1d3+1 with the haft or pommel, Size less the Reach gap) now offers the Special Effects of that blunt blow: **Bash** and **Stun Location**, never Impale, Bleed, Entangle or Sunder. It used to offer the blade's effects, and an Impale rolled the 1d3+1 twice and lodged the weapon.
+- **Maximise Damage** on a cramped blow maximises its one d3: 3+1 = 4 before the Damage Modifier. It can no longer be taken twice because the weapon itself has two dice (a greatsword or great axe).
+- D-PR1 check: a pinned weapon, or one held while lodged in the foe, still holds the distance (no snap), but cannot attack, parry or intercept; the other fighter closes against Evade only.
+- Tests: `tests/pits-cramped.cjs` (13 checks); `CombatRules.CRAMPED_STRIKE` is the shared profile.
+
 ## The Pits: wrists, a real axe, cleaner reach stances
 
 - **Weapons stay in the hand** (owner report). The weapon's angle from the forearm is held within what a wrist can do (-75 to +125 degrees). A pose that folded a weapon back along the forearm (worst with a hand at the head) now bends the elbow the other way, or stops at the limit. Strikes are re-aimed so they still land on the same point. Between poses the weapon goes round in front of the hand, never through the wrist. Out-of-range frames: 7.4% before, 0.6% after.

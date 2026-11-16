@@ -547,7 +547,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <div class="pits-subbar"><a href="../index.html#/the-pits">&larr; Choose a character</a><a href="#" id="homeLink">Reset bout</a></div>
 <main class="main" id="root"></main>
 
-<script src="../js/combat-rules.js?v=30ed5a5732"></script>
+<script src="../js/combat-rules.js?v=df867be054"></script>
 <script src="../js/data.js?v=e863ceddbb"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
 <script src="practice-guidance.js?v=ac900b7c93"></script>
@@ -1783,7 +1783,9 @@ function mkFighter(id,name,kind,style,weapon,armor=0,evade=48,level=1,str=13,siz
 }
 // The Reach a fighter actually fights at (owner, 2026-11-16): the weapon in hand. A dropped, broken or abandoned
 // embedded weapon controls nothing; then the shield's own Reach if one is strapped on and usable (shield strikes use
-// it, decisions.md PIT-P07), else empty hands at Touch. A pinned weapon is still held, so it keeps its Reach.
+// it, decisions.md PIT-P07), else empty hands at Touch. A pinned weapon, or one held while lodged in the foe, still
+// holds the distance (arena interpretation, D-PR1: Core resets no range on a pin or Impale), but canUseWeapon() keeps
+// it from attacking, parrying or intercepting, so the foe closes against Evade only (tests/pits-cramped.cjs).
 function heldReach(f){
   if(!f)return REACH_STEP.M;
   if(!f.disarmed&&guardWeapon(f).hp>0)return ARENA_WEAPONS[f.weapon].reach;
@@ -1808,6 +1810,8 @@ function canParryAtReach(id){if(S.disengaged)return false;const r=engagementInfo
 function canShieldParry(f){ensureEffectState(f);return !cannotRespond(f)&&f.shield!=='none'&&!f.shieldLost&&!String(f.impaledWeapon?.weapon||
  '').startsWith('shield:')&&f.pinnedGear!=='shield'&&!ARENA_WEAPONS[f.weapon].twoHanded&&armUsable(f,shieldArmOf(f))}
 function isCrampedAtReach(id){const r=engagementInfo();return r.active&&S.engagement==='short'&&id===r.longer}
+// The attack in p is a cramped haft blow (Core p.106): the longer weapon, not a shield strike, inside its own reach.
+function isCrampedAttack(p){return !!p&&!arenaProfile(attackKeyOf(p))?.shield&&isCrampedAtReach(p.atk);}
 function proposedRange(id){if(S.disengaged)return null;const r=engagementInfo(),f=S.fighters[id];
  if(!r.active||f.stunnedLocations?.['Right Leg']||f.stunnedLocations?.['Left Leg']||entangledLegs(f)||cannotRespond(f))return null;
   // (anything but 'short' is the longer weapon's distance: the state still says 'equal' when a matched bout turns
@@ -2704,7 +2708,7 @@ const GRADE_NAMES=['fumble','failure','success','critical'];
 function effectsWonBy(mine,theirs){
  return CombatRules.effectsWon(GRADE_NAMES[mine],GRADE_NAMES[theirs]);
 }
-function weaponRoll(w,maxDie,cramped=false,forcedRolls=null){let v=cramped?{dice:[1,3],bonus:1}:arenaProfile(w);
+function weaponRoll(w,maxDie,cramped=false,forcedRolls=null){let v=cramped?CombatRules.CRAMPED_STRIKE:arenaProfile(w);
  let arr=forcedRolls??Array.from({length:v.dice[0]},(_,i)=>i===0&&maxDie?v.dice[1]:die(v.dice[1]));
  return {total:arr.reduce((a,b)=>a+b,0)+v.bonus,detail:`${arr.join('+')}${v.bonus?`+${v.bonus}`:''}`,rolls:arr,sides:v.dice[1],bonus:v.bonus,count:v.dice[0]}}
 // Verified Mythras Core: page 101 (prone = Formidable), page 51 (over-100 differential rolls).
@@ -3031,7 +3035,8 @@ function availableEffects(p){
  const offense=p.owner===p.atk,actor=S.fighters[p.owner],target=S.fighters[p.other];
  if(!actor||!target)return [];
  ensureEffectState(actor);ensureEffectState(target);
- const ownKey=offense?attackKeyOf(p):actor.weapon,ownProfile=arenaProfile(ownKey),reach=engagementInfo();
+ const ownKey=offense?attackKeyOf(p):actor.weapon,ownProfile=arenaProfile(ownKey),reach=engagementInfo(),
+  cramped=offense&&isCrampedAttack(p);
  const ids=CombatRules.meleeEffectOptions({
   offense,attackGrade:p.attackRoll?.grade,defenceGrade:p.defenseRoll?.grade,
   reaction:p.reaction,parryTool:p.parryTool,
@@ -3039,8 +3044,10 @@ function availableEffects(p){
   maximize:p.maximize||0,effectsLeft:p.effectsLeft,forceFailure:!!p.forceFailure,chosen:p.chosen,
   // The arena models one layer of armour, so Bypass Armour is chosen once (D-CE3).
   unstackable:['bypassArmour'],
-  weapon:{traits:attackTraits(ownKey),size:ownProfile?.size,shield:!!ownProfile?.shield,entrapping:!!ownProfile?.entrapping},
-  attackDice:offense?arenaProfile(attackKeyOf(p)).dice[0]:0,
+  // A cramped haft blow offers the blunt strike's effects and maximises its one d3 (Core p.106; D-PR3).
+  weapon:cramped?{traits:CombatRules.CRAMPED_STRIKE.traits,size:ownProfile?.size,shield:false,entrapping:false}
+   :{traits:attackTraits(ownKey),size:ownProfile?.size,shield:!!ownProfile?.shield,entrapping:!!ownProfile?.entrapping},
+  attackDice:offense?(cramped?CombatRules.CRAMPED_STRIKE.dice[0]:arenaProfile(attackKeyOf(p)).dice[0]):0,
   actor:{siz:actor.siz,str:actor.str,prone:!!actor.prone,canUseWeapon:canUseWeapon(actor),
    pinned:!!actor.pinnedGear,entangled:!!entangledLoc(actor),legsEntangled:entangledLegs(actor)},
   target:{siz:target.siz,str:target.str,prone:!!target.prone,disarmed:!!target.disarmed,
@@ -3609,7 +3616,7 @@ function resolveHit(){
      `${atk.name}'s attack failed to connect.`, 'system','',{actor:atk.id,px:noHitPx(p)});endAction();return;
   }
   const chooseDamage=(loc)=>{
-    const akey=attackKeyOf(p),aw=arenaProfile(akey),cramped=!aw.shield&&isCrampedAtReach(atk.id),v=cramped?{dice:[1,3],bonus:1}:aw;
+    const akey=attackKeyOf(p),aw=arenaProfile(akey),cramped=isCrampedAttack(p),v=cramped?CombatRules.CRAMPED_STRIKE:aw;
     const mod=damageModifierFor(atk.str,atk.siz);
     const copies=p.impale?2:1;
     const dicePerCopy=v.dice[0];
