@@ -295,7 +295,7 @@ function fighter(id,wk,swap,look){
   if(!pend||pend[id])pend={seed:(Math.random()*1e9)|0,n:0,gap:0,fx:[]};
   const face=id==='a'?1:-1,x=CENTRE+(id==='a'?-1:1)*110;
   const m={id,hx:x,face,weapon:{key:wk.kind,len:wk.len},wk,swap:!!swap,prof:profile(wk),cine:true,
-    guard:{ffx:0,px:0},shield:!!(look&&look.shield),shieldKey:look&&look.shield?(look.shieldKey||'heater'):null,
+    stance:null,guard:{ffx:0,px:0},shield:!!(look&&look.shield),shieldKey:look&&look.shield?(look.shieldKey||'heater'):null,
     pair:pend,keys:[],base:x,lastP:null,down:false,over:false,hurt:false,chamber:null,ready:'guard'};
   if(m.shield)m.prof.two=0;                      // (a shield arm does not also hold the shaft)
   pend[id]=m;
@@ -329,6 +329,10 @@ const pick=(r,list)=>list[Math.min(list.length-1,Math.floor(r()*list.length))];
 function gap(wa,wb,k){
   const long=Math.max(wa.len,wb.len),short=Math.min(wa.len,wb.len);
   const g=Math.round(150+.62*long);
+  // (keep: the stage's long range when the Reach differs, the longer weapon's own range, the point hovering in front of the other's face and the shorter weapon well
+  // short of the body, owner 2026-11-16)
+  // (the longer weapon's drawn length out from its hips, then the other's face, then a hand's breadth of air)
+  if(k==='keep')return Math.round(Math.max(extent(wa).to,extent(wb).to)+100);
   return k==='apart'?g+190:k==='short'?Math.round(112+.4*short):g;
 }
 const station=()=>0;
@@ -343,8 +347,40 @@ function readyPose(m,r){
   const list=READY.filter(n=>n!==m.ready&&(m.prof.fam!=='thrust'||n!=='guardLow')&&!(m.prof.two&&n==='guardPoint'));
   m.ready=pick(r,list);return m.ready;
 }
+// Range stances (owner, 2026-11-16: "when a dagger is fighting a spear I want it to look like an impossible fight, but
+// when you get in close it should feel like the dagger has the advantage"). Only when the weapons' Reach differs by
+// enough for the engine's engagement rules (Core p.106); the stage says which (setRange). Every ready pose becomes
+// the stance; the attacks and defences are unchanged.
+//  keep:    the longer weapon at its own range: weight back, arms long, the point held level at the other's face.
+//  kept:    the shorter weapon held off: a low wary crouch, the weapon back by the hip, the empty hand out at the point.
+//  inside:  the shorter weapon inside: in close and leaning in, the weapon short and ready, the empty hand pressing.
+//  cramped: the longer weapon with the other inside it: leaning away, hands pulled in, the point up and useless.
+const STANCE={
+  keep:   {hip:[-14,64],lean:2,bend:2,head:-4,ff:[46,0],bf:[-52,0],h:[42,-6],eb:0,w:6,o:[4,-30],turn:8},
+  kept:   {hip:[-18,50],lean:12,bend:6,head:-6,ff:[34,0],bf:[-52,0],h:[8,-24],eb:0,w:34,o:[36,0],turn:-8},
+  inside: {hip:[6,56],lean:28,bend:8,head:-16,ff:[42,0],bf:[-44,0],h:[30,-4],eb:0,w:4,o:[38,-12],turn:8},
+  cramped:{hip:[-24,64],lean:-14,bend:-6,head:8,ff:[24,0],bf:[-52,0],h:[16,-18],eb:0,w:58,o:[2,-30],turn:-6}
+};
+// (small differences between the ready poses, so a stance still breathes: low, high, and a point held further out)
+const STANCE_VAR={guard:{},guardLow:{hip:[0,-4],lean:4},guardHigh:{hip:[0,3],lean:-3},guardPoint:{h:[4,0]}};
+function stancePose(m,name){
+  const st=m.stance,P={...STANCE[st]},v=STANCE_VAR[name]||{};
+  P.hip=[P.hip[0]+(v.hip?v.hip[0]:0),P.hip[1]+(v.hip?v.hip[1]:0)];P.lean+=v.lean||0;
+  if(v.h)P.h=[P.h[0]+v.h[0],P.h[1]+v.h[1]];
+  // a cut weapon kept long has its point at the face, a little higher; cramped, it is held upright by the body
+  if(st==='keep'&&m.prof.fam!=='thrust')P.w=16;
+  if(st==='cramped'&&m.prof.fam!=='thrust'){P.h=[6,8];P.eb=1;P.w=84;}
+  if(st==='kept'&&m.prof.two){P.h=[4,-28];P.w=60;}
+  if(m.shield)P.o=st==='cramped'?[20,-10]:[34,-6];
+  return P;
+}
+function setRange(M,key,longer){
+  for(const id of ['a','b']){const m=M&&M[id];if(!m)continue;
+    m.stance=!longer?null:key==='long'?(id===longer?'keep':'kept'):key==='short'?(id===longer?'cramped':'inside'):null;}
+}
 // a ready pose fitted to the weapon (long weapons are carried lower and further back; thrusters point at the face)
 function fit(m,name){
+  if(m.stance&&READY.includes(name)&&!m.down&&!m.hurt)return stancePose(m,name);
   const P={...POSE[name]};
   if(m.prof.fam==='thrust'&&(name==='guard'||name==='guardHigh')){P.h=name==='guard'?[30,-14]:[10,24];P.w=name==='guard'?14:-22;}
   if(m.prof.two&&name==='guard'){P.h=[14,-30];P.w=m.prof.fam==='thrust'?10:48;}
@@ -538,6 +574,11 @@ function blow(M,aid,t,s){
     key(D,t0+200,{...wardPose(D,H==='high'?'wardLow':'wardHigh'),hip:[D.lastP.hip[0]-4,D.lastP.hip[1]]},{e:'out5',plant:'bf'});
     hold(D,tc);
     T=partAt(D,tc,loc);
+  }else if(s.tried&&!dodge&&!stopped){
+    // a parry that failed (batch (c), owner 2026-11-16): it is seen tried, late or on the wrong line, and the blow
+    // gets there first; no steel meets
+    const tr=parryTried(D,r,t,tc,{H,loc,move,shield:s.tried==='shield'&&!!D.shield,warded:s.ward||warded});chosen.tried=tr;
+    T=partAt(D,tc,loc);
   }else{
     // (the replay: a parry that was declared and failed is still seen tried, as it was live: CL-02)
     if(s.flow&&s.ward&&!D.down)key(D,t+100,wardPose(D,s.ward),{e:'out',plant:'bf'});
@@ -702,6 +743,55 @@ function blow(M,aid,t,s){
   const out={tc:contacts.length?contacts[0].t:tc,contacts,end:s.flow&&!s.defeated?Math.min(end,tHit+(dodge?250:290)):end,move,
     ward:warded,leap,...chosen,finish:A.finished||null,release:A.release||null,drop:A.dropAt||null};A.finished=null;A.release=null;A.dropAt=null;
   return out;
+}
+
+// A failed parry (batch (c), owner 2026-11-16: "a visible failed parry"). The defender goes for the blow, but the
+// blow gets there first and no steel meets. Seen from the side, a guard set straight in front of the body would
+// cross any blow to the body (and read as a parry), so the attempt is made from the line the blow is not on: above
+// a blow that comes up or along to the legs, below one that comes down. Three ways, chosen per blow (the replay
+// repeats them):
+//  late:  a sweep from the far line toward the blow, still travelling, fast, at the contact.
+//  wrong: the guard has gone to the other line and is set there; it only starts back as the blow lands.
+//  short: the shield is thrust out on the other line and the blow comes in round its rim.
+// On the ground the arm (or the shield) comes up late. Returns the way chosen.
+function parryTried(D,r,t,tc,o){
+  const {H,shield,move}=o;
+  // part of the way from one pose to another; the arms as angles (the poses written so far keep angles, not hands)
+  const angles=P=>{const Q={...P};if(P.h){const a=armAngles(P.h,P.eb||0);Q.ua=a.ua;Q.fa=a.fa;}
+    if(P.o){const a=armAngles(P.o,P.oeb||0);Q.oua=a.ua;Q.ofa=a.fa;}delete Q.h;delete Q.o;delete Q.eb;delete Q.oeb;return Q;};
+  const lerpP=(A0,B0,u)=>{const A=angles(A0),B=angles(B0),out={};for(const k of Object.keys(B)){const a=A[k],b=B[k];
+    out[k]=Array.isArray(b)?b.map((v,i)=>lerp(Array.isArray(a)?a[i]:v,v,u)):typeof b==='number'&&typeof a==='number'?
+      (ANG.includes(k)?lerp(a,near(b,a),u):lerp(a,b,u)):b;}return out;};
+  if(D.down){
+    hold(D,tc-130);
+    // (the arm propping the body comes off the floor and forward, low: the blow lands above it as it arrives)
+    const up=shield?{o:[28,2],head:-8}:{h:[30,H==='low'?-8:4],eb:1,w:H==='low'?-30:70,head:-8};
+    key(D,tc,up,{e:'in',plant:'both'});
+    return 'late';
+  }
+  // the far line: high over a blow to the legs or one that rises; low under a blow that comes down to the head or body
+  // (a lunge comes along the line, so the guard goes over it, except at the head; an overhand stab comes down)
+  const high=H==='low'||(H!=='high'&&(move==='rise'||move==='lunge'));
+  const right=shield?'wardShield':H==='high'?'wardHigh':H==='low'?'wardLow':'wardMid';
+  // (further off the line than a ward: the hand up by the head and the blade back over it, or dropped by the hip
+  // and pointed at the floor)
+  let far=high?{...wardPose(D,'wardHigh'),h:[22,40],eb:1,w:D.prof.two?160:150}:{...wardPose(D,'wardLow'),h:[18,-38],w:-100,lean:16};
+  if(shield)far={...wardPose(D,'wardShield'),o:high?[24,30]:[30,-40],head:high?-14:-2};
+  // a declared guard already on the far line stays there
+  const set=o.warded&&o.warded===(high?'wardHigh':'wardLow');
+  const way=shield?'short':set||r()<.34?'wrong':'late';
+  if(way==='wrong'){
+    hold(D,tc-240);
+    key(D,tc-60,{...far,hip:[D.lastP.hip[0]-4,D.lastP.hip[1]-2]},{e:'out5',plant:'bf'});
+    // the eyes see it too late: the guard starts back to the open line as the blow lands
+    key(D,tc,lerpP(D.lastP,wardPose(D,right),.12),{e:'in',plant:'both'});
+    return 'wrong';
+  }
+  // late (or a shield thrust out short): a sweep through the far line toward the blow, still on its way at the contact
+  hold(D,tc-170);
+  key(D,tc-80,far,{e:'io',plant:'bf'});
+  key(D,tc,lerpP(D.lastP,wardPose(D,right),.2),{e:'in',plant:'bf'});
+  return way;
 }
 
 // the defender gets out of the way
@@ -1410,9 +1500,32 @@ function recover(m,t,g){
   const o=other(m);m.pair.gap=g;if(!o||m.down||m.over)return t;
   if(m.keys[m.keys.length-1].t>t+40)t=m.keys[m.keys.length-1].t;
   const xm=sample(m,t,true).px,xo=sample(o,t,true).px,sep=Math.abs(xo-xm),f=faceOf(m);
-  // each fighter takes half of the change
-  const d=(sep-g)/2;if(Math.abs(d)<10)return t;
+  // each fighter takes half of the change; with a Reach difference the change is the one who makes it (owner,
+  // 2026-11-16): the shorter weapon closes on its own and the longer opens on its own, the other only settles into
+  // its new stance where it stands
+  const share=m.stance==='inside'||m.stance==='keep'?1:m.stance==='kept'||m.stance==='cramped'?0:.5;
+  // (with stances, measured between where the two stand, as the gap is, not between the hips: the stances carry
+  // the hips back or forward)
+  let d=(share===.5?sep-g:Math.abs(o.base-m.base)-g)*share;if(Math.abs(d)<10)return share===0?restance(m,t):t;
   cut(m,t);const r=rng(m.pair);
+  if(share!==.5)d=(Math.abs(o.base-m.base)-g)*share;      // (cut puts the base where the feet are now)
+  if(m.stance==='inside'&&d>0){
+    // in under the point: a low dart, the empty hand batting the point up and away, then up close inside it
+    key(m,t+80,{hip:[0,44],lean:34,bend:10,head:-20,h:[14,-26],w:20,o:[40,22],ff:[36,0],bf:[-48,0]},{e:'out',plant:'both'});
+    key(m,t+270,{hip:[10,44],lean:30,bend:8,head:-18,h:[18,-22],w:14,o:[38,30],ff:[44,0],bf:[-40,0]},{at:m.base+f*d*.85,e:'out',slide:true});
+    fx(m,{t:t+80,kind:'dash',id:m.id,t1:t+270,x0:m.base-f*d*.85,x1:m.base,face:f});fx(m,{t:t+180,kind:'skid',id:m.id,t1:t+330});
+    key(m,t+440,fit(m,'guard'),{at:m.base+f*d*.15,e:'io'});
+    return t+440;
+  }
+  if(m.stance==='keep'&&d<0){
+    // the shaft punched out to make room, then a hop back to the weapon's own range, the point coming back to the face
+    // (the shaft stays up while the other is close; it comes down to the face only once the distance is made)
+    key(m,t+90,{hip:[6,60],lean:18,bend:4,head:-10,h:[38,-4],w:50,ff:[40,0],bf:[-48,0]},{e:'out',plant:'both'});
+    key(m,t+290,{hip:[-22,58],lean:-6,bend:-4,head:2,h:[30,-10],w:34,ff:[34,0],bf:[-50,0]},{at:m.base+f*d,e:'out5',slide:true,arc:10});
+    fx(m,{t:t+90,kind:'dash',id:m.id,t1:t+290,x0:m.base-f*d,x1:m.base,face:-f});fx(m,{t:t+200,kind:'skid',id:m.id,t1:t+360});
+    key(m,t+480,fit(m,'guard'),{e:'io'});
+    return t+480;
+  }
   if(d<0){
     key(m,t+70,POSE.coil,{e:'out',plant:'both'});
     key(m,t+250,{hip:[-20,56],lean:-8,ff:[36,0],bf:[-46,0]},{at:m.base+f*d,e:'out5',slide:true,arc:12});
@@ -1424,6 +1537,12 @@ function recover(m,t,g){
   }
   key(m,t+480,fit(m,readyPose(m,r)),{e:'io',plant:'both'});
   return t+480;
+}
+// into the stance the range now asks for, where the fighter stands
+function restance(m,t){
+  if(m.down||m.over)return t;
+  if(m.keys[m.keys.length-1].t>t+40)t=m.keys[m.keys.length-1].t;
+  cut(m,t);key(m,t+360,fit(m,'guard'),{e:'io',plant:'both'});return t+360;
 }
 const react=()=>0;
 
@@ -1444,7 +1563,7 @@ function speed(m,t){
 // are the feet skidding at t (a key with `slide` is being travelled)
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
-const api={supports,fighter,gap,station,place,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,trip,disarm,react,pose,
+const api={supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,trip,disarm,react,pose,
   joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;

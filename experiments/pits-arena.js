@@ -47,6 +47,11 @@ function paConditions(f){
   if(Object.keys(f.stunnedLocations||{}).length)add('Stunned',1);
   if(f.blindedTurns)add('Blinded',1);
   if(f.braced)add('Braced');
+  // range (owner, 2026-11-16): who the engagement rules favour (Core p.106), as the floor under the fighters shows it
+  if(f.id&&typeof engagementInfo==='function'&&!S.disengaged){const r=engagementInfo();
+    if(r.active&&r.longer){const longer=f.id===r.longer;
+      if(S.engagement==='short')add(longer?'Cramped: they are inside your reach':'Inside their reach',longer);
+      else add(longer?'Keeping them at reach':'Out of reach: weapon or close only',!longer);}}
   for(const loc of HIT_LOCS){const l=zoneClass(f,loc);if(l==='serious'||l==='major')add((l==='major'?'Major: ':'Serious: ')+loc,1);}
   return chips.length?chips.join(''):'<span class="chip none">No conditions</span>';
 }

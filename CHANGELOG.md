@@ -5,6 +5,27 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: range you can see
+
+- When the two weapons' Reach differs (dagger against spear, for example), the stage now shows who the range favours (owner, 2026-11-16: "it's really hard to tell when you have an advantage or disadvantage because of range").
+- **Stances.** At long range, the longer weapon keeps the point level at the other's face, weight back. The shorter weapon crouches warily, weapon held back, empty hand out at the point. Once inside, it flips: the shorter weapon presses in close, and the longer weapon leans away with its hands pulled in and the point up and useless.
+- **Spacing.** At long range the point hovers just off the face, and the shorter weapon falls well short of the other's body.
+- **Reach on the floor.** Each fighter has a band in its colour out to where its weapon can strike, with a tag underneath: IN REACH / OUT OF REACH at long range, INSIDE / CRAMPED once closed. The tags change when the fighters arrive, not before.
+- **Plates.** Each fighter's plate says the same: "Out of reach: weapon or close only", "Keeping them at reach", "Inside their reach", or "Cramped: they are inside your reach".
+- **Changing range.** The range changes by the move of whoever makes it. Closing is the shorter weapon's dart in under the point, batting it aside, and the longer weapon's point goes up as it arrives. Opening is the longer weapon's shove with the shaft and a hop back; the point comes down to the face only once the distance is made. The other fighter keeps its feet.
+- Weapons of equal Reach are unchanged. Rules and dice are unchanged; the tags follow the engine's engagement rules (Core p.106).
+- The range label under the feet is now dark ink, so it can be read on the light floor.
+- Tests: `tests/pits-cine-range.cjs`.
+## The Pits: a failed parry you can see
+
+- When a parry is rolled and fails, the defender is now seen trying it (HANDOFF batch (c)). It used to keep its guard where it was and only flinch, so the hit didn't look earned.
+- Three ways, chosen per blow; the replay repeats the same one:
+  - **Late:** the guard sweeps toward the blow and is still on its way when the blow lands.
+  - **Wrong line:** the guard has gone high for a blow to the legs, or low for one to the head, and only starts back as the blow lands.
+  - **Shield short:** the shield is thrust out on the other line and the blow comes in round its rim.
+- No steel meets: the attempt always stays clear of the attacking weapon, so it never looks like a parry that worked. On the ground, the arm or shield comes up late.
+- Rules and dice are unchanged. Tests: `tests/pits-cine-parry.cjs` (1,680 failed parries); browser check in `tests/visual/pits-spring-scripted.cjs`.
+
 ## The Pits: withdrawing an Impale
 
 - Pulling a weapon out of a wound is now one pull (owner, 2026-11-16: "Withdraw weapon looks horrible"). It used to look like a second stab: the weapon was pushed right through the body, and the tear-out flashed like a new hit with blood thrown out the far side.

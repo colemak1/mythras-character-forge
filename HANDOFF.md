@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-16 by Claude (Pits: withdrawing an Impale)_
+_Last updated: 2026-11-16 by Claude (Pits: range you can see)_
 
 ## Where things stand
 
@@ -15,6 +15,9 @@ _Last updated: 2026-11-16 by Claude (Pits: withdrawing an Impale)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+- **Claude, done 2026-11-16 (owner: "it's really hard to tell when you have an advantage or disadvantage because of range"):** with a Reach difference, the stage shows who the range favours: stances (the spear keeps the dagger off at its point; inside, the dagger presses and the spear is cramped, point up), reach bands and tags on the floor (IN REACH / OUT OF REACH, INSIDE / CRAMPED), plate tags, and range changes made by the one who makes them (the dagger darts in under the point; the spear shoves and hops back). Details: `docs/pits-animation-direction.md`, "Range you can see". Sheets `docs/pits-visual-checks/cine-range-*.jpg`. **Owner:** play dagger against spear, close, and get pushed back out; say if it now reads as impossible from outside and good for the dagger inside. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): dagger against spear; the floor and plate tags match the range after a Change Range each way, the tags change when the fighters arrive, and nothing covers the choices or dice.
+- **Claude, done 2026-11-16 (batch (c), owner: "let's do it"):** a parry rolled and failed is now seen tried: late (still sweeping in as the blow lands), on the wrong line (guard high, cut low, or the other way), or a shield thrust out short; no steel meets. Details: `docs/pits-animation-direction.md`, "A failed parry you can see". Sheets `docs/pits-visual-checks/cine-parry-failed-{late,wrong,shield,spear}.jpg`. **Owner:** OK the look, or name the moment that looks wrong. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): parry and fail a few times, with a weapon and with a shield; the guard moves but never touches the attacking weapon, and the blow lands. **Then Claude:** batch (b), ground poses and attacks from the ground; then (d) flexible weapons.
 
 - **Claude, done 2026-11-16 (owner: "Withdraw weapon looks horrible for both normal attacks and especially the finisher"):** a withdrawal is now one pull along the shaft, with no second thrust and no impact flash. The finishing one folds the loser round the wound and lays it down. Details: `docs/pits-animation-direction.md`, "Withdrawing an Impale". Sheets `docs/pits-visual-checks/cine-withdraw-live.jpg`, `cine-withdraw-finish.jpg`. **Owner:** withdraw a weapon in play (kept hold, and left in) and say if it still looks wrong. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): an Impale kept hold of, then Withdraw Embedded Weapon on the next turn. The point should come straight out, the weapon never goes through the body, and the wielder stays at its weapon until then.
 

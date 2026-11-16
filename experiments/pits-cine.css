@@ -60,7 +60,18 @@ html[data-mode="dark"] .pc-s-glow-in{stop-opacity:.3}
 .ps-cine .ps-left .ps-shield{stroke:var(--pc-acc-a)}.ps-cine .ps-right .ps-shield{stroke:var(--pc-acc-b)}
 .ps-cine .ps-trail{display:none}
 .ps-cine .ps-rline{stroke:#fff;opacity:.55}
-.ps-cine .ps-rtext{fill:#fff;opacity:.75}
+.ps-cine .ps-rtext{fill:var(--pc-ink-a);opacity:.6;stroke:var(--pc-floor-top);stroke-width:3px;paint-order:stroke}
+/* reach on the floor (owner, 2026-11-16): each fighter's band out to its weapon's point; tags from the engagement rules */
+.ps-cine .ps-reach{opacity:.28}
+.ps-cine .ps-reach-a{fill:var(--pc-acc-a);stroke:var(--pc-acc-a)}.ps-cine .ps-reach-b{fill:var(--pc-acc-b);stroke:var(--pc-acc-b)}
+.ps-cine .ps-reach.is-reach,.ps-cine .ps-reach.is-inside{opacity:.7}
+.ps-cine .ps-reach.is-out,.ps-cine .ps-reach.is-cramped{opacity:.22;fill-opacity:.15;stroke-width:1.5;stroke-dasharray:5 4}
+.ps-cine .ps-reach-end{stroke-width:3;stroke-linecap:round;opacity:.6;fill:none}
+.ps-cine .ps-reach-end.is-reach,.ps-cine .ps-reach-end.is-inside{opacity:1}
+.ps-cine .ps-reach-end.is-out,.ps-cine .ps-reach-end.is-cramped{opacity:.35}
+.ps-cine .ps-reach-tag{font:800 12px var(--st-body,var(--font-ui));letter-spacing:.14em;text-anchor:middle;fill:var(--pc-ink-a);
+  stroke:var(--pc-floor-top);stroke-width:3px;paint-order:stroke;stroke-linejoin:round}
+.ps-cine .ps-reach-tag.is-out,.ps-cine .ps-reach-tag.is-cramped{fill:var(--pc-blood)}
 .ps-cine .ps-reticle{stroke:#fff}
 .ps-cine .ps-dropped .ps-shaft,.ps-cine .ps-lodged .ps-shaft{filter:none}
 

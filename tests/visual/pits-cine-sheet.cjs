@@ -4,9 +4,9 @@
 // (psDraw), one frame every STEP ms of the stage clock, into one sheet per case.
 //
 //   node tests/visual/pits-cine-sheet.cjs '<cases json>' [out folder]
-//   a case: {name, phrase ('trip'|'disarm'|'press'; fell, after for a trip), weapon, pvpWeapon, shield, pvpShield, outcome, loc, lost, strike, shieldWard, down:'a'|'b', u (fixed
+//   a case: {name, phrase ('trip'|'disarm'|'press'|'range'; fell, after for a trip; start, next for a range), weapon, pvpWeapon, shield, pvpShield, outcome, loc, lost, strike, shieldWard, down:'a'|'b', u (fixed
 //   choice, 0..1), from, to (ms after the blow), focus ('a' or 'b': crop to that fighter, for looking at a grip), defeated, fx (the
-//   final blow's Special Effects: 'bash','stun','bleed','choose'), impale, held}
+//   final blow's Special Effects: 'bash','stun','bleed','choose'), impale, held, tried ('parry'|'shield': a failed parry)}
 //   env: PITS_URL (default http://localhost:8765/experiments/practice-combat.html), STEP (40), COLS (8), DARK (1)
 // Needs playwright and a static server at the repository root (python3 -m http.server 8765).
 const path=require('node:path'),fs=require('node:fs'),os=require('node:os');
@@ -30,22 +30,32 @@ const OUT=process.argv[3]||fs.mkdtempSync(path.join(os.tmpdir(),'pits-cine-sheet
       for(const id of ['a','b'])L.place(PS.M[id],PS.clock,PS.gap,'guard');
       let t=PS.clock+50;
       if(c.down){t=L.fall(PS.M[c.down],t)+200;PS.fig[c.down].mDown=true;}
+      // (a change of range, through the stage's own spacing: phrase 'range', start 'long'|'short', next)
+      if(c.phrase==='range'){S.engagement=c.start||'long';psSetSpacing(true);PS.reachTags=null;PS.busyUntil=0;psDrawReach(true);const tags=PS.reachTags;t=PS.clock+50;PS.clock=t;PS.busyUntil=t;S.engagement=c.next||'short';psSetSpacing(false);
+        window.__sheet={t,tags,r:{end:PS.busyUntil,contacts:[],move:'range'}};
+        return {t,end:PS.busyUntil,move:'range '+(c.start||'long')+' to '+(c.next||'short'),contacts:[],w:S.fighters.a.weapon+' / '+S.fighters.b.weapon};}
       const r=c.phrase==='trip'?L.trip(PS.M,'a',t,{fell:c.fell!==false,after:!!c.after}):c.phrase==='disarm'?L.disarm(PS.M,'a',t,{}):
-        c.phrase==='press'?{end:L.press(PS.M.a,PS.M.b,t),contacts:[],move:'press'}:c.withdraw?L.withdraw(PS.M,'a',t,{loc:c.loc||'chest',lost:c.lost||0,defeated:!!c.defeated}):L.blow(PS.M,'a',t,{outcome:c.outcome||'wound',loc:c.loc||'chest',lost:c.lost||0,strike:c.strike||null,shield:!!c.shieldWard,fall:c.fall||false,defeated:!!c.defeated,fx:c.fx||[],impale:!!c.impale,held:!!c.held});
+        c.phrase==='press'?{end:L.press(PS.M.a,PS.M.b,t),contacts:[],move:'press'}:c.withdraw?L.withdraw(PS.M,'a',t,{loc:c.loc||'chest',lost:c.lost||0,defeated:!!c.defeated}):L.blow(PS.M,'a',t,{outcome:c.outcome||'wound',loc:c.loc||'chest',lost:c.lost||0,strike:c.strike||null,shield:!!c.shieldWard,fall:c.fall||false,defeated:!!c.defeated,fx:c.fx||[],impale:!!c.impale,held:!!c.held,tried:c.tried||null});
       if(L.fixChoices)L.fixChoices(null);
       window.__sheet={t,r};
-      return {t,end:r.end,move:r.move,contacts:r.contacts.map(k=>[k.t-t,k.kind]),w:S.fighters.a.weapon+' / '+S.fighters.b.weapon};
+      return {t,end:r.end,move:r.move,tried:r.tried||null,contacts:r.contacts.map(k=>[k.t-t,k.kind]),w:S.fighters.a.weapon+' / '+S.fighters.b.weapon};
     },c);
     const shots=[];
     const from=c.from!=null?c.from:-60,to=c.to!=null?c.to:Math.min(info.end-info.t+120,1600);
     const times=[];for(let x=from;x<=to;x+=STEP)times.push(x);
     for(const k of info.contacts)if(!times.includes(k[0]))times.push(k[0]);times.sort((p,q)=>p-q);
-    const draw=dt=>page.evaluate(([dt,focus])=>{PS.clock=window.__sheet.t+dt;const now=performance.now();for(const id of ['a','b'])psDraw(PS.fig[id],now);
+    const draw=dt=>page.evaluate(([dt,focus,floor])=>{PS.clock=window.__sheet.t+dt;const now=performance.now();for(const id of ['a','b'])psDraw(PS.fig[id],now);
         const X=psFx();if(X)try{X.frame(now,16,false);}catch(e){}
-        const r=document.querySelector(focus?'#pitsStage .ps-fig.ps-'+(focus==='a'?'left':'right'):'#pitsStage .ps-figs').getBoundingClientRect();return [r.left,r.top,r.right,r.bottom];},[dt,c.focus||null]);
+        if(typeof psDrawReach==='function')try{psDrawReach();}catch(e){}
+        const r=document.querySelector(focus?'#pitsStage .ps-fig.ps-'+(focus==='a'?'left':'right'):'#pitsStage .ps-figs').getBoundingClientRect();
+        // (the floor under them too, when the reach bands are what is being looked at)
+        const g=floor&&document.querySelector('#pitsStage .ps-range');const q=g?g.getBoundingClientRect():r;
+        return [Math.min(r.left,q.left),Math.min(r.top,q.top),Math.max(r.right,q.right),Math.max(r.bottom,q.bottom)];},[dt,c.focus||null,c.phrase==='range'||!!c.floor]);
     // (one crop for the whole case: the figures over every frame, with a margin)
     let box=null;for(const dt of times){const r=await draw(dt);box=box?[Math.min(box[0],r[0]),Math.min(box[1],r[1]),Math.max(box[2],r[2]),Math.max(box[3],r[3])]:r;}
     const clip={x:Math.max(0,box[0]-24),y:Math.max(0,box[1]-24),width:box[2]-box[0]+48,height:box[3]-box[1]+48};
+    // (the measuring pass above ran to the end: the floor tags start again from the start's)
+    await page.evaluate(()=>{if(window.__sheet.tags)PS.reachTags=window.__sheet.tags;});
     for(const dt of times){
       await draw(dt);
       const f=path.join(OUT,c.name+'-'+String(shots.length).padStart(3,'0')+'.png');await page.screenshot({path:f,clip});
