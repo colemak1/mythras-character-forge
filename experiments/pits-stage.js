@@ -1154,8 +1154,9 @@ function psLull(){
     if(PS.clock<PS.busyUntil||typeof V==='undefined'||typeof S==='undefined'||!S||S.phase!=='fight'||V.busy||V.hold||S.pending||(typeof R!=='undefined'&&R)||psReplaying())return;
     for(const id of ['a','b']){
       const f=PS.fig[id],m=PS.M[id],e=S.fighters[id];if(!f||!m||!e||f.end||f.mEnd)continue;
-      if(e.prone&&!f.mDown){f.mDown=true;const d=L.fall(m,PS.clock);f.downAt=d;PS.busyUntil=Math.max(PS.busyUntil,d);psEmit('reconcile',{actor:id,kind:'down'});}
-      else if(!e.prone&&f.mDown){f.mDown=false;PS.busyUntil=Math.max(PS.busyUntil,L.stand(m,PS.clock,PS.gap));psEmit('reconcile',{actor:id,kind:'up'});}
+      // (the figure itself is compared too, not only the HUD's flag: audit CA-01)
+      if(e.prone&&(!f.mDown||(PS.cine&&!m.down))){f.mDown=true;const d=L.fall(m,PS.clock);f.downAt=d;PS.busyUntil=Math.max(PS.busyUntil,d);psEmit('reconcile',{actor:id,kind:'down'});}
+      else if(!e.prone&&(f.mDown||(PS.cine&&m.down))){f.mDown=false;PS.busyUntil=Math.max(PS.busyUntil,L.stand(m,PS.clock,PS.gap));psEmit('reconcile',{actor:id,kind:'up'});}
     }
     return;
   }
@@ -1223,7 +1224,8 @@ async function psMotionCue(cue){
       const r=L.blow(PS.M,me.id,PS.clock,{outcome:'armour',loc:'rleg',lost:0,fall:cue.fell?'sit':false,flow:psReplaying()});
       PS.busyUntil=r.end;me.spent=tgt.spent=true;
       // (the Prone chip waits until the tripped fighter is sat down: Work's check B1, 2026-11-14)
-      if(cue.fell&&!tgt.mDown){tgt.mDown=true;tgt.downAt=r.end;}
+      // (and only if the figure really goes down: the HUD follows the picture, audit CA-01)
+      if(cue.fell&&!tgt.mDown&&(!PS.cine||PS.M[tgt.id].down)){tgt.mDown=true;tgt.downAt=r.end;}
       const c=r.contacts[r.contacts.length-1],w=psW(c.at);await psUntil(c.t);
       psEmit('contact',{kind:'trip',actor:me.id,target:tgt.id,point:w.map(Math.round)});psBurst(w,'spark',10);psRing(w);
       await psHitStop(60);
@@ -1302,7 +1304,11 @@ async function psMotionBlow(cue){
   // (the trip's fall is drawn when the blow's own movement has played out, from the pose it left: written into the blow
   // it overlapped the struck fighter's reaction and the head jumped, measured 47 px in one frame)
   // (downAt: the HUD's Prone chip waits for the blow's contact, when the figure is seen to go down)
-  if(defeated||leg||evading){if(!def.mDown)def.downAt=r.contacts.length?r.contacts[0].t:PS.clock;def.mDown=true;}if(defeated)def.mEnd='lying';
+  // The HUD follows the figure: whoever the movement put on the ground (or left there) is shown down, from the
+  // blow's contact (audit CA-01: the HUD said prone over a standing figure)
+  if(PS.cine)for(const f of [def,atk]){const dn=!!PS.M[f.id].down;if(dn&&!f.mDown)f.downAt=f===def&&r.contacts.length?r.contacts[0].t:PS.clock;f.mDown=dn;}
+  else if(defeated||leg||evading){if(!def.mDown)def.downAt=r.contacts.length?r.contacts[0].t:PS.clock;def.mDown=true;}
+  if(defeated)def.mEnd='lying';
   const disarm=cue.record&&cue.record.disarm;let flown=false,tripTold=false;
   for(const c of r.contacts){
     await psUntil(c.t);const w=psW(c.at);psHudConditions();

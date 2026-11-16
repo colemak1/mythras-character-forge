@@ -24,6 +24,13 @@ The owner, after watching a hand-animated stick-figure fight: "I'm really not li
 
 **Checked how.** Frame by frame from a real browser with the clock stepped (sword, spear against sword and shield, greatsword against dagger; live and replay; 1600 and 1280 wide, a 390 phone, Light and Dark). Nobody but Claude has watched it at speed: **the owner's eye is the test.**
 
+**The look is locked (owner, 2026-11-16).** `tests/pits-cine-look.cjs` records every move's joints, contact times and end in the cases the audit (`docs/pits-cinematic-bug-audit-20261115.md`) does not call wrong. A change to it needs the owner's OK, stated in the PR.
+
+**Audit status (Claude).** Three lists, kept apart.
+- *Confirmed failures (CA):* CA-01 to CA-04 fixed (`tests/pits-cine-state.cjs`): a fall with no damage through is drawn and the Prone chip follows the figure; a fighter on the ground stays at ground height (the one knee at most) until Regain Footing; a shield strike's shield arrives with the body (a `lead` key: the lagged parts catch up on the way in) and is aimed per contact; a shield ward from the ground uses the shield. CA-05 to CA-12: open.
+- *Unverified concerns (CL-01 to CL-04):* not yet reproduced.
+- *Known limits (below):* not counted as bugs.
+
 **Known limits.**
 - Flexible weapons (flail, whip, net) are swung as rigid cuts; a shield is a disc.
 - On the ground a fighter has two poses (propped, flat) and attacks from one knee.
