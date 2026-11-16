@@ -70,6 +70,26 @@ function extent(wk){
   if(wk.hands===2&&(k==='blade'||k==='axe'||k==='club'||k==='pick'))return {from:-18,to:len};
   return {from:0,to:len};
 }
+// The wrist (owner, 2026-11-16: "the weapons are still not staying in the hands naturally, they end up in weird angles
+// that don't really make sense for the wrist"). The weapon's angle from the forearm, in the fighter's frame (up
+// positive): a hand turned palm down lets the weapon drop about 75 degrees below the line of the forearm, a hand thumb
+// up holds it up to about 125 degrees above (the grip's own angle across the palm and the wrist's tilt). Past that the
+// weapon would fold back along the forearm, which a wrist cannot do: it stops at the limit (solve()).
+const WRIST={lo:-75,hi:125};
+// how far past the wrist's turn a weapon at angle w is, on a forearm at angle fa (0: inside it)
+function wristOver(w,fa){const r=((w-fa+540)%360+360)%360-180;return r<WRIST.lo-.01?WRIST.lo-r:r>WRIST.hi+.01?r-WRIST.hi:0;}
+// The wrist is kept where each key is written (key()), so every pose holds the weapon in the hand and the in-betweens,
+// which turn the forearm and the weapon together, keep it there too. A key asking for a weapon folded past the wrist
+// first takes the elbow the other way (the hand and the weapon stay exactly where the movement put them, so contacts
+// do not move); only if no elbow holds it does the weapon stop at the nearer limit.
+function keepWrist(Q,h,eb){
+  if(Q.w==null||Q.fa==null||!wristOver(Q.w,Q.fa))return;
+  if(h){let best={fa:Q.fa,ua:Q.ua,o:wristOver(Q.w,Q.fa)};
+    for(const e of [eb>0?-1:1,eb<0?0:-1,0]){const a=armAngles(h,e),o=wristOver(Q.w,a.fa);if(o<best.o-.5)best={...a,o};}
+    Q.ua=best.ua;Q.fa=best.fa;if(!best.o)return;}
+  const r=((Q.w-Q.fa+540)%360+360)%360-180;
+  Q.w=Q.fa+(r>WRIST.hi&&r-WRIST.hi<=WRIST.lo+360-r?WRIST.hi:WRIST.lo);
+}
 const SHIELD_R={buckler:13,target:17,peltast:17,heater:19,viking:21,kite:22,hoplite:23,scutum:26};
 const supports=()=>true;
 let KEEP=1500;       // how much of the past a fighter keeps (ms); 0 keeps it all (the study tools)
@@ -229,6 +249,7 @@ function key(m,t,P,o){
   // (the knee stays down through a hold or a lean; a pose that places the feet says whether it kneels)
   Q.kd=P&&P.kd!=null?P.kd:P&&(P.ff||P.bf)?0:(m.lastP.kd||0);
   if(P&&P.h){const a=armAngles(P.h,P.eb||0);Q.ua=a.ua;Q.fa=a.fa;}
+  if(!o.free)keepWrist(Q,P&&P.h,P&&P.eb||0);
   if(P&&P.o){const a=armAngles(P.o,P.oeb||0);Q.oua=a.ua;Q.ofa=a.fa;}
   delete Q.h;delete Q.o;delete Q.eb;delete Q.oeb;
   const v={px:base+f*Q.hip[0],py:Q.hip[1],ffx:base+f*Q.ff[0],ffy:Q.ff[1],bfx:base+f*Q.bf[0],bfy:Q.bf[1],turn:Q.turn||0,kd:Q.kd};
@@ -241,6 +262,11 @@ function key(m,t,P,o){
     if(o.turns&&o.turns[c])a+=360*o.turns[c];
     v[c]=a;
   }
+  // (the weapon and the forearm turn the same way round from the last key, never through each other: of the ways round
+  // only one keeps the wrist inside its turn the whole way, even where the movement asked for a spin; a full turn
+  // asked for on purpose is kept)
+  if(!(o.turns&&o.turns.w)&&!o.free){const r0=pv.w-pv.fa,span=WRIST.hi-WRIST.lo;
+    if(((r0-WRIST.lo)%360+360)%360<=span){const c=Math.floor((r0-WRIST.lo)/360);v.w+=360*Math.round(((WRIST.lo+WRIST.hi)/2+360*c-(v.w-v.fa))/360);}}
   // steps: a foot that moves along the floor is lifted on the way, unless it skids
   const lift={...(o.lift||{})};
   if(!o.slide)for(const k of ['ff','bf']){
@@ -410,10 +436,10 @@ function readyPose(m,r){
 //  inside:  the shorter weapon inside: in close and leaning in, the weapon short and ready, the empty hand pressing.
 //  cramped: the longer weapon with the other inside it: leaning away, hands pulled in, the point up and useless.
 const STANCE={
-  keep:   {hip:[-14,64],lean:2,bend:2,head:-4,ff:[46,0],bf:[-52,0],h:[42,-6],eb:0,w:6,o:[4,-30],turn:8},
+  keep:   {hip:[-14,60],lean:8,bend:2,head:-6,ff:[46,0],bf:[-52,0],h:[40,-26],eb:0,w:14,o:[4,-30],turn:8},
   kept:   {hip:[-18,50],lean:12,bend:6,head:-6,ff:[34,0],bf:[-52,0],h:[8,-24],eb:0,w:34,o:[36,0],turn:-8},
   inside: {hip:[6,56],lean:28,bend:8,head:-16,ff:[42,0],bf:[-44,0],h:[30,-4],eb:0,w:4,o:[38,-12],turn:8},
-  cramped:{hip:[-24,64],lean:-14,bend:-6,head:8,ff:[24,0],bf:[-52,0],h:[16,-18],eb:0,w:58,o:[2,-30],turn:-6}
+  cramped:{hip:[-24,64],lean:-14,bend:-6,head:8,ff:[24,0],bf:[-52,0],h:[30,-36],eb:0,w:62,o:[2,-30],turn:-6}
 };
 // (small differences between the ready poses, so a stance still breathes: low, high, and a point held further out)
 const STANCE_VAR={guard:{},guardLow:{hip:[0,-4],lean:4},guardHigh:{hip:[0,3],lean:-3},guardPoint:{h:[4,0]}};
@@ -423,7 +449,7 @@ function stancePose(m,name){
   if(v.h)P.h=[P.h[0]+v.h[0],P.h[1]+v.h[1]];
   // a cut weapon kept long has its point at the face, a little higher; cramped, it is held upright by the body
   if(st==='keep'&&m.prof.fam!=='thrust')P.w=16;
-  if(st==='cramped'&&m.prof.fam!=='thrust'){P.h=[6,8];P.eb=1;P.w=84;}
+  if(st==='cramped'&&m.prof.fam!=='thrust'){P.h=[34,-20];P.eb=0;P.w=68;}
   if(st==='kept'&&m.prof.two){P.h=[4,-28];P.w=60;}
   if(m.shield)P.o=st==='cramped'?[20,-10]:[34,-6];
   return P;
@@ -491,9 +517,18 @@ function aimed(m,B,T,w,q,ext){
     if(Math.abs(nh-P.hip[1])>1)P.hip[1]=nh;else w+=Math.sign(dy)*5;
   }
   // (still out of reach: the blow lands further along the drawn weapon, never past its end)
-  {const c=clamp(dy,-ext*.92,ext*.92),sw=Math.sin(rad(w));
+  const q0=q,reach=()=>{q=q0;dy=T[1]-Math.sin(rad(w))*q*len-S[1];const c=clamp(dy,-ext*.92,ext*.92),sw=Math.sin(rad(w));
     if(c!==dy&&Math.abs(sw)>.15&&m.prof.to){const q2=clamp(q+(dy-c)/(sw*len),q,(m.prof.to-2)/len);q=q2;dy=T[1]-Math.sin(rad(w))*q*len-S[1];dy=clamp(dy,-ext*.92,ext*.92);}
-    else dy=c;}
+    else dy=c;};
+  reach();
+  // (the wrist, owner 2026-11-16: a blow asked to arrive with the weapon folded past the wrist arrives at the limit
+  // instead, with the arm put where that weapon still lands on the target)
+  for(let i=0;i<6;i++){
+    const h=[Math.sqrt(Math.max(4,ext*ext-dy*dy)),dy];let fa=null,ov=Infinity;
+    for(const e of [B.eb||0,1,-1,0]){const a=armAngles(h,e),x=wristOver(w,a.fa);if(x<ov){ov=x;fa=a.fa;}}
+    if(ov<.5)break;
+    const r=((w-fa+540)%360+360)%360-180;w=fa+(r>WRIST.hi&&r-WRIST.hi<=WRIST.lo+360-r?WRIST.hi:WRIST.lo);reach();
+  }
   // the feet come in under raised hips (a leg is only so long), so the body really is where the arm was measured from
   for(const k of ['ff','bf']){
     const ft=(P[k]||[k==='ff'?40:-40,0]).slice(),h=P.hip[1]-ft[1],reach=Math.sqrt(Math.max(100,LEG*LEG*.94-h*h));
@@ -1660,7 +1695,7 @@ function speed(m,t){
 // are the feet skidding at t (a key with `slide` is being travelled)
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
-const api={supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,trip,disarm,react,pose,
+const api={WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,trip,disarm,react,pose,
   joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;

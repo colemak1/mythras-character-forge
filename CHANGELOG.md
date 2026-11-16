@@ -12,6 +12,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 - D-PR1 check: a pinned weapon, or one held while lodged in the foe, still holds the distance (no snap), but cannot attack, parry or intercept; the other fighter closes against Evade only.
 - Tests: `tests/pits-cramped.cjs` (13 checks); `CombatRules.CRAMPED_STRIKE` is the shared profile.
 
+## The Pits: wrists, a real axe, cleaner reach stances
+
+- **Weapons stay in the hand** (owner report). The weapon's angle from the forearm is held within what a wrist can do (-75 to +125 degrees). A pose that folded a weapon back along the forearm (worst with a hand at the head) now bends the elbow the other way, or stops at the limit. Strikes are re-aimed so they still land on the same point. Between poses the weapon goes round in front of the hand, never through the wrist. Out-of-range frames: 7.4% before, 0.6% after.
+- **The axe looks like an axe:** a bearded head, edge leading a downward cut, a short poll behind, sized from hatchet to great axe. Also on a dropped or flung axe.
+- **Reach stances:** the spear at long range is held from the waist. Cramped, the spear is tipped forward clear of the wielder's face, and a cramped greatsword or halberd no longer stands up through its wielder's head.
+- The look lock (`tests/pits-cine-look.cjs`) is re-recorded for the wrist change. Contact times and endings are unchanged. Needs the owner's OK on the sheets in `docs/pits-visual-checks/` (`cine-wrist-before-after.jpg`, `cine-axe.jpg`, `cine-range-fixes.jpg`).
+
 ## The Pits: reach follows the weapon in hand; Disengage
 
 - **Reach comes from the weapon you hold** (owner request). A dropped, broken, or abandoned embedded weapon no longer keeps the other fighter out. Without its weapon a fighter fights at its shield's Reach, or at Touch with empty hands. A weapon that is pinned, or held while lodged in the foe, still counts. The floor bands, tags and plate follow the picture, so they change when the weapon visibly leaves the hand. `heldReach()`; decision D-PR1.
