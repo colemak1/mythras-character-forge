@@ -3,11 +3,12 @@
 //   - Impale, "Leave it in the wound": the weapon is drawn lodged in the wound and is not also thrown to the floor
 //   - a successful Trip: the tripped fighter goes down, and the plate's Prone chip waits for the figure
 //   - a miss, then the other's attack: the miss is drawn before the next attack is declared
+//   - a parry that wins a Disarm: the weapon is thrown once, at the Disarm
 //
 //   node tests/visual/pits-spring-scripted.cjs
 const assert=require('node:assert/strict');
 let chromium;try{({chromium}=require('playwright'));}catch(e){console.log('SKIP: playwright is not installed here');process.exit(0);}
-const URL_=(process.env.PITS_URL||'http://localhost:8765/experiments/practice-combat.html')+'?stage=spring';
+const BASE=process.env.PITS_URL||'http://localhost:8765/experiments/practice-combat.html',URL_=BASE+'?stage=spring';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 // sc: {config, react:[...], effect, pick:{pendingKind:selector}, rolls:{'a:Attack':n}, attacks}
 async function bout(browser,sc){
@@ -19,7 +20,7 @@ async function bout(browser,sc){
     // every frame: the defender's hips and whether its plate says Prone (for the chip's timing)
     window.__fr=[];const tick=()=>{try{const f=PS.fig.b;if(f.pts&&f.pts.H)window.__fr.push({hip:f.pts.H[1],chip:!!pitsStageShownProne('b')});}catch(e){}requestAnimationFrame(tick);};
     requestAnimationFrame(tick);});
-  await p.goto(URL_);
+  await p.goto(sc.url||URL_);
   await p.evaluate(c=>{const fly=window.psFlyWeapon;window.psFlyWeapon=function(f,m){window.__psRecord.push({type:'fly',actor:f.id,c:PS.clock});return fly(f,m);};
     const emit=window.psEmit;window.psEmit=function(t,d){emit(t,d);const r=window.__psRecord[window.__psRecord.length-1];if(r&&r.type===t)r.c=PS.clock;};
     Object.assign(config,{mode:'pvp',charname:'Aurel',pvpName:'Brann',style:60,pvpSkill:60,weapon:'sword',pvpWeapon:'sword',armor:0,pvpArmor:0},c||{});startRun(false);},sc.config);
@@ -34,7 +35,8 @@ async function bout(browser,sc){
     if(s.R&&sc.probe&&sc.probe.includes(s.R))probes.push({at:s.R,dropped:await p.evaluate(()=>document.querySelectorAll('#pitsStage .ps-dropped').length)});
     if(s.R){await p.evaluate(v=>{window.__next=v==null?null:v;},(sc.rolls||{})[s.R]);await click('[data-act=roll]');}
     else if(s.pend==='reaction'){const r=(sc.react||[])[nr++]||'none';await click('[data-act=react][data-val='+r+']')||await click('[data-act=react][data-val=none]');}
-    else if(s.pend==='effect'){if(!(sc.effect&&await click('[data-act=effect][data-val="'+sc.effect+'"]')))await click('[data-act=skipEffect]');}
+    else if(s.pend==='effect'){if(sc.effect)await click('[data-pa=fx][data-val="'+sc.effect+'"]');   // the deck: pick the chip, then confirm
+      if(!(sc.effect&&await click('[data-act=effect][data-val="'+sc.effect+'"]')))await click('[data-act=skipEffect]');}
     else if(s.pend&&sc.pick&&sc.pick[s.pend])await click(sc.pick[s.pend]);
     else if(s.pend)await click('#root .prompt .choice:not([data-act=yield]):not([data-act=help])');
     else{if(attacks++>=(sc.attacks||1))break;await click('[data-act=attack]');}
@@ -74,6 +76,18 @@ async function bout(browser,sc){
     assert.deepEqual(r.probes.filter(x=>x.dropped),[],'no weapon on the floor before the blow: '+JSON.stringify(r.probes));
     assert.equal(r.dropped,1,'the weapon lies on the floor once the blow has landed');
   });
+  // (owner, 2026-11-16: "parry into disarm disarms twice": the weapon flew at the parry, came back to the hand and flew
+  // again at the wrench). On both stages: thrown once, at the Disarm's own contact, and one weapon on the floor.
+  for(const [stage,url] of [['cinematic',BASE],['spring',URL_]])
+    await T('a parry that wins a Disarm throws the weapon once, at the wrench ('+stage+' stage)',async()=>{
+      const r=await bout(browser,{url,react:['parry'],effect:'disarm',rolls:{'a:Attack':40,'b:Parry':3,'a:Resist':99},attacks:1});
+      assert.deepEqual(r.errors,[]);
+      const fly=r.rec.filter(x=>x.type==='fly'),dis=r.rec.find(x=>x.type==='contact'&&x.kind==='disarm');
+      assert(dis,'the Disarm was drawn: '+JSON.stringify(r.rec.filter(x=>x.type==='contact')));
+      assert.equal(fly.length,1,'one throw: '+JSON.stringify(fly));
+      assert(fly[0].c>=dis.c,'thrown at the Disarm, not before it (throw '+fly[0].c+', Disarm '+dis.c+')');
+      assert.equal(r.dropped,1,'one weapon on the floor');
+    });
   // (Work's check B6, 2026-11-14: Keep hold drew two blades, one in the wound and one in the hand, the arm pulled back)
   await T('Impale, Keep hold: one weapon, lodged in the wound, with the hand on its grip',async()=>{
     const r=await bout(browser,{config:{weapon:'rapier'},react:['none'],effect:'impale',rolls:{'a:Attack':1},

@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-16 by Claude (Pits Trip, Disarm, Press Advantage choreography)_
+_Last updated: 2026-11-16 by Claude (Pits: parry into Disarm threw the weapon twice, fixed)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-16 by Claude (Pits Trip, Disarm, Press Advantage choreogr
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+- **Claude, done 2026-11-16 (owner report):** a parry that wins a Disarm threw the weapon twice (at the parry, then back in the hand and again at the wrench). Now thrown once, at the wrench, on both stages (`comingDisarm` in `pitsStageSync`). Browser check in `tests/visual/pits-spring-scripted.cjs`. **ChatGPT (Work)**, next batch: one parry into Disarm on the deployed Pits page (desktop); the weapon leaves the hand once.
 
 - **Owner decision, 2026-11-16: no phone view for the Pits.** "We do not need to worry about phone view at all for the pits." Nobody checks or fixes the Pits at phone width; drop the phone halves of the Work batches below (desktop only). The rest of the site still supports phones.
 

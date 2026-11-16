@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a parry that wins a Disarm throws the weapon once
+
+- A Disarm won on a parry threw the weapon at the parry, put it back in the hand for the bind and wrench, then threw it again (owner, 2026-11-16). The weapon now stays in the hand until the wrench and leaves once. The engine logs the Disarm before the blow it answered, and the stage draws the blow first; the stage now waits for the Disarm's own movement. Rules and dice are unchanged.
+- Tests: `tests/pits-cine-moves.cjs`; browser check on both stages in `tests/visual/pits-spring-scripted.cjs`.
+
 ## The Pits: Trip, Disarm and Press Advantage have their own moves
 
 - **Trip** is drawn as a trip: a hook of the foot behind the ankle, or a low sweep of the weapon along the floor (long weapons, or from the ground). If it works the foot goes out and the fighter sits down hard; if it is resisted, a hop and a catching step. The attacker's Trip is a hook straight out of its blow.
