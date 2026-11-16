@@ -152,6 +152,15 @@ const PS_KEYS=Object.keys(PS_IDLE);
 const psRad=a=>a*Math.PI/180,psDeg=r=>r*180/Math.PI;
 const psDir=(a,l)=>[Math.sin(psRad(a))*l,Math.cos(psRad(a))*l];
 const psAdd=(p,q)=>[p[0]+q[0],p[1]+q[1]];
+// An axe head (owner, 2026-11-16: "the ax drawing ... doesn't really look like an ax at all"): a bearded blade on the
+// leading side of the haft, its curved edge facing the way a downward cut goes, and a short poll behind. Points are
+// [along the haft from the hand, out from it] in the weapon's own units, scaled with the weapon (hatchet to great axe).
+// The landing point (PitsCine.profile reachAt) sits inside the blade at every length.
+function psAxeHead(len){
+  const k=Math.max(.75,Math.min(1.3,len/84)),P=(u,v)=>[len+u*k,v*k];
+  return {blade:[P(-2,2.5),P(3,15),P(0,20),P(-6,23.5),P(-13,24.5),P(-20,23),P(-26,18),P(-29,13),P(-18,7),P(-14,2.5)],
+    poll:[P(-3,-2.5),P(-3,-7),P(-11,-7),P(-11,-2.5)]};
+}
 const PS_ARM=[32,30];                       // upper arm, forearm
 // Geometry of a pose c for a fighter whose weapon is wk (all in the fighter's own
 // frame: x forward, y down, feet at y 0, before dx and facing are applied).
@@ -635,8 +644,11 @@ function psPaint(f,L,g,w1,dx,lift,pose,now,blen){
         e.wh2.setAttribute('points',psPts([at(len-4),at(len-34),a2]));e.wh2.style.display='';}
     }else if(kind==='staff'){ln(e.shaft,at(ex.from),tip);e.shaft.setAttribute('class','ps-shaft ps-wood');}
     else if(kind==='axe'){
+      // (the haft runs to the top of the head; the edge is on the side away from perp, which leads a downward cut)
+      const hd=psAxeHead(L.wk.len),on=([u,v])=>{const a=at(len+u-L.wk.len);return [a[0]-perp[0]*v,a[1]-perp[1]*v];};
       ln(e.shaft,at(ex.from),tip);e.shaft.setAttribute('class','ps-shaft ps-wood');
-      const a=at(len-4);e.wh.setAttribute('points',psPts([a,[a[0]+perp[0]*20,a[1]+perp[1]*20],at(len-26)]));e.wh.style.display='';
+      e.wh.setAttribute('points',psPts(hd.blade.map(on)));e.wh.style.display='';
+      e.wh2.setAttribute('points',psPts(hd.poll.map(on)));e.wh2.style.display='';
     }else if(kind==='club'||kind==='pick'){
       ln(e.shaft,at(ex.from),tip);e.shaft.setAttribute('class','ps-shaft ps-wood');
       if(kind==='club'){e.knob.setAttribute('cx',tip[0]);e.knob.setAttribute('cy',tip[1]);e.knob.setAttribute('r',len>100?13:9);e.knob.style.display='';}
@@ -871,7 +883,9 @@ function psWeaponShape(parent,wk){
   if(k==='spear'||k==='trident'||k==='polearm'){psSvg('line',{x1:-36,y1:0,x2:len,y2:0,class:'ps-shaft ps-wood','stroke-width':4},inner);
     psSvg('polygon',{points:(len+24)+',0 '+len+',6 '+len+',-6',class:'ps-head-blade'},inner);}
   else if(k==='blade'){psSvg('line',{x1:0,y1:0,x2:len,y2:0,class:'ps-shaft','stroke-width':4},inner);psSvg('line',{x1:10,y1:-9,x2:10,y2:9,class:'ps-guard','stroke-width':4},inner);}
-  else if(k==='axe'){psSvg('line',{x1:0,y1:0,x2:len,y2:0,class:'ps-shaft ps-wood','stroke-width':4},inner);psSvg('polygon',{points:(len-4)+',0 '+(len+2)+',20 '+(len-26)+',0',class:'ps-head-blade'},inner);}
+  else if(k==='axe'){const hd=psAxeHead(len),pts=a=>a.map(([u,v])=>u+','+v).join(' ');
+    psSvg('line',{x1:0,y1:0,x2:len,y2:0,class:'ps-shaft ps-wood','stroke-width':4},inner);
+    psSvg('polygon',{points:pts(hd.blade),class:'ps-head-blade'},inner);psSvg('polygon',{points:pts(hd.poll),class:'ps-head-blade'},inner);}
   else if(k==='club'||k==='pick'||k==='chain'){psSvg('line',{x1:0,y1:0,x2:len,y2:0,class:'ps-shaft ps-wood','stroke-width':5},inner);psSvg('circle',{cx:len,cy:0,r:k==='club'&&len>100?13:9,class:'ps-knob'},inner);}
   else psSvg('line',{x1:0,y1:0,x2:len,y2:0,class:'ps-shaft ps-wood','stroke-width':4},inner);
   return inner;
