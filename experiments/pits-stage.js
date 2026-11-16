@@ -1236,7 +1236,7 @@ function psCineBlow(id,s){
 // rules (Core p.106). Returns the fighters whose stance changed.
 function psRangeStances(){
   const L=PL();if(!PS.cine||!L.setRange||typeof engagementInfo!=='function')return [];
-  const before={a:PS.M.a&&PS.M.a.stance,b:PS.M.b&&PS.M.b.stance},info=engagementInfo();
+  const before={a:PS.M.a&&PS.M.a.stance,b:PS.M.b&&PS.M.b.stance},info=engagementInfo(psShownFighters());
   L.setRange(PS.M,psRangeKey(),info.active?info.longer:null);
   return ['a','b'].filter(id=>PS.M[id]&&PS.M[id].stance!==before[id]);
 }
@@ -1587,9 +1587,11 @@ function psMount(){
   return true;
 }
 // The range state to draw: the one recorded with the beat being replayed, else the live one.
+// the fighters as the picture shows them (a weapon lost mid-blow keeps its reach until the picture drops it)
+const psShownFighters=()=>(typeof V!=='undefined'&&typeof pitsPresenting==='function'&&pitsPresenting()&&V.shown&&V.shown.a&&V.shown.b)?V.shown:null;
 const psRng=()=>(typeof V!=='undefined'&&pitsPresenting()&&V.shown&&V.shownRange)||{disengaged:!!S.disengaged,engagement:S.engagement,gap:S.gapMetres||0};
 function psRangeKey(){
-  const info=typeof engagementInfo==='function'?engagementInfo():{active:false},r=psRng();
+  const info=typeof engagementInfo==='function'?engagementInfo(psShownFighters()):{active:false},r=psRng();
   return r.disengaged?'apart':!info.active?'even':r.engagement==='short'?'short':'long';
 }
 // The range meter names the range by weapon length: the longer weapon's reach while it controls the distance
@@ -1598,7 +1600,7 @@ const PS_REACH_WORD=['Touch','Close','Medium','Long','Very long'];
 function psRangeWord(key,r){
   if(key==='apart')return 'Apart'+(r.gap?' · '+r.gap+' m':'');
   if(key==='short')return 'Close range';
-  const w=id=>(typeof ARENA_WEAPONS!=='undefined'&&ARENA_WEAPONS[S.fighters[id].weapon]||{}).reach;
+  const F=psShownFighters()||S.fighters,w=id=>typeof heldReach==='function'?heldReach(F[id]):(typeof ARENA_WEAPONS!=='undefined'&&ARENA_WEAPONS[F[id].weapon]||{}).reach;
   const reach=Math.max(w('a')??2,w('b')??2);
   return (PS_REACH_WORD[reach]||'Medium')+' range';
 }
@@ -1609,7 +1611,7 @@ function psRangeWord(key,r){
 // longer weapon keeps the distance, INSIDE and CRAMPED once the shorter one has closed.
 function psReachTags(){
   const out={a:'',b:''};if(typeof engagementInfo!=='function'||!S.fighters)return out;
-  const r=psRng(),info=engagementInfo();if(r.disengaged||!info.active||!info.longer)return out;
+  const r=psRng(),info=engagementInfo(psShownFighters());if(r.disengaged||!info.active||!info.longer)return out;
   const lo=info.longer,sh=lo==='a'?'b':'a';
   if(r.engagement==='short'){out[lo]='cramped';out[sh]='inside';}else{out[lo]='reach';out[sh]='out';}
   return out;

@@ -24,7 +24,7 @@ const pbOn=()=>pitsBottomLayout()==='E';
 
 // ---- what is being decided, and by whom ----
 // Number keys follow this order (Attack first, Concede last), not the engine's list order.
-const PB_ORDER=['attack','shieldAttack','brace','dither','delay','changeRange','stand'];
+const PB_ORDER=['attack','shieldAttack','brace','dither','delay','changeRange','disengage','stand'];
 const pbRank=a=>{const i=PB_ORDER.indexOf(a.act);return a.act==='yield'?999:i<0?100:i;};
 const pbOrder=list=>list.map((a,i)=>[a,i]).sort((x,y)=>pbRank(x[0])-pbRank(y[0])||x[1]-y[1]).map(x=>x[0]);
 const pbHuman=id=>S.fighters?.[id]?.kind==='human';

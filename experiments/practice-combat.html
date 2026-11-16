@@ -550,12 +550,12 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="../js/combat-rules.js?v=30ed5a5732"></script>
 <script src="../js/data.js?v=e863ceddbb"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
-<script src="practice-guidance.js?v=d151386d20"></script>
-<script src="pits-view.js?v=bddcdd1b22"></script>
+<script src="practice-guidance.js?v=ac900b7c93"></script>
+<script src="pits-view.js?v=7bfcd488aa"></script>
 <script src="pits-game.js?v=3769cec741"></script>
 <script src="pits-report.js?v=78c28f1bb3"></script>
-<script src="pits-arena.js?v=7d7696e90c"></script>
-<script src="pits-bottom.js?v=9cdcd8a5a6"></script>
+<script src="pits-arena.js?v=85e764868b"></script>
+<script src="pits-bottom.js?v=a72b5103a4"></script>
 <script src="pits-lost.js?v=f385014ea5"></script>
 <script src="pits-idea.js?v=e1791930b7"></script>
 <script src="pits-motion.js?v=5c6cf25c54"></script>
@@ -564,7 +564,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="pits-spring-live.js?v=8c9c8efa51"></script>
 <script src="pits-cine.js?v=0929879ab7"></script>
 <script src="pits-cine-fx.js?v=20850166e4"></script>
-<script src="pits-stage.js?v=344967d68b"></script>
+<script src="pits-stage.js?v=d2bcd17f8a"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -1251,7 +1251,7 @@ function outcomeStrip(info){
     sub='Choose a defense';
     mark='⚔';
   }else if(p?.kind==='range'){
-    headline='Change range';sub='Allow, oppose, or intercept';mark='↔';
+    headline=p.desired==='apart'?'Disengage':'Change range';sub='Allow, oppose, or intercept';mark='↔';
   }else if(p?.kind==='effect'){
     headline=`${p.effectsLeft} Special Effect${p.effectsLeft===1?'':'s'} available`;sub='Choose an effect';css='effect';mark='✦';
   }else if(p?.kind==='location'){
@@ -1781,13 +1781,24 @@ function mkFighter(id,name,kind,style,weapon,armor=0,evade=48,level=1,str=13,siz
  hp,maxHp:clone(hp),prone:false,skipAttack:0,disabled:[],weaponHand:'Right Arm',shieldHand:'Left Arm',status:'Ready',lastDamage:null,bleeding:false,fatigue:0,
   stunnedLocations:{},impaledWounds:[],impaledWeapon:null};
 }
-// Core pp. 106-107: optional Closing and Opening Range. Two or more Reach steps matter.
-function engagementInfo(){
-  const a=S.fighters?.a,b=S.fighters?.b;if(!a||!b)return {active:false,gap:0,longer:null};
-  const ar=ARENA_WEAPONS[a.weapon].reach,br=ARENA_WEAPONS[b.weapon].reach,gap=Math.abs(ar-br);
+// The Reach a fighter actually fights at (owner, 2026-11-16): the weapon in hand. A dropped, broken or abandoned
+// embedded weapon controls nothing; then the shield's own Reach if one is strapped on and usable (shield strikes use
+// it, decisions.md PIT-P07), else empty hands at Touch. A pinned weapon is still held, so it keeps its Reach.
+function heldReach(f){
+  if(!f)return REACH_STEP.M;
+  if(!f.disarmed&&guardWeapon(f).hp>0)return ARENA_WEAPONS[f.weapon].reach;
+  const sh=f.shield&&f.shield!=='none'&&!f.shieldLost&&SHIELD_ATTACKS[f.shield];
+  if(sh&&armUsable(f,shieldArmOf(f)))return sh.reach;
+  return REACH_STEP.T;
+}
+// Core pp. 106-107: optional Closing and Opening Range. Two or more Reach steps matter. fighters: the presented
+// snapshot (V.shown) when the stage asks, so the range does not change before the picture does.
+function engagementInfo(fighters){
+  const F=fighters||S.fighters,a=F?.a,b=F?.b;if(!a||!b)return {active:false,gap:0,longer:null};
+  const ar=heldReach(a),br=heldReach(b),gap=Math.abs(ar-br);
   return {active:gap>=2,gap,longer:ar>br?'a':br>ar?'b':null};
 }
-function reachName(f){return REACH_NAMES[ARENA_WEAPONS[f.weapon].reach]||'?'}
+function reachName(f){return REACH_NAMES[heldReach(f)]||'?'}
 function canAttackBody(id){if(S.disengaged)return false;const r=engagementInfo();return !r.active||S.engagement==='short'||id===r.longer}
 // Core p.106: while the longer weapon keeps you off its wielder's body, you may
 // still attack that weapon (or close range).
@@ -1799,9 +1810,22 @@ function canShieldParry(f){ensureEffectState(f);return !cannotRespond(f)&&f.shie
 function isCrampedAtReach(id){const r=engagementInfo();return r.active&&S.engagement==='short'&&id===r.longer}
 function proposedRange(id){if(S.disengaged)return null;const r=engagementInfo(),f=S.fighters[id];
  if(!r.active||f.stunnedLocations?.['Right Leg']||f.stunnedLocations?.['Left Leg']||entangledLegs(f)||cannotRespond(f))return null;
-  if(id!==r.longer&&S.engagement==='long')return 'short';
+  // (anything but 'short' is the longer weapon's distance: the state still says 'equal' when a matched bout turns
+  // uneven because a weapon is lost)
+  if(id!==r.longer&&S.engagement!=='short')return 'short';
   if(id===r.longer&&S.engagement==='short')return 'long';
   return null;
+}
+// Change Range to disengage (Core pp.91, 106-107; C5-A04, C5-M32): with any Reach, matched or not, a fighter may
+// spend 1 AP to step out of the engagement; the opponent may allow it, oppose with Evade, or intercept.
+function canDisengage(id){
+  if(S.disengaged||S.phase!=='fight')return false;const f=S.fighters[id];
+  return !!f&&f.ap>=1&&!cannotRespond(f)&&!f.prone&&!f.stunnedLocations?.['Right Leg']&&!f.stunnedLocations?.['Left Leg']&&!entangledLegs(f);
+}
+function disengageReason(f){
+  if(S.disengaged)return 'Already apart';if(f.ap<1)return 'Needs 1 AP';if(cannotRespond(f))return 'Cannot act';
+  if(f.prone)return 'Get up first';if(entangledLegs(f))return 'Legs entangled';
+  return canDisengage(f.id)?'':'Leg stunned';
 }
 function setCombatRange(next,detail){S.engagement=next;log('Engagement Range',detail,'hit');}
 function spendReaction(f){
@@ -1827,14 +1851,15 @@ function expireDelay(f){
   f.ap=Math.max(0,f.ap-1);
   log('Delay expires',`${f.name} did not use the held reaction and loses the Action Point.`,'system','',{actor:f.id});
 }
-function beginChangeRange(id){
+// to: 'apart' to disengage; otherwise the reach change proposedRange offers
+function beginChangeRange(id,to){
   if(S.phase!=='fight'||S.pending)return;
-  const next=proposedRange(id),f=S.fighters[id],d=S.fighters[id==='a'?'b':'a'];
+  const apart=to==='apart',next=apart?(canDisengage(id)?'apart':null):proposedRange(id),f=S.fighters[id],d=S.fighters[id==='a'?'b':'a'];
   if(!next||!f||f.ap<1)return;
   f.ap--;
   S.pending={kind:'range',mover:id,defender:d.id,desired:next};
-  log(`${f.name} changes range`,`${f.name} spends 1 AP to ${next==='short'?'close inside':
-   'open beyond'} ${d.name}'s reach. ${d.name} may permit, oppose with Evade, or intercept with an attack.`,'system');
+  log(`${f.name} changes range`,`${f.name} spends 1 AP to ${apart?'disengage from':next==='short'?'close inside':
+   'open beyond'} ${d.name}${apart?'':"'s reach"}. ${d.name} may permit, oppose with Evade, or intercept with an attack.`,'system');
   if(d.kind==='ai'){
     if(!canOpposeRange(d))return rangeReact('permit');
     const wantIntercept=canInterceptRange(d)&&(Math.random()<(AI_STYLES[d.tactic]?.intercept??.55));
@@ -1844,8 +1869,10 @@ function beginChangeRange(id){
 function rangeReact(option){
   const p=S.pending;if(p?.kind!=='range'||R)return;
   const mover=S.fighters[p.mover],d=S.fighters[p.defender];
+  const apart=p.desired==='apart';
   if(option==='permit'||!canOpposeRange(d)){
     mover.braced=false;
+    if(apart){p.withdrawAfter=mover.id;p.withdrawTitle='Disengage';endRangeAction();return;}
     setCombatRange(p.desired,`${d.name} does not resist. ${p.desired==='short'?mover.name+' closes into shorter reach.':
      mover.name+' opens to longer reach.'}`);endRangeAction();return;
   }
@@ -1858,7 +1885,8 @@ function rangeReact(option){
         log('Change Range · Evade contest',
          `${mover.name} Evade ${mr.roll}/${mr.effectiveTarget}% (${mr.label}) vs ${d.name} Evade ${dr.roll}/${dr.effectiveTarget}% (${dr.label}). ${winner?
          'Change succeeds.':'Original range maintained.'}`,'system','',{sideDice:{[mover.id]:d100Dice(mr.roll),[d.id]:d100Dice(dr.roll)}});
-        if(winner)setCombatRange(p.desired,`${mover.name} ${p.desired==='short'?'closes to the shorter':'opens to the longer'} reach.`);
+        if(winner&&apart){p.withdrawAfter=mover.id;p.withdrawTitle='Disengage';}
+        else if(winner)setCombatRange(p.desired,`${mover.name} ${p.desired==='short'?'closes to the shorter':'opens to the longer'} reach.`);
         endRangeAction();
     });return;
   }
@@ -1870,9 +1898,10 @@ function rangeReact(option){
     requestOpposedSkills(d,combatTarget(d),'Intercept',mover,evadeTarget(mover),'Change Range',(dr,mr)=>{
         log('Change Range · Interception',
          (`${d.name} Combat Style ${dr.roll}/${dr.effectiveTarget}% (${dr.label}) vs ${mover.name} Evade ${mr.roll}/${mr.effectiveTarget}% (${mr.label}). The `
-         +`range changes even if the attack lands.`),'system','',{sideDice:{[d.id]:d100Dice(dr.roll),[mover.id]:d100Dice(mr.roll)}});
+         +`${apart?'mover gets away':'range changes'} even if the attack lands.`),'system','',{sideDice:{[d.id]:d100Dice(dr.roll),[mover.id]:d100Dice(mr.roll)}});
         const p2={kind:'effect',atk:d.id,def:mover.id,attackRoll:dr,defenseRoll:mr,reaction:'evade',evaded:!opposedBetter(dr,mr),owner:null,
-         other:null,effectsLeft:0,chosen:[],chosenLoc:null,maximize:0,rangeAfter:p.desired,rangeIntercept:true};
+         other:null,effectsLeft:0,chosen:[],chosenLoc:null,maximize:0,rangeAfter:apart?null:p.desired,rangeIntercept:true,
+         ...(apart?{withdrawAfter:mover.id,withdrawTitle:'Disengage'}:{})};
         S.pending=p2;
         const won=effectsWonBy(dr.grade,mr.grade),o=Math.max(0,won),def=Math.max(0,-won);
         if(o){p2.owner=d.id;p2.other=mover.id;p2.effectsLeft=o;log('Interception Special Effects',
@@ -2535,7 +2564,7 @@ function tutorialHint(){let p=S.pending;if(
  p?.kind==='reaction')return 'Choose weapon parry, shield parry, Evade, or conserve AP. Weapon and shield Size determine damage reduction.';
  if(p?.kind==='effect')return 'A better success grade can grant Special Effects before damage is resolved.';
  if(p?.kind==='range')return ('The defender may allow the Change Range action, oppose with Evade, or intercept by attacking against the mover’s Evade. '
- +'Closing succeeds even if an interception hits.');if(
+ +(p.desired==='apart'?'Disengaging succeeds even if an interception hits.':'Closing succeeds even if an interception hits.'));if(
  p?.kind==='location')return 'Choose Location lets you target a normally reachable area of the opponent rather than roll the d20 location die.';
  return 'Each combatant gets one proactive action in initiative order per cycle. Reactive actions also cost an Action Point. Track both fighters’ location HP.'}
 // After a fight: look at the result again, or watch the whole fight again (the tape exists once any beat was played).
@@ -2557,13 +2586,14 @@ if(S.phase==='over')return `<div class="endpanel"><span class="eyebrow">${S.mode
 const p=S.pending;
 if(p?.kind==='range'){
   const mover=S.fighters[p.mover],d=S.fighters[p.defender];
+  const away=p.desired==='apart';
   return (`<div class="turnline"><h3>${esc(
-   d.name)} · Change Range</h3><span>${d.ap} AP available</span></div><div class="choicegrid"><button class="choice" data-act="rangeRespond" `
-   +`data-val="permit"><strong>Allow Change</strong><small>Keep your AP; range changes automatically.</small></button><button class="choice gold" `
+   d.name)} · ${away?esc(mover.name)+' disengages':'Change Range'}</h3><span>${d.ap} AP available</span></div><div class="choicegrid"><button class="choice" data-act="rangeRespond" `
+   +`data-val="permit"><strong>${away?'Let Them Go':'Allow Change'}</strong><small>Keep your AP; ${away?'they break away':'range changes'} automatically.</small></button><button class="choice gold" `
    +`data-act="rangeRespond" data-val="oppose" ${!canOpposeRange(d)?'disabled':
-   ''}><strong>Oppose · 1 AP</strong><small>Opposed Evade rolls; preserve the present range if you win.</small></button><button class="choice red" `
+   ''}><strong>Oppose · 1 AP</strong><small>Opposed Evade rolls; ${away?'keep them engaged':'preserve the present range'} if you win.</small></button><button class="choice red" `
    +`data-act="rangeRespond" data-val="intercept" ${!canInterceptRange(d)?'disabled':
-   ''} style="grid-column:span 2"><strong>Intercept · 1 AP</strong><small>Attack versus mover’s Evade; range changes regardless of the hit.</small></button></div>`);
+   ''} style="grid-column:span 2"><strong>Intercept · 1 AP</strong><small>Attack versus mover’s Evade; ${away?'they get away':'range changes'} regardless of the hit.</small></button></div>`);
 }
 if(p?.kind==='reaction')return reactionChoicesHtml(p);
 if(p?.kind==='effect')return effectChoicesHtml(p);
@@ -2638,7 +2668,8 @@ return (`<div class="turnline"><h3>Choose an action</h3><span>${f.ap} AP remaini
  'Ready Weapon':'Pick Up Weapon'} · 1 AP</strong></button>`:''}<button class="choice" data-act="changeRange" ${f.ap<1||!proposedRange(id)?'disabled':
  ''}><strong>${proposedRange(id)==='short'?'Close Inside · 1 AP':'Change Range · 1 AP'}</strong><small>${proposedRange(id)==='short'?
  'Close to shorter reach':proposedRange(id)==='long'?'Open to longer reach':
- 'No contested reach difference'}</small></button>${!ARENA_WEAPONS[f.weapon].twoHanded&&!f.disarmed?
+ 'No contested reach difference'}</small></button><button class="choice" data-act="disengage" ${canDisengage(id)?'':
+ 'disabled'}><strong>Disengage · 1 AP</strong><small>Change Range to step out of the fight; they may allow, oppose or intercept</small></button>${!ARENA_WEAPONS[f.weapon].twoHanded&&!f.disarmed?
  `<button class="choice" data-act="swapHand" ${swapHandReason(f)?'disabled':''} title="${esc(swapHandReason(f))}">
   <strong>Switch Weapon Hand · Free</strong><small>Move the weapon to your other working hand (app policy, not Core RAW)</small></button>`:
  ''}${f.shield!=='none'?`<button class="choice" data-act="ward" ${armUsable(f,shieldArmOf(f))?'':'disabled'} title="Free action before an incoming attack"><strong>${f.warded?.length?
@@ -2894,7 +2925,7 @@ function canShieldStrike(f){
 function shieldReachesBody(id){
  if(S.disengaged)return false;
  const f=S.fighters[id],o=S.fighters[id==='a'?'b':'a'],sh=SHIELD_ATTACKS[f.shield];if(!sh)return false;
- const mine=ARENA_WEAPONS[f.weapon].reach,theirs=ARENA_WEAPONS[o.weapon].reach;
+ const mine=heldReach(f),theirs=heldReach(o);
  const distance=S.engagement==='short'?Math.min(mine,theirs):Math.max(mine,theirs);
  return distance-sh.reach<2;
 }
@@ -3870,11 +3901,11 @@ function resolveWound(atk,def,loc,cls,wound,attackRoll,onContinue){
    });
  }
 }
-function endAction(){const rangeAfter=S.pending?.rangeAfter,withdrawAfter=S.pending?.withdrawAfter;
+function endAction(){const rangeAfter=S.pending?.rangeAfter,withdrawAfter=S.pending?.withdrawAfter,withdrawTitle=S.pending?.withdrawTitle||'Withdraw';
  if(rangeAfter&&S.phase==='fight')setCombatRange(rangeAfter,
  `${S.fighters.a.name} and ${S.fighters.b.name} now fight at ${rangeAfter} reach after the interception.`);
  if(withdrawAfter&&S.phase==='fight'){S.disengaged=true;S.gapMetres=Math.max(1,S.gapMetres||0);dropPinIfSeparated();
- log('Withdraw',`${S.fighters[withdrawAfter].name} has broken engagement; the opponents must re-engage before another melee attack.`,'system','',{
+ log(withdrawTitle,`${S.fighters[withdrawAfter].name} has broken engagement; the opponents must re-engage before another melee attack.`,'system','',{
  actor:withdrawAfter});}S.pending=null;if(S.phase!=='fight'){render();return;}advanceStun(S.fighters[S.order[S.turnIndex]]);S.turnIndex++;advance();}
 function endFight(winnerId,reason){
   if(deferConcurrentEnd(winnerId,reason))return;
@@ -3929,7 +3960,8 @@ function handleClick(e){const n=e.target.closest('[data-act]');if(!n)return;let 
  log('Ward Shield',`${S.fighters[p.actor].name} covers ${p.selected.join(', ')||'no locations'} with the shield.`,'system');render();}break;
  }case 'clearward':{const p=S.pending;if(p?.kind==='ward'){S.fighters[p.actor].warded=[];S.pending=null;
  log('Ward Cleared',`${S.fighters[p.actor].name} releases the shield ward.`,'system');render();}break;
- }case 'changeRange':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')beginChangeRange(id);break;}case 'rangeRespond':rangeReact(v);
+ }case 'changeRange':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')beginChangeRange(id);break;}
+ case 'disengage':{const id=S.order[S.turnIndex];if(S.fighters[id]?.kind==='human')beginChangeRange(id,'apart');break;}case 'rangeRespond':rangeReact(v);
  break;case 'effect':applyEffect(v);break;case 'pinChoose':finishPinWeapon(v);break;case 'counterWatch':{const p=S.pending;
  if(p?.kind==='counterChoice'){p.watchEffect=v;p.kind='counterRetaliation';render();}break;}case 'counterReturn':{const p=S.pending;
  if(p?.kind==='counterRetaliation')finishPrepareCounter(p.watchEffect,v);break;}case 'tripResist':{const p=S.pending;
