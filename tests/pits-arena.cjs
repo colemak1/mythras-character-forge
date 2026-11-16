@@ -126,13 +126,49 @@ test('blocked and armoured blows are worded truthfully, never as an injury',()=>
  assert.match(line({total:3,blocked:0,blockedBy:'',afterParry:3,armour:3,wound:0,before:7,after:7,loc:'Chest'}).head,/^Armour held/);
  assert.match(line({total:9,blocked:4,blockedBy:'parry',afterParry:5,armour:2,wound:3,before:7,after:4,loc:'Chest'}).math,/9 damage − 4 parry − 2 armour = 3 HP lost/);
 });
-test('the result dialog is drawn once, in the current layout and in each alternative bottom layout',()=>{
+test('the end of a bout is not a dialog: the dice tray says Victory and the deck shows how it ended (owner, 2026-11-16)',()=>{
  const B=arena();vm.runInContext(fs.readFileSync(path.join(root,'experiments/pits-bottom.js'),'utf8'),B.ctx);
- B.run(`S.phase='over';S.winnerId='a';S.winner='a';S.showEndModal=true;V.busy=false;V.hold=null;render()`);
- const count=()=>(B.out.innerHTML.match(/class="result-backdrop"/g)||[]).length;
- assert.equal(count(),1,'current layout');
- for(const L of ['A','B','C','D','E']){B.run(`PB.layout='${L}';render()`);assert.equal(count(),1,'layout '+L);
-  assert.equal((B.out.innerHTML.match(/id="resultTitle"/g)||[]).length,1,'one resultTitle in layout '+L);}
+ B.run(`S.phase='over';S.winnerId='a';S.winner=S.fighters.a.name;S.showEndModal=true;V.busy=false;V.hold=null;R=null;
+  S.finalCause={type:'injury',location:'Head',severity:'major',hpLost:10,remaining:-5,maxHp:5,victim:S.fighters.b.name,consequence:'Fatal wound'};render()`);
+ assert.equal((B.out.innerHTML.match(/class="result-backdrop"/g)||[]).length,0,'no dialog over the arena');
+ const tray=B.run('paTrayHtml()');
+ assert.match(tray,/class="roll end won"/);assert.match(tray,/>VICTORY</);assert.match(tray,new RegExp(B.run('S.fighters.a.name')+' wins'));
+ for(const deck of [B.run('pitsBottomDeckHtml()'),B.run('paPromptHtml()')]){
+  assert.equal((deck.match(/class="prompt end pa-end won"/g)||[]).length,1,'the result panel, once');
+  assert.match(deck,/Major wound · Head/);assert.match(deck,/finish-location-figure/);assert.match(deck,/Encounter ended in round/);
+  assert.match(deck,/class="cta" data-act="retry"/);assert.match(deck,/data-act="reset"/);
+  assert.doesNotMatch(deck,/data-act="showResult"|data-act="dismissResult"/,'no buttons for the old dialog');
+ }
+ B.run(`S.winnerId='b';S.winner=S.fighters.b.name`);assert.match(B.run('paTrayHtml()'),/class="roll end lost"[\s\S]*>DEFEAT</);
+ B.run(`S.winnerId=null;S.winner='Neither fighter'`);assert.match(B.run('paTrayHtml()'),/>DRAW</);
+ B.run(`S.phase='between';S.mode='normal';S.winnerId='a'`);assert.match(B.run('pitsBottomDeckHtml()'),/data-act="next"[^>]*>Face Opponent/);
+ // the classic layout keeps its dialog
+ const C=arena('?layout=classic');C.run(`S.phase='over';S.winnerId='a';S.winner='a';S.showEndModal=true;V.busy=false;V.hold=null;render()`);
+ assert.equal((C.out.innerHTML.match(/class="result-backdrop"/g)||[]).length,1,'classic layout dialog');
+});
+test('every turn has a recommended move, selected at the start and marked Recommended (owner, 2026-11-16)',()=>{
+ const B=arena();vm.runInContext(fs.readFileSync(path.join(root,'experiments/pits-bottom.js'),'utf8'),B.ctx);
+ const pick=()=>JSON.parse(B.run(`(()=>{const c=pbCtx();return JSON.stringify({sel:c.sel&&c.sel.act,rec:c.rec&&c.rec.act,def:c.def&&c.def.val,recD:c.recD&&c.recD.val})})()`));
+ let c=pick();assert.equal(c.rec,'attack');assert.equal(c.sel,'attack','starts selected');
+ let html=B.run('pitsBottomDeckHtml()');
+ assert.match(html,/data-val="attack"[^>]*>[\s\S]*?<span class="brec">Recommended<\/span>/);
+ assert.equal((html.match(/class="brec"/g)||[]).length,1,'one recommended row');
+ assert.match(html,/class="bgo" data-act="attack"/,'Confirm sends the recommended move');
+ assert.match(html,/<b>Recommended.<\/b> Attacking is how/,'the deck says why');assert.match(B.run('pbInfoHtml(pbCtx())'),/brec-tag/,'the details mark it');
+ // a choice of the player's own wins over the recommendation
+ B.run(`PB.sel='brace'`);assert.equal(pick().sel,'brace');assert.equal(pick().rec,'attack');
+ // prone: get up first
+ B.run(`PB.key='';S.fighters.a.prone=true`);assert.equal(pick().rec,'stand');assert.equal(pick().sel,'stand');
+ B.run(`S.fighters.a.prone=false;PB.key=''`);
+ // the phones' deck marks it too
+ assert.match(B.run('paActionsHtml()'),/class="act recommended"[^>]*data-act="attack"[\s\S]*?Recommended/);
+ // a defence is recommended and selected when attacked: the better parry, keeping the fighter on their feet
+ B.run(`S.turnIndex=1;S.pending={kind:'reaction',atk:'b',def:'a',attackRoll:{roll:30,grade:2}}`);
+ c=pick();assert.equal(c.recD,'parry');assert.equal(c.def,'parry','the defence starts selected');
+ html=B.run('pitsBottomDeckHtml()');assert.match(html,/data-val="parry"[^>]*>[\s\S]*?Recommended/);assert.match(html,/class="bgo" data-act="react" data-val="parry"/);
+ // an attack that already missed, with one AP left: keep it
+ B.run(`PB.key='';S.fighters.a.ap=1;S.pending.attackRoll={roll:90,grade:1}`);assert.equal(pick().recD,'none');
+ B.run(`S.pending=null;S.turnIndex=0;S.fighters.a.ap=2;PB.key=''`);
 });
 test('a new opponent starts with an empty Current exchange: the last bout\'s blows are history only',()=>{
  const B=arena();

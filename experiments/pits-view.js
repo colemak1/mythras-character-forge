@@ -59,6 +59,42 @@ function pitsLegalActions(id){
   return out;
 }
 
+// The recommended choice (owner, 2026-11-16: "a recommended action every turn that starts auto selected").
+// Advice only, never a rule: a fixed order of priorities over the moves the engine already allows, with one plain reason.
+function pitsRecommendedAction(id){
+  const f=S.fighters?.[id];if(!f)return null;
+  const on=pitsLegalActions(id).filter(a=>a.enabled&&a.act!=='yield');
+  const pick=(act,why)=>on.some(a=>a.act===act)?{act,why}:null;
+  const gear=f.pinnedGear==='shield'?'shield':'weapon';
+  return (f.prone?pick('stand','You are on the ground: get up first. Attacks on you are easier while you are prone.'):null)
+    ||(f.pinnedGear?pick('freePin',`Your ${gear} is pinned. Free it so you can attack and parry with it again.`):null)
+    ||pick('freeEntangle','You are entangled. Break free before it is used to trip you.')
+    ||(f.disarmed?pick('recoverWeapon','You have no weapon in hand. Get it back before anything else.'):null)
+    ||pick('attack','Attacking is how a bout is won. Each parry or evade later costs 1 AP, so watch what you keep.')
+    ||pick('shieldAttack','Your weapon cannot attack now; the shield still can.')
+    ||pick('withdrawImpale','Your weapon is stuck in them. Pull it out to fight with it again.')
+    ||pick('changeRange','You cannot reach them from here. Change the range first.')
+    ||pick('delay','Nothing useful to do now. Delay keeps your AP for defending.')
+    ||(on[0]?{act:on[0].act,why:''}:null);
+}
+// The recommended answer to an attack or a range change, from the options offered (each {val,enabled,pct}).
+function pitsRecommendedDefence(id,options){
+  const f=S.fighters?.[id],p=S.pending,on=(options||[]).filter(d=>d.enabled);if(!f||!on.length)return null;
+  const has=v=>on.find(d=>d.val===v);
+  if(p?.kind==='range'){
+    const o=has('oppose');
+    return o&&o.pct>=40?{val:'oppose',why:`Your Evade (${o.pct}%) has a fair chance to keep the range as it is.`}
+      :{val:'permit',why:'Opposing is a long shot at your Evade; keep the AP.'};
+  }
+  const missed=p?.attackRoll&&p.attackRoll.grade<2;
+  if(missed&&f.ap<=1&&has('none'))return {val:'none',why:'Their attack already missed. Keep your last AP.'};
+  const parries=on.filter(d=>d.val==='parry'||d.val==='shield').sort((a,b)=>b.pct-a.pct),ev=has('evade');
+  // an Evade leaves you prone, so it is only advised when it is much better than any parry
+  if(parries[0]&&(!ev||parries[0].pct+20>=ev.pct))return {val:parries[0].val,why:missed?'Their attack already missed; a good parry can still earn you Special Effects.':`Your best parry (${parries[0].pct}%). A parry keeps you on your feet; a weapon or shield also blocks damage by its size.`};
+  if(ev)return {val:'evade',why:`Evade (${ev.pct}%) is your best chance${parries[0]?' by far':''}. You end up prone if it works.`};
+  return has('none')?{val:'none',why:'No defence is possible now.'}:null;
+}
+
 // A plain snapshot of one fighter for the panels (and for tests).
 function pitsFighterSnapshot(f){
   const w=ARENA_WEAPONS[f.weapon]||{};

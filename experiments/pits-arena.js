@@ -153,6 +153,10 @@ function paTrayHtml(){
     body='<div data-inline-dice></div>';
     if(pct!=null&&r.defs.length===1&&r.defs[0].sides===100)bar=pitsBandHtml(pct,r.settled?r.values[0]:null);
     cls=' live';
+  }else if(S.phase==='between'||S.phase==='over'){
+    // the bout is over: the tray says so (the details are in the command deck below)
+    const r=resultParts();
+    title=r.result;sub=esc(r.winnerLine);who=r.draw?'foe':r.victory?'you':'foe';cls=' end '+(r.draw?'draw':r.victory?'won':'lost');
   }else if(R&&!V.busy){
     const pct=paPct(R.label);
     title=rollHeading(R.label);who=paHuman(R.actor)?'you':'foe';sub=pct!=null?`Target <b>${pct}%</b>${rollDifficultyHtml(R.actor)}`:esc(defsOf(R));
@@ -251,20 +255,33 @@ function paFocus(){
 const PA_ACT_SHORT={attack:'Attack',shieldAttack:'Shield Strike',changeRange:'Change Range',brace:'Brace',delay:'Delay',dither:'Dither',stand:'Regain Footing',yield:'Concede Bout'};
 function paActionsHtml(){
   const phase=pitsPhase(),id=phase==='action'&&paHuman(S.order?.[S.turnIndex])?S.order[S.turnIndex]:'a';
-  const f=S.fighters[id],live=phase==='action',list=pitsLegalActions(id);
+  const f=S.fighters[id],live=phase==='action',list=pitsLegalActions(id),rec=live?pitsRecommendedAction(id):null;
   const pips=Array.from({length:f.apMax},(_,i)=>`<span class="pip${i<f.ap?' on':''}"></span>`).join('');
   const rows=list.map(a=>{
     const help=typeof actionChoiceHelp==='function'?actionChoiceHelp(a.act,f):'';
     const on=live&&a.enabled;
-    return `<button type="button" class="act${a.act==='delay'?' hold':''}${a.act==='yield'?' danger':''}" data-act="${a.act}" title="${esc(live&&!a.enabled&&a.reason?a.reason:help)}" ${on?'':'disabled'}>
-      <span><b>${esc(a.label)}</b><small>${esc(live&&!a.enabled&&a.reason?a.reason:help)}</small></span><span class="cst">${a.ap?a.ap+' AP':'free'}</span></button>`;
+    return `<button type="button" class="act${rec?.act===a.act?' recommended':''}${a.act==='delay'?' hold':''}${a.act==='yield'?' danger':''}" data-act="${a.act}" title="${esc(live&&!a.enabled&&a.reason?a.reason:help)}" ${on?'':'disabled'}>
+      <span><b>${esc(a.label)}</b><small>${rec?.act===a.act?'<em class="rec">Recommended.</em> ':''}${esc(live&&!a.enabled&&a.reason?a.reason:help)}</small></span><span class="cst">${a.ap?a.ap+' AP':'free'}</span></button>`;
   }).join('');
   return `<h3><span>${live?(S.mode==='pvp'?esc(f.name)+': your turn':'Your turn'):'Actions'}</span><span class="pp">${pips}</span></h3>${rows}`;
+}
+// The end of a bout, in the command deck instead of a dialog (owner, 2026-11-16): the dice tray says Victory, Defeat or Draw;
+// this says how it ended and what to do next. The words come from the engine's own resultParts().
+function paEndHtml(){
+  const r=resultParts(),next=r.next,mode=S.mode;
+  const primary=next?`<button type="button" class="cta" data-act="next">Face Opponent ${S.wave+1} →</button>`
+    :`<button type="button" class="cta" data-act="retry">${mode==='pvp'?'Rematch':mode==='tutorial'?'Try Lesson Again':'Run Again'}</button>`;
+  const back=`<button type="button" class="cta alt" data-act="reset">${next?'Finish Run':'Back to Modes'}</button>`;
+  const carry=next?`<p class="pa-end-note">${mode==='normal'?'You are restored to full health for the next opponent.':'Your wounds carry into the next encounter; Action Points refresh.'} The next opponent is stronger.</p>`:'';
+  return `<div class="prompt end pa-end ${r.draw?'draw':r.victory?'won':'lost'}" aria-label="Result">
+    <header><h4>${esc(r.winnerLine)}</h4><span class="result-eyebrow">${r.eyebrow}</span></header>
+    ${r.finish}<div class="result-meta">${r.meta}</div>${carry}
+    <div class="endbuttons">${primary}${replayButtonHtml('cta alt')}${back}</div>${fieldDressingHtml()}</div>`;
 }
 function paPromptHtml(){
   const phase=pitsPhase(),f=S.fighters[S.order?.[S.turnIndex]]||S.fighters.a;
   if(V.busy)return `<div class="prompt"><h4>${V.replaying?'Replaying the fight':'Resolving the exchange'}</h4>${presentationControlsHtml()}</div>`;
-  if(S.phase==='between'||S.phase==='over')return `<div class="prompt end">${actionHtml()}</div>`;
+  if(S.phase==='between'||S.phase==='over')return paEndHtml();
   if(phase==='rolling')return `<div class="prompt"><h4>Roll the dice</h4><p>Press <b>Roll</b> in the dice tray (or Space). The target is shown there.</p></div>`;
   if(phase==='action')return `<div class="prompt"><h4>${S.mode==='pvp'?esc(f.name)+', your move':'Your move'}</h4><p>You have <b>${f.ap} AP</b>. Choose an action on the left.</p>${paHelp()}</div>`;
   if(phase==='opponent')return `<div class="prompt"><h4>${esc(f.name)} acts</h4><p>The opponent's dice resolve automatically; you will be asked to react when it matters.</p></div>`;

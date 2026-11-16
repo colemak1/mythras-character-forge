@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: result in the arena, recommended move
+
+- The end of a bout is no longer a window over the arena. The dice tray says **Victory**, **Defeat** or **Draw** and who won; the middle box of the command deck shows the finishing injury (figure and words), the round, and the buttons (Rematch or Next opponent, Replay fight, Back to Modes, First Aid in Hardcore). Phones show the same panel in their deck. `?layout=classic` keeps the old window.
+- Every turn has a **Recommended** move, already selected: confirm it with Enter or pick another. Advice only, never a rule: get up when prone, free a pinned weapon, break free, recover a dropped weapon, else attack (or the shield, a stuck weapon, the range). When attacked, the best parry is recommended (Evade only when it is much better, since it leaves you prone); a missed attack with one AP left recommends keeping it. The details panel says why. Tests: `tests/pits-arena.cjs`, `tests/pits-bottom.cjs`.
+
 ## The Pits: blood fades (audit CA-11)
 
 - A drop of blood that lands now fades by one deadline, instead of renewing its life on every frame. Test: `tests/pits-cine-blood.cjs`.
