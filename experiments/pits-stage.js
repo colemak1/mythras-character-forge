@@ -716,6 +716,7 @@ function psFrame(now){
     }
     for(const id of ['a','b'])if(PS.fig[id])psDraw(PS.fig[id],now);
     {const X=psFx();if(X)try{X.film(psReplaying());X.frame(now,dt,!!stopped);}catch(e){psEmit('cue-error',{cue:'fx',message:String(e&&e.message||e)});}}
+    if(PS.cine)try{psDrawReach();}catch(e){}
     psFollowReticles();psDrawLodged(now);psDrawFlag(now);PS.raf=requestAnimationFrame(psFrame);return;
   }
   for(const id of ['a','b']){
@@ -1231,6 +1232,14 @@ function psCineBlow(id,s){
   psEmit('move',{actor:id,key,move:r.move,ward:r.ward||null,style:r.style||null,finish:r.finish||null,replay:psReplaying()});
   return r;
 }
+// Range stances on the cinematic stage (owner, 2026-11-16): who the range favours, from the engine's engagement
+// rules (Core p.106). Returns the fighters whose stance changed.
+function psRangeStances(){
+  const L=PL();if(!PS.cine||!L.setRange||typeof engagementInfo!=='function')return [];
+  const before={a:PS.M.a&&PS.M.a.stance,b:PS.M.b&&PS.M.b.stance},info=engagementInfo();
+  L.setRange(PS.M,psRangeKey(),info.active?info.longer:null);
+  return ['a','b'].filter(id=>PS.M[id]&&PS.M[id].stance!==before[id]);
+}
 function psMotionFigs(){
   // a new bout chooses its movement once, when neither fighter has been made: the spring trial if it is switched on and
   // both weapons have a family
@@ -1247,7 +1256,7 @@ function psMotionFigs(){
         m.shield=!!f.look.shield;if(f.look.shieldKey)m.shieldKey=f.look.shieldKey;}
       continue;
     }
-    if(!m||m.weapon.len!==wk.len||m.weapon.key!==wk.kind||m.swap!==!!f.look.swap){PS.M[id]=PL().fighter(id,wk,f.look.swap,f.look);PS.M[id].keep=20000;psPlaceM(id);}
+    if(!m||m.weapon.len!==wk.len||m.weapon.key!==wk.kind||m.swap!==!!f.look.swap){PS.M[id]=PL().fighter(id,wk,f.look.swap,f.look);PS.M[id].keep=20000;psRangeStances();psPlaceM(id);}
   }
   // (the bout's seed: kept live, given back to the figures a replay rebuilds)
   if(PS.cine&&PS.M.a&&PS.M.a.pair){const tape=psCineTape();if(psReplaying()&&tape.seed!=null)PS.M.a.pair.seed=tape.seed;else if(tape.seed==null)tape.seed=PS.M.a.pair.seed;}
@@ -1590,7 +1599,48 @@ function psRangeWord(key,r){
   const reach=Math.max(w('a')??2,w('b')??2);
   return (PS_REACH_WORD[reach]||'Medium')+' range';
 }
+// Reach on the floor (cinematic stage, owner 2026-11-16: "it's really hard to tell when you have an advantage or
+// disadvantage because of range"). Each fighter has a band in its colour from its body out to as far as its weapon
+// reaches as drawn, every frame, so one band visibly covers the other fighter while the other falls short. The tag
+// under each says what the engine's engagement rules (Core p.106) make of it: IN REACH and OUT OF REACH while the
+// longer weapon keeps the distance, INSIDE and CRAMPED once the shorter one has closed.
+function psReachTags(){
+  const out={a:'',b:''};if(typeof engagementInfo!=='function'||!S.fighters)return out;
+  const r=psRng(),info=engagementInfo();if(r.disengaged||!info.active||!info.longer)return out;
+  const lo=info.longer,sh=lo==='a'?'b':'a';
+  if(r.engagement==='short'){out[lo]='cramped';out[sh]='inside';}else{out[lo]='reach';out[sh]='out';}
+  return out;
+}
+const PS_LUNGE=40;
+const PS_REACH_TAG={reach:'In reach',out:'Out of reach',inside:'Inside',cramped:'Cramped'};
+function psDrawReach(rebuild){
+  const g=psLayer('ps-range');if(!g||!PS.cine||!PS.M.a||!PS.M.b)return;
+  if(rebuild||!PS.reachEls||!PS.reachEls.word.isConnected){
+    g.innerHTML='';const E={word:null};
+    for(const id of ['a','b'])E[id]={band:psSvg('rect',{class:'ps-reach ps-reach-'+id,height:7,rx:3.5},g),
+      end:psSvg('line',{class:'ps-reach-end ps-reach-'+id},g),tag:psSvg('text',{class:'ps-reach-tag'},g)};
+    E.word=psSvg('text',{class:'ps-rtext'},g);PS.reachEls=E;
+  }
+  // (the tags change when the fighters get there, not when the engine rules the new range)
+  if(!PS.reachTags||PS.clock>=PS.busyUntil)PS.reachTags=psReachTags();
+  const E=PS.reachEls,L=PL(),y=PS_GROUND+14,tags=PS.reachTags,xs={};
+  for(const id of ['a','b']){const m=PS.M[id],j=L.joints(m,PS.clock),f=m.face||(id==='a'?1:-1);
+    // as far as the weapon can strike from here: its point as drawn (or the hand, if the weapon is held back past it)
+    // and a lunge's step
+    const reach=Math.max(f*(j.tip[0]-j.P[0]),f*(j.Hn[0]-j.P[0]),10)+PS_LUNGE,x0=j.P[0],x1=x0+f*reach;xs[id]=x0;
+    const e=E[id],t=tags[id];
+    e.band.setAttribute('x',Math.min(x0,x1));e.band.setAttribute('width',Math.abs(x1-x0));e.band.setAttribute('y',y-3.5);
+    e.band.setAttribute('class','ps-reach ps-reach-'+id+(t?' is-'+t:''));
+    e.end.setAttribute('x1',x1);e.end.setAttribute('x2',x1);e.end.setAttribute('y1',y-9);e.end.setAttribute('y2',y+9);
+    e.end.setAttribute('class','ps-reach-end ps-reach-'+id+(t?' is-'+t:''));
+    e.tag.setAttribute('x',x0);e.tag.setAttribute('y',y+24);e.tag.textContent=t?PS_REACH_TAG[t].toUpperCase():'';
+    e.tag.setAttribute('class','ps-reach-tag'+(t?' is-'+t:''));}
+  // (the range's name only when no tags say more: at close range the two tags fill the floor between the fighters)
+  const key=psRangeKey();E.word.setAttribute('x',(xs.a+xs.b)/2);E.word.setAttribute('y',y+24);
+  E.word.textContent=tags.a||tags.b?'':psRangeWord(key,psRng()).toUpperCase();
+}
 function psDrawRange(key){
+  if(PS.cine&&PS.M.a&&PS.M.b){if(PS.clock>=PS.busyUntil)PS.reachTags=null;psDrawReach(true);return;}
   const g=psLayer('ps-range');if(!g)return;
   // (the spring stage: the marker lies between where the two actually stand, which moves with the fight)
   const at=f=>PS.springOn&&f.standX!=null?f.standX:f.tx;
@@ -1605,12 +1655,20 @@ function pitsStageReset(){PS.run=null;}
 function psSetSpacing(snap){
   if(PS_MOTION&&PS.fig.a.look&&PS.fig.b.look){
     // a change of range is footwork: the fighters step to their new places (no sliding)
-    const key=psRangeKey(),L=PL(),gap=L.gap(PS.fig.a.look.wk,PS.fig.b.look.wk,key),moved=gap!==PS.gap;PS.gap=gap;
+    // (a new bout: the movement is chosen before the spacing, so the cinematic stage's own spacing is used from the start)
+    if(!PS.M.a&&!PS.M.b)PS.cine=PS_CINE;
+    const key=psRangeKey(),L=PL(),gap=L.gap(PS.fig.a.look.wk,PS.fig.b.look.wk,PS_CINE&&key==='long'?'keep':key),moved=gap!==PS.gap;PS.gap=gap;
     psMotionFigs();
+    // (a new stance with no step to take: the fighter settles into it where it stands)
+    const restance=psRangeStances();
+    if(!moved&&!snap&&L.restance)for(const id of restance){const f=PS.fig[id];
+      if(!f.mDown&&!f.mEnd&&PS.clock>=PS.busyUntil)PS.busyUntil=Math.max(PS.busyUntil,L.restance(PS.M[id],PS.clock));}
+    // (both take their step together: the first one's step does not make the other wait for a lull)
+    const free=PS.clock>=PS.busyUntil;
     for(const id of ['a','b']){const f=PS.fig[id],m=PS.M[id];
       if(moved&&snap)psPlaceM(id);
       // (not while a weapon held in a wound joins the two: they do not step apart round it, owner 2026-11-16)
-      else if(moved&&!f.mDown&&!f.mEnd&&!psTiedByLodge()){if(PS.clock>=PS.busyUntil){f.relocate=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,gap,psHurt(f)));}else f.relocate='range';}
+      else if(moved&&!f.mDown&&!f.mEnd&&!psTiedByLodge()){if(free){f.relocate=false;PS.busyUntil=Math.max(PS.busyUntil,L.recover(m,PS.clock,gap,psHurt(f)));}else f.relocate='range';}
       f.tx=m.hx+m.face*(L.station(m,gap)-m.guard.ffx+m.guard.px);}
     psDrawRange(key);return;
   }
@@ -1639,7 +1697,7 @@ function pitsStageSync(){
   if(fresh){psSettle();for(const k of Object.keys(PS.lodge)){PS.lodge[k].remove();delete PS.lodge[k];}
     for(const id of ['a','b']){const f=PS.fig[id];if(f.dropEl){f.dropEl.remove();f.dropEl=null;}f.look=null;}
     PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};if(!psReplaying())PS.cineTape=null;
-    PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.flag=false;f.finishDrop=false;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.tripAhead=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
+    PS.M={};PS.gap=0;PS.go=0;PS.intents={};PS.reachTags=null;for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.flag=false;f.finishDrop=false;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.tripAhead=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
   for(const id of ['a','b']){
     const f=PS.fig[id];f.look=pitsStageLook(view[id]);
     // (the movement stage draws its figures at scale 1: a SIZ scale set here would put every marker placed before the next
