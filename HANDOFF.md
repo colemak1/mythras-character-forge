@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-16 by Claude (Pits: Disarm on the parry, double Disarm fixed, white flag for surrender)_
+_Last updated: 2026-11-16 by Claude (Pits: Impale sticks at the blow; plan for Special Effect finishes)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-16 by Claude (Pits: Disarm on the parry, double Disarm fi
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+- **Claude, done 2026-11-16 (owner report):** Impale sticks in the wound at the blow's contact (kept hold: hand on the grip; left in: the hand opens), and a finishing Impale has its own finish. **Owner:** choose which Special Effect finishes to build next from the table in `docs/pits-animation-direction.md`, "Finishing blows by Special Effect"; one PR each with a frame sheet. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): an Impale left in, one kept hold of, and a finishing Impale; the weapon is in the wound as the blow lands, never swung through and then placed.
 
 - **Claude, done 2026-11-16 (owner report):** every Disarm is now drawn by its blow: a Disarm won on a parry takes the weapon at the parry, and an attacker's Disarm against a parry throws it once (a beat folded into a blow used to start its own movement too). Compel Surrender ends with the loser raising a little white flag (it used to fall as if injured). Browser checks in `tests/visual/pits-spring-scripted.cjs`. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): a parry into Disarm (the weapon leaves at the parry, once); an attacker's Disarm against a parry (once); a Compel Surrender (white flag, no fall).
 

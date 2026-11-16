@@ -24,6 +24,26 @@ The owner, after watching a hand-animated stick-figure fight: "I'm really not li
 
 **Checked how.** Frame by frame from a real browser with the clock stepped (sword, spear against sword and shield, greatsword against dagger; live and replay; 1600 and 1280 wide, Light and Dark; phone width is not a target for the Pits, owner 2026-11-16). Nobody but Claude has watched it at speed: **the owner's eye is the test.**
 
+**Impale (2026-11-16, owner report: "the swing happens then the blade teleports to the wound").** The blow now knows it impales (`record.impale`, with whether the weapon is kept hold of). The cinematic phrase `impaled()` keeps the point in the wound from the contact: kept hold, the hand stays on the grip; left in, the hand opens (`release`) and the attacker steps back. The stage draws the weapon in the wound from the contact (`PS.lodgeAhead`) until the engine's own state is shown. A finishing Impale (`finish: 'impale'`): driven home, held, the fighter sags on it, the hand opens and the fighter goes down with the blade still in.
+
+**Finishing blows by Special Effect (plan, owner, 2026-11-16: "we should plan different finishes based on the special effect selected on the final blow").** The engine already says which effects the last exchange carried; the finish is chosen from them, and with none, the present finishes (through, launch, slam, run, ground) stay. Rules and dice are unchanged; a finish draws only what the engine's facts say. Built so far: **Impale** (above) and **Compel Surrender** (white flag, no blow). Proposed, one line each:
+
+| Effect on the final blow | Finish |
+|---|---|
+| Bash | knocked off the feet: thrown back through the air, a heavy landing and a roll to a stop |
+| Bleed | a quick draw-cut across; the fighter stands holding the wound, then kneels, then topples |
+| Stun Location | the struck part snaps, a dazed wobble, and the fighter drops straight down, limp |
+| Blind Opponent | a hand to the eyes, a staggering half-step, a wild swing at nothing, then a fall |
+| Maximise Damage, Bypass Armour, Sunder | one heavy blow; armour cracks (sparks, a piece flies) and the fighter is driven to the knees, then over |
+| Choose Location | by the part: head, a spin and a drop; leg, the leg goes and the fighter falls sideways; arm, the weapon falls first |
+| Circumvent Parry | the blade slips round the raised guard (a feint, a turn of the wrist), the guard still up as the fighter falls |
+| Trip Opponent | the sweep, then a downward blow to the fighter on the floor |
+| Disarm Opponent | the weapon spins away and sticks in the floor; the finishing blow comes as the fighter looks after it |
+| Damage Weapon | the fighter's weapon or shield breaks in two as it falls |
+| Entangle | yanked off the feet by the caught limb |
+
+**Owner:** pick the three or four that matter most; one PR each, with a frame sheet for your OK.
+
 **Trip, Disarm and Press Advantage (batch (a), 2026-11-16; waiting for the owner's OK on the sheets).** Each is now a phrase of its own in `pits-cine.js`, not a stand-in blow; tests `tests/pits-cine-moves.cjs`. Sheets: `docs/pits-visual-checks/cine-trip-hook.jpg`, `cine-trip-sweep-longspear.jpg`, `cine-trip-resisted.jpg`, `cine-disarm.jpg`, `cine-press.jpg`.
 - *Trip* (`trip()`): a **hook** (knee up, the foot whips round behind the other's front ankle) or a **sweep** (dropped low, the weapon scythes along the floor; always for a long shaft or from the ground). Worked: the foot is kicked up, the body tips back and sits down hard. Resisted: a hop on the planted leg, arms out, a catching step back. The defender's Trip (won on a parry) is this phrase; the attacker's Trip is a hook straight out of its blow's follow-through, told at the ankle.
 - *Disarm* (`disarm()`): a small cock, the blade binds on the other's weapon near the hand, drops under it and flicks up hard; the weapon leaves at the flick, the empty hand is thrown up and back, a step back to guard.

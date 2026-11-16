@@ -330,7 +330,14 @@ function pitsStageBeat(events,step,names){
     // the attacker's Trip (resolved before the location and the damage): the blow carries it, one movement (FR-03)
     const striker=pitsStageBlowActor(e,names)||attacker;
     const trip=striker?inEx(a0+1,step,['trip']).find(c=>c.actor===striker)||null:null;
-    return {cue:{...cue,record:{press:inEx(a0+1,step,['press'])[0]||null,after:inEx(step+1,a1,PSTAGE_AFTER),arise:arise?arise.actor:null,disarm,trip}},consumed:false};
+    // Impale: the weapon lodges in this blow's wound (the engine's entry comes before the blow); kept hold of unless the
+    // wielder chose to leave it in the wound (a computer keeps hold)
+    let impale=null;
+    if(striker&&inEx(a0+1,a1,['lodge']).some(c=>c.actor===striker)){
+      let left=false;for(let i=a0+1;i<a1;i++){const x=events[i];if(x&&!x.roll&&!x.checkpoint&&x.title==='Impale · Left in the wound')left=true;}
+      impale={held:!left};
+    }
+    return {cue:{...cue,record:{press:inEx(a0+1,step,['press'])[0]||null,after:inEx(step+1,a1,PSTAGE_AFTER),arise:arise?arise.actor:null,disarm,trip,impale}},consumed:false};
   }
   // the attacker's Trip has no movement of its own when a blow of its exchange follows: that blow draws it
   if(cue.type==='trip'){
@@ -366,7 +373,7 @@ const PS_SPRING=(()=>{try{return /[?&]stage=spring\b/.test(location.search)&&typ
 // the cinematic movement (pits-cine.js) is the Pits' own; ?stage=spring and ?stage=classic keep the earlier two for comparison
 const PS_CINE=(()=>{try{return typeof PitsCine!=='undefined'&&!/[?&]stage=(spring|classic|poses)\b/.test(location.search);}catch(e){return false;}})();
 const PS_MOTION=(()=>{try{return typeof PitsMotion!=='undefined'&&!/[?&]stage=poses\b/.test(location.search);}catch(e){return false;}})();
-const PS={clock:0,M:{},gap:0,busyUntil:0,paused:false,cuePromise:null,cueFor:0,fig:{},lastId:0,epoch:0,raf:0,ready:false,seeded:false,ex:null,run:null,wasBusy:false,fighters:{},lodge:{},tether:{},events:[]};
+const PS={clock:0,M:{},gap:0,busyUntil:0,paused:false,cuePromise:null,cueFor:0,fig:{},lastId:0,epoch:0,raf:0,ready:false,seeded:false,ex:null,run:null,wasBusy:false,fighters:{},lodge:{},tether:{},events:[],lodgeAhead:{}};
 const PS_GROUND=450,PS_SPACING={apart:440,even:300,short:220,long:390},PS_M=22;
 const psP=o=>({...PS_IDLE,...o});
 const PS_POSE={
@@ -541,11 +548,19 @@ function psDrawMotion(f,L,now){
   if(PS.springOn){f.standX=m.hx+m.face*(j.F[0]+j.bF[0])/2;f.shadow.setAttribute('cx',f.standX);}
   if(PS.cine){const up=Math.min(j.F[1],j.bF[1]),k=Math.max(.35,1-up/160);f.shadow.setAttribute('cx',m.hx);f.shadow.setAttribute('rx',52*k);f.shadow.setAttribute('opacity',.34*k);}
 }
+// the stage's own lodged weapon (an Impale drawn at its contact, before the engine's state is shown) merged into the
+// engine's list: one entry per wielder; the stage's let-go wins over the engine's hold
+function psMergeLodge(list,la){
+  list=(list||[]).slice();const i=list.findIndex(w=>w.holder===la.holder);
+  if(i<0)list.push({...la});else list[i]={...list[i],held:list[i].held&&la.held};
+  return list;
+}
 // the held lodged weapon of this fighter on the spring stage, if any: {v (the impaled figure), loc, weapon}
 function psHeldLodge(f){
   if(!PS.springOn)return null;
   for(const [vid,list] of Object.entries(PS.fighters.lodged||{}))for(const w of list||[]){
-    if(w.holder!==f.id||!w.held)continue;const v=PS.fig[vid];if(v&&v.pts)return {v,loc:w.loc,weapon:w.weapon};}
+    // (not once the bout is over: the winner has let go, the finishing Impale)
+    if(w.holder!==f.id||!w.held||f.mEnd)continue;const v=PS.fig[vid];if(v&&v.pts)return {v,loc:w.loc,weapon:w.weapon};}
   return null;
 }
 const psUnit=v=>{const l=Math.hypot(v[0],v[1])||1;return [v[0]/l,v[1]/l];};
@@ -866,8 +881,11 @@ function psDrawLodged(now){
       if(!el||!el.isConnected){el=PS.lodge[key]=psSvg('g',{class:'ps-lodged'},fx);psWeaponShape(el,pitsStageWeaponKind(w.weapon,3));}
       const P=psBodyPt(v,w.loc),len=pitsStageWeaponKind(w.weapon,3).len;
       // the weapon points back toward its wielder; if abandoned, out and slightly up
-      const H=w.held?holder.pts&&psWorld(holder,holder.pts.hand):[P[0]+(holder.X>v.X?1:-1)*len,P[1]-len*.35];
-      const ang=Math.atan2(H[1]-P[1],H[0]-P[0]);
+      const held=w.held&&!holder.mEnd;
+      const H=held?holder.pts&&psWorld(holder,holder.pts.hand):[P[0]+(holder.X>v.X?1:-1)*len,P[1]-len*.35];
+      // (let go: it stays at the angle it had in the hand, it does not swing to a new one, owner 2026-11-16)
+      let ang=Math.atan2(H[1]-P[1],H[0]-P[0]);
+      if(held)el.ang=ang;else if(el.ang!=null)ang=el.ang;
       el.setAttribute('transform','translate('+(P[0]+Math.cos(ang)*len/2)+','+(P[1]+Math.sin(ang)*len/2)+') rotate('+psDeg(ang)+')');
     }
     const t=PS.fighters.tether&&PS.fighters.tether[id];
@@ -1381,6 +1399,7 @@ async function psMotionBlow(cue){
   const evading=((px.react||ex.react)==='evade'||out==='evaded')&&!px.rangeIntercept&&arise!==def.id;
   const tried=evading&&/^(evaded|miss|fumble)$/.test(out);
   // the attacker's Trip, carried by this blow (FR-03): one attack, and the defender goes down from it if the trip worked
+  const impale=(!pulled&&!weaponHit&&cue.record&&cue.record.impale)||null;
   const trip=(cue.record&&cue.record.trip)||null,tripFell=!!(trip&&trip.fell&&!defeated);def.tripAhead=false;
   PS.intents={};
   // the attacking tool (the engine's px.tool, or the attack beat's): a shield strike is drawn as one. Kept apart from
@@ -1389,7 +1408,8 @@ async function psMotionBlow(cue){
   // The replay repeats the live move (CA-09): each blow draws its choices from a stream keyed by its log entry, and
   // the move and the defence declared live are kept on the tape and given again.
   const r=pulled?L.withdraw(PS.M,atk.id,PS.clock,{loc,lost,defeated,flow:psReplaying()}):
-    psCineBlow(atk.id,{outcome:out,loc,lost,shield:weaponHit?false:shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying()});
+    psCineBlow(atk.id,{outcome:out,loc,lost,shield:weaponHit?false:shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying(),
+      impale:!!impale&&lost>0&&!strike,held:!!(impale&&impale.held)});
   PS.busyUntil=r.end;atk.spent=def.spent=true;
   // (the trip's fall is drawn when the blow's own movement has played out, from the pose it left: written into the blow
   // it overlapped the struck fighter's reaction and the head jumped, measured 47 px in one frame)
@@ -1433,6 +1453,10 @@ async function psMotionBlow(cue){
       await psHitStop(PS.cine?(full?120:80):(full?70:50));
     }else{
       def.flash=lost>0?loc:null;def.flashUntil=performance.now()+(PS.cine?240:900);
+      // Impale: from this contact the weapon is drawn in the wound, held (the hand on its grip), until the hand opens
+      if(impale&&lost>0&&PS.cine&&!PS.lodgeAhead[def.id]){
+        PS.lodgeAhead[def.id]={loc,weapon:(S.fighters[atk.id]||{}).weapon||'sword',holder:atk.id,held:true};
+        PS.fighters.lodged[def.id]=psMergeLodge(PS.fighters.lodged[def.id],PS.lodgeAhead[def.id]);psEmit('lodge',{actor:atk.id,target:def.id,at:'contact'});}
       psEmit('contact',{kind:out,actor:atk.id,target:def.id,loc,point:w.map(Math.round),tip:psWorld(atk,atk.pts.tip).map(Math.round),lost});
       if(lost>0){
         psBurst(w,'spark',10);psRing(w);psShake(1+lost/6);psBurst(w,'blood',10+lost*2);
@@ -1450,6 +1474,9 @@ async function psMotionBlow(cue){
       }
     }
   }
+  // Impale, let go (left in the wound, or the finishing blow): the hand opens; the weapon stays where it is
+  if(r.release&&PS.lodgeAhead[def.id]){await psUntil(r.release);const la=PS.lodgeAhead[def.id];la.held=false;
+    PS.fighters.lodged[def.id]=psMergeLodge(PS.fighters.lodged[def.id],la);atk.look.armed=false;psEmit('release',{actor:atk.id});}
   await psUntil(r.end);
   if(hookAfter&&PS.M[def.id]&&!PS.M[def.id].down&&!(tripFell&&def.mDown)){
     // the attacker's Trip: the hook behind the ankle, out of the blow's follow-through
@@ -1580,6 +1607,9 @@ function pitsStageSync(){
     // (not a weapon left in the other fighter's wound: Impale, "leave it in" marks the wielder disarmed, but the weapon
     // is drawn where it is lodged, not thrown to the floor as well)
     const lodgedIn=(view[id==='a'?'b':'a'].impaledWounds||[]).some(w=>w&&w.attacker===id);
+    // (a weapon in the other's wound is not also in the hand: once the bout is over the winner of a finishing Impale has
+    // let go, and the held weapon is drawn in the wound only, owner 2026-11-16)
+    if(lodgedIn&&PS.cine&&f.mEnd)f.look.armed=false;
     // A Disarm the engine has resolved while its exchange still waits on a person (the throw distance, the hit location,
     // the damage): the engine marks the weapon lost before those rolls, but the blow that knocks it away has not been
     // drawn yet. The weapon stays in the hand until it is (Work's check B4, 2026-11-14). Not on a fresh bout.
@@ -1601,6 +1631,11 @@ function pitsStageSync(){
      // (it used to walk both back to a neutral guard at the next lull: report review FR-06)
      f.pressWas=f.pressRole;}}
   PS.fighters.lodged={a:pitsStageLodged(view,'a'),b:pitsStageLodged(view,'b')};
+  // an Impale drawn at its contact stays drawn while the shown state catches up; then the engine's state is the picture
+  for(const id of ['a','b']){const la=PS.lodgeAhead[id];if(!la)continue;
+    if(fresh||(!V.busy&&!V.hold)){delete PS.lodgeAhead[id];continue;}
+    PS.fighters.lodged[id]=psMergeLodge(PS.fighters.lodged[id],la);
+    const hf=PS.fig[la.holder];if(hf&&hf.look&&!la.held)hf.look.armed=false;}
   PS.fighters.tether={a:pitsStageEntangle(view,'a'),b:pitsStageEntangle(view,'b')};
   const over=(S.phase==='over'||S.phase==='between')&&S.winnerId&&!V.busy;
   if(over){PS.fig[S.winnerId].end='win';PS.fig[S.winnerId==='a'?'b':'a'].end='ko';}

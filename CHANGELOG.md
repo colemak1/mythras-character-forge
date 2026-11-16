@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: Impale sticks at the blow
+
+- An Impale stays in the wound from the moment it lands. Kept hold, the hand stays on the grip; left in, the hand lets go and the fighter steps back. Before, the blow swung through and the weapon then appeared in the wound (owner, 2026-11-16).
+- A finishing Impale has its own finish: driven home, held, the fighter sags on it, the hand opens, and the fighter goes down with the blade still in. The winner no longer shows a second weapon in the hand afterwards.
+- Rules and dice are unchanged. Tests: `tests/pits-cine-moves.cjs`, `tests/pits-stage.cjs`; browser check in `tests/visual/pits-spring-scripted.cjs`. A plan for finishes chosen by the final blow's Special Effect is in `docs/pits-animation-direction.md`.
+
 ## The Pits: one Disarm, on the parry; a white flag for Compel Surrender
 
 - A Disarm won on a parry now takes the weapon in the parry itself, not in a second move after it (owner, 2026-11-16).
