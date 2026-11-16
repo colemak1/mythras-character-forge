@@ -5,7 +5,7 @@
 //
 //   node tests/visual/pits-cine-sheet.cjs '<cases json>' [out folder]
 //   a case: {name, weapon, pvpWeapon, shield, pvpShield, outcome, loc, lost, strike, shieldWard, down:'a'|'b', u (fixed
-//   choice, 0..1), from, to (ms after the blow), guard (true: also a frame of each fighter's guard first)}
+//   choice, 0..1), from, to (ms after the blow), focus ('a' or 'b': crop to that fighter, for looking at a grip)}
 //   env: PITS_URL (default http://localhost:8765/experiments/practice-combat.html), STEP (40), COLS (8), DARK (1)
 // Needs playwright and a static server at the repository root (python3 -m http.server 8765).
 const path=require('node:path'),fs=require('node:fs'),os=require('node:os');
@@ -38,9 +38,9 @@ const OUT=process.argv[3]||fs.mkdtempSync(path.join(os.tmpdir(),'pits-cine-sheet
     const from=c.from!=null?c.from:-60,to=c.to!=null?c.to:Math.min(info.end-info.t+120,1600);
     const times=[];for(let x=from;x<=to;x+=STEP)times.push(x);
     for(const k of info.contacts)if(!times.includes(k[0]))times.push(k[0]);times.sort((p,q)=>p-q);
-    const draw=dt=>page.evaluate(dt=>{PS.clock=window.__sheet.t+dt;const now=performance.now();for(const id of ['a','b'])psDraw(PS.fig[id],now);
+    const draw=dt=>page.evaluate(([dt,focus])=>{PS.clock=window.__sheet.t+dt;const now=performance.now();for(const id of ['a','b'])psDraw(PS.fig[id],now);
         const X=psFx();if(X)try{X.frame(now,16,false);}catch(e){}
-        const r=document.querySelector('#pitsStage .ps-figs').getBoundingClientRect();return [r.left,r.top,r.right,r.bottom];},dt);
+        const r=document.querySelector(focus?'#pitsStage .ps-fig.ps-'+(focus==='a'?'left':'right'):'#pitsStage .ps-figs').getBoundingClientRect();return [r.left,r.top,r.right,r.bottom];},[dt,c.focus||null]);
     // (one crop for the whole case: the figures over every frame, with a margin)
     let box=null;for(const dt of times){const r=await draw(dt);box=box?[Math.min(box[0],r[0]),Math.min(box[1],r[1]),Math.max(box[2],r[2]),Math.max(box[3],r[3])]:r;}
     const clip={x:Math.max(0,box[0]-24),y:Math.max(0,box[1]-24),width:box[2]-box[0]+48,height:box[3]-box[1]+48};

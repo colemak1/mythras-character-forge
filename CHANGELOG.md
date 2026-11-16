@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: weapons held as the rules and a hand would hold them (audit CA-05 to CA-07, the owner's grip note)
+
+- **Handedness from the engine (CA-05).** A shortspear or trident is held in one hand, and with a shield the shield arm no longer also holds the shaft. A military flail is held in two hands.
+- **The second hand stays on the drawn shaft (CA-06).** It takes the nearest point of the drawn shaft it can reach, and lets go for that moment when none is in reach, instead of hanging up to 25 units off the weapon.
+- **Weapons land where they are drawn (CA-07).** The painter and the movement now share one weapon extent. A quarterstaff lands on the staff, not 9 units past its end. A two-handed sword or axe has a hilt or haft below the first hand for the second.
+- **The hold.** Elbows asked to sit under the arm now do: a floor rule meant for the world was flipping every such elbow up. Swords, axes and maces no longer fold back over the forearm in guard, which happened in about 15% of frames and is now about 6%. Hand positions at each key, weapon angles, contact points and timing are unchanged.
+- Tests: `tests/pits-cine-grip.cjs`. The look lock is re-recorded with the owner's OK. Frame sheets, before and after: `docs/pits-visual-checks/grip-20261116/`.
+
 ## The Pits: contacts, the replay and lasting state (audit CA-08, CA-09, CA-12, CL-01 to CL-04)
 
 The second batch from the cinematic audit (`docs/pits-cinematic-bug-audit-20261115.md`). The approved look is unchanged (`tests/pits-cine-look.cjs` passes as recorded).

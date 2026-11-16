@@ -48,7 +48,25 @@ function profile(wk){
   else if(k==='axe'){p.heavy=true;p.reachAt=.86;if(wk.two||len>=110)p.two=26;}
   else if(k==='club'||k==='pick'){p.heavy=true;p.reachAt=.92;if(len>100)p.two=26;}
   else if(k==='chain'||k==='whip'||k==='net'){p.reachAt=.95;}
+  // The engine's handedness, when the stage gives it (audit CA-05): a one-handed weapon is held in one hand (a
+  // shortspear with a shield), a two-handed one in both (a military flail on its handle)
+  if(wk.hands===1)p.two=0;
+  else if(wk.hands===2&&!p.two)p.two=k==='chain'||k==='whip'||k==='net'?22:26;
+  if(p.two&&k==='blade')p.two=-12;               // a two-handed sword: the second hand on the hilt, below the first
+  // what is drawn of it, along the weapon from the weapon hand (shared with the painter, CA-07)
+  const ex=extent(wk);p.from=ex.from;p.to=ex.to;
+  // the point that lands is on the drawn weapon
+  p.reachAt=Math.min(p.reachAt,(p.to-4)/len);
   return p;
+}
+// The drawn extent of a weapon, along it from the weapon hand: a spear's butt and a staff's lower half are behind the
+// hand; a two-handed sword or axe has a hilt or haft below it for the second hand. The painter (psPaint) draws this.
+function extent(wk){
+  wk=wk||{kind:'blade',len:92};const k=wk.kind,len=wk.len||92;
+  if(k==='spear'||k==='trident'||k==='polearm')return {from:-36,to:len};
+  if(k==='staff')return {from:-30,to:len-30};
+  if(wk.hands===2&&(k==='blade'||k==='axe'||k==='club'||k==='pick'))return {from:-18,to:len};
+  return {from:0,to:len};
 }
 const SHIELD_R={buckler:13,target:17,peltast:17,heater:19,viking:21,kite:22,hoplite:23,scutum:26};
 const supports=()=>true;
@@ -57,7 +75,7 @@ let KEEP=1500;       // how much of the past a fighter keeps (ms); 0 keeps it al
 // ----- the rig -----
 const dirL=a=>[Math.cos(rad(a)),Math.sin(rad(a))];
 // two bones from a to b; the joint goes to the side `prefer` points to
-function ik2(a,b,l1,l2,prefer){
+function ik2(a,b,l1,l2,prefer,free){
   let dx=b[0]-a[0],dy=b[1]-a[1],d=Math.hypot(dx,dy)||1e-6;
   const dd=clamp(d,Math.abs(l1-l2)+.5,l1+l2-.2),ux=dx/d,uy=dy/d;
   const x=(l1*l1-l2*l2+dd*dd)/(2*dd),h=Math.sqrt(Math.max(0,l1*l1-x*x));
@@ -65,7 +83,7 @@ function ik2(a,b,l1,l2,prefer){
   const s1=(j1[0]-m[0])*prefer[0]+(j1[1]-m[1])*prefer[1];
   let mid=s1>=0?j1:j2;
   // (a knee or an elbow is never under the floor: on the ground the joint goes the other way)
-  if(mid[1]<1){const alt=s1>=0?j2:j1;if(alt[1]>mid[1])mid=alt;}
+  if(!free&&mid[1]<1){const alt=s1>=0?j2:j1;if(alt[1]>mid[1])mid=alt;}
   return {mid,end:[a[0]+ux*dd,a[1]+uy*dd],over:d-dd};
 }
 // the torso in the fighter's frame from a local pose (hip, lean, bend, head, turn)
@@ -99,26 +117,33 @@ function solve(v,f,m,opt){
   const du=D(ua),df=D(fa);let E=[wS[0]+du[0]*DIM.upper,wS[1]+du[1]*DIM.upper],Hn=[E[0]+df[0]*DIM.fore,E[1]+df[1]*DIM.fore];
   // an arm lying on the ground rests on it
   if(Hn[1]<1||E[1]<1){const r=ik2(wS,[Hn[0],Math.max(1,Hn[1])],DIM.upper,DIM.fore,[0,1]);E=r.mid;Hn=r.end;}
-  const len=m?m.weapon.len:92;let dw=D(w);
+  const len=m?(m.prof.to!=null?m.prof.to:m.weapon.len):92;let dw=D(w);
   let tip=[Hn[0]+dw[0]*len,Hn[1]+dw[1]*len],blen=len;
   // a weapon does not go through the floor: its point rests on it and it is drawn shorter (turned into the scene)
   if(tip[1]<1){
     if(Hn[1]>4){const k=(Hn[1]-1)/(Hn[1]-tip[1]);tip=[Hn[0]+(tip[0]-Hn[0])*k,1];blen=Math.max(10,len*k);}
     // (a hand on the ground: the weapon lies along it)
     else{w=Math.cos(rad(w))>=0?0:180;tip=[Hn[0]+f*Math.cos(rad(w))*len,Hn[1]];}
+    dw=D(w);                                      // (the grip below follows the weapon as drawn)
   }
   let ou=D(oua),of=D(ofa),oE=[oS[0]+ou[0]*DIM.upper,oS[1]+ou[1]*DIM.upper],oHn=[oE[0]+of[0]*DIM.fore,oE[1]+of[1]*DIM.fore];
   if(oHn[1]<1||oE[1]<1){const r=ik2(oS,[oHn[0],Math.max(1,oHn[1])],DIM.upper,DIM.fore,[0,1]);oE=r.mid;oHn=r.end;}
   // both hands on a long weapon: the lead hand holds the shaft where it can reach it
+  let grip=null;
   const two=m&&m.prof.two&&!opt.off&&!opt.weapon&&!opt.unarmed?m.prof.two:0;
   if(two){
+    // the second hand holds the drawn shaft where it can reach it, nearest the usual grip; where no part of the shaft
+    // is in reach it lets go for that moment, instead of hanging in the air beside the weapon (audit CA-06)
     const at=d=>[Hn[0]+dw[0]*d,Hn[1]+dw[1]*d],far=d=>Math.hypot(at(d)[0]-oS[0],at(d)[1]-oS[1]);
-    let d=two;if(far(d)>ARM*.98){let best=d,bf=far(d);for(let x=d;x>=-10;x-=3){const q=far(x);if(q<bf){best=x;bf=q;}if(q<=ARM*.98)break;}d=best;}
-    const g=at(d),r=ik2(oS,[g[0],Math.max(1,g[1])],DIM.upper,DIM.fore,[-f*.3,-1]);oE=r.mid;oHn=r.end;
+    const lo=(m.prof.from||0)+4,hi=Math.min(blen,len)-8;let d=null;
+    if(far(two)<=ARM*.98&&two>=lo&&two<=hi)d=two;
+    else for(let k=3;k<=hi-lo+3&&d==null;k+=3)for(const x of [two-k,two+k])if(x>=lo&&x<=hi&&far(x)<=ARM*.98){d=x;break;}
+    grip=d;
+    if(d!=null){const g=at(d),r=ik2(oS,[g[0],Math.max(1,g[1])],DIM.upper,DIM.fore,[-f*.3,-1]);oE=r.mid;oHn=r.end;}
   }
   const kneeWay=[f*.9,.45];
   const fl=ik2(P,[v.ffx,Math.max(0,v.ffy)],DIM.thigh,DIM.shin,kneeWay),bl=ik2(P,[v.bfx,Math.max(0,v.bfy)],DIM.thigh,DIM.shin,kneeWay);
-  return {P,M,S,wS,oS,Hd,E,Hn,oE,oHn,K:fl.mid,F:fl.end,bK:bl.mid,bF:bl.end,tip,w,blen};
+  return {P,M,S,wS,oS,Hd,E,Hn,oE,oHn,K:fl.mid,F:fl.end,bK:bl.mid,bF:bl.end,tip,w,blen,grip};
 }
 
 // ----- the track: whole-pose keys, sampled per channel -----
@@ -161,7 +186,9 @@ function fill(m,P){
 }
 // hand offset from the shoulder -> arm angles (elbow below the line unless eb says above)
 function armAngles(h,eb){
-  const r=ik2([0,0],h,DIM.upper,DIM.fore,eb>0?[0,1]:eb<0?[-1,0]:[0,-1]);
+  // (around the shoulder, not on the floor: the floor rule of ik2 would put every elbow asked to be below the shoulder
+  // above it, and the weapon would sit awkwardly in the hand, owner 2026-11-16)
+  const r=ik2([0,0],h,DIM.upper,DIM.fore,eb>0?[0,1]:eb<0?[-1,0]:[0,-1],true);
   return {ua:deg(Math.atan2(r.mid[1],r.mid[0])),fa:deg(Math.atan2(r.end[1]-r.mid[1],r.end[0]-r.mid[0]))};
 }
 // Write a key: pose P (local, partial) at time t. o: at (the base, world x), e (ease), ec (ease per channel),
@@ -268,6 +295,7 @@ function fighter(id,wk,swap,look){
   const m={id,hx:x,face,weapon:{key:wk.kind,len:wk.len},wk,swap:!!swap,prof:profile(wk),cine:true,
     guard:{ffx:0,px:0},shield:!!(look&&look.shield),shieldKey:look&&look.shield?(look.shieldKey||'heater'):null,
     pair:pend,keys:[],base:x,lastP:null,down:false,over:false,hurt:false,chamber:null,ready:'guard'};
+  if(m.shield)m.prof.two=0;                      // (a shield arm does not also hold the shaft)
   pend[id]=m;
   const P={...POSE.guard,ua:0,fa:0,oua:0,ofa:0};
   const a=armAngles(P.h,0),b=armAngles(P.o,0);P.ua=a.ua;P.fa=a.fa;P.oua=b.ua;P.ofa=b.fa;delete P.h;delete P.o;
@@ -370,7 +398,10 @@ function aimed(m,B,T,w,q,ext){
     const need=dy-Math.sign(dy)*ext*.86,nh=clamp(P.hip[1]+need,26,m.down?GROUND_HIP:84);
     if(Math.abs(nh-P.hip[1])>1)P.hip[1]=nh;else w+=Math.sign(dy)*5;
   }
-  dy=clamp(dy,-ext*.92,ext*.92);
+  // (still out of reach: the blow lands further along the drawn weapon, never past its end)
+  {const c=clamp(dy,-ext*.92,ext*.92),sw=Math.sin(rad(w));
+    if(c!==dy&&Math.abs(sw)>.15&&m.prof.to){const q2=clamp(q+(dy-c)/(sw*len),q,(m.prof.to-2)/len);q=q2;dy=T[1]-Math.sin(rad(w))*q*len-S[1];dy=clamp(dy,-ext*.92,ext*.92);}
+    else dy=c;}
   // the feet come in under raised hips (a leg is only so long), so the body really is where the arm was measured from
   for(const k of ['ff','bf']){
     const ft=(P[k]||[k==='ff'?40:-40,0]).slice(),h=P.hip[1]-ft[1],reach=Math.sqrt(Math.max(100,LEG*LEG*.94-h*h));
@@ -506,6 +537,8 @@ function blow(M,aid,t,s){
   }
   // --- the attacker ---
   const q=bash?0:P.reachAt,down=!!A.down;
+  // (the furthest point that can land is on the drawn weapon: CA-07)
+  const qMax=Math.min(.98,P.to?(P.to-2)/A.weapon.len:.98);
   const wHit=move==='over'||move==='spin'?(H==='high'?-22:H==='mid'?-38:-58):move==='rise'?(H==='high'?38:H==='mid'?8:-30):
     move==='stab'?(H==='high'?-34:-48):(H==='high'?12:H==='mid'?-4:-30);
   let body;
@@ -530,8 +563,8 @@ function blow(M,aid,t,s){
     // not on top of the other: if the body would end too close, the arm is bent and the blow comes from further out
     const near_=x=>f*(xd0-(x.at+f*x.P.hip[0]));
     const need=D.down?128:118;
-    if(near_(aim)<need){const a2=aimed(A,body,T,wHit,Math.min(.97,q+.12),ARM*.7);if(near_(a2)>near_(aim))aim=a2;}
-    if(D.down&&near_(aim)<need-10){const a3=aimed(A,body,T,wHit,.98,ARM*.55);if(near_(a3)>near_(aim))aim=a3;}
+    if(near_(aim)<need){const a2=aimed(A,body,T,wHit,Math.min(qMax,q+.12),ARM*.7);if(near_(a2)>near_(aim))aim=a2;}
+    if(D.down&&near_(aim)<need-10){const a3=aimed(A,body,T,wHit,qMax,ARM*.55);if(near_(a3)>near_(aim))aim=a3;}
   }
   // a miss falls short or goes past: the blade is not stopped by anything
   const xa0=sample(A,t,true).px,travel=f*(aim.at-A.base);
@@ -1005,7 +1038,7 @@ function speed(m,t){
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
 const api={supports,fighter,gap,station,place,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,press,react,pose,
-  joints,sample,speed,sliding,takeFx,profile,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
+  joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
