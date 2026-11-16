@@ -905,7 +905,7 @@ function finish(A,D,r,th,o){
   if(sample(D,th,true).py<30)kind='ground';
   // the final blow's Special Effect chooses the finish (owner, 2026-11-16); a fighter already on the floor keeps 'ground'
   if(kind!=='ground'){const fxs=o.fx||[];
-    const byFx=fxs.includes('bash')?'bashed':fxs.includes('stun')?'stunned':fxs.includes('bleed')?'bled':
+    const byFx=fxs.includes('bash')?'bashed':fxs.includes('trip')?'tripped':fxs.includes('disarm')?'disarmed':fxs.includes('stun')?'stunned':fxs.includes('bleed')?'bled':
       fxs.includes('choose')?(loc==='head'?'headshot':/leg/.test(loc)?'legout':/arm/.test(loc)?'armdrop':null):null;
     if(byFx)kind=byFx;}
   A.finished=kind;
@@ -1048,6 +1048,39 @@ const FX_FINISH={
     key(D,th+1580,POSE.face,{at:x+away*30,e:'in'});
     fx(D,{t:th+1100,kind:'land',x,power:.5});fx(D,{t:th+1580,kind:'land',x:x+away*30,power:1});
     D.down='flat';return th+1900;
+  },
+  // Trip Opponent: the blow takes the legs; the feet go out and the fighter lands flat on its back. The winner stands
+  // over it, the point held down at it, then lowers it (one blow: the engine's)
+  tripped(A,D,r,th,o){
+    const {away,f,move,wHit,aim}=o,x=D.base,P0=aim.P;
+    key(D,th+70,{hip:[-14,58],lean:-24,bend:-10,head:16,ff:[42,30],h:[8,38],eb:1,w:132,o:[-18,36],oeb:1},{at:x+away*10,e:'out5',plant:'bf'});
+    key(D,th+230,{hip:[-34,32],lean:-40,bend:20,head:26,ff:[44,36],bf:[8,6],h:[2,22],eb:1,w:150,o:[-34,-18]},{at:x+away*24,e:'in'});
+    key(D,th+380,POSE.flat,{at:x+away*36,e:'out',slide:true});
+    fx(D,{t:th+380,kind:'land',x:x+away*34,power:1.2});fx(D,{t:th+380,kind:'skid',id:D.id,t1:th+500});
+    D.down='flat';
+    const wEnd=move==='rise'?wHit+100:wHit-70;
+    keyA(A,th+110,{hip:[8,P0.hip[1]-4],lean:(P0.lean||30)+10,head:-26,h:[30,-44],w:wEnd,o:[-46,0]},{e:'out',spin:move==='rise'?{w:1}:{w:-1},plant:'bf'});
+    // over the fallen fighter, clear of it (not standing on it): the point held down at it
+    const jd=joints(D,th+400),xs=[jd.F[0],jd.bF[0],jd.Hd[0],jd.P[0]],edge=f>0?Math.min(...xs):Math.max(...xs);
+    const body={hip:[4,62],lean:24,bend:4,head:-28,ff:[40,0],bf:[-46,0],turn:6,o:[-30,-20]};
+    const a=aimed(A,body,[edge+f*60,26],-84,.98);
+    const over=f*(a.at+f*a.P.ff[0]-(edge-f*14));if(over>0)a.at-=f*over;
+    keyA(A,th+640,a.P,{at:a.at,e:'io'});
+    keyA(A,th+1150,{hip:[a.P.hip[0],a.P.hip[1]-2]},{e:'lin',plant:'both'});
+    keyA(A,th+1650,POSE.victory,{at:a.at-f*30,e:'io'});
+    return th+1650;
+  },
+  // Disarm Opponent: the weapon leaves the hand at the blow and spins away (the stage sticks it in the floor); the
+  // fighter's eyes follow it, then it finds the wound, and goes down
+  disarmed(A,D,r,th,o){
+    const {away}=o,x=D.base;carryOn(A,th,o,th+1700,70);
+    key(D,th+80,{hip:[-12,64],lean:-12,bend:-6,head:12,h:[-8,46],eb:1,w:160,o:[10,-20]},{at:x+away*12,e:'out5',plant:'both'});
+    key(D,th+420,{hip:[-10,66],lean:-18,bend:-8,head:-30,h:[0,24],eb:1,w:120,o:[0,-30]},{e:'io',plant:'both'});
+    key(D,th+780,{hip:[-8,64],lean:6,bend:6,head:26,h:[10,-40],w:-60,o:[16,-30]},{e:'io',plant:'both'});
+    key(D,th+1000,{...POSE.kneel,head:24},{e:'in',plant:'both'});
+    key(D,th+1240,POSE.face,{at:x+away*40,e:'in'});
+    fx(D,{t:th+1000,kind:'land',x,power:.5});fx(D,{t:th+1240,kind:'land',x:x+away*40,power:1});
+    D.down='flat';return th+1700;
   },
   // Choose Location, the head: it snaps back, the body turns away and drops
   headshot(A,D,r,th,o){
