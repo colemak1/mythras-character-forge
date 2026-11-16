@@ -206,15 +206,18 @@ function drawSmear(id,m,clock,shown){
   el.setAttribute('d','M'+pts(outer).replace(/ /g,' L')+' L'+pts(inner.reverse()).replace(/ /g,' L')+' Z');
   el.setAttribute('opacity',clamp((sp.tip-.9)*.45,.3,.9).toFixed(2));
 }
-function drawGhosts(id,m,clock,on){
-  const sp=PitsCine.speed(m,clock).body,show=on||sp>1.05;
+// (opt: the arms and equipment as the figure is drawn, so an afterimage never carries a blade the figure does not
+// hold, or a healthy arm it does not have; nothing at all with reduced motion: CL-03)
+function drawGhosts(id,m,clock,on,opt,blade){
+  const sp=PitsCine.speed(m,clock).body,show=!reduced()&&(on||sp>1.05);
   for(let k=0;k<3;k++){
     const g=ghost[id][k];if(!show){g.g.setAttribute('opacity',0);continue;}
-    const j=PitsCine.joints(m,clock-(k+1)*26),P=a=>pts(a.map(p=>[p[0],Y(p[1])]));
+    const j=PitsCine.joints(m,clock-(k+1)*26,opt),P=a=>pts(a.map(p=>[p[0],Y(p[1])]));
     g.a.setAttribute('points',P([j.P,j.K,j.F]));g.b.setAttribute('points',P([j.P,j.bK,j.bF]));g.c.setAttribute('points',P([j.P,j.M,j.S]));
     g.d.setAttribute('points',P([j.wS,j.E,j.Hn]));g.e.setAttribute('points',P([j.oS,j.oE,j.oHn]));
     g.h.setAttribute('cx',j.Hd[0]);g.h.setAttribute('cy',Y(j.Hd[1]));
     g.w.setAttribute('x1',j.Hn[0]);g.w.setAttribute('y1',Y(j.Hn[1]));g.w.setAttribute('x2',j.tip[0]);g.w.setAttribute('y2',Y(j.tip[1]));
+    g.w.setAttribute('opacity',blade?1:0);
     g.g.setAttribute('opacity',(.34-k*.1).toFixed(2));
   }
 }
@@ -300,7 +303,8 @@ function frame(now,dt,stopped){
   if(moving)runActive(clock,dt);
   for(const id of ['a','b']){
     const m=PS.M[id],f=PS.fig[id],armed=!!(f&&f.look&&f.look.armed&&!f.dropEl&&!f.dropping);
-    drawSmear(id,m,clock,armed&&!reduced());drawGhosts(id,m,clock,!reduced()&&ghosting(id));drawScarf(id,m,dt,now);
+    const opt=f&&f.look&&typeof psPoseOpt==='function'?psPoseOpt(f,f.look):{},blade=armed&&!(typeof psHeldLodge==='function'&&f&&psHeldLodge(f));
+    drawSmear(id,m,clock,blade&&!reduced());drawGhosts(id,m,clock,!reduced()&&ghosting(id),opt,blade);drawScarf(id,m,dt,now);
   }
   if(!stopped)stepParts(dt);
   // the impact frame and the flash end on the real clock

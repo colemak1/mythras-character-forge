@@ -92,7 +92,10 @@ function solve(v,f,m,opt){
   const D=a=>{const d=dirL(a);return [f*d[0],d[1]];};
   let ua=v.ua,fa=v.fa,oua=v.oua,ofa=v.ofa,w=v.w;
   if(opt.weapon){ua=-84;fa=-96;w=-100;}            // a disabled arm hangs
+  // a pinned weapon or shield is held down where it is pinned until it is freed (audit CA-12)
+  else if(opt.pinW){ua=-48;fa=-60;w=-58;}
   if(opt.off){oua=-94;ofa=-86;}
+  else if(opt.pinS){oua=-58;ofa=-40;}
   const du=D(ua),df=D(fa);let E=[wS[0]+du[0]*DIM.upper,wS[1]+du[1]*DIM.upper],Hn=[E[0]+df[0]*DIM.fore,E[1]+df[1]*DIM.fore];
   // an arm lying on the ground rests on it
   if(Hn[1]<1||E[1]<1){const r=ik2(wS,[Hn[0],Math.max(1,Hn[1])],DIM.upper,DIM.fore,[0,1]);E=r.mid;Hn=r.end;}
@@ -282,6 +285,14 @@ const other=m=>m.pair[m.id==='a'?'b':'a'];
 let FIXED=null;
 function rng(pair){if(FIXED!=null){pair.n++;const u=FIXED;return ()=>u;}let a=(pair.seed+pair.n*0x9E3779B1)|0;pair.n++;
   return ()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+// The stream for one exchange (audit CA-09): keyed by the exchange (the stage gives the engine's log id), so the live
+// blow and the replay draw the same choices however many other calls came before.
+function rngKey(pair,key){
+  if(FIXED!=null){const u=FIXED;return ()=>u;}
+  let h=2166136261;for(const ch of String(key)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}
+  let a=(pair.seed^h)|0;
+  return ()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+}
 const pick=(r,list)=>list[Math.min(list.length-1,Math.floor(r()*list.length))];
 
 // how far apart the two stand for the engine's range
@@ -433,7 +444,7 @@ function wardPose(m,name){
 function blow(M,aid,t,s){
   const A=M[aid],D=M[aid==='a'?'b':'a'];
   if(!A||!D)return {tc:t,contacts:[],end:t};
-  const p=A.pair,r=rng(p),o=s.outcome||'miss',loc=s.loc||'chest',lost=s.lost||0;
+  const p=A.pair,r=s.key!=null?rngKey(p,s.key):rng(p),o=s.outcome||'miss',loc=s.loc||'chest',lost=s.lost||0;
   cut(A,t);cut(D,t);
   const hit=o==='wound'||o==='partial-parry'||o==='partial-ward';
   const stopped=o==='parried'||o==='full-parry'||o==='full-ward';
@@ -441,11 +452,14 @@ function blow(M,aid,t,s){
   const dodge=o==='evaded'||o==='miss'||o==='fumble';
   const f=faceOf(A),fd=faceOf(D);
   const chambered=!s.flow&&A.chamber&&t-A.chamber.t<60000?A.chamber.name:null;A.chamber=null;
-  const warded=!s.flow&&D.ward&&t-D.ward.t<60000?D.ward.name:null;D.ward=null;
+  // (s.ward: the defence the defender declared live, given again by the replay so it repeats the live move, CA-09)
+  const warded=s.ward||(!s.flow&&D.ward&&t-D.ward.t<60000?D.ward.name:null);D.ward=null;
   const H=heightOf(loc),P=A.prof,bash=s.strike==='shield'&&A.shield;
   // --- the attack: which swing ---
   let move;
   if(bash)move='bash';
+  // (s.move: the move the live blow chose, given again by the replay: CA-09)
+  else if(s.move&&s.move!=='bash')move=s.move;
   else if(P.fam==='thrust')move=chambered==='upStab'?'stab':chambered?'lunge':(!P.two&&A.weapon.len<=80&&H!=='low'&&r()<.4?'stab':'lunge');
   else move=chambered==='upHigh'?'over':chambered==='upLow'?'rise':chambered==='upSide'?'spin':
     H==='low'?pick(r,['over','rise','rise','spin']):H==='high'?pick(r,['over','over','over','spin','rise']):pick(r,['over','rise','over','rise','spin']);
@@ -458,7 +472,7 @@ function blow(M,aid,t,s){
   let Ts=Math.round((P.fam==='thrust'?85:105)*heavy);                       // strike
   if(move==='spin')Ts+=60;if(leap)Ts+=110;
   const tw=t0+Ta,tc=tw+Ts;
-  const contacts=[];
+  const contacts=[],chosen={};
   // --- the defender up to the contact, so the blow can be aimed at where the target will be ---
   const xd0=sample(D,t,true).px,away=-fd;                 // world direction the defender is driven
   let T,clashAt=null,kind='hit',groundShield=false;
@@ -482,6 +496,8 @@ function blow(M,aid,t,s){
     T=partAt(D,t,loc);kind='miss';
     if(o==='miss'||o==='fumble')T=[T[0]-f*26,T[1]];
   }else{
+    // (the replay: a parry that was declared and failed is still seen tried, as it was live: CL-02)
+    if(s.flow&&s.ward&&!D.down)key(D,t+100,wardPose(D,s.ward),{e:'out',plant:'bf'});
     // caught: a flinch as it arrives, no more
     hold(D,tc-90);
     if(!D.down)key(D,tc,{hip:[D.lastP.hip[0]-5,D.lastP.hip[1]+2],lean:D.lastP.lean-7,head:D.lastP.head+6},{e:'in',plant:'both'});
@@ -550,7 +566,7 @@ function blow(M,aid,t,s){
   if(stopped){
     contacts.push({t:tc,at:Tc,kind:'clash'});
     if(groundShield)hold(D,tc);       // (the shield stays on the blow until it lands)
-    const style=D.down||A.down?'bounce':pick(r,['bounce','shove','bounce','slide']);
+    const style=D.down||A.down?'bounce':pick(r,['bounce','shove','bounce','slide']);chosen.style=style;
     const push=P.heavy?54:36;
     if(style==='shove'){
       // locked: the two lean into it, then the defender throws the attacker off
@@ -632,7 +648,8 @@ function blow(M,aid,t,s){
     if(sep<want){const d=f*(want-sep);la.v.px-=d;la.v.ffx-=d;la.v.bfx-=d;A.base-=d;}
   }
   // the replay runs straight on: the next exchange is written into this one's recovery
-  const out={tc:contacts.length?contacts[0].t:tc,contacts,end:s.flow&&!s.defeated?Math.min(end,tHit+(dodge?250:290)):end,move};
+  const out={tc:contacts.length?contacts[0].t:tc,contacts,end:s.flow&&!s.defeated?Math.min(end,tHit+(dodge?250:290)):end,move,
+    ward:warded,leap,...chosen,finish:A.finished||null};A.finished=null;
   return out;
 }
 
@@ -801,6 +818,7 @@ function finish(A,D,r,th,o){
   let kind=D.down&&D.lastP.hip[1]<30?'ground':thrust?'run':pick(r,o.leap?['slam','slam','through']:['through','launch','through','slam']);
   if(bash)kind='launch';
   if(sample(D,th,true).py<30)kind='ground';
+  A.finished=kind;
   if(kind==='ground'){
     keyA(A,th+140,{hip:[aim.P.hip[0]+8,aim.P.hip[1]-4]},{e:'out',plant:'both'});
     key(D,th+120,{...POSE.flat},{at:x+away*30,e:'out5',slide:true});
@@ -872,6 +890,36 @@ function finish(A,D,r,th,o){
   keyA(A,th+800,{hip:[0,62],lean:10,h:[24,-34],w:-40},{e:'io',plant:'both'});
   keyA(A,th+1400,POSE.victory,{e:'io'});
   return th+1400;
+}
+
+// ----- an Impale withdrawn, and a self-inflicted hit (audit CA-08, CL-04) -----
+// The wielder takes hold of the weapon in the wound and tears it out, as a thrust is torn out after a hit (struck): the
+// injury lands as it comes out. s: {loc, lost, defeated, flow}. Nothing new is invented: no extra body damage.
+function withdraw(M,aid,t,s){
+  const A=M[aid],D=M[aid==='a'?'b':'a'];if(!A||!D)return {tc:t,contacts:[],end:t};
+  const loc=s.loc||'chest',lost=s.lost||0;cut(A,t);cut(D,t);
+  const f=faceOf(A),away=-faceOf(D),T=partAt(D,t,loc);
+  // the hand back on the grip: the point is in the wound
+  const body={hip:[14,56],lean:24,bend:6,head:-14,ff:[50,0],bf:[-48,0],turn:10,o:[-36,-18]};
+  const a=aimed(A,body,T,-4,.8);hold(D,t+140);
+  keyA(A,t+140,a.P,{at:a.at,e:'out'});
+  const tc=t+230;
+  hold(A,tc);
+  const contacts=[{t:tc,at:T,kind:lost>0?'hit':'clash'}];
+  // torn out: the wielder rocks back, the wounded fighter is pulled after it, then recoils
+  keyA(A,tc+150,{hip:[-18,58],lean:8,h:[-10,-16],eb:-1,w:2,o:[30,-10]},{at:A.base-f*24,e:'out',slide:true});
+  if(s.defeated&&!D.down){D.over=A.over=true;key(D,tc+80,{...recoil(loc)},{at:D.base-away*8,e:'out5',plant:'bf'});
+    const e=fall(D,tc+200);keyA(A,e+300,POSE.victory,{e:'io'});return {tc,contacts,end:e+300,move:'withdraw'};}
+  if(D.down){key(D,tc+90,{lean:D.lastP.lean-10,head:12},{e:'out5',plant:'both'});key(D,tc+400,POSE.prop,{e:'io'});}
+  else{key(D,tc+80,recoil(loc),{at:D.base+away*12,e:'out5',slide:true});key(D,tc+460,fit(D,'hurt'),{e:'io',plant:'bf'});D.hurt=true;}
+  keyA(A,tc+480,fit(A,readyPose(A,rng(A.pair))),{e:'io'});
+  return {tc,contacts,end:s.flow?tc+320:tc+500,move:'withdraw'};
+}
+// a fighter hurts itself (Accidental Injury): the struck part is driven away, then the hurt guard
+function flinch(m,t,loc){
+  if(m.over)return t;cut(m,t);
+  if(m.down){key(m,t+90,{lean:m.lastP.lean-10,head:12},{e:'out5',plant:'both'});key(m,t+400,POSE.prop,{e:'io'});return t+400;}
+  key(m,t+80,recoil(loc||'chest'),{e:'out5',plant:'bf'});key(m,t+460,fit(m,'hurt'),{e:'io',plant:'bf'});m.hurt=true;return t+460;
 }
 
 // ----- the rest of what the stage asks for -----
@@ -956,7 +1004,7 @@ function speed(m,t){
 // are the feet skidding at t (a key with `slide` is being travelled)
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
-const api={supports,fighter,gap,station,place,recover,intent,blow,fall,stand,lower,yieldTo,press,react,pose,
+const api={supports,fighter,gap,station,place,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,press,react,pose,
   joints,sample,speed,sliding,takeFx,profile,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;

@@ -97,6 +97,11 @@ const paSkillLine=l=>{
 };
 // Plain words and arithmetic for a resolved blow (from the engine's facts, never re-derived).
 function paBlowLine(l){
+  // a withdrawn Impale's own injury, and a struck weapon, end their exchange too (audit CA-08: the readout kept the
+  // earlier blow, or stayed "In progress")
+  if(l.title==='Withdrawal injury'&&l.meta&&l.meta.impact){const im=l.meta.impact,lost=im.hpLost||0;
+    return {head:(lost>0?'Wounded by the withdrawal':'Withdrawn without injury')+' · '+im.location,math:`${lost} HP lost as the weapon is pulled out.`,kind:lost>0?'wound':'zero'};}
+  if(l.title==='Weapon struck')return {head:'Weapon struck',math:String(l.body||'').replace(/\s+/g,' ').trim(),kind:'parried'};
   const px=l.meta&&l.meta.px;if(!px)return null;
   if(l.title==='No Damaging Hit'){
     const o=pitsStageOutcome({type:'deflect',px,evaded:px.evaded});
@@ -316,6 +321,9 @@ function pitsFightRecord(){
     config,mode:S.mode,guidance:!!V.guidance,quick:!!V.quick,auto:!!PA.auto,bottom:document.body.dataset.bottom||'',
     fighters:{a:{name:S.fighters.a.name,weapon:S.fighters.a.weapon,shield:S.fighters.a.shield},b:{name:S.fighters.b.name,weapon:S.fighters.b.weapon,shield:S.fighters.b.shield}},
     presented:(V.tape||[]).map(sh),log:(S.logs||[]).map(l=>({id:l.id,t:l.title,b:l.body})),stage,
+    // which stage drew the fight, and what it needs to draw it again the same way (audit, reporting gap)
+    stageName:typeof PS==='undefined'?null:PS.cine?'cine':PS.springOn?'spring':'classic',
+    cine:typeof PS!=='undefined'&&PS.cine&&typeof psCineTape==='function'?{seed:psCineTape().seed,choices:psCineTape().by}:null,
     // the moments a player pressed "What just happened?" in this bout (pits-lost.js)
     lost:typeof plMarks==='function'?plMarks():[]});
 }
