@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: what the figures show matches the fight (audit CA-01 to CA-04)
+
+ChatGPT (Work)'s audit of the cinematic stage (`docs/pits-cinematic-bug-audit-20261115.md`) found pictures that disagreed with the fight. The look is unchanged: the owner approved it, and a new test holds it.
+
+- **A Trip that lands is drawn (CA-01).** A successful Trip on a parry, or a failed evade where armour stopped everything, said Prone in the plate while the figure stayed on its feet. The fighter now goes down, and the Prone chip follows the figure, live and in the replay.
+- **On the ground, a fighter stays on the ground (CA-02).** Attacking, parrying, missing or pressing from the ground no longer stands the fighter up for a moment. Only Regain Footing gets up.
+- **A shield strike hits with the shield (CA-03).** The shield used to arrive after its own sparks. It now lands where the blow is shown, including the second contact of a partly parried strike and low targets.
+- **A shield ward from the ground uses the shield (CA-04).** It used to be drawn meeting the blow with the weapon.
+- Tests: `tests/pits-cine-state.cjs` (each check failed before the fix). `tests/pits-cine-look.cjs` holds the approved look: the joints and contact times of every move in the cases the audit does not call wrong. Rules and dice untouched.
+
 ## The Pits: a fight worth watching back
 
 The owner asked for the fight itself to be the main thing: "cooler, meatier, sexier", something to show someone afterwards. The Pits now draws its fights on a new cinematic stage. The rules, the dice and the choices are unchanged.
