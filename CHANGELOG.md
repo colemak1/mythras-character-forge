@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: cramped haft blows follow the blow, not the blade
+
+- Chat's source review (#362, D-PR3, Core pp.95–100, 106) is applied. A longer weapon striking from inside a shorter one's reach (1d3+1 with the haft or pommel, Size less the Reach gap) now offers the Special Effects of that blunt blow: **Bash** and **Stun Location**, never Impale, Bleed, Entangle or Sunder. It used to offer the blade's effects, and an Impale rolled the 1d3+1 twice and lodged the weapon.
+- **Maximise Damage** on a cramped blow maximises its one d3: 3+1 = 4 before the Damage Modifier. It can no longer be taken twice because the weapon itself has two dice (a greatsword or great axe).
+- D-PR1 check: a pinned weapon, or one held while lodged in the foe, still holds the distance (no snap), but cannot attack, parry or intercept; the other fighter closes against Evade only.
+- Tests: `tests/pits-cramped.cjs` (13 checks); `CombatRules.CRAMPED_STRIKE` is the shared profile.
+
 ## The Pits: reach follows the weapon in hand; Disengage
 
 - **Reach comes from the weapon you hold** (owner request). A dropped, broken, or abandoned embedded weapon no longer keeps the other fighter out. Without its weapon a fighter fights at its shield's Reach, or at Touch with empty hands. A weapon that is pinned, or held while lodged in the foe, still counts. The floor bands, tags and plate follow the picture, so they change when the weapon visibly leaves the hand. `heldReach()`; decision D-PR1.

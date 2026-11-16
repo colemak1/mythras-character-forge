@@ -148,6 +148,11 @@ test('parryReduction: equal or larger blocks all, one smaller half (rounded up),
  assert.deepEqual(C.parryReduction(8,3,2),{blocked:4,remaining:4});assert.deepEqual(C.parryReduction(7,3,2),{blocked:4,remaining:3});
  assert.deepEqual(C.parryReduction(8,4,2),{blocked:0,remaining:8});
 });
+test('CRAMPED_STRIKE: the haft blow is 1d3+1 and bludgeoning, Bash and Stun only (Core p.106; D-PR3)',()=>{
+ assert.deepEqual([...C.CRAMPED_STRIKE.dice],[1,3]);assert.equal(C.CRAMPED_STRIKE.bonus,1);
+ assert.deepEqual([...C.CRAMPED_STRIKE.traits].sort(),['bash','stun']);
+ assert(Object.isFrozen(C.CRAMPED_STRIKE)&&Object.isFrozen(C.CRAMPED_STRIKE.traits),'shared, so frozen');
+});
 test('crampedSize: a Size step lost per Reach step inside reach, never below Small (Core p.106)',()=>{
  assert.equal(C.crampedSize(4,2),2);assert.equal(C.crampedSize(2,3),1);
 });

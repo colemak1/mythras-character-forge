@@ -187,6 +187,14 @@ function parryReduction(damage,attackSize,parrySize){
 // Core p.106: a weapon used inside its Reach loses a Size step per step of
 // difference (never below Small).
 function crampedSize(size,reachGap){return Math.max(1,size-reachGap);}
+// Core p.106: the cramped strike itself is a blunt blow with the haft, hilt,
+// pommel or guard for 1d3+1. Its Special Effects follow that blow, not the
+// weapon's normal head (decisions.md D-PR3, Chat review 2026-11-16, Core
+// pp.95-100): no Impale (needs an impaling attack), no Bleed (cutting), no
+// Entangle; Bash and Stun Location as a bludgeoning weapon. Sunder is withheld
+// (arena interpretation: Core p.99 asks for a suitable weapon). Maximise Damage
+// works on its one d3 (3+1 before the Damage Modifier).
+const CRAMPED_STRIKE=Object.freeze({dice:Object.freeze([1,3]),bonus:1,traits:Object.freeze(["bash","stun"])});
 
 /* ---------- Damage to a location (Core pp.94–96, 99–100, 103–104) ---------- */
 // One blow: parry, a passively warded location, then armour.
@@ -411,7 +419,7 @@ return {
   GRADE_VALUE,gradeRoll,gradeAttempt,opposedWins,opposedTargets,skillAtGrade,mostSevereGrade,HOPELESS_STEPS,
   contestLevels,impaleGrades,impaleIncapacitates,IMPALE_INCAPACITATED,
   effectsWon,
-  SIZE_STEP,SIZE_NAMES,REACH_STEP,REACH_NAMES,parryReduction,crampedSize,
+  SIZE_STEP,SIZE_NAMES,REACH_STEP,REACH_NAMES,parryReduction,crampedSize,CRAMPED_STRIKE,
   resolveBlow,woundLevel,woundOutcome,canBash,bashDistance,knockbackDistance,withdrawalDamage,strikeWeapon,
   canDisarm,disarmResistSkill,
   SPECIAL_EFFECTS,specialEffect,effectRoleAllows,effectRequirementMet,meleeEffectOptions,tripResistSkills
