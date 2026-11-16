@@ -57,7 +57,8 @@ function pitsStageCue(entry,names){
   if(t==='FIGHT ENDS'){
     // only what the engine's own wording says: a concession, an injury, or blood loss/exhaustion; nothing is inferred from the damage
     // (a wound is checked first: a Major Limb Wound's text also mentions blood loss, as a deadline after the fight)
-    const how=/concede/i.test(b)?'concede':/\bWound to\b/.test(b)?'injury':/blood loss|fatigue|exertion|exhaustion|neither fighter/i.test(b)?'fatigue':'injury';
+    // (Compel Surrender: "surrenders under threat", or "capitulates" after Force Failure; drawn with a white flag)
+    const how=/surrenders under threat|capitulates/i.test(b)?'surrender':/concede/i.test(b)?'concede':/\bWound to\b/.test(b)?'injury':/blood loss|fatigue|exertion|exhaustion|neither fighter/i.test(b)?'fatigue':'injury';
     return {type:'end',winner:idOf(b),how};
   }
   return null;
@@ -322,8 +323,10 @@ function pitsStageBeat(events,step,names){
   const attacker=a0>=0?(pitsStageCue(events[a0],names)||{}).actor:PSTAGE_BLOW.includes(cue.type)?cue.actor:blowActor(step-1);
   if(PSTAGE_BLOW.includes(cue.type)){
     const arise=inEx(a0+1,a1,['arise'])[0];
-    // a Disarm won by the attacker is part of its blow: the weapon leaves the hand at the contact, no second swing
-    const disarm=attacker?inEx(step+1,a1,['disarm']).find(c=>c.actor===attacker)||null:null;
+    // a Disarm in this exchange is part of its blow, no second swing: the attacker's takes the weapon from the defender's
+    // hand at the contact; the defender's (won on the parry) takes it from the attacker's at the parry (owner, 2026-11-16:
+    // "it should be the same hit that disarms")
+    const disarm=inEx(step+1,a1,['disarm'])[0]||null;
     // the attacker's Trip (resolved before the location and the damage): the blow carries it, one movement (FR-03)
     const striker=pitsStageBlowActor(e,names)||attacker;
     const trip=striker?inEx(a0+1,step,['trip']).find(c=>c.actor===striker)||null:null;
@@ -335,7 +338,7 @@ function pitsStageBeat(events,step,names){
       if(c&&PSTAGE_BLOW.includes(c.type)&&!events[i].roll&&!events[i].checkpoint)return pitsStageBlowActor(events[i],names)===cue.actor?{cue,consumed:true}:{cue,consumed:false};}
     return {cue,consumed:false};
   }
-  if(cue.type==='disarm'&&attacker&&cue.actor===attacker&&inEx(a0+1,step,PSTAGE_BLOW).length)return {cue,consumed:true};
+  if(cue.type==='disarm'&&inEx(a0+1,step,PSTAGE_BLOW).length)return {cue,consumed:true};
   // Arise has no movement of its own: the blow of its exchange draws it (the evader keeps its feet; a fighter already
   // down gets up as the exchange ends)
   if(cue.type==='arise')return {cue,consumed:true};
@@ -675,7 +678,7 @@ function psFrame(now){
     }
     for(const id of ['a','b'])if(PS.fig[id])psDraw(PS.fig[id],now);
     {const X=psFx();if(X)try{X.film(psReplaying());X.frame(now,dt,!!stopped);}catch(e){psEmit('cue-error',{cue:'fx',message:String(e&&e.message||e)});}}
-    psFollowReticles();psDrawLodged(now);PS.raf=requestAnimationFrame(psFrame);return;
+    psFollowReticles();psDrawLodged(now);psDrawFlag(now);PS.raf=requestAnimationFrame(psFrame);return;
   }
   for(const id of ['a','b']){
     const f=PS.fig[id];if(!f)continue;
@@ -702,7 +705,7 @@ function psFrame(now){
     f.vel=f.vel||{};if(dt>0)for(const key of PS_KEYS){const v=(f.cur[key]-before[key])/dt;f.vel[key]=(f.vel[key]||0)*.5+v*.5;}
     psDraw(f,now);
   }
-  psFollowReticles();psDrawLodged(now);
+  psFollowReticles();psDrawLodged(now);psDrawFlag(now);
   PS.raf=requestAnimationFrame(psFrame);
 }
 // psPlay(f,[pose,ms,{trail,out}],[pose,ms],...): one or more frames in order; resolves when
@@ -818,7 +821,7 @@ function psSettle(keepExchange){
     f.anim=null;f.mom=null;f.vel=null;f.plant=null;f.relaxAt=0;f.endPose=null;f.forceLimp=null;if(!keepExchange)f.exPose=null;f.trailOn=false;f.trailPts=[];f.flash=null;f.dropping=false;f.slide=null;f.hx=f.tx;
     if(f.dropEl&&f.look&&f.look.armed){f.dropEl.remove();f.dropEl=null;}
     f.cur={...psRest(f)};}
-  if(PS_MOTION){PS.busyUntil=PS.clock;for(const id of ['a','b']){const f=PS.fig[id];if(!f)continue;f.mEnd=null;if(PS.M[id]&&f.look)psPlaceM(id);}}
+  if(PS_MOTION){PS.busyUntil=PS.clock;for(const id of ['a','b']){const f=PS.fig[id];if(!f)continue;f.mEnd=null;f.flag=false;if(PS.M[id]&&f.look)psPlaceM(id);}}
   psClearEffects();{const b=psLayer('ps-banner');if(b)b.className='ps-banner';}if(psFx())psFx().reset();PS.rate=1;psEmit('settle',{});
 }
 // Weapon knocked away or dropped: fly it in an arc, then leave it on the floor
@@ -876,6 +879,25 @@ function psDrawLodged(now){
     }
   }
   for(const reg of [PS.lodge,PS.tether])for(const k of Object.keys(reg)){if(!keep.has(k)){reg[k].remove();delete reg[k];}}
+}
+// Compel Surrender: a little white flag on a short stick in the off hand, the cloth stirring (owner, 2026-11-16).
+// Drawn every frame from the hand, so it follows the raise; it shows only while the fighter is the one who surrendered.
+function psDrawFlag(now){
+  const fx=psLayer('ps-fx');if(!fx)return;
+  for(const id of ['a','b']){
+    const f=PS.fig[id];if(!f)continue;
+    const on=!!(f.flag&&f.pts&&f.pts.bHn&&PS.clock>=(f.flagAt||0));
+    if(!on){if(f.flagEl){f.flagEl.remove();f.flagEl=null;}continue;}
+    if(!f.flagEl||!f.flagEl.isConnected){
+      const g=f.flagEl=psSvg('g',{class:'ps-flag'},fx);
+      psSvg('line',{class:'ps-flag-pole',x1:0,y1:8,x2:0,y2:-58},g);
+      f.flagCloth=psSvg('path',{class:'ps-flag-cloth'},g);
+    }
+    const H=psWorld(f,f.pts.bHn),d=f.face||1,wv=Math.sin(now/170)*3,wv2=Math.sin(now/170+1.3)*3;
+    // the cloth flies from the top of the stick, back over the fighter's own shoulder
+    f.flagCloth.setAttribute('d','M0,-58 Q'+(-d*13)+','+(-61+wv)+' '+(-d*28)+','+(-57+wv2)+' L'+(-d*28)+','+(-37+wv2)+' Q'+(-d*13)+','+(-41+wv)+' 0,-38 Z');
+    f.flagEl.setAttribute('transform','translate('+H[0].toFixed(1)+','+H[1].toFixed(1)+')');
+  }
 }
 // When a wielder still holds a lodged weapon, keep their arm reaching into the wound.
 function psHoldLodged(){
@@ -993,7 +1015,8 @@ async function psRunCue(cue){
       psBanner(cue.winner?(won?'Victory':'Defeated'):'Draw',won?'vd':'bad');psSfx('crit');
       const lo=cue.winner&&PS.fig[cue.winner==='a'?'b':'a'],wi=cue.winner&&PS.fig[cue.winner];
       if(lo){
-        if(cue.how==='concede'){lo.endPose=PS_POSE.yield;psEmit('yield',{target:lo.id});await psPlay(lo,[PS_POSE.yield,480]);}
+        if(cue.how==='concede'||cue.how==='surrender'){lo.endPose=PS_POSE.yield;psEmit('yield',{target:lo.id,how:cue.how});
+          if(cue.how==='surrender'){lo.flag=true;lo.flagAt=PS.clock+200;}await psPlay(lo,[PS_POSE.yield,480]);}
         else{lo.endPose=PS_POSE.ko;await psPlay(lo,[PS_POSE.ko,520]);}
       }
       if(wi){wi.endPose=PS_POSE.win;psPlay(wi,[PS_POSE.win,360]);}
@@ -1322,7 +1345,10 @@ async function psMotionCue(cue){
       const lo=cue.winner&&PS.fig[cue.winner==='a'?'b':'a'],wi=cue.winner&&PS.fig[cue.winner];
       let end=PS.clock;
       if(lo){
-        if(cue.how==='concede'){lo.mEnd='yield';psEmit('yield',{target:lo.id});end=L.yieldTo(PS.M[lo.id],PS.clock);}
+        if(cue.how==='concede'){lo.mEnd='yield';psEmit('yield',{target:lo.id,how:cue.how});end=L.yieldTo(PS.M[lo.id],PS.clock);}
+        // Compel Surrender (owner, 2026-11-16): the off hand goes up with a little white flag
+        else if(cue.how==='surrender'){lo.mEnd='yield';psEmit('yield',{target:lo.id,how:cue.how});
+          end=L.surrender?L.surrender(PS.M[lo.id],PS.clock):L.yieldTo(PS.M[lo.id],PS.clock);lo.flag=true;lo.flagAt=PS.clock+260;}
         else{lo.mEnd='lying';if(!lo.mDown){lo.mDown=true;end=L.fall(PS.M[lo.id],PS.clock);lo.downAt=end;}}
       }
       if(wi){wi.mEnd='low';end=Math.max(end,L.lower(PS.M[wi.id],PS.clock));}
@@ -1382,9 +1408,12 @@ async function psMotionBlow(cue){
     if(trip&&!tripTold&&!hookAfter){tripTold=true;psEmit('contact',{kind:'trip',actor:atk.id,target:def.id,fell:!!trip.fell,point:w.map(Math.round)});
       if(trip.fell){psBanner('Tripped','crit');psDom(psWorld(def,def.pts?def.pts.hd:[0,-120]),'Tripped!','fx');}
       else psDom(psWorld(def,def.pts?def.pts.Sh:[0,-100]),'Resists the trip','blk');}
-    // the attacker's Disarm: the weapon leaves the defender's hand at the blow's (first) contact
-    if(disarm&&!flown&&c.kind!=='miss'){flown=true;def.dropAhead=true;psEmit('contact',{kind:'disarm',actor:atk.id,target:def.id,point:w.map(Math.round)});
-      psBanner('Disarmed','crit');psFlyWeapon(def,disarm.metres);}
+    // the attacker's Disarm: the weapon leaves the defender's hand at the blow's (first) contact. The defender's Disarm
+    // (won on the parry): the attacker's weapon leaves its hand at the parry, the same contact
+    if(disarm&&!flown&&(c.kind!=='miss'||disarm.actor===def.id)){flown=true;
+      const loser=disarm.target===atk.id?atk:def,winner=loser===atk?def:atk;loser.dropAhead=true;
+      psEmit('contact',{kind:'disarm',actor:winner.id,target:loser.id,point:w.map(Math.round)});
+      psBanner('Disarmed','crit');psFlyWeapon(loser,disarm.metres);}
     if(c.kind==='miss'){
       psEmit('contact',{kind:out,actor:atk.id,target:def.id,point:w.map(Math.round)});
       psBurst(w,'gray',5);psSfx('miss');if(psFx())psFx().impact(w,'miss',1,atk.face);
@@ -1537,7 +1566,7 @@ function pitsStageSync(){
   if(fresh){psSettle();for(const k of Object.keys(PS.lodge)){PS.lodge[k].remove();delete PS.lodge[k];}
     for(const id of ['a','b']){const f=PS.fig[id];if(f.dropEl){f.dropEl.remove();f.dropEl=null;}f.look=null;}
     PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};if(!psReplaying())PS.cineTape=null;
-    PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.tripAhead=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
+    PS.M={};PS.gap=0;PS.go=0;PS.intents={};for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.flag=false;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.tripAhead=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
   for(const id of ['a','b']){
     const f=PS.fig[id];f.look=pitsStageLook(view[id]);
     // (the movement stage draws its figures at scale 1: a SIZ scale set here would put every marker placed before the next
@@ -1593,10 +1622,13 @@ function pitsStageSync(){
       PS.lastId=e.id;
       const b=pitsStageBeat(V.events,V.step,names);
       PS.cueFor=e.id;
-      if(b.consumed)PS.cuePromise=null;      // part of the blow's own motion: nothing to start, and nothing to cancel
-      // (a trip that worked: the blow still to come draws the fall, so the lull must not lay the figure down first,
-      // while the location and damage dice play)
-      if(b.consumed&&b.cue&&b.cue.type==='trip'&&b.cue.fell&&PS.fig[b.cue.target])PS.fig[b.cue.target].tripAhead=true;
+      // part of the blow's own motion: nothing to start, and nothing to cancel. (The else used to belong to the trip test
+      // only, so a consumed Disarm, Press or Arise started its own movement as well: the weapon flew at the blow and
+      // again in a second bind, owner 2026-11-16.)
+      if(b.consumed){PS.cuePromise=null;
+        // (a trip that worked: the blow still to come draws the fall, so the lull must not lay the figure down first,
+        // while the location and damage dice play)
+        if(b.cue&&b.cue.type==='trip'&&b.cue.fell&&PS.fig[b.cue.target])PS.fig[b.cue.target].tripAhead=true;}
       else{PS.epoch++;PS.cuePromise=b.cue?psRunCue(b.cue):null;}
     }
   }else{

@@ -80,3 +80,6 @@
 @media (prefers-reduced-motion:reduce){
   .ps-shake,.ps-num,.ps-banner.ps-go{animation-duration:.01s}
 }
+/* Compel Surrender: the white flag (owner, 2026-11-16) */
+.ps-flag-pole{stroke:var(--ps-ink);stroke-width:2.5;stroke-linecap:round}
+.ps-flag-cloth{fill:var(--paper);stroke:var(--ps-ink);stroke-width:1.5;stroke-linejoin:round}

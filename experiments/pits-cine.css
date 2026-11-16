@@ -114,3 +114,6 @@ html[data-mode="dark"] .pc-s-glow-in{stop-opacity:.3}
 /* the replay is a film: the plates and the dice are put away and the fight has the whole picture */
 .ps-cine .ps-hud{transition:opacity .25s}
 .ps-cine .pc-film .ps-hud{opacity:0;pointer-events:none}
+/* Compel Surrender: the white flag (owner, 2026-11-16) */
+.ps-cine .ps-flag-pole{stroke:var(--pc-wood)}
+.ps-cine .ps-flag-cloth{fill:var(--pc-steel);stroke:var(--pc-ink-a)}

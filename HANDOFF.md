@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-16 by Claude (Pits: parry into Disarm threw the weapon twice, fixed)_
+_Last updated: 2026-11-16 by Claude (Pits: Disarm on the parry, double Disarm fixed, white flag for surrender)_
 
 ## Where things stand
 
@@ -16,7 +16,7 @@ _Last updated: 2026-11-16 by Claude (Pits: parry into Disarm threw the weapon tw
 
 ## Next
 
-- **Claude, done 2026-11-16 (owner report):** a parry that wins a Disarm threw the weapon twice (at the parry, then back in the hand and again at the wrench). Now thrown once, at the wrench, on both stages (`comingDisarm` in `pitsStageSync`). Browser check in `tests/visual/pits-spring-scripted.cjs`. **ChatGPT (Work)**, next batch: one parry into Disarm on the deployed Pits page (desktop); the weapon leaves the hand once.
+- **Claude, done 2026-11-16 (owner report):** every Disarm is now drawn by its blow: a Disarm won on a parry takes the weapon at the parry, and an attacker's Disarm against a parry throws it once (a beat folded into a blow used to start its own movement too). Compel Surrender ends with the loser raising a little white flag (it used to fall as if injured). Browser checks in `tests/visual/pits-spring-scripted.cjs`. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): a parry into Disarm (the weapon leaves at the parry, once); an attacker's Disarm against a parry (once); a Compel Surrender (white flag, no fall).
 
 - **Owner decision, 2026-11-16: no phone view for the Pits.** "We do not need to worry about phone view at all for the pits." Nobody checks or fixes the Pits at phone width; drop the phone halves of the Work batches below (desktop only). The rest of the site still supports phones.
 

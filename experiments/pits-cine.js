@@ -269,6 +269,8 @@ const POSE={
   flat:     {hip:[-40,7],lean:-88,bend:-2,head:-4,ff:[50,2],bf:[36,2],h:[-30,-6],w:176,o:[-34,-10],turn:0},
   face:     {hip:[30,8],lean:86,bend:4,head:6,ff:[-52,2],bf:[-38,2],h:[36,-2],w:-4,o:[30,-10],turn:0},
   yield:    {hip:[-8,40],lean:10,bend:8,head:18,ff:[30,0],bf:[-30,0],h:[6,-56],w:-80,o:[26,20],oeb:1,turn:0},
+  // Compel Surrender: the weapon lowered, the off hand up and out with the white flag (the stage draws the flag)
+  surrender:{hip:[-10,64],lean:-2,bend:2,head:14,ff:[26,0],bf:[-32,0],h:[8,-58],w:-84,o:[26,34],oeb:-1,turn:0},
   victory:  {hip:[0,82],lean:2,bend:-2,head:-4,ff:[18,0],bf:[-20,0],h:[20,-48],w:-64,o:[-6,-54],turn:2},
 };
 const READY=['guard','guardLow','guardHigh','guardPoint'];
@@ -986,6 +988,7 @@ function lower(m,t){
   if(m.keys[m.keys.length-1].t>t+50)return m.keys[m.keys.length-1].t;
   cut(m,t);m.over=true;keyA(m,t+520,POSE.victory,{e:'io',plant:'ff'});return t+520;
 }
+function surrender(m,t){cut(m,t);m.over=true;key(m,t+460,POSE.surrender,{e:'io',plant:'ff'});return t+460;}
 function yieldTo(m,t){cut(m,t);m.over=true;key(m,t+420,POSE.yield,{e:'io',plant:'ff'});return t+420;}
 // ----- Trip, Disarm, Press Advantage: their own choreography (owner, 2026-11-16) -----
 // Each is a phrase of its own, not a stand-in blow: the stage gives the engine's result (the trip worked or was
@@ -1137,7 +1140,7 @@ function speed(m,t){
 // are the feet skidding at t (a key with `slide` is being travelled)
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
-const api={supports,fighter,gap,station,place,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,press,trip,disarm,react,pose,
+const api={supports,fighter,gap,station,place,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,trip,disarm,react,pose,
   joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
