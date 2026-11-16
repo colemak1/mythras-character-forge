@@ -987,16 +987,116 @@ function lower(m,t){
   cut(m,t);m.over=true;keyA(m,t+520,POSE.victory,{e:'io',plant:'ff'});return t+520;
 }
 function yieldTo(m,t){cut(m,t);m.over=true;key(m,t+420,POSE.yield,{e:'io',plant:'ff'});return t+420;}
-// Press Advantage: the point stays in the face and the other is walked back
+// ----- Trip, Disarm, Press Advantage: their own choreography (owner, 2026-11-16) -----
+// Each is a phrase of its own, not a stand-in blow: the stage gives the engine's result (the trip worked or was
+// resisted; the weapon goes) and the phrase only draws it. s.key: the exchange's stream, so a replay repeats it.
+
+// Trip Opponent: the front foot is taken. A hook (the tripper's own foot behind the ankle) or a sweep (the weapon low
+// along the floor, for a long shaft or from the ground). s: {fell, after (a hook straight after the tripper's own blow),
+// key}. Returns {tc, contacts, end, move}; the contact is at the ankle.
+function trip(M,aid,t,s){
+  s=s||{};const A=M[aid],D=M[aid==='a'?'b':'a'];
+  if(!A||!D||D.down||A.over||D.over)return {tc:t,contacts:[],end:t,move:null};
+  const r=s.key!=null?rngKey(A.pair,s.key+'|trip'):rng(A.pair);
+  cut(A,t);cut(D,t);
+  const f=faceOf(A),away=-faceOf(D),sD=sample(D,t,true),x=D.base;
+  const T=[sD.ffx-f*4,9];
+  const move=A.down||(A.prof.two>30)?'sweep':s.after?'hook':pick(r,['hook','hook','sweep']);
+  const tw=t+(s.after?90:160),tc=tw+(move==='sweep'?120:105);
+  if(move==='hook'){
+    // in close, the knee comes up, then the foot whips round behind the ankle and pulls
+    const FX=64,at=T[0]-f*(FX+6);
+    keyA(A,tw,{hip:[-10,56],lean:8,bend:4,head:-10,ff:[10,24],bf:[-30,0],h:[16,8],eb:1,w:118,o:[-24,18],oeb:1,turn:-8},
+      {at:lerp(A.base,at,.7),e:'out',slide:true,ec:{ffy:'out',ffx:'in'}});
+    dustAt(A,t+40,sample(A,t,true).bfx,3,-f);
+    keyA(A,tc,{hip:[-4,46],lean:24,bend:8,head:-16,ff:[FX,10],bf:[-36,0],h:[14,10],eb:1,w:122,o:[-32,14],oeb:1,turn:-10},
+      {at,e:'in',plant:'bf',ec:{ffx:'in3',ffy:'in'}});
+    keyA(A,tc+130,{hip:[-8,50],lean:16,ff:[30,4],head:-10},{e:'out',plant:'bf'});
+  }else{
+    // dropped low, the weapon scythes along the floor into the ankle
+    const body={hip:[0,40],lean:38,bend:8,head:-18,ff:[56,0],bf:[-50,0],turn:12,o:[-40,-6]};
+    const a=aimed(A,body,T,-6,A.prof.reachAt);
+    keyA(A,tw,windUp(A,'upLow'),{e:'out',plant:A.down?'both':'ff'});
+    keyA(A,tc,a.P,{at:a.at,e:'in',ec:{px:'out',w:'in3',ua:'in',fa:'in'},spin:{w:1},slide:true});
+    fx(A,{t:tw+20,kind:'swing',id:A.id,t1:tc+90,heavy:A.prof.heavy});
+    keyA(A,tc+120,{hip:[6,a.P.hip[1]],lean:(a.P.lean||30)+6,w:-30,h:[a.P.h[0]-6,a.P.h[1]-4]},{e:'out',plant:'both',spin:{w:-1}});
+    dustAt(A,tc,T[0],6,f);
+  }
+  hold(D,tc-60);
+  const contacts=[{t:tc,at:T,kind:'trip'}];
+  if(s.fell){
+    // the foot goes out from under: kicked up and forward, the body tips back and sits down hard
+    key(D,tc+70,{hip:[-14,58],lean:-24,bend:-10,head:16,ff:[42,30],h:[8,38],eb:1,w:132,o:[-18,36],oeb:1},{e:'out5',plant:'bf'});
+    key(D,tc+220,{hip:[-34,32],lean:-40,bend:20,head:26,ff:[44,36],bf:[8,6],h:[2,22],eb:1,w:150,o:[-34,-18]},{at:x+away*18,e:'in'});
+    key(D,tc+350,POSE.prop,{at:x+away*30,e:'out',slide:true});
+    fx(D,{t:tc+340,kind:'land',x:x+away*24,power:.9});fx(D,{t:tc+340,kind:'skid',id:D.id,t1:tc+460});
+    D.down='prop';
+  }else{
+    // the foot is lifted and put down again: a hop, the arms out, a catching step back
+    key(D,tc+70,{hip:[-8,66],lean:-8,bend:-4,head:8,ff:[22,20],h:[30,22],eb:1,w:110,o:[-14,12],oeb:1},{e:'out5',plant:'bf'});
+    key(D,tc+240,{hip:[-12,60],lean:10,ff:[30,0],bf:[-50,0],h:[30,-10],w:60,o:[10,-30]},{at:x+away*22,e:'io'});
+    key(D,tc+460,fit(D,D.hurt?'hurt':'guard'),{e:'io',plant:'both'});
+  }
+  keyA(A,tc+(s.fell?480:420),fit(A,readyPose(A,r)),{e:'io'});
+  return {tc,contacts,end:tc+(s.fell?500:480),move};
+}
+
+// Disarm Opponent: the blade binds on the other's weapon near the hand, winds round it and wrenches it out; the hand
+// is thrown up and back, empty. The stage throws the weapon itself at the second contact. s: {key}.
+function disarm(M,aid,t,s){
+  s=s||{};const A=M[aid],D=M[aid==='a'?'b':'a'];
+  if(!A||!D||A.over||D.over)return {tc:t,contacts:[],end:t,move:null};
+  const r=s.key!=null?rngKey(A.pair,s.key+'|disarm'):rng(A.pair);
+  cut(A,t);cut(D,t);
+  const f=faceOf(A),away=-faceOf(D),x=D.base;
+  const tw=t+120,tc=tw+100;
+  hold(D,tc);
+  const jd=joints(D,tc),B=[jd.Hn[0]+(jd.tip[0]-jd.Hn[0])*.4,jd.Hn[1]+(jd.tip[1]-jd.Hn[1])*.4];
+  const a=aimed(A,{hip:[12,58],lean:24,bend:6,head:-14,ff:[52,0],bf:[-48,0],turn:10,o:[-36,-18]},B,22,.5);
+  // a small cock, not a full swing: the blade only has to reach the other's
+  keyA(A,tw,{hip:[-12,58],lean:8,bend:2,head:-8,ff:[34,0],bf:[-50,0],h:[10,8],eb:1,w:70,o:[-30,-20],turn:-4},{e:'out',plant:'ff'});
+  keyA(A,tc,a.P,{at:a.at,e:'in',ec:{px:'out',w:'in3'}});
+  // the wind: the point drops under the other's blade, round it, then flicks up hard and throws it out of the hand
+  const tr=tc+110,tf=tr+70;
+  keyA(A,tr,{hip:[a.P.hip[0]+6,a.P.hip[1]-4],lean:(a.P.lean||24)+6,h:[a.P.h[0]-2,a.P.h[1]-16],w:a.P.w-110},{e:'io',plant:'both',spin:{w:-1}});
+  keyA(A,tf,{hip:[a.P.hip[0]+2,a.P.hip[1]+2],lean:(a.P.lean||24)-6,head:-10,h:[a.P.h[0]-6,a.P.h[1]+24],eb:1,w:a.P.w+64},{e:'out5',plant:'both',spin:{w:1}});
+  keyA(A,tf+150,{hip:[-6,60],lean:6,head:-8,h:[18,24],eb:1,w:a.P.w+80},{at:A.base-f*14,e:'out',slide:true});
+  hold(D,tf);
+  const jr=joints(D,tf);
+  const contacts=[{t:tc,at:B,kind:'clash'},{t:tf,at:jr.Hn,kind:'disarm'}];
+  fx(A,{t:tc+10,kind:'grind',t1:tr,at:B});
+  // the weapon hand thrown up and back, open; a step back, the hand brought in to guard
+  keyA(D,tf+80,{hip:[-12,64],lean:-12,bend:-6,head:12,h:[-8,46],eb:1,w:160,o:[10,-20]},{e:'out5',plant:'both'});
+  keyA(D,tf+300,{hip:[-14,60],lean:6,bend:4,head:-6,h:[24,-10],w:50,o:[18,-16]},{at:x+away*30,e:'io'});
+  keyA(A,tf+460,fit(A,readyPose(A,r)),{e:'io'});
+  keyA(D,tf+520,fit(D,readyPose(D,r)),{e:'io',plant:'both'});
+  return {tc,contacts,end:tf+520,move:'bind'};
+}
+
+// Press Advantage: the attacker beats the other's guard aside and drives on; the other gives two steps back and
+// covers up, the point in its face (the engine's hold lasts until its next turn)
 function press(A,D,t){
   if(A.over||D.over)return t;
-  cut(A,t);cut(D,t);const f=faceOf(A),r=rng(A.pair);
+  cut(A,t);cut(D,t);const f=faceOf(A),away=-faceOf(D),x=D.base;
   if(D.down){keyA(A,t+260,{hip:[10,58],lean:26,h:[44,-24],w:-28,o:[-30,-20]},{e:'out',plant:'bf'});return t+260;}
-  const T=partAt(D,t,'head'),a=aimed(A,{hip:[12,60],lean:24,bend:4,head:-14,ff:[52,0],bf:[-46,0],turn:10,o:[-36,-18]},[T[0]-f*40,T[1]-6],4,.98);
-  key(D,t+200,{hip:[-22,62],lean:-16,bend:-8,head:-10,h:[26,6],w:104,o:[-10,-30],ff:[28,0],bf:[-48,0]},{at:D.base-faceOf(D)*40,e:'out',slide:true});
-  keyA(A,t+220,a.P,{at:a.at+f*40,e:'out'});
-  fx(D,{t:t+20,kind:'skid',id:D.id,t1:t+200});
-  return t+360;
+  const body={hip:[12,60],lean:24,bend:4,head:-14,ff:[52,0],bf:[-46,0],turn:10,o:[-36,-18]};
+  // the beat: the blade knocks the other's guard off line
+  const jd=joints(D,t+130),B=[jd.Hn[0]+(jd.tip[0]-jd.Hn[0])*.5,jd.Hn[1]+(jd.tip[1]-jd.Hn[1])*.5];
+  const b=aimed(A,{...body,hip:[16,58]},B,-30,.55);
+  hold(D,t+110);
+  keyA(A,t+130,b.P,{at:b.at,e:'in',ec:{px:'out',w:'in3'},slide:true});
+  fx(A,{t:t+130,kind:'thump',at:B,power:.35});
+  key(D,t+190,{h:[30,-34],w:-44,lean:-8,head:10,o:[-6,-24]},{e:'out5',plant:'both'});
+  // two steps: the point goes to the face and stays there; the other backs off and covers
+  for(const [i,d] of [[1,38],[2,74]]){
+    const tt=t+130+i*190,T=partAt(D,t,'head'),a=aimed(A,body,[T[0]-f*40+away*d,T[1]-6],4,.98);
+    // (the guard stays off line for the first step and only comes back up on the second)
+    key(D,tt-10,{hip:[-16-i*4,62-i*3],lean:-10+i*6,bend:-6+i*6,head:-6,h:i===1?[30,-24]:[26,0],w:i===1?-24:64,o:[-10,-30],ff:[28,0],bf:[-48,0]},
+      {at:x+away*d,e:'io'});
+    keyA(A,tt,a.P,{at:a.at+f*40,e:'io'});
+  }
+  fx(D,{t:t+200,kind:'skid',id:D.id,t1:t+520});
+  return t+560;
 }
 // the engine changed the range: the pair close, or spring apart
 function recover(m,t,g){
@@ -1037,7 +1137,7 @@ function speed(m,t){
 // are the feet skidding at t (a key with `slide` is being travelled)
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
-const api={supports,fighter,gap,station,place,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,press,react,pose,
+const api={supports,fighter,gap,station,place,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,press,trip,disarm,react,pose,
   joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
