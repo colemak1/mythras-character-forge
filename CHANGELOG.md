@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: withdrawing an Impale
+
+- Pulling a weapon out of a wound is now one pull (owner, 2026-11-16: "Withdraw weapon looks horrible"). It used to look like a second stab: the weapon was pushed right through the body, and the tear-out flashed like a new hit with blood thrown out the far side.
+- Now the hand stays on the grip, the wielder braces, and the point comes straight back out the way it went in. Blood follows the blade toward the wielder, and there is no impact flash.
+- The wounded fighter is pulled after the blade and folds round the wound. When the withdrawal ends the fight, it goes to its knees and onto its face while the winner steps clear.
+- A wielder holding its weapon in a wound no longer walks away from it when the range changes.
+- Rules and dice are unchanged. Test: `tests/pits-cine-contact.cjs`.
+
 ## The Pits: the last finishing blows
 
 - The rest of the finishes by Special Effect (owner, 2026-11-16: "continue the finisher animations"):

@@ -1198,22 +1198,61 @@ const FX_FINISH={
 function withdraw(M,aid,t,s){
   const A=M[aid],D=M[aid==='a'?'b':'a'];if(!A||!D)return {tc:t,contacts:[],end:t};
   const loc=s.loc||'chest',lost=s.lost||0;cut(A,t);cut(D,t);
-  const f=faceOf(A),away=-faceOf(D),T=partAt(D,t,loc);
-  // the hand back on the grip: the point is in the wound
-  const body={hip:[14,56],lean:24,bend:6,head:-14,ff:[50,0],bf:[-48,0],turn:10,o:[-36,-18]};
-  const a=aimed(A,body,T,-4,.8);hold(D,t+140);
-  keyA(A,t+140,a.P,{at:a.at,e:'out'});
-  const tc=t+230;
-  hold(A,tc);
-  const contacts=[{t:tc,at:T,kind:lost>0?'hit':'clash'}];
-  // torn out: the wielder rocks back, the wounded fighter is pulled after it, then recoils
-  keyA(A,tc+150,{hip:[-18,58],lean:8,h:[-10,-16],eb:-1,w:2,o:[30,-10]},{at:A.base-f*24,e:'out',slide:true});
-  if(s.defeated&&!D.down){D.over=A.over=true;key(D,tc+80,{...recoil(loc)},{at:D.base-away*8,e:'out5',plant:'bf'});
-    const e=fall(D,tc+200);keyA(A,e+300,POSE.victory,{e:'io'});return {tc,contacts,end:e+300,move:'withdraw'};}
-  if(D.down){key(D,tc+90,{lean:D.lastP.lean-10,head:12},{e:'out5',plant:'both'});key(D,tc+400,POSE.prop,{e:'io'});}
-  else{key(D,tc+80,recoil(loc),{at:D.base+away*12,e:'out5',slide:true});key(D,tc+460,fit(D,'hurt'),{e:'io',plant:'bf'});D.hurt=true;}
-  keyA(A,tc+480,fit(A,readyPose(A,rng(A.pair))),{e:'io'});
-  return {tc,contacts,end:s.flow?tc+320:tc+500,move:'withdraw'};
+  const f=faceOf(A),away=-faceOf(D),len=A.weapon.len,held=s.held!==false;
+  // (owner, 2026-11-16: "withdraw weapon looks horrible"). One pull, never a second thrust: the hand is on the grip with
+  // the point in the wound along the line the stage draws it (shoulder to wound, the point PS_LODGE_IN inside); the
+  // wielder braces and the wounded fighter is tugged toward it; then the hand draws straight back along the shaft and
+  // the point comes out the way it went in. The injury lands as it comes out.
+  const q=Math.max(.5,(len-10)/len);
+  const B=P0=>({hip:P0.hip.slice(),lean:P0.lean,bend:P0.bend,head:P0.head,ff:P0.ff.slice(),bf:P0.bf.slice(),turn:P0.turn||0,o:[-30,-16]});
+  const lineAt=tt=>{const T=partAt(D,tt,loc),Sh=joints(A,tt).wS;
+    // the shaft runs from the shoulder's side to the wound, never steeper than the arm can hold it
+    return {T,w:clamp(deg(Math.atan2(T[1]-Sh[1],f*(T[0]-Sh[0])||1)),-40,30)};};
+  // the hand on the grip: at once if it kept hold, a step in and a grab if the weapon was left in the wound
+  // (further off than a lean: a real step in, the time it takes, never a dash)
+  const L0=lineAt(t),body0=B(A.lastP);
+  const g0=aimed(A,{...body0,lean:Math.max(10,body0.lean)},L0.T,L0.w,q),far=Math.abs(g0.at-A.base);
+  const tg=t+Math.round(Math.min(380,Math.max(held?70:240,far*2.4)));
+  hold(D,tg);
+  if(!held||far>30)keyA(A,Math.round((t+tg)/2),{hip:[body0.hip[0]+6,body0.hip[1]-2],lean:body0.lean+8,h:[30,-10],w:-20},
+    {at:A.base+(g0.at-A.base)*.5,e:'io'});
+  keyA(A,tg,g0.P,{at:g0.at,e:'io'});
+  // the brace: the weight settles back, the wounded fighter is drawn a little toward the weapon
+  const tb=tg+140;
+  if(!D.down)key(D,tb,{lean:D.lastP.lean+14,head:(D.lastP.head||0)+12,hip:[D.lastP.hip[0]+6,D.lastP.hip[1]-2]},{at:D.base-away*8,e:'io',plant:'bf'});
+  else hold(D,tb);
+  const L1={T:partAt(D,tb,loc),w:g0.P.w};
+  const g1=aimed(A,{...g0.P,lean:g0.P.lean-8,hip:[g0.P.hip[0]-6,g0.P.hip[1]-3]},L1.T,L1.w,q);
+  keyA(A,tb,g1.P,{at:g1.at,e:'io',plant:'bf'});
+  const tc=tb;
+  const contacts=[{t:tc,at:L1.T,kind:lost>0?'tear':'clash'}];
+  fx(D,{t:tc,kind:'spurt',id:D.id,loc,dir:-away,n:lost>0?Math.min(30,8+lost*3):0});
+  // the pull: the hand travels back along the shaft, the point leaves the wound the way it went in
+  const dw=rad(L1.w),pull=Math.max(44,Math.min(len*.6,80)),T2=[L1.T[0]-f*Math.cos(dw)*pull,L1.T[1]-Math.sin(dw)*pull];
+  const g2=aimed(A,{...g1.P,lean:g1.P.lean-14,hip:[g1.P.hip[0]-14,g1.P.hip[1]-2],head:(g1.P.head||0)+6},T2,L1.w,q);
+  keyA(A,tc+120,g2.P,{at:g2.at,e:'out5',slide:true});
+  fx(A,{t:tc+20,kind:'skid',id:A.id,t1:tc+160});
+  if(s.defeated&&!D.down){
+    // the last of it: pulled after the blade, a hand to the wound, the knees, the face; the winner steps clear
+    D.over=A.over=true;const c=CLUTCH[loc]||CLUTCH.chest,x=D.base;
+    key(D,tc+90,{hip:[4,62],lean:30,bend:20,head:24,h:[16,-50],w:-70,o:c,oeb:1},{at:x-away*14,e:'out5',plant:'bf'});
+    key(D,tc+520,{hip:[0,58],lean:36,bend:24,head:30,o:c,oeb:1},{e:'lin',plant:'both'});
+    key(D,tc+760,{...POSE.kneel,head:28,lean:24,o:c,oeb:1},{e:'in',plant:'both'});
+    key(D,tc+1000,POSE.face,{at:x+away*20,e:'in'});D.down='flat';
+    fx(D,{t:tc+760,kind:'land',x,power:.5});fx(D,{t:tc+1000,kind:'land',x:x+away*20,power:1});
+    keyA(A,tc+420,{hip:[-14,62],lean:2,head:-6,h:[20,-34],w:-50,o:[-6,-40]},{at:A.base-f*60,e:'io'});
+    keyA(A,tc+1400,POSE.victory,{e:'io'});
+    return {tc,contacts,end:tc+1400,move:'withdraw'};
+  }
+  if(D.down){key(D,tc+90,{lean:D.lastP.lean+8,head:12},{e:'out5',plant:'both'});key(D,tc+420,POSE.prop,{e:'io'});}
+  else{
+    // pulled after the blade, then folding round the wound
+    const c=CLUTCH[loc]||CLUTCH.chest;
+    key(D,tc+80,{hip:[2,60],lean:26,bend:16,head:20,o:c,oeb:1},{at:D.base-away*10,e:'out5',plant:'bf'});
+    key(D,tc+480,{...fit(D,'hurt'),o:c,oeb:1},{at:D.base+away*6,e:'io',plant:'bf'});D.hurt=true;
+  }
+  keyA(A,tc+500,fit(A,readyPose(A,rng(A.pair))),{at:A.base-f*10,e:'io'});
+  return {tc,contacts,end:s.flow?tc+320:tc+520,move:'withdraw'};
 }
 // a fighter hurts itself (Accidental Injury): the struck part is driven away, then the hurt guard
 function flinch(m,t,loc){
