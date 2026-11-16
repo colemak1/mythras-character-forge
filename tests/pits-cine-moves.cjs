@@ -117,4 +117,28 @@ test('a Disarm still to be drawn keeps the weapon in the hand (it is thrown once
   assert(/f\.armedSeen&&\(heldDisarm\|\|waitingNow\|\|comingDisarm\)\)f\.look\.armed=true/.test(st),'and keeps the weapon drawn until then');
 });
 
+// Impale (owner, 2026-11-16: "it doesn't get stuck in the wound immediately, the swing happens then the blade teleports
+// to the wound"): the point stays in the wound from the contact; the hand opens there (left in) or stays (kept hold).
+test('Impale: the point stays in the wound after the contact; the hand lets go, or keeps hold',()=>{
+  for(const w of ['rapier','spear','sword','dagger'])for(const [how,held,defeated] of [['left in',false,false],['kept hold',true,false],['finishing',false,true],['finishing, held',true,true]]){
+    const M=pair(w,'sword',.4),what=w+' impale, '+how,t=100;
+    const r=C.blow(M,'a',t,{outcome:'wound',loc:'chest',lost:defeated?12:5,impale:true,held,defeated});C.fixChoices(null);
+    const tc=r.contacts[r.contacts.length-1].t;
+    possible(M.a,tc,what);possible(M.b,tc,what);
+    // the point is still near the wound a moment later (not drawn through and away)
+    const tip0=C.joints(M.a,tc).tip,tip1=C.joints(M.a,tc+60).tip;
+    assert(dist(tip0,tip1)<30,what+': the point moves '+dist(tip0,tip1).toFixed(0)+' in 60 ms after the contact');
+    if(held&&!defeated)assert.equal(r.release,null,what+': kept hold, the hand does not open');
+    else{assert(r.release>tc&&r.release<tc+700,what+': the hand opens after the contact ('+r.release+')');}
+    if(defeated){assert.equal(r.finish,'impale',what);assert(M.b.down,what+': the struck fighter goes down');}
+    for(let x=t;x<=r.end;x+=8){possible(M.a,x,what);possible(M.b,x,what);}
+  }
+});
+test('the stage draws the Impale at its contact and lets go at the release',()=>{
+  const st=fs.readFileSync(path.join(__dirname,'..','experiments','pits-stage.js'),'utf8');
+  assert(/impale:!!impale&&lost>0&&!strike,held:!!\(impale&&impale\.held\)/.test(st),'the blow is told it impales, and whether it is kept hold of');
+  assert(/PS\.lodgeAhead\[def\.id\]=\{loc,weapon:/.test(st),'the weapon is drawn in the wound from the contact');
+  assert(/if\(r\.release&&PS\.lodgeAhead\[def\.id\]\)\{await psUntil\(r\.release\);/.test(st),'and let go at the release');
+});
+
 console.log(passed+' passed');

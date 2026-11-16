@@ -308,6 +308,14 @@ test('an offensive Disarm waits for its whole exchange, then is part of the one 
  assert.deepEqual([hb.cue.record.disarm.actor,hb.cue.record.disarm.target,hb.cue.record.disarm.metres],['b','a',1],'the parried blow carries the defender\'s Disarm');
  assert.equal(db.consumed,true,'the defender\'s Disarm has no second movement');
 });
+test('an Impale is carried by its blow, with whether the weapon is kept hold of (owner, 2026-11-16)',()=>{
+ const atk=ATK(),lod=B('Impaled Weapon',"Kethan's Rapier lodges in Marek's Chest.",{actor:'a',target:'b',location:'Chest'}),
+  hit=B('Kethan hits Chest','x',{actor:'a',impact:{target:'b',location:'Chest',hpLost:5},px:{total:5}}),
+  left=B('Impale · Left in the wound','Kethan lets go of the Rapier.',{actor:'a'});
+ let hb=beat([atk,lod,hit],2);assert.deepEqual(hb.cue.record.impale,{held:true},'kept hold (a computer, or Keep hold)');
+ hb=beat([atk,lod,hit,left],2);assert.deepEqual(hb.cue.record.impale,{held:false},'left in the wound');
+ assert.equal(beat([atk,hit],1).cue.record.impale,null,'no Impale, nothing lodged');
+});
 test('a beat folded into a blow starts no movement of its own (owner, 2026-11-16: disarms drawn twice)',()=>{
  const st=fs.readFileSync(path.join(root,'experiments/pits-stage.js'),'utf8');
  // (the else used to belong to the trip test only, so a consumed Disarm ran its own cue after the blow)

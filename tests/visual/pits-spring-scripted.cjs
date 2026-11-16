@@ -4,6 +4,7 @@
 //   - a successful Trip: the tripped fighter goes down, and the plate's Prone chip waits for the figure
 //   - a miss, then the other's attack: the miss is drawn before the next attack is declared
 //   - a Disarm won on a parry, or an attacker's Disarm against a parry: the weapon leaves once, at the parry
+//   - Impale on the cinematic stage: the weapon is in the wound from the blow's contact
 //
 //   node tests/visual/pits-spring-scripted.cjs
 const assert=require('node:assert/strict');
@@ -34,7 +35,8 @@ async function bout(browser,sc){
     if(s.phase!=='fight')break;
     if(s.R&&sc.probe&&sc.probe.includes(s.R))probes.push({at:s.R,dropped:await p.evaluate(()=>document.querySelectorAll('#pitsStage .ps-dropped').length)});
     if(s.R){await p.evaluate(v=>{window.__next=v==null?null:v;},(sc.rolls||{})[s.R]);await click('[data-act=roll]');}
-    else if(s.pend==='reaction'){const r=(sc.react||[])[nr++]||'none';await click('[data-act=react][data-val='+r+']')||await click('[data-act=react][data-val=none]');}
+    else if(s.pend==='reaction'){const r=(sc.react||[])[nr++]||'none';await click('[data-pa=def][data-val='+r+']');   // the deck: pick, then confirm
+      await click('[data-act=react][data-val='+r+']')||await click('[data-act=react][data-val=none]');}
     else if(s.pend==='effect'){if(sc.effect)await click('[data-pa=fx][data-val="'+sc.effect+'"]');   // the deck: pick the chip, then confirm
       if(!(sc.effect&&await click('[data-act=effect][data-val="'+sc.effect+'"]')))await click('[data-act=skipEffect]');}
     else if(s.pend&&sc.pick&&sc.pick[s.pend])await click(sc.pick[s.pend]);
@@ -92,6 +94,21 @@ async function bout(browser,sc){
       assert.equal(fly.length,1,'one throw: '+JSON.stringify(fly));
       assert.equal(dis[0].c,par.c,'the Disarm is the parry\'s own contact');
       assert.equal(r.dropped,1,'one weapon on the floor');
+    });
+  // (owner, 2026-11-16: "Impale ... doesn't get stuck in the wound immediately, the swing happens then the blade
+  // teleports to the wound"). The cinematic stage: the weapon is in the wound at the blow's contact; left in, the hand
+  // opens after it; one weapon in the wound, none thrown.
+  for(const how of ['leave','hold'])
+    await T('Impale ('+how+'): in the wound from the contact (cinematic stage)',async()=>{
+      const r=await bout(browser,{url:BASE,config:{weapon:'rapier'},react:['none'],effect:'impale',rolls:{'a:Attack':1},
+        pick:{impaleLeave:'[data-act=impaleLeave][data-val='+how+']'},attacks:1});
+      assert.deepEqual(r.errors,[]);
+      const hit=r.rec.find(x=>x.type==='contact'&&x.kind==='wound'),lod=r.rec.find(x=>x.type==='lodge'),rel=r.rec.find(x=>x.type==='release');
+      assert(hit&&lod,'the thrust landed and lodged: '+JSON.stringify(r.rec));
+      assert.equal(lod.c,hit.c,'lodged at the contact');
+      if(how==='leave')assert(rel&&rel.c>hit.c,'the hand opens after the contact');else assert(!rel,'kept hold: the hand stays');
+      assert.equal(r.lodged,1,'one weapon in the wound');
+      assert.deepEqual(r.rec.filter(x=>x.type==='fly'),[],'no weapon thrown');
     });
   // (Work's check B6, 2026-11-14: Keep hold drew two blades, one in the wound and one in the hand, the arm pulled back)
   await T('Impale, Keep hold: one weapon, lodged in the wound, with the hand on its grip',async()=>{

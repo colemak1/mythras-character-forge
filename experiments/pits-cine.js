@@ -674,7 +674,7 @@ function blow(M,aid,t,s){
       key(D,th+90,{hip:[D.lastP.hip[0]-10,D.lastP.hip[1]-4],lean:D.lastP.lean-10,head:10},{at:D.base+away*16,e:'out5',slide:true});
       ready(A,th+420);ready(D,th+380);end=th+420;
     }else{
-      end=struck(A,D,r,th,{loc,lost,H,move,f,away,wHit,aim,defeated:!!s.defeated,fall:s.fall,prone:!!s.prone,bash,big,leap});
+      end=struck(A,D,r,th,{loc,lost,H,move,f,away,wHit,aim,defeated:!!s.defeated,fall:s.fall,prone:!!s.prone,bash,big,leap,impale:!!s.impale&&!bash,held:!!s.held});
     }
   }
   // the two never end an exchange standing in each other: the attacker gives ground
@@ -684,7 +684,7 @@ function blow(M,aid,t,s){
   }
   // the replay runs straight on: the next exchange is written into this one's recovery
   const out={tc:contacts.length?contacts[0].t:tc,contacts,end:s.flow&&!s.defeated?Math.min(end,tHit+(dodge?250:290)):end,move,
-    ward:warded,leap,...chosen,finish:A.finished||null};A.finished=null;
+    ward:warded,leap,...chosen,finish:A.finished||null,release:A.release||null};A.finished=null;A.release=null;
   return out;
 }
 
@@ -774,6 +774,8 @@ function struck(A,D,r,th,o){
   const thrust=move==='lunge'||move==='stab';
   D.hurt=true;
   // --- the attacker's follow-through ---
+  // (Impale: the blade stays in the wound from the contact on; it is not drawn through and then put there, owner 2026-11-16)
+  if(o.impale)return impaled(A,D,r,th,o);
   if(o.defeated){
     return finish(A,D,r,th,o);
   }
@@ -846,6 +848,54 @@ function goDown(D,th,rec,kb,x,away,sit){
   D.down='prop';
 }
 // The blow that ends the fight. Slow, enormous, final.
+// Impale (owner, 2026-11-16): the point goes in and stays there. The attacker drives it home and either keeps hold
+// (the stage keeps the hand on the grip) or lets go and steps back; A.release is when the hand opens, for the stage,
+// which draws the weapon in the wound from the contact on. As a finishing blow: driven home, held, the struck fighter
+// sags on the blade, the attacker lets go and the fighter goes down with it still in.
+function impaled(A,D,r,th,o){
+  const {loc,f,away,aim}=o,x=D.base,P0=aim.P,lean0=P0.lean||30;
+  keyA(A,th+80,{hip:[P0.hip[0]+3,P0.hip[1]-1],lean:lean0+2},{at:A.base+f*3,e:'out',plant:'bf'});
+  if(o.defeated){
+    D.over=A.over=true;A.finished='impale';fx(A,{t:th,kind:'finish',id:D.id});
+    if(D.down){
+      // pinned to the floor: a last jerk, the point held there, let go
+      key(D,th+90,{...POSE.flat,hip:[-44,7]},{e:'out5',plant:'both'});D.down='flat';
+      keyA(A,th+420,{hip:[P0.hip[0]+4,P0.hip[1]-3]},{e:'lin',plant:'both'});A.release=th+420;
+      keyA(A,th+640,{hip:[-14,62],lean:-4,head:-6,h:[20,-40],w:-60,o:[-10,-40]},{at:A.base-f*40,e:'out',slide:true});
+      keyA(A,th+1200,POSE.victory,{e:'io'});return th+1200;
+    }
+    // doubled over the blade, held up on it a moment
+    key(D,th+80,{hip:[-18,60],lean:30,bend:30,head:26,h:[20,-40],w:-50,o:[24,-34]},{at:x+away*10,e:'out5',slide:true});
+    key(D,th+560,{hip:[-20,56],lean:34,head:32},{e:'lin',plant:'both'});
+    keyA(A,th+560,{hip:[P0.hip[0]+4,P0.hip[1]-3]},{e:'lin',plant:'both'});
+    // the hand opens; the winner steps back and watches it go down
+    A.release=th+600;
+    keyA(A,th+820,{hip:[-14,62],lean:-4,head:-6,h:[20,-40],w:-60,o:[-10,-40]},{at:A.base-f*50,e:'out',slide:true});
+    fx(D,{t:th+600,kind:'burst',id:D.id,loc});
+    key(D,th+860,{hip:[-4,36],lean:24,bend:30,head:34,ff:[20,0],bf:[-26,0],h:[16,-50],w:-70,o:[10,-56]},{e:'in',plant:'both'});
+    key(D,th+1120,POSE.flat,{at:x+away*26,e:'in'});D.down='flat';
+    fx(D,{t:th+1120,kind:'land',x:x+away*20,power:1.1});
+    keyA(A,th+1600,POSE.victory,{e:'io'});
+    return th+1600;
+  }
+  // not finished: the struck fighter buckles round the blade, close (it cannot be thrown clear of it)
+  const rec=recoil(loc);
+  if(D.down){key(D,th+90,{lean:D.lastP.lean-10,head:12},{e:'out5',plant:'both'});key(D,th+420,POSE.prop,{e:'io'});}
+  else{
+    key(D,th+70,{...rec,hip:[rec.hip[0]*.5,Math.max(48,rec.hip[1])],lean:rec.lean*.5},{at:x+away*8,e:'out5',slide:true});
+    key(D,th+480,fit(D,'hurt'),{at:x+away*10,e:'io',plant:'bf'});
+  }
+  if(o.held){
+    // kept hold: the hand stays on the grip, braced
+    keyA(A,th+420,{hip:[P0.hip[0]-2,P0.hip[1]+2],lean:lean0-4},{e:'io',plant:'both'});
+    return th+480;
+  }
+  A.release=th+240;
+  keyA(A,th+240,{hip:[P0.hip[0]+3,P0.hip[1]-1]},{e:'lin',plant:'both'});
+  keyA(A,th+460,{hip:[-14,60],lean:6,head:-6,h:[24,-30],w:-40,o:[-10,-36]},{at:A.base-f*40,e:'out',slide:true});
+  keyA(A,th+720,fit(A,readyPose(A,r)),{e:'io'});
+  return th+720;
+}
 function finish(A,D,r,th,o){
   const {loc,H,move,f,away,wHit,aim,bash}=o,x=D.base,thrust=move==='lunge'||move==='stab';
   D.over=A.over=true;D.down='flat';
