@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: blood fades (audit CA-11)
+
+- A drop of blood that lands now fades by one deadline, instead of renewing its life on every frame. Test: `tests/pits-cine-blood.cjs`.
+- CA-10 (the fallen head drawn partly in the floor) is kept as it is: the owner finds it looks natural (2026-11-16).
+
 ## The Pits: weapons held as the rules and a hand would hold them (audit CA-05 to CA-07, the owner's grip note)
 
 - **Handedness from the engine (CA-05).** A shortspear or trident is held in one hand, and with a shield the shield arm no longer also holds the shaft. A military flail is held in two hands.

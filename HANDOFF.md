@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-15 by Claude (Pits cinematic stage)_
+_Last updated: 2026-11-16 by Claude (Pits cinematic audit fixes)_
 
 ## Where things stand
 
@@ -15,6 +15,8 @@ _Last updated: 2026-11-15 by Claude (Pits cinematic stage)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+
+- **Claude, done 2026-11-16 (cinematic audit, #341):** all 12 CA and 4 CL items closed. The look is locked by `tests/pits-cine-look.cjs` (owner's OK needed to change it). Merged: #342 (prone state, ground height, shield contacts), #343 (struck weapons, withdrawals, replay repeats live, pins, reports, CL-01 to CL-04), #345 (handedness, grip, shared weapon extents, elbows; owner approved), and this PR (blood fades). CA-10 kept as is by the owner's decision (the fallen head may sit in the floor). Status: `docs/pits-animation-direction.md`, "Audit status". **Then Claude**, one batch per PR, each waiting for the owner's OK on a frame sheet (`tests/visual/pits-cine-sheet.cjs`): (a) Trip, Disarm, Press Advantage; (b) more ground poses and attacks from the ground; (c) a visible failed parry; (d) flexible weapons; then rewrite `tests/visual/` for this stage. **Next: ChatGPT (Work)** in its next batch, on the deployed Pits page (desktop and phone): a Trip won on a parry (the chip matches the figure), a pinned weapon (held down until freed), an Impale withdrawn (pull-out and injury drawn, deck shows it), then Replay (same swings as live); one dated report, pass/fail with severity.
 
 - **ChatGPT (Work), 2026-11-15:** default cinematic bug audit in `docs/pits-cinematic-bug-audit-20261115.md`, with measurements and a live standing/Prone screenshot. Owner approves the current look; preserve it. Twelve reproduced/code-confirmed failures (including defensive Trip ignoring the fall), four source-backed checks, and the owner's already-known gaps listed separately. All 75 root test files passed; live coverage limits are explicit. **Next: Claude** — fix CA-01–04 first, then equipment/contact/replay/state defects in the report; add targeted regressions. Read this report before changing animation direction. Readiness 13/14; completeness 8/8, unchanged.
 
