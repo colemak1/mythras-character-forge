@@ -1133,14 +1133,16 @@ a.weapon = 'dagger';
 b.weapon = 'greatsword';
 a.ap = b.ap = 3;
 bout.engagement = 'long';
-b.disarmed = true;
+// (a pinned weapon: still held, so it keeps its Reach, but it cannot attack; a dropped one controls no reach at all,
+// tests/pits-reach.cjs)
+b.pinnedGear = 'weapon';
 scheduling.beginChangeRange('a');
-check('A disarmed fighter cannot intercept a range change',
+check('A fighter whose weapon cannot attack cannot intercept a range change',
   /data-val="intercept" disabled/.test(root.innerHTML));
 scheduling.rangeReact('intercept');
 check('An illegal interception spends no AP and rolls no dice',
   b.ap === 3 && !scheduling.pending());
-b.disarmed = false;
+b.pinnedGear = null;
 b.style = a.evade = 65;
 scheduling.rangeReact('intercept');
 check('A legal interception spends one AP and prompts the interceptor',

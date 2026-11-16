@@ -126,6 +126,7 @@ function actionChoiceHelp(act,f){
   case 'delay':return 'Hold an AP for a reaction. If unused before your next turn, that AP is lost.';
   case 'ward':return `Passively cover up to ${SHIELDS[f.shield].coverage} locations. An active shield parry releases the ward.`;
   case 'stand':return !f.prone?'You are already standing.':canRegainFooting(f)?'Stand using an opposed Brawn or Athletics test while engaged.':'A disabled or stunned leg prevents standing.';
+  case 'disengage':return f.ap<1?'No Action Points remaining.':'Change Range to step out of the fight, matched reach or not. They may allow it, oppose with Evade, or intercept; an interception cannot stop you getting away.';
   case 'changeRange':return f.ap<1?'No Action Points remaining.':proposedRange(f.id)==='short'?'Close Inside to reach their body. They may oppose or intercept.':proposedRange(f.id)==='long'?'Open the range to restore your longer weapon’s normal use.':'No useful reach change is available in this position.';
   case 'brace':return f.braced?'You are already braced.':'Spend 1 AP to resist knockback; bracing ends when you move.';
   case 'dither':return 'Spend 1 AP without another action. Delay instead if you want to preserve a reaction.';

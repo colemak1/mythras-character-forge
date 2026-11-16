@@ -50,7 +50,8 @@ function pitsLegalActions(id){
   if(f.disarmed)add('recoverWeapon',f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?'Ready Weapon':'Pick Up Weapon',1,recoverWeaponReason(f));
   // ARM-06 (app policy): a free move of a held one-handed weapon to the other hand
   if(!f.disarmed&&!ARENA_WEAPONS[f.weapon].twoHanded&&!shieldCarried(f))add('swapHand','Switch Weapon Hand',0,swapHandReason(f));
-  add('changeRange','Change Range',1,needs(1)||(!proposedRange(id)?'No reach to contest':''));
+  add('changeRange',proposedRange(id)==='short'?'Close Inside':'Change Range',1,needs(1)||(!proposedRange(id)?'No reach to contest':''));
+  if(typeof canDisengage==='function')add('disengage','Disengage',1,disengageReason(f));
   add('brace','Brace',1,needs(1)||(f.braced?'Already braced':''));
   add('delay','Delay',0,'');
   add('dither','Dither',1,needs(1));
@@ -105,7 +106,7 @@ function pitsFighterSnapshot(f){
 }
 function pitsSnapshot(){
   return {phase:pitsPhase(),round:S.round,cycle:S.cycle,turn:S.order?.[S.turnIndex]||null,
-    range:S.disengaged?'apart':!engagementInfo().active?'even':S.engagement==='short'?'short':'long',
+    range:S.disengaged?'apart':!engagementInfo(typeof pitsPresenting==='function'&&pitsPresenting()&&V.shown?V.shown:null).active?'even':S.engagement==='short'?'short':'long',
     fighters:{a:pitsFighterSnapshot(S.fighters.a),b:pitsFighterSnapshot(S.fighters.b)}};
 }
 // Short words for the strip pill, per phase.

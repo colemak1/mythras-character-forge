@@ -48,7 +48,7 @@ function paConditions(f){
   if(f.blindedTurns)add('Blinded',1);
   if(f.braced)add('Braced');
   // range (owner, 2026-11-16): who the engagement rules favour (Core p.106), as the floor under the fighters shows it
-  if(f.id&&typeof engagementInfo==='function'&&!S.disengaged){const r=engagementInfo();
+  if(f.id&&typeof engagementInfo==='function'&&!S.disengaged){const r=engagementInfo(paView());
     if(r.active&&r.longer){const longer=f.id===r.longer;
       if(S.engagement==='short')add(longer?'Cramped: they are inside your reach':'Inside their reach',longer);
       else add(longer?'Keeping them at reach':'Out of reach: weapon or close only',!longer);}}
@@ -257,7 +257,7 @@ function paFocus(){
   });
 }
 // Command deck (inside #root): actions, prompt and exchange breakdown, chronicle.
-const PA_ACT_SHORT={attack:'Attack',shieldAttack:'Shield Strike',changeRange:'Change Range',brace:'Brace',delay:'Delay',dither:'Dither',stand:'Regain Footing',yield:'Concede Bout'};
+const PA_ACT_SHORT={attack:'Attack',shieldAttack:'Shield Strike',changeRange:'Change Range',disengage:'Disengage',brace:'Brace',delay:'Delay',dither:'Dither',stand:'Regain Footing',yield:'Concede Bout'};
 function paActionsHtml(){
   const phase=pitsPhase(),id=phase==='action'&&paHuman(S.order?.[S.turnIndex])?S.order[S.turnIndex]:'a';
   const f=S.fighters[id],live=phase==='action',list=pitsLegalActions(id),rec=live?pitsRecommendedAction(id):null;

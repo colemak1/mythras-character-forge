@@ -5,6 +5,14 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: reach follows the weapon in hand; Disengage
+
+- **Reach comes from the weapon you hold** (owner request). A dropped, broken, or abandoned embedded weapon no longer keeps the other fighter out. Without its weapon a fighter fights at its shield's Reach, or at Touch with empty hands. A weapon that is pinned, or held while lodged in the foe, still counts. The floor bands, tags and plate follow the picture, so they change when the weapon visibly leaves the hand. `heldReach()`; decision D-PR1.
+- **Disengage** (Change Range, 1 AP) is offered in every bout, with matched reach too. The opponent may let them go, oppose with Evade, or intercept; an interception doesn't stop the move, even when it hits. The fighters end apart, as after the Withdraw effect. Not while prone, with a stunned leg, entangled legs or no AP. Decision D-PR2 (for Chat's review).
+- A matched bout that turns uneven because a weapon is lost no longer leaves the shorter fighter without a way to close.
+- **Open rules question, D-PR3:** a cramped haft or pommel blow still keeps the weapon's Size (less the Reach gap) and its cutting and impaling effects. Nothing is changed until the owner or Chat rules on it.
+- Tests: `tests/pits-reach.cjs` (30 checks). `tests/practice-combat-ux.cjs` now checks interception with a pinned weapon instead of a dropped one, since a dropped weapon no longer controls reach. The golden bouts' random player doesn't press Disengage, so their fixtures are unchanged.
+
 ## The Pits: fighting from the ground
 
 - A fighter on the ground now fights from there (HANDOFF batch (b)). It used to attack from a squat and scuttle across the floor, parry with the arm alone, and always wait propped on one hand.
