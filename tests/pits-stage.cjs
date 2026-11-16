@@ -275,8 +275,8 @@ test('a parry that wins a Trip or a Disarm: the blocked blow is drawn first, the
  const dis=B('Disarm Opponent','The weapon lands 2m away.',{actor:'b'}),dh2=B('No Damaging Hit','x',{actor:'a'});
  assert.deepEqual(arrange([dis,dh2],[],false).play.map(e=>e.id),[dh2.id,dis.id]);
 });
+const beat=(ev,i)=>JSON.parse(A.run(`JSON.stringify(pitsStageBeat(${JSON.stringify(ev)},${i},${JSON.stringify(names)}))`));
 test('an offensive Disarm waits for its whole exchange, then is part of the one blow (Work, 2026-11-13)',()=>{
- const beat=(ev,i)=>JSON.parse(A.run(`JSON.stringify(pitsStageBeat(${JSON.stringify(ev)},${i},${JSON.stringify(names)}))`));
  for(const body of ["Marek's weapon lands 2m away.","Marek drops the weapon at their feet."]){
   // the attack, the effect chosen and resolved (with its distance roll) while location and damage are still to come
   const atk=ATK(),dd=DI('Disarm distance · d4'),dis=B('Disarm Opponent',body,{actor:'a',target:'b'});
@@ -299,12 +299,28 @@ test('an offensive Disarm waits for its whole exchange, then is part of the one 
   const hb2=beat(ev,bi),db2=beat(ev,di);
   assert.equal(hb2.cue.record.disarm&&hb2.cue.record.disarm.type,'disarm','without the attack entry: still part of the blow');assert.equal(db2.consumed,true);
  }
- // a defensive Disarm (the defender's, after a parry): drawn after the parry, with its own movement
+ // a defensive Disarm (the defender's, won on the parry): the same parry takes the weapon (owner, 2026-11-16: "it
+ // should be the same hit that disarms"); the Disarm beat has no movement of its own
  const atk=ATK(),par=B('Marek parries','x',{actor:'b'}),dis=B('Disarm Opponent',"Kethan's weapon lands 1m away.",{actor:'b',target:'a'}),dh=B('No Damaging Hit','x',{actor:'a'});
  const r=arrange([atk,par,dis,dh],[],false),ids=r.play.map(e=>e.id);
  assert.deepEqual(ids,[atk.id,par.id,dh.id,dis.id]);
- const db=JSON.parse(A.run(`JSON.stringify(pitsStageBeat(${JSON.stringify(r.play)},3,${JSON.stringify(names)}))`));
- assert.equal(db.consumed,false,'the defender\'s Disarm keeps its own movement');
+ const hb=beat(r.play,2),db=beat(r.play,3);
+ assert.deepEqual([hb.cue.record.disarm.actor,hb.cue.record.disarm.target,hb.cue.record.disarm.metres],['b','a',1],'the parried blow carries the defender\'s Disarm');
+ assert.equal(db.consumed,true,'the defender\'s Disarm has no second movement');
+});
+test('a beat folded into a blow starts no movement of its own (owner, 2026-11-16: disarms drawn twice)',()=>{
+ const st=fs.readFileSync(path.join(root,'experiments/pits-stage.js'),'utf8');
+ // (the else used to belong to the trip test only, so a consumed Disarm ran its own cue after the blow)
+ assert(/if\(b\.consumed\)\{PS\.cuePromise=null;[\s\S]{0,400}?tripAhead=true;\}\s*else\{PS\.epoch\+\+;PS\.cuePromise=b\.cue\?psRunCue\(b\.cue\):null;\}/.test(st),
+   'a consumed beat runs no cue');
+});
+test('Compel Surrender ends in a surrender (white flag), not a collapse',()=>{
+ assert.equal(cue('FIGHT ENDS','Kethan wins. Marek surrenders under threat after failing Willpower.',{}).how,'surrender');
+ assert.equal(cue('FIGHT ENDS','Kethan wins. Marek capitulates after Force Failure.',{}).how,'surrender');
+ assert.equal(cue('FIGHT ENDS','Kethan wins. Marek concedes.',{}).how,'concede');
+ const st=fs.readFileSync(path.join(root,'experiments/pits-stage.js'),'utf8');
+ assert(/cue\.how==='surrender'\)\{lo\.mEnd='yield'[^\n]*\n[^\n]*lo\.flag=true/.test(st),'the cinematic stage raises the flag');
+ assert(/function psDrawFlag/.test(st)&&/psDrawLodged\(now\);psDrawFlag\(now\);PS\.raf/.test(st),'the flag is drawn every frame');
 });
 test('a blow takes its effects and consequences into one record; those beats have no motion of their own',()=>{
  const atk=ATK(),press=B('Press Advantage','Marek cannot attack on the next Turn, but may act otherwise.',{actor:'a'}),hit=HIT(),wnd=WND(),

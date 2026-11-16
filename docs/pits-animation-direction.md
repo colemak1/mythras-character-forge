@@ -39,7 +39,8 @@ The owner, after watching a hand-animated stick-figure fight: "I'm really not li
 **Known limits.**
 - Flexible weapons (flail, whip, net) are swung as rigid cuts; a shield is a disc.
 - On the ground a fighter has two poses (propped, flat) and attacks from one knee.
-- The attacker's Disarm is still drawn by its blow (the weapon leaves the hand at the contact); only the defender's Disarm has the bind and wrench.
+- Every Disarm is drawn by its blow (owner, 2026-11-16: "it should be the same hit that disarms"): the attacker's takes the defender's weapon at the blow's contact, the defender's (won on the parry) takes the attacker's weapon at the parry. The bind and wrench (`disarm()`) is used only for a Disarm with no blow in its exchange.
+- Compel Surrender ends in `surrender()`: the weapon lowered, the head bowed, the off hand up with a little white flag (drawn by the stage, `psDrawFlag`).
 - A thrust leaves a curved smear when the point swings into line.
 - On a short screen with a tall dice tray the heads can touch the tray while the scene is held.
 - With reduced motion the effects are off and movements jump to their ends, as before.

@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: one Disarm, on the parry; a white flag for Compel Surrender
+
+- A Disarm won on a parry now takes the weapon in the parry itself, not in a second move after it (owner, 2026-11-16).
+- An attacker's Disarm against a parry no longer throws the weapon twice. A move that is part of a blow (a Disarm, Press Advantage, Arise) could still start its own movement after the blow; it no longer does.
+- Compel Surrender: the fighter who gives up lowers the weapon and raises a little white flag. Before, it fell down as if injured.
+- Rules and dice are unchanged. Tests: `tests/pits-stage.cjs`; browser checks on both stages in `tests/visual/pits-spring-scripted.cjs`.
+
 ## The Pits: a parry that wins a Disarm throws the weapon once
 
 - A Disarm won on a parry threw the weapon at the parry, put it back in the hand for the bind and wrench, then threw it again (owner, 2026-11-16). The weapon now stays in the hand until the wrench and leaves once. The engine logs the Disarm before the blow it answered, and the stage draws the blow first; the stage now waits for the Disarm's own movement. Rules and dice are unchanged.

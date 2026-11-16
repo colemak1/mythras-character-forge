@@ -3,7 +3,7 @@
 //   - Impale, "Leave it in the wound": the weapon is drawn lodged in the wound and is not also thrown to the floor
 //   - a successful Trip: the tripped fighter goes down, and the plate's Prone chip waits for the figure
 //   - a miss, then the other's attack: the miss is drawn before the next attack is declared
-//   - a parry that wins a Disarm: the weapon is thrown once, at the Disarm
+//   - a Disarm won on a parry, or an attacker's Disarm against a parry: the weapon leaves once, at the parry
 //
 //   node tests/visual/pits-spring-scripted.cjs
 const assert=require('node:assert/strict');
@@ -76,16 +76,21 @@ async function bout(browser,sc){
     assert.deepEqual(r.probes.filter(x=>x.dropped),[],'no weapon on the floor before the blow: '+JSON.stringify(r.probes));
     assert.equal(r.dropped,1,'the weapon lies on the floor once the blow has landed');
   });
-  // (owner, 2026-11-16: "parry into disarm disarms twice": the weapon flew at the parry, came back to the hand and flew
-  // again at the wrench). On both stages: thrown once, at the Disarm's own contact, and one weapon on the floor.
+  // (owner, 2026-11-16: "parry into disarm disarms twice", then "the disarm should happen on the parry ... it should be
+  // the same hit that disarms. Also offensive [disarms] still happen twice"). On both stages: the weapon is thrown once,
+  // at the parry's own contact, with no second bind; one weapon on the floor.
   for(const [stage,url] of [['cinematic',BASE],['spring',URL_]])
-    await T('a parry that wins a Disarm throws the weapon once, at the wrench ('+stage+' stage)',async()=>{
-      const r=await bout(browser,{url,react:['parry'],effect:'disarm',rolls:{'a:Attack':40,'b:Parry':3,'a:Resist':99},attacks:1});
+    for(const [who,sc] of [['a parry that wins a Disarm',{react:['parry'],effect:'disarm',rolls:{'a:Attack':40,'b:Parry':3,'a:Resist':99}}],
+                           ['an attacker\'s Disarm against a parry',{react:['parry'],effect:'disarm',rolls:{'a:Attack':1,'b:Parry':60,'b:Resist':99}}]])
+    await T(who+': the weapon leaves the hand once, at the parry ('+stage+' stage)',async()=>{
+      const r=await bout(browser,{url,...sc,attacks:1});
       assert.deepEqual(r.errors,[]);
-      const fly=r.rec.filter(x=>x.type==='fly'),dis=r.rec.find(x=>x.type==='contact'&&x.kind==='disarm');
-      assert(dis,'the Disarm was drawn: '+JSON.stringify(r.rec.filter(x=>x.type==='contact')));
+      const fly=r.rec.filter(x=>x.type==='fly'),dis=r.rec.filter(x=>x.type==='contact'&&x.kind==='disarm'),
+        par=r.rec.find(x=>x.type==='contact'&&/parr|deflect/.test(x.kind));
+      assert(par,'the parry was drawn: '+JSON.stringify(r.rec.filter(x=>x.type==='contact')));
+      assert.equal(dis.length,1,'one Disarm contact: '+JSON.stringify(dis));
       assert.equal(fly.length,1,'one throw: '+JSON.stringify(fly));
-      assert(fly[0].c>=dis.c,'thrown at the Disarm, not before it (throw '+fly[0].c+', Disarm '+dis.c+')');
+      assert.equal(dis[0].c,par.c,'the Disarm is the parry\'s own contact');
       assert.equal(r.dropped,1,'one weapon on the floor');
     });
   // (Work's check B6, 2026-11-14: Keep hold drew two blades, one in the wound and one in the hand, the arm pulled back)
