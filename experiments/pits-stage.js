@@ -222,7 +222,8 @@ function pitsStageAim(base,wk,swap,target,opts){
 const PSTAGE_BLOW=['hit','deflect','weapon','withdrawHit'];
 const PSTAGE_AFTER=['wound','limb','drop','lodge','end','falling'];
 // the engine's names of the Special Effects that choose a finishing blow's finish
-const PSTAGE_FX={'Bash':'bash','Stun Location':'stun','Bleed':'bleed','Choose Location':'choose'};
+const PSTAGE_FX={'Bash':'bash','Stun Location':'stun','Bleed':'bleed','Choose Location':'choose','Circumvent Parry':'circumvent',
+  'Entangle':'entangle','Maximise Damage':'maximise','Bypass Armour':'bypass','Sunder':'sunder'};
 const PSTAGE_EFFECT=['trip','disarm'];
 function pitsStageKind(e,names){
   if(!e)return 'none';if(e.roll)return 'roll';if(e.checkpoint)return 'checkpoint';
@@ -566,6 +567,8 @@ function psExchangeFx(cue,striker){
     const k=l.meta&&l.meta.actor===striker&&PSTAGE_FX[l.title];if(k&&!fx.includes(k))fx.push(k);}
   return fx;
 }
+// a fighter still blinded by an earlier Blind Opponent (engine state)
+function psBlinded(id){const f=PS.fighters&&PS.fighters[id];return !!(f&&f.blindedTurns>0);}
 // the stage's own lodged weapon (an Impale drawn at its contact, before the engine's state is shown) merged into the
 // engine's list: one entry per wielder; the stage's let-go wins over the engine's hold
 function psMergeLodge(list,la){
@@ -1436,7 +1439,9 @@ async function psMotionBlow(cue){
   const r=pulled?L.withdraw(PS.M,atk.id,PS.clock,{loc,lost,defeated,flow:psReplaying()}):
     psCineBlow(atk.id,{outcome:out,loc,lost,shield:weaponHit?false:shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,flow:psReplaying(),
       impale:!!impale&&lost>0&&!strike,held:!!(impale&&impale.held),fx:psExchangeFx(cue,atk.id).concat(
-        trip&&trip.fell?['trip']:[],cue.record&&cue.record.disarm&&cue.record.disarm.actor===atk.id?['disarm']:[])});
+        trip&&trip.fell?['trip']:[],cue.record&&cue.record.disarm&&cue.record.disarm.actor===atk.id?['disarm']:[],
+        // (Blind Opponent is a defender's effect: a blinded loser is drawn blind on the blow that ends it)
+        psBlinded(def.id)?['blind']:[])});
   PS.busyUntil=r.end;atk.spent=def.spent=true;
   // (the trip's fall is drawn when the blow's own movement has played out, from the pose it left: written into the blow
   // it overlapped the struck fighter's reaction and the head jumped, measured 47 px in one frame)

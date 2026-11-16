@@ -497,14 +497,18 @@ function blow(M,aid,t,s){
   else move=chambered==='upHigh'?'over':chambered==='upLow'?'rise':chambered==='upSide'?'spin':
     H==='low'?pick(r,['over','rise','rise','spin']):H==='high'?pick(r,['over','over','over','spin','rise']):pick(r,['over','rise','over','rise','spin']);
   const big=!!s.defeated||lost>=7;
-  const leap=!A.down&&!bash&&move==='over'&&H!=='low'&&(big||r()<.22);
+  // Circumvent Parry on the finishing blow (owner, 2026-11-16): a feint draws the guard to the other line and the blade
+  // comes in round it; the guard is still up as the fighter falls (FX_FINISH.slipped)
+  const slip=!!s.defeated&&(s.fx||[]).includes('circumvent')&&o==='wound'&&!A.down&&!D.down&&!bash;
+  const leap=!slip&&!A.down&&!bash&&move==='over'&&H!=='low'&&(big||r()<.22);
   // --- timing (stage clock, ms) ---
   const heavy=P.heavy?1.25:1;
   let t0=t;
   const Ta=chambered?40:Math.round((P.fam==='thrust'?140:180)*heavy);       // wind-up
   let Ts=Math.round((P.fam==='thrust'?85:105)*heavy);                       // strike
   if(move==='spin')Ts+=60;if(leap)Ts+=110;
-  const tw=t0+Ta,tc=tw+Ts;
+  const feint=slip?170:0;
+  const tw=t0+Ta+feint,tc=tw+Ts;
   const contacts=[],chosen={};
   // --- the defender up to the contact, so the blow can be aimed at where the target will be ---
   const xd0=sample(D,t,true).px,away=-fd;                 // world direction the defender is driven
@@ -528,6 +532,12 @@ function blow(M,aid,t,s){
     // the blow goes where the target was
     T=partAt(D,t,loc);kind='miss';
     if(o==='miss'||o==='fumble')T=[T[0]-f*26,T[1]];
+  }else if(slip){
+    // the feint (below) draws the guard to the other line; it is held there as the real blow comes in
+    hold(D,t0+90);
+    key(D,t0+200,{...wardPose(D,H==='high'?'wardLow':'wardHigh'),hip:[D.lastP.hip[0]-4,D.lastP.hip[1]]},{e:'out5',plant:'bf'});
+    hold(D,tc);
+    T=partAt(D,tc,loc);
   }else{
     // (the replay: a parry that was declared and failed is still seen tried, as it was live: CL-02)
     if(s.flow&&s.ward&&!D.down)key(D,t+100,wardPose(D,s.ward),{e:'out',plant:'bf'});
@@ -570,6 +580,12 @@ function blow(M,aid,t,s){
   }
   // a miss falls short or goes past: the blade is not stopped by anything
   const xa0=sample(A,t,true).px,travel=f*(aim.at-A.base);
+  // a feint at the other line (Circumvent Parry): the guard goes to meet it
+  if(slip){
+    const lowF=H==='high';
+    keyA(A,t0+120,{hip:[-2,lowF?58:64],lean:lowF?24:14,bend:4,head:lowF?-14:-8,ff:[40,0],bf:[-46,0],h:lowF?[34,-30]:[30,24],eb:lowF?0:1,
+      w:lowF?-30:40,o:[20,-20],turn:4},{at:A.base+f*10,e:'out'});
+  }
   // wind-up
   if(!chambered){
     const name=down?'kneel':bash?'upBash':move==='lunge'?'upThrust':move==='stab'?'upStab':move==='rise'?'upLow':move==='spin'?'upSide':'upHigh';
@@ -674,7 +690,7 @@ function blow(M,aid,t,s){
       key(D,th+90,{hip:[D.lastP.hip[0]-10,D.lastP.hip[1]-4],lean:D.lastP.lean-10,head:10},{at:D.base+away*16,e:'out5',slide:true});
       ready(A,th+420);ready(D,th+380);end=th+420;
     }else{
-      end=struck(A,D,r,th,{loc,lost,H,move,f,away,wHit,aim,defeated:!!s.defeated,fall:s.fall,prone:!!s.prone,bash,big,leap,impale:!!s.impale&&!bash,held:!!s.held,fx:s.fx||[]});
+      end=struck(A,D,r,th,{loc,lost,H,move,f,away,wHit,aim,defeated:!!s.defeated,fall:s.fall,prone:!!s.prone,bash,big,leap,impale:!!s.impale&&!bash,held:!!s.held,fx:s.fx||[],slip});
     }
   }
   // the two never end an exchange standing in each other: the attacker gives ground
@@ -905,8 +921,12 @@ function finish(A,D,r,th,o){
   if(sample(D,th,true).py<30)kind='ground';
   // the final blow's Special Effect chooses the finish (owner, 2026-11-16); a fighter already on the floor keeps 'ground'
   if(kind!=='ground'){const fxs=o.fx||[];
-    const byFx=fxs.includes('bash')?'bashed':fxs.includes('trip')?'tripped':fxs.includes('disarm')?'disarmed':fxs.includes('stun')?'stunned':fxs.includes('bleed')?'bled':
-      fxs.includes('choose')?(loc==='head'?'headshot':/leg/.test(loc)?'legout':/arm/.test(loc)?'armdrop':null):null;
+    const by=[['circumvent','slipped'],['bash','bashed'],['trip','tripped'],['disarm','disarmed'],['entangle','yanked'],['stun','stunned'],['bleed','bled']];
+    // (Circumvent Parry is drawn only when its feint was: a hit straight in, both standing)
+    let byFx=null;for(const [k,v] of by)if(!byFx&&fxs.includes(k)&&(k!=='circumvent'||o.slip))byFx=v;
+    if(!byFx&&fxs.includes('choose'))byFx=loc==='head'?'headshot':/leg/.test(loc)?'legout':/arm/.test(loc)?'armdrop':null;
+    if(!byFx&&(fxs.includes('maximise')||fxs.includes('bypass')||fxs.includes('sunder')))byFx='cracked';
+    if(!byFx&&fxs.includes('blind'))byFx='blinded';
     if(byFx)kind=byFx;}
   A.finished=kind;
   if(FX_FINISH[kind])return FX_FINISH[kind](A,D,r,th,o);
@@ -1080,6 +1100,65 @@ const FX_FINISH={
     key(D,th+1000,{...POSE.kneel,head:24},{e:'in',plant:'both'});
     key(D,th+1240,POSE.face,{at:x+away*40,e:'in'});
     fx(D,{t:th+1000,kind:'land',x,power:.5});fx(D,{t:th+1240,kind:'land',x:x+away*40,power:1});
+    D.down='flat';return th+1700;
+  },
+  // Circumvent Parry: the blade came in round the guard (the feint drew it to the other line, in blow()); the guard is
+  // still up, the arms do not move, as the body sinks to its knees and falls
+  slipped(A,D,r,th,o){
+    const {away}=o,x=D.base;carryOn(A,th,o,th+1500,70);
+    key(D,th+70,{hip:[-14,62],lean:-8,bend:-4,head:22},{at:x+away*10,e:'out5',plant:'bf'});
+    key(D,th+520,{hip:[-12,60],lean:2,head:34},{e:'lin',plant:'both'});
+    key(D,th+820,{hip:[-6,36],lean:18,bend:8,head:26,ff:[30,0],bf:[-34,0]},{e:'in',plant:'bf'});
+    key(D,th+1100,POSE.face,{at:x+away*30,e:'in'});
+    fx(D,{t:th+520,kind:'burst',id:D.id,loc:o.loc});
+    fx(D,{t:th+820,kind:'land',x,power:.5});fx(D,{t:th+1100,kind:'land',x:x+away*30,power:1});
+    D.down='flat';return th+1500;
+  },
+  // Entangle: the weapon wraps the part it struck and the attacker hauls on it: the fighter is yanked off its feet,
+  // feet first toward the attacker, down on its back and dragged a little way
+  yanked(A,D,r,th,o){
+    const {f,away,aim}=o,x=D.base,P0=aim.P,toA=-away;
+    keyA(A,th+90,{hip:[P0.hip[0]+4,P0.hip[1]-2]},{e:'out',plant:'both'});
+    // the haul: weight back, the weapon hand drawn in to the hip, a step back
+    keyA(A,th+260,{hip:[-30,52],lean:-26,bend:-10,head:10,ff:[30,0],bf:[-56,0],h:[-6,-40],w:-150,o:[10,-40],turn:-6},{at:A.base-f*30,e:'out5',slide:true});
+    keyA(A,th+700,{hip:[-20,58],lean:-14,head:4,h:[0,-44],w:-140,o:[6,-44]},{at:A.base-f*110,e:'io'});
+    keyA(A,th+1500,POSE.victory,{e:'io'});
+    fx(A,{t:th+180,kind:'skid',id:A.id,t1:th+420});
+    key(D,th+70,{...recoil(o.loc),hip:[-8,60]},{at:x+away*4,e:'out5',plant:'bf'});
+    // the feet go first, toward the haul; the body pivots back over them and slams down
+    key(D,th+250,{hip:[10,58],lean:-62,bend:-10,head:30,ff:[84,60],bf:[56,46],h:[-20,30],eb:1,w:150,o:[-30,24],oeb:1},{at:x+toA*34,e:'out'});
+    key(D,th+420,{...POSE.flat,hip:[-40,14]},{at:x+toA*60,e:'in'});
+    key(D,th+760,POSE.flat,{at:x+toA*110,e:'out',slide:true});
+    fx(D,{t:th+420,kind:'land',x:x+toA*40,power:1.3});fx(D,{t:th+430,kind:'skid',id:D.id,t1:th+760});
+    D.down='flat';return th+1500;
+  },
+  // Maximise Damage, Bypass Armour, Sunder: one heavy blow; the armour cracks (sparks, a piece flies) and the fighter is
+  // driven to its knees, then over
+  cracked(A,D,r,th,o){
+    const {f,away,aim}=o,x=D.base,P0=aim.P;
+    // (the weight dropped through the blow, the feet where they landed)
+    keyA(A,th+120,{hip:[P0.hip[0]+6,P0.hip[1]-6],lean:(P0.lean||30)+10,head:-22},{e:'out',plant:'both'});
+    keyA(A,th+620,{hip:[-6,60],lean:14,h:[24,-34],w:-40,ff:[38,0],bf:[-44,0]},{at:A.base-f*60,e:'io'});
+    keyA(A,th+1500,POSE.victory,{e:'io'});
+    fx(D,{t:th,kind:'crack',id:D.id,loc:o.loc,dir:away});
+    key(D,th+70,{hip:[-16,50],lean:30,bend:22,head:24,ff:[30,0],bf:[-40,0],h:[20,-50],w:-60,o:[20,-50]},{at:x+away*14,e:'out5',slide:true});
+    key(D,th+240,{...POSE.kneel,head:26,lean:22,h:[18,-30],w:-80,o:[14,-30]},{at:x+away*18,e:'in',plant:'bf'});
+    key(D,th+700,{lean:28,head:32},{e:'lin',plant:'both'});
+    key(D,th+960,POSE.face,{at:x+away*34,e:'in'});
+    fx(D,{t:th+240,kind:'land',x:x+away*18,power:1.2});fx(D,{t:th+960,kind:'land',x:x+away*34,power:1});
+    D.down='flat';return th+1500;
+  },
+  // Blinded (the loser was blinded by an earlier Blind Opponent, still in force): a hand to the eyes, a staggering
+  // half-step, a wild swing at nothing, then a fall
+  blinded(A,D,r,th,o){
+    const {away}=o,x=D.base;carryOn(A,th,o,th+1700,90);
+    key(D,th+70,{...recoil(o.loc),o:[14,24],oeb:1},{at:x+away*14,e:'out5',slide:true});
+    key(D,th+300,{hip:[-4,64],lean:-10,bend:-4,head:-16,ff:[26,0],bf:[-44,0],h:[20,30],eb:1,w:130,o:[14,24],oeb:1},{at:x+away*30,e:'io'});
+    key(D,th+520,{hip:[6,60],lean:26,bend:8,head:10,h:[34,-30],w:-60,o:[14,24],oeb:1,turn:-10},{e:'out',plant:'bf',spin:{w:-1}});
+    key(D,th+780,{hip:[10,56],lean:32,bend:12,head:22,ff:[34,0],bf:[-40,0],h:[20,-50],w:-90,o:[16,20],oeb:1},{at:x+away*36,e:'io'});
+    key(D,th+1000,{...POSE.kneel,head:24,o:[14,22],oeb:1},{e:'in',plant:'both'});
+    key(D,th+1240,POSE.face,{at:x+away*50,e:'in'});
+    fx(D,{t:th+1000,kind:'land',x:x+away*36,power:.5});fx(D,{t:th+1240,kind:'land',x:x+away*50,power:1});
     D.down='flat';return th+1700;
   },
   // Choose Location, the head: it snaps back, the body turns away and drops
