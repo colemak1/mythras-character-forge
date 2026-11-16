@@ -124,7 +124,7 @@ function stepParts(dt){
     if(p.k==='dust'){el.setAttribute('cx',p.x);el.setAttribute('cy',p.y);el.setAttribute('r',p.r*(1+u*p.grow));el.setAttribute('opacity',(.55*(1-u)).toFixed(3));p.vx*=.985;}
     else if(p.k==='spark'){const s=Math.hypot(p.vx,p.vy)||1,l=p.len*(1-u*.6);el.setAttribute('x1',p.x);el.setAttribute('y1',p.y);
       el.setAttribute('x2',p.x-p.vx/s*l);el.setAttribute('y2',p.y-p.vy/s*l);el.setAttribute('opacity',(1-u*u).toFixed(3));}
-    else if(p.k==='blood'){if(p.y>G+rnd(2,14)){p.y=Math.min(p.y,G+14);p.vx=0;p.vy=0;p.g=0;p.life=Math.max(p.life,p.age+900);}
+    else if(p.k==='blood'){if(!p.landed&&p.y>G+rnd(2,14)){p.landed=true;p.y=Math.min(p.y,G+14);p.vx=0;p.vy=0;p.g=0;p.life=Math.max(p.life,p.age+900);}  // (one fade deadline, set when it lands: CA-11)
       el.setAttribute('cx',p.x);el.setAttribute('cy',p.y);el.setAttribute('opacity',(1-u*u*u).toFixed(3));}
     else if(p.k==='line'){const l=p.len*(1-u);el.setAttribute('x1',p.x);el.setAttribute('y1',p.y);el.setAttribute('x2',p.x-p.dir*l);el.setAttribute('y2',p.y);el.setAttribute('opacity',(.8*(1-u)).toFixed(3));}
     else if(p.k==='ring'){el.setAttribute('r',4+(p.r1-4)*(1-Math.pow(1-u,3)));el.setAttribute('opacity',(1-u).toFixed(3));el.setAttribute('stroke-width',(7*(1-u)+1).toFixed(1));}
