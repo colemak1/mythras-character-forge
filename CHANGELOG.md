@@ -5,6 +5,11 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: dice sit still long enough to read
+
+- Once the dice settle they now stay for 1.4 seconds before the fight moves on (owner: "everything moves too quickly to process anything"). The result line still appears with the dice at once. Before this, a roll whose result came next moved on the moment the dice stopped. **Fast** keeps the hold to 0.3 s, and pressing **Continue** skips it. Replays hold the same way.
+- Tests: `tests/pits-dice-hold.cjs`.
+
 ## The Pits: cramped haft blows follow the blow, not the blade
 
 - Chat's source review (#362, D-PR3, Core pp.95–100, 106) is applied. A longer weapon striking from inside a shorter one's reach (1d3+1 with the haft or pommel, Size less the Reach gap) now offers the Special Effects of that blunt blow: **Bash** and **Stun Location**, never Impale, Bleed, Entangle or Sunder. It used to offer the blade's effects, and an Impale rolled the 1d3+1 twice and lodged the weapon.

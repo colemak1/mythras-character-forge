@@ -1636,8 +1636,11 @@ function playDiceBeat(roll){
       status.textContent=String(roll.values[0]);
       status.setAttribute('aria-label',values[0]);
     }
-    // The result explains the die; show both together without an extra click.
-    if(rollMatchesResult(active,V.events[V.step+1]))advancePresentation();
+    // The dice sit still for a moment once they settle, so the player can take the roll in (owner, 2026-11-16:
+    // "everything moves too quickly to process anything"). The result explains the die, so it is shown with the
+    // dice straight away; nothing after it plays until the hold is over.
+    V.diceHoldUntil=Date.now()+diceHoldMs();
+    if(rollMatchesResult(active,V.events[V.step+1])){V.step++;playBeat();}
     else schedulePresentation(650);
   };
   // Combat remains playable if the graphics libraries or Canvas are unavailable.
@@ -1703,8 +1706,13 @@ function schedulePresentation(delay){
   render();
   V.timer=setTimeout(advancePresentation,V.quick?130:delay);
 }
+// How long settled dice stay before the fight moves on (Fast keeps it short).
+const DICE_HOLD_MS=1400,DICE_HOLD_QUICK_MS=300;
+function diceHoldMs(){return V.quick?DICE_HOLD_QUICK_MS:DICE_HOLD_MS;}
 function advancePresentation(){
   if(!V.busy)return;
+  const wait=(V.diceHoldUntil||0)-Date.now();
+  if(wait>0){clearTimeout(V.timer);V.timer=setTimeout(advancePresentation,wait);return;}
   V.awaitingContinue=false;
   V.step++;
   playBeat();
@@ -4043,7 +4051,7 @@ function decoratedClick(e){
     return;
   }
   if(act==='togglelog'){V.showLog=!V.showLog;render();document.querySelector('.history-toggle')?.focus?.({preventScroll:true});return;}
-  if(act==='continue'){continuePresentation();return;}
+  if(act==='continue'){V.diceHoldUntil=0;continuePresentation();return;}
   if(act==='skip'){skipPresentation();return;}
   if(act==='replayShowResult'){const was=V.replaying;skipPresentation();if(was&&['between','over'].includes(S.phase)){S.showEndModal=true;render();}return;}
   if(act==='roll'){if(!V.busy&&R)playCaptured(performManualRoll);return;}
