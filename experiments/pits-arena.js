@@ -172,6 +172,7 @@ function paTrayHtml(){
   }else{
     const c=paResultCard();
     if(c){title=c.title;sub=c.sub;who=c.who;bar=c.bar;res=c.res;}
+    else cls=' idle';   // nothing to show: the tray steps back (pits-bottom.css)
   }
   return `<div class="top"><section class="roll${cls}" data-who="${who}" aria-live="polite">
     <div class="r-t">${esc(title)}</div><div class="r-s">${sub}</div>${body}${bar?`<div class="sbar">${bar}</div>`:''}

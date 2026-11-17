@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a calmer battle screen that shows where to look
+
+- The fighter whose turn it is has a solid plate with a coloured bar and coloured Action Points; the other plate steps back. Hit Points read larger, and "No conditions" is quieter.
+- The Confirm and Roll buttons are now the only strongly coloured things on screen. The middle box of the bottom deck leads; the details on the right read as a side note.
+- The move list is tighter, so the last move no longer runs under "When attacked", and the chosen move has a bar beside it.
+- The empty dice tray is no longer drawn over the round banner. Desktop only; phones are unchanged. Rules and dice are unchanged.
+
 ## The Pits: a slower flail whirl that runs into the blow
 
 - A flail is now whirled once over the head, over about half a second (it was two turns in a third of a second, too fast to read). The whirl gathers speed into the blow instead of stopping before it.
