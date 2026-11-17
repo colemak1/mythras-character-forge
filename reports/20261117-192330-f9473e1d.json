@@ -1,0 +1,31 @@
+{
+ "id": "f9473e1d-e6c1-4d17-993d-b5e529669aa7",
+ "created_at": "2026-11-17T19:23:30.408044+00:00",
+ "reporter": null,
+ "note": "[Idea] opposed rolls should be handled in a way in which i can see the rolls going against eachother. like side by side or something not too sure.",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=e9a7ad4cca;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=c022b26da0;cine-fx=02003a23cc;stage=5089c892e5",
+ "record": {
+  "at": "2026-11-17T19:23:29.870Z",
+  "mode": "normal",
+  "phase": "rolling",
+  "round": 2,
+  "record": "pits-idea",
+  "screen": {
+   "step": "Action",
+   "headline": "Kethan Voss: roll the dice"
+  },
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Border Deserter",
+    "shield": "none",
+    "weapon": "sword"
+   }
+  }
+ }
+}

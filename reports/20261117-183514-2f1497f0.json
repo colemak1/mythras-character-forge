@@ -1,0 +1,31 @@
+{
+ "id": "2f1497f0-a52a-4230-b83d-ac92023c2dee",
+ "created_at": "2026-11-17T18:35:14.992362+00:00",
+ "reporter": null,
+ "note": "[Idea] for impale it should auto select the higher die and show that in the dice roll, like you roll the die and the lower number leaves the screen leaving just the higher number",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=e9a7ad4cca;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=c022b26da0;cine-fx=02003a23cc;stage=5089c892e5",
+ "record": {
+  "at": "2026-11-17T18:35:14.695Z",
+  "mode": "normal",
+  "phase": "effects",
+  "round": 2,
+  "record": "pits-idea",
+  "screen": {
+   "step": "Damage",
+   "headline": "A decision is waiting"
+  },
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Border Deserter",
+    "shield": "none",
+    "weapon": "greatsword"
+   }
+  }
+ }
+}

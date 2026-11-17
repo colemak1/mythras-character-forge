@@ -1,0 +1,31 @@
+{
+ "id": "0ee6e6cb-b9f4-48dc-82ce-9bdf88b96cc8",
+ "created_at": "2026-11-17T18:33:59.928834+00:00",
+ "reporter": null,
+ "note": "[Idea] does it need to still make me roll when a parry that will result in 0 damage goes through with no special effect, feels like the choose locatio and damage rolls are a waste of time and would not occur at the table",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=e9a7ad4cca;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=c022b26da0;cine-fx=02003a23cc;stage=5089c892e5",
+ "record": {
+  "at": "2026-11-17T18:33:58.084Z",
+  "mode": "normal",
+  "phase": "rolling",
+  "round": 2,
+  "record": "pits-idea",
+  "screen": {
+   "step": "Damage",
+   "headline": "Watch the exchange play out"
+  },
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Border Deserter",
+    "shield": "none",
+    "weapon": "greatsword"
+   }
+  }
+ }
+}

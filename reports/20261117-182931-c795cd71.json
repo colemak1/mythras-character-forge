@@ -1,0 +1,31 @@
+{
+ "id": "c795cd71-34c9-44bf-9b29-695eea95006c",
+ "created_at": "2026-11-17T18:29:31.560474+00:00",
+ "reporter": null,
+ "note": "[Idea] should show a recommended option for special effects and hide ones that arent applicable like stand fast when im already standing, we dont need the fight history in the middle either we can use that space to make the special effect options bigger.",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=e9a7ad4cca;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=c022b26da0;cine-fx=02003a23cc;stage=5089c892e5",
+ "record": {
+  "at": "2026-11-17T18:29:31.255Z",
+  "mode": "normal",
+  "phase": "effects",
+  "round": 1,
+  "record": "pits-idea",
+  "screen": {
+   "step": "Effects",
+   "headline": "Kethan Voss earned 1 Special Effect to choose"
+  },
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Border Deserter",
+    "shield": "none",
+    "weapon": "greatsword"
+   }
+  }
+ }
+}

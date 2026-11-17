@@ -1,0 +1,31 @@
+{
+ "id": "431b1509-be29-43ef-ac98-2d8001efbce0",
+ "created_at": "2026-11-17T19:27:15.199398+00:00",
+ "reporter": null,
+ "note": "[Idea] when you hover over conditons inthe corners or maybe when you click them it should show what they are doing to you",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=e9a7ad4cca;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=c022b26da0;cine-fx=02003a23cc;stage=5089c892e5",
+ "record": {
+  "at": "2026-11-17T19:27:15.021Z",
+  "mode": "normal",
+  "phase": "action",
+  "round": 1,
+  "record": "pits-idea",
+  "screen": {
+   "step": "Action",
+   "headline": "Kethan Voss's turn: 2 AP to spend"
+  },
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "quarterstaff"
+   },
+   "b": {
+    "name": "Border Deserter",
+    "shield": "none",
+    "weapon": "sword"
+   }
+  }
+ }
+}

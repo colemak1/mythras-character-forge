@@ -1,0 +1,18 @@
+{
+ "id": "37e78391-e9e9-4488-b2ed-f9a804703d8f",
+ "created_at": "2026-11-17T18:45:44.742733+00:00",
+ "reporter": null,
+ "note": "[Lost #1 note] its not obvious what you need to roll on endurance rolls to stay up and honestly not super obvious what it does in general",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=e9a7ad4cca;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=c022b26da0;cine-fx=02003a23cc;stage=5089c892e5",
+ "record": {
+  "at": "2026-11-17T18:37:44.281Z",
+  "mark": 1,
+  "round": 1,
+  "record": "pits-lost-note",
+  "fighters": [
+   "Kethan Voss",
+   "Border Deserter"
+  ]
+ }
+}

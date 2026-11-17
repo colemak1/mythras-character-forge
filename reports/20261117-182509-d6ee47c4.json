@@ -1,0 +1,195 @@
+{
+ "id": "d6ee47c4-9b2e-4ac9-8d93-fe939aa3d9ad",
+ "created_at": "2026-11-17T18:25:09.067603+00:00",
+ "reporter": null,
+ "note": "[Lost #1] Pressed \"What just happened?\" in round 1, at Action: Watch the exchange play out.",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=e9a7ad4cca;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=c022b26da0;cine-fx=02003a23cc;stage=5089c892e5",
+ "record": {
+  "at": "2026-11-17T18:25:05.921Z",
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+  "log": [
+   {
+    "b": "Kethan Voss rolls 3 + 13 − 2 armour penalty = 14.",
+    "t": "Kethan Voss · Initiative",
+    "id": 1
+   },
+   {
+    "b": "Border Deserter rolls 5 + 12 − 0 armour penalty = 17.",
+    "t": "Border Deserter · Initiative",
+    "id": 2
+   },
+   {
+    "b": "Kethan Voss: 3+13−2 = 14. Border Deserter: 5+12−0 = 17. Border Deserter acts first.",
+    "t": "Encounter 1 · Initiative",
+    "id": 3
+   },
+   {
+    "b": "75 against Combat Style 49% — FAILURE.",
+    "t": "Border Deserter attacks",
+    "id": 4
+   }
+  ],
+  "auto": false,
+  "cine": {
+   "seed": 796459673,
+   "choices": {}
+  },
+  "lost": [
+   {
+    "n": 1,
+    "at": "2026-11-17T18:25:05.919Z",
+    "beat": 5,
+    "roll": null,
+    "tape": 8,
+    "turn": "b",
+    "beats": 8,
+    "cycle": 1,
+    "phase": "resolving",
+    "round": 1,
+    "recent": [],
+    "screen": {
+     "deck": "",
+     "step": "Action",
+     "tray": "Dice trayRolls appear here",
+     "story": "Nothing yet. Each exchange is told here, step by step.",
+     "strip": "ROUND 1 Resolving Engaged Initiative: Kethan Voss 14 · Border Deserter 17",
+     "details": "How an exchange works The attacker rolls Combat Style. The defender may parry or evade (1 AP). The better grade earns Special Effects. If the blow lands: hit location, then damage minus parry and armour.",
+     "headline": "Watch the exchange play out"
+    },
+    "pending": "reaction",
+    "playing": true,
+    "logShown": 3,
+    "logTotal": 4,
+    "replaying": false,
+    "stageClock": 0,
+    "stageEvents": 1,
+    "lastLogShown": 3
+   }
+  ],
+  "mode": "normal",
+  "page": "",
+  "quick": false,
+  "stage": [
+   [
+    0,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ]
+  ],
+  "bottom": "E",
+  "config": {
+   "con": 13,
+   "dex": 13,
+   "int": 13,
+   "siz": 13,
+   "str": 13,
+   "mode": "normal",
+   "armor": 2,
+   "evade": 46,
+   "style": 67,
+   "pvpCon": 12,
+   "pvpDex": 12,
+   "pvpInt": 12,
+   "pvpSiz": 12,
+   "pvpStr": 12,
+   "shield": "none",
+   "weapon": "sword",
+   "pvpName": "Second Player",
+   "charname": "Kethan Voss",
+   "firstAid": 40,
+   "pvpArmor": 1,
+   "pvpEvade": 50,
+   "pvpSkill": 65,
+   "username": "Guest",
+   "pvpShield": "none",
+   "pvpWeapon": "dagger",
+   "willpower": 55,
+   "leftHanded": false,
+   "mixedArmour": false,
+   "pvpMixedArmour": false,
+   "armourByLocation": {
+    "Head": 2,
+    "Chest": 2,
+    "Abdomen": 2,
+    "Left Arm": 2,
+    "Left Leg": 2,
+    "Right Arm": 2,
+    "Right Leg": 2
+   },
+   "pvpArmourByLocation": {}
+  },
+  "record": "pits-spring-1",
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Border Deserter",
+    "shield": "none",
+    "weapon": "greatsword"
+   }
+  },
+  "guidance": true,
+  "lostMark": 1,
+  "presented": [
+   {
+    "roll": [
+     "a",
+     "Initiative · d10",
+     [
+      3
+     ]
+    ]
+   },
+   {
+    "b": "Kethan Voss rolls 3 + 13 − 2 armour penalty = 14.",
+    "t": "Kethan Voss · Initiative",
+    "id": 1
+   },
+   {
+    "roll": [
+     "b",
+     "Initiative · d10",
+     [
+      5
+     ]
+    ]
+   },
+   {
+    "b": "Border Deserter rolls 5 + 12 − 0 armour penalty = 17.",
+    "t": "Border Deserter · Initiative",
+    "id": 2
+   },
+   {
+    "b": "Kethan Voss: 3+13−2 = 14. Border Deserter: 5+12−0 = 17. Border Deserter acts first.",
+    "t": "Encounter 1 · Initiative",
+    "id": 3
+   },
+   {
+    "cp": 1
+   },
+   {
+    "roll": [
+     "b",
+     "Attack · Combat Style 49%",
+     [
+      75
+     ]
+    ]
+   },
+   {
+    "b": "75 against Combat Style 49% — FAILURE.",
+    "t": "Border Deserter attacks",
+    "id": 4
+   }
+  ],
+  "stageName": "cine"
+ }
+}
