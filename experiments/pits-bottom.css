@@ -134,3 +134,35 @@ body.pa-on #root .bE .pits-band-wrap{margin:16px 0 0}
 /* the end of a bout fills the middle box */
 .bE .bmid.bend{padding:0}
 body.pa-on #root .bE .bmid.bend .pa-end{flex:1 1 auto;padding:10px 14px 12px;border:0;margin:0}
+
+/* Where the eye goes (owner, 2026-11-17): one loud thing at a time. The fighter whose turn it is, the one button that
+   moves the fight on, and the headline of the middle box are loud; the rest steps back. Desktop only. */
+@media (min-width:901px){
+  /* top corners: the acting fighter's plate is solid with a bar across its top, the other steps back */
+  body.pa-on .plate{background:color-mix(in srgb,var(--pa-surface) 80%,transparent);transition:background .25s}
+  body.pa-on .plate:not(.acting) .p-head,body.pa-on .plate:not(.acting) .p-body{opacity:.78}
+  body.pa-on .plate.acting{background:color-mix(in srgb,var(--pa-surface) 97%,transparent);
+    box-shadow:0 4px 0 var(--pa-gold) inset,0 0 0 1px var(--pa-gold) inset}
+  body.pa-on .plate .p-sk{opacity:.8}
+  body.pa-on .plate.acting .pip.on{background:var(--pa-gold);border-color:var(--pa-gold)}
+  body.pa-on .plate .chip.none{border-color:transparent;padding-left:0;opacity:.6}
+  body.pa-on .plate .tot b{font-size:17px;font-weight:700}
+  /* the empty dice tray is not drawn: no white box in the middle of the fight until there is a roll */
+  body.pa-on .roll.idle{visibility:hidden}
+
+  /* bottom: the middle box leads, the button in it is the only strong colour */
+  .bE .bmid{border-top:3px solid var(--st-text,var(--bone))}
+  .bE .bmid header h4{font-size:21px}
+  .bdeck .bgo{background:var(--pa-gold);border-color:var(--pa-gold);min-height:44px;padding:0 20px}
+  .bE .bdo p{font-size:13px}
+  body.pa-on .roll .rbtn{background:var(--pa-gold);border-color:var(--pa-gold);color:var(--st-on-accent,var(--paper))}
+  /* left: tighter rows (the last move no longer runs under "When attacked"), a bar marks the chosen one */
+  .bE .bgrp{gap:0}
+  .bE .brow{min-height:21px}
+  .bE .brow.sel{border-color:transparent;box-shadow:3px 0 0 var(--pa-gold) inset;font-weight:600}
+  .bE .brow.off{opacity:.36}
+  .bE .brow kbd{border-color:transparent;background:transparent;padding:3px 0}
+  /* right: details read as a note beside the middle box, not a second box */
+  .bE .binfo{background:transparent;border-color:transparent;border-left-color:var(--pa-line2);padding-right:4px}
+  .bE .binfo-body h4{font-size:16px}
+}
