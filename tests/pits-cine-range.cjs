@@ -95,6 +95,51 @@ test('a change of range is made by the one who makes it; the other keeps its fee
   }
 });
 
+// (owner, 2026-11-17: "the range animations look off". The dart in was a squat slid along the floor with the other's
+// point lifting before anything touched it; the way out covered the distance in two frames and then drifted.)
+test('closing: the point waits for the hand, and the dart is a long low lunge',()=>{
+  for(const [ws,wl] of PAIRS){
+    const M=pair(ws,wl,'long'),what=ws+' darts in under '+wl,t0=50;
+    C.setRange(M,'short','b');const g=C.gap(WK[ws],WK[wl],'short');
+    C.recover(M.a,t0,g);C.recover(M.b,t0,g);
+    // the longer weapon holds its line until the empty hand has gone up to it, then it is knocked up
+    const tip0=C.joints(M.b,t0).tip;
+    for(let t=t0;t<=t0+100;t+=10)assert(dist(C.joints(M.b,t).tip,tip0)<3,what+': the point moved before it was touched, at '+(t-t0));
+    assert(C.joints(M.b,t0+250).tip[1]>tip0[1]+30,what+': the point was not knocked up');
+    // the empty hand is at the point when it goes up (within a hand's breadth, or at the end of the arm's reach)
+    const h=C.joints(M.a,t0+110);
+    assert(dist(h.oHn,tip0)<24||dist(h.oHn,h.oS)>C.ARM*.85,what+': the empty hand is '+dist(h.oHn,tip0).toFixed(0)+' from the point');
+    // in the dart the back leg is stretched out behind and the hips are low: a lunge, not a squat
+    const j=C.joints(M.a,t0+300);
+    assert(dist(j.P,j.bF)>C.LEG*.9,what+': the back leg is folded in the dart ('+dist(j.P,j.bF).toFixed(0)+')');
+    assert(j.P[1]<50,what+': the dart is not low');
+    assert(j.F[0]-j.bF[0]>100,what+': the feet are only '+(j.F[0]-j.bF[0]).toFixed(0)+' apart in the dart');
+  }
+});
+
+test('opening: a shove, then a hop that takes its time and leaves the floor',()=>{
+  for(const [ws,wl] of PAIRS){
+    const M=pair(ws,wl,'short'),what=wl+' opens from '+ws,t0=50;
+    C.setRange(M,'long','b');const g=C.gap(WK[ws],WK[wl],'keep');
+    const x0=C.joints(M.b,t0).P[0];
+    C.recover(M.a,t0,g);const end=C.recover(M.b,t0,g),x1=C.joints(M.b,end+50).P[0];
+    // the shove comes first: the hands go out toward the other before the feet leave
+    const s=C.joints(M.b,t0+120);
+    assert(s.Hn[0]<C.joints(M.b,t0).Hn[0]-8,what+': no shove');
+    assert(Math.abs(s.F[0]-C.joints(M.b,t0).F[0])<2,what+': the feet left before the shove');
+    // the other is rocked back by it (its head goes back), without moving its feet
+    assert(C.joints(M.a,t0+230).Hd[0]<C.joints(M.a,t0+100).Hd[0]-15,what+': the shove did not move the other');
+    // the hop is not over in two frames: 40 ms after the shove less than half the way is made, and it is still
+    // going 120 ms after it
+    const part=t=>(C.joints(M.b,t).P[0]-x0)/(x1-x0);
+    assert(part(t0+160)<.5,what+': '+(part(t0+160)*100).toFixed(0)+'% of the way 40 ms after the shove');
+    assert(part(t0+240)<.9,what+': the hop is over 120 ms after the shove');
+    // both feet off the floor on the way
+    const mid=C.joints(M.b,t0+245);
+    assert(mid.F[1]>8&&mid.bF[1]>8,what+': the feet stay on the floor ('+mid.F[1].toFixed(0)+', '+mid.bF[1].toFixed(0)+')');
+  }
+});
+
 test('blows start from the stances: bodies possible, nothing jumps, the two never stand in each other',()=>{
   let n=0;
   for(const [ws,wl] of PAIRS)for(const key of ['long','short'])for(const aid of ['a','b'])

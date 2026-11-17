@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-17 by Claude (animation pass)_
+_Last updated: 2026-11-17 by Claude (range moves)_
 
 ## Where things stand
 
@@ -16,6 +16,7 @@ _Last updated: 2026-11-17 by Claude (animation pass)_
 
 ## Next
 
+- **Claude, done 2026-11-17 (owner: "fix up the range animations, they look off"):** the two changes of range between weapons of different Reach are redrawn (`recover`, `restance` in `experiments/pits-cine.js`; tests in `tests/pits-cine-range.cjs`). Closing is a gather and one long low lunge under the point, which goes up when the empty hand reaches it; opening is a shove, the other rocked back, a real hop and the point brought out. Sheets `docs/pits-visual-checks/cine-range-close.jpg`, `cine-range-open.jpg`. Not changed: the four standing stances, the floor bands and tags, and the shared step between weapons of equal Reach. **Owner:** play dagger against spear, close and get pushed out; if it is still off, say whether it is a stance (standing still) or a move.
 - **Claude, done 2026-11-17 (owner: go over the new animations, briefly):** frame sheets of the flexible weapons, ground fighting, failed parries and withdrawals looked over. Fixed: a whip, flail or net drew a sword's white smear and afterimage blade; a whip's lash kinked after a blow (`pits-cine-fx.js`, `pits-flex.js`, test in `tests/pits-flex.cjs`). Not changed, for the **owner** to judge in play: after a hit the defender's own sword leaves a large smear as it is thrown back.
 - **Claude, done 2026-11-17 (owner: light rework of the bottom and corner UI):** styles only, at the end of `experiments/pits-bottom.css`, plus an `idle` class on the empty dice tray (`pits-arena.js`). Checked at 1280x720, light and dark. Already failing before this and not fixed: `tests/visual/pits-layout.cjs` "every action inside the viewport" (1280x720, 1366x768) and `tests/visual/pits-bottom.cjs` FR-05 (`f.hold is not a function`). **Owner:** say what still pulls the eye wrongly.
 - **Claude, done 2026-11-17 (owner: quick audit fixes):** the flail whirl is one turn over 480 ms and runs into the blow; the rope's damping no longer depends on frame rate; a restarted rope forgets its old direction; reduced motion draws it straight (`experiments/pits-flex.js`, tests in `tests/pits-flex.cjs`). Not looked at in a browser: **owner**, play one flail bout and say if the whirl reads well.

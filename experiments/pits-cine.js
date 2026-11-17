@@ -1638,6 +1638,13 @@ function press(A,D,t){
   fx(D,{t:t+200,kind:'skid',id:D.id,t1:t+520});
   return t+560;
 }
+// (when things happen in a change of range made by one fighter, ms: the dart in under the point, and the shove and hop back)
+const DART={reach:110,in:300,end:500},SHOVE={hit:120,land:370,end:560};
+// where the empty arm's shoulder is (world) for a pose written at the fighter's base
+function offShoulder(m,P){
+  const f=faceOf(m),a1=rad(P.lean),a2=rad(P.lean+(P.bend||0));
+  return [m.base+f*(P.hip[0]+(Math.sin(a1)+Math.sin(a2))*DIM.spine-(P.turn||0)*.7),P.hip[1]+(Math.cos(a1)+Math.cos(a2))*DIM.spine];
+}
 // the engine changed the range: the pair close, or spring apart
 function recover(m,t,g){
   const o=other(m);m.pair.gap=g;if(!o||m.down||m.over)return t;
@@ -1649,25 +1656,33 @@ function recover(m,t,g){
   const share=m.stance==='inside'||m.stance==='keep'?1:m.stance==='kept'||m.stance==='cramped'?0:.5;
   // (with stances, measured between where the two stand, as the gap is, not between the hips: the stances carry
   // the hips back or forward)
-  let d=(share===.5?sep-g:Math.abs(o.base-m.base)-g)*share;if(Math.abs(d)<10)return share===0?restance(m,t):t;
+  let d=(share===.5?sep-g:Math.abs(o.base-m.base)-g)*share;if(Math.abs(d)<10)return share===0?restance(m,t,!o.down&&!o.over):t;
   cut(m,t);const r=rng(m.pair);
   if(share!==.5)d=(Math.abs(o.base-m.base)-g)*share;      // (cut puts the base where the feet are now)
   if(m.stance==='inside'&&d>0){
-    // in under the point: a low dart, the empty hand batting the point up and away, then up close inside it
-    key(m,t+80,{hip:[0,44],lean:34,bend:10,head:-20,h:[14,-26],w:20,o:[40,22],ff:[36,0],bf:[-48,0]},{e:'out',plant:'both'});
-    key(m,t+270,{hip:[10,44],lean:30,bend:8,head:-18,h:[18,-22],w:14,o:[38,30],ff:[44,0],bf:[-40,0]},{at:m.base+f*d*.85,e:'out',slide:true});
-    fx(m,{t:t+80,kind:'dash',id:m.id,t1:t+270,x0:m.base-f*d*.85,x1:m.base,face:f});fx(m,{t:t+180,kind:'skid',id:m.id,t1:t+330});
-    key(m,t+440,fit(m,'guard'),{at:m.base+f*d*.15,e:'io'});
-    return t+440;
+    // in under the point (owner, 2026-11-17: "the range animations look off"): a gather with the empty hand going up
+    // to the point, then one long low lunge under it, the back leg stretched out behind (it was a squat slid along
+    // the floor), the hand carrying the point up overhead; then up close inside it. The other's weapon goes up when
+    // the hand gets to it (restance), not before.
+    const G={hip:[-16,46],lean:24,bend:8,head:-14,h:[2,-20],w:28,turn:-6},jo=joints(o,t),sh=offShoulder(m,G);
+    const L=Math.hypot(jo.tip[0]-jo.Hn[0],jo.tip[1]-jo.Hn[1])||1,at=[jo.tip[0]+(jo.Hn[0]-jo.tip[0])*14/L,jo.tip[1]+(jo.Hn[1]-jo.tip[1])*14/L];
+    let rx=f*(at[0]-sh[0]),ry=at[1]-sh[1];const rl=Math.hypot(rx,ry)||1,k=Math.min(1,ARM*.94/rl);rx*=k;ry*=k;
+    key(m,t+DART.reach,{...G,o:[rx,ry]},{e:'io',plant:'both'});
+    key(m,t+DART.in,{hip:[10,44],lean:38,bend:6,head:-26,h:[8,-18],w:8,o:[22,46],ff:[52,0],bf:[-64,0],turn:4},{at:m.base+f*d*.9,e:'out',slide:true});
+    fx(m,{t:t+DART.reach,kind:'dash',id:m.id,t1:t+DART.in,x0:m.base-f*d*.9,x1:m.base,face:f});fx(m,{t:t+DART.in-90,kind:'skid',id:m.id,t1:t+DART.in+40});
+    key(m,t+DART.end,fit(m,'guard'),{at:m.base+f*d*.1,e:'io'});
+    return t+DART.end;
   }
   if(m.stance==='keep'&&d<0){
-    // the shaft punched out to make room, then a hop back to the weapon's own range, the point coming back to the face
-    // (the shaft stays up while the other is close; it comes down to the face only once the distance is made)
-    key(m,t+90,{hip:[6,60],lean:18,bend:4,head:-10,h:[38,-4],w:50,ff:[40,0],bf:[-48,0]},{e:'out',plant:'both'});
-    key(m,t+290,{hip:[-22,58],lean:-6,bend:-4,head:2,h:[30,-10],w:34,ff:[34,0],bf:[-50,0]},{at:m.base+f*d,e:'out5',slide:true,arc:10});
-    fx(m,{t:t+90,kind:'dash',id:m.id,t1:t+290,x0:m.base-f*d,x1:m.base,face:-f});fx(m,{t:t+200,kind:'skid',id:m.id,t1:t+360});
-    key(m,t+480,fit(m,'guard'),{e:'io'});
-    return t+480;
+    // the shaft punched out across the other to make room, then a real hop back (both feet off the floor, landing
+    // low) to the weapon's own range, and the point snapped out level at the face. It was a slide that covered the
+    // distance in two frames and then drifted. The shaft stays up while the other is close.
+    key(m,t+SHOVE.hit,{hip:[2,62],lean:8,bend:2,head:-6,h:[44,-8],w:56,ff:[40,0],bf:[-48,0]},{e:'out',plant:'both'});
+    key(m,t+SHOVE.land,{hip:[-20,56],lean:6,bend:2,head:-4,h:[20,-18],w:42,ff:[48,0],bf:[-50,0]},{at:m.base+f*d,e:'skid',arc:26,lift:{ff:22,bf:26}});
+    fx(m,{t:t+SHOVE.hit,kind:'dash',id:m.id,t1:t+SHOVE.land,x0:m.base-f*d,x1:m.base,face:-f});dustAt(m,t+SHOVE.land,m.base,5,-f);
+    key(m,t+SHOVE.land+60,{hip:[-20,50],lean:8,h:[18,-20],w:30},{e:'out',plant:'both'});
+    key(m,t+SHOVE.end,fit(m,'guard'),{e:'out',plant:'both'});
+    return t+SHOVE.end;
   }
   if(d<0){
     key(m,t+70,POSE.coil,{e:'out',plant:'both'});
@@ -1681,11 +1696,25 @@ function recover(m,t,g){
   key(m,t+480,fit(m,readyPose(m,r)),{e:'io',plant:'both'});
   return t+480;
 }
-// into the stance the range now asks for, where the fighter stands
-function restance(m,t){
+// into the stance the range now asks for, where the fighter stands. `by`: the other fighter is making the change, and
+// this one is moved by it at the moment it gets here: the longer weapon's point is batted up as the dart reaches it,
+// the shorter fighter is rocked back by the shove.
+function restance(m,t,by){
   if(m.down||m.over)return t;
   if(m.keys[m.keys.length-1].t>t+40)t=m.keys[m.keys.length-1].t;
-  cut(m,t);key(m,t+360,fit(m,'guard'),{e:'io',plant:'both'});return t+360;
+  cut(m,t);
+  if(by&&m.stance==='cramped'){
+    const P=fit(m,'guard');
+    key(m,t+DART.reach,{},{e:'lin',plant:'both'});
+    key(m,t+DART.reach+140,{...P,hip:[P.hip[0]-4,P.hip[1]+2],lean:P.lean-8,head:(P.head||0)+6,w:P.w+16},{e:'out',plant:'both'});
+    key(m,t+DART.end,P,{e:'io',plant:'both'});return t+DART.end;
+  }
+  if(by&&m.stance==='kept'){
+    key(m,t+SHOVE.hit-30,{},{e:'lin',plant:'both'});
+    key(m,t+SHOVE.hit+110,{hip:[-24,52],lean:-12,bend:-4,head:14,h:[-4,-28],w:64,o:[20,14],turn:-4},{e:'out',plant:'both'});
+    key(m,t+SHOVE.end-60,fit(m,'guard'),{e:'io',plant:'both'});return t+SHOVE.end-60;
+  }
+  key(m,t+360,fit(m,'guard'),{e:'io',plant:'both'});return t+360;
 }
 const react=()=>0;
 
