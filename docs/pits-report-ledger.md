@@ -7,6 +7,13 @@ write here; take a report by putting your name in **Who** before diagnosing it. 
 
 | Report file | Note (short) | Who | Status | Finding | Fix |
 |---|---|---|---|---|---|
+| `20261117-192634-b4b4f5e1.json` | overextend has no animation or visual clue | Claude | fixed | FR-19, Sev 2. The Overextend line was in the story only; the stage drew a plain parried blow. | the overextended fighter stumbles on past its blow; "Overextended" shown over it. This PR; tests `tests/pits-report-fixes-3.cjs`. |
+| `20261117-184734-3e4770a4.json` | holding an impaled weapon, figure lets go | Claude | fixed | FR-20, Sev 2. Rule right (still held, Core p.97). The spear's long-reach stance put the holder's weight back, so the hand came off the grip while the other attacked. Also: two Delay turns counted against a 3-turn Serious Wound stun (R4). | no reach stance while a held weapon joins the two. This PR; tests `tests/pits-report-fixes-3.cjs`. R4 to Chat. |
+| `20261117-184544-37e78391.json` | Lost #1 note: what to roll on Endurance, what it does | Claude | fixed | FR-18, Sev 2. The log said "54/55% (FAILURE)": the roll was against 28% (impaled weapon, Formidable). Nothing said Endurance must beat the attack roll, or what was at stake. | the true target and its cause in the log; the story and the roll prompt say what to beat, the chance and the stakes. This PR; tests `tests/pits-report-fixes-3.cjs`. R3 to Chat. |
+| `20261117-183744-05223363.json` | Lost #1 | Claude | fixed | Paired with 184544. | See 184544. |
+| `20261117-183655-907a4b43.json` | second fight shows last fight's final blow | Claude | fixed | FR-17, Sev 2. The tray's result card read back past "New Opponent". | the card stops at a new opponent and shows the initiative result. This PR; tests `tests/pits-report-fixes-3.cjs`. |
+| `20261117-182548-8675aa47.json` | Lost #1 note: who goes first? show totals | Claude | fixed | FR-16, Sev 2. The totals were only in the small strip; the story said "Nothing yet". | tray and story say who acts first with both totals, held 2.2 s. This PR; tests `tests/pits-report-fixes-3.cjs`. |
+| `20261117-182509-d6ee47c4.json` | Lost #1 | Claude | fixed | Paired with 182548. | See 182548. |
 | `20261117-032326-ea7eb029.json` | Lost #1 note: why did I just win | Claude | fixed | FR-15, Sev 2. Head Serious Wound, Endurance failed: the loser goes down only after its concurrent attack (tied Initiative), so Victory follows a parried blow and the knockout line is cut off. | the result names the cause ("falls unconscious: Serious Wound to Head") after the concurrent action. This PR; tests `tests/pits-report-fixes-2.cjs`. |
 | `20261117-032318-8e47c64f.json` | Lost #1: Kethan Voss wins | Claude | fixed | FR-15 (as above). Also: right arm disabled, then a concurrent attack at 32% and later left-hand attacks at 48%. |  off-hand and concurrent-attack percentages to Chat (R1). This PR; tests `tests/pits-report-fixes-2.cjs`. |
 | `20261115-001152-f5132896.json` | replay keeps pausing | Claude | likely fixed | Spring stage. The cinematic replay (2026-11-15) runs as a film without stops. | Owner recheck only. |
@@ -50,3 +57,9 @@ Suggestions sent with the Pits **Idea** button (`[Idea]` notes). One row each: d
 
 | Date | From | Idea | Decision |
 |---|---|---|---|
+| 2026-11-17 | - | Hover or tap a condition chip to see what it does to you (`192715`) | Built (Claude, this PR): Details panel and tooltip. |
+| 2026-11-17 | - | Opposed rolls shown side by side, so you see the two rolls go against each other (`192330`) | Owner to choose. Claude: worth doing for Trip, Disarm, Regain Footing and Endurance; one tray card with two dice. |
+| 2026-11-17 | - | Impale: the lower of the two damage dice leaves, the higher stays (`183514`) | Owner to choose. Claude: small. The engine already lets the attacker pick; would auto-pick the higher only when nothing else differs. |
+| 2026-11-17 | - | Skip the location and damage rolls when a parry will stop everything and no Special Effect is in play (`183359`) | Owner to choose; rules question for Chat first (the location still matters for some effects and for Damage Weapon). |
+| 2026-11-17 | - | Rework the middle of the bottom deck: less history, the recommendation bigger at the top, recommended option bordered in red (`182754`, `183126`) | Owner to choose; a v0 mockup first suits it (AGENTS.md, design flow). |
+| 2026-11-17 | - | Special Effects: show a recommended one, hide ones that do nothing now (Stand Fast when no knockback can happen) (`182931`) | Owner to choose. Hiding needs a rule per effect for "does nothing now" (Chat); a recommendation can follow the AI's own pick. |

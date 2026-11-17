@@ -214,7 +214,8 @@ test('the stage reads only: no rule or dice code in it',()=>{
 });
 test('cues for Press Advantage, a dropped weapon, a disabled limb and how a fight ended (only what the engine says)',()=>{
  assert.deepEqual(cue('Press Advantage','Marek cannot attack on the next Turn, but may act otherwise.',{actor:'a'}),{type:'press',actor:'a',target:'b',name:'Press Advantage'});
- assert.equal(cue('Overextend Opponent','Marek cannot attack on the next Turn.',{actor:'a'}),null,'Overextend keeps the generic look');
+ // (Overextend has its own movement since report 20261117-192634: the one named first in the line is overextended)
+ assert.deepEqual(cue('Overextend Opponent','Marek cannot attack on the next Turn.',{actor:'a'}),{type:'overextend',actor:'a',target:'b'});
  assert.deepEqual(cue('Weapon Dropped',"Kethan's Right Arm is useless and the weapon falls from it.",{actor:'a'}),{type:'drop',actor:'a'});
  const lm=cue('Limb Disabled',"Kethan's Left Leg becomes unusable until healed to positive HP. They fall prone.",{});
  assert.equal(lm.type,'limb');assert.equal(lm.leg,true);assert.equal(lm.loc,'lleg');assert.equal(lm.who,'a');

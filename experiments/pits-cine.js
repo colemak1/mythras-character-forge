@@ -1638,6 +1638,18 @@ function press(A,D,t){
   fx(D,{t:t+200,kind:'skid',id:D.id,t1:t+520});
   return t+560;
 }
+// Overextend Opponent (Core p.97), drawn on the one overextended (report 20261117-192634: "no sort of animation or visual
+// clue"): the failed blow carries on past the guard, the weight goes over the front foot, a stagger to catch itself with
+// the empty arm thrown out, then back to its place, still low. The rule's part, no attack next turn, is on the plate.
+function overextend(m,t){
+  if(m.over||m.down)return t;
+  cut(m,t);const f=faceOf(m),x=m.base;
+  key(m,t+160,{hip:[22,46],lean:40,bend:12,head:-24,ff:[62,0],bf:[-26,0],h:[56,-56],w:-70,o:[-34,-6],turn:12},{at:x+f*22,e:'out',slide:true});
+  key(m,t+340,{hip:[26,42],lean:32,bend:16,head:-14,ff:[58,0],bf:[-14,8],h:[44,-60],w:-90,o:[-46,14],turn:10},{at:x+f*36,e:'io',plant:'ff'});
+  dustAt(m,t+340,x+f*48,5,f);
+  key(m,t+760,fit(m,'hurt'),{at:x,e:'io'});
+  return t+780;
+}
 // (when things happen in a change of range made by one fighter, ms: the dart in under the point, and the shove and hop back)
 const DART={reach:110,in:300,end:500},SHOVE={hit:120,land:370,end:560};
 // where the empty arm's shoulder is (world) for a pose written at the fighter's base
@@ -1735,7 +1747,7 @@ function speed(m,t){
 // are the feet skidding at t (a key with `slide` is being travelled)
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
-const api={WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,trip,disarm,react,pose,
+const api={WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,overextend,trip,disarm,react,pose,
   joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
