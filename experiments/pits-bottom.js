@@ -154,21 +154,63 @@ function pbTripLine(l,g){
   return {cls:stands?'fx':'hurt',html:`<b>${head}</b> (Trip Opponent, ${from}). ${who} rolled <b>${m[3]}</b> on ${m[2]} ${m[4]}% · ${esc(word)}`
     +(vs?`, against the ${offensive?'attack':'defence'} roll of <b>${vs.r.roll}</b> (${esc(PB_GRADE_WORD[vs.r.grade]||'')})`:'')+'.'};
 }
+// A Disarm in plain words (report 20261115-000640: "wasn't sure if I resisted the disarm"): whose Special Effect it was,
+// the resisting roll, and whether the weapon stays.
+function pbDisarmLine(l){
+  const m=/^(.+?) rolls (\d+) against (\d+)% \((\w+)\)\. (Keeps|Loses) weapon/.exec(String(l.body||''));if(!m)return null;
+  const owner=S.fighters[l.meta?.actor],target=owner?S.fighters[pbOther(owner.id)]:null;
+  const you=target&&pbHuman(target.id)&&!pbHuman(owner.id),who=you?'You':esc(m[1]),keeps=m[5]==='Keeps';
+  const word=PB_GRADE_WORD[m[4].toLowerCase()]||m[4];
+  const head=keeps?(you?'You resist the disarm and keep your weapon':`${who} resists the disarm and keeps the weapon`)
+    :(you?'You are disarmed':`${who} is disarmed`);
+  return {cls:keeps?'fx':'hurt',html:`<b>${head}</b> (Disarm Opponent, ${owner?esc(owner.name)+"'s":'a'} Special Effect). ${who} rolled <b>${m[2]}</b> against ${m[3]}% · ${esc(word)}.`};
+}
+// Special Effects whose engine line is not enough on its own for a new player (report 20261114-235608: "parry bypass was
+// not so clear... make the special effect choices made by the opponent more clear"): one plain consequence each.
+const PB_FX_PLAIN={
+  'Circumvent Parry':'The parry still succeeded, but this blow goes around it: the parry stops none of the damage.',
+  'Bypass Armour':'Armour on the location hit does not reduce this blow.',
+  'Maximise Damage':'The weapon\'s damage die counts as its highest roll.',
+  'Choose Location':'No hit location roll: the attacker picks where the blow lands.',
+  'Press Advantage':'The one pressed back cannot attack on their next turn, but can still parry, evade and act otherwise.',
+  'Overextend Opponent':'The overextended fighter cannot attack on their next turn.',
+  'Force Failure':'The defence counts as failed.',
+  'Enhance Parry':'This parry stops all of the weapon\'s damage, whatever its size.',
+  'Arise':'Back on their feet at once, at no AP cost.'
+};
+const pbFxNames=()=>new Set(typeof SPECIAL_EFFECT_NAMES==='object'?Object.values(SPECIAL_EFFECT_NAMES):Object.keys(PB_FX_PLAIN));
 // Plain lines for one exchange, oldest first.
 function pbStory(g){
   if(!g)return [];
-  const out=[],last=[...g.entries].reverse().find(l=>paBlowLine(l))||null;
+  const out=[],last=[...g.entries].reverse().find(l=>paBlowLine(l))||null,fxNames=pbFxNames(),told=new Set();
+  let arise=null;
   for(const l of g.entries){
     const r=pbRollOf(l);
-    if(r){out.push({cls:'roll',g:r.grade,html:`<b>${esc(l.title)}</b>: rolled <b>${r.roll}</b>, needed ${r.pct} or less · <span class="g">${PB_GRADE_WORD[r.grade]}</span>`});continue;}
+    if(r){out.push({cls:'roll',g:r.grade,html:`<b>${esc(l.title)}</b>: rolled <b>${r.roll}</b>, needed ${r.pct} or less · <span class="g">${PB_GRADE_WORD[r.grade]}</span>`});
+      // Evade always ends prone, hit or miss (Core p.103; reports 20261114-235839 "why prone?" and 235443)
+      if(/ evades$/.test(l.title)){const n=l.title.replace(/ evades$/,'');
+        out.push({cls:'fx',html:`<b>${esc(n)} dives clear and ends prone</b>: an Evade always leaves the evader on the ground, whether it succeeds or not (Core p.103).`});}
+      continue;}
+    // no parry or evade: say whether it was a choice or there was no AP left (report 20261114-235648)
+    if(/ does not defend$/.test(l.title)){const noAp=/no Action Points left/.test(l.body||'');
+      out.push({cls:'fx',html:`<b>${esc(l.title.replace(/ does not defend$/,''))} ${noAp?'has no AP left: cannot parry or evade':'does not defend'}</b>${noAp?'':' and keeps their Action Points'}.`});continue;}
     if(l.title==='Trip Opponent'){const t=pbTripLine(l,g);if(t){out.push(t);continue;}}
+    if(l.title==='Disarm Opponent'){const t=pbDisarmLine(l);if(t){out.push(t);told.add(l.title);continue;}}
+    // Arise is chosen before the blow is resolved, so the engine logs it before the evade's fall: tell it after the result
+    if(l.title==='Arise'){arise=l;continue;}
+    // a Special Effect says who chose it, once, and what it means in plain words
+    if(fxNames.has(l.title)&&!told.has(l.title)){told.add(l.title);
+      const owner=S.fighters[l.meta?.actor],you=owner&&pbHuman(owner.id)&&!pbHuman(pbOther(owner.id)),plain=PB_FX_PLAIN[l.title];
+      out.push({cls:'fx se',html:`<b>${owner?(you?'You':esc(owner.name))+' chose ':''}${esc(l.title)}</b> (Special Effect): ${esc(pbClip(l.body,120))}${plain?' '+esc(plain):''}`});continue;}
     // (an earlier blow of the same exchange, an Impale before its withdrawal, is told where it happened; the last is the result)
     {const b=paBlowLine(l);if(b){if(l!==last)out.push({cls:'end'+(/Wounded/.test(b.head)?' hurt':''),html:`<b>${esc(b.head)}</b> · ${esc(b.math)}`});continue;}}
     if(/^(Hit Location|Damage|Choose Location)$/i.test(l.title)||l.kind==='hit'||l.kind==='hurt')
-      out.push({cls:l.kind==='hurt'?'hurt':'fx',html:`<b>${esc(l.title)}</b>: ${esc(pbClip(l.body,120))}`});
+      out.push({cls:l.kind==='hurt'?'hurt':'fx',html:`<b>${esc(l.title)}</b>: ${esc(l.title==='Falling'?String(l.body||'').replace(/\s+/g,' ').trim():pbClip(l.body,120))}`});
   }
   const res=paExchangeResult(g);
   if(res)out.push({cls:'end'+(/Wounded/.test(res.head)?' hurt':''),html:`<b>${esc(res.head)}</b> · ${esc(res.math)}`});
+  if(arise){const owner=S.fighters[arise.meta?.actor];
+    out.push({cls:'fx se',html:`<b>${owner?esc(owner.name)+' chose ':''}Arise</b> (Special Effect): ${esc(pbClip(arise.body,120))} ${esc(PB_FX_PLAIN.Arise)}`});}
   return out;
 }
 // Whatever happened after the last exchange that is not part of it (Brace, Change Range, a new round...).
@@ -177,7 +219,7 @@ const PB_FREEING=/^(Pin Weapon · |Entangle · |Entangle ends)/;
 function pbSince(g){
   const logs=paVisibleLogs();const last=g?.entries[g.entries.length-1];
   const at=last?logs.lastIndexOf(last):-1,rest=logs.slice(at+1).filter(l=>l.title&&(l.kind!=='system'||PB_FREEING.test(l.title)));
-  return rest.slice(-2).map(l=>({cls:'note',html:`<b>${esc(l.title)}</b>${l.body?': '+esc(pbClip(l.body,110)):''}`}));
+  return rest.slice(-2).map(l=>({cls:'note',html:`<b>${esc(l.title)}</b>${l.body?': '+esc(/^(Falling|FIGHT ENDS)$/.test(l.title)?String(l.body).replace(/\s+/g,' ').trim():pbClip(l.body,110)):''}`}));
 }
 // What is still holding a fighter from an earlier exchange: told from the fighters' state, not the log, so it stays in
 // view for as long as it lasts (report review FR-01: a pin outlived the two exchanges the story keeps).
@@ -188,6 +230,8 @@ function pbLasting(){
     const by=S.fighters[f.pinnedBy]?.name||'the opponent';
     if(f.pinnedGear){const item=f.pinnedGear==='shield'?'shield':(ARENA_WEAPONS[f.weapon]?.name||'weapon').toLowerCase();
       out.push({cls:'last',html:`<b>Still pinned</b>: ${esc(name)}'s ${esc(item)}, by ${esc(by)}. No ${f.pinnedGear==='shield'?'shield parries or strikes':'attacks or parries'} with it until ${esc(name)} frees it (Free Pinned ${f.pinnedGear==='shield'?'Shield':'Weapon'}: 1 AP, opposed Brawn).`});}
+    if((f.skipAttack||0)>0)
+      out.push({cls:'last',html:`<b>Still stunned</b>: ${esc(name)} cannot attack for ${f.skipAttack} more turn${f.skipAttack===1?'':'s'} (Serious Wound). Parry, evade and other actions still work.`});
     if(f.entangled&&typeof entangledLoc==='function'&&entangledLoc(f))
       out.push({cls:'last',html:`<b>Still entangled</b>: ${esc(name)}'s ${esc(f.entangled.loc)}, by ${esc(S.fighters[f.entangled.by]?.name||'the opponent')}. Break Free: 1 AP, opposed Brawn.`});
   }
@@ -203,6 +247,8 @@ function pbHeadline(c){
   if(p?.kind==='range')return `${who(S.fighters[p.mover])} tries to change range`;
   if(p?.kind==='effect')return `${who(S.fighters[p.owner])} earned ${p.effectsLeft} Special Effect${p.effectsLeft===1?'':'s'} to choose`;
   if(p?.kind==='location')return `${who(S.fighters[p.owner])}: choose where the blow lands`;
+  if(p?.kind==='footingDefendChoice')return pbHuman(p.target)?`${who(S.fighters[p.actor])} tries to stand: resist with Brawn or Athletics`:`${who(S.fighters[p.target])} is resisting`;
+  if(p?.kind==='footingSkillChoice')return pbHuman(p.actor)?`Regain Footing: beat ${who(S.fighters[p.target])} to stand`:`${who(S.fighters[p.actor])} tries to stand`;
   if(p)return pbHuman(p.owner||p.other||p.def)?'A decision is waiting':'The opponent is deciding';
   return pbHuman(turn?.id)?`${who(turn)}'s turn: ${turn.ap} AP to spend`:`${who(turn)} is acting`;
 }
@@ -376,6 +422,8 @@ function pbDefaultInfo(c){
   const g=pbExchange(),res=g?paExchangeResult(g):null;
   if(c.choosingFx&&c.p.kind==='location')return `<header><h4>Choose Location</h4></header><p>Point at a location to see its hit points and armour, then click it.</p>`;
   if(c.choosingFx)return `<header><h4>Special Effects</h4></header><p>Point at an effect to see what it does and, if it needs a roll, the chance it works.</p>`;
+  if((S.phase==='between'||S.phase==='over')&&!V.busy&&typeof resultParts==='function'){const r=resultParts();
+    if(r.causeLine)return `<header><h4>${esc(r.winnerLine)}</h4></header><p>${esc(r.causeLine)}</p>${res?`<p class="bsmall">The last blow on screen: <b>${esc(res.head)}</b>. ${esc(res.math)}</p>`:''}`;}
   return `<header><h4>How an exchange works</h4></header>
     <ol class="bhow"><li>The attacker rolls Combat Style.</li><li>The defender may parry or evade (1 AP).</li><li>The better grade earns Special Effects.</li><li>If the blow lands: hit location, then damage minus parry and armour.</li></ol>
     ${res?`<p class="bsmall">Last result: <b>${esc(res.head)}</b>. ${esc(res.math)}</p>`:''}`;

@@ -130,7 +130,7 @@ function actionChoiceHelp(act,f){
   case 'changeRange':return f.ap<1?'No Action Points remaining.':proposedRange(f.id)==='short'?'Close Inside to reach their body. They may oppose or intercept.':proposedRange(f.id)==='long'?'Open the range to restore your longer weapon’s normal use.':'No useful reach change is available in this position.';
   case 'brace':return f.braced?'You are already braced.':'Spend 1 AP to resist knockback; bracing ends when you move.';
   case 'dither':return 'Spend 1 AP without another action. Delay instead if you want to preserve a reaction.';
-  case 'recoverWeapon':return f.droppedMetres>3?'Spend 1 AP moving to the dropped weapon.':f.recoveringWeapon?'Spend 1 AP to ready the weapon you picked up.':'Spend 1 AP to pick up the weapon; ready it on a later turn.';
+  case 'recoverWeapon':return f.droppedMetres>3?'Spend 1 AP moving to the dropped weapon.':f.recoveringWeapon?'Step 2 of 2: spend 1 AP to ready the weapon you picked up. After this you can attack and parry with it.':'Step 1 of 2: spend 1 AP to pick up the weapon. It is not ready yet: Ready Weapon (another 1 AP, on a later action) puts it to use (Core p.92).';
   case 'reengage':return f.prone?'Stand before moving to engage.':S.gapMetres>3?'The arena charges 1 AP to cross this gap.':'Return to melee range; this short arena gap costs no Move AP.';
   case 'freePin':return f?.pinnedGear?`Your Brawn against ${S.fighters?.[f.pinnedBy]?.name||'the opponent'}'s: win and your ${f.pinnedGear==='shield'?'shield':'weapon'} is free.`:'Contest the pin to free your trapped item.';
   case 'swapHand':return swapHandReason(f)||'Free. Move the weapon to your other working hand. House policy, not Core RAW.';

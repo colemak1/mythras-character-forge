@@ -42,9 +42,9 @@ test('FR-01: Pin Weapon stays in its exchange, with Bypass Armour, in the deck a
  A.run(`S.logs=${PIN_EXCHANGE};S.fighters.a.pinnedGear='weapon';S.fighters.a.pinnedBy='b';PB.key='';`);
  assert.deepEqual(JSON.parse(A.run('JSON.stringify(paExchanges().map(g=>g.entries.map(l=>l.id)))')),[[4,5,6,7,8,9,10]],'one exchange, pin included');
  const story=text(A.run('pitsArenaDeckHtml()'));
- assert.match(story,/Pin Weapon: Border Deserter pins Kethan Voss's weapon/);assert.match(story,/Bypass Armour:/);
+ assert.match(story,/Border Deserter chose Pin Weapon \(Special Effect\): Border Deserter pins Kethan Voss's weapon/);assert.match(story,/chose Bypass Armour \(Special Effect\): .*Armour on the location hit does not reduce this blow/);
  const recent=JSON.parse(A.run('JSON.stringify(plRecent())')).map(l=>l.text).join(' / ');
- assert.match(recent,/Pin Weapon: Border Deserter pins/);assert.match(recent,/Bypass Armour/);
+ assert.match(recent,/chose Pin Weapon \(Special Effect\): Border Deserter pins/);assert.match(recent,/Bypass Armour/);
  assert.match(recent,/Still pinned: Kethan Voss's broadsword, by Border Deserter\. No attacks or parries with it until Kethan Voss frees it \(Free Pinned Weapon: 1 AP, opposed Brawn\)/);
 });
 

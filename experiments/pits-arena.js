@@ -45,6 +45,10 @@ function paConditions(f){
   if(f.pinnedGear)add('Pinned '+f.pinnedGear,1);
   if(entangledLoc(f))add('Entangled',1);
   if(Object.keys(f.stunnedLocations||{}).length)add('Stunned',1);
+  // a fighter who cannot attack says so, with how long (report 20261115-000759)
+  if((f.skipAttack||0)>0)add('Stunned: no attacks · '+f.skipAttack+(f.skipAttack===1?' turn':' turns'),1);
+  else if((f.pressedTurns||0)>0)add('Pressed: no attack',1);
+  else if((f.overextendedTurns||0)>0)add('Overextended: no attack',1);
   if(f.blindedTurns)add('Blinded',1);
   if(f.braced)add('Braced');
   // range (owner, 2026-11-16): who the engagement rules favour (Core p.106), as the floor under the fighters shows it
@@ -161,7 +165,7 @@ function paTrayHtml(){
   }else if(S.phase==='between'||S.phase==='over'){
     // the bout is over: the tray says so (the details are in the command deck below)
     const r=resultParts();
-    title=r.result;sub=esc(r.winnerLine);who=r.draw?'foe':r.victory?'you':'foe';cls=' end '+(r.draw?'draw':r.victory?'won':'lost');
+    title=r.result;sub=esc(r.winnerLine)+(r.causeLine?`<small class="r-cause">${esc(r.causeLine)}</small>`:'');who=r.draw?'foe':r.victory?'you':'foe';cls=' end '+(r.draw?'draw':r.victory?'won':'lost');
   }else if(R&&!V.busy){
     const pct=paPct(R.label);
     title=rollHeading(R.label);who=paHuman(R.actor)?'you':'foe';sub=pct!=null?`Target <b>${pct}%</b>${rollDifficultyHtml(R.actor)}`:esc(defsOf(R));
