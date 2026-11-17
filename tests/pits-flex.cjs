@@ -44,6 +44,26 @@ test('a fast swing: the whip tip trails the straight line, and is on it when pin
   assert.equal(X.pinAt([500],400),0);assert.equal(X.pinAt([500],500),1);assert.equal(X.pinAt([500],530),1);assert(X.pinAt([500],470)>0&&X.pinAt([500],470)<1);
   assert.equal(X.pinAt([500],700),0);
 });
+// Fixes of 2026-11-17: a restart forgets the old swing, the rope moves alike at 60 and 120 frames a second, reduced
+// motion draws it straight
+test('a rope started again takes the new line at once',()=>{
+  const st={},o={kind:'chain',len:110,root:[0,0],dir:[1,0],clk:0,floor:400};
+  X.step(st,o);X.step(st,{...o,clk:16});
+  X.step(st,{...o,dir:[-1,0],clk:5000});          // a jump: started again, facing the other way
+  assert.deepStrictEqual(st.dir,[-1,0]);
+});
+test('the rope swings the same at 60 and at 120 frames a second',()=>{
+  const run=ms=>{const st={};for(let t=0;t<=600;t+=ms){const a=-1.2+3*Math.min(1,t/400);
+    X.step(st,{kind:'whip',len:150,root:[0,0],dir:[Math.cos(a),Math.sin(a)],clk:t,tension:.5,floor:400});}return st.pts[st.pts.length-1];};
+  const p=run(1000/60),q=run(1000/120);
+  assert(dist(p,q)<4,'the tips are '+dist(p,q).toFixed(1)+' apart');
+});
+test('reduced motion: the rope is drawn straight and does not swing',()=>{
+  const st={},o={kind:'chain',len:110,root:[0,0],dir:[1,0],floor:400,stiff:true};
+  for(let t=0;t<=320;t+=16)X.step(st,{...o,clk:t});
+  const T=X.rigid([0,0],[1,0],110,X.cfg('chain'));
+  assert(dist(st.pts[st.pts.length-1],T[T.length-1])<.01);
+});
 // The stage's way, frame by frame over real blows: the rope's root and line from the movement's joints, pinned on its
 // contacts (pits-stage.js psFlex, psFlexHits)
 function bout(wk,o,loc,u,each){
@@ -55,7 +75,7 @@ function bout(wk,o,loc,u,each){
     const ts=[t];for(const h of hits)if(h>t-16&&h<t)ts.unshift(h);   // (the stage waits for each contact's frame)
     for(const tt of ts.sort((x,y)=>x-y)){const j=C.joints(M.a,tt),Hn=flip(j.Hn),tip=flip(j.tip);
       let d=[tip[0]-Hn[0],tip[1]-Hn[1]];const l=Math.hypot(d[0],d[1])||1;d=[d[0]/l,d[1]/l];
-      if(M.a.whirl&&tt>=M.a.whirl.t0&&tt<=M.a.whirl.t1){const v=(tt-M.a.whirl.t0)/(M.a.whirl.t1-M.a.whirl.t0),s=-4*Math.PI*v*v*(3-2*v),cs=Math.cos(s),sn=Math.sin(s);d=[d[0]*cs-d[1]*sn,d[0]*sn+d[1]*cs];}
+      if(M.a.whirl&&tt>=M.a.whirl.t0&&tt<=M.a.whirl.t1){const v=(tt-M.a.whirl.t0)/(M.a.whirl.t1-M.a.whirl.t0),s=-2*Math.PI*v*v,cs=Math.cos(s),sn=Math.sin(s);d=[d[0]*cs-d[1]*sn,d[0]*sn+d[1]*cs];}
       const root=[Hn[0]+d[0]*c.hl,Hn[1]+d[1]*c.hl];
       X.step(st,{kind:wk.kind,len:wk.len,root,dir:d,clk:tt,pin:X.pinAt(hits,tt),floor:0});
       each({t:tt,st,M,r,rigidTip:[Hn[0]+d[0]*wk.len,Hn[1]+d[1]*wk.len],hit:hits.includes(tt)});}

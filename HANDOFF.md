@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-17 by Claude (batch (d), flexible weapons)_
+_Last updated: 2026-11-17 by Claude (flail whirl and rope fixes)_
 
 ## Where things stand
 
@@ -16,6 +16,7 @@ _Last updated: 2026-11-17 by Claude (batch (d), flexible weapons)_
 
 ## Next
 
+- **Claude, done 2026-11-17 (owner: quick audit fixes):** the flail whirl is one turn over 480 ms and runs into the blow; the rope's damping no longer depends on frame rate; a restarted rope forgets its old direction; reduced motion draws it straight (`experiments/pits-flex.js`, tests in `tests/pits-flex.cjs`). Not looked at in a browser: **owner**, play one flail bout and say if the whirl reads well.
 - **Claude, done 2026-11-17 (batch (d), owner: "next animations"):** flails, whips and nets are drawn as a rope that hangs, trails the swing and lands on each contact; a flail whirls over the head first (`experiments/pits-flex.js`, tests `tests/pits-flex.cjs`). The chain was invisible before. Sheets `docs/pits-visual-checks/cine-flex-*.jpg`. **Owner:** look at the sheets or play a flail or whip bout and name what looks off. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): one bout each with a flail, a whip and a net (the chain or lash hangs at rest and the head is on the target when it hits). **Then Claude:** the animation batches (a) to (d) are done; next pick comes from the owner.
 - **Claude, done 2026-11-17 (owner: "once the dice are rolled they need to sit for a second"):** settled dice hold 1.4 s before anything moves on (Fast 0.3 s; Continue skips it). `DICE_HOLD_MS` in `experiments/practice-combat.html`; test `tests/pits-dice-hold.cjs`. Not checked in a browser. **Owner:** play a bout and say if 1.4 s is right (one number to change).
 - **Claude, done 2026-11-16 (Chat's reach review #362, merged):** a cramped haft blow now offers Bash and Stun Location, never Impale, Bleed, Entangle or Sunder, and Maximise fixes its one d3 at 3 (4 before DM), once only (D-PR3). D-PR1 checked: a pinned or held-and-lodged weapon holds the distance but cannot attack, parry or intercept. Tests `tests/pits-cramped.cjs`; one golden bout regenerated (its AI had Impaled with a haft). No live check needed beyond Work's existing dagger-against-spear item.

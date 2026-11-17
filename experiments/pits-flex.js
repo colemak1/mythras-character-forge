@@ -26,7 +26,7 @@ function cfg(kind){return KIND[kind]||KIND.chain;}
 function rigid(root,dir,len,c){const seg=(len-c.hl)/c.n,out=[];for(let i=0;i<=c.n;i++)out.push([root[0]+dir[0]*i*seg,root[1]+dir[1]*i*seg]);return out;}
 function reset(st,o){
   const c=cfg(o.kind);st.kind=o.kind;st.len=o.len;st.pts=rigid(o.root,o.dir,o.len,c);st.old=st.pts.map(p=>p.slice());
-  st.root=o.root.slice();st.tip=st.pts[c.n].slice();st.open=0;st.clk=o.clk;
+  st.root=o.root.slice();st.dir=o.dir.slice();st.tip=st.pts[c.n].slice();st.open=0;st.clk=o.clk;
   // two seconds at rest, so a new weapon starts hanging, not stiff
   if(!o.stiff)for(let i=0;i<240;i++)sub(st,c,o.root,o.dir,o.len,STEP/1000,0,0,o.floor);
   return st;
@@ -34,8 +34,10 @@ function reset(st,o){
 // one substep (h in seconds); tension 0..1
 function sub(st,c,root,dir,len,h,tension,pin,floor){
   const seg=(len-c.hl)/c.n,P=st.pts,O=st.old,T=rigid(root,dir,len,c);
+  // (damp is per full substep: a shorter substep damps less, so the rope moves the same at 60 and 120 frames a second)
+  const dm=Math.pow(c.damp,h*1000/STEP);
   for(let i=1;i<=c.n;i++){
-    const p=P[i],o=O[i],vx=(p[0]-o[0])*c.damp,vy=(p[1]-o[1])*c.damp;
+    const p=P[i],o=O[i],vx=(p[0]-o[0])*dm,vy=(p[1]-o[1])*dm;
     O[i]=p.slice();p[0]+=vx;p[1]+=vy+c.g*h*h;
     const k=(c.base+c.boost*tension)*(1-(1-c.tipK)*i/c.n),a=1-Math.exp(-k*h);
     p[0]+=(T[i][0]-p[0])*a;p[1]+=(T[i][1]-p[1])*a;
@@ -60,16 +62,17 @@ function sub(st,c,root,dir,len,h,tension,pin,floor){
 // Returns st, with st.pts (n+1 points from the handle's end to the tip), st.tip and st.open (0..1, how open a net is).
 function step(st,o){
   const c=cfg(o.kind);
-  if(!st.pts||st.kind!==o.kind||st.len!==o.len)return reset(st,o);
+  // (reduced motion: no rope movement at all, the weapon is drawn straight)
+  if(o.stiff||!st.pts||st.kind!==o.kind||st.len!==o.len)return reset(st,o);
   let dt=o.clk-st.clk;
   // a jump (a new bout, the replay starting over, a figure placed anew) starts the rope again
-  if(dt<0||dt>500||Math.hypot(o.root[0]-st.root[0],o.root[1]-st.root[1])>180)return reset(st,o);
+  if(dt<0||dt>120||Math.hypot(o.root[0]-st.root[0],o.root[1]-st.root[1])>180)return reset(st,o);
   if(dt===0)return st;                       // the scene is held: the rope is held with it
   const tip=[o.root[0]+o.dir[0]*o.len,o.root[1]+o.dir[1]*o.len];
   const sp=Math.hypot(tip[0]-st.tip[0],tip[1]-st.tip[1])/(dt/1000);
   // (below a slow drift, a guard breathing or a step, it hangs as it is: only a real swing pulls it out)
   const tension=o.tension!=null?clamp(o.tension,0,1):clamp((sp-150)/c.ref,0,1);
-  const n=Math.max(1,Math.ceil(dt/STEP)),h=dt/n/1000;
+  const n=Math.max(1,Math.ceil(dt/STEP-1e-6)),h=dt/n/1000;
   for(let i=0;i<n;i++){
     // the handle's end and the straight weapon move through the frame, not in one jump
     const u=(i+1)/n,r=[st.root[0]+(o.root[0]-st.root[0])*u,st.root[1]+(o.root[1]-st.root[1])*u];
