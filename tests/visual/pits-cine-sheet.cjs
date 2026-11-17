@@ -37,6 +37,8 @@ const OUT=process.argv[3]||fs.mkdtempSync(path.join(os.tmpdir(),'pits-cine-sheet
       const r=c.phrase==='trip'?L.trip(PS.M,'a',t,{fell:c.fell!==false,after:!!c.after}):c.phrase==='disarm'?L.disarm(PS.M,'a',t,{}):
         c.phrase==='press'?{end:L.press(PS.M.a,PS.M.b,t),contacts:[],move:'press'}:c.withdraw?L.withdraw(PS.M,'a',t,{loc:c.loc||'chest',lost:c.lost||0,defeated:!!c.defeated}):L.blow(PS.M,'a',t,{outcome:c.outcome||'wound',loc:c.loc||'chest',lost:c.lost||0,strike:c.strike||null,shield:!!c.shieldWard,fall:c.fall||false,defeated:!!c.defeated,fx:c.fx||[],impale:!!c.impale,held:!!c.held,tried:c.tried||null});
       if(L.fixChoices)L.fixChoices(null);
+      // (a flexible weapon is laid onto each contact, as on the live stage)
+      if(typeof psFlexHits==='function')psFlexHits(r);
       window.__sheet={t,r};
       return {t,end:r.end,move:r.move,tried:r.tried||null,contacts:r.contacts.map(k=>[k.t-t,k.kind]),w:S.fighters.a.weapon+' / '+S.fighters.b.weapon};
     },c);

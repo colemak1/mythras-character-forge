@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: flails, whips and nets move like flexible weapons
+
+- A flail's chain, a whip's lash and a net now trail the hand instead of swinging as a stiff stick. At rest they hang (a whip lies on the floor), in a fast swing they lag and catch up with a snap, and on every contact the head lands exactly where the blow lands. The chain was not drawn at all before (only the handle and the ball showed).
+- A flail is whirled twice over the head before it comes down; a whip is drawn back over the shoulder. A dropped flail, whip or net lies slack and no longer sticks point down in the floor.
+- The rope stops when the scene is held and runs slow in slow motion. Rules and dice are unchanged.
+- Tests: `tests/pits-flex.cjs`. Sheets: `docs/pits-visual-checks/cine-flex-*.jpg`.
+
 ## The Pits: dice sit still long enough to read
 
 - Once the dice settle they now stay for 1.4 seconds before the fight moves on (owner: "everything moves too quickly to process anything"). The result line still appears with the dice at once. Before this, a roll whose result came next moved on the moment the dice stopped. **Fast** keeps the hold to 0.3 s, and pressing **Continue** skips it. Replays hold the same way.

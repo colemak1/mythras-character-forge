@@ -56,6 +56,12 @@ html[data-mode="dark"] .pc-s-glow-in{stop-opacity:.3}
 .ps-cine .ps-left .ps-guard{stroke:var(--pc-acc-a)}.ps-cine .ps-right .ps-guard{stroke:var(--pc-acc-b)}
 .ps-cine .ps-head-blade{fill:var(--pc-steel);stroke:#11141a;stroke-width:1.5}
 .ps-cine .ps-knob{fill:#3a3f4b;stroke:#0d0f14}
+/* flexible weapons (batch (d)): a flail's chain, a whip's lash, a net's cord and mesh */
+.ps-cine .ps-wire{stroke-linecap:round;stroke-linejoin:round}
+.ps-cine .ps-wire.ps-chain{stroke:var(--pc-steel);stroke-width:3.2;stroke-dasharray:4 2.2;filter:drop-shadow(0 0 1px rgba(0,0,0,.95))}
+.ps-cine .ps-wire.ps-lash{stroke:var(--pc-wood);stroke-width:3}
+.ps-cine .ps-wire.ps-cord{stroke:var(--pc-wood);stroke-width:2.6}
+.ps-cine .ps-net-mesh{stroke:var(--pc-wood);stroke-width:1.4;stroke-linejoin:round;fill:var(--pc-wood);fill-opacity:.12}
 .ps-cine .ps-shield{fill:#39404f;stroke:#0d0f14;stroke-width:4}
 .ps-cine .ps-left .ps-shield{stroke:var(--pc-acc-a)}.ps-cine .ps-right .ps-shield{stroke:var(--pc-acc-b)}
 .ps-cine .ps-trail{display:none}
