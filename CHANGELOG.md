@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a concurrent attack keeps its pre-wound skill (rulings D-R1, D-R2)
+
+ChatGPT (Chat), Core pp.87–88, 90–91, 110. At tied Initiative a fighter wounded in the other's turn still makes its own committed attack at the same moment; that attack now uses its skill from before the wound. In report 20261117-032318 it rolled against 32%, its 48% made Hard by the arm wound it was concurrent with. Its weapon, arm and stun were already held back until after the action; its hit points were not.
+
+- Checked, no change: no off-hand penalty exists (a weapon in a working left hand uses the normal Combat Style, the report's later 48%), and every Serious Wound already stops attacks for 1d3 Turns whether or not Endurance succeeds.
+- Tests: `tests/pits-serious-wound-rulings.cjs` (7): concurrent attack, damage in its own turn, off hand, resisted and failed Endurance (arm and head), parry and evade during the stop, its end.
+
 ## The Pits: a stun counts only the stunned fighter's own Turns (ruling D-R4)
 
 ChatGPT (Chat), Core pp.90–91, 110: a fighter with no Action Points left gets no Turn in a cycle, so a Serious Wound's "cannot attack for 1d3 Turns" does not count down then. It used to, so a fighter stunned for 3 Turns could attack on its third (report 20261117-184734). A Turn spent Delaying or on another permitted action still counts. Press Advantage, Overextend and Blind count the same way.
