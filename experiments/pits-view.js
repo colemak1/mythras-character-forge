@@ -113,6 +113,44 @@ function pitsRecommendedDefence(id,options){
   return has('none')?{val:'none',why:'No defence is possible now.'}:null;
 }
 
+// Special Effects that are offered but would change nothing in this exchange (Idea 20261117-182931: "hide ones that
+// aren't applicable"). They stay one click away under "more"; nothing is removed from the engine's list. Returns the
+// reason in words, or ''.
+function pitsEffectIdle(id,p){
+  const t=S.fighters?.[p?.other],missed=!!(p?.attackRoll&&p.attackRoll.grade<2);
+  if(!p||!t)return '';
+  if(p.owner!==p.atk&&missed&&(id==='standFast'||id==='enhance'))return 'Their attack missed: no blow lands to brace against or block.';
+  if(id==='bypassArmour'&&!HIT_LOCS.some(l=>armourAt(t,l)>0))return `${t.name} wears no armour.`;
+  if(id==='scar')return 'A scar for the story: it changes nothing in the bout.';
+  return '';
+}
+// Why an effect is good now, in a line (the recommendation's reason).
+function pitsEffectWhy(id,p){
+  const t=S.fighters?.[p?.other];if(!t)return '';
+  const low=HIT_LOCS.map(l=>[l,t.hp[l]]).sort((a,b)=>a[1]-b[1])[0];
+  return {circumventParry:'Their parry worked; this blow goes around it, so the parry stops nothing.',
+    impale:'Damage is rolled twice and you keep the better; the weapon can lodge and hamper them.',
+    choose:low?`You pick where it lands: their ${low[0]} is down to ${low[1]} HP.`:'You pick where it lands.',
+    bypassArmour:'Their armour stops none of this blow.',maximize:'The damage die counts as its highest roll.',
+    bleed:'A cut that can make them bleed and tire each round.',stun:'The struck location can be stunned and made useless for a while.',
+    bash:'Knocks them back with the force of the blow.',sunder:'Cuts into their armour where it lands.',
+    entangle:'Holds the struck location; you can trip or disarm them next.',press:'They cannot attack on their next turn.',
+    overextend:'They cannot attack on their next turn.',trip:'Puts them on the ground if they fail to resist: everything gets harder for them.',
+    disarm:'Knocks the weapon from their hand if they fail to resist.',damageWeapon:'Strikes their weapon; at 0 HP it breaks.',
+    pinWeapon:'Pins their weapon or shield: no attacks or parries with it until they free it.',arise:'Back on your feet at once.',
+    withdraw:'Breaks off the fight: you step out of reach.',enhance:'This parry stops all of the damage.',blind:'Blinds them for a few turns.',
+    slip:'Frees you from the pin or entanglement.',accidental:'Their fumble hurts them.',compel:'They may give up the fight.',
+    remise:'A quick follow-up attack.',forceFailure:'Their next resistance roll fails.',prepareCounter:'Turns a later effect back on them.',
+    standFast:'No knockback from this blow.'}[id]||'';
+}
+// The effect the Pits recommends to a person: the computer fighters' own scores (effectScores), without their style or
+// randomness, among the effects that change something now.
+function pitsRecommendedEffect(p){
+  if(!p||p.kind!=='effect'||typeof effectScores!=='function')return null;
+  const best=effectScores(p).filter(([id])=>!pitsEffectIdle(id,p)).sort((a,b)=>b[1]-a[1])[0];
+  return best?{id:best[0],why:pitsEffectWhy(best[0],p)}:null;
+}
+
 // A plain snapshot of one fighter for the panels (and for tests).
 function pitsFighterSnapshot(f){
   const w=ARENA_WEAPONS[f.weapon]||{};

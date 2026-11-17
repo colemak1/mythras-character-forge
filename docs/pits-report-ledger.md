@@ -58,8 +58,8 @@ Suggestions sent with the Pits **Idea** button (`[Idea]` notes). One row each: d
 | Date | From | Idea | Decision |
 |---|---|---|---|
 | 2026-11-17 | - | Hover or tap a condition chip to see what it does to you (`192715`) | Built (Claude, this PR): Details panel and tooltip. |
-| 2026-11-17 | - | Opposed rolls shown side by side, so you see the two rolls go against each other (`192330`) | Owner to choose. Claude: worth doing for Trip, Disarm, Regain Footing and Endurance; one tray card with two dice. |
-| 2026-11-17 | - | Impale: the lower of the two damage dice leaves, the higher stays (`183514`) | Owner to choose. Claude: small. The engine already lets the attacker pick; would auto-pick the higher only when nothing else differs. |
-| 2026-11-17 | - | Skip the location and damage rolls when a parry will stop everything and no Special Effect is in play (`183359`) | Owner to choose; rules question for Chat first (the location still matters for some effects and for Damage Weapon). |
-| 2026-11-17 | - | Rework the middle of the bottom deck: less history, the recommendation bigger at the top, recommended option bordered in red (`182754`, `183126`) | Owner to choose; a v0 mockup first suits it (AGENTS.md, design flow). |
-| 2026-11-17 | - | Special Effects: show a recommended one, hide ones that do nothing now (Stand Fast when no knockback can happen) (`182931`) | Owner to choose. Hiding needs a rule per effect for "does nothing now" (Chat); a recommendation can follow the AI's own pick. |
+| 2026-11-17 | - | Opposed rolls shown side by side, so you see the two rolls go against each other (`192330`) | Built (owner: "implement them all", 2026-11-17): every resisting roll shows the roll to beat beside it. |
+| 2026-11-17 | - | Impale: the lower of the two damage dice leaves, the higher stays (`183514`) | Built: the higher is kept without asking; the tray shows the lower leave. |
+| 2026-11-17 | - | Skip the location and damage rolls when a parry will stop everything and no Special Effect is in play (`183359`) | Built: skipped only when the parry blocks everything by Size, no Special Effect is on the blow and no knockback is possible (Core p.104). |
+| 2026-11-17 | - | Rework the middle of the bottom deck: less history, the recommendation bigger at the top, recommended option bordered in red (`182754`, `183126`) | Built without a mockup at the owner's request: decision first and large, red border on the recommended choice, story smaller. |
+| 2026-11-17 | - | Special Effects: show a recommended one, hide ones that do nothing now (Stand Fast when no knockback can happen) (`182931`) | Built: recommendation from the AI's own scores; Stand Fast, Enhance Parry (attack missed), Bypass Armour (no armour) and Scar Foe fold under "more". |

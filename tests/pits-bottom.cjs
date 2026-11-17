@@ -93,7 +93,9 @@ test('Special Effects are chosen in the middle, with odds on the right, and no w
  assert(ids.includes('trip'),'trip is offered here');
  let html=A.run('pitsArenaDeckHtml()');
  for(const id of ids)assert(tags(html,`data-pa="fx" data-val="${id}"`).length===1,id+' chip');
- assert.equal(tags(html,'data-act="effect"').length,0,'nothing sent until chosen');
+ // the recommended effect starts selected (Idea 20261117-182931); only Confirm sends it
+ const rec=JSON.parse(A.run('JSON.stringify(pitsRecommendedEffect(S.pending).id)'));
+ assert.deepEqual(tags(html,'data-act="effect"'),tags(html,`class="bgo" data-act="effect" data-val="${rec}"`),'only the Confirm button, for the recommended one');
  assert.match(html,/data-act="skipEffect"/);
  assert.equal(A.run('paModalHtml()'),'');
  A.run(`PB.fx='trip'`);html=A.run('pitsArenaDeckHtml()');

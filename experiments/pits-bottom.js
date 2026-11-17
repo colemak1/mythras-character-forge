@@ -72,8 +72,10 @@ function pbCtx(){
   const donD=defs.filter(d=>d.enabled);
   const def=reacting?(donD.find(d=>d.val===PB.def)||donD.find(d=>d.val===recD?.val)||null):null;
   const fxList=choosingFx&&p.kind==='effect'?availableEffects(p):[];
-  const fx=fxList.find(([fid])=>fid===PB.fx)||null;
-  return {phase,p,id,me,foe,live,list,sel,defs,def,rec,recD,reacting:!!reacting,choosingFx:!!choosingFx,fxList,fx};
+  // (the recommended effect starts selected, as the recommended action and defence do; Idea 20261117-182931)
+  const recF=choosingFx&&p.kind==='effect'?pitsRecommendedEffect(p):null;
+  const fx=fxList.find(([fid])=>fid===PB.fx)||fxList.find(([fid])=>fid===recF?.id)||null;
+  return {phase,p,id,me,foe,live,list,sel,defs,def,rec,recD,recF,reacting:!!reacting,choosingFx:!!choosingFx,fxList,fx};
 }
 
 // ---- left: your moves ----
@@ -81,14 +83,14 @@ const pbPips=f=>`<span class="bpips" aria-label="${f.ap} of ${f.apMax} action po
 function pbActionRows(c){
   return c.list.map((a,i)=>{
     const on=c.live&&a.enabled,picked=c.sel&&a.act===c.sel.act;
-    return `<button type="button" class="brow${picked?' sel':''}${on?'':' off'}" data-pa="sel" data-val="${a.act}" data-pb-info="act:${a.act}" ${on?'':'aria-disabled="true"'}>
+    return `<button type="button" class="brow${picked?' sel':''}${on?'':' off'}${on&&c.rec?.act===a.act?' rec':''}" data-pa="sel" data-val="${a.act}" data-pb-info="act:${a.act}" ${on?'':'aria-disabled="true"'}>
       <kbd>${c.live&&i<9?i+1:''}</kbd><span class="nm">${esc(a.label)}</span>${c.rec?.act===a.act?'<span class="brec">Recommended</span>':''}<span class="co">${pbCost(a)}</span></button>`;
   }).join('');
 }
 function pbDefenceRows(c){
   return c.defs.map((d,i)=>{
     const picked=c.def&&d.val===c.def.val;
-    return `<button type="button" class="brow def${picked?' sel':''}${d.enabled?'':' off'}" data-pa="def" data-val="${d.val}" data-pb-info="def:${d.val}" ${d.enabled?'':'aria-disabled="true"'}>
+    return `<button type="button" class="brow def${picked?' sel':''}${d.enabled?'':' off'}${d.enabled&&c.recD?.val===d.val?' rec':''}" data-pa="def" data-val="${d.val}" data-pb-info="def:${d.val}" ${d.enabled?'':'aria-disabled="true"'}>
       <kbd>${c.reacting&&i<9?i+1:''}</kbd><span class="nm">${esc(d.label)}</span>${c.recD?.val===d.val?'<span class="brec">Recommended</span>':''}${d.pct!=null?`<span class="pc">${d.pct}%</span>`:''}<span class="co">${d.ap?d.ap+' AP':'free'}</span></button>`;
   }).join('');
 }
@@ -124,10 +126,6 @@ function pbStepNow(c){
     return 'fx';
   }
   return 'act';
-}
-function pbTracker(c){
-  const now=pbStepNow(c),i=PB_STEPS.findIndex(s=>s[0]===now);
-  return `<ol class="btrack" aria-label="Where the exchange is">${PB_STEPS.map(([k,n],j)=>`<li class="${j<i?'done':j===i?'now':''}"${j===i?' aria-current="step"':''}>${esc(n)}</li>`).join('')}</ol>`;
 }
 // The exchange on screen: the one in progress, else the last one.
 function pbExchange(){const ex=paExchanges();return ex[ex.length-1]||null;}
@@ -267,24 +265,36 @@ function pbHeadline(c){
   if(p)return pbHuman(p.owner||p.other||p.def)?'A decision is waiting':'The opponent is deciding';
   return pbHuman(turn?.id)?`${who(turn)}'s turn: ${turn.ap} AP to spend`:`${who(turn)} is acting`;
 }
+// The decision, at the top of the middle column and large (Ideas 20261117-182754, 183126): the recommended choice
+// and why, in a red-bordered box with its Confirm button; another pick says so instead.
+function pbRecBox(isRec,why,other,btn){
+  return `<div class="bdo brecbox${isRec?' is-rec':''}"><div class="brecwhy">${isRec?`<span class="brecl">Recommended</span><p><b>Recommended.</b> ${esc(why)}</p>`
+    :`<span class="brecl other">Your choice</span><p>${other}</p>`}</div>${btn}</div>`;
+}
 function pbDecision(c){
   const p=c.p;
   if(c.live){
     const a=c.sel;
-    return a?`<div class="bdo"><p>${c.rec?.act===a.act?`<b>Recommended.</b> ${esc(c.rec.why)}`:'Pick an action on the left. Point at anything to see its odds on the right.'}</p>
-      <button type="button" class="bgo" data-act="${a.act}">${esc(a.label)} · ${pbCost(a)} <kbd>Enter</kbd></button></div>`
+    return a?pbRecBox(c.rec?.act===a.act,c.rec?.why||'','Point at anything on the left to see its odds on the right.',
+      `<button type="button" class="bgo" data-act="${a.act}">${esc(a.label)} · ${pbCost(a)} <kbd>Enter</kbd></button>`)
       :'<div class="bdo"><p class="bnone">No action available.</p></div>';
   }
   if(c.reacting){
     const d=c.def;
-    return `<div class="bdo"><p>${c.recD&&d?.val===c.recD.val?`<b>Recommended.</b> ${esc(c.recD.why)}`:p.kind==='range'?'Answer on the left.':'Pick a defence on the left; each one shows its odds against this roll.'}</p>
-      ${d?`<button type="button" class="bgo" data-act="${d.act}" data-val="${d.val}">${esc(d.label)}${d.ap?' · '+d.ap+' AP':''} <kbd>Enter</kbd></button>`:'<button type="button" class="bgo" disabled>Choose first</button>'}</div>`;
+    return pbRecBox(!!(c.recD&&d?.val===c.recD.val),c.recD?.why||'',p.kind==='range'?'Answer on the left.':'Each defence on the left shows its odds against this roll.',
+      d?`<button type="button" class="bgo" data-act="${d.act}" data-val="${d.val}">${esc(d.label)}${d.ap?' · '+d.ap+' AP':''} <kbd>Enter</kbd></button>`:'<button type="button" class="bgo" disabled>Choose first</button>');
   }
   if(c.choosingFx&&p.kind==='effect'){
-    const chips=c.fxList.map(([id,name],i)=>`<button type="button" class="bfx${c.fx&&c.fx[0]===id?' sel':''}" data-pa="fx" data-val="${id}" data-pb-info="fx:${id}"><kbd>${i<9?i+1:''}</kbd>${esc(name)}</button>`).join('');
-    return `<div class="bdo fx"><div class="bfxs" role="group" aria-label="Special Effects">${chips}</div>
-      <div class="bfxgo"><button type="button" class="toolbutton bskip" data-act="skipEffect">Skip</button>
-      ${c.fx?`<button type="button" class="bgo" data-act="effect" data-val="${c.fx[0]}">${esc(c.fx[1])} <kbd>Enter</kbd></button>`:'<button type="button" class="bgo" disabled>Choose an effect</button>'}</div></div>`;
+    // bigger chips with what each does; the ones that change nothing now fold under "more" (still choosable)
+    const chip=([id,name],i)=>`<button type="button" class="bfx${c.fx&&c.fx[0]===id?' sel':''}${c.recF?.id===id?' rec':''}" data-pa="fx" data-val="${id}" data-pb-info="fx:${id}">`
+      +`<kbd>${i<9?i+1:''}</kbd><span class="bfxn">${esc(name)}</span><small>${esc((p.owner!==p.atk&&EFFECT_CHOICE_TEXT_DEFENSIVE[id])||EFFECT_CHOICE_TEXT[id]||'')}</small></button>`;
+    const order=c.fxList.map((e,i)=>[e,i]),live=order.filter(([e])=>!pitsEffectIdle(e[0],p)),idle=order.filter(([e])=>pitsEffectIdle(e[0],p));
+    const more=idle.length?`<details class="bfxmore"><summary>${idle.length} more that change nothing now</summary><div class="bfxs">${idle.map(([e,i])=>chip(e,i)
+      +`<p class="bidle">${esc(pitsEffectIdle(e[0],p))}</p>`).join('')}</div></details>`:'';
+    const go=c.fx?`<button type="button" class="bgo" data-act="effect" data-val="${c.fx[0]}">${esc(c.fx[1])} <kbd>Enter</kbd></button>`:'<button type="button" class="bgo" disabled>Choose an effect</button>';
+    return `${pbRecBox(!!(c.recF&&c.fx&&c.fx[0]===c.recF.id),c.recF?(c.recF.why?`${c.fx[1]}: ${c.recF.why}`:c.fx[1]):'','Point at an effect to see what it does and its odds.',
+      `<div class="bfxgo"><button type="button" class="toolbutton bskip" data-act="skipEffect">Skip</button>${go}</div>`)}
+      <div class="bdo fx"><div class="bfxs" role="group" aria-label="Special Effects">${live.map(([e,i])=>chip(e,i)).join('')}</div>${more}</div>`;
   }
   if(c.choosingFx&&p.kind==='location'){
     const t=S.fighters[p.def];
@@ -314,8 +324,15 @@ function pbMiddle(c){
   // newest last; the list is drawn reversed in a column-reverse box so it always shows the newest lines
   const story=lines.length?`<ul class="bstory" aria-live="polite">${lines.slice().reverse().map(l=>`<li data-k="${l.cls}"${l.g?` data-g="${l.g}"`:''}>${l.html}</li>`).join('')}</ul>`
     :'<ul class="bstory"><li data-k="note">Nothing yet. Each exchange is told here, step by step.</li></ul>';
-  return `<div class="bmid"><header><h4>${esc(pbHeadline(c))}</h4><span class="lbl">${inProgress||!g?'This exchange':'Last exchange'}</span></header>
-    ${pbTracker(c)}${story}${still}${pbDecision(c)}</div>`;
+  const step=(PB_STEPS.find(x=>x[0]===pbStepNow(c))||PB_STEPS[0])[1];
+  // A decision of yours (an action, a defence, a Special Effect): the decision comes first and large, with only a small
+  // line saying where the exchange is; the story shrinks under it, and gives way entirely to the Special Effects
+  // (Ideas 20261117-182754, 183126, 182931). Otherwise the story is the page, as before.
+  if(c.live||c.reacting||(c.choosingFx&&c.p.kind==='effect'))
+    return `<div class="bmid bdecide"><p class="bkick"><span>${esc(step)}</span>${esc(pbHeadline(c))}</p>${pbDecision(c)}
+      ${c.choosingFx?'':story.replace('class="bstory"','class="bstory short"')}${still}</div>`;
+  return `<div class="bmid"><header><h4>${esc(pbHeadline(c))}</h4><span class="lbl">${esc(step)} · ${inProgress||!g?'this exchange':'last exchange'}</span></header>
+    ${story}${still}${pbDecision(c)}</div>`;
 }
 
 // ---- right: details and odds ----

@@ -357,3 +357,23 @@ body.pa-on .roll.end .r-s .r-cause{display:block;font-size:12px;margin-top:3px;c
 /* a condition chip explains itself on hover, focus or tap (its meaning shows in Details) */
 .plate .chip[data-pb-info]{cursor:help}
 .plate .chip[data-pb-info]:focus-visible{outline:2px solid var(--st-accent,var(--accent));outline-offset:1px}
+/* an opposed roll: the roll to beat and this roll side by side (Idea 20261117-192330) */
+.roll .rvs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:6px 0 2px}
+.roll .rvs-side{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 6px;border:1px solid var(--pa-line2,currentColor);min-width:0}
+.roll .rvs-side small{font-size:11px;color:var(--st-text-dim,var(--bone-dim));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.roll .rvs-side b{font:700 26px/1.05 var(--st-display,var(--font-display))}
+.roll .rvs-side span{font-size:11.5px;font-weight:600}
+.roll .rvs-side.won{border:2px solid var(--pa-gold)}
+.roll .rvs-mark{font:700 12px/1 var(--st-body,var(--font-ui));letter-spacing:.12em;text-transform:uppercase;color:var(--st-text-dim,var(--bone-dim))}
+.roll .rvs-out{font-size:12.5px;text-align:center}
+.roll .rvs-out.won{font-weight:700}
+/* Impale: two weapon rolls, the lower one leaves (Idea 20261117-183514) */
+.roll .rimp{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:6px 0 2px}
+.roll .rimp>span{display:flex;flex-direction:column;align-items:center;padding:4px 14px;border:1px solid var(--pa-line2,currentColor)}
+.roll .rimp small{font-size:11px;color:var(--st-text-dim,var(--bone-dim))}
+.roll .rimp b{font:700 24px/1.05 var(--st-display,var(--font-display))}
+.roll .rimp .rimp-keep{border:2px solid var(--pa-gold)}
+.roll .rimp .rimp-gone{animation:pa-imp-gone .55s ease-in .45s both}
+.roll .rimp p{flex-basis:100%;margin:0;text-align:center;font-size:12.5px}
+@keyframes pa-imp-gone{to{opacity:0;transform:translateY(14px) scale(.85);max-width:0;padding-left:0;padding-right:0;margin:0;border-width:0}}
+@media (prefers-reduced-motion:reduce){.roll .rimp .rimp-gone{animation:none;opacity:.35;text-decoration:line-through}}

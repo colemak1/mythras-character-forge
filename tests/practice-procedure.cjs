@@ -63,17 +63,34 @@ test('a resisted Major torso wound keeps its 2× Healing Rate Combat Round deadl
  const rate=run('healingRateFor(S.fighters.b.con)');
  assert.deepEqual(JSON.parse(run('JSON.stringify(S.fighters.b.criticalWindow)')),{unit:'combat rounds',value:2*rate,location:'Chest'});
 });
-test('Impale: the attacker picks a damage roll, then chooses to keep hold or leave the weapon in (Core p.97)',()=>{
+test('Impale: the higher damage roll is kept, then the attacker chooses to keep hold or leave the weapon in (Core p.97)',()=>{
  setup('dagger');hit({impale:true});                 // 1d4+1 twice + DM 1d2
  answer(2,4,1);                                       // options 3 and 5
- assert.equal(run('S.pending.kind'),'impalePick');run('chooseImpaleDamage(1)');
+ // (the higher is kept without asking, Idea 20261117-183514)
+ assert(logs().some(l=>/^Impale · Damage selected :: .*chooses option B: 5 weapon damage/.test(l)),logs().join('\n'));
  assert.equal(run('S.pending.kind'),'impaleLeave','asked whether to leave it in');
  assert.match(output.innerHTML,/data-act="impaleLeave" data-val="leave"/);
  run('chooseImpaleLeave(true)');
  assert.equal(run('S.fighters.a.impaledWeapon'),null);assert.equal(run('S.fighters.a.disarmed'),true);
  assert.equal(run('S.fighters.b.impaledWounds.length'),1,'the wound keeps its penalty');
- setup('dagger');hit({impale:true});answer(2,4,1);run('chooseImpaleDamage(1)');run('chooseImpaleLeave(false)');
+ setup('dagger');hit({impale:true});answer(2,4,1);run('chooseImpaleLeave(false)');
  assert.equal(run('S.fighters.a.impaledWeapon.loc'),'Chest','keeps hold: pull it free later');assert.equal(run('S.fighters.a.disarmed'),false);
+});
+test('a parry that stops the whole blow skips the location and damage rolls only when nothing reads them (Idea 20261117-183359)',()=>{
+ const parried=x=>Object.assign({chosenLoc:null,reaction:'parry',parryTool:'weapon',defenseRoll:{grade:2,roll:30,label:'Success',effectiveTarget:60}},x||{});
+ // sword (Medium, 1d8) + DM 1d2 can do at most 10: no knockback against SIZ 10, and a Medium parry blocks it all
+ setup('sword');hit(parried());
+ assert.equal(run('R'),null,'no location or damage roll');
+ assert(logs().some(l=>/^No Damaging Hit :: .*parry stops the whole blow .*no location or damage is rolled/.test(l)),logs().join('\n'));
+ assert.equal(JSON.parse(run('JSON.stringify(S.logs[S.logs.length-1].meta.px.wholeParry)')),true);
+ // SIZ 9: the most it can do (10) could knock them back, so the damage is rolled (Core p.104 reads it before the parry)
+ setup('sword');run('S.fighters.b.siz=9');hit(parried());assert.match(run('R.label'),/Hit Location/);
+ // a larger weapon than the parry: only half is blocked, so it is rolled
+ setup('greatsword');hit(parried());assert.match(run('R.label'),/Hit Location/);
+ // a Special Effect on the blow (Bleed) reads the damage: rolled
+ setup('sword');hit(parried({bleed:true}));assert.match(run('R.label'),/Hit Location/);
+ // a failed parry: rolled
+ setup('sword');hit(parried({defenseRoll:{grade:1,roll:80,label:'Failure',effectiveTarget:60}}));assert.match(run('R.label'),/Hit Location/);
 });
 test('withdrawing a Barbed weapon does full damage, a normal one half; the injury is recorded (Core pp.61, 98)',()=>{
  for(const [weapon,dmgDie,expect] of [['trident',6,6],['spear',6,4]]){   // Trident 1d8 Barbed; Shortspear 1d8+1 → 7 halved → 4
@@ -199,7 +216,6 @@ test('RC-25: a lodged weapon in an Incapacitated Impale cell ends the fight (Cor
  const impale=siz=>{
   setup('longspear');run(`S.fighters.b.siz=${siz}`);hit({impale:true});
   answer(...Array(run('R.defs.length')).fill(2));
-  run('chooseImpaleDamage(1)');
   if(run('S.pending&&S.pending.kind')==='impaleLeave')run('chooseImpaleLeave(false)');
  };
  impale(10);                                             // SIZ 1–10, Large weapon: Incapacitated

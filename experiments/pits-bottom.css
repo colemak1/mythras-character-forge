@@ -129,7 +129,7 @@ body.pa-on #root .bE .pits-band-wrap{margin:16px 0 0}
 
 /* the recommended move starts selected and says so (owner, 2026-11-16) */
 .bE .brow .brec{flex:none;font:600 9.5px/1 var(--st-body,var(--font-ui));letter-spacing:.12em;text-transform:uppercase;color:var(--pb-accent);border:1px solid currentColor;padding:2px 5px}
-.bdeck .brec-tag{color:var(--pb-accent);border-color:currentColor;margin-left:auto}
+.bdeck .brec-tag{color:var(--pa-gold);border-color:currentColor;margin-left:auto}
 .bE .bdo p b{color:var(--st-text,var(--bone))}
 /* the end of a bout fills the middle box */
 .bE .bmid.bend{padding:0}
@@ -166,3 +166,37 @@ body.pa-on #root .bE .bmid.bend .pa-end{flex:1 1 auto;padding:10px 14px 12px;bor
   .bE .binfo{background:transparent;border-color:transparent;border-left-color:var(--pa-line2);padding-right:4px}
   .bE .binfo-body h4{font-size:16px}
 }
+
+/* The decision leads the middle box (Ideas 2026-11-17: "the recommended ... bigger so the player actually reads it",
+   "border the recommended option in red", "we don't need the fight history in the middle"). A small line says where
+   the exchange is; the recommended choice and why sit in a red-bordered box with the button; the story shrinks.
+   (--pb-rec: the deck's red, the same as its main button) */
+.bdeck{--pb-rec:var(--pa-gold)}
+.bE .bmid.bdecide{gap:7px}
+.bE .bkick{margin:0;flex:none;display:flex;gap:10px;align-items:baseline;font:600 12px/1.2 var(--st-body,var(--font-ui));color:var(--pa-dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bE .bkick span{flex:none;letter-spacing:.1em;text-transform:uppercase;font-size:10.5px;color:var(--st-text,var(--bone))}
+.bE .bdo.brecbox{flex:none;border:2px solid var(--pa-line2);border-radius:2px;padding:9px 12px;gap:14px;background:var(--pa-surface2)}
+.bE .bdo.brecbox.is-rec{border-color:var(--pb-rec)}
+.bE .brecwhy{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.bE .brecl{font:700 10.5px/1 var(--st-body,var(--font-ui));letter-spacing:.14em;text-transform:uppercase;color:var(--pb-rec)}
+.bE .brecl.other{color:var(--pa-dim)}
+.bE .bdo.brecbox p{font-size:16px;line-height:1.35;color:var(--st-text,var(--bone))}
+.bE .bdo.brecbox p b{display:none}   /* the label above says it */
+.bE .bdo.brecbox .bfxgo{flex:none;align-items:center;gap:8px}
+.bE .bstory.short{flex:1 1 0;font-size:12px;min-height:0}
+/* the recommended row on the left and the recommended effect are bordered red too */
+.bE .brow.rec{outline:2px solid var(--pb-rec);outline-offset:-2px}
+.bE .brow .brec{color:var(--pb-rec)}
+.bE .bfx.rec{border:2px solid var(--pb-rec)}
+/* Special Effects: bigger chips, each with what it does; the box scrolls if there are many */
+.bE .bmid.bdecide .brecbox:has(.bfxgo) p{font-size:14.5px}
+.bE .bdo.fx{border-top:0;padding-top:0;flex:1 1 0;min-height:0;overflow:auto;display:block}
+.bE .bdo.fx .bfxs{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:5px;max-height:none;overflow:visible}
+.bE .bdo.fx .bfx{display:grid;grid-template-columns:auto 1fr;column-gap:7px;align-items:baseline;text-align:left;padding:5px 8px;font-size:14px;min-width:0}
+.bE .bdo.fx .bfx kbd{grid-row:1/3;align-self:start}
+.bE .bdo.fx .bfxn{font-weight:700}
+.bE .bdo.fx .bfx small{grid-column:2;font-size:11px;line-height:1.25;color:var(--pa-dim);min-width:0;overflow:hidden;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.bE .bfxmore summary{cursor:pointer;font-size:12px;color:var(--pa-dim);margin:5px 0 4px}
+.bE .bfxmore .bidle{margin:-3px 0 4px;font-size:11px;color:var(--pa-dim);grid-column:1/-1}
