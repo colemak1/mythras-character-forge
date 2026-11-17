@@ -350,3 +350,5 @@ body.pa-on #root .pa-end .endbuttons button{flex:1 1 auto;min-height:38px;paddin
 /* the recommended action (phones and ?bottom=current) */
 .act.recommended{border-left-color:var(--pa-gold)}
 .act .rec{font-style:normal;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pa-gold)}
+/* why the bout ended, under the winner (report 20261117-032326) */
+body.pa-on .roll.end .r-s .r-cause{display:block;font-size:12px;margin-top:3px;color:var(--pa-dim)}

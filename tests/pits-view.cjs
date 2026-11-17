@@ -35,7 +35,7 @@ test('legal actions: AP costs, and disabled options say why',()=>{
  assert.equal(a.changeRange.reason,'No reach to contest','equal reach');
  run(`S.fighters.a.ap=0`);a=acts('a');
  assert.equal(a.attack.reason,'Needs 1 AP');assert.equal(a.brace.reason,'Needs 1 AP');assert.equal(a.delay.enabled,true);
- setup();run(`S.fighters.a.skipAttack=2`);assert.equal(acts('a').attack.reason,'Stunned or pressed');
+ setup();run(`S.fighters.a.skipAttack=2`);assert.equal(acts('a').attack.reason,'Stunned by a Serious Wound: no attacks for 2 more turns. You can still parry, evade and take other actions.');
  setup();run(`S.fighters.a.prone=true`);assert.equal(acts('a').stand.enabled,true);
 });
 test('legal actions match the buttons the engine renders (same acts, same enabled state)',()=>{

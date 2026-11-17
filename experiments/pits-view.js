@@ -32,6 +32,23 @@ function pitsPhase(){
   return human(S.order?.[S.turnIndex])?'action':'opponent';
 }
 
+// Why a fighter cannot attack now, in plain words, or '' (report 20261115-000759: "not very obvious that I'm stunned,
+// I just can't hit"). Read from the engine's counters only; the longest restriction is named first.
+function pitsNoAttackWhy(f){
+  if(!f)return '';
+  const n=k=>f[k]||0,turns=k=>n(k)+' more turn'+(n(k)===1?'':'s');
+  if(n('skipAttack')>0&&n('skipAttack')>=n('pressedTurns')&&n('skipAttack')>=n('overextendedTurns'))
+    return `Stunned by a Serious Wound: no attacks for ${turns('skipAttack')}. You can still parry, evade and take other actions.`;
+  if(n('pressedTurns')>0&&n('pressedTurns')>=n('overextendedTurns'))
+    return 'Pressed back (Press Advantage): no attack this turn. You can still parry, evade and take other actions.';
+  if(n('overextendedTurns')>0)return `Overextended: no attacks for ${turns('overextendedTurns')}. You can still parry, evade and take other actions.`;
+  if(typeof cannotAttackDueToStun==='function'&&cannotAttackDueToStun(f)){
+    const loc=['Head','Chest','Abdomen'].find(l=>f.stunnedLocations&&f.stunnedLocations[l])||'body';
+    return `Your ${loc} is stunned (Stun Location): no attacks until it wears off.`;
+  }
+  return '';
+}
+
 // Every proactive action the engine offers this fighter now, with its AP
 // cost, whether it is legal, and a short reason when it is not.
 function pitsLegalActions(id){
@@ -39,7 +56,7 @@ function pitsLegalActions(id){
   const out=[],ap=f.ap||0;
   const add=(act,label,cost,why)=>out.push({act,label,ap:cost,enabled:!why,reason:why||''});
   const needs=cost=>ap<cost?`Needs ${cost} AP`:'';
-  const pressed=()=>attackRestrictionTurns(f)>0||cannotAttackDueToStun(f)?'Stunned or pressed':'';
+  const pressed=()=>pitsNoAttackWhy(f);
   add('attack','Attack',1,needs(1)||pressed()||(!canUseWeapon(f)?(typeof weaponBlockedWhy==='function'?weaponBlockedWhy(f):'Weapon unusable'):!(canAttackBody(id)||mustTargetWeapon(id))?'Out of reach':''));
   if(typeof canShieldStrike==='function'&&canShieldStrike(f))
     add('shieldAttack','Shield Strike',1,needs(1)||pressed()||(!shieldReachesBody(id)?'Out of reach':''));
@@ -47,7 +64,7 @@ function pitsLegalActions(id){
   if(f.pinnedGear)add('freePin','Free Pinned '+(f.pinnedGear==='shield'?'Shield':'Weapon'),1,needs(1));
   if(typeof entangledLoc==='function'&&entangledLoc(f))add('freeEntangle','Break Free',1,needs(1));
   if(typeof entangling==='function'){const held=entangling(f);if(held&&!held.prone)add('entangleTrip','Trip Entangled Foe',1,needs(1));}
-  if(f.disarmed)add('recoverWeapon',f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?'Ready Weapon':'Pick Up Weapon',1,recoverWeaponReason(f));
+  if(f.disarmed)add('recoverWeapon',f.droppedMetres>3?'Move to Weapon':f.recoveringWeapon?'Ready Weapon (2 of 2)':'Pick Up Weapon (1 of 2)',1,recoverWeaponReason(f));
   // ARM-06 (app policy): a free move of a held one-handed weapon to the other hand
   if(!f.disarmed&&!ARENA_WEAPONS[f.weapon].twoHanded&&!shieldCarried(f))add('swapHand','Switch Weapon Hand',0,swapHandReason(f));
   add('changeRange',proposedRange(id)==='short'?'Close Inside':'Change Range',1,needs(1)||(!proposedRange(id)?'No reach to contest':''));

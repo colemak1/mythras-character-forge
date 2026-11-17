@@ -59,12 +59,12 @@ test('ARM-01: a left-handed fighter holds the weapon in the left hand and the sh
 });
 test('ARM-02: recovery takes a working free hand and two actions; the weapon ends up in that hand',()=>{
  const A=setup();A(`applyLimbDisabled(S.fighters.a,'Right Arm',false)`);
- let acts=legal(A).find(x=>x.act==='recoverWeapon');assert(acts&&acts.enabled,'Pick Up Weapon is offered');assert.equal(acts.label,'Pick Up Weapon');
+ let acts=legal(A).find(x=>x.act==='recoverWeapon');assert(acts&&acts.enabled,'Pick Up Weapon is offered');assert.equal(acts.label,'Pick Up Weapon (1 of 2)');
  const ap=A('S.fighters.a.ap');
  A('recoverWeaponStep(S.fighters.a)');
  assert.equal(A('S.fighters.a.weaponHand'),'Left Arm','picked up with the working hand');assert.equal(A('S.fighters.a.recoveringWeapon'),true);
  assert.equal(A('!!S.fighters.a.disarmed'),true,'not ready yet');assert.equal(A('canUseWeapon(S.fighters.a)'),false);
- assert.equal(legal(A).find(x=>x.act==='recoverWeapon').label,'Ready Weapon');
+ assert.equal(legal(A).find(x=>x.act==='recoverWeapon').label,'Ready Weapon (2 of 2)');
  A('recoverWeaponStep(S.fighters.a)');
  assert.equal(A('!!S.fighters.a.disarmed'),false);assert.equal(A('S.fighters.a.ap'),ap-2,'two actions, 2 AP');
  assert.equal(A('canUseWeapon(S.fighters.a)'),true,'fighting on with the other hand');

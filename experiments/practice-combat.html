@@ -510,7 +510,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 </style>
 <link rel="stylesheet" href="pits-stone.css?v=a495935cd5">
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
-<link rel="stylesheet" href="pits-arena.css?v=c1678cf44d">
+<link rel="stylesheet" href="pits-arena.css?v=f1e229783b">
 <link rel="stylesheet" href="pits-stage.css?v=4b6c786d11">
 <link rel="stylesheet" href="pits-cine.css?v=5f257857a3">
 <link rel="stylesheet" href="pits-bottom.css?v=2f6d0d8089">
@@ -550,12 +550,12 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="../js/combat-rules.js?v=df867be054"></script>
 <script src="../js/data.js?v=e863ceddbb"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
-<script src="practice-guidance.js?v=ac900b7c93"></script>
-<script src="pits-view.js?v=7bfcd488aa"></script>
+<script src="practice-guidance.js?v=648985b8c4"></script>
+<script src="pits-view.js?v=34d5123e38"></script>
 <script src="pits-game.js?v=3769cec741"></script>
 <script src="pits-report.js?v=78c28f1bb3"></script>
-<script src="pits-arena.js?v=5b54e9371a"></script>
-<script src="pits-bottom.js?v=a72b5103a4"></script>
+<script src="pits-arena.js?v=e9a7ad4cca"></script>
+<script src="pits-bottom.js?v=803af881e6"></script>
 <script src="pits-lost.js?v=f385014ea5"></script>
 <script src="pits-idea.js?v=e1791930b7"></script>
 <script src="pits-motion.js?v=5c6cf25c54"></script>
@@ -2030,13 +2030,17 @@ function resultParts(){
    'Both exhausted fighters lack the AP to act; the training bout is scored as a draw.':'Fight ended without a finishing wound';
   const eyebrow=`${S.mode==='pvp'?'DUEL':S.mode==='tutorial'?'TRAINING':'GAUNTLET'} · ROUND ${S.round}`;
   const winnerLine=draw?'Neither combatant can continue':S.winner+' wins';
+  // why the bout ended, in one line (report 20261117-032326, "why did I just win": the knockout came before a last parried
+  // blow, so the last result on screen was not the one that ended it)
+  const causeLine=draw?'':injury?`${cause.victim}: ${severity.toLowerCase()} to the ${cause.location}. ${cause.consequence}.`:
+    String(cause.reason||'').replace(/\s*\(Core[^)]*\)/g,'').trim();
   const finish=`<div class="result-finish ${injury?'has-location':''}" id="resultCause">
       ${injury?`<div class="result-figure">${finishingLocationSvg(cause.location)}</div>`:''}
       <div class="result-why"><div class="result-eyebrow">${injury?'FINISHING INJURY':'BOUT ENDED BY'}</div>
         <strong>${esc(injuryTitle)}</strong><span>${esc(injuryDetail)}</span><small>${esc(consequence)}</small>${urgent?`<small>${esc(urgent)}</small>`:''}</div>
     </div>`;
   const meta=`Encounter ended in round ${S.round}${injury?' · Final hit to '+esc(cause.location):''}`;
-  return {draw,victory,result,injury,eyebrow,winnerLine,finish,meta,next:S.phase==='between'};
+  return {draw,victory,result,injury,eyebrow,winnerLine,causeLine,finish,meta,next:S.phase==='between'};
 }
 function resultModalHtml(){
   if(!S.showEndModal||V.busy||!['between','over'].includes(S.phase))return '';
@@ -2620,7 +2624,10 @@ if(p?.kind==='blindResistChoice')return (`<div class="turnline"><h3>Resist Blind
 if(p?.kind==='footingSkillChoice'||p?.kind==='footingDefendChoice'){
  const f=S.fighters[p.kind==='footingSkillChoice'?p.actor:p.target];
  return `<div class="turnline"><h3>${p.kind==='footingSkillChoice'?'Regain Footing':
-  'Oppose Standing'}</h3><span>Brawn or Athletics</span></div><div class="choicegrid"><button class="choice" data-act="${p.kind==='footingSkillChoice'?
+  'Oppose Standing'}</h3><span>Brawn or Athletics</span></div><small class="desc">${p.kind==='footingSkillChoice'?
+  `You are engaged, so getting up is an opposed roll: beat ${esc(S.fighters[p.target]?.name||'the opponent')} and you stand (Core p.92).`:
+  `${esc(S.fighters[p.actor]?.name||'The opponent')} is trying to get up. You are engaged, so standing is an opposed roll: `+
+  'win it and they stay down (Core p.92).'}</small><div class="choicegrid"><button class="choice" data-act="${p.kind==='footingSkillChoice'?
   'footingSkill':'footingDefend'}" data-val="brawn"><strong>Brawn · ${f.brawn}%</strong></button><button class="choice" data-act="${p.kind===('footingSki'
   +'llChoice')?'footingSkill':'footingDefend'}" data-val="athletics"><strong>Athletics · ${f.athletics}%</strong></button></div>`;
 }
@@ -3196,7 +3203,8 @@ function deferConcurrentEnd(winnerId,reason){
  const loser=winnerId==='a'?'b':'a';
  if(!t.granted&&S.order[S.turnIndex]===t.first&&loser===t.second&&S.fighters[t.second].ap>0&&!t.pendingEnd){
   t.pendingEnd={winnerId,reason};
-  log('Falling',`${S.fighters[loser].name} is going down, but their concurrent action this cycle still happens first. ${reason}`,'hurt',
+  log('Falling',`${S.fighters[loser].name} is going down. ${reason} They tied on Initiative, so both act at the same moment: `+
+   `${S.fighters[loser].name}'s own action this cycle still happens first.`,'hurt',
    'Core p.90: tied Initiative totals act concurrently.',{actor:loser});
   endAction();return true;
  }
@@ -3337,7 +3345,8 @@ function react(action){
     });
   }else{
     p.reaction='none';
-    log(`${d.name} does not defend`,`${d.name} preserves Action Points. The exchange is treated as an undefended attack.`,'system');
+    log(`${d.name} does not defend`,d.ap>0?`${d.name} chooses not to defend and keeps their Action Points. The attack is undefended.`:
+     `${d.name} has no Action Points left, so cannot parry or evade. The attack is undefended.`,'system');
     finalize(null);
   }
 }
@@ -3621,7 +3630,8 @@ function resolveHit(){
     });return;
   }
   if(p.attackRoll.grade<2||p.evaded){
-    log('No Damaging Hit',p.evaded?`${def.name} evades the incoming strike${p.rangeIntercept?' while changing range':', ending prone'}.`:
+    log('No Damaging Hit',p.evaded?`${def.name} evades the incoming strike${p.rangeIntercept?' while changing range':
+     def.prone?', ending prone':' and is already back on their feet'}.`:
      `${atk.name}'s attack failed to connect.`, 'system','',{actor:atk.id,px:noHitPx(p)});endAction();return;
   }
   const chooseDamage=(loc)=>{
@@ -3934,8 +3944,8 @@ function endFight(winnerId,reason){
     type:'injury',location:hit.loc,severity:zoneClass(loser,hit.loc),hpLost:hit.wound,
     remaining:loser.hp[hit.loc],maxHp:loser.maxHp[hit.loc],attacker:hit.attacker||winner.name,
     weapon:hit.weapon||'',victim:loser.name,criticalWindow:loser.criticalWindow||null,
-    consequence:/dies immediately|dies from/i.test(reason)?'Fatal wound':/unconscious|consciousness/i.test(reason)?'Unconscious':'Incapacitated'
-  }:{type:/blood loss|fatigue|exertion|exhaustion/i.test(reason)?'fatigue':'concession',victim:loser.name};
+    consequence:/dies immediately|dies from/i.test(reason)?'Fatal wound':/unconscious|consciousness/i.test(reason)?'Unconscious':'Incapacitated',reason
+  }:{reason,type:/blood loss|fatigue|exertion|exhaustion/i.test(reason)?'fatigue':'concession',victim:loser.name};
   S.showEndModal=true;
   log('FIGHT ENDS',`${winner.name} wins. ${reason}`,'hurt');
   if(['pvp','tutorial'].includes(S.mode)){S.phase='over';render();return;}

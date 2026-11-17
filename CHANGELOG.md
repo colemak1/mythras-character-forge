@@ -5,6 +5,21 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: the fight says what just happened (fight reports FR-08 to FR-15)
+
+From the owner's Lost? presses and reports of 2026-11-14 to 2026-11-17. The rules were right in these; the screen did not say what had happened. Rules and dice unchanged.
+
+- **No AP, no defence.** When a defender has no Action Points left, the log and the story now say "has no Action Points left, so cannot parry or evade". It used to say the defender "preserves Action Points", which read as a choice. A chosen no-defence says it keeps the AP.
+- **Stunned.** Attack, when greyed out, says why: stunned by a Serious Wound and for how many more turns, pressed back by Press Advantage, or overextended. It used to say "Stunned or pressed". The plate shows a chip ("Stunned: no attacks · 3 turns") and the story keeps a "Still stunned" line while it lasts.
+- **Evade ends prone.** After every Evade roll the story says the evader dives clear and ends on the ground, success or not (Core p.103). Arise, chosen before the blow resolves, is now told after the result, so a fighter no longer seems to stand before falling. The engine line says "is already back on their feet" when Arise was taken.
+- **Standing up while engaged.** The prompt to oppose the opponent getting up says what is happening (an opposed roll, Core p.92), and the headline names it.
+- **Pick up, then ready.** The buttons read "Pick Up Weapon (1 of 2)" and "Ready Weapon (2 of 2)", and their help says the weapon is not usable until readied (Core p.92).
+- **Disarm.** Told plainly: "You resist the disarm and keep your weapon", whose Special Effect it was, and the roll.
+- **Special Effects.** Each one in the story says who chose it ("Border Deserter chose Circumvent Parry") and, for the ones that confuse, what it did in plain words (Circumvent Parry: the parry still succeeded but stops none of the damage; Bypass Armour, Maximise Damage, Choose Location, Press Advantage, Overextend, Force Failure, Enhance Parry, Arise).
+- **Why the bout ended.** The Victory/Defeat tray and the details panel name the finishing injury ("Border Deserter: serious wound to the Head. Unconscious."). A loser going down on tied Initiative has the "Falling" line told whole: it says both act at the same moment, so the loser's last action comes first. Before, Victory followed a parried blow with the cause cut off.
+- Tests: `tests/pits-report-fixes-2.cjs` (10). Golden bouts regenerated for the new defence and Falling wording only (`tests/fixtures/pits-golden.json`).
+- Not done: Special Effects are told in the deck story below the stage, not as text on the stage itself.
+
 ## The Pits: changing range looks like a move, not a slide
 
 Owner, 2026-11-17: "the range animations look off". Dagger against spear and the like (weapons whose Reach differs); rules and dice unchanged.

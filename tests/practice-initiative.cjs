@@ -60,7 +60,7 @@ test('a defeat in the first tied turn waits for the second fighter\'s action; bo
  setup([5,10],[7,8]);run('advance()');
  run(`S.pending={kind:'resolving'};endFight('a','Second dies immediately from a Major Wound to Head.')`);
  assert.equal(run('S.phase'),'fight','the bout is not over yet');assert.equal(run('S.turnIndex'),1);
- assert(logs().some(l=>/^Falling :: .*concurrent action this cycle still happens first/.test(l)),logs().join('\n'));
+ assert(logs().some(l=>/^Falling :: .*both act at the same moment: .*own action this cycle still happens first/.test(l)),logs().join('\n'));
  assert.equal(run('S.tie.granted'),true,'B gets the concurrent turn');
  run(`S.pending={kind:'resolving'};endAction()`);         // B's action ends without felling A
  assert.notEqual(run('S.phase'),'fight');assert.equal(run('S.winnerId'),'a');
