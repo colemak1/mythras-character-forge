@@ -1,0 +1,18 @@
+{
+ "id": "90a50c4e-4447-437a-810d-478e41405c8c",
+ "created_at": "2026-11-14T23:58:39.765272+00:00",
+ "reporter": null,
+ "note": "[Lost #4 note] why prone?",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=2de8fc67a5;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;stage=41ec18c848",
+ "record": {
+  "at": "2026-11-14T23:58:32.689Z",
+  "mark": 4,
+  "round": 2,
+  "record": "pits-lost-note",
+  "fighters": [
+   "Kethan Voss",
+   "Border Deserter"
+  ]
+ }
+}

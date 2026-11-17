@@ -1,0 +1,18 @@
+{
+ "id": "ea7eb029-6fab-44a7-9b27-d671897d080f",
+ "created_at": "2026-11-17T03:23:26.334029+00:00",
+ "reporter": null,
+ "note": "[Lost #1 note] Why did i just win",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=5b54e9371a;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=9a6f6cfaf8;cine-fx=02003a23cc;stage=5089c892e5",
+ "record": {
+  "at": "2026-11-17T03:23:18.141Z",
+  "mark": 1,
+  "round": 3,
+  "record": "pits-lost-note",
+  "fighters": [
+   "Kethan Voss",
+   "Border Deserter"
+  ]
+ }
+}

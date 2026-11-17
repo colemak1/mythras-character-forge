@@ -1,0 +1,18 @@
+{
+ "id": "ad4634ad-4072-46f4-8cfa-0c5207db1a16",
+ "created_at": "2026-11-14T23:56:48.169301+00:00",
+ "reporter": null,
+ "note": "[Lost #3 note] we need to make ap more clear, i just had to double take why the opponent didnt even attempt to parry",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=2de8fc67a5;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;stage=41ec18c848",
+ "record": {
+  "at": "2026-11-14T23:56:20.712Z",
+  "mark": 3,
+  "round": 1,
+  "record": "pits-lost-note",
+  "fighters": [
+   "Kethan Voss",
+   "Border Deserter"
+  ]
+ }
+}

@@ -1,0 +1,223 @@
+{
+ "id": "528a32f6-5f70-4823-88f3-c821121b0779",
+ "created_at": "2026-11-14T21:08:29.83043+00:00",
+ "reporter": null,
+ "note": "[Lost #1] Pressed \"What just happened?\" in round 1, at Effects: The opponent is deciding.",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=d9e43ed972;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=bcba3a2354;stage=16f0fafc9e",
+ "record": {
+  "at": "2026-11-14T21:08:26.485Z",
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+  "log": [
+   {
+    "b": "Kethan Voss rolls 8 + 13 − 2 armour penalty = 19.",
+    "t": "Kethan Voss · Initiative",
+    "id": 1
+   },
+   {
+    "b": "Border Deserter rolls 4 + 12 − 0 armour penalty = 16.",
+    "t": "Border Deserter · Initiative",
+    "id": 2
+   },
+   {
+    "b": "Kethan Voss: 8+13−2 = 19. Border Deserter: 4+12−0 = 16. Kethan Voss acts first.",
+    "t": "Encounter 1 · Initiative",
+    "id": 3
+   },
+   {
+    "b": "11 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 4
+   },
+   {
+    "b": "20 vs 45% — SUCCESS. 1 AP remaining.",
+    "t": "Border Deserter evades",
+    "id": 5
+   },
+   {
+    "b": "Border Deserter evades the incoming strike, ending prone.",
+    "t": "No Damaging Hit",
+    "id": 6
+   }
+  ],
+  "auto": false,
+  "lost": [
+   {
+    "n": 1,
+    "at": "2026-11-14T21:08:26.484Z",
+    "beat": null,
+    "roll": null,
+    "tape": 10,
+    "turn": "b",
+    "beats": null,
+    "cycle": 1,
+    "phase": "resist",
+    "round": 1,
+    "recent": [
+     {
+      "k": "head",
+      "text": "Kethan Voss attacked (still going)"
+     },
+     {
+      "k": "roll",
+      "text": "Kethan Voss attacks: rolled 11, needed 67 or less · Success"
+     },
+     {
+      "k": "roll",
+      "text": "Border Deserter evades: rolled 20, needed 45 or less · Success"
+     }
+    ],
+    "screen": {
+     "deck": "",
+     "step": "Effects",
+     "tray": "Last roll Border Deserter evades 20 20 against 45% — Success",
+     "story": "Border Deserter evades: rolled 20, needed 45 or less · Success Kethan Voss attacks: rolled 11, needed 67 or less · Success",
+     "strip": "ROUND 1 Resist Engaged Initiative: Kethan Voss 19 · Border Deserter 16",
+     "details": "How an exchange works The attacker rolls Combat Style. The defender may parry or evade (1 AP). The better grade earns Special Effects. If the blow lands: hit location, then damage minus parry and armour.",
+     "headline": "The opponent is deciding"
+    },
+    "pending": "footingDefendChoice",
+    "playing": false,
+    "logShown": 6,
+    "logTotal": 6,
+    "replaying": false,
+    "stageClock": null,
+    "stageEvents": 0,
+    "lastLogShown": 6
+   }
+  ],
+  "mode": "normal",
+  "page": "",
+  "quick": false,
+  "stage": [],
+  "bottom": "E",
+  "config": {
+   "con": 13,
+   "dex": 13,
+   "int": 13,
+   "siz": 13,
+   "str": 13,
+   "mode": "normal",
+   "armor": 2,
+   "evade": 46,
+   "style": 67,
+   "pvpCon": 12,
+   "pvpDex": 12,
+   "pvpInt": 12,
+   "pvpSiz": 12,
+   "pvpStr": 12,
+   "shield": "none",
+   "weapon": "sword",
+   "pvpName": "Second Player",
+   "charname": "Kethan Voss",
+   "firstAid": 40,
+   "pvpArmor": 1,
+   "pvpEvade": 50,
+   "pvpSkill": 65,
+   "username": "Guest",
+   "pvpShield": "none",
+   "pvpWeapon": "dagger",
+   "willpower": 55,
+   "leftHanded": false,
+   "mixedArmour": false,
+   "pvpMixedArmour": false,
+   "armourByLocation": {
+    "Head": 2,
+    "Chest": 2,
+    "Abdomen": 2,
+    "Left Arm": 2,
+    "Left Leg": 2,
+    "Right Arm": 2,
+    "Right Leg": 2
+   },
+   "pvpArmourByLocation": {}
+  },
+  "record": "pits-spring-1",
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Border Deserter",
+    "shield": "none",
+    "weapon": "greatsword"
+   }
+  },
+  "guidance": true,
+  "lostMark": 1,
+  "presented": [
+   {
+    "roll": [
+     "a",
+     "Initiative · d10",
+     [
+      8
+     ]
+    ]
+   },
+   {
+    "b": "Kethan Voss rolls 8 + 13 − 2 armour penalty = 19.",
+    "t": "Kethan Voss · Initiative",
+    "id": 1
+   },
+   {
+    "roll": [
+     "b",
+     "Initiative · d10",
+     [
+      4
+     ]
+    ]
+   },
+   {
+    "b": "Border Deserter rolls 4 + 12 − 0 armour penalty = 16.",
+    "t": "Border Deserter · Initiative",
+    "id": 2
+   },
+   {
+    "b": "Kethan Voss: 8+13−2 = 19. Border Deserter: 4+12−0 = 16. Kethan Voss acts first.",
+    "t": "Encounter 1 · Initiative",
+    "id": 3
+   },
+   {
+    "roll": [
+     "a",
+     "Attack · Combat Style 67%",
+     [
+      11
+     ]
+    ]
+   },
+   {
+    "b": "11 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 4
+   },
+   {
+    "roll": [
+     "b",
+     "Evade · 45%",
+     [
+      20
+     ]
+    ]
+   },
+   {
+    "b": "20 vs 45% — SUCCESS. 1 AP remaining.",
+    "t": "Border Deserter evades",
+    "id": 5
+   },
+   {
+    "roll": [
+     "b",
+     "Regain Footing · Border Deserter brawn",
+     [
+      23
+     ]
+    ]
+   }
+  ]
+ }
+}

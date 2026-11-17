@@ -1,0 +1,18 @@
+{
+ "id": "157d4e44-a995-4c81-869d-fe2b2aab9b25",
+ "created_at": "2026-11-14T21:08:57.699837+00:00",
+ "reporter": null,
+ "note": "[Lost #1 note] that all happened quick not sure why im opposing standing rn",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=d9e43ed972;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=bcba3a2354;stage=16f0fafc9e",
+ "record": {
+  "at": "2026-11-14T21:08:26.484Z",
+  "mark": 1,
+  "round": 1,
+  "record": "pits-lost-note",
+  "fighters": [
+   "Kethan Voss",
+   "Border Deserter"
+  ]
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "id": "76aa2d2e-9d50-49fc-bf21-b2d7b28f6d24",
+ "created_at": "2026-11-15T00:06:40.090962+00:00",
+ "reporter": null,
+ "note": "[Lost #1 note] wasnt sure if i resisted the disarm. everything moves too quick lets slow it down a bunch",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=2de8fc67a5;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;stage=41ec18c848",
+ "record": {
+  "at": "2026-11-15T00:06:16.900Z",
+  "mark": 1,
+  "round": 1,
+  "record": "pits-lost-note",
+  "fighters": [
+   "Kethan Voss",
+   "Border Deserter"
+  ]
+ }
+}
