@@ -5,6 +5,13 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a stun counts only the stunned fighter's own Turns (ruling D-R4)
+
+ChatGPT (Chat), Core pp.90–91, 110: a fighter with no Action Points left gets no Turn in a cycle, so a Serious Wound's "cannot attack for 1d3 Turns" does not count down then. It used to, so a fighter stunned for 3 Turns could attack on its third (report 20261117-184734). A Turn spent Delaying or on another permitted action still counts. Press Advantage, Overextend and Blind count the same way.
+
+- Ruling D-R3 recorded too (no change): an Impale's difficulty applies to the Endurance roll against the same blow's wound.
+- Tests: three in `tests/practice-procedure.cjs` (a Turn counts; cycles and a new round with no AP do not; Delay counts, its expiry does not). Golden bouts regenerated; seeds 144 to 285 and 489 to 529 so every bout still shows its rules.
+
 ## The Pits: the five player Ideas of 2026-11-17
 
 All the Ideas sent from the Pits on 2026-11-17, built at the owner's request. Rules unchanged; two procedures are quicker.

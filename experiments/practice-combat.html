@@ -3240,7 +3240,8 @@ function advance(){if(S.phase!=='fight'||S.pending||S.roundProcessing)return;let
   finishCombatRound();return;
  }else S.cycle++;S.turnIndex=0;}
 if(S.turnIndex===0)beginConcurrentCycle();
-let id=S.order[S.turnIndex],f=S.fighters[id];expireDelay(f);if(f.ap<=0){advanceStun(f);S.turnIndex++;continue;}
+// (no AP: no Turn this cycle, so nothing that lasts some Turns counts down; Core pp.90-91, 110, ruling D-R4 2026-11-17)
+let id=S.order[S.turnIndex],f=S.fighters[id];expireDelay(f);if(f.ap<=0){S.turnIndex++;continue;}
  if(S.turnIndex===1)grantConcurrentTurn(id);
  if(f.kind==='ai'||f.remiseFrom)captureActionBoundary(f.remiseFrom||id);
  // Core p.99 Remise: on the recipient's next proactive turn, a Small-weapon
