@@ -16,7 +16,8 @@
 // second) at rest and in a full-speed swing. tipK: the pull at the tip against the root. g: gravity, units/s^2.
 const KIND={
   chain:{n:6,hl:30,base:.05,boost:46,tipK:.8,g:1500,damp:.988,ref:650},
-  whip: {n:12,hl:30,base:.25,boost:34,tipK:.18,g:900,damp:.992,ref:700},
+  // (bend: a lash is stiff along its length: no link folds back on the one before it, so it curls and never kinks)
+  whip: {n:12,hl:30,base:.25,boost:34,tipK:.18,g:900,damp:.992,ref:700,bend:1.5},
   net:  {n:5,hl:8,base:.1,boost:30,tipK:.6,g:1100,damp:.985,ref:600}
 };
 const STEP=1000/120;        // ms of simulated time per substep
@@ -49,6 +50,10 @@ function sub(st,c,root,dir,len,h,tension,pin,floor){
       const a=P[i-1],b=P[i],dx=b[0]-a[0],dy=b[1]-a[1],d=Math.hypot(dx,dy)||1e-6,e=(d-seg)/d;
       if(i===1){b[0]-=dx*e;b[1]-=dy*e;}
       else{a[0]+=dx*e*.5;a[1]+=dy*e*.5;b[0]-=dx*e*.5;b[1]-=dy*e*.5;}
+    }
+    if(c.bend)for(let i=2;i<=c.n;i++){
+      const a=P[i-2],b=P[i],dx=b[0]-a[0],dy=b[1]-a[1],d=Math.hypot(dx,dy)||1e-6,min=seg*c.bend;
+      if(d<min){const e=(d-min)/d*(i===2?1:.5);if(i>2){a[0]+=dx*e;a[1]+=dy*e;}b[0]-=dx*e;b[1]-=dy*e;}
     }
     P[0]=root.slice();
     if(floor!=null)for(let i=1;i<=c.n;i++)if(P[i][1]>floor){P[i][1]=floor;O[i][0]+=(P[i][0]-O[i][0])*.4;}

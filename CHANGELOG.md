@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a whip no longer leaves a sword's trail
+
+- A whip, flail or net no longer draws the white blade smear or a stiff afterimage blade behind a fast swing: that trail followed a straight weapon the fighter does not hold. The rope itself shows the swing.
+- A whip's lash no longer kinks or crumples above the hand after a blow; it curls.
+- Found by going over frame sheets of the new moves (flexible weapons, ground fighting, failed parries, withdrawals); nothing else was changed. Tests: `tests/pits-flex.cjs`.
+
 ## The Pits: a calmer battle screen that shows where to look
 
 - The fighter whose turn it is has a solid plate with a coloured bar and coloured Action Points; the other plate steps back. Hit Points read larger, and "No conditions" is quieter.

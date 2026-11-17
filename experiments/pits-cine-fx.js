@@ -326,7 +326,9 @@ function frame(now,dt,stopped){
   for(const id of ['a','b']){
     const m=PS.M[id],f=PS.fig[id],armed=!!(f&&f.look&&f.look.armed&&!f.dropEl&&!f.dropping);
     const opt=f&&f.look&&typeof psPoseOpt==='function'?psPoseOpt(f,f.look):{},blade=armed&&!(typeof psHeldLodge==='function'&&f&&psHeldLodge(f));
-    drawSmear(id,m,clock,blade&&!reduced());drawGhosts(id,m,clock,!reduced()&&ghosting(id),opt,blade);drawScarf(id,m,dt,now);
+    // (a chain, lash or net is its own trail: the straight blade's smear and afterimage blade are not drawn for it)
+    const stiff=blade&&!(m.weapon&&/^(chain|whip|net)$/.test(m.weapon.key));
+    drawSmear(id,m,clock,stiff&&!reduced());drawGhosts(id,m,clock,!reduced()&&ghosting(id),opt,stiff);drawScarf(id,m,dt,now);
   }
   if(!stopped)stepParts(dt);
   // the impact frame and the flash end on the real clock
