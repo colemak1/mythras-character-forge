@@ -645,8 +645,8 @@ function blow(M,aid,t,s){
   if(move==='spin')Ts+=60;if(leap)Ts+=110;
   const feint=slip?170:0;
   // a flail is whirled over the head before it comes down (batch (d)): the hand holds high while the stage swings the
-  // head round it twice (A.whirl; pits-flex.js draws the chain)
-  const whirl=P.flex==='chain'&&!A.down&&!bash&&!slip?320:0;
+  // head once round it (A.whirl; pits-flex.js draws the chain)
+  const whirl=P.flex==='chain'&&!A.down&&!bash&&!slip?480:0;
   const tw=t0+Ta+feint+whirl,tc=tw+Ts;
   A.whirl=whirl?{t0:tw-whirl,t1:tw}:null;
   const contacts=[],chosen={};

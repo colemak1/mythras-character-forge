@@ -676,7 +676,7 @@ function psFlexHits(r){const hits=(r&&r.contacts||[]).map(c=>c.t);
 // A flexible weapon (batch (d), 2026-11-17): the handle, then a flail's chain and head, a whip's lash or a net, stepped
 // by PitsFlex on the stage clock (still while the scene is held, slow in slow motion). The movement aims it straight;
 // near each contact of the blow (f.flexHits, the stage clock) it is laid onto that straight line, so the head is
-// where the sparks are. A flail's whirl (the movement's m.whirl) swings the straight line round twice over the head.
+// where the sparks are. A flail's whirl (the movement's m.whirl) swings the straight line once round over the head.
 // Returns the drawn tip, in the fighter's frame.
 function psFlex(f,L,kind,len,hand,w1,dx,now){
   const e=f.e,F=typeof PitsFlex!=='undefined'?PitsFlex:null,c=F?F.cfg(kind):{hl:30,n:2},hl=c.hl;
@@ -689,8 +689,9 @@ function psFlex(f,L,kind,len,hand,w1,dx,now){
     const X=f.hx+f.face*dx*f.scale,toW=p=>[X+f.face*f.scale*p[0],PS_GROUND+f.scale*p[1]],toL=p=>[f.face*(p[0]-X)/f.scale,(p[1]-PS_GROUND)/f.scale];
     const clk=PS_MOTION?PS.clock:now,m=PS.M&&PS.M[f.id];
     let w=w1,tension=null;
-    // the whirl: two turns over the head, back over the top, ending on the blow's own line
-    if(kind==='chain'&&m&&m.whirl&&clk>=m.whirl.t0&&clk<=m.whirl.t1){const u=(clk-m.whirl.t0)/(m.whirl.t1-m.whirl.t0);w=w1-720*u*u*(3-2*u);tension=1;}
+    // the whirl: one turn over the head, back over the top, gathering speed into the blow's own line (it does not
+    // stop before the blow)
+    if(kind==='chain'&&m&&m.whirl&&clk>=m.whirl.t0&&clk<=m.whirl.t1){const u=(clk-m.whirl.t0)/(m.whirl.t1-m.whirl.t0);w=w1-360*u*u;tension=1;}
     const d=psDir(w,1),root=toW(h2),dir=[f.face*d[0],d[1]];
     const st=f.flex||(f.flex={});
     F.step(st,{kind,len,root,dir,clk,tension,pin:F.pinAt(f.flexHits,clk),floor:PS_GROUND-2,stiff:psReduced()});

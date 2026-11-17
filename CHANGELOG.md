@@ -5,6 +5,12 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a slower flail whirl that runs into the blow
+
+- A flail is now whirled once over the head, over about half a second (it was two turns in a third of a second, too fast to read). The whirl gathers speed into the blow instead of stopping before it.
+- A chain, lash or net moves the same on 60 Hz and 120 Hz screens, and no longer twitches when a bout or replay starts over.
+- With reduced motion on, a flexible weapon is drawn straight and does not swing.
+
 ## The Pits: flails, whips and nets move like flexible weapons
 
 - A flail's chain, a whip's lash and a net now trail the hand instead of swinging as a stiff stick. At rest they hang (a whip lies on the floor), in a fast swing they lag and catch up with a snap, and on every contact the head lands exactly where the blow lands. The chain was not drawn at all before (only the handle and the ball showed).
