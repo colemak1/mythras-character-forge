@@ -99,4 +99,16 @@ test('R2: parry and evade stay open while attacks are stopped; the stop ends aft
  run(`advanceStun(S.fighters.b)`);assert.equal(fighter('b').canAttack,true,'expired after its 2 Turns');
 });
 
+test('two-handed weapon: a Serious Wound to either arm makes attacks a grade harder; to both, two (owner, 2026-11-17)',()=>{
+ bout();run(`(()=>{const b=S.fighters.b;b.weapon='greatsword';b.weaponGuard=null;ensureEffectState(b);b.weaponHand='Right Arm';b.style=60;})()`);
+ assert.equal(fighter('b').target,60);
+ run(`S.fighters.b.hp['Left Arm']=-1`);assert.equal(fighter('b').target,40,'the arm that does not "hold" it counts too: Hard');
+ run(`S.fighters.b.hp['Right Arm']=-1`);assert.equal(fighter('b').target,30,'both arms: Formidable');
+ run(`R={actor:'b',label:'Attack · Combat Style 30%',defs:[{sides:100}]}`);
+ assert.match(run(`rollDifficultyHtml('b')`),/Serious Right Arm wound[\s\S]*Serious Left Arm wound/);run('R=null');
+ // a one-handed weapon: only the arm that holds it
+ run(`(()=>{const b=S.fighters.b;b.weapon='sword';b.weaponGuard=null;ensureEffectState(b);b.hp['Right Arm']=5;})()`);
+ assert.equal(fighter('b').target,60,'Left Arm wound, sword in the right hand: no penalty');
+});
+
 console.log(passed+' Serious Wound ruling tests (R1, R2) passed');

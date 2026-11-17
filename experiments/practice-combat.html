@@ -1053,8 +1053,7 @@ function rollDifficultyHtml(actor){
  const reasons=[];
  if(f.prone)reasons.push('Prone');
  if(isStyle){
-   if(f.weaponHand&&skillZoneClass(f,f.weaponHand)==='serious')
-     reasons.push('Serious '+f.weaponHand+' wound');
+   for(const arm of weaponArms(f))if(skillZoneClass(f,arm)==='serious')reasons.push('Serious '+arm+' wound');
    if(cannotAttackDueToStun(f))reasons.push('Stunned');
    if(f.weaponHand&&limbDisabled(f,f.weaponHand))reasons.push('Weapon arm disabled');
  }else{
@@ -2322,9 +2321,9 @@ function conditionInsightsHtml(f){
      (grade>0?'Embedded weapon increases skill difficulty.':'Lodged weapon; no additional skill penalty from its size.'));
  }
  for(const loc of f.disabled||[])add(loc+' disabled','This location cannot be used normally until recovered.');
- const arm=f.weaponHand;
- if(arm&&zoneClass(f,arm)==='serious'&&!f.disabled?.includes(arm))
-   add('Serious '+arm+' wound','Attacks with this arm are one difficulty grade harder.');
+ for(const arm of weaponArms(f))if(zoneClass(f,arm)==='serious'&&!f.disabled?.includes(arm))
+   add('Serious '+arm+' wound',ARENA_WEAPONS[f.weapon]?.twoHanded?'Attacks with the two-handed weapon are one difficulty grade harder for this arm.'
+    :'Attacks with this arm are one difficulty grade harder.');
  for(const loc of ['Left Leg','Right Leg']){
    if(zoneClass(f,loc)==='serious'||f.partialLimbs?.[loc])
      add(loc+' injury','Evade is one difficulty grade harder for this leg.');
@@ -2755,9 +2754,15 @@ function weaponRoll(w,maxDie,cramped=false,forcedRolls=null){let v=cramped?Comba
 // Verified Mythras Core: page 101 (prone = Formidable), page 51 (over-100 differential rolls).
 // Several situational grades (prone, a seriously wounded arm, blinded) do not
 // multiply: the most severe one applies (Core pp.38, 101; RC-12).
+// The arms a weapon is used with: both for a two-handed weapon (owner, 2026-11-17: "both arms should count"), else the
+// one that holds it. Each with a Serious Wound makes the task one grade harder, as each injured leg does for Evade.
+function weaponArms(f,tool='weapon'){
+ if(tool==='shield')return [shieldArmOf(f)];
+ return ARENA_WEAPONS[f.weapon]?.twoHanded?['Right Arm','Left Arm']:[f.weaponHand].filter(Boolean);
+}
 function combatTarget(f,tool='weapon'){
- const arm=tool==='shield'?shieldArmOf(f):f.weaponHand;
- const steps=CombatRules.mostSevereGrade(f.prone?2:0,arm&&skillZoneClass(f,arm)==='serious'?1:0,f.blindedTurns>0?3:0);
+ const arms=weaponArms(f,tool).filter(a=>skillZoneClass(f,a)==='serious').length;
+ const steps=CombatRules.mostSevereGrade(f.prone?2:0,arms,f.blindedTurns>0?3:0);
  return steps>=3?Math.max(1,CombatRules.skillAtGrade(f.style,steps)):CombatRules.skillAtGrade(f.style,steps);
 }
 // Core p.110: a usable but seriously injured leg makes leg-dependent tasks

@@ -10,7 +10,8 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 ChatGPT (Chat), Core pp.87–88, 90–91, 110. At tied Initiative a fighter wounded in the other's turn still makes its own committed attack at the same moment; that attack now uses its skill from before the wound. In report 20261117-032318 it rolled against 32%, its 48% made Hard by the arm wound it was concurrent with. Its weapon, arm and stun were already held back until after the action; its hit points were not.
 
 - Checked, no change: no off-hand penalty exists (a weapon in a working left hand uses the normal Combat Style, the report's later 48%), and every Serious Wound already stops attacks for 1d3 Turns whether or not Endurance succeeds.
-- Tests: `tests/pits-serious-wound-rulings.cjs` (7): concurrent attack, damage in its own turn, off hand, resisted and failed Endurance (arm and head), parry and evade during the stop, its end.
+- **Two-handed weapons count both arms** (owner): a Serious Wound to either arm makes their attacks one grade harder, to both arms two grades. It used to count only the arm marked as holding the weapon. One-handed weapons are unchanged.
+- Tests: `tests/pits-serious-wound-rulings.cjs` (8): concurrent attack, damage in its own turn, off hand, two-handed, resisted and failed Endurance (arm and head), parry and evade during the stop, its end.
 
 ## The Pits: a stun counts only the stunned fighter's own Turns (ruling D-R4)
 
