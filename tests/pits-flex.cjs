@@ -119,4 +119,14 @@ test('the stage draws flexible weapons with the rope, a visible chain and a net 
   for(const k of ['ps-chain','ps-lash','ps-cord','ps-net-mesh'])assert(new RegExp('\\.'+k+'\\{[^}]*stroke:').test(css),k+' has no stroke');
   assert(html.indexOf('pits-flex.js')>0&&html.indexOf('pits-flex.js')<html.indexOf('pits-stage.js'));
 });
+test('a lash never kinks: yanked back and forth, no link folds onto the one before it; no blade smear for a rope',()=>{
+  const st={},o={kind:'whip',len:150,floor:0,clk:0,root:[0,-120],dir:[1,0]};X.reset(st,o);
+  let worst=1e9;const seg=(150-30)/12;
+  for(let t=8;t<=1600;t+=8){const a=Math.sin(t/55)*2.2+(t%400<60?2:0);
+    X.step(st,{...o,clk:t,root:[40*Math.sin(t/90),-120+20*Math.cos(t/70)],dir:[Math.cos(a),Math.sin(a)]});
+    for(let i=2;i<st.pts.length;i++)worst=Math.min(worst,dist(st.pts[i-2],st.pts[i]));}
+  assert(worst>seg*1.2,'a link folded back: '+worst.toFixed(1));
+  const fx=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','experiments','pits-cine-fx.js'),'utf8');
+  assert(/chain\|whip\|net/.test(fx)&&/drawSmear\(id,m,clock,stiff&&/.test(fx));
+});
 console.log(passed+' passed');
