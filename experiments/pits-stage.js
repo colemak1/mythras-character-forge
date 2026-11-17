@@ -486,7 +486,8 @@ function psBuildFig(id,svg){
     knob:psSvg('circle',{r:9,class:'ps-knob'},body),
     wh:psSvg('polygon',{class:'ps-head-blade'},body),
     wh2:psSvg('polygon',{class:'ps-head-blade'},body),
-    wire:psSvg('polyline',{class:'ps-wire',fill:'none'},body)};
+    wire:psSvg('polyline',{class:'ps-wire',fill:'none'},body),
+    mesh:psSvg('path',{class:'ps-net-mesh',fill:'none'},body)};
   const f={id,g,shadow,e,cur:{...PS_IDLE},anim:null,done:null,hx:600,tx:600,face:id==='a'?1:-1,scale:1,
     look:null,pts:null,flash:null,flashUntil:0,dropEl:null,dropping:false,end:null,classes:{},trailOn:false,trailPts:[],holdPose:null,slide:null,X:600};
   f.trail=psSvg('polyline',{class:'ps-trail',opacity:0},svg.querySelector('.ps-fx'));
@@ -622,7 +623,7 @@ function psPaint(f,L,g,w1,dx,lift,pose,now,blen){
     const r=psShieldR(L.shieldKey);if(f.shieldDrawnR!==r){f.shieldDrawnR=r;e.shield.setAttribute('r',r);}}
   const hand=g.Hn;let tip=hand;
   const show=L.armed&&!f.dropping;
-  for(const k of ['shaft','guard','knob','wh','wh2','wire'])e[k].style.display='none';
+  for(const k of ['shaft','guard','knob','wh','wh2','wire','mesh'])e[k].style.display='none';
   if(show){
     // (what is drawn of the weapon: the extent the movement aims and lands with, PitsCine.extent; blen is the drawn end
     // the movement gives, shorter where the point rests on the floor)
@@ -654,13 +655,8 @@ function psPaint(f,L,g,w1,dx,lift,pose,now,blen){
       if(kind==='club'){e.knob.setAttribute('cx',tip[0]);e.knob.setAttribute('cy',tip[1]);e.knob.setAttribute('r',len>100?13:9);e.knob.style.display='';}
       else{e.wh.setAttribute('points',psPts([psAdd(tip,psDir(w1,12)),[tip[0]+perp[0]*8,tip[1]+perp[1]*8],[tip[0]-perp[0]*8,tip[1]-perp[1]*8]]));e.wh.style.display='';}
     }else if(kind==='chain'||kind==='whip'||kind==='net'){
-      // flexible weapons: a short handle and a hanging, swinging end
-      const sw=Math.sin(now/260+(f.id==='b'?2:0))*(f.anim||PS_MOTION?0:8),hl=kind==='net'?26:30;
-      const h2=at(hl);ln(e.shaft,hand,h2);e.shaft.setAttribute('class','ps-shaft ps-wood');
-      const end=psAdd(h2,psDir(w1+sw,len-hl)),mid=psAdd(h2,psDir(w1-sw*1.6,(len-hl)/2));
-      e.wire.setAttribute('points',psPts([h2,mid,end]));e.wire.style.display='';tip=end;
-      if(kind==='chain'){e.knob.setAttribute('cx',end[0]);e.knob.setAttribute('cy',end[1]);e.knob.setAttribute('r',9);e.knob.style.display='';}
-      if(kind==='net'){e.knob.setAttribute('cx',end[0]);e.knob.setAttribute('cy',end[1]);e.knob.setAttribute('r',24);e.knob.setAttribute('class','ps-knob ps-net');e.knob.style.display='';}
+      // flexible weapons (batch (d)): a short handle and a rope that trails the hand (pits-flex.js)
+      tip=psFlex(f,L,kind,L.wk.len,hand,w1,c.dx,now);
     }
   }
   const X=f.hx+f.face*c.dx*f.scale;f.X=X;
@@ -672,6 +668,54 @@ function psPaint(f,L,g,w1,dx,lift,pose,now,blen){
   else if(f.trailPts.length)f.trailPts.shift();
   if(f.trailPts.length>2){f.trail.setAttribute('points',psPts(f.trailPts));f.trail.setAttribute('opacity',.7*f.trailPts.length/9);}
   else f.trail.setAttribute('opacity',0);
+}
+// the contacts of the movement just written: a flexible weapon is laid straight onto each (both fighters: a chain that
+// parries meets the blow on its straight line too)
+function psFlexHits(r){const hits=(r&&r.contacts||[]).map(c=>c.t);
+  for(const id of ['a','b']){const f=PS.fig[id];if(f)f.flexHits=(f.flexHits||[]).filter(t=>t>=PS.clock-200&&t<=PS.clock+5000).concat(hits);}}
+// A flexible weapon (batch (d), 2026-11-17): the handle, then a flail's chain and head, a whip's lash or a net, stepped
+// by PitsFlex on the stage clock (still while the scene is held, slow in slow motion). The movement aims it straight;
+// near each contact of the blow (f.flexHits, the stage clock) it is laid onto that straight line, so the head is
+// where the sparks are. A flail's whirl (the movement's m.whirl) swings the straight line round twice over the head.
+// Returns the drawn tip, in the fighter's frame.
+function psFlex(f,L,kind,len,hand,w1,dx,now){
+  const e=f.e,F=typeof PitsFlex!=='undefined'?PitsFlex:null,c=F?F.cfg(kind):{hl:30,n:2},hl=c.hl;
+  const at=d=>psAdd(hand,psDir(w1,d)),h2=at(hl);
+  e.knob.setAttribute('class','ps-knob');
+  if(kind!=='net'){ln2(e.shaft,hand,h2);e.shaft.setAttribute('class','ps-shaft ps-wood');}else e.shaft.style.display='none';
+  let pts;
+  if(!F){pts=[h2,at(len)];}
+  else{
+    const X=f.hx+f.face*dx*f.scale,toW=p=>[X+f.face*f.scale*p[0],PS_GROUND+f.scale*p[1]],toL=p=>[f.face*(p[0]-X)/f.scale,(p[1]-PS_GROUND)/f.scale];
+    const clk=PS_MOTION?PS.clock:now,m=PS.M&&PS.M[f.id];
+    let w=w1,tension=null;
+    // the whirl: two turns over the head, back over the top, ending on the blow's own line
+    if(kind==='chain'&&m&&m.whirl&&clk>=m.whirl.t0&&clk<=m.whirl.t1){const u=(clk-m.whirl.t0)/(m.whirl.t1-m.whirl.t0);w=w1-720*u*u*(3-2*u);tension=1;}
+    const d=psDir(w,1),root=toW(h2),dir=[f.face*d[0],d[1]];
+    const st=f.flex||(f.flex={});
+    F.step(st,{kind,len,root,dir,clk,tension,pin:F.pinAt(f.flexHits,clk),floor:PS_GROUND-2,stiff:psReduced()});
+    pts=st.pts.map(toL);f.flexOpen=st.open;
+  }
+  const end=pts[pts.length-1];
+  e.wire.setAttribute('points',psPts(pts));e.wire.style.display='';
+  e.wire.setAttribute('class','ps-wire ps-'+(kind==='chain'?'chain':kind==='whip'?'lash':'cord'));
+  if(kind==='chain'){e.knob.setAttribute('cx',end[0]);e.knob.setAttribute('cy',end[1]);e.knob.setAttribute('r',len>100?11:9);e.knob.style.display='';}
+  if(kind==='net'){e.mesh.setAttribute('d',psNetPath(hand,pts,f.flexOpen||0));e.mesh.style.display='';}
+  return end;
+}
+function ln2(el,a,b){el.setAttribute('x1',a[0]);el.setAttribute('y1',a[1]);el.setAttribute('x2',b[0]);el.setAttribute('y2',b[1]);el.style.display='';}
+// A net: bunched in the hand at rest, spread wide as it is cast (open 0..1). Its cord runs along pts; the mesh is
+// drawn either side of it, widest in the middle, as diamonds.
+function psNetPath(hand,pts,open){
+  const n=pts.length-1,A=[],B=[],w=4+30*Math.min(1,open);
+  for(let i=0;i<=n;i++){
+    const p=pts[i],q=pts[Math.min(n,i+1)],o=pts[Math.max(0,i-1)],t=psUnit([q[0]-o[0],q[1]-o[1]]),s=w*Math.sin(Math.PI*(i+.6)/(n+1.2));
+    A.push([p[0]-t[1]*s,p[1]+t[0]*s]);B.push([p[0]+t[1]*s,p[1]-t[0]*s]);
+  }
+  const P=p=>p[0].toFixed(1)+' '+p[1].toFixed(1);
+  let d='M'+P(hand)+' L'+A.map(P).join(' L')+' L'+B.slice().reverse().map(P).join(' L')+' Z';
+  for(let i=0;i<n;i++)d+=' M'+P(A[i])+' L'+P(B[i+1])+' M'+P(B[i])+' L'+P(A[i+1]);
+  return d;
 }
 // The pose a fighter settles into when nothing is playing.
 function psRest(f){
@@ -886,13 +930,22 @@ function psWeaponShape(parent,wk){
   else if(k==='axe'){const hd=psAxeHead(len),pts=a=>a.map(([u,v])=>u+','+v).join(' ');
     psSvg('line',{x1:0,y1:0,x2:len,y2:0,class:'ps-shaft ps-wood','stroke-width':4},inner);
     psSvg('polygon',{points:pts(hd.blade),class:'ps-head-blade'},inner);psSvg('polygon',{points:pts(hd.poll),class:'ps-head-blade'},inner);}
-  else if(k==='club'||k==='pick'||k==='chain'){psSvg('line',{x1:0,y1:0,x2:len,y2:0,class:'ps-shaft ps-wood','stroke-width':5},inner);psSvg('circle',{cx:len,cy:0,r:k==='club'&&len>100?13:9,class:'ps-knob'},inner);}
+  else if(k==='chain'||k==='whip'||k==='net'){
+    // (a flexible weapon lies slack: the handle, then the chain, lash or net in a loose curve on the floor)
+    const hl=k==='net'?8:30,rest=len-hl,pts=[[0,0]];for(let i=0;i<=8;i++){const u=i/8;pts.push([hl+u*rest*.82,Math.sin(u*Math.PI*1.4)*rest*.12]);}
+    if(k!=='net')psSvg('line',{x1:0,y1:0,x2:hl,y2:0,class:'ps-shaft ps-wood','stroke-width':5},inner);
+    psSvg('polyline',{points:psPts(pts.slice(1)),class:'ps-wire ps-'+(k==='chain'?'chain':k==='whip'?'lash':'cord'),fill:'none'},inner);
+    const e=pts[pts.length-1];
+    if(k==='chain')psSvg('circle',{cx:e[0],cy:e[1],r:len>100?11:9,class:'ps-knob'},inner);
+    if(k==='net')psSvg('path',{d:psNetPath([0,0],pts.slice(1),.15),class:'ps-net-mesh',fill:'none'},inner);}
+  else if(k==='club'||k==='pick'){psSvg('line',{x1:0,y1:0,x2:len,y2:0,class:'ps-shaft ps-wood','stroke-width':5},inner);psSvg('circle',{cx:len,cy:0,r:k==='club'&&len>100?13:9,class:'ps-knob'},inner);}
   else psSvg('line',{x1:0,y1:0,x2:len,y2:0,class:'ps-shaft ps-wood','stroke-width':4},inner);
   return inner;
 }
 // opt.stick: lands point down, stuck in the floor (the Disarm finish)
 function psFlyWeapon(f,metres,opt){
-  const stick=!!(opt&&opt.stick);
+  // (a flail, whip or net cannot stick point down: it lands slack)
+  const stick=!!(opt&&opt.stick)&&!/^(chain|whip|net)$/.test(f.look.wk.kind);
   const from=f.pts?psWorld(f,f.pts.hand):[f.X,PS_GROUND-80];
   const to=[f.X-f.face*Math.max(60,metres*PS_M+50),PS_GROUND+2];
   const g=psSvg('g',{class:'ps-dropped'},psLayer('ps-fx'));psWeaponShape(g,f.look.wk);
@@ -1369,7 +1422,7 @@ async function psMotionCue(cue){
       psDom(psWorld(me,me.pts?me.pts.Sh:[0,-60]),'Trip Opponent','fx');PS.intents={};
       const r=L.trip?L.trip(PS.M,me.id,PS.clock,{fell:!!cue.fell,key:PS.cueFor}):
         psCineBlow(me.id,{outcome:'armour',loc:'rleg',lost:0,fall:cue.fell?'sit':false,flow:psReplaying()});
-      PS.busyUntil=r.end;me.spent=tgt.spent=true;
+      PS.busyUntil=r.end;psFlexHits(r);me.spent=tgt.spent=true;
       if(L.trip)psEmit('move',{actor:me.id,key:PS.cueFor||null,move:r.move,replay:psReplaying()});
       // (the Prone chip waits until the tripped fighter is sat down: Work's check B1, 2026-11-14)
       // (and only if the figure really goes down: the HUD follows the picture, audit CA-01)
@@ -1386,7 +1439,7 @@ async function psMotionCue(cue){
       // the spring stage keeps the stand-in, a blow that meets the weapon
       PS.intents={};
       const r=L.disarm?L.disarm(PS.M,me.id,PS.clock,{key:PS.cueFor}):psCineBlow(me.id,{outcome:'parried',loc:'rarm',lost:0,flow:psReplaying()});
-      PS.busyUntil=r.end;me.spent=tgt.spent=true;
+      PS.busyUntil=r.end;psFlexHits(r);me.spent=tgt.spent=true;
       if(L.disarm)psEmit('move',{actor:me.id,key:PS.cueFor||null,move:r.move,replay:psReplaying()});
       const cs=r.contacts.length>1?r.contacts:r.contacts.concat(r.contacts);
       for(let i=0;i<cs.length;i++){
@@ -1473,7 +1526,7 @@ async function psMotionBlow(cue){
         trip&&trip.fell?['trip']:[],cue.record&&cue.record.disarm&&cue.record.disarm.actor===atk.id?['disarm']:[],
         // (Blind Opponent is a defender's effect: a blinded loser is drawn blind on the blow that ends it)
         psBlinded(def.id)?['blind']:[])});
-  PS.busyUntil=r.end;atk.spent=def.spent=true;
+  PS.busyUntil=r.end;psFlexHits(r);atk.spent=def.spent=true;
   // (the trip's fall is drawn when the blow's own movement has played out, from the pose it left: written into the blow
   // it overlapped the struck fighter's reaction and the head jumped, measured 47 px in one frame)
   // (downAt: the HUD's Prone chip waits for the blow's contact, when the figure is seen to go down)
@@ -1551,7 +1604,7 @@ async function psMotionBlow(cue){
   await psUntil(r.end);
   if(hookAfter&&PS.M[def.id]&&!PS.M[def.id].down&&!(tripFell&&def.mDown)){
     // the attacker's Trip: the hook behind the ankle, out of the blow's follow-through
-    const h=L.trip(PS.M,atk.id,PS.clock,{fell:tripFell,after:true,key:PS.cueFor});PS.busyUntil=Math.max(PS.busyUntil,h.end);
+    const h=L.trip(PS.M,atk.id,PS.clock,{fell:tripFell,after:true,key:PS.cueFor});PS.busyUntil=Math.max(PS.busyUntil,h.end);psFlexHits(h);
     const c=h.contacts[0];
     if(c){const w=psW(c.at);await psUntil(c.t);
       psEmit('contact',{kind:'trip',actor:atk.id,target:def.id,fell:!!trip.fell,point:w.map(Math.round)});psBurst(w,'spark',8);psRing(w);

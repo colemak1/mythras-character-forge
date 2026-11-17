@@ -49,7 +49,7 @@ function profile(wk){
   else if(k==='staff'){p.two=44;p.reachAt=.85;}
   else if(k==='axe'){p.heavy=true;p.reachAt=.86;if(wk.two||len>=110)p.two=26;}
   else if(k==='club'||k==='pick'){p.heavy=true;p.reachAt=.92;if(len>100)p.two=26;}
-  else if(k==='chain'||k==='whip'||k==='net'){p.reachAt=.95;}
+  else if(k==='chain'||k==='whip'||k==='net'){p.reachAt=.95;p.flex=k;}
   // The engine's handedness, when the stage gives it (audit CA-05): a one-handed weapon is held in one hand (a
   // shortspear with a shield), a two-handed one in both (a military flail on its handle)
   if(wk.hands===1)p.two=0;
@@ -551,6 +551,9 @@ function chamberFor(m,r,strike){
   let list=CHAMBER[m.prof.fam];
   if(m.prof.fam==='thrust'&&(m.prof.two||m.weapon.len>80))list=['upThrust'];
   if(m.prof.two&&m.prof.fam==='cut')list=['upHigh','upLow','upSide'];
+  // (a flail is whirled overhead and a whip drawn back over the shoulder before the blow: batch (d))
+  if(m.prof.flex==='chain')list=['upHigh'];
+  if(m.prof.flex==='whip')list=['upHigh','upSide'];
   return pick(r,list);
 }
 function windUp(m,name){
@@ -641,7 +644,11 @@ function blow(M,aid,t,s){
   let Ts=Math.round((P.fam==='thrust'?85:105)*heavy);                       // strike
   if(move==='spin')Ts+=60;if(leap)Ts+=110;
   const feint=slip?170:0;
-  const tw=t0+Ta+feint,tc=tw+Ts;
+  // a flail is whirled over the head before it comes down (batch (d)): the hand holds high while the stage swings the
+  // head round it twice (A.whirl; pits-flex.js draws the chain)
+  const whirl=P.flex==='chain'&&!A.down&&!bash&&!slip?320:0;
+  const tw=t0+Ta+feint+whirl,tc=tw+Ts;
+  A.whirl=whirl?{t0:tw-whirl,t1:tw}:null;
   const contacts=[],chosen={};
   // --- the defender up to the contact, so the blow can be aimed at where the target will be ---
   const xd0=sample(D,t,true).px,away=-fd;                 // world direction the defender is driven
@@ -729,9 +736,13 @@ function blow(M,aid,t,s){
   // wind-up
   if(!chambered){
     const name=gm?GROUND[gm].up:down?'kneel':bash?'upBash':move==='lunge'?'upThrust':move==='stab'?'upStab':move==='rise'?'upLow':move==='spin'?'upSide':'upHigh';
-    keyA(A,tw,windUp(A,name),down?{e:'out',slide:true}:{e:'out',plant:'ff'});
+    keyA(A,tw-whirl,windUp(A,name),down?{e:'out',slide:true}:{e:'out',plant:'ff'});
     if(!down)dustAt(A,t0+40,sample(A,t,true).bfx,3,-f);
-  }else keyA(A,tw,{hip:[A.lastP.hip[0]-3,A.lastP.hip[1]-2]},{e:'out',plant:'both'});
+  }else keyA(A,tw-whirl,{hip:[A.lastP.hip[0]-3,A.lastP.hip[1]-2]},{e:'out',plant:'both'});
+  // (the whirl: the body rocks into it while the head goes round)
+  if(whirl){const W=A.lastP;
+    keyA(A,tw-whirl*.5,{hip:[W.hip[0]+4,W.hip[1]-2],lean:W.lean+4},{e:'io',plant:'both'});
+    keyA(A,tw,{hip:[W.hip[0]-2,W.hip[1]-3],lean:W.lean-2},{e:'io',plant:'both'});}
   // the strike: the body is thrown in first, the weapon whips in last
   const spin=move==='rise'?{w:1}:move==='lunge'||bash?null:{w:-1};
   const ec={px:'out',py:'out',ffx:'out',bfx:'out',lean:'out',w:move==='lunge'?'in':'in3',ua:'in',fa:'in',turn:'out'};
@@ -861,7 +872,7 @@ function blow(M,aid,t,s){
   }
   // the replay runs straight on: the next exchange is written into this one's recovery
   const out={tc:contacts.length?contacts[0].t:tc,contacts,end:s.flow&&!s.defeated?Math.min(end,tHit+(dodge?250:290)):end,move:gm||move,
-    ward:warded,leap,...chosen,finish:A.finished||null,release:A.release||null,drop:A.dropAt||null};A.finished=null;A.release=null;A.dropAt=null;
+    ward:warded,leap,...chosen,whirl:A.whirl||null,finish:A.finished||null,release:A.release||null,drop:A.dropAt||null};A.finished=null;A.release=null;A.dropAt=null;
   return out;
 }
 

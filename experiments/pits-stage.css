@@ -48,6 +48,8 @@
 .ps-shaft.ps-wood{stroke:var(--ps-dim)}
 .ps-guard{stroke:var(--ps-gold);stroke-linecap:round}
 .ps-knob{fill:var(--ps-dim);stroke:var(--ps-ink);stroke-width:2}
+.ps-wire{stroke:var(--ps-ink);stroke-width:2.5;stroke-linecap:round}
+.ps-net-mesh{stroke:var(--ps-dim);stroke-width:1.2}
 .ps-head-blade{fill:var(--ps-ink);stroke:var(--ps-ink);stroke-width:1.5}
 .ps-trail{fill:none;stroke:var(--ps-ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .ps-blood{fill:var(--ps-hurt)}
