@@ -165,6 +165,20 @@ function pbDisarmLine(l){
     :(you?'You are disarmed':`${who} is disarmed`);
   return {cls:keeps?'fx':'hurt',html:`<b>${head}</b> (Disarm Opponent, ${owner?esc(owner.name)+"'s":'a'} Special Effect). ${who} rolled <b>${m[2]}</b> against ${m[3]}% · ${esc(word)}.`};
 }
+// A Serious or Major Wound's Endurance roll in plain words (report 20261117-184544: "it's not obvious what you need to
+// roll on endurance rolls to stay up and ... what it does in general"): the two rolls, why one wins, and what it meant.
+function pbWoundLine(l){
+  const t=/^(SERIOUS|MAJOR) WOUND · (.+)$/.exec(l.title||'');if(!t)return null;
+  const m=/^(.+?) Endurance (\d+)\/(\d+)% \((\w+)\) versus the attack (\d+) \((\w+)\)\. (Resists|Fails)[^.]*\.(?: Endurance (\d+)% made harder by ([^.]+)\.)?/.exec(String(l.body||''));
+  if(!m)return null;
+  const level=t[1].toLowerCase(),loc=t[2],ok=m[7]==='Resists',owner=S.fighters[l.meta?.actor];
+  const you=owner&&pbHuman(owner.id)&&!pbHuman(pbOther(owner.id)),who=you?'You':esc(m[1]);
+  const st=paWoundStakes(level,loc,you?'you':m[1]),word=g=>esc(PB_GRADE_WORD[g.toLowerCase()]||g);
+  return {cls:ok?'fx':'hurt',html:`<b>${who} ${ok?(you?'resist':'resists'):(you?'fail':'fails')} the ${level==='major'?'Major':'Serious'} Wound to the ${esc(loc)}</b>: `
+    +`Endurance <b>${m[2]}</b> against ${m[3]}%${m[8]?` (${m[8]}%, made harder by ${esc(m[9])})`:''} · ${word(m[4])}, against the attack roll of <b>${m[5]}</b> · ${word(m[6])}. `
+    +`To resist, Endurance must beat the attack roll: a better grade, or the same grade and a higher roll (Core p.110). `
+    +(ok?`Resisted: ${esc(st.ok)}`:`Not resisted: ${esc(st.bad)}${st.ok?` (Had it been resisted: ${esc(st.ok)})`:''}`)};
+}
 // Special Effects whose engine line is not enough on its own for a new player (report 20261114-235608: "parry bypass was
 // not so clear... make the special effect choices made by the opponent more clear"): one plain consequence each.
 const PB_FX_PLAIN={
@@ -196,6 +210,7 @@ function pbStory(g){
       out.push({cls:'fx',html:`<b>${esc(l.title.replace(/ does not defend$/,''))} ${noAp?'has no AP left: cannot parry or evade':'does not defend'}</b>${noAp?'':' and keeps their Action Points'}.`});continue;}
     if(l.title==='Trip Opponent'){const t=pbTripLine(l,g);if(t){out.push(t);continue;}}
     if(l.title==='Disarm Opponent'){const t=pbDisarmLine(l);if(t){out.push(t);told.add(l.title);continue;}}
+    {const t=pbWoundLine(l);if(t){out.push(t);continue;}}
     // Arise is chosen before the blow is resolved, so the engine logs it before the evade's fall: tell it after the result
     if(l.title==='Arise'){arise=l;continue;}
     // a Special Effect says who chose it, once, and what it means in plain words
@@ -279,11 +294,20 @@ function pbDecision(c){
   if(c.phase==='opponent'&&!V.busy&&!R&&!p)return `<div class="bdo"><p class="bnone">${esc(S.fighters[S.order?.[S.turnIndex]]?.name||'The opponent')} is choosing. If they attack, your defences light up on the left.</p></div>`;
   return `<div class="bdo bprompt">${paPromptHtml()}</div>`;
 }
+// this bout's initiative result, once it has been shown (null before it, or from an earlier bout)
+function pbInitiativeNow(){
+  const logs=paVisibleLogs();
+  for(let i=logs.length-1;i>=0;i--){const t=logs[i].title||'';if(t==='New Opponent')return null;
+    if(/^Encounter \d+ · Initiative$/.test(t))return paInitiative(logs[i]);}
+  return null;
+}
 function pbMiddle(c){
   // the bout is over: how it ended and what next, in place of the exchange (no dialog over the arena)
   if((S.phase==='between'||S.phase==='over')&&!V.busy)return `<div class="bmid bend">${paEndHtml()}</div>`;
   const g=pbExchange(),inProgress=!!(R||c.p||V.busy);
   let lines=pbStory(g);
+  // before the first exchange of a bout: who acts first, and how (report 20261117-182548)
+  if(!g){const n=pbInitiativeNow();if(n)lines=[{cls:'note',html:`<b>Initiative: ${esc(n.head)}</b>. ${esc(n.a.name)} ${esc(n.a.math)}; ${esc(n.b.name)} ${esc(n.b.math)}.`}];}
   if(!inProgress)lines=lines.concat(pbSince(g));
   // (what still holds a fighter has its own line under the story, so it never scrolls away)
   const lasting=pbLasting(),still=lasting.length?`<ul class="blasting" aria-label="Still in effect">${lasting.map(l=>`<li>${l.html}</li>`).join('')}</ul>`:'';
@@ -436,6 +460,8 @@ function pbInfoHtml(c,key){
   else if(kind==='def'){const d=c.defs.find(x=>x.val===val);if(d)h=`<header><h4>${esc(d.label)}</h4>${pbRecWhy(c.recD,val)}<span class="btag">${d.ap?d.ap+' AP':'free'}</span></header>${d.usable===false?`<p>${esc(d.why)}</p>`:pbDefenceOdds(d,c)}`;}
   else if(kind==='fx')h=pbFxInfo(val,c);
   else if(kind==='loc')h=pbLocInfo(val,c);
+  else if(kind==='cond'){const [n,w]=String(val).split('|').map(x=>{try{return decodeURIComponent(x);}catch(e){return x;}});
+    h=`<header><h4>${esc(n)}</h4><span class="btag">condition</span></header><p>${esc(w||'')}</p>`;}
   return h||pbDefaultInfo(c);
 }
 function pbRight(c){
@@ -479,7 +505,7 @@ function pbWire(){
   });
   const hover=e=>{
     if(!pbOn()||!document.body.classList.contains('pa-on'))return;
-    const t=e.target.closest?.('#root [data-pb-info],#root .bdo.bloc [data-act="pickloc"]');
+    const t=e.target.closest?.('#root [data-pb-info],#pitsStage .ps-hud [data-pb-info],#root .bdo.bloc [data-act="pickloc"]');
     const key=t?(t.dataset.pbInfo||'loc:'+t.dataset.val):null;
     if(key===PB.hover)return;
     // leaving an item for empty space inside the details panel keeps what is shown, so it can be read

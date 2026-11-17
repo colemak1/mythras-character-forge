@@ -510,7 +510,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 </style>
 <link rel="stylesheet" href="pits-stone.css?v=a495935cd5">
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
-<link rel="stylesheet" href="pits-arena.css?v=f1e229783b">
+<link rel="stylesheet" href="pits-arena.css?v=8327df4382">
 <link rel="stylesheet" href="pits-stage.css?v=4b6c786d11">
 <link rel="stylesheet" href="pits-cine.css?v=5f257857a3">
 <link rel="stylesheet" href="pits-bottom.css?v=2f6d0d8089">
@@ -554,18 +554,18 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="pits-view.js?v=34d5123e38"></script>
 <script src="pits-game.js?v=3769cec741"></script>
 <script src="pits-report.js?v=78c28f1bb3"></script>
-<script src="pits-arena.js?v=e9a7ad4cca"></script>
-<script src="pits-bottom.js?v=803af881e6"></script>
+<script src="pits-arena.js?v=7b1cf6447a"></script>
+<script src="pits-bottom.js?v=ca95eb75b8"></script>
 <script src="pits-lost.js?v=f385014ea5"></script>
 <script src="pits-idea.js?v=e1791930b7"></script>
 <script src="pits-motion.js?v=5c6cf25c54"></script>
 <script src="pits-spring.js?v=d6e69e0c95"></script>
 <script src="pits-writer.js?v=e371f2e1b2"></script>
 <script src="pits-spring-live.js?v=8c9c8efa51"></script>
-<script src="pits-cine.js?v=c022b26da0"></script>
+<script src="pits-cine.js?v=78b7c5f201"></script>
 <script src="pits-cine-fx.js?v=02003a23cc"></script>
 <script src="pits-flex.js?v=dff1553db0"></script>
-<script src="pits-stage.js?v=5089c892e5"></script>
+<script src="pits-stage.js?v=9de0ef1f33"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -994,14 +994,17 @@ function requestDice(actor,defs,label,callback){
   R={id:++rollSerial,actor,defs:defs.map(d=>({...d})),label,callback};
   render();
 }
+// What makes a fighter's skill rolls harder right now (effectiveSkill), in words.
+function skillPenaltyCauses(f){
+ const causes=[];if(!f)return causes;
+ if((FATIGUE_GRADES[Math.min(9,f.fatigue||0)]||0)>0)causes.push((FATIGUE_NAMES[Math.min(9,f.fatigue)]||'Fatigue')+' fatigue');
+ if(impaleGrade(f)>0)causes.push('impaled weapon');
+ if(entangledTorso(f))causes.push('entangled '+f.entangled.loc.toLowerCase());
+ return causes;
+}
 function requestSkill(actor,percent,label,callback){
  const effective=effectiveSkill(S.fighters?.[actor],percent);
- const causes=[];
- const f=S.fighters?.[actor];
- if(f&&(FATIGUE_GRADES[Math.min(9,f.fatigue||0)]||0)>0)
-   causes.push((FATIGUE_NAMES[Math.min(9,f.fatigue)]||'Fatigue')+' fatigue');
- if(f&&impaleGrade(f)>0)causes.push('impaled weapon');
- if(f&&entangledTorso(f))causes.push('entangled '+f.entangled.loc.toLowerCase());
+ const f=S.fighters?.[actor],causes=skillPenaltyCauses(f);
  const shown=effective!==percent?`${label} · ${effective}% (${causes.join(' + ')||'adjusted'})`:label;
  requestDice(actor,[{sides:100,label:'d100'}],shown,values=>{
   const result=rollSkill(effective,values[0]);result.effectiveTarget=effective;
@@ -1698,6 +1701,8 @@ function playBeat(){
   // Paced by the animation: the next beat starts the moment this beat's motion is done. Beats with no motion of their
   // own (folded into a blow's record, or plain text) pass quickly. With no stage on screen, fall back to timed beats.
   render();
+  // who acts first is read before the first blow (report 20261117-182548): the result stays up a moment
+  if(/^Encounter \d+ · Initiative$/.test(e.title||'')){schedulePresentation(V.quick?DICE_HOLD_QUICK_MS:INITIATIVE_HOLD_MS);return;}
   const tok=V.beatTok=(V.beatTok||0)+1,done=typeof pitsStageCueDone==='function'?pitsStageCueDone(e.id):null;
   if(done){done.then(()=>{if(V.busy&&V.beatTok===tok){flushPendingShown();advancePresentation();}});return;}
   const stageUp=typeof pitsStageMounted==='function'&&pitsStageMounted();
@@ -1708,7 +1713,7 @@ function schedulePresentation(delay){
   V.timer=setTimeout(advancePresentation,V.quick?130:delay);
 }
 // How long settled dice stay before the fight moves on (Fast keeps it short).
-const DICE_HOLD_MS=1400,DICE_HOLD_QUICK_MS=300;
+const DICE_HOLD_MS=1400,DICE_HOLD_QUICK_MS=300,INITIATIVE_HOLD_MS=2200;
 function diceHoldMs(){return V.quick?DICE_HOLD_QUICK_MS:DICE_HOLD_MS;}
 function advancePresentation(){
   if(!V.busy)return;
@@ -3871,7 +3876,10 @@ function resolveWound(atk,def,loc,cls,wound,attackRoll,onContinue){
    });
  }else woundEndurance();
  function woundEndurance(){
+   // presentation only: what the Endurance roll has to beat, for the dice tray (report 20261117-184544)
+   S.woundTest={id:def.id,level:cls,loc,attack:{roll:attackRoll.roll,grade:attackRoll.grade,name:attackRoll.name||String(attackRoll.label||'').toLowerCase()}};
    requestSkill(def.id,def.endurance,`Endurance · ${cls} wound to ${loc}`,res=>{
+     S.woundTest=null;
      let defendedAgainst=attackRoll;
      if((res.effectiveTarget??def.endurance)>100){
        const excess=(res.effectiveTarget??def.endurance)-100;
@@ -3883,9 +3891,12 @@ function resolveWound(atk,def,loc,cls,wound,attackRoll,onContinue){
         +`roll ${attackRoll.roll} is now ${defendedAgainst.label}.`),'system','Core p.110: apply the excess over 100 retroactively to the attacking skill.',{actor:def.id});
      }
      const holds=opposedBetter(res,defendedAgainst);
+     // (the target rolled against, not the sheet's: "54/55% FAILURE" was a roll against 28%, report 20261117-183744)
+     const eff=res.effectiveTarget??def.endurance,why=eff!==def.endurance?skillPenaltyCauses(def).join(' + '):'';
      log(`${cls.toUpperCase()} WOUND · ${loc}`,
-      `${def.name} Endurance ${res.roll}/${def.endurance}% (${res.label}) versus the attack ${defendedAgainst.roll} (${defendedAgainst.label}). ${holds?
-      'Resists the additional consequence.':'Fails to resist.'}`,'hurt',`Core p.110 · ${body} consequence`,{actor:def.id,dice:d100Dice(res.roll)});
+      `${def.name} Endurance ${res.roll}/${eff}% (${res.label}) versus the attack ${defendedAgainst.roll} (${defendedAgainst.label}). ${holds?
+      'Resists the additional consequence.':'Fails to resist.'}${eff!==def.endurance?
+      ` Endurance ${def.endurance}% made harder by ${why||'a penalty'}.`:''}`,'hurt',`Core p.110 · ${body} consequence`,{actor:def.id,dice:d100Dice(res.roll)});
      // What the wound does once the Endurance roll is known is the shared
      // rule (CombatRules.woundOutcome, Core pp.109–110).
      const result=CombatRules.woundOutcome({level:cls,limb:isLimb,leg:loc.endsWith('Leg'),

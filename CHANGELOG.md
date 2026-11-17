@@ -5,6 +5,18 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: initiative, Endurance and Overextend told; a held Impale stays held (fight reports FR-16 to FR-20)
+
+From the reports and Lost? presses of 2026-11-17 (exported 19:47 UTC). Rules and dice unchanged.
+
+- **Who goes first.** After the initiative rolls the dice tray says who acts first, with both totals and how they were made ("Kethan Voss d10 5 + 13 bonus − 2 armour = 16"), and holds it for 2.2 s before the first blow (`INITIATIVE_HOLD_MS`; Fast 0.3 s). The deck's story says it too until the first exchange. A tie says they act at the same time.
+- **A new opponent starts clean.** The tray no longer shows the last bout's finishing blow ("Wounded · Right Leg") at the start of the next fight.
+- **Endurance against a wound.** The log now gives the Endurance target actually rolled against: "54/55% (FAILURE)" was a roll against 28%, halved by the impaled weapon, and it now reads "54/28% ... Endurance 55% made harder by impaled weapon". The story tells the roll in plain words: both rolls, that Endurance must beat the attack roll (a better grade, or the same grade and a higher roll, Core p.110), and what it meant (the leg useless and a fall, unconscious, and so on). A player's own Endurance roll shows, before rolling, the attack roll to beat, the chance to resist, and what resisting and failing each mean.
+- **Overextend Opponent** has its own movement: the failed blow carries on past the guard, a stagger on the front foot with the empty arm thrown out, then back to its place, low. "Overextended" shows over the fighter.
+- **Holding an impaled weapon.** The holder no longer takes its long-reach stance (weight back) while its weapon is in the other's wound, so the hand stays on the grip while the other attacks. It used to let go in the picture though it still held the weapon.
+- **Conditions explain themselves** (from an Idea): pointing at or tapping a condition chip on a plate shows what it does in Details, and as a tooltip.
+- Tests: `tests/pits-report-fixes-3.cjs` (9); one case in `tests/pits-stage.cjs` changed from "Overextend has no look" to its new cue. Golden bouts regenerated for the Endurance wording only (5 lines).
+
 ## The Pits: the fight says what just happened (fight reports FR-08 to FR-15)
 
 From the owner's Lost? presses and reports of 2026-11-14 to 2026-11-17. The rules were right in these; the screen did not say what had happened. Rules and dice unchanged.

@@ -53,6 +53,8 @@ function pitsStageCue(entry,names){
   // tied Initiative: the fighter this blow has finished still acts once this cycle before it goes down (Core p.90)
   if(t==='Falling'&&/is going down/.test(b))return {type:'falling',actor:m.actor||idOf(b)};
   if(t==='Press Advantage')return {type:'press',actor,target:other(actor),name:t};
+  // (the engine's line names the one overextended first: "X cannot attack on the next Turn")
+  if(t==='Overextend Opponent'){const tg=idOf(b)||(m.actor?other(m.actor):null);return tg?{type:'overextend',actor:other(tg),target:tg}:null;}
   if(t==='Impaled Weapon')return {type:'lodge',actor};
   if(t==='FIGHT ENDS'){
     // only what the engine's own wording says: a concession, an injury, or blood loss/exhaustion; nothing is inferred from the damage
@@ -353,7 +355,7 @@ function pitsStageBeat(events,step,names){
     const fx=[];
     for(let i=a0+1;i<a1;i++){const x=events[i];if(!x||x.roll||x.checkpoint||!x.meta||x.meta.actor!==striker)continue;
       const k=PSTAGE_FX[x.title];if(k&&!fx.includes(k))fx.push(k);}
-    return {cue:{...cue,record:{press:inEx(a0+1,step,['press'])[0]||null,after:inEx(step+1,a1,PSTAGE_AFTER),arise:arise?arise.actor:null,disarm,trip,impale,fx}},consumed:false};
+    return {cue:{...cue,record:{press:inEx(a0+1,step,['press'])[0]||null,overextend:inEx(a0+1,a1,['overextend'])[0]||null,after:inEx(step+1,a1,PSTAGE_AFTER),arise:arise?arise.actor:null,disarm,trip,impale,fx}},consumed:false};
   }
   // the attacker's Trip has no movement of its own when a blow of its exchange follows: that blow draws it
   if(cue.type==='trip'){
@@ -365,7 +367,7 @@ function pitsStageBeat(events,step,names){
   // Arise has no movement of its own: the blow of its exchange draws it (the evader keeps its feet; a fighter already
   // down gets up as the exchange ends)
   if(cue.type==='arise')return {cue,consumed:true};
-  if(cue.type==='press'){
+  if(cue.type==='press'||cue.type==='overextend'){
     const later=inEx(step+1,a1,PSTAGE_BLOW).length>0;
     return later?{cue,consumed:true}:{cue,consumed:false};
   }
@@ -1305,7 +1307,9 @@ function psCineBlow(id,s){
 function psRangeStances(){
   const L=PL();if(!PS.cine||!L.setRange||typeof engagementInfo!=='function')return [];
   const before={a:PS.M.a&&PS.M.a.stance,b:PS.M.b&&PS.M.b.stance},info=engagementInfo(psShownFighters());
-  L.setRange(PS.M,psRangeKey(),info.active?info.longer:null);
+  // (no reach stance while a weapon held in a wound joins the two: the holder kept its weight back for its Reach and its
+  // hand came off the grip while it still held the weapon, report 20261117-184734)
+  L.setRange(PS.M,psRangeKey(),info.active&&!psTiedByLodge()?info.longer:null);
   return ['a','b'].filter(id=>PS.M[id]&&PS.M[id].stance!==before[id]);
 }
 function psMotionFigs(){
@@ -1462,6 +1466,8 @@ async function psMotionCue(cue){
       psBanner('Weapon lodged','red');psSfx('crit');psEmit('lodge',{actor:me.id});if(!psReplaying())await psSleep(500);
     }else if(cue.type==='press'&&me&&tgt){
       await psMotionPress(me,tgt,{record:{press:cue}});
+    }else if(cue.type==='overextend'){
+      await psMotionOverextend(cue);
     }else if(cue.type==='drop'&&me){
       if(!me.dropEl&&me.look&&!me.look.armed)psFlyWeapon(me,0);if(!psReplaying())await psSleep(300);
     }else if(cue.type==='end'){
@@ -1626,7 +1632,17 @@ async function psMotionBlow(cue){
     atk.mEnd='low';const e2=L.lower(PS.M[atk.id],PS.clock);PS.busyUntil=Math.max(PS.busyUntil,e2);
     await psUntil(Math.min(e2,PS.clock+380));return;
   }
+  if(!finishing)await psMotionOverextend(cue);
   if(!finishing)await psMotionPress(atk,def,cue);
+}
+// Overextend Opponent: the one overextended stumbles on past its failed blow (pits-cine.js, overextend).
+async function psMotionOverextend(cue){
+  const o=cue&&(cue.type==='overextend'?cue:cue.record&&cue.record.overextend);if(!o)return;
+  const f=PS.fig[o.target],m=PS.M[o.target];if(!f||!m)return;
+  psDom(psWorld(f,f.pts?f.pts.Sh:[0,-100]),'Overextended','fx');psBanner('Overextended','crit');psEmit('overextend',{actor:o.actor,target:o.target});
+  if(!PL().overextend||f.mEnd||f.mDown)return;
+  const end=PL().overextend(m,Math.max(PS.clock,PS.busyUntil));PS.busyUntil=Math.max(PS.busyUntil,end);f.spent=true;
+  await psUntil(end);
 }
 // Press Advantage: the attacker stays on the blade with the point in the face, held until the engine ends the effect.
 async function psMotionPress(atk,def,cue){

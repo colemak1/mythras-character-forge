@@ -187,6 +187,8 @@ body.pits-stone #root .deck .chron .combat-history{display:flex;flex-direction:c
   background:var(--st-text,var(--bone));color:var(--pa-surface);padding:0 6px;min-width:22px;text-align:center}
 .roll .pits-mk[data-edge="l"] b{left:0;transform:none}.roll .pits-mk[data-edge="r"] b{left:auto;right:-2px;transform:none}
 .roll .r-res{margin-top:6px}
+/* initiative: one line per fighter under who acts first */
+.roll .r-res .r-init{display:block;font-weight:600;font-size:13px}
 
 /* ===== Full-screen battle (owner, 2026-11-11): no site navigation; Exit Battle stays in the bar ===== */
 body.pa-on{--pa-bar:50px;--pa-deck:clamp(214px,29vh,290px)}
@@ -352,3 +354,6 @@ body.pa-on #root .pa-end .endbuttons button{flex:1 1 auto;min-height:38px;paddin
 .act .rec{font-style:normal;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pa-gold)}
 /* why the bout ended, under the winner (report 20261117-032326) */
 body.pa-on .roll.end .r-s .r-cause{display:block;font-size:12px;margin-top:3px;color:var(--pa-dim)}
+/* a condition chip explains itself on hover, focus or tap (its meaning shows in Details) */
+.plate .chip[data-pb-info]{cursor:help}
+.plate .chip[data-pb-info]:focus-visible{outline:2px solid var(--st-accent,var(--accent));outline-offset:1px}

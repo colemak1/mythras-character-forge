@@ -32,9 +32,36 @@ function paZonesSvg(f,pick){
       +`<text class="a" x="${PA_ZT[loc][0]}" y="${PA_ZT[loc][1]+11}">A${armourAt(f,loc)}</text></g>`;
   }).join('');
 }
+// What a condition chip means, from what the engine does with it (practice-combat.html: combatTarget, evadeTarget,
+// canMakeAttack, effectiveSkill, the Brace action).
+function PA_COND_WHY(t,f){
+  const n=k=>f[k]||0,turns=k=>n(k)+(n(k)===1?' more turn':' more turns');
+  const noAtk='Parry, evade and other actions still work.';
+  if(t==='Prone')return 'On the ground: Combat Style and Evade are Formidable (halved). Regain Footing costs 1 AP.';
+  if(t==='Bleeding')return 'Fatigue gets one level worse each new Combat Round until the bleeding is stopped.';
+  if(t==='Disarmed')return 'No weapon in hand: pick it up and ready it (two actions) before attacking with it.';
+  if(t==='Impaled')return 'A weapon is lodged in a wound. Depending on its size, it makes this fighter\'s skills harder until it is pulled out.';
+  if(/^Pinned /.test(t))return 'Pinned by the opponent: no attacks or parries with it until freed (Free Pinned: 1 AP, opposed Brawn).';
+  if(t==='Entangled')return 'Caught by the opponent\'s weapon. Break Free: 1 AP, opposed Brawn.';
+  if(t==='Stunned')return 'A location is stunned by Stun Location: it cannot be used until the stun wears off.';
+  if(/^Stunned: no attacks/.test(t))return `Serious Wound: cannot attack for ${turns('skipAttack')}. ${noAtk}`;
+  if(/^Pressed/.test(t))return `Press Advantage: cannot attack on the next turn. ${noAtk}`;
+  if(/^Overextended/.test(t))return `Overextend Opponent: the last attack left this fighter off balance; it cannot attack on its next turn. ${noAtk}`;
+  if(t==='Blinded')return `Blinded for ${turns('blindedTurns')}: Combat Style and Evade are Herculean (a tenth).`;
+  if(t==='Braced')return 'Braced: counts as half again its SIZ against knockback and leaping attacks, and double against Bash.';
+  if(/^(Serious|Major): /.test(t))return /^Major/.test(t)?'A Major Wound to this location.':'A Serious Wound: this location is at 0 hit points or less.';
+  if(/^Cramped/.test(t))return 'The opponent is inside your weapon\'s reach: your longer weapon is cramped.';
+  if(/^Inside their reach/.test(t))return 'You are inside the longer weapon\'s reach: it is cramped against you.';
+  if(/^Keeping them at reach/.test(t))return 'Your longer weapon keeps the opponent at its reach: they must close the range to strike your body.';
+  if(/^Out of reach/.test(t))return 'Outside the longer weapon\'s reach: you can attack its weapon, or close the range first.';
+  if(typeof FATIGUE_NAMES!=='undefined'&&t===FATIGUE_NAMES[n('fatigue')])return (FATIGUE_GRADES[Math.min(9,n('fatigue'))]||0)>0?'Fatigue: skill rolls are harder.':'Fatigue: no skill penalty yet.';
+  return '';
+}
 function paConditions(f){
   const chips=[];
-  const add=(t,bad)=>chips.push(`<span class="chip${bad?'':' soft'}">${esc(t)}</span>`);
+  // each chip says what it does to the fighter: on hover or tap it shows in Details, and as a tooltip (Idea 20261117-192715)
+  const add=(t,bad,why)=>{why=why||PA_COND_WHY(t,f);
+    chips.push(`<span class="chip${bad?'':' soft'}"${why?` tabindex="0" title="${esc(why)}" data-pb-info="cond:${esc(encodeURIComponent(t)+'|'+encodeURIComponent(why))}"`:''}>${esc(t)}</span>`);};
   // (Prone follows the figure on the stage when the stage draws the fall later than the engine rules it)
   const shown=typeof pitsStageShownProne==='function'&&f.id?pitsStageShownProne(f.id):null;
   if(shown==null?f.prone:shown)add('Prone',1);
@@ -136,10 +163,39 @@ function paExchangeHtml(g,label,open){
     <ul>${rows}</ul></section>`;
 }
 // The newest relevant result for the idle tray (never reverts to an earlier skill roll).
+// What a Serious or Major Wound's Endurance roll decides (Core p.110, CombatRules.woundOutcome), in plain words.
+function paWoundStakes(level,loc,who){
+  const limb=CombatRules.isLimb(loc),leg=/Leg$/.test(loc),you=who==='you',W=you?'You':who;
+  const say=o=>({resisted:'only the wound itself.',
+    limbDisabled:`the ${loc.toLowerCase()} is useless until healed${leg?`, and ${you?'you fall':'they fall'} prone`:''}.`,
+    unconscious:`${W} ${you?'fall':'falls'} unconscious: the bout is over.`,
+    majorLimb:`${W} ${you?'are':'is'} incapacitated and prone${o.conscious?' but conscious':' and unconscious'}: the bout is over.`,
+    majorDying:`${W} ${you?'are':'is'} dying: the bout is over.`,majorDead:`${W} ${you?'die':'dies'}: the bout is over.`}[o.outcome]||'');
+  const o=r=>CombatRules.woundOutcome({level,limb,leg,resisted:r});
+  return {ok:say(o(true)),bad:say(o(false))};
+}
+// Initiative in plain words: both totals with how they were made, and who acts first (report 20261117-182548: "not
+// clear who is going to go first after the initiative rolls, should show total number with bonus").
+function paInitiative(l){
+  const m=/^(.+?): (\d+)\+(\d+)−(\d+) = (-?\d+)\. (.+?): (\d+)\+(\d+)−(\d+) = (-?\d+)\. (.*)$/.exec(String(l&&l.body||'').replace(/\s+/g,' ').trim());
+  if(!m)return null;
+  const side=(n,roll,bonus,pen,tot)=>({name:n,roll:+roll,bonus:+bonus,pen:+pen,total:+tot,
+    math:`d10 ${roll} + ${bonus} bonus${+pen?` − ${pen} armour`:''} = ${tot}`});
+  const a=side(m[1],m[2],m[3],m[4],m[5]),b=side(m[6],m[7],m[8],m[9],m[10]),tie=/Tied/.test(m[11]);
+  const first=tie?null:(/ acts first/.exec(m[11])?m[11].replace(/ acts first\.?$/,''):(a.total>=b.total?a.name:b.name));
+  return {a,b,tie,first,head:tie?`Tied at ${a.total}: they act at the same time`:`${first} acts first`};
+}
 function paResultCard(){
   const logs=paVisibleLogs();
   for(let i=logs.length-1;i>=0;i--){
-    const l=logs[i],b=paBlowLine(l);
+    const l=logs[i];
+    // a new opponent starts afresh: nothing from the last bout is shown as this one's result (report 20261117-183655)
+    if(l.title==='New Opponent')return null;
+    if(/^Encounter \d+ · Initiative$/.test(l.title||'')){const n=paInitiative(l);if(!n)return null;
+      const mine=S.fighters.a&&n.first===S.fighters.a.name;
+      return {title:'Initiative',sub:`<b>${esc(n.head)}</b>`,who:n.tie||mine?'you':'foe',bar:'',
+        res:`<span class="r-init">${esc(n.a.name)} ${esc(n.a.math)}</span><span class="r-init">${esc(n.b.name)} ${esc(n.b.math)}</span>`};}
+    const b=paBlowLine(l);
     if(b){const who=S.fighters[l.meta.actor];
       return {title:'Result',sub:esc(b.head),who:paHuman(l.meta.actor)?'you':'foe',bar:'',res:`<span class="o-${b.kind==='wound'||/partial/.test(b.kind)?'fumble':'success'}">${esc(b.math)}</span>`};}
     const sk=/(attacks|strikes with the shield|parries( with shield)?|evades)$/.test(l.title)?paSkillLine(l):null;
@@ -171,6 +227,12 @@ function paTrayHtml(){
     title=rollHeading(R.label);who=paHuman(R.actor)?'you':'foe';sub=pct!=null?`Target <b>${pct}%</b>${rollDifficultyHtml(R.actor)}`:esc(defsOf(R));
     body='<div class="r-dice">'+R.defs.map(d=>d.sides===100?'<div class="die d10 lg"><span>00</span></div><div class="die d10 lg"><span>0</span></div>':`<div class="die d${d.sides}"><span>?</span></div>`).join('')+'</div>';
     if(pct!=null&&R.defs.length===1&&R.defs[0].sides===100)bar=pitsBandHtml(pct,null);
+    // an Endurance roll against a wound: what it has to beat, the chance, and what is at stake (report 20261117-184544)
+    {const w=S.woundTest,lm=/^Endurance · (serious|major) wound to (.+?)(?: · |$)/.exec(R.label||'');
+     if(w&&lm&&w.id===R.actor&&pct!=null){const st=paWoundStakes(w.level,w.loc,paHuman(R.actor)?'you':S.fighters[R.actor].name);
+       let n=0;for(let v=1;v<=100;v++)if(CombatRules.opposedWins({roll:v,grade:CombatRules.GRADE_VALUE[CombatRules.gradeAttempt(v,pct)]},w.attack))n++;
+       sub+=`<small class="r-cause">Beat the attack roll of <b>${w.attack.roll}</b> (${esc(PITS_ZONE_WORD[w.attack.name]||w.attack.name)}): a better grade, `
+         +`or the same grade and a higher roll. Chance to resist: <b>${n}%</b>.<br>Resist: ${esc(st.ok)} Fail: ${esc(st.bad)}</small>`;}}
     btn=`<button type="button" class="rbtn" data-act="roll" aria-label="Roll ${esc(defsOf(R))} now"><span>Roll ${esc(defsOf(R))}</span><kbd>Space</kbd></button>`;
     cls=' await';
   }else{
