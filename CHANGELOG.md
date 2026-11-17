@@ -5,6 +5,25 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a stun counts only the stunned fighter's own Turns (ruling D-R4)
+
+ChatGPT (Chat), Core pp.90–91, 110: a fighter with no Action Points left gets no Turn in a cycle, so a Serious Wound's "cannot attack for 1d3 Turns" does not count down then. It used to, so a fighter stunned for 3 Turns could attack on its third (report 20261117-184734). A Turn spent Delaying or on another permitted action still counts. Press Advantage, Overextend and Blind count the same way.
+
+- Ruling D-R3 recorded too (no change): an Impale's difficulty applies to the Endurance roll against the same blow's wound.
+- Tests: three in `tests/practice-procedure.cjs` (a Turn counts; cycles and a new round with no AP do not; Delay counts, its expiry does not). Golden bouts regenerated; seeds 144 to 285 and 489 to 529 so every bout still shows its rules.
+
+## The Pits: the five player Ideas of 2026-11-17
+
+All the Ideas sent from the Pits on 2026-11-17, built at the owner's request. Rules unchanged; two procedures are quicker.
+
+- **The decision leads the deck.** On your turn, when attacked and when choosing a Special Effect, the middle of the bottom deck opens with the recommended choice and why, large, in a red-bordered box with its button. The step tracker and the big headline are now one small line; the exchange story is smaller under it, and gone while choosing a Special Effect. The recommended action or defence on the left is bordered red too.
+- **Special Effects.** A recommended one, pre-selected and bordered red, with a reason. It is the computer fighters' own best score for the situation (`effectScores`, shared with `aiChooseEffect`, which is unchanged), so the two never disagree. Chips are bigger and say what each effect does. Effects that change nothing now fold under "N more that change nothing now", still choosable: Stand Fast and Enhance Parry when the attack missed, Bypass Armour against no armour, Scar Foe.
+- **Opposed rolls side by side.** A resisting roll (Trip, Disarm, Blind, Compel, Stun, Bleed, Endurance against a wound, Regain Footing, breaking free of a pin or entanglement, resisting a withdrawal, opposing a range change) shows the roll it must beat beside it, the chance to win before the roll, and who won and why after. Skill rolls now always show their target %.
+- **Impale keeps the higher roll** for a player as it already did for the computer, without asking; the dice tray shows both weapon rolls and the lower one leaving.
+- **A parry that stops everything skips the dice.** When a successful parry's weapon or shield is at least as large as the attacking weapon, no Special Effect is on the blow, and the most the weapon and Damage Modifier can roll is not over the defender's SIZ (so no knockback, Core p.104), the hit location and damage are not rolled. The story says why.
+- Tests: `tests/pits-ideas.cjs` (8); a case in `tests/practice-procedure.cjs` for the parry; the Impale tests there now expect the higher roll kept. Golden bouts regenerated; two seeds moved (250 to 253, 230 to 489) so every bout still shows the rules it must cover.
+- The phone deck (900 px and narrower) keeps its own Special Effects list; the side-by-side rolls and the Impale tray work there too.
+
 ## The Pits: initiative, Endurance and Overextend told; a held Impale stays held (fight reports FR-16 to FR-20)
 
 From the reports and Lost? presses of 2026-11-17 (exported 19:47 UTC). Rules and dice unchanged.

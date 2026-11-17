@@ -63,17 +63,71 @@ test('a resisted Major torso wound keeps its 2× Healing Rate Combat Round deadl
  const rate=run('healingRateFor(S.fighters.b.con)');
  assert.deepEqual(JSON.parse(run('JSON.stringify(S.fighters.b.criticalWindow)')),{unit:'combat rounds',value:2*rate,location:'Chest'});
 });
-test('Impale: the attacker picks a damage roll, then chooses to keep hold or leave the weapon in (Core p.97)',()=>{
+test('Impale: the higher damage roll is kept, then the attacker chooses to keep hold or leave the weapon in (Core p.97)',()=>{
  setup('dagger');hit({impale:true});                 // 1d4+1 twice + DM 1d2
  answer(2,4,1);                                       // options 3 and 5
- assert.equal(run('S.pending.kind'),'impalePick');run('chooseImpaleDamage(1)');
+ // (the higher is kept without asking, Idea 20261117-183514)
+ assert(logs().some(l=>/^Impale · Damage selected :: .*chooses option B: 5 weapon damage/.test(l)),logs().join('\n'));
  assert.equal(run('S.pending.kind'),'impaleLeave','asked whether to leave it in');
  assert.match(output.innerHTML,/data-act="impaleLeave" data-val="leave"/);
  run('chooseImpaleLeave(true)');
  assert.equal(run('S.fighters.a.impaledWeapon'),null);assert.equal(run('S.fighters.a.disarmed'),true);
  assert.equal(run('S.fighters.b.impaledWounds.length'),1,'the wound keeps its penalty');
- setup('dagger');hit({impale:true});answer(2,4,1);run('chooseImpaleDamage(1)');run('chooseImpaleLeave(false)');
+ setup('dagger');hit({impale:true});answer(2,4,1);run('chooseImpaleLeave(false)');
  assert.equal(run('S.fighters.a.impaledWeapon.loc'),'Chest','keeps hold: pull it free later');assert.equal(run('S.fighters.a.disarmed'),false);
+});
+test('a parry that stops the whole blow skips the location and damage rolls only when nothing reads them (Idea 20261117-183359)',()=>{
+ const parried=x=>Object.assign({chosenLoc:null,reaction:'parry',parryTool:'weapon',defenseRoll:{grade:2,roll:30,label:'Success',effectiveTarget:60}},x||{});
+ // sword (Medium, 1d8) + DM 1d2 can do at most 10: no knockback against SIZ 10, and a Medium parry blocks it all
+ setup('sword');hit(parried());
+ assert.equal(run('R'),null,'no location or damage roll');
+ assert(logs().some(l=>/^No Damaging Hit :: .*parry stops the whole blow .*no location or damage is rolled/.test(l)),logs().join('\n'));
+ assert.equal(JSON.parse(run('JSON.stringify(S.logs[S.logs.length-1].meta.px.wholeParry)')),true);
+ // SIZ 9: the most it can do (10) could knock them back, so the damage is rolled (Core p.104 reads it before the parry)
+ setup('sword');run('S.fighters.b.siz=9');hit(parried());assert.match(run('R.label'),/Hit Location/);
+ // a larger weapon than the parry: only half is blocked, so it is rolled
+ setup('greatsword');hit(parried());assert.match(run('R.label'),/Hit Location/);
+ // a Special Effect on the blow (Bleed) reads the damage: rolled
+ setup('sword');hit(parried({bleed:true}));assert.match(run('R.label'),/Hit Location/);
+ // a failed parry: rolled
+ setup('sword');hit(parried({defenseRoll:{grade:1,roll:80,label:'Failure',effectiveTarget:60}}));assert.match(run('R.label'),/Hit Location/);
+});
+// R4 (ChatGPT (Chat), Core pp.90-91, 110; docs/decisions.md D-R4): a fighter with no AP gets no Turn in a cycle, so a
+// Serious Wound's "cannot attack for 1d3 Turns" does not count down then. A Turn spent Delaying or on another
+// permitted non-attack action does count. (Report 20261117-184734: the stunned fighter attacked on its third Turn.)
+const act=a=>run(`handleClick({target:{closest:()=>({dataset:{act:'${a}'},tagName:'BUTTON',classList:{contains:()=>false}})}})`);
+const turnState=()=>JSON.parse(run(`JSON.stringify({round:S.round,cycle:S.cycle,turn:S.order[S.turnIndex],stun:S.fighters.b.skipAttack,apA:S.fighters.a.ap,apB:S.fighters.b.ap,
+ canAttackB:canMakeAttack(S.fighters.b)})`));
+function stunned(apB,apA){
+ setup('sword');
+ run(`(()=>{const a=S.fighters.a,b=S.fighters.b;S.pending=null;R=null;S.round=1;S.cycle=1;S.order=['b','a'];S.turnIndex=0;
+  a.ap=${apA};a.apMax=3;b.ap=${apB};b.apMax=2;b.skipAttack=3;a.skipAttack=0;b.delaying=false;a.delaying=false;
+  for(const f of [a,b]){f.con=18;f.fatigue=0;f.exertionRounds=0;}})()`);
+}
+test('R4: a Turn the stunned fighter takes (Dither) counts down its Serious Wound stun',()=>{
+ stunned(2,3);run('advance()');
+ let t=turnState();assert.equal(t.turn,'b');assert.equal(t.canAttackB,false,'stunned: no attack');
+ act('dither');assert.equal(turnState().stun,2,'one Turn taken');
+});
+test('R4: once out of AP the stunned fighter gets no Turn, so later cycles do not count down its stun',()=>{
+ stunned(1,3);run('advance()');
+ act('dither');                                   // b's only AP: stun 3 -> 2
+ let t=turnState();assert.equal(t.stun,2);assert.equal(t.turn,'a');assert.equal(t.apB,0);
+ act('dither');                                   // a, cycle 1
+ t=turnState();assert.equal(t.cycle,2);assert.equal(t.turn,'a','b has no AP: its Turn is skipped');assert.equal(t.stun,2,'no Turn, no count');
+ act('dither');                                   // a, cycle 2
+ t=turnState();assert.equal(t.cycle,3);assert.equal(t.stun,2,'still no Turn for b');
+ act('dither');                                   // a, cycle 3: both out of AP, the round ends
+ t=turnState();assert.equal(t.round,2,'a new round');assert.equal(t.turn,'b','the next round starts with b');
+ assert.equal(t.stun,2,'the stun waits for b\'s next real Turn');assert.equal(t.canAttackB,false,'still cannot attack on its first Turn of the round');
+ act('dither');assert.equal(turnState().stun,1,'that Turn counts');
+});
+test('R4: a Turn spent Delaying counts; the Delay expiring on a later cycle with no AP left does not',()=>{
+ stunned(1,3);run('advance()');
+ act('delay');                                    // b holds its last AP: a Turn taken, stun 3 -> 2
+ let t=turnState();assert.equal(t.stun,2);assert.equal(t.turn,'a');
+ act('dither');                                   // a, cycle 1; cycle 2 begins with b: the held AP is lost, no Turn
+ t=turnState();assert.equal(t.apB,0);assert.equal(t.stun,2,'the Delay expiring is not a Turn');assert.equal(t.turn,'a');
 });
 test('withdrawing a Barbed weapon does full damage, a normal one half; the injury is recorded (Core pp.61, 98)',()=>{
  for(const [weapon,dmgDie,expect] of [['trident',6,6],['spear',6,4]]){   // Trident 1d8 Barbed; Shortspear 1d8+1 → 7 halved → 4
@@ -199,7 +253,6 @@ test('RC-25: a lodged weapon in an Incapacitated Impale cell ends the fight (Cor
  const impale=siz=>{
   setup('longspear');run(`S.fighters.b.siz=${siz}`);hit({impale:true});
   answer(...Array(run('R.defs.length')).fill(2));
-  run('chooseImpaleDamage(1)');
   if(run('S.pending&&S.pending.kind')==='impaleLeave')run('chooseImpaleLeave(false)');
  };
  impale(10);                                             // SIZ 1–10, Large weapon: Incapacitated

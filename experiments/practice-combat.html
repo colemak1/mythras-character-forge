@@ -510,10 +510,10 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 </style>
 <link rel="stylesheet" href="pits-stone.css?v=a495935cd5">
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
-<link rel="stylesheet" href="pits-arena.css?v=8327df4382">
+<link rel="stylesheet" href="pits-arena.css?v=f6a8a37f43">
 <link rel="stylesheet" href="pits-stage.css?v=4b6c786d11">
 <link rel="stylesheet" href="pits-cine.css?v=5f257857a3">
-<link rel="stylesheet" href="pits-bottom.css?v=2f6d0d8089">
+<link rel="stylesheet" href="pits-bottom.css?v=39622799e3">
 <link rel="stylesheet" href="../sitota-theme.css?v=a47f8d5bd9">
 </head>
 <body class="pits-page">
@@ -551,11 +551,11 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="../js/data.js?v=e863ceddbb"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
 <script src="practice-guidance.js?v=648985b8c4"></script>
-<script src="pits-view.js?v=34d5123e38"></script>
+<script src="pits-view.js?v=76322a23e6"></script>
 <script src="pits-game.js?v=3769cec741"></script>
 <script src="pits-report.js?v=78c28f1bb3"></script>
-<script src="pits-arena.js?v=7b1cf6447a"></script>
-<script src="pits-bottom.js?v=ca95eb75b8"></script>
+<script src="pits-arena.js?v=25e750b4bb"></script>
+<script src="pits-bottom.js?v=8cce484e7e"></script>
 <script src="pits-lost.js?v=f385014ea5"></script>
 <script src="pits-idea.js?v=e1791930b7"></script>
 <script src="pits-motion.js?v=5c6cf25c54"></script>
@@ -980,18 +980,24 @@ let nextLogId=1;
 // Manual rolls are actual decision points. Human dice are generated ONLY when the
 // corresponding fighter clicks Roll, never during action selection or playback.
 let R=null,rollSerial=0;
-function resolveDice(actor,defs,label,callback){
+function resolveDice(actor,defs,label,callback,vs=null,pct=null){
   const values=defs.map(d=>d.fixed!=null?d.fixed:die(d.sides));
-  if(V.capturing)V.queue.push({roll:{actor,defs,values,label}});
+  if(V.capturing)V.queue.push({roll:{actor,defs,values,label,vs,pct}});
   callback(values);
 }
+// Presentation only: the roll an opposed roll must beat, shown beside it in the dice tray (Idea 20261117-192330:
+// "see the rolls going against each other"). Set with opposing() on the line before the requestSkill it belongs to;
+// the next roll requested takes it. {who, what, roll, grade (0-3)}
+let NEXT_VS=null,NEXT_PCT=null;   // (NEXT_PCT: a skill roll's target, set by requestSkill)
+function opposing(who,what,r){NEXT_VS=r&&r.roll>0?{who:who?.name||'',what,roll:r.roll,grade:r.grade}:null;}
 function requestDice(actor,defs,label,callback){
   if(!Array.isArray(defs)||!defs.length)throw Error('Missing dice for '+label);
+  const vs=NEXT_VS,pct=NEXT_PCT;NEXT_VS=null;NEXT_PCT=null;
   if(S.fighters?.[actor]?.kind==='ai'){
-    resolveDice(actor,defs,label,callback);
+    resolveDice(actor,defs,label,callback,vs,pct);
     return;
   }
-  R={id:++rollSerial,actor,defs:defs.map(d=>({...d})),label,callback};
+  R={id:++rollSerial,actor,defs:defs.map(d=>({...d})),label,callback,vs,pct};
   render();
 }
 // What makes a fighter's skill rolls harder right now (effectiveSkill), in words.
@@ -1006,6 +1012,7 @@ function requestSkill(actor,percent,label,callback){
  const effective=effectiveSkill(S.fighters?.[actor],percent);
  const f=S.fighters?.[actor],causes=skillPenaltyCauses(f);
  const shown=effective!==percent?`${label} · ${effective}% (${causes.join(' + ')||'adjusted'})`:label;
+ NEXT_PCT=effective;
  requestDice(actor,[{sides:100,label:'d100'}],shown,values=>{
   const result=rollSkill(effective,values[0]);result.effectiveTarget=effective;
   // Presentation only: remember the roll for the readout under the dice.
@@ -1023,7 +1030,7 @@ function performManualRoll(){
   if(!R||V.busy)return;
   const request=R;
   R=null;
-  resolveDice(request.actor,request.defs,request.label,request.callback);
+  resolveDice(request.actor,request.defs,request.label,request.callback,request.vs,request.pct);
 }
 /* Explains ONLY engine-applied adjustments, using the same combat, Evade
    and general-condition helpers that determine the target. */
@@ -1935,6 +1942,7 @@ function requestOpposedSkills(a,aPct,aLabel,b,bPct,bLabel,resolve){
   const targets=CombatRules.opposedTargets(effectiveSkill(a,aPct),effectiveSkill(b,bPct));
   const aTarget=targets.a,bTarget=targets.b;
   requestDice(a.id,[{sides:100,label:'d100'}],`${aLabel} · ${a.name} ${aTarget}%`,([ar])=>{
+    opposing(a,'Evade',rollSkill(aTarget,ar));
     requestDice(b.id,[{sides:100,label:'d100'}],`${bLabel} · ${b.name} ${bTarget}%`,([br])=>{
       resolve({...rollSkill(aTarget,ar),effectiveTarget:aTarget},{...rollSkill(bTarget,br),effectiveTarget:bTarget});
     });
@@ -2802,6 +2810,7 @@ function beginEntangleTrip(id){
  const resist=skill=>{
   S.pending=null;
   const k=tripResistOptions(victim).includes(skill)?skill:'brawn',base=tripResistPct(victim,k);
+  opposing(f,'entangle',origin);
   requestSkill(victim.id,base,`Trip · ${victim.name} ${TRIP_SKILL_NAMES[k]}`,res=>{
    const stands=opposedBetter(res,origin);
    if(!stands)victim.prone=true;
@@ -2822,6 +2831,7 @@ function beginFreeEntangle(id){
  const holder=S.fighters[f.entangled.by];
  f.ap--;reopenBandage(f,'pulling free of an entangling weapon');
  requestSkill(f.id,f.brawn,`Break free · ${f.name} Brawn`,attempt=>{
+  opposing(f,'Brawn',attempt);
   requestSkill(holder.id,holder.brawn,`Hold on · ${holder.name} Brawn`,resistance=>{
    const freed=opposedBetter(attempt,resistance),loc=f.entangled.loc;
    if(freed)f.entangled=null;
@@ -2841,6 +2851,7 @@ function beginFreePinnedGear(id){
  const gear=f.pinnedGear;
  f.ap--;reopenBandage(f,'wrestling a pinned weapon');
  requestSkill(f.id,f.brawn,`Free ${gear} · ${f.name} Brawn`,attempt=>{
+  opposing(f,'Brawn',attempt);
   requestSkill(holder.id,holder.brawn,`Hold pin · ${holder.name} Brawn`,resistance=>{
    const freed=opposedBetter(attempt,resistance);
    if(freed){f.pinnedGear=null;f.pinnedBy=null;}
@@ -2984,6 +2995,7 @@ function finishRegainFooting(f,other,skill){
    const defend=(defSkill)=>{
      const what=defSkill==='athletics'?'athletics':'brawn',pct=other[what];
      S.pending={kind:'footingResolution',actor:f.id,target:other.id};
+     opposing(f,'stand',br);
      requestSkill(other.id,pct,`Oppose standing · ${other.name} ${what}`,res=>{
        const success=opposedBetter(br,res);
        if(success)f.prone=false;
@@ -3228,7 +3240,8 @@ function advance(){if(S.phase!=='fight'||S.pending||S.roundProcessing)return;let
   finishCombatRound();return;
  }else S.cycle++;S.turnIndex=0;}
 if(S.turnIndex===0)beginConcurrentCycle();
-let id=S.order[S.turnIndex],f=S.fighters[id];expireDelay(f);if(f.ap<=0){advanceStun(f);S.turnIndex++;continue;}
+// (no AP: no Turn this cycle, so nothing that lasts some Turns counts down; Core pp.90-91, 110, ruling D-R4 2026-11-17)
+let id=S.order[S.turnIndex],f=S.fighters[id];expireDelay(f);if(f.ap<=0){S.turnIndex++;continue;}
  if(S.turnIndex===1)grantConcurrentTurn(id);
  if(f.kind==='ai'||f.remiseFrom)captureActionBoundary(f.remiseFrom||id);
  // Core p.99 Remise: on the recipient's next proactive turn, a Small-weapon
@@ -3356,7 +3369,9 @@ function react(action){
   }
 }
 // Small utility AI: evaluates *legal* options; noise keeps opponents from behaving identically.
-function aiChooseEffect(p){
+// How much each offered Special Effect is worth here, before a computer fighter's style and its random spread
+// (aiChooseEffect); the Pits' recommendation for a person uses the same scores (pitsRecommendedEffect).
+function effectScores(p){
  const options=availableEffects(p),actor=S.fighters[p.owner],target=S.fighters[p.other];
  const weights={bleed:67,impale:76,bash:60,stun:68,choose:46+(Math.min(...HIT_LOCS.map(l=>target.hp[l]))<=2?29:0),press:40+(target.ap>=2?20:0),
   trip:target.prone?0:36+Math.floor(actor.brawn/10),maximize:64,bypassArmour:target.armor>0?75:20,
@@ -3364,7 +3379,11 @@ function aiChooseEffect(p){
   compel:disadvantagedForSurrender(target)?84:0,remise:target.ap>0?66:30,withdraw:S.disengaged?0:59,disarm:70,
    damageWeapon:target.weaponGuard?.hp<=4?80:34,enhance:85,blind:73,standFast:27,accidental:92,scar:19,sunder:target.armor>1?60:18,forceFailure:52,
    pinWeapon:target.pinnedGear?0:76,prepareCounter:51,entangle:72,slip:95};
- return options.map(([id])=>[id,(weights[id]??12)+(AI_STYLES[actor.tactic]?.effects[id]??0)+Math.random()*13]).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
+ return options.map(([id])=>[id,weights[id]??12]);
+}
+function aiChooseEffect(p){
+ const actor=S.fighters[p.owner];
+ return effectScores(p).map(([id,w])=>[id,w+(AI_STYLES[actor.tactic]?.effects[id]??0)+Math.random()*13]).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
 }
 function chooseAIEffectOrRender(){const p=S.pending;if(!p||p.kind!=='effect')return;if(S.fighters[p.owner].kind!=='ai'){render();return;
  }const x=aiChooseEffect(p);if(x)applyEffect(x);else resolveHit();}
@@ -3507,6 +3526,7 @@ function applyEffect(effect){
    const defend=(skill)=>{
      const shieldDefense=skill==='shield'&&usesShield;
      const pct=shieldDefense?shieldPct:evadePct;
+     opposing(S.fighters[p.owner],p.owner===p.atk?'attack':'parry',origin);
      requestSkill(target.id,pct,`Blind Opponent · ${target.name} ${shieldDefense?'Shield style':'Evade'} resistance`,res=>{
        const resists=p.forceFailure?false:opposedBetter(res,origin);p.forceFailure=false;
        if(resists){note('Blind Opponent',`${target.name} resists with ${shieldDefense?'shield':'Evade'} (${res.roll}/${res.effectiveTarget??pct}%).`);finishOneEffect();return;}
@@ -3531,6 +3551,7 @@ function applyEffect(effect){
    const at=S.pending;
    if(p.forceFailure){p.forceFailure=false;note('Force Failure · Surrender',
     `${target.name} automatically fails to resist the demand; ${actor.name} forces surrender.`);endFight(actor.id,`${target.name} capitulates after Force Failure.`);return;}
+   opposing(S.fighters[p.owner],p.owner===p.atk?'attack':'parry',origin);
    requestSkill(target.id,target.willpower,`Resist surrender · ${target.name} Willpower`,res=>{
      const resists=opposedBetter(res,origin);
      note('Compel Surrender',
@@ -3545,6 +3566,7 @@ function applyEffect(effect){
    const pct=CombatRules.disarmResistSkill(target.style,ownSize,otherSize);
    if(p.forceFailure){p.forceFailure=false;note('Force Failure · Disarm',`${target.name} automatically loses the Disarm contest.`);
     disarmAndScatter(actor,target,()=>finishOneEffect());return;}
+   opposing(S.fighters[p.owner],p.owner===p.atk?'attack':'parry',origin);
    requestSkill(target.id,pct,`Resist disarm · ${target.name}`,res=>{
      const resists=opposedBetter(res,origin);
      note('Disarm Opponent',`${target.name} rolls ${res.roll} against ${pct}% (${res.label}). ${resists?'Keeps weapon.':'Loses weapon.'}`);
@@ -3586,6 +3608,7 @@ function applyEffect(effect){
     `${target.name} automatically fails due to Force Failure and falls prone.`);finishOneEffect();return;}
    const resist=(skill)=>{
      const choice=tripResistOptions(target).includes(skill)?skill:'brawn',base=tripResistPct(target,choice);
+     opposing(S.fighters[p.owner],p.owner===p.atk?'attack':'parry',origin);
      requestSkill(target.id,base,`Trip · ${target.name} ${TRIP_SKILL_NAMES[choice]}`,res=>{
        const stands=opposedBetter(res,origin);
        if(!stands)target.prone=true;
@@ -3613,6 +3636,17 @@ function hitPx(p,blow,dmg,before,after,loc){
    reactGrade:p.defenseRoll?p.defenseRoll.grade:null,aGrade:p.attackRoll.grade,total:dmg.total,blocked:blow.blocked,
    blockedBy:blow.blockedBy||'',afterParry:blow.afterParry,armour:blow.absorbed,wound:blow.wound,before,after,loc};
 }
+// Whether a successful parry blocks the whole blow whatever is rolled, with nothing else reading the location or damage.
+function parryStopsEverything(p,atk,def){
+  if(p.reaction!=='parry'||!(p.defenseRoll?.grade>=2)||p.bypassParry)return false;
+  if(p.impale||p.bleed||p.stun||p.bash||p.sunder||p.entangle||p.chosenLoc||p.maximize>0||p.bypassArmour||p.standFast)return false;
+  const akey=attackKeyOf(p),aw=arenaProfile(akey),cramped=isCrampedAttack(p),v=cramped?CombatRules.CRAMPED_STRIKE:aw;
+  const attackSize=cramped?CombatRules.crampedSize(aw.size,engagementInfo().gap):aw.size;
+  const parrySize=p.parryTool==='shield'?SHIELDS[def.shield]?.size:ARENA_WEAPONS[def.weapon]?.size;
+  if(!p.enhanceParry&&!(parrySize>=attackSize))return false;
+  const mod=damageModifierFor(atk.str,atk.siz),dmMax=mod.sign<0?0:[].concat(mod.sides).reduce((n,x,i)=>n+(Array.isArray(mod.sides)?x:mod.count*x),0);
+  return v.dice[0]*v.dice[1]+(v.bonus||0)+dmMax<=def.siz;
+}
 function noHitPx(p){
   return {exid:p.exid,tool:/^shield:/.test(p.attackKey)?'shield':'weapon',react:p.reaction,reactTool:p.parryTool||'weapon',
    reactGrade:p.defenseRoll?p.defenseRoll.grade:null,aGrade:p.attackRoll.grade,evaded:!!p.evaded};
@@ -3638,6 +3672,16 @@ function resolveHit(){
     log('No Damaging Hit',p.evaded?`${def.name} evades the incoming strike${p.rangeIntercept?' while changing range':
      def.prone?', ending prone':' and is already back on their feet'}.`:
      `${atk.name}'s attack failed to connect.`, 'system','',{actor:atk.id,px:noHitPx(p)});endAction();return;
+  }
+  // A parry that stops the whole blow whatever is rolled: the hit location and damage rolls change nothing, so they are
+  // not asked for (Idea 20261117-183359: "would not occur at the table"). Only when nothing else reads them: no Special
+  // Effect on the blow, and no knockback possible (Core p.104 reads the damage before the parry: the most this weapon
+  // and Damage Modifier can roll is not over the defender's SIZ).
+  if(parryStopsEverything(p,atk,def)){
+    const tool=p.parryTool==='shield'?SHIELDS[def.shield].name:ARENA_WEAPONS[def.weapon].name;
+    log('No Damaging Hit',`${def.name}'s ${tool} parry stops the whole blow (Core p.95: a parrying weapon as large as the attacking one blocks `
+     +`all its damage), and it cannot land hard enough to knock them back, so no location or damage is rolled.`,'system','',
+     {actor:atk.id,px:{...noHitPx(p),wholeParry:true}});endAction();return;
   }
   const chooseDamage=(loc)=>{
     const akey=attackKeyOf(p),aw=arenaProfile(akey),cramped=isCrampedAttack(p),v=cramped?CombatRules.CRAMPED_STRIKE:aw;
@@ -3762,6 +3806,7 @@ function resolveHit(){
           if(p.forceFailure){p.forceFailure=false;ensureEffectState(def);def.stunnedLocations[loc]=Math.max(def.stunnedLocations[loc]||0,wound);
            log('Force Failure · Stun',`${def.name} automatically fails the opposed Endurance test; ${loc} is stunned for ${wound} turns.`,'hurt','',{
            actor:def.id,location:loc,target:def.id});collisionThenWound();return;}
+          opposing(S.fighters[p.atk],'attack',p.attackRoll);
           requestSkill(def.id,def.endurance,`Stun Location · ${def.name} Endurance`,test=>{
             const resists=opposedBetter(test,p.attackRoll);
             if(!resists){ensureEffectState(def);def.stunnedLocations[loc]=Math.max(def.stunnedLocations[loc]||0,wound);}
@@ -3774,6 +3819,7 @@ function resolveHit(){
           if(p.forceFailure){p.forceFailure=false;ensureEffectState(def);def.bleeding=true;if(sourceWound){sourceWound.bleeding=true;
            sourceWound.wasBleeding=true;}log('Force Failure · Bleed',`${def.name} automatically fails to resist Bleed. Blood loss begins.`,'hurt','',{
            actor:def.id,location:loc,target:def.id});stunCheck();return;}
+          opposing(S.fighters[p.atk],'attack',p.attackRoll);
           requestSkill(def.id,def.endurance,`Bleed · ${def.name} Endurance`,test=>{
             const resists=opposedBetter(test,p.attackRoll);
             if(!resists){ensureEffectState(def);def.bleeding=true;if(sourceWound){sourceWound.bleeding=true;sourceWound.wasBleeding=true;}}
@@ -3786,10 +3832,9 @@ function resolveHit(){
           stunCheck();
         }
       };
-      if(p.impale&&atk.kind==='human'){
-        p.kind='impalePick';p.impaleSelections=weaponChoices.map(ch=>ch.reduce((a,b)=>a+b,0)+v.bonus);
-        p.impaleFinish=complete;render();
-      }else if(p.impale){
+      // Impale keeps the higher of the two weapon rolls, for a person as for the computer (Idea 20261117-183514: "auto
+      // select the higher die"; there is no reason to keep the lower). The dice tray shows the lower one leave.
+      if(p.impale){
         const sums=weaponChoices.map(ch=>ch.reduce((a,b)=>a+b,0));complete(sums[1]>sums[0]?1:0);
       }else complete(0);
     });
@@ -3857,7 +3902,7 @@ function finishWithdrawImpale(id,opposed){
     }else endAction();
    });
   };
-  if(opposed){requestSkill(target.id,target.brawn,`Resist withdrawal · ${target.name} Brawn`,res=>resolve(res));}
+  if(opposed){opposing(f,'Brawn',br);requestSkill(target.id,target.brawn,`Resist withdrawal · ${target.name} Brawn`,res=>resolve(res));}
   else resolve(null);
  });
 }
@@ -3878,6 +3923,7 @@ function resolveWound(atk,def,loc,cls,wound,attackRoll,onContinue){
  function woundEndurance(){
    // presentation only: what the Endurance roll has to beat, for the dice tray (report 20261117-184544)
    S.woundTest={id:def.id,level:cls,loc,attack:{roll:attackRoll.roll,grade:attackRoll.grade,name:attackRoll.name||String(attackRoll.label||'').toLowerCase()}};
+   opposing(atk,'attack',attackRoll);
    requestSkill(def.id,def.endurance,`Endurance · ${cls} wound to ${loc}`,res=>{
      S.woundTest=null;
      let defendedAgainst=attackRoll;

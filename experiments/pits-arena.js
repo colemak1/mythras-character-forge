@@ -141,7 +141,9 @@ function paBlowLine(l){
   const px=l.meta&&l.meta.px;if(!px)return null;
   if(l.title==='No Damaging Hit'){
     const o=pitsStageOutcome({type:'deflect',px,evaded:px.evaded});
-    return {head:{evaded:'Evaded',parried:'Parried',fumble:'Fumbled attack',miss:'Missed'}[o]||'No damage',math:'No damage.',kind:o};
+    // (a parry that stops all of it whatever is rolled: nothing is rolled, Idea 20261117-183359)
+    return {head:{evaded:'Evaded',parried:'Parried',fumble:'Fumbled attack',miss:'Missed'}[o]||'No damage',
+      math:px.wholeParry?'No damage: the parry stops the whole blow whatever is rolled, so no location or damage roll.':'No damage.',kind:o};
   }
   const o=pitsStageOutcome({type:'hit',lost:l.meta.impact?l.meta.impact.hpLost:px.wound,px});
   const parts=[`${px.total} damage`];
@@ -208,14 +210,43 @@ function paResultCard(){
 
 // Dice tray: the engine's own dice (inline 3D tray, or the Roll button for a manual roll).
 const paPct=label=>{const m=[...String(label||'').matchAll(/(\d{1,3})%/g)];return m.length?+m[m.length-1][1]:null;};
+// Opposed rolls side by side (Idea 20261117-192330: "see the rolls going against each other"): the roll to beat on one
+// side, this roll on the other (its face once it has landed), the chance to win before the roll and who won after.
+// vs comes from the engine's request (opposing(), practice-combat.html); the grading is the engine's (CombatRules).
+const paGradeOf=(v,pct)=>CombatRules.GRADE_VALUE[CombatRules.gradeAttempt(v,pct)];
+const PA_GRADE_NAME=['fumble','failure','success','critical'];
+function paVersusHtml(r,pct,value){
+  const vs=r&&r.vs;if(!vs||pct==null)return '';
+  const me=S.fighters[r.actor],word=g=>esc(PITS_ZONE_WORD[PA_GRADE_NAME[g]]||'');
+  const mine=value!=null?{roll:value,grade:paGradeOf(value,pct)}:null;
+  let n=0;for(let v=1;v<=100;v++)if(CombatRules.opposedWins({roll:v,grade:paGradeOf(v,pct)},vs))n++;
+  const won=mine?CombatRules.opposedWins(mine,vs):null;
+  const meName=paHuman(r.actor)&&!paHuman(r.actor==='a'?'b':'a')?'You':esc(me?.name||'');
+  const why=mine?(mine.grade!==vs.grade?'the better grade':mine.grade>=2?'the same grade, the higher roll':'both failed, so it is not beaten'):'';
+  const verdict=mine?`<div class="rvs-out ${won?'won':'lost'}">${won?`${meName} ${meName==='You'?'win':'wins'}`:`${esc(vs.who)} ${vs.who==='You'?'win':'wins'}`}: ${why}</div>`
+    :`<div class="rvs-out">Chance to win: <b>${n}%</b> · a better grade wins; the same grade, the higher roll</div>`;
+  return `<div class="rvs" aria-label="Opposed roll"><div class="rvs-side them"><small>${esc(vs.who)} · ${esc(vs.what)}</small><b>${String(vs.roll).padStart(2,'0')}</b>`
+    +`<span class="o-${PA_GRADE_NAME[vs.grade]}">${word(vs.grade)}</span></div><div class="rvs-mark">vs</div>`
+    +`<div class="rvs-side me${mine?(won?' won':' lost'):''}"><small>${meName} · ${pct}%</small><b>${mine?String(mine.roll).padStart(2,'0'):'?'}</b>`
+    +`<span${mine?` class="o-${PA_GRADE_NAME[mine.grade]}"`:''}>${mine?word(mine.grade):'to roll'}</span></div></div>${verdict}`;
+}
+// Impale: the weapon is rolled twice and the higher kept (Idea 20261117-183514: "the lower number leaves the screen
+// leaving just the higher number"). From the dice the engine rolled (labels "Weapon A n" / "Weapon B n").
+function paImpaleHtml(r){
+  if(!r||!/roll weapon twice/.test(r.label||'')||!r.settled)return '';
+  const sum=k=>r.defs.reduce((n,d,i)=>n+(new RegExp('^Weapon '+k+' ').test(d.label||'')?Number(r.values[i])||0:0),0);
+  const a=sum('A'),b=sum('B'),keep=b>a?'B':'A';
+  const side=(k,v)=>`<span class="rimp-${k===keep?'keep':'gone'}"><small>Roll ${k}</small><b>${v}</b></span>`;
+  return `<div class="rimp" aria-label="Impale: the higher weapon roll is kept">${side('A',a)}${side('B',b)}<p>Impale keeps the higher weapon roll: <b>${Math.max(a,b)}</b></p></div>`;
+}
 function paTrayHtml(){
   let title='Dice tray',sub='Rolls appear here',who='you',body='',bar='',res='',btn='',cls='';
   const defsOf=r=>r.defs.map(d=>d.sides===100?'d100':'d'+d.sides).join(' + ');
   if(V.replaying)return '';   // a replay of the fight shows the fight, not the dice
   if(V.busy&&V.roll){
-    const r=V.roll,pct=paPct(r.label);
+    const r=V.roll,pct=r.pct??paPct(r.label);
     title=rollHeading(r.label);who=paHuman(r.actor)?'you':'foe';sub=pct!=null?`Target <b>${pct}%</b>`:esc(defsOf(r));
-    body='<div data-inline-dice></div>';
+    body='<div data-inline-dice></div>'+paVersusHtml(r,pct,r.settled?r.values[0]:null)+paImpaleHtml(r);
     if(pct!=null&&r.defs.length===1&&r.defs[0].sides===100)bar=pitsBandHtml(pct,r.settled?r.values[0]:null);
     cls=' live';
   }else if(S.phase==='between'||S.phase==='over'){
@@ -223,15 +254,17 @@ function paTrayHtml(){
     const r=resultParts();
     title=r.result;sub=esc(r.winnerLine)+(r.causeLine?`<small class="r-cause">${esc(r.causeLine)}</small>`:'');who=r.draw?'foe':r.victory?'you':'foe';cls=' end '+(r.draw?'draw':r.victory?'won':'lost');
   }else if(R&&!V.busy){
-    const pct=paPct(R.label);
+    const pct=R.pct??paPct(R.label);
     title=rollHeading(R.label);who=paHuman(R.actor)?'you':'foe';sub=pct!=null?`Target <b>${pct}%</b>${rollDifficultyHtml(R.actor)}`:esc(defsOf(R));
-    body='<div class="r-dice">'+R.defs.map(d=>d.sides===100?'<div class="die d10 lg"><span>00</span></div><div class="die d10 lg"><span>0</span></div>':`<div class="die d${d.sides}"><span>?</span></div>`).join('')+'</div>';
+    body=R.vs&&pct!=null?paVersusHtml(R,pct,null)
+      :'<div class="r-dice">'+R.defs.map(d=>d.sides===100?'<div class="die d10 lg"><span>00</span></div><div class="die d10 lg"><span>0</span></div>':`<div class="die d${d.sides}"><span>?</span></div>`).join('')+'</div>';
     if(pct!=null&&R.defs.length===1&&R.defs[0].sides===100)bar=pitsBandHtml(pct,null);
     // an Endurance roll against a wound: what it has to beat, the chance, and what is at stake (report 20261117-184544)
     {const w=S.woundTest,lm=/^Endurance · (serious|major) wound to (.+?)(?: · |$)/.exec(R.label||'');
      if(w&&lm&&w.id===R.actor&&pct!=null){const st=paWoundStakes(w.level,w.loc,paHuman(R.actor)?'you':S.fighters[R.actor].name);
        let n=0;for(let v=1;v<=100;v++)if(CombatRules.opposedWins({roll:v,grade:CombatRules.GRADE_VALUE[CombatRules.gradeAttempt(v,pct)]},w.attack))n++;
-       sub+=`<small class="r-cause">Beat the attack roll of <b>${w.attack.roll}</b> (${esc(PITS_ZONE_WORD[w.attack.name]||w.attack.name)}): a better grade, `
+       sub+=R.vs?`<small class="r-cause">Resist: ${esc(st.ok)} Fail: ${esc(st.bad)}</small>`
+         :`<small class="r-cause">Beat the attack roll of <b>${w.attack.roll}</b> (${esc(PITS_ZONE_WORD[w.attack.name]||w.attack.name)}): a better grade, `
          +`or the same grade and a higher roll. Chance to resist: <b>${n}%</b>.<br>Resist: ${esc(st.ok)} Fail: ${esc(st.bad)}</small>`;}}
     btn=`<button type="button" class="rbtn" data-act="roll" aria-label="Roll ${esc(defsOf(R))} now"><span>Roll ${esc(defsOf(R))}</span><kbd>Space</kbd></button>`;
     cls=' await';
