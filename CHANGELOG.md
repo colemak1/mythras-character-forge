@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: changing range looks like a move, not a slide
+
+Owner, 2026-11-17: "the range animations look off". Dagger against spear and the like (weapons whose Reach differs); rules and dice unchanged.
+
+- **Closing in.** The shorter weapon's fighter gathers, puts its empty hand up to the point, then goes in under it in one long low lunge with the back leg stretched out behind. It was a squat slid along the floor. The longer weapon's point now goes up when the hand gets to it; it used to lift on its own before anything touched it.
+- **Opening out.** The longer weapon shoves, the other fighter is rocked back by the shove, and then comes a real hop back: both feet off the floor, a low landing, and the point brought out level at the face. It used to cover the distance in two frames and then drift.
+- Timings: closing 500 ms (was 440), opening 560 ms (was 480). `DART`, `SHOVE` in `experiments/pits-cine.js`.
+- Tests: two new in `tests/pits-cine-range.cjs`. Sheets: `docs/pits-visual-checks/cine-range-close.jpg`, `cine-range-open.jpg`. The sheet tool takes `FW` for bigger frames.
+
 ## The Pits: a whip no longer leaves a sword's trail
 
 - A whip, flail or net no longer draws the white blade smear or a stiff afterimage blade behind a fast swing: that trail followed a straight weapon the fighter does not hold. The rope itself shows the swing.
