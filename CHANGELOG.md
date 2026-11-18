@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits replay and weapon contact
+
+A finishing withdrawal gets its own collapse. Spearheads end at the contact point used by the animation, and a held embedded weapon follows the wound while the wielder stays on its grip.
+
 ## The Pits: a stun counts only the stunned fighter's own Turns (ruling D-R4)
 
 ChatGPT (Chat), Core pp.90–91, 110: a fighter with no Action Points left gets no Turn in a cycle, so a Serious Wound's "cannot attack for 1d3 Turns" does not count down then. It used to, so a fighter stunned for 3 Turns could attack on its third (report 20261117-184734). A Turn spent Delaying or on another permitted action still counts. Press Advantage, Overextend and Blind count the same way.

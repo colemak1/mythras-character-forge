@@ -328,8 +328,10 @@ function pitsStageBeat(events,step,names){
   if(!cue)return {cue:null,consumed:false};
   const k=i=>pitsStageKind(events[i],names);
   let a0=-1,a1=events.length;
-  for(let i=step;i>=0;i--)if(k(i)==='attack'){a0=i;break;}
-  for(let i=step+1;i<events.length;i++)if(k(i)==='attack'){a1=i;break;}
+  // A withdrawal starts its own action even though it has no attack roll.
+  const startsAction=i=>['attack','withdraw'].includes(k(i));
+  for(let i=step;i>=0;i--)if(startsAction(i)){a0=i;break;}
+  for(let i=step+1;i<events.length;i++)if(startsAction(i)){a1=i;break;}
   const inEx=(lo,hi,types)=>{const out=[];for(let i=lo;i<hi;i++){const c=pitsStageCue(events[i],names);if(c&&types.includes(c.type)&&!events[i].roll&&!events[i].checkpoint)out.push(c);}return out;};
   // who attacked in this exchange (its attack entry)
   // (the attack entry can be in an earlier batch than its blow: then the blow's own actor, the engine's attacker)
@@ -554,18 +556,42 @@ function psDrawMotion(f,L,now){
   // was drawn in the hand, with the arm pulled back)
   let Lp=L;const held=psHeldLodge(f);
   if(held){
-    const W=psLocal(f,psBodyPt(held.v,held.loc)),Sh=g.wSh||g.Sh,len=pitsStageWeaponKind(held.weapon,3).len;
+    const wound=psBodyPt(held.v,held.loc),Sh=g.wSh||g.Sh,len=pitsStageWeaponKind(held.weapon,3).len;
+    let W=psLocal(f,wound);
+    // The shaft and arm have fixed lengths. Follow the wound only as far as needed
+    // to bring the grip within reach, keeping the feet on the floor.
+    const arm=62*.98,shaft=len-PS_LODGE_IN;
+    const dx=W[0]-Sh[0],dy=W[1]-Sh[1];
+    const separation=Math.hypot(dx,dy);
+    const reachable=Math.max(shaft-arm,Math.min(shaft+arm,separation));
+    if(reachable!==separation){
+      const forward=Math.sign(dx)||1;
+      const lateral=Math.sqrt(Math.max(0,reachable*reachable-dy*dy));
+      f.hx+=f.face*(dx-forward*lateral);
+      W=psLocal(f,wound);
+    }
     const d=psUnit([Sh[0]-W[0],Sh[1]-W[1]]),G=[W[0]+d[0]*(len-PS_LODGE_IN),W[1]+d[1]*(len-PS_LODGE_IN)];
-    const R=62,u=psUnit([G[0]-Sh[0],G[1]-Sh[1]]),dist=Math.min(Math.hypot(G[0]-Sh[0],G[1]-Sh[1]),R*.98);
+    const u=psUnit([G[0]-Sh[0],G[1]-Sh[1]]),dist=Math.min(Math.hypot(G[0]-Sh[0],G[1]-Sh[1]),arm);
     g.Hn=[Sh[0]+u[0]*dist,Sh[1]+u[1]*dist];g.E=psElbow(Sh,g.Hn,32,30);
+    f.heldPose={clock:PS.clock,offset:f.hx-m.hx,hand:g.Hn};
     Lp={...L,armed:false};
+  }else if(f.heldPose){
+    // Blend out the constraint from the last painted hold, including during a withdrawal.
+    const previous=f.heldPose,u=Math.min(1,Math.max(0,(PS.clock-previous.clock)/180));
+    if(u===1)f.heldPose=null;
+    else{
+      const weight=1-u*u*(3-2*u);
+      f.hx+=previous.offset*weight;
+      g.Hn=g.Hn.map((v,i)=>v+(previous.hand[i]-v)*weight);
+      g.E=psElbow(g.wSh||g.Sh,g.Hn,32,30);
+    }
   }
   // the shadow lifts with the hips when the figure is on the floor
   psPaint(f,Lp,g,j.w+90,0,Math.max(0,Math.min(40,(70-j.P[1])*.5)),null,now,j.blen);
   if(held)f.pts.hand=g.Hn;
   // the spring trial moves the whole stance (the writer's steps), so the shadow goes under the feet, not the station
-  if(PS.springOn){f.standX=m.hx+m.face*(j.F[0]+j.bF[0])/2;f.shadow.setAttribute('cx',f.standX);}
-  if(PS.cine){const up=Math.min(j.F[1],j.bF[1]),k=Math.max(.35,1-up/160);f.shadow.setAttribute('cx',m.hx);f.shadow.setAttribute('rx',52*k);f.shadow.setAttribute('opacity',.34*k);}
+  if(PS.springOn){f.standX=f.hx+m.face*(j.F[0]+j.bF[0])/2;f.shadow.setAttribute('cx',f.standX);}
+  if(PS.cine){const up=Math.min(j.F[1],j.bF[1]),k=Math.max(.35,1-up/160);f.shadow.setAttribute('cx',f.hx);f.shadow.setAttribute('rx',52*k);f.shadow.setAttribute('opacity',.34*k);}
 }
 // The Special Effects the striker chose in this blow's exchange. The blow's batch may not hold them all: an effect the
 // engine waited on a person for (Choose Location) was shown in an earlier batch, so the fight's log is read back from
@@ -637,9 +663,9 @@ function psPaint(f,L,g,w1,dx,lift,pose,now,blen){
       ln(e.shaft,at(ex.from),tip);const g1=at(10);
       ln(e.guard,[g1[0]-perp[0]*9,g1[1]-perp[1]*9],[g1[0]+perp[0]*9,g1[1]+perp[1]*9]);e.guard.style.display='';
     }else if(kind==='spear'||kind==='trident'||kind==='polearm'){
-      ln(e.shaft,at(ex.from),tip);e.shaft.setAttribute('class','ps-shaft ps-wood');
-      const a=psAdd(tip,psDir(w1,kind==='polearm'?20:24));
-      e.wh.setAttribute('points',psPts([a,[tip[0]+perp[0]*6,tip[1]+perp[1]*6],[tip[0]-perp[0]*6,tip[1]-perp[1]*6]]));e.wh.style.display='';
+      const base=at(len-(kind==='polearm'?20:24));
+      ln(e.shaft,at(ex.from),base);e.shaft.setAttribute('class','ps-shaft ps-wood');
+      e.wh.setAttribute('points',psPts([tip,[base[0]+perp[0]*6,base[1]+perp[1]*6],[base[0]-perp[0]*6,base[1]-perp[1]*6]]));e.wh.style.display='';
       if(kind==='trident'){const p1=at(len-26),p2=psAdd(p1,psDir(w1,26));
         e.guard.setAttribute('class','ps-guard');ln(e.guard,[p1[0]-perp[0]*9,p1[1]-perp[1]*9],[p1[0]+perp[0]*9,p1[1]+perp[1]*9]);e.guard.style.display='';
         e.wh2.setAttribute('points',psPts([psAdd(p2,[-perp[0]*9,-perp[1]*9]),[p1[0]-perp[0]*9,p1[1]-perp[1]*9],[p1[0]-perp[0]*7,p1[1]-perp[1]*7]]));e.wh2.style.display='';}
@@ -773,7 +799,9 @@ function psFrame(now){
       if(!PS.paused&&!stopped)PS.clock+=dt*psSpeed()*(PS.rate||1);
       if(!PS.paused)psLull();
     }
-    for(const id of ['a','b'])if(PS.fig[id])psDraw(PS.fig[id],now);
+    // Sample the wound before drawing its holder, on either side of the arena.
+    const order=PS.fighters.lodged?.b?.some(w=>w.held&&w.holder==='a')?['b','a']:['a','b'];
+    for(const id of order)if(PS.fig[id])psDraw(PS.fig[id],now);
     {const X=psFx();if(X)try{X.film(psReplaying());X.frame(now,dt,!!stopped);}catch(e){psEmit('cue-error',{cue:'fx',message:String(e&&e.message||e)});}}
     if(PS.cine)try{psDrawReach();}catch(e){}
     psFollowReticles();psDrawLodged(now);psDrawFlag(now);PS.raf=requestAnimationFrame(psFrame);return;
@@ -927,8 +955,8 @@ function psSettle(keepExchange){
 function psWeaponShape(parent,wk){
   const len=wk.len,inner=psSvg('g',{transform:'translate('+(-len/2)+',0)'},parent);
   const k=wk.kind;
-  if(k==='spear'||k==='trident'||k==='polearm'){psSvg('line',{x1:-36,y1:0,x2:len,y2:0,class:'ps-shaft ps-wood','stroke-width':4},inner);
-    psSvg('polygon',{points:(len+24)+',0 '+len+',6 '+len+',-6',class:'ps-head-blade'},inner);}
+  if(k==='spear'||k==='trident'||k==='polearm'){psSvg('line',{x1:-36,y1:0,x2:len-24,y2:0,class:'ps-shaft ps-wood','stroke-width':4},inner);
+    psSvg('polygon',{points:len+',0 '+(len-24)+',6 '+(len-24)+',-6',class:'ps-head-blade'},inner);}
   else if(k==='blade'){psSvg('line',{x1:0,y1:0,x2:len,y2:0,class:'ps-shaft','stroke-width':4},inner);psSvg('line',{x1:10,y1:-9,x2:10,y2:9,class:'ps-guard','stroke-width':4},inner);}
   else if(k==='axe'){const hd=psAxeHead(len),pts=a=>a.map(([u,v])=>u+','+v).join(' ');
     psSvg('line',{x1:0,y1:0,x2:len,y2:0,class:'ps-shaft ps-wood','stroke-width':4},inner);
@@ -1786,7 +1814,7 @@ function pitsStageSync(){
   if(fresh){psSettle();for(const k of Object.keys(PS.lodge)){PS.lodge[k].remove();delete PS.lodge[k];}
     for(const id of ['a','b']){const f=PS.fig[id];if(f.dropEl){f.dropEl.remove();f.dropEl=null;}f.look=null;}
     PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};if(!psReplaying())PS.cineTape=null;
-    PS.M={};PS.gap=0;PS.go=0;PS.intents={};PS.reachTags=null;for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.flag=false;f.finishDrop=false;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.tripAhead=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
+    PS.M={};PS.gap=0;PS.go=0;PS.intents={};PS.reachTags=null;for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.heldPose=null;f.flag=false;f.finishDrop=false;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.tripAhead=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
   for(const id of ['a','b']){
     const f=PS.fig[id];f.look=pitsStageLook(view[id]);
     // (the movement stage draws its figures at scale 1: a SIZ scale set here would put every marker placed before the next
