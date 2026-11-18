@@ -96,7 +96,9 @@ body.pa-on #root .bE .bprompt .choicegrid{grid-template-columns:repeat(auto-fit,
 .bE .binfo-body header{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .bE .binfo-body h4{margin:0;font:700 18px/1.15 var(--st-display,var(--font-display))}
 .bE .binfo-body p{margin:0}
-.bE .binfo-body .bsmall{font-size:12px;color:var(--pa-dim)}
+/* (Idea 20261117-205726: the most important text bottom right was the hardest to read) */
+.bE .binfo-body .bsmall{font-size:13px;color:var(--st-text,var(--bone));font-weight:500}
+.bE .binfo-body .bsmall b{font-weight:700}
 .bE .binfo-body .bsrc{font-size:11px;color:var(--pa-dim);letter-spacing:.04em}
 .bE .bbig{display:flex;align-items:baseline;gap:8px}
 .bE .bbig strong{font:700 26px/1 var(--st-body,var(--font-ui));font-variant-numeric:tabular-nums}

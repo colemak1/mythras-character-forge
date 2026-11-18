@@ -240,7 +240,7 @@ function paImpaleHtml(r){
   return `<div class="rimp" aria-label="Impale: the higher weapon roll is kept">${side('A',a)}${side('B',b)}<p>Impale keeps the higher weapon roll: <b>${Math.max(a,b)}</b></p></div>`;
 }
 function paTrayHtml(){
-  let title='Dice tray',sub='Rolls appear here',who='you',body='',bar='',res='',btn='',cls='';
+  let title='Dice tray',sub='Rolls appear here',who='you',body='',bar='',res='',btn='',cls='',stakes='';
   const defsOf=r=>r.defs.map(d=>d.sides===100?'d100':'d'+d.sides).join(' + ');
   if(V.replaying)return '';   // a replay of the fight shows the fight, not the dice
   if(V.busy&&V.roll){
@@ -263,9 +263,11 @@ function paTrayHtml(){
     {const w=S.woundTest,lm=/^Endurance · (serious|major) wound to (.+?)(?: · |$)/.exec(R.label||'');
      if(w&&lm&&w.id===R.actor&&pct!=null){const st=paWoundStakes(w.level,w.loc,paHuman(R.actor)?'you':S.fighters[R.actor].name);
        let n=0;for(let v=1;v<=100;v++)if(CombatRules.opposedWins({roll:v,grade:CombatRules.GRADE_VALUE[CombatRules.gradeAttempt(v,pct)]},w.attack))n++;
-       sub+=R.vs?`<small class="r-cause">Resist: ${esc(st.ok)} Fail: ${esc(st.bad)}</small>`
-         :`<small class="r-cause">Beat the attack roll of <b>${w.attack.roll}</b> (${esc(PITS_ZONE_WORD[w.attack.name]||w.attack.name)}): a better grade, `
-         +`or the same grade and a higher roll. Chance to resist: <b>${n}%</b>.<br>Resist: ${esc(st.ok)} Fail: ${esc(st.bad)}</small>`;}}
+       if(!R.vs)sub+=`<small class="r-cause">Beat the attack roll of <b>${w.attack.roll}</b> (${esc(PITS_ZONE_WORD[w.attack.name]||w.attack.name)}): a better grade, `
+         +`or the same grade and a higher roll. Chance to resist: <b>${n}%</b>.</small>`;
+       // the stakes on their own lines, large and dark (Idea 20261117-210145: "the text ... that tells me if i miss i die is
+       // hard to read because its too small and too light"); outside .r-s, which short screens hide
+       stakes=`<div class="r-stakes"><p class="ok"><b>Resist:</b> ${esc(st.ok)}</p><p class="bad"><b>Fail:</b> ${esc(st.bad)}</p></div>`;}}
     btn=`<button type="button" class="rbtn" data-act="roll" aria-label="Roll ${esc(defsOf(R))} now"><span>Roll ${esc(defsOf(R))}</span><kbd>Space</kbd></button>`;
     cls=' await';
   }else{
@@ -274,7 +276,7 @@ function paTrayHtml(){
     else cls=' idle';   // nothing to show: the tray steps back (pits-bottom.css)
   }
   return `<div class="top"><section class="roll${cls}" data-who="${who}" aria-live="polite">
-    <div class="r-t">${esc(title)}</div><div class="r-s">${sub}</div>${body}${bar?`<div class="sbar">${bar}</div>`:''}
+    <div class="r-t">${esc(title)}</div><div class="r-s">${sub}</div>${body}${stakes}${bar?`<div class="sbar">${bar}</div>`:''}
     ${res?`<div class="r-res">${res}</div>`:''}${btn}</section></div>`;
 }
 

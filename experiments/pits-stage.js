@@ -994,6 +994,26 @@ function psFlyWeapon(f,metres,opt){
   requestAnimationFrame(step);
 }
 
+// Surrender (Idea 20261118-164218: "when they surrender they should drop all weapons and shields before raising the
+// white flag"): the weapon falls from the hand and the shield from the arm, then the flag goes up. Presentation only.
+function psSurrenderDrop(f){
+  if(!f||!f.look)return;
+  if(f.look.armed&&!f.dropEl){f.finishDrop=true;f.look.armed=false;psFlyWeapon(f,0);psEmit('drop',{target:f.id,at:'surrender'});}
+  if(f.look.shield&&!f.shieldDropEl){
+    const r=psShieldR(f.look.shieldKey),from=f.pts&&f.pts.bHn?psWorld(f,f.pts.bHn):[f.X,PS_GROUND-80],to=[f.X+f.face*34,PS_GROUND-r*.3];
+    const g=psSvg('g',{class:'ps-dropped'},psLayer('ps-fx'));psSvg('ellipse',{cx:0,cy:0,rx:r,ry:r,class:'ps-shield'},g);
+    f.shieldDropEl=g;f.shieldDropped=true;f.look.shield=false;psEmit('drop',{target:f.id,at:'surrender',what:'shield'});
+    const e=g.firstChild,t0=performance.now(),d=psReduced()?1:520/psSpeed(),tok=PS.epoch;
+    const step=now=>{
+      if(!g.isConnected||tok!==PS.epoch)return;
+      const p=Math.min(1,(now-t0)/d),q=p*p,x=from[0]+(to[0]-from[0])*p,y=from[1]+(to[1]-from[1])*q;
+      e.setAttribute('ry',(r*(1-.7*q)).toFixed(1));g.setAttribute('transform','translate('+x.toFixed(1)+','+y.toFixed(1)+')');
+      if(p<1)requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+}
+
 // ---- Lodged weapons and entanglement: drawn every frame from engine state ----
 const PS_LODGE_IN=10;   // how far the point of a lodged weapon is drawn inside the body
 function psDrawLodged(now){
@@ -1164,7 +1184,7 @@ async function psRunCue(cue){
       const lo=cue.winner&&PS.fig[cue.winner==='a'?'b':'a'],wi=cue.winner&&PS.fig[cue.winner];
       if(lo){
         if(cue.how==='concede'||cue.how==='surrender'){lo.endPose=PS_POSE.yield;psEmit('yield',{target:lo.id,how:cue.how});
-          if(cue.how==='surrender'){lo.flag=true;lo.flagAt=PS.clock+200;}await psPlay(lo,[PS_POSE.yield,480]);}
+          if(cue.how==='surrender'){psSurrenderDrop(lo);lo.flag=true;lo.flagAt=PS.clock+620;}await psPlay(lo,[PS_POSE.yield,480]);}
         else{lo.endPose=PS_POSE.ko;await psPlay(lo,[PS_POSE.ko,520]);}
       }
       if(wi){wi.endPose=PS_POSE.win;psPlay(wi,[PS_POSE.win,360]);}
@@ -1507,12 +1527,13 @@ async function psMotionCue(cue){
       let end=PS.clock;
       if(lo){
         if(cue.how==='concede'){lo.mEnd='yield';psEmit('yield',{target:lo.id,how:cue.how});end=L.yieldTo(PS.M[lo.id],PS.clock);}
-        // Compel Surrender (owner, 2026-11-16): the off hand goes up with a little white flag
+        // Compel Surrender (owner, 2026-11-16): the off hand goes up with a little white flag, once the weapon and shield
+        // are down (psSurrenderDrop)
         else if(cue.how==='surrender'){lo.mEnd='yield';psEmit('yield',{target:lo.id,how:cue.how});
-          end=L.surrender?L.surrender(PS.M[lo.id],PS.clock):L.yieldTo(PS.M[lo.id],PS.clock);lo.flag=true;lo.flagAt=PS.clock+260;}
+          psSurrenderDrop(lo);const t0=PS.clock+360;end=L.surrender?L.surrender(PS.M[lo.id],t0):L.yieldTo(PS.M[lo.id],t0);lo.flag=true;lo.flagAt=t0+260;}
         else{lo.mEnd='lying';if(!lo.mDown){lo.mDown=true;end=L.fall(PS.M[lo.id],PS.clock);lo.downAt=end;}}
       }
-      if(wi){wi.mEnd='low';end=Math.max(end,L.lower(PS.M[wi.id],PS.clock));}
+      if(wi){wi.mEnd='low';const e1=L.lower(PS.M[wi.id],PS.clock);end=Math.max(end,e1);if(L.celebrate)L.celebrate(PS.M[wi.id],e1);}
       PS.busyUntil=Math.max(PS.busyUntil,end);await psUntil(Math.min(end,PS.clock+700));
     }
   }catch(e){if(e!==0)psEmit('cue-error',{cue:cue.type,message:String(e&&e.message||e)});}
@@ -1658,6 +1679,8 @@ async function psMotionBlow(cue){
   if(defeated){
     const won=endC.winner==='a';psBanner(won?'Victory':'Defeated',won?'vd':'bad');psSfx('crit');
     atk.mEnd='low';const e2=L.lower(PS.M[atk.id],PS.clock);PS.busyUntil=Math.max(PS.busyUntil,e2);
+    // (then the winner celebrates, Idea 20261118-164233; not waited on: the result shows while it plays)
+    if(L.celebrate)L.celebrate(PS.M[atk.id],e2);
     await psUntil(Math.min(e2,PS.clock+380));return;
   }
   if(!finishing)await psMotionOverextend(cue);
@@ -1812,7 +1835,7 @@ function pitsStageSync(){
   // A new bout or a new opponent: forget the old one completely.
   const fresh=PS.run!==S||PS.fighters.b!==S.fighters.b;
   if(fresh){psSettle();for(const k of Object.keys(PS.lodge)){PS.lodge[k].remove();delete PS.lodge[k];}
-    for(const id of ['a','b']){const f=PS.fig[id];if(f.dropEl){f.dropEl.remove();f.dropEl=null;}f.look=null;}
+    for(const id of ['a','b']){const f=PS.fig[id];if(f.dropEl){f.dropEl.remove();f.dropEl=null;}if(f.shieldDropEl){f.shieldDropEl.remove();f.shieldDropEl=null;}f.shieldDropped=false;f.look=null;}
     PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};if(!psReplaying())PS.cineTape=null;
     PS.M={};PS.gap=0;PS.go=0;PS.intents={};PS.reachTags=null;for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.heldPose=null;f.flag=false;f.finishDrop=false;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.tripAhead=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
   for(const id of ['a','b']){
@@ -1824,6 +1847,7 @@ function pitsStageSync(){
     // is shown) stays out of the hand until the shown state has caught up: it does not jump back and drop again
     // (a finish to the arm dropped the weapon; the engine does not mark it, the picture keeps it on the floor)
     if(f.finishDrop)f.look.armed=false;
+    if(f.shieldDropped)f.look.shield=false;   // (a surrender put the shield down, psSurrenderDrop)
     // (nor once the bout is over: a blow that disarms and ends the fight is resolved before the engine marks the weapon
     // dropped, and the weapon came back to the hand at the end, owner 2026-11-16, the Disarm finish)
     if(f.dropAhead){if(!f.look.armed)f.dropAhead=false;else if(V.busy||V.hold||S.phase!=='fight')f.look.armed=false;else f.dropAhead=false;}

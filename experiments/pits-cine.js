@@ -411,8 +411,13 @@ function gap(wa,wb,k){
   // (keep: the stage's long range when the Reach differs, the longer weapon's own range, the point hovering in front of the other's face and the shorter weapon well
   // short of the body, owner 2026-11-16)
   // (the longer weapon's drawn length out from its hips, then the other's face, then a hand's breadth of air)
-  if(k==='keep')return Math.round(Math.max(extent(wa).to,extent(wb).to)+100);
-  return k==='apart'?g+190:k==='short'?Math.round(112+.4*short):g;
+  // (report 20261117-205829, "it always looks like the spear is already hitting my head": a hand's breadth read as a
+  // touch behind the other's guard and hands, so the point now hangs clearly short, still level at the face)
+  if(k==='keep')return Math.round(Math.max(extent(wa).to,extent(wb).to)+110);
+  // (an even range: the longer weapon's guard point stops clear of the other, report 20261117-205829 again: a 150 spear
+  // at 150+.62*len had its point on a swordsman's guard and face from the first frame)
+  const clear=Math.round(Math.max(extent(wa).to,extent(wb).to)+110);
+  return k==='apart'?Math.max(g,clear)+190:k==='short'?Math.round(112+.4*short):Math.max(g,clear);
 }
 const station=()=>0;
 const fx=(m,o)=>{m.pair.fx.push(o);};
@@ -1525,6 +1530,29 @@ function lower(m,t){
   if(m.keys[m.keys.length-1].t>t+50)return m.keys[m.keys.length-1].t;
   cut(m,t);m.over=true;keyA(m,t+520,POSE.victory,{e:'io',plant:'ff'});return t+520;
 }
+// Victory celebrations (Idea 20261118-164233: "lets add some victory celebrations"): after the weapon comes down, the
+// winner raises it overhead and pumps it twice, or brings it up in a salute; then back to the victory stance. Chosen
+// from the bout's seed, so a replay celebrates the same way. Returns the end time.
+const CHEER={
+  raise:[{hip:[0,88],lean:-6,bend:-6,head:14,ff:[18,0],bf:[-20,0],h:[8,60],eb:1,w:96,o:[-8,-50],turn:0},
+    {hip:[0,82],lean:-2,bend:-2,head:8,ff:[18,0],bf:[-20,0],h:[10,44],eb:1,w:104,o:[-8,-52],turn:0}],
+  salute:[{hip:[0,84],lean:0,bend:0,head:2,ff:[18,0],bf:[-20,0],h:[20,8],eb:1,w:90,o:[-6,-54],turn:0},
+    {hip:[0,82],lean:6,bend:2,head:-10,ff:[18,0],bf:[-20,0],h:[24,0],eb:1,w:84,o:[-6,-54],turn:0}]
+};
+function celebrate(m,t){
+  if(!m||m.down)return t;
+  const r=rngKey(m.pair,'cheer|'+m.id),how=pick(r,['raise','raise','salute']),[a,b]=CHEER[how];
+  const last=m.keys[m.keys.length-1];if(last.t>t)t=last.t;
+  if(how==='raise'){
+    keyA(m,t+160,POSE.victory,{e:'lin',plant:'both'});
+    keyA(m,t+520,a,{e:'out',plant:'both'});keyA(m,t+700,b,{e:'io',plant:'both'});
+    keyA(m,t+880,a,{e:'out',plant:'both'});keyA(m,t+1060,b,{e:'io',plant:'both'});keyA(m,t+1240,a,{e:'out',plant:'both'});
+    keyA(m,t+2000,a,{e:'lin',plant:'both'});keyA(m,t+2600,POSE.victory,{e:'io',plant:'both'});return t+2600;
+  }
+  keyA(m,t+160,POSE.victory,{e:'lin',plant:'both'});
+  keyA(m,t+560,a,{e:'io',plant:'both'});keyA(m,t+1300,a,{e:'lin',plant:'both'});keyA(m,t+1600,b,{e:'io',plant:'both'});
+  keyA(m,t+2300,POSE.victory,{e:'io',plant:'both'});return t+2300;
+}
 function surrender(m,t){cut(m,t);m.over=true;key(m,t+460,POSE.surrender,{e:'io',plant:'ff'});return t+460;}
 function yieldTo(m,t){cut(m,t);m.over=true;key(m,t+420,POSE.yield,{e:'io',plant:'ff'});return t+420;}
 // ----- Trip, Disarm, Press Advantage: their own choreography (owner, 2026-11-16) -----
@@ -1747,7 +1775,7 @@ function speed(m,t){
 // are the feet skidding at t (a key with `slide` is being travelled)
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
-const api={WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,overextend,trip,disarm,react,pose,
+const api={WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,celebrate,yieldTo,surrender,press,overextend,trip,disarm,react,pose,
   joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
