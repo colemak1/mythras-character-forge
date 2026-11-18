@@ -271,7 +271,9 @@ function pitsStageArrange(events,held,waiting,names){
     const ks=list.map(e=>pitsStageKind(e,names));
     // (a Trip or a Disarm can be resolved before the blow, while the engine still waits for the location and damage:
     // it is held with the blow, so nothing of the exchange is drawn before the whole of it is known)
-    const b=ks.findIndex(k=>PSTAGE_BLOW.includes(k)||PSTAGE_EFFECT.includes(k));
+    // (a withdrawal that worked is drawn by its injury: held with it, so the weapon stays in the wound until the
+    // injury's dice are shown, report 20261118-213426)
+    const b=ks.findIndex((k,i)=>PSTAGE_BLOW.includes(k)||PSTAGE_EFFECT.includes(k)||k==='withdraw'&&(pitsStageCue(list[i],names)||{}).ok);
     if(waiting&&b>=0){
       play.push(...list.slice(0,b),...list.slice(b).filter(e=>e.roll));
       hold=list.slice(b).filter(e=>!e.roll);
@@ -295,6 +297,10 @@ function pitsStageOrder(list,names){
     // (the cinematic stage: a defender's Trip is drawn in the blow it answers, one movement, so it stays where it is
     // and its dice are rolled before the blow, as for the attacker's; owner, 2026-11-18)
     if(k(out[i])==='trip'&&PS_CINE)continue;
+    // (likewise a Disarm, the attacker's or the defender's: the blow carries it, so the blow stays after the Disarm's
+    // dice and the location and damage dice that follow them; moving the blow first drew the hit before those dice were
+    // shown, report 20261118-212902)
+    if(k(out[i])==='disarm'&&PS_CINE)continue;
     let at=i;while(at>0&&(out[at-1].roll||out[at-1].checkpoint))at--;
     const [blow]=out.splice(j,1);out.splice(at,0,blow);i++;
   }
@@ -345,7 +351,8 @@ function pitsStageBeat(events,step,names){
     // a Disarm in this exchange is part of its blow, no second swing: the attacker's takes the weapon from the defender's
     // hand at the contact; the defender's (won on the parry) takes it from the attacker's at the parry (owner, 2026-11-16:
     // "it should be the same hit that disarms")
-    const disarm=inEx(step+1,a1,['disarm'])[0]||null;
+    // (on the cinematic stage the Disarm's entry stays before the blow, after its dice: see pitsStageOrder)
+    const disarm=inEx(PS_CINE?a0+1:step+1,a1,['disarm'])[0]||null;
     // the attacker's Trip (resolved before the location and the damage): the blow carries it, one movement (FR-03)
     const striker=pitsStageBlowActor(e,names)||attacker;
     const trip=striker?inEx(a0+1,step,['trip']).find(c=>c.actor===striker)||null:null;
@@ -374,9 +381,14 @@ function pitsStageBeat(events,step,names){
     return {cue,consumed:false};
   }
   if(cue.type==='disarm'&&inEx(a0+1,step,PSTAGE_BLOW).length)return {cue,consumed:true};
+  // (carried: a later blow draws it, so the picture keeps the state before it until that blow lands: the weapon is
+  // still in the hand, or in the wound, until then)
+  if(cue.type==='disarm'&&PS_CINE&&inEx(step+1,a1,PSTAGE_BLOW).length)return {cue,consumed:true,carried:true};
   // Arise has no movement of its own: the blow of its exchange draws it (the evader keeps its feet; a fighter already
   // down gets up as the exchange ends)
   if(cue.type==='arise')return {cue,consumed:true};
+  // a withdrawal that worked has no movement of its own when its injury follows: that blow is the one pull
+  if(cue.type==='withdraw'&&cue.ok&&inEx(step+1,a1,['withdrawHit']).length)return {cue,consumed:true,carried:true};
   if(cue.type==='press'||cue.type==='overextend'){
     const later=inEx(step+1,a1,PSTAGE_BLOW).length>0;
     return later?{cue,consumed:true}:{cue,consumed:false};
@@ -1906,9 +1918,17 @@ function pitsStageSync(){
     // A Disarm still to be drawn in this playback: the engine logs a defender's Disarm before the blow it answered and
     // the stage draws the blow first, so the blow's shown state already says disarmed. The weapon stays in the hand
     // until the Disarm's own wrench throws it; it used to fly at the parry and again at the wrench (owner, 2026-11-16).
-    const comingDisarm=!!(V.busy&&Array.isArray(V.events)&&V.events.slice(V.step||0).some(e=>e&&!e.roll&&e.title==='Disarm Opponent'&&e.meta&&e.meta.target===id));
+    // (on the cinematic stage the Disarm's entry stays before the blow that carries it, pitsStageOrder: a Disarm earlier
+    // in the exchange being played is still to be drawn too, until that blow throws the weapon)
+    const isDisarm=e=>e&&!e.roll&&e.title==='Disarm Opponent'&&e.meta&&e.meta.target===id;
+    let carried=false;
+    if(PS_CINE&&V.busy&&Array.isArray(V.events))for(let i=Math.min(V.step||0,V.events.length-1);i>=0;i--){const e=V.events[i];
+      if(isDisarm(e)){carried=true;break;}if(e&&!e.roll&&!e.checkpoint&&/ (attacks|strikes with the shield)$|^Withdraw Impale$/.test(e.title||''))break;}
+    const comingDisarm=!!(V.busy&&Array.isArray(V.events)&&(carried||V.events.slice(V.step||0).some(isDisarm)));
     if(!f.look.armed&&!f.dropEl&&view[id].disarmed&&!lodgedIn&&!fresh&&f.armedSeen&&(heldDisarm||waitingNow||comingDisarm))f.look.armed=true;
-    else if(!f.look.armed&&!f.dropEl&&view[id].disarmed&&!lodgedIn)psFlyWeapon(f,view[id].droppedMetres||2);
+    // (nor while a blow is about to throw it itself: dropAhead is set just before the blow's Disarm contact, whose shown
+    // state already says disarmed; the weapon flew twice, once here and once from the blow)
+    else if(!f.look.armed&&!f.dropEl&&view[id].disarmed&&!lodgedIn&&!f.dropAhead)psFlyWeapon(f,view[id].droppedMetres||2);
     f.armedSeen=f.look.armed;
     f.end=null;
   }

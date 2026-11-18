@@ -198,8 +198,9 @@ function paResultCard(){
       return {title:'Initiative',sub:`<b>${esc(n.head)}</b>`,who:n.tie||mine?'you':'foe',bar:'',
         res:`<span class="r-init">${esc(n.a.name)} ${esc(n.a.math)}</span><span class="r-init">${esc(n.b.name)} ${esc(n.b.math)}</span>`};}
     const b=paBlowLine(l);
-    if(b){const who=S.fighters[l.meta.actor];
-      return {title:'Result',sub:esc(b.head),who:paHuman(l.meta.actor)?'you':'foe',bar:'',res:`<span class="o-${b.kind==='wound'||/partial/.test(b.kind)?'fumble':'success'}">${esc(b.math)}</span>`};}
+    // (a struck weapon's entry has no meta: report 20261118-213134, the tray threw and the fight stopped)
+    if(b){const actor=l.meta&&l.meta.actor;
+      return {title:'Result',sub:esc(b.head),who:actor&&paHuman(actor)?'you':'foe',bar:'',res:`<span class="o-${b.kind==='wound'||/partial/.test(b.kind)?'fumble':'success'}">${esc(b.math)}</span>`};}
     const sk=/(attacks|strikes with the shield|parries( with shield)?|evades)$/.test(l.title)?paSkillLine(l):null;
     if(sk){const kind=sk.grade,mine=l.meta&&paHuman(l.meta.actor);
       return {title:'Last roll',sub:esc(l.title),who:mine?'you':'foe',bar:pitsBandHtml(sk.pct,sk.roll),

@@ -23,7 +23,7 @@ async function bout(browser,sc){
     window.__pitsDie=n=>{if(n===100&&window.__next!=null){const v=window.__next;window.__next=null;return v;}
       if(n===10)return (window.__d10=(window.__d10||0)+1)%2?10:1;return Math.ceil(n/2);};
     // every frame: the defender's hips and whether its plate says Prone (for the chip's timing)
-    window.__fr=[];const tick=()=>{try{const f=PS.fig.b;if(f.pts&&f.pts.H)window.__fr.push({hip:f.pts.H[1],chip:!!pitsStageShownProne('b')});}catch(e){}requestAnimationFrame(tick);};
+    window.__fr=[];const tick=()=>{try{const f=PS.fig.b;if(f.pts&&f.pts.H)window.__fr.push({hip:f.pts.H[1],chip:!!pitsStageShownProne('b'),lodged:document.querySelectorAll('#pitsStage .ps-lodged').length,c:PS.clock});}catch(e){}requestAnimationFrame(tick);};
     requestAnimationFrame(tick);});
   await p.goto(sc.url||URL_);
   await p.evaluate(c=>{const fly=window.psFlyWeapon;window.psFlyWeapon=function(f,m,o){window.__psRecord.push({type:'fly',actor:f.id,c:PS.clock});return fly(f,m,o);};
@@ -34,7 +34,8 @@ async function bout(browser,sc){
   const click=q=>p.evaluate(q=>{const e=[...document.querySelectorAll(q)].find(x=>!x.disabled);if(!e)return false;
     e.dispatchEvent(new MouseEvent('click',{bubbles:true}));return true;},q);
   let attacks=0,nr=0,bz=0;const probes=[];
-  for(let i=0;i<500;i++){const s=await st();
+  // (1500 steps: since the dice hold of 2026-11-17 a bout with many manual rolls needs more than 500)
+  for(let i=0;i<1500;i++){const s=await st();
     if(s.busy){if(++bz>250)break;await sleep(40);continue;}bz=0;
     if(s.phase!=='fight')break;
     if(s.R&&sc.probe&&sc.probe.includes(s.R))probes.push({at:s.R,dropped:await p.evaluate(()=>document.querySelectorAll('#pitsStage .ps-dropped').length)});
@@ -45,7 +46,7 @@ async function bout(browser,sc){
       if(!(sc.effect&&await click('[data-act=effect][data-val="'+sc.effect+'"]')))await click('[data-act=skipEffect]');}
     else if(s.pend&&sc.pick&&sc.pick[s.pend])await click(sc.pick[s.pend]);
     else if(s.pend)await click('#root .prompt .choice:not([data-act=yield]):not([data-act=help])');
-    else{if(attacks++>=(sc.attacks||1))break;await click('[data-act=attack]');}
+    else{if(attacks++>=(sc.attacks||1))break;if(!(sc.withdraw&&await click('[data-act=withdrawImpale]')))await click('[data-act=attack]');}
     await sleep(100);}
   await sleep(1200);
   const out=await p.evaluate(()=>({rec:window.__psRecord.map(r=>({type:r.type,kind:r.kind||r.outcome||r.finish||'',actor:r.actor,c:Math.round(r.c||0),tried:r.tried||null})),
@@ -82,7 +83,7 @@ async function bout(browser,sc){
   });
   // (Work's check B4, 2026-11-14: the disarmed weapon lay on the floor while the hit location still waited for its roll)
   await T('Disarm by the attacker: the weapon stays in hand until the blow lands, then lies on the floor once',async()=>{
-    const r=await bout(browser,{config:{str:18,siz:18},react:['none'],effect:'disarm',rolls:{'a:Attack':1,'b:Resist':99},
+    const r=await bout(browser,{url:BASE,config:{str:18,siz:18},react:['none'],effect:'disarm',rolls:{'a:Attack':1,'b:Resist':99},
       probe:['a:Disarm','a:Hit','a:Damage'],attacks:1});
     assert.deepEqual(r.errors,[]);
     assert(r.probes.length>=2,'the exchange waited on the rolls: '+JSON.stringify(r.probes));
@@ -103,7 +104,9 @@ async function bout(browser,sc){
       assert(par,'the parry was drawn: '+JSON.stringify(r.rec.filter(x=>x.type==='contact')));
       assert.equal(dis.length,1,'one Disarm contact: '+JSON.stringify(dis));
       assert.equal(fly.length,1,'one throw: '+JSON.stringify(fly));
-      assert.equal(dis[0].c,par.c,'the Disarm is the parry\'s own contact');
+      // (owner, 2026-11-18, #380: a critical parry's Disarm is the parry driving on through the blade, one movement: it
+      // lands with the parry or straight after it, never as a second movement)
+      assert(dis[0].c>=par.c&&dis[0].c-par.c<=300,'the Disarm comes with the parry, in one movement: '+JSON.stringify({par:par.c,dis:dis[0].c}));
       assert.equal(r.dropped,1,'one weapon on the floor');
     });
   // (owner, 2026-11-16: "Impale ... doesn't get stuck in the wound immediately, the swing happens then the blade
@@ -165,6 +168,19 @@ async function bout(browser,sc){
     assert.equal(r.held.lodged,1,'the weapon is drawn lodged in the wound');
     assert.equal(r.held.shaft,'none','no second weapon is drawn in the hand');
     assert(r.held.gap!=null&&r.held.gap<=4,'the hand is on the grip (off by '+r.held.gap+')');
+  });
+  // report 20261118-213426: "the withdraw weapon happened visually before the damage was rolled and then the blade went
+  // back in and then was pulled out again". A held Impale, then Withdraw: the weapon stays in the wound through the
+  // Brawn and damage dice, then comes out in one pull, and never goes back in.
+  await T('Impale kept hold of, then withdrawn: in the wound until its dice are shown, then out once (cinematic stage)',async()=>{
+    const r=await bout(browser,{url:BASE,config:{weapon:'rapier'},react:['none','none','none'],effect:'impale',rolls:{'a:Attack':1},
+      pick:{impaleLeave:'[data-act=impaleLeave][data-val=hold]'},attacks:6,withdraw:true});
+    assert.deepEqual(r.errors,[]);
+    const changes=[];let last=-1;for(const f of r.frames)if(f.lodged!==last){changes.push(f.lodged);last=f.lodged;}
+    assert.deepEqual(changes,[0,1,0],'in the wound once, then out once: '+JSON.stringify(changes));
+    const pull=r.rec.filter(x=>x.type==='resolve'&&x.kind==='wound').pop(),out=r.frames.find((f,i)=>i&&f.lodged===0&&r.frames[i-1].lodged===1);
+    assert(pull&&out&&out.c>=pull.c,'the weapon leaves the wound with the pull, not before it: '+JSON.stringify({pull,out}));
+    assert.deepEqual(r.rec.filter(x=>x.type==='withdraw'),[],'a withdrawal that worked is drawn by its injury only');
   });
   await T('a successful Trip: the tripped fighter goes down onto the floor',async()=>{
     const r=await bout(browser,{react:['none'],effect:'trip',rolls:{'a:Attack':10,'b:Trip':99,'b:Brawn':99,'b:Evade':99},attacks:1});

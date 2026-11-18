@@ -554,7 +554,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="pits-view.js?v=76322a23e6"></script>
 <script src="pits-game.js?v=3769cec741"></script>
 <script src="pits-report.js?v=78c28f1bb3"></script>
-<script src="pits-arena.js?v=945698686c"></script>
+<script src="pits-arena.js?v=0668e33d79"></script>
 <script src="pits-bottom.js?v=a27e8fce37"></script>
 <script src="pits-lost.js?v=f385014ea5"></script>
 <script src="pits-idea.js?v=e1791930b7"></script>
@@ -565,7 +565,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="pits-cine.js?v=6eb3edda87"></script>
 <script src="pits-cine-fx.js?v=02003a23cc"></script>
 <script src="pits-flex.js?v=dff1553db0"></script>
-<script src="pits-stage.js?v=01bb94f293"></script>
+<script src="pits-stage.js?v=b5fe35d372"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -1697,7 +1697,8 @@ function playBeat(){
   const names={a:S.fighters.a.name,b:S.fighters.b.name};
   const beat=typeof pitsStageBeat==='function'?pitsStageBeat(V.events,V.step,names):{cue:null,consumed:false};
   const upto=S.logs.filter(entry=>entry.id<=e.id).length;
-  if(e.view){
+  // (a beat its blow carries, a Disarm or a withdrawal, changes the picture only when that blow lands)
+  if(e.view&&!beat.carried){
     const view=clone(e.view);
     if(beat.cue&&['hit','deflect'].includes(beat.cue.type)){
       V.visibleCount=upto-1;V.pendingShown={view,rng:e.rng||null,visible:upto};   // shown at contact

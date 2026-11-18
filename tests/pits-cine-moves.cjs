@@ -112,8 +112,12 @@ test('the stage uses the phrases on the cinematic stage and keeps the stand-ins 
 // Disarm is still to be drawn. (Browser check: tests/visual/pits-spring-scripted.cjs, "a parry that wins a Disarm".)
 test('a Disarm still to be drawn keeps the weapon in the hand (it is thrown once, at the wrench)',()=>{
   const st=fs.readFileSync(path.join(__dirname,'..','experiments','pits-stage.js'),'utf8');
-  assert(/comingDisarm=!!\(V\.busy&&Array\.isArray\(V\.events\)&&V\.events\.slice\(V\.step\|\|0\)\.some\(e=>e&&!e\.roll&&e\.title==='Disarm Opponent'&&e\.meta&&e\.meta\.target===id\)\)/.test(st),
+  assert(/const isDisarm=e=>e&&!e\.roll&&e\.title==='Disarm Opponent'&&e\.meta&&e\.meta\.target===id;/.test(st),'a Disarm of this fighter');
+  assert(/comingDisarm=!!\(V\.busy&&Array\.isArray\(V\.events\)&&\(carried\|\|V\.events\.slice\(V\.step\|\|0\)\.some\(isDisarm\)\)\)/.test(st),
     'the sync looks ahead for a Disarm of this fighter in the playback');
+  // (and back, on the cinematic stage, to a Disarm earlier in the exchange that the blow being played carries, report
+  // 20261118-212902: the weapon flew twice)
+  assert(/if\(isDisarm\(e\)\)\{carried=true;break;\}/.test(st),'and back to a Disarm its blow carries');
   assert(/f\.armedSeen&&\(heldDisarm\|\|waitingNow\|\|comingDisarm\)\)f\.look\.armed=true/.test(st),'and keeps the weapon drawn until then');
 });
 

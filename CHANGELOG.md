@@ -5,6 +5,28 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: forwards, not backwards (gates, and the reports of 18 November evening)
+
+The owner: "it's starting to feel like our bugs are getting worse". New rules in `AGENTS.md` ("Forwards, not backwards"),
+and the checks that hold them. Rules and dice unchanged.
+
+- **Ordering gate** (`tests/pits-order.cjs`, in the Tests check): 150 seeded bouts on the presentation layer. It fails if
+  a blow is shown before the dice that decide it, anything is shown twice or never, the fight ends twice, or a bout
+  stalls. On the old code 34 of 120 bouts failed.
+- **Browser smoke bouts** (`tests/visual/pits-smoke.cjs`): whole bouts with every Special Effect forced once, then Replay.
+  They fail on any page error, a stall, a second collapse, or a weapon going back into a wound. The Tests check now
+  runs them and `tests/visual/pits-spring-scripted.cjs` in a browser job.
+- **Disarm (FR-25, Severity 1):** an attacker's Disarm drew the hit and the knockout before the location and damage
+  dice were shown. The blow now comes after all its dice and carries the Disarm; the weapon is thrown once.
+- **Damage Weapon (FR-26, Severity 1):** every Damage Weapon hit threw a script error in the dice tray and stopped the
+  fight ("stuck resolving the exchange"). Fixed.
+- **Withdrawing an Impale (FR-27, FR-28):** the weapon left the wound before the withdrawal's damage was rolled, then
+  went back in and was pulled out again (in play and in the replay). It now stays in until the dice are shown, then
+  comes out in one pull.
+- **Browser tests that were already failing:** the scripted harness stopped after 500 steps, too few since the dice
+  hold; the attacker's-Disarm test ran on the retired spring link; the parry-Disarm test still expected the 16 Nov
+  timing, before the owner's one-movement counter (#380). All three are updated, none weakened.
+
 ## The Pits: a concurrent attack keeps its pre-wound skill (rulings D-R1, D-R2)
 
 ChatGPT (Chat), Core pp.87–88, 90–91, 110. At tied Initiative a fighter wounded in the other's turn still makes its own committed attack at the same moment; that attack now uses its skill from before the wound. In report 20261117-032318 it rolled against 32%, its 48% made Hard by the arm wound it was concurrent with. Its weapon, arm and stun were already held back until after the action; its hit points were not.
