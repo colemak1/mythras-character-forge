@@ -30,16 +30,6 @@ function stage(replaying,extra){
 }
 const cueOf=(S,title,body,meta)=>JSON.parse(S.run(`JSON.stringify(pitsStageCue(${JSON.stringify({title,body,meta})},{a:'Aurel',b:'Brann'}))`));
 
-test('a concurrent turn keeps the fall already shown while the engine grants the second action',()=>{
-  const S=stage(false);
-  S.run(`S={phase:'fight',fighters:{a:{},b:{prone:false}},tie:{second:'b',deferred:{f:{prone:true}}}};
-    PS.clock=PitsCine.fall(PS.M.b,PS.clock);PS.fig.b.mDown=true;psLull();`);
-  assert(S.run('!!PS.M.b.down && PS.fig.b.mDown'));
-  assert(!S.ev().some(([type,data])=>type==='reconcile'&&data.kind==='up'));
-  S.run('S.tie=null;psLull()');
-  assert(S.ev().some(([type,data])=>type==='reconcile'&&data.kind==='up'));
-});
-
 test('a later withdrawal owns its victory after a nonterminal left-arm Impale',()=>{
   const S=stage(true);
   const names={a:'Kethan Voss',b:'Border Deserter'};

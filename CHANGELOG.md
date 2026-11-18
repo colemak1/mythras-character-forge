@@ -5,6 +5,15 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: the replay is back to how it was before the exchange timeline (owner, 2026-11-18)
+
+The owner: replays have looked "way worse" since Work's exchange timeline (#375, merged in #376, patched in #377). That
+change is undone: the replay again redraws each blow from the bout's seed and the move and defence chosen live, running
+straight on from one exchange into the next, as it did before 2026-11-18. The stage and test code are back to their
+state before #375, with #374 kept (finishing withdrawal, spearhead contact, hand on a held weapon's grip) and the deck
+layout tweaks for short screens kept. The old `?stage=spring` and `?stage=classic` links work again. Rules and dice
+unchanged.
+
 ## The Pits: the replay flows again (fight report FR-21)
 
 The owner's report of 2026-11-18: "the replay of this fight looks horrible". Since #376 each blow's recording kept the

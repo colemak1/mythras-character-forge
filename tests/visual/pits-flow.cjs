@@ -25,18 +25,10 @@ async function until(page,cond,noRoll){for(let i=0;i<500;i++){const s=await st(p
   else if(cond(s))return s;else if(s.hasR&&!noRoll)await click(page,'[data-act=roll]');await sleep(40);}throw new Error('timeout '+JSON.stringify(await st(page)));}
 const myTurn=s=>s.phase==='fight'&&!s.pend&&!s.hasR&&s.turn==='a';
 // every motion the stage starts: which figure, and whether it moves toward the common idle stance
-const spy=page=>page.evaluate(()=>{
-  const opening=Object.fromEntries(['a','b'].map(id=>[id,PitsCine.sample(PS.M[id],PS.clock)]));
-  const emit=psEmit;
-  psEmit=(type,data)=>{
-    emit(type,data);
-    if(type==='intent'||type==='move')for(const id of ['a','b']){
-      const keys=PS.M[id].keys.filter(k=>k.t>PS.clock);
-      if(keys.length)__psPlays.push({id,idle:keys.some((k,i)=>i>0&&Object.keys(opening[id]).some(c=>keys[i-1].v[c]!==opening[id][c])&&Object.keys(opening[id]).every(c=>k.v[c]===opening[id][c]))});
-    }
-  };
-});
-const pose=page=>page.evaluate(()=>['a','b'].map(id=>PitsCine.joints(PS.M[id],PS.clock)));
+const spy=page=>page.evaluate(()=>{const orig=window.psPlay;window.psPlay=function(f,...frames){
+  const last=frames[frames.length-1],pose=last&&last[0],idle=typeof pose==='object'&&PS_KEYS.every(k=>pose[k]===PS_POSE.idle[k]);
+  window.__psPlays.push({id:f.id,idle,t:Math.round(performance.now())});return orig.call(this,f,...frames);};});
+const pose=page=>page.evaluate(()=>['a','b'].map(i=>JSON.stringify(PS.fig[i].cur)));
 
 (async()=>{
   const browser=await chromium.launch();let pass=0,fail=0;
@@ -99,7 +91,7 @@ const pose=page=>page.evaluate(()=>['a','b'].map(id=>PitsCine.joints(PS.M[id],PS
     const order=await page.evaluate(()=>V.tape.map(e=>e.roll?'dice':(e.title||'?')));
     const hit=order.findIndex(t=>/ hits /.test(t)),lastDice=order.lastIndexOf('dice');
     assert(hit>=0&&lastDice<hit,'every die was shown before the hit entry: '+order.join(' | '));
-    const lo=await page.evaluate(()=>PS.M.b.down&&PitsCine.joints(PS.M.b,PS.clock).P[1]<40);
+    const lo=await page.evaluate(()=>PS.fig.b.endPose===PS_POSE.ko||PS.fig.b.end==='ko');
     assert(lo,'the defeated figure ends collapsed');
     assert.equal((await page.evaluate(()=>window.__psPlays.filter(p=>p.idle&&p.id==='b').length)),0,'the defeated figure was never sent back to idle');
     assert.deepEqual(page.errors,[]);await page.close();
@@ -132,14 +124,12 @@ const pose=page=>page.evaluate(()=>['a','b'].map(id=>PitsCine.joints(PS.M[id],PS
     assert.deepEqual(await page.evaluate(()=>[PS.fig.a.pressRole,PS.fig.b.pressRole]),['press','cover'],'the aggressor presses and the opponent covers while the effect is active');
     await page.evaluate(()=>{window.__psRecord.length=0;psRunCue({type:'press',actor:'a',target:'b',name:'Press Advantage'});});await sleep(900);
     assert(await page.evaluate(()=>window.__psRecord.some(r=>r.type==='press')),'the effect has its own cue');
-    const d=await page.evaluate(()=>{const a=PitsCine.joints(PS.M.a,PS.clock),b=PitsCine.joints(PS.M.b,PS.clock);
-      return {gap:Math.hypot(a.tip[0]-b.Hd[0],a.tip[1]-b.Hd[1]),label:[...document.querySelectorAll('#pitsStage .ps-num')].map(e=>e.textContent).join('|')};});
-    assert(d.gap<70,'the point threatens the covering fighter');
-    const held=await pose(page);
+    const d=await page.evaluate(()=>({a:PS.fig.a.cur.dx,b:PS.fig.b.cur.dx,pa:PS_POSE.press.dx,pb:PS_POSE.cover.dx,label:[...document.querySelectorAll('#pitsStage .ps-num')].map(e=>e.textContent).join('|')}));
+    assert(Math.abs(d.a-d.pa)<3&&Math.abs(d.b-d.pb)<3,'the pair holds its stance (a '+d.a+' b '+d.b+')');
     assert(/Press Advantage/.test(d.label),'the effect is named briefly ('+d.label+')');
     assert.equal(await page.evaluate(()=>JSON.stringify({hp:[S.fighters.a.hp,S.fighters.b.hp],ap:[S.fighters.a.ap,S.fighters.b.ap],eng:S.engagement,dis:S.disengaged,gap:S.gapMetres})),before,'no damage, AP or range change was invented');
     await sleep(1200);   // sustained: the stance does not drift back while the effect is active
-    assert.deepEqual(await pose(page),held,'both fighters hold their stance');
+    assert(Math.abs(await page.evaluate(()=>PS.fig.a.cur.dx)-d.pa)<3,'still pressing after a lull');
     await page.evaluate(()=>{S.fighters.b.pressedTurns=0;render();});await sleep(80);
     assert.deepEqual(await page.evaluate(()=>[PS.fig.a.pressRole,PS.fig.b.pressRole]),[null,null],'released when the engine says the effect is over');
     assert.deepEqual(page.errors,[]);await page.close();
@@ -157,16 +147,14 @@ const pose=page=>page.evaluate(()=>['a','b'].map(id=>PitsCine.joints(PS.M[id],PS
   });
   await T('a disabling leg injury buckles the leg and puts the figure down; a concession looks like yielding; nothing is inferred about severing',async()=>{
     const page=await synthetic();
-    // the engine marks the fighter prone with the disabled leg (applyLimbDisabled); without it the stage stands it up again
-    await page.evaluate(()=>{S.fighters.b.prone=true;psRunCue({type:'hit',actor:'a',target:'b',loc:'rleg',lost:5,px:{total:5,wound:5,loc:'Right Leg',tool:'weapon'},
+    await page.evaluate(()=>{psRunCue({type:'hit',actor:'a',target:'b',loc:'rleg',lost:5,px:{total:5,wound:5,loc:'Right Leg',tool:'weapon'},
       record:{press:null,after:[{type:'wound',level:'serious',loc:'rleg'},{type:'limb',leg:true,loc:'rleg',who:'b'}]}});});
-    const samples=[];for(let i=0;i<26;i++){samples.push(await page.evaluate(()=>PitsCine.joints(PS.M.b,PS.clock).P[1]));await sleep(60);}
-    assert(Math.min(...samples)<40,'the hips dropped (lowest '+Math.min(...samples).toFixed(0)+')');
-    const end=await page.evaluate(()=>({lean:PitsCine.sample(PS.M.b,PS.clock).lean,down:!!PS.M.b.down,hip:PitsCine.joints(PS.M.b,PS.clock).P[1]}));
-    assert(end.down&&end.hip<40&&end.lean<-25,'and the figure goes down from the blow alone (torso '+end.lean.toFixed(0)+', hips '+end.hip.toFixed(0)+')');
+    const samples=[];for(let i=0;i<26;i++){samples.push(await page.evaluate(()=>PS.fig.b.cur.l1));await sleep(60);}
+    assert(Math.max(...samples)>50,'the front knee dropped (l1 reached '+Math.max(...samples).toFixed(0)+')');
+    const end=await page.evaluate(()=>PS.fig.b.cur.t);assert(end<-60,'and the figure goes down (torso '+end.toFixed(0)+')');
     const p2=await synthetic();
     await p2.evaluate(()=>{window.__psRecord.length=0;psRunCue({type:'end',winner:'a',how:'concede'});});await sleep(900);
-    const y=await p2.evaluate(()=>({yield:window.__psRecord.some(r=>r.type==='yield'),t:PitsCine.sample(PS.M.b,PS.clock).lean,col:window.__psRecord.some(r=>r.type==='collapse')}));
+    const y=await p2.evaluate(()=>({yield:window.__psRecord.some(r=>r.type==='yield'),t:PS.fig.b.cur.t,col:window.__psRecord.some(r=>r.type==='collapse')}));
     assert(y.yield&&!y.col,'a concession yields; it is not a collapse');assert(y.t>8&&y.t<30,'bowed, not fallen (torso '+y.t.toFixed(0)+')');
     const full=await p2.evaluate(()=>/sever|ampu|dismember/i.test(pitsStageCue.toString()+pitsStageBeat.toString()));
     assert.equal(full,false,'no severing is inferred anywhere in the cue logic');

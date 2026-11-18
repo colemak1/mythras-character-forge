@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-18 by Claude (FR-21: the replay flows again)_
+_Last updated: 2026-11-18 by Claude (exchange-timeline replay undone)_
 
 ## Where things stand
 
@@ -16,6 +16,7 @@ _Last updated: 2026-11-18 by Claude (FR-21: the replay flows again)_
 
 ## Next
 
+- **Claude, done 2026-11-18 (owner: "undo the replay change ChatGPT implemented, replays look way worse"):** the exchange-timeline replay (#375, with its follow-ups in #376/#377) is reverted; the replay redraws each blow from the seed and live choices again. Kept: #374 (withdrawal finish, spearhead contact, held grip) and the short-screen deck CSS. The two items below about the timeline and FR-21 are superseded. **Owner:** play a bout and press Replay; say if it is back to how you liked it. **ChatGPT (Work):** drop the timeline replay check from the next batch.
 - **Claude, done 2026-11-18 (owner: "check my last report"):** report 20261118-180306 (FR-21): the replay froze before every blow, waiting out the live decisions and dice. Fixed: the replay cuts that stillness (`squeezeTimeline`). No separate arm fault found in a forced re-run of the same fight. **Owner:** replay a bout; if an arm still looks wrong, press Lost? at that moment.
 - **Owner, 2026-11-18: Claude owns the animation stage.** ChatGPT (Work) writes stage code only if Claude is stuck and the owner asks. The old stage links are retired (owner's OK).
 - **Claude, done 2026-11-18:** Work's #374 and #375 reviewed, merged together and finished in one PR: replay plays back recorded blows; old stages off the fight page; withdrawal finish, spearhead contact, held grip. Tests fixed: the reach/handedness checks now run on the cinematic rig (the copy of the retired geometry is deleted); the leg-injury check requires the fall itself. **Owner:** look at the two sheets linked at the top of `docs/pits-animation-direction.md` (a wound into a Trip, a finishing spear withdrawal) and play one bout with Replay. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): a bout with an Impale kept hold of, then Withdraw; press Replay at the end (the same blows, the hand on the grip).

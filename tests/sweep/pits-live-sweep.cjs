@@ -1,4 +1,4 @@
-// The live flow, swept headless: whole fights driven through the same interface the stage uses (studies/pits-spring-pair.js:
+// The live flow, swept headless: whole fights driven through the same interface the stage uses (pits-spring-live.js:
 // a declared attack, a declared defence, the resolved blow; falls, getting up), from wherever the last exchange left
 // both fighters, and checked against the movement rules (tests/lib/pits-motion-rules.cjs) plus two of its own for the
 // moments the picture holds still while a person decides or the dice roll:
@@ -8,7 +8,7 @@
 //   node tests/sweep/pits-live-sweep.cjs [fights per pairing=6] [exchanges per fight=6] [weapon,weapon,...]
 // It prints each fault, a count by kind, and frame counts (FRAMES). The counts are the numbers to drive down; not zero yet.
 // COLLIDE=1 runs it with the collision rule on (blades cannot pass through the other fighter).
-const PL=require('../../experiments/studies/pits-spring-pair.js'),PS=require('../../experiments/pits-spring.js');
+const PL=require('../../experiments/pits-spring-live.js'),PS=require('../../experiments/pits-spring.js');
 const {fault}=require('../lib/pits-motion-rules.cjs');
 // COLLIDE=1: with the collision rule on (blades cannot pass through the other fighter; pits-spring.js, api.collide)
 if(process.env.COLLIDE==='1')PS.collide=true;

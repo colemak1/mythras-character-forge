@@ -13,17 +13,15 @@ const URL_=process.env.PITS_URL||'http://localhost:8765/experiments/practice-com
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const st=page=>page.evaluate(()=>{const S=prototypeCombat.state(),V=prototypeCombat.presentation();
   return {phase:S.phase,busy:!!V.busy,pend:S.pending?S.pending.kind:null,hasR:!!prototypeCombat.pendingRoll(),turn:S.order?S.order[S.turnIndex]:null,
-    paused:PS.paused,clock:PS.clock,motion:PL()===PitsCine,
+    paused:PS.paused,clock:PS.clock,motion:PS_MOTION,
     finite:['a','b'].every(i=>{const p=PS.fig[i].pts;return !p||['Sh','H','F','bF','Hn','tip'].every(k=>Number.isFinite(p[k][0])&&Number.isFinite(p[k][1]));})};});
 const click=(page,q)=>page.evaluate(q=>{const e=[...document.querySelectorAll(q)].find(x=>!x.disabled);if(!e)return false;e.click();return true;},q);
 async function bout(browser,cfg,seed,shots){
   const page=await browser.newPage({viewport:{width:1280,height:800}});page.errors=[];page.on('pageerror',e=>page.errors.push(e.message));
   await page.addInitScript(s=>{window.__psRecord=[];let a=s;const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
-    // A successful attack and parry open each bout; subsequent rolls use its seed.
-    const opening=[20,20,18];let locations=0;
-    window.__pitsDie=n=>n===100&&opening.length?opening.shift():n===20&&locations++<3?11:Math.ceil(rnd()*n);},seed);
+    window.__pitsDie=n=>Math.ceil(rnd()*n);},seed);
   await page.goto(URL_+'?bottom=current');await page.evaluate(c=>{Object.assign(config,c);startRun(false);},cfg);await sleep(300);
-  const out={paused:0,frozenMoves:0,stalls:0,page};let prev=null,busySince=0,shot={},reactions=0;
+  const out={paused:0,frozenMoves:0,stalls:0,page};let prev=null,busySince=0,shot={};
   for(let i=0;i<4000;i++){
     const s=await st(page);assert(s.finite,'a figure has a non-finite joint');
     if(prev&&prev.paused&&s.paused){out.paused++;if(Math.abs(s.clock-prev.clock)>0.5)out.frozenMoves++;}
@@ -33,15 +31,8 @@ async function bout(browser,cfg,seed,shots){
     if(['between','over'].includes(s.phase)&&!s.busy)break;
     if(s.busy){if(!busySince)busySince=Date.now();if(Date.now()-busySince>4000){out.stalls++;await click(page,'[data-act=continue]');busySince=0;}await sleep(40);continue;}
     busySince=0;
-    if(s.hasR&&!out.paused){
-      // Leave a real input pending long enough for the declaration to reach its hold.
-      await page.waitForFunction(()=>PS.paused);
-      const held=await st(page);await sleep(120);
-      const later=await st(page);assert(later.paused);out.paused++;
-      if(held.clock!==later.clock)out.frozenMoves++;
-    }
     if(s.hasR)await click(page,'[data-act=roll]');
-    else if(s.pend==='reaction')await click(page,'[data-act=react][data-val='+(++reactions%3?'parry':'none')+']')||await click(page,'[data-act=react][data-val=none]');
+    else if(s.pend==='reaction')await click(page,'[data-act=react][data-val='+(i%3?'parry':'none')+']')||await click(page,'[data-act=react][data-val=none]');
     else if(s.pend==='effect')await click(page,'#root .prompt [data-act=effect]')||await click(page,'[data-act=skipEffect]');
     else if(s.pend==='location')await click(page,'[data-act=pickloc]');
     else if(i>2500&&s.phase==='fight'&&!s.pend&&await click(page,'[data-act=yield]')){}
@@ -84,14 +75,9 @@ async function bout(browser,cfg,seed,shots){
     assert(rec.filter(t=>t==='contact').length>=3,'the replay drew the contacts again');
     assert(!rec.includes('cue-error'));assert.deepEqual(page.errors,[]);await page.close();
   });
-  await T('all retired stage URLs play the cinematic rig',async()=>{
-    for(const name of ['classic','spring','poses']){
-      const page=await browser.newPage();await page.goto(URL_+'?stage='+name+'&bottom=current');
-      await page.evaluate(()=>startRun(false));
-      assert(await page.evaluate(()=>PS.M.a.cine&&PS.M.b.cine&&PL()===PitsCine));
-      assert.equal(await page.locator('script[src*="pits-spring"]').count(),0);
-      await page.close();
-    }
+  await T('?stage=poses still opens the earlier pose stage',async()=>{
+    const page=await browser.newPage();await page.goto(URL_+'?stage=poses&bottom=current');
+    assert.equal(await page.evaluate(()=>PS_MOTION),false);await page.close();
   });
   await browser.close();console.log(`${pass} passed, ${fail} failed`);process.exit(fail?1:0);
 })();

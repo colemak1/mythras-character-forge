@@ -287,7 +287,7 @@ function cut(m,t){
   const f=faceAt(m,t),v=sample(m,t,true);
   while(ks.length>1&&ks[ks.length-1].t>=t)ks.pop();
   // (old keys are no longer needed once the picture has passed them)
-  while(!m.timeline&&KEEP&&ks.length>3&&ks[1].t<t-KEEP)ks.shift();
+  while(KEEP&&ks.length>3&&ks[1].t<t-KEEP)ks.shift();
   const last=ks[ks.length-1];
   if(last.t>=t)return;
   ks.push({t,v,e:'lin',ec:null,fe:null,lift:{},arc:0,face:f,slide:false,tag:'cut'});
@@ -694,9 +694,7 @@ function blow(M,aid,t,s){
     T=partAt(D,tc,loc);
   }
   // --- the attacker ---
-  // Catch a retreating defender with the outer edge of the sword.
-  const catching=s.failedEvade&&P.kind==='blade'&&P.fam==='cut';
-  const q=bash?0:catching?Math.min(.76,(P.to-4)/P.len):P.reachAt,down=!!A.down;
+  const q=bash?0:P.reachAt,down=!!A.down;
   // (the furthest point that can land is on the drawn weapon: CA-07)
   const qMax=Math.min(.98,P.to?(P.to-2)/A.weapon.len:.98);
   const wHit=move==='over'||move==='spin'?(H==='high'?-22:H==='mid'?-38:-58):move==='rise'?(H==='high'?38:H==='mid'?8:-30):
@@ -873,15 +871,6 @@ function blow(M,aid,t,s){
     if(sep<want){const d=f*(want-sep);la.v.px-=d;la.v.ffx-=d;la.v.bfx-=d;A.base-=d;}
   }
   // the replay runs straight on: the next exchange is written into this one's recovery
-  // The torso and shoulder settle a few milliseconds behind the swing. Place
-  // sparks and blood on the cutting edge as drawn where it crosses the body.
-  if(!bash&&P.kind==='blade'&&P.fam==='cut'){
-    for(const contact of contacts.filter(c=>c.kind==='hit')){
-      const j=joints(A,contact.t);
-      const edge=j.Hn.map((v,i)=>v+(j.tip[i]-v)*q);
-      if(Math.hypot(edge[0]-contact.at[0],edge[1]-contact.at[1])<=5)contact.at=edge;
-    }
-  }
   const out={tc:contacts.length?contacts[0].t:tc,contacts,end:s.flow&&!s.defeated?Math.min(end,tHit+(dodge?250:290)):end,move:gm||move,
     ward:warded,leap,...chosen,whirl:A.whirl||null,finish:A.finished||null,release:A.release||null,drop:A.dropAt||null};A.finished=null;A.release=null;A.dropAt=null;
   return out;
@@ -1758,111 +1747,7 @@ function speed(m,t){
 // are the feet skidding at t (a key with `slide` is being travelled)
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
-// Author both tracks off screen. A clip owns its keys, contact markers and picture cues in
-// local milliseconds. Installing it only translates the clock; it never chooses a move.
-const copy=value=>JSON.parse(JSON.stringify(value));
-function shiftMarker(marker,delta){
-  const shifted={...marker};
-  for(const field of ['t','t0','t1','tc','end','blowEnd','release','drop']){
-    if(typeof shifted[field]==='number')shifted[field]+=delta;
-  }
-  if(marker.contacts)shifted.contacts=marker.contacts.map(c=>shiftMarker(c,delta));
-  if(marker.whirl)shifted.whirl=shiftMarker(marker.whirl,delta);
-  return shifted;
-}
-function trackState(m,origin,offset){
-  // The preceding key and 100 ms of history preserve the secondary joints' lag.
-  const keys=m.keys.slice(idx(m.keys,origin-100)).map(k=>shiftMarker(k,offset));
-  const {pair,...state}=m;
-  for(const field of ['ward','chamber','whirl']){
-    if(state[field])state[field]=shiftMarker(state[field],offset);
-  }
-  return copy({...state,keys});
-}
-function authorTimeline(M,start,resolve,write){
-  const pair={seed:M.a.pair.seed,n:M.a.pair.n,gap:M.a.pair.gap,fx:[]};
-  for(const id of ['a','b'])pair[id]={...trackState(M[id],start,-start),pair,timeline:true};
-  const result=write(pair,resolve-start);
-  const tracks={};
-  for(const id of ['a','b']){
-    tracks[id]=trackState(pair[id],0,0);
-    delete tracks[id].timeline;
-  }
-  return {tracks,fx:pair.fx,result,sequence:pair.n,resolve:resolve-start};
-}
-// The replay plays each exchange as one movement (owner, 2026-11-18: "the replay lost its fluidity"). A clip recorded
-// live holds still while a person decides and the dice roll; those stretches, where neither figure moves and no
-// picture cue falls, are cut back to `keep` ms. Everything after a cut comes that much earlier; nothing else changes.
-function remapMarker(marker,f){
-  const out={...marker};
-  for(const field of ['t','t0','t1','tc','end','blowEnd','release','drop'])if(typeof out[field]==='number')out[field]=f(out[field]);
-  if(marker.contacts)out.contacts=marker.contacts.map(c=>remapMarker(c,f));
-  if(marker.whirl)out.whirl=remapMarker(marker.whirl,f);
-  return out;
-}
-const sameKey=(a,b)=>!(b.lift&&(b.lift.ff||b.lift.bf))&&!b.arc&&a.face===b.face&&CH.every(c=>a.v[c]===b.v[c]);
-function stillSpans(track,upTo){
-  const ks=track.keys,out=[];
-  for(let i=0;i<ks.length;i++){
-    const a=ks[i],b=ks[i+1],s=Math.max(0,a.t),e=Math.min(upTo,b?b.t:upTo);
-    if(e>s&&(!b||sameKey(a,b)))out.push([s,e]);
-  }
-  return out;
-}
-function squeezeTimeline(clip,keep){
-  keep=keep==null?160:keep;
-  const upTo=clip.resolve;if(!(upTo>0))return clip;
-  const sa=stillSpans(clip.tracks.a,upTo),sb=stillSpans(clip.tracks.b,upTo),cues=clip.fx.map(e=>e.t);
-  const cuts=[];
-  for(const [a0,a1] of sa)for(const [b0,b1] of sb){
-    const s=Math.max(a0,b0),e=Math.min(a1,b1);if(e<=s)continue;
-    // a picture cue inside the stillness keeps everything up to it
-    const from=Math.max(s,...cues.filter(t=>t>=s&&t<e))+keep;
-    if(e-from>40)cuts.push([from,e]);
-  }
-  if(!cuts.length)return clip;
-  cuts.sort((x,y)=>x[0]-y[0]);
-  const f=t=>{let d=0;for(const [c0,c1] of cuts){if(t>=c1)d+=c1-c0;else if(t>c0)d+=t-c0;}return t-d;};
-  const tracks={};
-  for(const id of ['a','b']){
-    const tr={...clip.tracks[id],keys:clip.tracks[id].keys.map(k=>remapMarker(k,f))};
-    for(const field of ['ward','chamber','whirl'])if(tr[field])tr[field]=remapMarker(tr[field],f);
-    tracks[id]=tr;
-  }
-  const result=remapMarker(clip.result,f);
-  if(clip.result.phrases)result.phrases=clip.result.phrases.map(p=>remapMarker(p,f));
-  return {...clip,tracks,fx:clip.fx.map(e=>remapMarker(e,f)),result,resolve:f(upTo),squeezed:true};
-}
-function playTimeline(M,clip,start){
-  for(const id of ['a','b'])Object.assign(M[id],trackState(clip.tracks[id],0,start));
-  M.a.pair.n=clip.sequence;
-  M.a.pair.fx.push(...clip.fx.map(e=>shiftMarker(e,start)));
-  const result=shiftMarker(clip.result,start);
-  if(result.phrases)result.phrases=result.phrases.map(p=>shiftMarker(p,start));
-  return result;
-}
-
-// All movement caused by the resolved exchange is written before its first contact.
-// Later phrases begin at the preceding phrase's last key, even if the renderer misses a frame.
-function exchange(M,actor,t,s){
-  const attacker=M[actor],defender=other(attacker);
-  const result=s.withdraw?withdraw(M,actor,t,s):blow(M,actor,t,s);
-  const phrases=[];
-  let end=result.end;
-  const add=(kind,phrase)=>{phrases.push({kind,t:end,...phrase});end=phrase.end;};
-  const down={a:M.a.down,b:M.b.down};
-  if(s.trip&&!s.defeated&&!defender.down)add('trip',trip(M,actor,end,{after:true,fell:s.trip.fell,key:s.key}));
-  if(s.arise&&M[s.arise].down&&!M[s.arise].over)add('arise',{end:stand(M[s.arise],end),actor:s.arise});
-  if(s.defeated)add('lower',{end:lower(attacker,end)});
-  else if(!s.finishing){
-    if(s.overextend&&!M[s.overextend.target].down&&!M[s.overextend.target].over)
-      add('overextend',{end:overextend(M[s.overextend.target],end),actor:s.overextend.target});
-    if(s.press)add('press',{end:press(attacker,defender,end)});
-  }
-  return {...result,blowEnd:result.end,end,down,phrases};
-}
-
-const api={authorTimeline,playTimeline,squeezeTimeline,exchange,WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,overextend,trip,disarm,react,pose,
+const api={WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,overextend,trip,disarm,react,pose,
   joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
