@@ -1,0 +1,400 @@
+{
+ "id": "ffd0a481-2057-421a-9f72-f1480575a055",
+ "created_at": "2026-11-18T21:29:02.146214+00:00",
+ "reporter": null,
+ "note": "fight was very very broken. my guy moved before the disarm dice were rolled. then the disarm killed him, it said victory, and then rolled damageto the head, not sure what happened ill play more",
+ "page": "experiments/practice-combat.html?forge=1",
+ "build": "arena=945698686c;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=70b6d31d58;cine-fx=02003a23cc;stage=1682d85eb2",
+ "record": {
+  "at": "2026-11-18T21:27:45.376Z",
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+  "log": [
+   {
+    "b": "Goat rolls 9 + 14 − 0 armour penalty = 23.",
+    "t": "Goat · Initiative",
+    "id": 1
+   },
+   {
+    "b": "Border Deserter rolls 5 + 12 − 0 armour penalty = 17.",
+    "t": "Border Deserter · Initiative",
+    "id": 2
+   },
+   {
+    "b": "Goat: 9+14−0 = 23. Border Deserter: 5+12−0 = 17. Goat acts first.",
+    "t": "Encounter 1 · Initiative",
+    "id": 3
+   },
+   {
+    "b": "50 against Combat Style 100% — SUCCESS.",
+    "t": "Goat attacks",
+    "id": 4
+   },
+   {
+    "b": "48 vs 45% — FAILURE. 1 AP remaining.",
+    "t": "Border Deserter evades",
+    "id": 5
+   },
+   {
+    "b": "Goat gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 6
+   },
+   {
+    "b": "Border Deserter rolls 92 against 45% (FAILURE). Loses weapon.",
+    "t": "Disarm Opponent",
+    "id": 7
+   },
+   {
+    "b": "Border Deserter's weapon lands 3m away. A distant weapon must be approached, then picked up and readied.",
+    "t": "Disarm Opponent",
+    "id": 8
+   },
+   {
+    "b": "Goat rolls 19 (d20): Head.",
+    "t": "Hit Location",
+    "id": 9
+   },
+   {
+    "b": "4 weapon (4) +1d4 (+1) = 5 total; 0 parry; 0 armour; 5 HP lost.",
+    "t": "Goat hits Head",
+    "id": 10
+   },
+   {
+    "b": "Border Deserter cannot attack for the next 2 Turns; other actions remain possible.",
+    "t": "Serious Wound · Stunned",
+    "id": 11
+   },
+   {
+    "b": "Border Deserter Endurance 22/53% (SUCCESS) versus the attack 50 (SUCCESS). Fails to resist: both succeeded and the attack's 50 is higher.",
+    "t": "SERIOUS WOUND · Head",
+    "id": 12
+   },
+   {
+    "b": "Goat wins. Border Deserter loses consciousness from a Serious Wound to Head.",
+    "t": "FIGHT ENDS",
+    "id": 13
+   }
+  ],
+  "auto": false,
+  "cine": {
+   "seed": 93603201,
+   "choices": {
+    "10": {
+     "move": "over",
+     "ward": null
+    }
+   }
+  },
+  "lost": [],
+  "mode": "normal",
+  "page": "?forge=1",
+  "quick": false,
+  "stage": [
+   [
+    0,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    0,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    230,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    230,
+    "intent",
+    "evade",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    450,
+    "brace",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    950,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "head",
+    5
+   ],
+   [
+    950,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    1217,
+    "contact",
+    "disarm",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    1217,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "head",
+    5
+   ],
+   [
+    1217,
+    "collapse",
+    "injury",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    11031,
+    "locate",
+    "",
+    "",
+    "b",
+    "head",
+    0
+   ]
+  ],
+  "bottom": "E",
+  "config": {
+   "con": 10,
+   "dex": 14,
+   "int": 14,
+   "siz": 17,
+   "str": 16,
+   "mode": "normal",
+   "armor": 2,
+   "evade": 48,
+   "style": 100,
+   "pvpCon": 12,
+   "pvpDex": 12,
+   "pvpInt": 12,
+   "pvpSiz": 12,
+   "pvpStr": 12,
+   "shield": "none",
+   "weapon": "sword",
+   "pvpName": "Second Player",
+   "charname": "Goat",
+   "firstAid": 28,
+   "pvpArmor": 1,
+   "pvpEvade": 50,
+   "pvpSkill": 65,
+   "username": "Colemak",
+   "pvpShield": "none",
+   "pvpWeapon": "dagger",
+   "willpower": 73,
+   "mixedArmour": false,
+   "pvpMixedArmour": false,
+   "armourByLocation": {},
+   "pvpArmourByLocation": {}
+  },
+  "record": "pits-spring-1",
+  "fighters": {
+   "a": {
+    "name": "Goat",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Border Deserter",
+    "shield": "none",
+    "weapon": "mace"
+   }
+  },
+  "guidance": true,
+  "presented": [
+   {
+    "roll": [
+     "a",
+     "Initiative · d10",
+     [
+      9
+     ]
+    ]
+   },
+   {
+    "b": "Goat rolls 9 + 14 − 0 armour penalty = 23.",
+    "t": "Goat · Initiative",
+    "id": 1
+   },
+   {
+    "roll": [
+     "b",
+     "Initiative · d10",
+     [
+      5
+     ]
+    ]
+   },
+   {
+    "b": "Border Deserter rolls 5 + 12 − 0 armour penalty = 17.",
+    "t": "Border Deserter · Initiative",
+    "id": 2
+   },
+   {
+    "b": "Goat: 9+14−0 = 23. Border Deserter: 5+12−0 = 17. Goat acts first.",
+    "t": "Encounter 1 · Initiative",
+    "id": 3
+   },
+   {
+    "roll": [
+     "a",
+     "Attack · Combat Style 100%",
+     [
+      50
+     ]
+    ]
+   },
+   {
+    "b": "50 against Combat Style 100% — SUCCESS.",
+    "t": "Goat attacks",
+    "id": 4
+   },
+   {
+    "roll": [
+     "b",
+     "Evade · 45%",
+     [
+      48
+     ]
+    ]
+   },
+   {
+    "b": "48 vs 45% — FAILURE. 1 AP remaining.",
+    "t": "Border Deserter evades",
+    "id": 5
+   },
+   {
+    "b": "Goat gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 6
+   },
+   {
+    "roll": [
+     "b",
+     "Resist disarm · Border Deserter",
+     [
+      92
+     ]
+    ]
+   },
+   {
+    "b": "Border Deserter rolls 92 against 45% (FAILURE). Loses weapon.",
+    "t": "Disarm Opponent",
+    "id": 7
+   },
+   {
+    "roll": [
+     "a",
+     "Disarm · weapon flies +1d4 metres",
+     [
+      3
+     ]
+    ]
+   },
+   {
+    "roll": [
+     "a",
+     "Hit Location · d20",
+     [
+      19
+     ]
+    ]
+   },
+   {
+    "b": "4 weapon (4) +1d4 (+1) = 5 total; 0 parry; 0 armour; 5 HP lost.",
+    "t": "Goat hits Head",
+    "id": 10
+   },
+   {
+    "roll": [
+     "a",
+     "Damage · Head",
+     [
+      4,
+      1
+     ]
+    ]
+   },
+   {
+    "roll": [
+     "b",
+     "Serious Wound · 1d3 stunned turns",
+     [
+      2
+     ]
+    ]
+   },
+   {
+    "roll": [
+     "b",
+     "Endurance · serious wound to Head",
+     [
+      22
+     ]
+    ]
+   },
+   {
+    "b": "Border Deserter's weapon lands 3m away. A distant weapon must be approached, then picked up and readied.",
+    "t": "Disarm Opponent",
+    "id": 8
+   },
+   {
+    "b": "Goat rolls 19 (d20): Head.",
+    "t": "Hit Location",
+    "id": 9
+   },
+   {
+    "b": "Border Deserter cannot attack for the next 2 Turns; other actions remain possible.",
+    "t": "Serious Wound · Stunned",
+    "id": 11
+   },
+   {
+    "b": "Border Deserter Endurance 22/53% (SUCCESS) versus the attack 50 (SUCCESS). Fails to resist: both succeeded and the attack's 50 is higher.",
+    "t": "SERIOUS WOUND · Head",
+    "id": 12
+   },
+   {
+    "b": "Goat wins. Border Deserter loses consciousness from a Serious Wound to Head.",
+    "t": "FIGHT ENDS",
+    "id": 13
+   }
+  ],
+  "stageName": "cine"
+ }
+}

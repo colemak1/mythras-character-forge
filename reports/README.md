@@ -4,10 +4,15 @@ Copied from the site by the "Export Pits fight reports" workflow. One file per r
 build it came from, and the fight record (dice and rulings in the order shown, the engine's log, what the stage drew).
 Diagnoses go in `docs/pits-report-ledger.md` on the working branch, not here. How it works: `docs/pits-reports.md`.
 
-61 reports.
+66 reports.
 
 | When (UTC) | Who | Note | Page | Build | File |
 |---|---|---|---|---|---|
+| 2026-11-18 21:51 | - | impale looks horrible and makes no sense, idek know how i won rn and the whole time the impaled sword was moving around with the impaled arm. | experiments/practice-combat.html?forge=1 | arena=945698686c;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=70b6d31d58;cine-fx=02003a23cc;stage=1682d85eb2 | [20261118-215121-b6bf5c97.json](20261118-215121-b6bf5c97.json) |
+| 2026-11-18 21:34 | - | replay looks even worse on this btw | experiments/practice-combat.html?forge=1 | arena=945698686c;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=70b6d31d58;cine-fx=02003a23cc;stage=1682d85eb2 | [20261118-213447-c08ac9ab.json](20261118-213447-c08ac9ab.json) |
+| 2026-11-18 21:34 | - | the withdraw weapon happened visually before the damage was rolled and then the blade went back in and then was pulled out again | experiments/practice-combat.html?forge=1 | arena=945698686c;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=70b6d31d58;cine-fx=02003a23cc;stage=1682d85eb2 | [20261118-213426-c3d34190.json](20261118-213426-c3d34190.json) |
+| 2026-11-18 21:31 | - | stuck rn resolving the exchange, i have to click show results to move on | experiments/practice-combat.html?forge=1 | arena=945698686c;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=70b6d31d58;cine-fx=02003a23cc;stage=1682d85eb2 | [20261118-213134-0fb6162a.json](20261118-213134-0fb6162a.json) |
+| 2026-11-18 21:29 | - | fight was very very broken. my guy moved before the disarm dice were rolled. then the disarm killed him, it said victory, and then rolled damageto the head, ... | experiments/practice-combat.html?forge=1 | arena=945698686c;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=70b6d31d58;cine-fx=02003a23cc;stage=1682d85eb2 | [20261118-212902-ffd0a481.json](20261118-212902-ffd0a481.json) |
 | 2026-11-18 18:03 | - | the replay of this fight looks horrible, we moved n=backwords somewhere what happened | experiments/practice-combat.html?forge=1 | arena=ff19696511;cine=b366fb8df7;cine-fx=02003a23cc;stage=fcb8cdaacb | [20261118-180306-37d02c9f.json](20261118-180306-37d02c9f.json) |
 | 2026-11-18 18:02 | - | [Lost #1] Pressed "What just happened?" in round 1: Replaying the fight. | experiments/practice-combat.html?forge=1 | arena=ff19696511;cine=b366fb8df7;cine-fx=02003a23cc;stage=fcb8cdaacb | [20261118-180241-94e297d9.json](20261118-180241-94e297d9.json) |
 | 2026-11-18 16:42 | - | [Idea] lets add some victory celebrations | experiments/practice-combat.html | arena=25e750b4bb;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=78b7c5f201;cine-fx=02003a23cc;stage=9de0ef1f33 | [20261118-164233-20324ca5.json](20261118-164233-20324ca5.json) |

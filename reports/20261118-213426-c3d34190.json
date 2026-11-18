@@ -1,0 +1,1382 @@
+{
+ "id": "c3d34190-6998-405b-9ebb-03b2bc10398a",
+ "created_at": "2026-11-18T21:34:26.524818+00:00",
+ "reporter": null,
+ "note": "the withdraw weapon happened visually before the damage was rolled and then the blade went back in and then was pulled out again",
+ "page": "experiments/practice-combat.html?forge=1",
+ "build": "arena=945698686c;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=70b6d31d58;cine-fx=02003a23cc;stage=1682d85eb2",
+ "record": {
+  "at": "2026-11-18T21:33:25.530Z",
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+  "log": [
+   {
+    "b": "Goat rolls 9 + 14 − 0 armour penalty = 23.",
+    "t": "Goat · Initiative",
+    "id": 1
+   },
+   {
+    "b": "Border Deserter rolls 5 + 12 − 0 armour penalty = 17.",
+    "t": "Border Deserter · Initiative",
+    "id": 2
+   },
+   {
+    "b": "Goat: 9+14−0 = 23. Border Deserter: 5+12−0 = 17. Goat acts first.",
+    "t": "Encounter 1 · Initiative",
+    "id": 3
+   },
+   {
+    "b": "50 against Combat Style 100% — SUCCESS.",
+    "t": "Goat attacks",
+    "id": 4
+   },
+   {
+    "b": "48 vs 45% — FAILURE. 1 AP remaining.",
+    "t": "Border Deserter evades",
+    "id": 5
+   },
+   {
+    "b": "Goat gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 6
+   },
+   {
+    "b": "Border Deserter rolls 92 against 45% (FAILURE). Loses weapon.",
+    "t": "Disarm Opponent",
+    "id": 7
+   },
+   {
+    "b": "Border Deserter's weapon lands 3m away. A distant weapon must be approached, then picked up and readied.",
+    "t": "Disarm Opponent",
+    "id": 8
+   },
+   {
+    "b": "Goat rolls 19 (d20): Head.",
+    "t": "Hit Location",
+    "id": 9
+   },
+   {
+    "b": "4 weapon (4) +1d4 (+1) = 5 total; 0 parry; 0 armour; 5 HP lost.",
+    "t": "Goat hits Head",
+    "id": 10
+   },
+   {
+    "b": "Border Deserter cannot attack for the next 2 Turns; other actions remain possible.",
+    "t": "Serious Wound · Stunned",
+    "id": 11
+   },
+   {
+    "b": "Border Deserter Endurance 22/53% (SUCCESS) versus the attack 50 (SUCCESS). Fails to resist: both succeeded and the attack's 50 is higher.",
+    "t": "SERIOUS WOUND · Head",
+    "id": 12
+   },
+   {
+    "b": "Goat wins. Border Deserter loses consciousness from a Serious Wound to Head.",
+    "t": "FIGHT ENDS",
+    "id": 13
+   },
+   {
+    "b": "Border Deserter steps forward. Your HP was restored.",
+    "t": "New Opponent",
+    "id": 14
+   },
+   {
+    "b": "Goat rolls 5 + 14 − 0 armour penalty = 19.",
+    "t": "Goat · Initiative",
+    "id": 15
+   },
+   {
+    "b": "Border Deserter rolls 4 + 12 − 0 armour penalty = 16.",
+    "t": "Border Deserter · Initiative",
+    "id": 16
+   },
+   {
+    "b": "Goat: 5+14−0 = 19. Border Deserter: 4+12−0 = 16. Goat acts first.",
+    "t": "Encounter 2 · Initiative",
+    "id": 17
+   },
+   {
+    "b": "43 against Combat Style 100% — SUCCESS.",
+    "t": "Goat attacks",
+    "id": 18
+   },
+   {
+    "b": "39 vs 53% — SUCCESS. 1 AP remaining.",
+    "t": "Border Deserter parries",
+    "id": 19
+   },
+   {
+    "b": "Border Deserter's Mace parry stops the whole blow (Core p.95: a parrying weapon as large as the attacking one blocks all its damage), and it cannot land hard enough to knock them back, so no location or damage is rolled.",
+    "t": "No Damaging Hit",
+    "id": 20
+   },
+   {
+    "b": "62 against Combat Style 53% — FAILURE.",
+    "t": "Border Deserter attacks",
+    "id": 21
+   },
+   {
+    "b": "21 vs 100% — SUCCESS. 2 AP remaining.",
+    "t": "Goat parries",
+    "id": 22
+   },
+   {
+    "b": "Goat gains 1 Special Effect from superior success.",
+    "t": "Defensive Special Effects",
+    "id": 23
+   },
+   {
+    "b": "Border Deserter rolls 49 against 53% (SUCCESS). Keeps weapon.",
+    "t": "Disarm Opponent",
+    "id": 24
+   },
+   {
+    "b": "Border Deserter's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 25
+   },
+   {
+    "b": "33 against Combat Style 100% — SUCCESS.",
+    "t": "Goat attacks",
+    "id": 26
+   },
+   {
+    "b": "Border Deserter has no Action Points left, so cannot parry or evade. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 27
+   },
+   {
+    "b": "Goat gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 28
+   },
+   {
+    "b": "Goat inflicts 8 damage on Border Deserter's Mace; 6 AP protects it, 2 HP lost (4 remaining).",
+    "t": "Damage Weapon",
+    "id": 29
+   },
+   {
+    "b": "Damage Weapon resolves instead of a blow to the body.",
+    "t": "Weapon struck",
+    "id": 30
+   },
+   {
+    "b": "81 against Combat Style 100% — SUCCESS.",
+    "t": "Goat attacks",
+    "id": 31
+   },
+   {
+    "b": "Border Deserter has no Action Points left, so cannot parry or evade. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 32
+   },
+   {
+    "b": "Goat gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 33
+   },
+   {
+    "b": "Goat inflicts 8 damage on Border Deserter's Mace; 6 AP protects it, 2 HP lost (2 remaining).",
+    "t": "Damage Weapon",
+    "id": 34
+   },
+   {
+    "b": "Damage Weapon resolves instead of a blow to the body.",
+    "t": "Weapon struck",
+    "id": 35
+   },
+   {
+    "b": "AP refresh. Fatigue and blood loss carry forward.",
+    "t": "Round 2",
+    "id": 36
+   },
+   {
+    "b": "48 against Combat Style 100% — SUCCESS.",
+    "t": "Goat attacks",
+    "id": 37
+   },
+   {
+    "b": "66 vs 53% — FAILURE. 1 AP remaining.",
+    "t": "Border Deserter parries",
+    "id": 38
+   },
+   {
+    "b": "Goat gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 39
+   },
+   {
+    "b": "Goat inflicts 9 damage on Border Deserter's Mace; 6 AP protects it, 3 HP lost (0 remaining). Weapon breaks.",
+    "t": "Damage Weapon",
+    "id": 40
+   },
+   {
+    "b": "Damage Weapon resolves instead of a blow to the body.",
+    "t": "Weapon struck",
+    "id": 41
+   },
+   {
+    "b": "Goat wins. Border Deserter cannot continue using the equipped weapon and concedes the bout.",
+    "t": "FIGHT ENDS",
+    "id": 42
+   },
+   {
+    "b": "Arena Novice steps forward. Your HP was restored.",
+    "t": "New Opponent",
+    "id": 43
+   },
+   {
+    "b": "Goat rolls 6 + 14 − 0 armour penalty = 20.",
+    "t": "Goat · Initiative",
+    "id": 44
+   },
+   {
+    "b": "Arena Novice rolls 2 + 12 − 0 armour penalty = 14.",
+    "t": "Arena Novice · Initiative",
+    "id": 45
+   },
+   {
+    "b": "Goat: 6+14−0 = 20. Arena Novice: 2+12−0 = 14. Goat acts first.",
+    "t": "Encounter 3 · Initiative",
+    "id": 46
+   },
+   {
+    "b": "78 against Combat Style 100% — SUCCESS.",
+    "t": "Goat attacks",
+    "id": 47
+   },
+   {
+    "b": "64 vs 57% — FAILURE. 1 AP remaining.",
+    "t": "Arena Novice parries with shield",
+    "id": 48
+   },
+   {
+    "b": "Goat gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 49
+   },
+   {
+    "b": "Weapon damage will be rolled twice; choose a result.",
+    "t": "Impale",
+    "id": 50
+   },
+   {
+    "b": "Goat rolls 3 (d20): Right Leg.",
+    "t": "Hit Location",
+    "id": 51
+   },
+   {
+    "b": "Goat chooses option A: 7 weapon damage before the Damage Modifier.",
+    "t": "Impale · Damage selected",
+    "id": 52
+   },
+   {
+    "b": "7 weapon (7) +1d4 (+1) = 8 total; 0 parry; 0 armour; 8 HP lost.",
+    "t": "Goat hits Right Leg",
+    "id": 53
+   },
+   {
+    "b": "Goat's Broadsword lodges in Arena Novice's Right Leg. Choose: keep hold and pull it free on a later turn, or leave it in the wound.",
+    "t": "Impaled Weapon",
+    "id": 54
+   },
+   {
+    "b": "Goat keeps hold of the weapon and can pull it free on a later turn (Ready Weapon).",
+    "t": "Impale · Keeps hold",
+    "id": 55
+   },
+   {
+    "b": "Arena Novice cannot attack for the next 3 Turns; other actions remain possible.",
+    "t": "Serious Wound · Stunned",
+    "id": 56
+   },
+   {
+    "b": "Arena Novice Endurance 42/29% (FAILURE) versus the attack 78 (SUCCESS). Fails to resist: the attack has the better grade. Endurance 57% made harder by impaled weapon.",
+    "t": "SERIOUS WOUND · Right Leg",
+    "id": 57
+   },
+   {
+    "b": "Arena Novice's Right Leg becomes unusable until healed to positive HP. They fall prone.",
+    "t": "Limb Disabled",
+    "id": 58
+   },
+   {
+    "b": "Arena Novice holds an Action Point for a reaction until their next turn.",
+    "t": "Delay",
+    "id": 59
+   },
+   {
+    "b": "Goat Brawn 35 (SUCCESS) versus Arena Novice Brawn 76 (FAILURE): weapon withdrawn.",
+    "t": "Withdraw Impale",
+    "id": 60
+   },
+   {
+    "b": "Goat withdraws Broadsword: 3 normal weapon damage, halved to 2. No Damage Modifier or armour reduction. Arena Novice's Right Leg is now -5 HP.",
+    "t": "Withdrawal injury",
+    "id": 61
+   },
+   {
+    "b": "Arena Novice Endurance 32/57% (SUCCESS) versus the attack 35 (SUCCESS). Fails to resist: both succeeded and the attack's 35 is higher.",
+    "t": "MAJOR WOUND · Right Leg",
+    "id": 62
+   },
+   {
+    "b": "Goat wins. Arena Novice has a Major Limb Wound to the Right Leg: incapacitated and prone. Falls unconscious from agony. If the GM rules the limb severed, punctured or ripped off, untreated blood loss becomes fatal after 10 minutes.",
+    "t": "FIGHT ENDS",
+    "id": 63
+   }
+  ],
+  "auto": false,
+  "cine": {
+   "seed": 452578892,
+   "choices": {
+    "53": {
+     "move": "over",
+     "ward": "wardShield"
+    }
+   }
+  },
+  "lost": [],
+  "mode": "normal",
+  "page": "?forge=1",
+  "quick": false,
+  "stage": [
+   [
+    0,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    0,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    230,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    230,
+    "intent",
+    "evade",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    450,
+    "brace",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    950,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "head",
+    5
+   ],
+   [
+    950,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    1217,
+    "contact",
+    "disarm",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    1217,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "head",
+    5
+   ],
+   [
+    1217,
+    "collapse",
+    "injury",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    11031,
+    "locate",
+    "",
+    "",
+    "b",
+    "head",
+    0
+   ],
+   [
+    92747,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    93430,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    93430,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    93660,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    93660,
+    "intent",
+    "parry",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    93880,
+    "guard",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    93880,
+    "resolve",
+    "parried",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    93880,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    94097,
+    "contact",
+    "parried",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    94795,
+    "intent",
+    "attack",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    95025,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    95025,
+    "intent",
+    "parry",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    95245,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    95245,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    95245,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    95429,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    95956,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    96186,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    96186,
+    "resolve",
+    "parried",
+    "a",
+    "b",
+    "rarm",
+    0
+   ],
+   [
+    96186,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    96336,
+    "contact",
+    "weapon",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    96871,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    96871,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    97101,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    97101,
+    "resolve",
+    "parried",
+    "a",
+    "b",
+    "rarm",
+    0
+   ],
+   [
+    97101,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    97318,
+    "contact",
+    "weapon",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    97866,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    97866,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    98096,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    98096,
+    "intent",
+    "parry",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    98316,
+    "guard",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    101150,
+    "resolve",
+    "parried",
+    "a",
+    "b",
+    "rarm",
+    0
+   ],
+   [
+    101150,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    101366,
+    "contact",
+    "weapon",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    107333,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    107333,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    107333,
+    "guard",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    107333,
+    "resolve",
+    "parried",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    107333,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    107683,
+    "contact",
+    "parried",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    107983,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    107983,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    107983,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    107983,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    108350,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    108633,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    108633,
+    "resolve",
+    "parried",
+    "a",
+    "b",
+    "rarm",
+    0
+   ],
+   [
+    108633,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    108933,
+    "contact",
+    "weapon",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    109216,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    109216,
+    "resolve",
+    "parried",
+    "a",
+    "b",
+    "rarm",
+    0
+   ],
+   [
+    109216,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    109566,
+    "contact",
+    "weapon",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    109866,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    109866,
+    "guard",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    109866,
+    "resolve",
+    "parried",
+    "a",
+    "b",
+    "rarm",
+    0
+   ],
+   [
+    109866,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    110216,
+    "contact",
+    "weapon",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    120649,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    121283,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    121283,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    121513,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    121513,
+    "intent",
+    "shield",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    121733,
+    "guard",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    121733,
+    "locate",
+    "",
+    "",
+    "b",
+    "rleg",
+    0
+   ],
+   [
+    121733,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "rleg",
+    8
+   ],
+   [
+    121733,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    121883,
+    "lodge",
+    "",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    121883,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "rleg",
+    8
+   ],
+   [
+    122358,
+    "reconcile",
+    "down",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    122698,
+    "withdraw",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    127748,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "rleg",
+    2
+   ],
+   [
+    127965,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "rleg",
+    2
+   ],
+   [
+    127965,
+    "collapse",
+    "injury",
+    "a",
+    "b",
+    "",
+    0
+   ]
+  ],
+  "bottom": "E",
+  "config": {
+   "con": 10,
+   "dex": 14,
+   "int": 14,
+   "siz": 17,
+   "str": 16,
+   "mode": "normal",
+   "armor": 2,
+   "evade": 48,
+   "style": 100,
+   "pvpCon": 12,
+   "pvpDex": 12,
+   "pvpInt": 12,
+   "pvpSiz": 12,
+   "pvpStr": 12,
+   "shield": "none",
+   "weapon": "sword",
+   "pvpName": "Second Player",
+   "charname": "Goat",
+   "firstAid": 28,
+   "pvpArmor": 1,
+   "pvpEvade": 50,
+   "pvpSkill": 65,
+   "username": "Colemak",
+   "pvpShield": "none",
+   "pvpWeapon": "dagger",
+   "willpower": 73,
+   "mixedArmour": false,
+   "pvpMixedArmour": false,
+   "armourByLocation": {},
+   "pvpArmourByLocation": {}
+  },
+  "record": "pits-spring-1",
+  "fighters": {
+   "a": {
+    "name": "Goat",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Arena Novice",
+    "shield": "heater",
+    "weapon": "spear"
+   }
+  },
+  "guidance": true,
+  "presented": [
+   {
+    "roll": [
+     "a",
+     "Initiative · d10",
+     [
+      6
+     ]
+    ]
+   },
+   {
+    "b": "Goat rolls 6 + 14 − 0 armour penalty = 20.",
+    "t": "Goat · Initiative",
+    "id": 44
+   },
+   {
+    "roll": [
+     "b",
+     "Initiative · d10",
+     [
+      2
+     ]
+    ]
+   },
+   {
+    "b": "Arena Novice rolls 2 + 12 − 0 armour penalty = 14.",
+    "t": "Arena Novice · Initiative",
+    "id": 45
+   },
+   {
+    "b": "Goat: 6+14−0 = 20. Arena Novice: 2+12−0 = 14. Goat acts first.",
+    "t": "Encounter 3 · Initiative",
+    "id": 46
+   },
+   {
+    "roll": [
+     "a",
+     "Attack · Combat Style 100%",
+     [
+      78
+     ]
+    ]
+   },
+   {
+    "b": "78 against Combat Style 100% — SUCCESS.",
+    "t": "Goat attacks",
+    "id": 47
+   },
+   {
+    "roll": [
+     "b",
+     "Parry · 57%",
+     [
+      64
+     ]
+    ]
+   },
+   {
+    "b": "64 vs 57% — FAILURE. 1 AP remaining.",
+    "t": "Arena Novice parries with shield",
+    "id": 48
+   },
+   {
+    "b": "Goat gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 49
+   },
+   {
+    "b": "Weapon damage will be rolled twice; choose a result.",
+    "t": "Impale",
+    "id": 50
+   },
+   {
+    "roll": [
+     "a",
+     "Hit Location · d20",
+     [
+      3
+     ]
+    ]
+   },
+   {
+    "b": "Goat rolls 3 (d20): Right Leg.",
+    "t": "Hit Location",
+    "id": 51
+   },
+   {
+    "roll": [
+     "a",
+     "Damage · Right Leg · roll weapon twice",
+     [
+      7,
+      1,
+      1
+     ]
+    ]
+   },
+   {
+    "b": "Goat chooses option A: 7 weapon damage before the Damage Modifier.",
+    "t": "Impale · Damage selected",
+    "id": 52
+   },
+   {
+    "roll": [
+     "b",
+     "Serious Wound · 1d3 stunned turns",
+     [
+      3
+     ]
+    ]
+   },
+   {
+    "roll": [
+     "b",
+     "Endurance · serious wound to Right Leg · 29% (impaled weapon)",
+     [
+      42
+     ]
+    ]
+   },
+   {
+    "b": "7 weapon (7) +1d4 (+1) = 8 total; 0 parry; 0 armour; 8 HP lost.",
+    "t": "Goat hits Right Leg",
+    "id": 53
+   },
+   {
+    "b": "Goat's Broadsword lodges in Arena Novice's Right Leg. Choose: keep hold and pull it free on a later turn, or leave it in the wound.",
+    "t": "Impaled Weapon",
+    "id": 54
+   },
+   {
+    "b": "Goat keeps hold of the weapon and can pull it free on a later turn (Ready Weapon).",
+    "t": "Impale · Keeps hold",
+    "id": 55
+   },
+   {
+    "b": "Arena Novice cannot attack for the next 3 Turns; other actions remain possible.",
+    "t": "Serious Wound · Stunned",
+    "id": 56
+   },
+   {
+    "b": "Arena Novice Endurance 42/29% (FAILURE) versus the attack 78 (SUCCESS). Fails to resist: the attack has the better grade. Endurance 57% made harder by impaled weapon.",
+    "t": "SERIOUS WOUND · Right Leg",
+    "id": 57
+   },
+   {
+    "b": "Arena Novice's Right Leg becomes unusable until healed to positive HP. They fall prone.",
+    "t": "Limb Disabled",
+    "id": 58
+   },
+   {
+    "cp": 1
+   },
+   {
+    "b": "Arena Novice holds an Action Point for a reaction until their next turn.",
+    "t": "Delay",
+    "id": 59
+   },
+   {
+    "roll": [
+     "a",
+     "Withdraw weapon · Goat Brawn",
+     [
+      35
+     ]
+    ]
+   },
+   {
+    "roll": [
+     "b",
+     "Resist withdrawal · Arena Novice Brawn · 28% (impaled weapon)",
+     [
+      76
+     ]
+    ]
+   },
+   {
+    "b": "Goat Brawn 35 (SUCCESS) versus Arena Novice Brawn 76 (FAILURE): weapon withdrawn.",
+    "t": "Withdraw Impale",
+    "id": 60
+   },
+   {
+    "roll": [
+     "a",
+     "Withdraw weapon · half damage · Right Leg",
+     [
+      3
+     ]
+    ]
+   },
+   {
+    "roll": [
+     "b",
+     "Endurance · major wound to Right Leg",
+     [
+      32
+     ]
+    ]
+   },
+   {
+    "b": "Goat withdraws Broadsword: 3 normal weapon damage, halved to 2. No Damage Modifier or armour reduction. Arena Novice's Right Leg is now -5 HP.",
+    "t": "Withdrawal injury",
+    "id": 61
+   },
+   {
+    "b": "Arena Novice Endurance 32/57% (SUCCESS) versus the attack 35 (SUCCESS). Fails to resist: both succeeded and the attack's 35 is higher.",
+    "t": "MAJOR WOUND · Right Leg",
+    "id": 62
+   },
+   {
+    "b": "Goat wins. Arena Novice has a Major Limb Wound to the Right Leg: incapacitated and prone. Falls unconscious from agony. If the GM rules the limb severed, punctured or ripped off, untreated blood loss becomes fatal after 10 minutes.",
+    "t": "FIGHT ENDS",
+    "id": 63
+   }
+  ],
+  "stageName": "cine"
+ }
+}
