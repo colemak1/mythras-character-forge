@@ -24,6 +24,24 @@ Three assistants work on this project: **Claude** (Claude Code), **ChatGPT** and
 
 If an assistant isn't sure between 1 and 2, it picks 1 and says why in one line; the owner can downgrade it.
 
+## Forwards, not backwards (proposed 2026-11-18, awaiting the owner's OK)
+
+The Pits got worse while bugs were being fixed: fixes broke things that already worked (FR-21, FR-24, and the 18 Nov reports where the stage showed a result before its dice). These rules make sure each batch leaves the site better than it found it.
+
+1. **Stop the line.** While `docs/pits-report-ledger.md` has an open Severity 1, Claude ships only fixes: no Ideas and no new animations. Ideas wait in the ledger.
+2. **Ordering gate.** The **Tests** check plays a set of seeded bouts covering every Special Effect, Impale kept hold of or left in and then withdrawn, Disarm, Trip, surrender and Replay. It fails if:
+   - a hit, fall, drop or withdrawal is drawn before the dice that decide it are shown;
+   - a blow is drawn twice;
+   - the fight ends more than once;
+   - the fight stalls with no decision or end in sight.
+
+   A new gate must first be shown failing on the reports it is meant to catch.
+3. **A fixed report becomes a test.** Each fixed report's seed and choices go under `tests/`, and the gate re-runs it on every push. A report fixed once stays fixed.
+4. **Browser checks in CI.** A short browser job plays three full bouts and fails on a console error or a stall. A failing test is fixed, not left red or skipped.
+5. **New stage work goes behind a flag.** New animation or stage work is reached through a `?stage=` link until the owner has played it, and only then becomes the default. Fixes go straight to the default.
+6. **Count what went backwards.** The ledger has a **Caused by** column: the PR that broke it, or "old". Each batch's last line reports the fixes made and the regressions caused, next to the two `session-zero.md` numbers.
+7. **Clear the queue.** Each Claude session starts by merging or closing open docs PRs. Any finding in them goes into the ledger or `session-zero.md`, so nothing is lost in an old PR.
+
 ## When something is done
 
 A subsystem closes when:
