@@ -5,7 +5,7 @@
 //   - no new jumps: hands, elbows and points snap no more often than without the rule;
 //   - with the rule off, nothing changes (the trial is unchanged unless the page asks for ?collide=on).
 const assert=require('node:assert/strict');
-const PL=require('../experiments/studies/pits-spring-pair.js'),PS=require('../experiments/pits-spring.js');
+const PL=require('../experiments/pits-spring-live.js'),PS=require('../experiments/pits-spring.js');
 let passed=0;const test=(n,f)=>{f();passed++;console.log('PASS '+n);};
 const WK={sword:{kind:'blade',len:92},rapier:{kind:'blade',len:112,thin:1},greatsword:{kind:'blade',len:130},
   spear:{kind:'spear',len:150},axe:{kind:'axe',len:84}};

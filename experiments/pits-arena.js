@@ -444,8 +444,8 @@ function pitsFightRecord(){
     fighters:{a:{name:S.fighters.a.name,weapon:S.fighters.a.weapon,shield:S.fighters.a.shield},b:{name:S.fighters.b.name,weapon:S.fighters.b.weapon,shield:S.fighters.b.shield}},
     presented:(V.tape||[]).map(sh),log:(S.logs||[]).map(l=>({id:l.id,t:l.title,b:l.body})),stage,
     // which stage drew the fight, and what it needs to draw it again the same way (audit, reporting gap)
-    stageName:typeof PS==='undefined'?null:'cine',
-    cine:typeof PS!=='undefined'&&PS.cine&&typeof psCineTape==='function'?{seed:psCineTape().seed,choices:Object.fromEntries(Object.entries(psCineTape().by).map(([id,{clip,...choice}])=>[id,choice]))}:null,
+    stageName:typeof PS==='undefined'?null:PS.cine?'cine':PS.springOn?'spring':'classic',
+    cine:typeof PS!=='undefined'&&PS.cine&&typeof psCineTape==='function'?{seed:psCineTape().seed,choices:psCineTape().by}:null,
     // the moments a player pressed "What just happened?" in this bout (pits-lost.js)
     lost:typeof plMarks==='function'?plMarks():[]});
 }

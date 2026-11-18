@@ -55,27 +55,6 @@ test('every weapon can fight every outcome at every location: bodies possible, t
   assert(n>1000);
 });
 
-test('a blow lands at the height of its location, and a left arm is the weapon arm of a left-handed fighter',()=>{
-  // (moved from the retired pose stage's aim test: the contact height follows the location on the rig the page draws)
-  for(const w of ['sword','spear','dagger','greatsword']){
-    const y={};
-    for(const loc of ['head','chest','abdomen','lleg']){
-      const M=pair(w,'sword',7);const r=C.blow(M,'a',100,{outcome:'wound',loc,lost:3});
-      y[loc]=r.contacts.find(c=>c.kind==='hit').at[1];
-    }
-    assert(y.head>y.chest&&y.chest>y.abdomen&&y.abdomen>y.lleg,w+': contact heights '+JSON.stringify(y));
-  }
-  // arms are role based: a left-handed defender's left arm is its weapon arm, a right-handed one's is its off arm
-  for(const swap of [false,true]){
-    seed(3);
-    const M={a:C.fighter('a',WK.sword,false,{}),b:C.fighter('b',WK.sword,swap,{})};
-    const g=C.gap(WK.sword,WK.sword,'long');C.place(M.a,0,g,'guard');C.place(M.b,0,g,'guard');
-    const hit=C.blow(M,'a',100,{outcome:'wound',loc:'larm',lost:3}).contacts.find(c=>c.kind==='hit'),j=C.joints(M.b,hit.t);
-    const weaponArm=dist(hit.at,j.E)<dist(hit.at,j.oE);
-    assert.equal(weaponArm,swap,(swap?'left':'right')+'-handed: the left arm is '+(weaponArm?'the weapon':'the off')+' arm');
-  }
-});
-
 test('the two never stand in each other, and a blow never jumps',()=>{
   let n=0;
   for(const [wa,wb] of [['sword','sword'],['dagger','sword'],['sword','spear'],['greatsword','dagger'],['spear','halberd'],['mace','rapier']])
@@ -189,13 +168,13 @@ test('the rest of what the stage asks for: range, Press Advantage, a yield, a sn
   const limp=C.pose(M.a,e4+200,{weapon:true});assert(limp.Hn[1]<limp.wS[1]-40,'a disabled weapon arm does not hang');
 });
 
-test('the Pits page uses the cinematic stage for every route',()=>{
+test('the Pits page uses the cinematic stage by default, and keeps the earlier two behind a switch',()=>{
   const read=f=>fs.readFileSync(path.join(__dirname,'..','experiments',f),'utf8');
   const page=read('practice-combat.html'),stage=read('pits-stage.js');
   const at=n=>page.indexOf('src="'+n+'?v=');
   assert(at('pits-cine.js')>0&&at('pits-cine-fx.js')>at('pits-cine.js')&&at('pits-stage.js')>at('pits-cine-fx.js'),'the page loads the movement, its picture, then the stage');
   assert(/href="pits-cine\.css\?v=/.test(page),'the page loads the look');
-  for(const old of ['pits-spring-live.js','pits-spring.js','pits-motion.js','pits-writer.js'])assert.equal(at(old),-1,old);
-  assert.match(stage,/const PL=\(\)=>PitsCine;/);
+  assert(/const PS_CINE=/.test(stage)&&/stage=\(spring\|classic\|poses\)/.test(stage),'the earlier stages stay behind ?stage=');
+  assert(/PS\.cine\?PitsCine:/.test(stage));
 });
 console.log(passed+' passed');

@@ -1,11 +1,11 @@
-// The spring stage's live flow (experiments/studies/pits-spring-pair.js), driven the way the stage drives it and checked
+// The spring stage's live flow (experiments/pits-spring-live.js), driven the way the stage drives it and checked
 // without a browser: a declared action is drawn before its dice and held; the resolved blow then starts from that
 // held pose and lands soon; nothing goes back to a guard between exchanges; a fighter on the ground stays there.
 // (Owner, 2026-11-13: "the blade begins its swing and then pauses ... then everything starts moving".)
 // The browser side (the clock stops, nothing moves while a person decides) is tests/visual/pits-spring-live.cjs;
 // movement faults over many random fights are counted by tests/sweep/pits-live-sweep.cjs.
 const assert=require('node:assert/strict');
-const PL=require('../experiments/studies/pits-spring-pair.js'),PS=require('../experiments/pits-spring.js'),PW=require('../experiments/pits-writer.js');
+const PL=require('../experiments/pits-spring-live.js'),PS=require('../experiments/pits-spring.js'),PW=require('../experiments/pits-writer.js');
 let passed=0;const test=(n,f)=>{f();passed++;console.log('PASS '+n);};
 const WK={sword:{kind:'blade',len:92},dagger:{kind:'blade',len:50},rapier:{kind:'blade',len:112,thin:1},mace:{kind:'club',len:70},
   spear:{kind:'spear',len:150},greatsword:{kind:'blade',len:130},pike:{kind:'spear',len:230},halberd:{kind:'polearm',len:176},
