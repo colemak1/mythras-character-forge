@@ -411,8 +411,13 @@ function gap(wa,wb,k){
   // (keep: the stage's long range when the Reach differs, the longer weapon's own range, the point hovering in front of the other's face and the shorter weapon well
   // short of the body, owner 2026-11-16)
   // (the longer weapon's drawn length out from its hips, then the other's face, then a hand's breadth of air)
-  if(k==='keep')return Math.round(Math.max(extent(wa).to,extent(wb).to)+100);
-  return k==='apart'?g+190:k==='short'?Math.round(112+.4*short):g;
+  // (report 20261117-205829, "it always looks like the spear is already hitting my head": a hand's breadth read as a
+  // touch behind the other's guard and hands, so the point now hangs clearly short, still level at the face)
+  if(k==='keep')return Math.round(Math.max(extent(wa).to,extent(wb).to)+110);
+  // (an even range: the longer weapon's guard point stops clear of the other, report 20261117-205829 again: a 150 spear
+  // at 150+.62*len had its point on a swordsman's guard and face from the first frame)
+  const clear=Math.round(Math.max(extent(wa).to,extent(wb).to)+110);
+  return k==='apart'?Math.max(g,clear)+190:k==='short'?Math.round(112+.4*short):Math.max(g,clear);
 }
 const station=()=>0;
 const fx=(m,o)=>{m.pair.fx.push(o);};
@@ -1525,6 +1530,29 @@ function lower(m,t){
   if(m.keys[m.keys.length-1].t>t+50)return m.keys[m.keys.length-1].t;
   cut(m,t);m.over=true;keyA(m,t+520,POSE.victory,{e:'io',plant:'ff'});return t+520;
 }
+// Victory celebrations (Idea 20261118-164233: "lets add some victory celebrations"): after the weapon comes down, the
+// winner raises it overhead and pumps it twice, or brings it up in a salute; then back to the victory stance. Chosen
+// from the bout's seed, so a replay celebrates the same way. Returns the end time.
+const CHEER={
+  raise:[{hip:[0,88],lean:-6,bend:-6,head:14,ff:[18,0],bf:[-20,0],h:[8,60],eb:1,w:96,o:[-8,-50],turn:0},
+    {hip:[0,82],lean:-2,bend:-2,head:8,ff:[18,0],bf:[-20,0],h:[10,44],eb:1,w:104,o:[-8,-52],turn:0}],
+  salute:[{hip:[0,84],lean:0,bend:0,head:2,ff:[18,0],bf:[-20,0],h:[20,8],eb:1,w:90,o:[-6,-54],turn:0},
+    {hip:[0,82],lean:6,bend:2,head:-10,ff:[18,0],bf:[-20,0],h:[24,0],eb:1,w:84,o:[-6,-54],turn:0}]
+};
+function celebrate(m,t){
+  if(!m||m.down)return t;
+  const r=rngKey(m.pair,'cheer|'+m.id),how=pick(r,['raise','raise','salute']),[a,b]=CHEER[how];
+  const last=m.keys[m.keys.length-1];if(last.t>t)t=last.t;
+  if(how==='raise'){
+    keyA(m,t+160,POSE.victory,{e:'lin',plant:'both'});
+    keyA(m,t+520,a,{e:'out',plant:'both'});keyA(m,t+700,b,{e:'io',plant:'both'});
+    keyA(m,t+880,a,{e:'out',plant:'both'});keyA(m,t+1060,b,{e:'io',plant:'both'});keyA(m,t+1240,a,{e:'out',plant:'both'});
+    keyA(m,t+2000,a,{e:'lin',plant:'both'});keyA(m,t+2600,POSE.victory,{e:'io',plant:'both'});return t+2600;
+  }
+  keyA(m,t+160,POSE.victory,{e:'lin',plant:'both'});
+  keyA(m,t+560,a,{e:'io',plant:'both'});keyA(m,t+1300,a,{e:'lin',plant:'both'});keyA(m,t+1600,b,{e:'io',plant:'both'});
+  keyA(m,t+2300,POSE.victory,{e:'io',plant:'both'});return t+2300;
+}
 function surrender(m,t){cut(m,t);m.over=true;key(m,t+460,POSE.surrender,{e:'io',plant:'ff'});return t+460;}
 function yieldTo(m,t){cut(m,t);m.over=true;key(m,t+420,POSE.yield,{e:'io',plant:'ff'});return t+420;}
 // ----- Trip, Disarm, Press Advantage: their own choreography (owner, 2026-11-16) -----
@@ -1541,7 +1569,8 @@ function trip(M,aid,t,s){
   cut(A,t);cut(D,t);
   const f=faceOf(A),away=-faceOf(D),sD=sample(D,t,true),x=D.base;
   const T=[sD.ffx-f*4,9];
-  const move=A.down||(A.prof.two>30)?'sweep':s.after?'hook':pick(r,['hook','hook','sweep']);
+  // (a defender's counter trip with a long weapon sweeps the legs with the shaft from where it stands: s.counter)
+  const move=A.down||(A.prof.two>30)||(s.counter&&A.weapon.len>=130)?'sweep':s.after?'hook':pick(r,['hook','hook','sweep']);
   const tw=t+(s.after?90:160),tc=tw+(move==='sweep'?120:105);
   if(move==='hook'){
     // in close, the knee comes up, then the foot whips round behind the ankle and pulls
@@ -1611,6 +1640,51 @@ function disarm(M,aid,t,s){
   keyA(A,tf+460,fit(A,readyPose(A,r)),{e:'io'});
   keyA(D,tf+520,fit(D,readyPose(D,r)),{e:'io',plant:'both'});
   return {tc,contacts,end:tf+520,move:'bind'};
+}
+
+// A defender's Disarm as part of the blow it answers, one movement with no pause (owner, 2026-11-18: "a miss that gets
+// parried successfully and then disarm should look like a missed swing then the defender swipes the blade out of their
+// hand, all in one single motion ... a hit and critical parry ... should look like a parry where you also get the
+// effect: the force of the parry knocking the blade out of their hand"). did: the defender, who takes the weapon.
+// s.via: 'miss' (the attack failed: the swing has gone by and the attacker is overcommitted; the defender steps in and
+// cuts down across the weapon hand), 'parry' (a good attack met by a better parry: from the clash the defender's blade
+// drives on through the other's and flings it up out of the hand), 'evade'. Contact kind 'disarm' where it leaves.
+function counterDisarm(M,did,t,s){
+  s=s||{};const D=M[did],A=other(D);
+  if(!A||!D||A.over||D.over)return {tc:t,contacts:[],end:t,move:null};
+  const r=s.key!=null?rngKey(D.pair,s.key+'|strip'):rng(D.pair);
+  cut(A,t);cut(D,t);
+  const f=faceOf(D),away=-faceOf(A),x=A.base,via=s.via||'parry';
+  const tc=t+(via==='parry'?80:via==='miss'?150:200);
+  hold(A,tc);
+  // (just above the hand: a hand's breadth up the weapon, whatever its length)
+  const ja=joints(A,tc),qa=Math.min(.2,20/A.weapon.len),B=[ja.Hn[0]+(ja.tip[0]-ja.Hn[0])*qa,ja.Hn[1]+(ja.tip[1]-ja.Hn[1])*qa];
+  let move;
+  if(via==='parry'){
+    // the parry does not stop: it drives up and out through the other's blade, the weight going in behind it
+    move='beat';
+    const a=aimed(D,{hip:[10,60],lean:20,bend:4,head:-12,ff:[46,0],bf:[-46,0],turn:8,o:[-30,-18]},B,64,.42);
+    keyA(D,tc,a.P,{at:a.at,e:'in',ec:{w:'in3'},spin:{w:1}});
+    keyA(D,tc+140,{hip:[4,64],lean:6,head:-8,h:[a.P.h[0]-4,a.P.h[1]+30],eb:1,w:a.P.w+46},{at:a.at,e:'out',plant:'both',spin:{w:1}});
+    fx(D,{t:tc,kind:'thump',at:B,power:.7});
+  }else{
+    // in after the missed swing: a short cock and a cut down across the weapon hand, the blade carried on through
+    move='strip';
+    const a=aimed(D,{hip:[14,56],lean:26,bend:6,head:-14,ff:[54,0],bf:[-46,0],turn:10,o:[-36,-18]},B,-34,.4);
+    keyA(D,t+(via==='miss'?60:90),{hip:[-6,62],lean:10,bend:2,head:-8,ff:[36,0],bf:[-48,0],h:[16,26],eb:1,w:118,o:[-28,-16],turn:-2},{e:'out',plant:'bf'});
+    keyA(D,tc,a.P,{at:a.at,e:'io',ec:{w:'in3'},spin:{w:-1},slide:true});
+    keyA(D,tc+130,{hip:[a.P.hip[0]+4,a.P.hip[1]-2],lean:(a.P.lean||26)+4,h:[a.P.h[0]-4,a.P.h[1]-22],w:a.P.w-50},{at:a.at,e:'out',plant:'both',spin:{w:-1}});
+    fx(D,{t:t+40,kind:'swing',id:D.id,t1:tc+60,heavy:D.prof.heavy});
+    fx(D,{t:tc,kind:'thump',at:B,power:.45});
+  }
+  const contacts=[{t:tc,at:B,kind:'disarm'}];
+  // the emptied hand: thrown back (up for the beat, down and away for the cut), a step back, the hand brought in
+  keyA(A,tc+80,via==='parry'?{hip:[-12,64],lean:-12,bend:-6,head:12,h:[-8,46],eb:1,w:160,o:[10,-20]}
+    :{hip:[-10,60],lean:4,bend:2,head:8,h:[-14,-30],w:-120,o:[12,-24]},{e:'out5',plant:'both'});
+  keyA(A,tc+320,{hip:[-14,60],lean:6,bend:4,head:-6,h:[24,-10],w:50,o:[18,-16]},{at:x+away*30,e:'io'});
+  keyA(D,tc+460,fit(D,readyPose(D,r)),{e:'io'});
+  keyA(A,tc+520,fit(A,readyPose(A,r)),{e:'io',plant:'both'});
+  return {tc,contacts,end:tc+520,move};
 }
 
 // Press Advantage: the attacker beats the other's guard aside and drives on; the other gives two steps back and
@@ -1747,7 +1821,7 @@ function speed(m,t){
 // are the feet skidding at t (a key with `slide` is being travelled)
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
-const api={WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,overextend,trip,disarm,react,pose,
+const api={WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,celebrate,yieldTo,surrender,press,overextend,trip,disarm,counterDisarm,react,pose,
   joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;

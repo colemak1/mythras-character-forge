@@ -96,7 +96,9 @@ body.pa-on #root .bE .bprompt .choicegrid{grid-template-columns:repeat(auto-fit,
 .bE .binfo-body header{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .bE .binfo-body h4{margin:0;font:700 18px/1.15 var(--st-display,var(--font-display))}
 .bE .binfo-body p{margin:0}
-.bE .binfo-body .bsmall{font-size:12px;color:var(--pa-dim)}
+/* (Idea 20261117-205726: the most important text bottom right was the hardest to read) */
+.bE .binfo-body .bsmall{font-size:13px;color:var(--st-text,var(--bone));font-weight:500}
+.bE .binfo-body .bsmall b{font-weight:700}
 .bE .binfo-body .bsrc{font-size:11px;color:var(--pa-dim);letter-spacing:.04em}
 .bE .bbig{display:flex;align-items:baseline;gap:8px}
 .bE .bbig strong{font:700 26px/1 var(--st-body,var(--font-ui));font-variant-numeric:tabular-nums}
@@ -200,3 +202,8 @@ body.pa-on #root .bE .bmid.bend .pa-end{flex:1 1 auto;padding:10px 14px 12px;bor
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .bE .bfxmore summary{cursor:pointer;font-size:12px;color:var(--pa-dim);margin:5px 0 4px}
 .bE .bfxmore .bidle{margin:-3px 0 4px;font-size:11px;color:var(--pa-dim);grid-column:1/-1}
+
+@media (min-width:901px) and (max-height:800px){
+  body.pa-on[data-bottom="E"]:has(.bdo.fx){--pa-deck:min(390px,54vh)}
+  .bE .bdo.fx .bfxs{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}
+}

@@ -13,6 +13,68 @@ ChatGPT (Chat), Core pp.87–88, 90–91, 110. At tied Initiative a fighter woun
 - **Two-handed weapons count both arms** (owner): a Serious Wound to either arm makes their attacks one grade harder, to both arms two grades. It used to count only the arm marked as holding the weapon. One-handed weapons are unchanged.
 - Tests: `tests/pits-serious-wound-rulings.cjs` (8): concurrent attack, damage in its own turn, off hand, two-handed, resisted and failed Endurance (arm and head), parry and evade during the stop, its end.
 
+## The Pits: a defender's Disarm or Trip is one movement with the blow
+
+The owner asked for the defensive Special Effects to be single movements. Now, when a defender wins **Disarm Opponent**
+or **Trip Opponent**:
+
+- **after an attack that failed**, the swing misses and the defender strikes straight into the overcommitted attacker:
+  a cut across the weapon hand that takes the weapon, or a hook (a sweep with a long weapon) that takes the feet;
+- **after a good attack met by a better parry** (a critical parry), it is the parry itself: the force of it drives on
+  through the blade and flings it from the hand, or turns straight into the trip.
+
+No pause and no second movement. Rules and dice unchanged; a defender's Trip shows its resistance dice before the blow.
+Tests: `tests/pits-counter.cjs`. The frame-sheet tool takes a `counter` case.
+
+## The Pits: the fight reports and Ideas of 17–18 November
+
+Rules and dice unchanged.
+
+- **Endurance (FR-22):** a successful Endurance roll that still loses now says why: "Fails to resist: both succeeded and
+  the attack's 24 is higher" (Core p.110), in the log and in the deck. The dice tray shows what happens on a resist and a
+  fail on their own lines, larger and darker, with "Fail" in red (Idea). Golden bouts regenerated for the wording.
+- **Readability (Idea):** the Details panel's small lines (last result, odds, what an effect needs) are full-strength
+  text instead of dim.
+- **Spear guard (FR-23):** a spear or other long weapon no longer holds its point on the other fighter's hand and face
+  at an even range; it stops clear in front.
+- **Replay (FR-24):** a fight won by withdrawing a held Impale no longer collapses the loser twice in the replay
+  (fixed by #374; now tested with that fight's log).
+- **Surrender (Idea):** the one who surrenders drops the weapon and the shield before raising the white flag.
+- **Victory celebrations (Idea):** after the weapon comes down, the winner raises it overhead and pumps it, or salutes.
+  The bout's seed picks which, so a replay matches.
+
+Tests: `tests/pits-report-fixes-4.cjs`.
+
+## The Pits: the replay is back to how it was before the exchange timeline (owner, 2026-11-18)
+
+The owner: replays have looked "way worse" since Work's exchange timeline (#375, merged in #376, patched in #377). That
+change is undone: the replay again redraws each blow from the bout's seed and the move and defence chosen live, running
+straight on from one exchange into the next, as it did before 2026-11-18. The stage and test code are back to their
+state before #375, with #374 kept (finishing withdrawal, spearhead contact, hand on a held weapon's grip) and the deck
+layout tweaks for short screens kept. The old `?stage=spring` and `?stage=classic` links work again. Rules and dice
+unchanged.
+
+## The Pits: the replay flows again (fight report FR-21)
+
+The owner's report of 2026-11-18: "the replay of this fight looks horrible". Since #376 each blow's recording kept the
+wait while the player decided and the dice rolled, so the replay froze both fighters in their declared poses before
+every blow (almost 3 s before the finishing Impale). The replay now cuts that stillness out of each recording, keeping
+a 160 ms beat; the wind-up and the blow are drawn exactly as live. Live play is unchanged.
+
+- `squeezeTimeline` in `experiments/pits-cine.js`; the stage replays the squeezed recording (`psTimeline`).
+- Test: `tests/pits-exchange-timeline.cjs` (the wait is cut, every frame of the blow matches live, no stillness over 200 ms).
+
+## The Pits: replay plays back what was recorded; the old stages retired
+
+Built by ChatGPT (Work) as an owner-assigned trial (#374, #375), reviewed and finished by Claude. Rules and dice unchanged.
+
+- **Replay matches the live fight.** Each blow records both fighters' movement, contacts and follow-ups (a Trip hook, Press Advantage, a finish) before it plays; Replay plays those recordings back instead of re-creating them. Test `tests/pits-exchange-timeline.cjs` checks every frame of three chained blows.
+- **The old stages are gone from the fight page.** `?stage=spring`, `?stage=classic` and `?stage=poses` now open the cinematic stage (owner, 2026-11-18). The spring study stays on the collision comparison page (`experiments/studies/pits-spring-pair.js`).
+- **Tied initiative after a disabling hit:** the fallen fighter stays down through the second fighter's action.
+- **Withdrawals and held weapons:** a finishing withdrawal has its own collapse; a spearhead ends at the point of contact; a held weapon follows the wound while the wielder keeps its grip, and lets go smoothly.
+- **Fits at 1280×720:** the deck is a little shorter on short desktop screens, so every action and Special Effect is on screen (two browser tests that were already failing now pass).
+- **Tests:** the reach and handedness checks of the retired stage now run on the cinematic rig (`tests/pits-cine.cjs`); the leg-injury browser check requires the fall itself, not either of two signs.
+
 ## The Pits: a stun counts only the stunned fighter's own Turns (ruling D-R4)
 
 ChatGPT (Chat), Core pp.90–91, 110: a fighter with no Action Points left gets no Turn in a cycle, so a Serious Wound's "cannot attack for 1d3 Turns" does not count down then. It used to, so a fighter stunned for 3 Turns could attack on its third (report 20261117-184734). A Turn spent Delaying or on another permitted action still counts. Press Advantage, Overextend and Blind count the same way.

@@ -69,7 +69,7 @@ test('FR-18: the wound line names the Endurance target rolled against, and why i
    requestDice=(actor,defs,label,cb)=>cb([54]);
    resolveWound(a,d,'Left Leg','serious',3,{roll:49,grade:2,label:'SUCCESS',name:'success'},()=>{});
    return JSON.stringify((S.logs.find(l=>/^SERIOUS WOUND/.test(l.title))||{}).body||'');})()`));
- assert.match(body,/^Border Deserter Endurance 54\/28% \(FAILURE\) versus the attack 49 \(SUCCESS\)\. Fails to resist\. Endurance 55% made harder by impaled weapon\.$/);
+ assert.match(body,/^Border Deserter Endurance 54\/28% \(FAILURE\) versus the attack 49 \(SUCCESS\)\. Fails to resist: the attack has the better grade\. Endurance 55% made harder by impaled weapon\.$/);
 });
 
 test('FR-18: the story tells the Endurance roll in plain words: both rolls, how to resist, and what it meant',()=>{

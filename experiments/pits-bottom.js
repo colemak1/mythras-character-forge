@@ -167,13 +167,14 @@ function pbDisarmLine(l){
 // roll on endurance rolls to stay up and ... what it does in general"): the two rolls, why one wins, and what it meant.
 function pbWoundLine(l){
   const t=/^(SERIOUS|MAJOR) WOUND · (.+)$/.exec(l.title||'');if(!t)return null;
-  const m=/^(.+?) Endurance (\d+)\/(\d+)% \((\w+)\) versus the attack (\d+) \((\w+)\)\. (Resists|Fails)[^.]*\.(?: Endurance (\d+)% made harder by ([^.]+)\.)?/.exec(String(l.body||''));
+  const m=/^(.+?) Endurance (\d+)\/(\d+)% \((\w+)\) versus the attack (\d+) \((\w+)\)\. (Resists|Fails)[^:.]*(?:: ([^.]+))?\.(?: Endurance (\d+)% made harder by ([^.]+)\.)?/.exec(String(l.body||''));
   if(!m)return null;
   const level=t[1].toLowerCase(),loc=t[2],ok=m[7]==='Resists',owner=S.fighters[l.meta?.actor];
   const you=owner&&pbHuman(owner.id)&&!pbHuman(pbOther(owner.id)),who=you?'You':esc(m[1]);
   const st=paWoundStakes(level,loc,you?'you':m[1]),word=g=>esc(PB_GRADE_WORD[g.toLowerCase()]||g);
   return {cls:ok?'fx':'hurt',html:`<b>${who} ${ok?(you?'resist':'resists'):(you?'fail':'fails')} the ${level==='major'?'Major':'Serious'} Wound to the ${esc(loc)}</b>: `
-    +`Endurance <b>${m[2]}</b> against ${m[3]}%${m[8]?` (${m[8]}%, made harder by ${esc(m[9])})`:''} · ${word(m[4])}, against the attack roll of <b>${m[5]}</b> · ${word(m[6])}. `
+    +`Endurance <b>${m[2]}</b> against ${m[3]}%${m[9]?` (${m[9]}%, made harder by ${esc(m[10])})`:''} · ${word(m[4])}, against the attack roll of <b>${m[5]}</b> · ${word(m[6])}`
+    +(m[8]?`: <b>${esc(m[8])}</b>. `:'. ')
     +`To resist, Endurance must beat the attack roll: a better grade, or the same grade and a higher roll (Core p.110). `
     +(ok?`Resisted: ${esc(st.ok)}`:`Not resisted: ${esc(st.bad)}${st.ok?` (Had it been resisted: ${esc(st.ok)})`:''}`)};
 }
