@@ -1053,13 +1053,12 @@ function rollDifficultyHtml(actor){
  const reasons=[];
  if(f.prone)reasons.push('Prone');
  if(isStyle){
-   if(f.weaponHand&&zoneClass(f,f.weaponHand)==='serious')
-     reasons.push('Serious '+f.weaponHand+' wound');
+   for(const arm of weaponArms(f))if(skillZoneClass(f,arm)==='serious')reasons.push('Serious '+arm+' wound');
    if(cannotAttackDueToStun(f))reasons.push('Stunned');
    if(f.weaponHand&&limbDisabled(f,f.weaponHand))reasons.push('Weapon arm disabled');
  }else{
    for(const loc of ['Right Leg','Left Leg']){
-     if(zoneClass(f,loc)==='serious')reasons.push('Serious '+loc+' wound');
+     if(skillZoneClass(f,loc)==='serious')reasons.push('Serious '+loc+' wound');
      else if(f.partialLimbs?.[loc])reasons.push('Partial '+loc+' function');
    }
  }
@@ -2227,6 +2226,18 @@ function setupHtml(){applyPracticeLoadout();let modes=[['tutorial','01','Guided 
  +`</div><p>Some results and effects remain simplified for this prototype, including full fatigue, weapon durability and unarmed grapples. Forge `
  +`characters use a disposable profile; the arena still has the limitations listed below.</p></details></div></div></div>`)}
 function zoneClass(f,loc){return CombatRules.woundLevel(f.hp[loc],f.maxHp[loc]);}
+// The wound level a fighter's own skill rolls read. In its concurrent turn (tied Initiative, Core p.90) a fighter acts
+// with its start-of-cycle state, so a wound the other fighter dealt this cycle does not penalise the action it had
+// already committed to (ruling D-R1, ChatGPT (Chat) 2026-11-17, Core pp.87-88, 90-91, 110; report 20261117-032318: an
+// attack made Hard, 48% to 32%, by the arm wound it was concurrent with). Damage taken during its own turn still counts.
+function skillZoneClass(f,loc){
+ const t=S.tie;
+ if(t&&t.granted&&t.second===f.id&&t.key===concurrentKey()&&t.snapHp&&t.grantHp){
+  const hp=t.snapHp[loc]+((f.hp[loc]??0)-(t.grantHp[loc]??0));
+  return CombatRules.woundLevel(hp,f.maxHp[loc]);
+ }
+ return zoneClass(f,loc);
+}
 
 function figureSvg(f){
  const sel=S.sel?.[f.id];
@@ -2310,9 +2321,9 @@ function conditionInsightsHtml(f){
      (grade>0?'Embedded weapon increases skill difficulty.':'Lodged weapon; no additional skill penalty from its size.'));
  }
  for(const loc of f.disabled||[])add(loc+' disabled','This location cannot be used normally until recovered.');
- const arm=f.weaponHand;
- if(arm&&zoneClass(f,arm)==='serious'&&!f.disabled?.includes(arm))
-   add('Serious '+arm+' wound','Attacks with this arm are one difficulty grade harder.');
+ for(const arm of weaponArms(f))if(zoneClass(f,arm)==='serious'&&!f.disabled?.includes(arm))
+   add('Serious '+arm+' wound',ARENA_WEAPONS[f.weapon]?.twoHanded?'Attacks with the two-handed weapon are one difficulty grade harder for this arm.'
+    :'Attacks with this arm are one difficulty grade harder.');
  for(const loc of ['Left Leg','Right Leg']){
    if(zoneClass(f,loc)==='serious'||f.partialLimbs?.[loc])
      add(loc+' injury','Evade is one difficulty grade harder for this leg.');
@@ -2743,9 +2754,15 @@ function weaponRoll(w,maxDie,cramped=false,forcedRolls=null){let v=cramped?Comba
 // Verified Mythras Core: page 101 (prone = Formidable), page 51 (over-100 differential rolls).
 // Several situational grades (prone, a seriously wounded arm, blinded) do not
 // multiply: the most severe one applies (Core pp.38, 101; RC-12).
+// The arms a weapon is used with: both for a two-handed weapon (owner, 2026-11-17: "both arms should count"), else the
+// one that holds it. Each with a Serious Wound makes the task one grade harder, as each injured leg does for Evade.
+function weaponArms(f,tool='weapon'){
+ if(tool==='shield')return [shieldArmOf(f)];
+ return ARENA_WEAPONS[f.weapon]?.twoHanded?['Right Arm','Left Arm']:[f.weaponHand].filter(Boolean);
+}
 function combatTarget(f,tool='weapon'){
- const arm=tool==='shield'?shieldArmOf(f):f.weaponHand;
- const steps=CombatRules.mostSevereGrade(f.prone?2:0,arm&&zoneClass(f,arm)==='serious'?1:0,f.blindedTurns>0?3:0);
+ const arms=weaponArms(f,tool).filter(a=>skillZoneClass(f,a)==='serious').length;
+ const steps=CombatRules.mostSevereGrade(f.prone?2:0,arms,f.blindedTurns>0?3:0);
  return steps>=3?Math.max(1,CombatRules.skillAtGrade(f.style,steps)):CombatRules.skillAtGrade(f.style,steps);
 }
 // Core p.110: a usable but seriously injured leg makes leg-dependent tasks
@@ -2754,7 +2771,7 @@ function combatTarget(f,tool='weapon'){
 // Prone and blinded are separate grades: the most severe applies (RC-12).
 function evadeTarget(f){
  let legs=0;
- for(const loc of ['Right Leg','Left Leg'])if(zoneClass(f,loc)==='serious'||f.partialLimbs?.[loc])legs++;
+ for(const loc of ['Right Leg','Left Leg'])if(skillZoneClass(f,loc)==='serious'||f.partialLimbs?.[loc])legs++;
  const steps=CombatRules.mostSevereGrade(f.prone?2:0,legs,f.blindedTurns>0?3:0);
  return steps>=3?Math.max(1,CombatRules.skillAtGrade(f.evade,steps)):CombatRules.skillAtGrade(f.evade,steps);
 }
@@ -3154,7 +3171,7 @@ function beginConcurrentCycle(){
  if(!Number.isFinite(a.initiative)||a.initiative!==b.initiative){S.tie=null;return;}
  const first=S.cycle%2===1?'a':'b',second=first==='a'?'b':'a';
  S.order=[first,second];
- S.tie={key,first,second,snap:concurrentCapture(S.fighters[second]),granted:false,pendingEnd:null};
+ S.tie={key,first,second,snap:concurrentCapture(S.fighters[second]),snapHp:cloneVal(S.fighters[second].hp),granted:false,pendingEnd:null};
  log('Tied Initiative',`${a.name} and ${b.name} both have Initiative ${a.initiative}, so they act concurrently this cycle. ${S.fighters[
   first].name} declares first (arena convention, alternating each cycle); nothing done in that turn can stop ${S.fighters[
   second].name}'s action this cycle.`,'system','Core p.90: tied Initiative totals act concurrently.');
@@ -3180,7 +3197,7 @@ function concurrentGraceView(snap,cur){
 function grantConcurrentTurn(id){
  const t=S.tie;if(!t||t.key!==concurrentKey()||t.granted||id!==t.second)return;
  const f=S.fighters[id],cur=concurrentCapture(f),view=concurrentGraceView(t.snap,cur);
- t.granted=true;t.deferred=cur;t.view=view;
+ t.granted=true;t.deferred=cur;t.view=view;t.grantHp=cloneVal(f.hp);
  for(const k of CONCURRENT_FIELDS)f[k]=cloneVal(view.f[k]);
  for(const k of CONCURRENT_GLOBALS)S[k]=cloneVal(view.g[k]);
  const changed=JSON.stringify(cur)!==JSON.stringify(view);
