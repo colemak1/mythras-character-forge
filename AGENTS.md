@@ -24,7 +24,7 @@ Three assistants work on this project: **Claude** (Claude Code), **ChatGPT** and
 
 If an assistant isn't sure between 1 and 2, it picks 1 and says why in one line; the owner can downgrade it.
 
-## Forwards, not backwards (proposed 2026-11-18, awaiting the owner's OK)
+## Forwards, not backwards (owner, 2026-11-18)
 
 The Pits got worse while bugs were being fixed: fixes broke things that already worked (FR-21, FR-24, and the 18 Nov reports where the stage showed a result before its dice). These rules make sure each batch leaves the site better than it found it.
 
