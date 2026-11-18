@@ -5,6 +5,17 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: replay plays back what was recorded; the old stages retired
+
+Built by ChatGPT (Work) as an owner-assigned trial (#374, #375), reviewed and finished by Claude. Rules and dice unchanged.
+
+- **Replay matches the live fight.** Each blow records both fighters' movement, contacts and follow-ups (a Trip hook, Press Advantage, a finish) before it plays; Replay plays those recordings back instead of re-creating them. Test `tests/pits-exchange-timeline.cjs` checks every frame of three chained blows.
+- **The old stages are gone from the fight page.** `?stage=spring`, `?stage=classic` and `?stage=poses` now open the cinematic stage (owner, 2026-11-18). The spring study stays on the collision comparison page (`experiments/studies/pits-spring-pair.js`).
+- **Tied initiative after a disabling hit:** the fallen fighter stays down through the second fighter's action.
+- **Withdrawals and held weapons:** a finishing withdrawal has its own collapse; a spearhead ends at the point of contact; a held weapon follows the wound while the wielder keeps its grip, and lets go smoothly.
+- **Fits at 1280×720:** the deck is a little shorter on short desktop screens, so every action and Special Effect is on screen (two browser tests that were already failing now pass).
+- **Tests:** the reach and handedness checks of the retired stage now run on the cinematic rig (`tests/pits-cine.cjs`); the leg-injury browser check requires the fall itself, not either of two signs.
+
 ## The Pits: a stun counts only the stunned fighter's own Turns (ruling D-R4)
 
 ChatGPT (Chat), Core pp.90–91, 110: a fighter with no Action Points left gets no Turn in a cycle, so a Serious Wound's "cannot attack for 1d3 Turns" does not count down then. It used to, so a fighter stunned for 3 Turns could attack on its third (report 20261117-184734). A Turn spent Delaying or on another permitted action still counts. Press Advantage, Overextend and Blind count the same way.

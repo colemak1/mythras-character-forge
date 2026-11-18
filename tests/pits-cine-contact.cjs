@@ -30,6 +30,100 @@ function stage(replaying,extra){
 }
 const cueOf=(S,title,body,meta)=>JSON.parse(S.run(`JSON.stringify(pitsStageCue(${JSON.stringify({title,body,meta})},{a:'Aurel',b:'Brann'}))`));
 
+test('a concurrent turn keeps the fall already shown while the engine grants the second action',()=>{
+  const S=stage(false);
+  S.run(`S={phase:'fight',fighters:{a:{},b:{prone:false}},tie:{second:'b',deferred:{f:{prone:true}}}};
+    PS.clock=PitsCine.fall(PS.M.b,PS.clock);PS.fig.b.mDown=true;psLull();`);
+  assert(S.run('!!PS.M.b.down && PS.fig.b.mDown'));
+  assert(!S.ev().some(([type,data])=>type==='reconcile'&&data.kind==='up'));
+  S.run('S.tie=null;psLull()');
+  assert(S.ev().some(([type,data])=>type==='reconcile'&&data.kind==='up'));
+});
+
+test('a later withdrawal owns its victory after a nonterminal left-arm Impale',()=>{
+  const S=stage(true);
+  const names={a:'Kethan Voss',b:'Border Deserter'};
+  const impact=hpLost=>({actor:'a',impact:{target:'b',location:'Left Arm',hpLost}});
+  const events=[
+    {title:'Kethan Voss attacks'},
+    {title:'Kethan Voss hits Left Arm',meta:impact(7)},
+    {title:'Impaled Weapon',meta:{actor:'a'}},
+    {title:'SERIOUS WOUND · Left Arm'},
+    {title:'Limb Disabled'},
+    {title:'Delay'},
+    {title:'Withdraw Impale',body:'weapon withdrawn',meta:{actor:'a'}},
+    {title:'Withdrawal injury',meta:impact(4)},
+    {title:'MAJOR WOUND · Left Arm'},
+    {title:'FIGHT ENDS',body:'Kethan Voss wins. Major Limb Wound to the Left Arm.'}
+  ];
+  S.ctx.tape=events;S.ctx.names=names;
+  const owners=JSON.parse(S.run(`JSON.stringify(tape.filter(e=>pitsStageReplayable(e,names))
+    .map((e,i,film)=>pitsStageBeat(film,i,names))
+    .filter(b=>b.cue.record?.after.some(c=>c.type==='end')||(b.cue.type==='end'&&!b.consumed))
+    .map(b=>b.cue.type))`));
+  assert.deepEqual(owners,['withdrawHit']);
+});
+
+// Capture the coordinates written by the SVG painter, including the separate lodged-weapon group.
+test('drawn spearhead clears the face and the drawn palm follows the embedded grip on either side',()=>{
+  for(const weapon of ['spear','sword'])for(const id of ['a','b']){
+    const S=stage(false);
+    S.ctx.weapon=weapon;S.ctx.holder=id;
+    const result=S.run(`(()=>{
+      const v=holder==='a'?'b':'a';
+      const layer={appendChild(){}};
+      document.createElementNS=()=>({style:{},attrs:{},isConnected:true,
+        setAttribute(k,v){this.attrs[k]=String(v);},appendChild(){}});
+      document.querySelector=()=>layer;
+      const svg={querySelector:()=>layer};
+      for(const id of ['a','b']){
+        const wk={...pitsStageWeaponKind(id===holder?weapon:'sword',3),hands:1};
+        const look={...PS.fig[id].look,wk};
+        PS.fig[id]=psBuildFig(id,svg);PS.fig[id].look=look;
+        PS.M[id]=PitsCine.fighter(id,wk,false,look);
+      }
+      PS.M.a.pair.seed=880989421;
+      const gap=PitsCine.gap(PS.M.a.wk,PS.M.b.wk,'even');
+      for(const id of ['a','b'])PitsCine.place(PS.M[id],0,gap,'guard');
+      const h=PS.fig[holder],d=PS.fig[v];
+      function draw(id){const f=PS.fig[id];psDrawMotion(f,f.look,PS.clock);}
+      draw(v);draw(holder);
+      let clearance=null;
+      if(weapon==='spear'){
+        const tip=psWorld(h,h.e.wh.attrs.points.split(' ')[0].split(',').map(Number));
+        const head=psBodyPt(d,'head');
+        clearance=Math.hypot(tip[0]-head[0],tip[1]-head[1])-Number(d.e.head.attrs.r);
+      }
+      const hit=PitsCine.blow(PS.M,holder,100,{outcome:'wound',loc:'larm',lost:7,impale:true,held:true,key:15});
+      const counter=PitsCine.blow(PS.M,v,hit.end+100,{outcome:'miss',loc:'chest',key:21});
+      const w={loc:'larm',holder,weapon,held:true};
+      PS.fighters.lodged={[v]:[w]};
+      const palmGap=()=>{
+        const el=PS.lodge['L:'+v+':larm:'+holder];
+        const [x,y,angle]=el.attrs.transform.match(/[-+.0-9e]+(?=[,)])/g).map(Number);
+        const radians=angle*Math.PI/180;
+        const half=pitsStageWeaponKind(weapon,3).len/2;
+        const palm=psWorld(h,h.e.rarm.attrs.points.split(' ').pop().split(',').map(Number));
+        return Math.hypot(palm[0]-x+half*Math.cos(radians),palm[1]-y+half*Math.sin(radians));
+      };
+      let worst=0,samples=0;
+      for(PS.clock=hit.end;PS.clock<=counter.end;PS.clock+=16){
+        draw(v);draw(holder);psDrawLodged(PS.clock);
+        worst=Math.max(worst,palmGap());samples++;
+      }
+      const lastX=h.X;
+      w.held=false;PS.clock-=16;draw(v);draw(holder);psDrawLodged(PS.clock);
+      if(Math.abs(h.X-lastX)>1)throw Error('holder jumps at release');
+      PS.clock+=200;draw(v);draw(holder);psDrawLodged(PS.clock);
+      return {clearance,worst,samples,released:palmGap()};
+    })()`);
+    const detail=weapon+' '+id+' '+JSON.stringify(result);
+    if(weapon==='spear')assert(result.clearance>10,detail);
+    assert(result.samples>10&&result.worst<2,detail);
+    assert(result.released>2,detail);
+  }
+});
+
 // ----- CA-08 -----
 test('CA-08: Weapon struck, Withdraw Impale and Withdrawal injury each have a cue',()=>{
   const S=stage(false);

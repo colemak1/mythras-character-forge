@@ -1,26 +1,8 @@
-// The Pits: the spring movement (pits-spring.js) and the exchange writer (pits-writer.js) driving the live stage.
-// A TRIAL, behind ?stage=spring (owner, 2026-11-13; nothing is released). Without the switch, or when either fighter's
-// weapon has no family yet, the stage keeps today's movement (PitsMotion.LIVE).
-//
-// The stage (pits-stage.js) talks to its movement layer through one small interface: make a fighter, place it, draw a
-// declared action before its dice (intent), write a blow from the engine's resolved facts and get back when and where
-// its contacts land (blow), draw a pose at the stage's clock, and a few others (fall, stand, lower, yield, press,
-// recover). This file answers that interface:
-//   - both fighters live in one writer world (PitsWriter.create), made when the stage has made both;
-//   - each blow is one record for PitsWriter.exchange, written from the stage's clock: nothing is written before the
-//     moment the stage has already shown (S.now), and what the last exchange had planned for after that moment is
-//     dropped (S.cut), so each movement starts from the pose the last one was held in, not from a guard;
-//   - the picture holds still between movements (the stage stops its clock), so the moment of each hold is chosen to
-//     read cleanly (holdAt);
-//   - the simulation runs forward as the clock does (ensure), from the writer's checkpoints;
-//   - writer time runs at PACE times the stage's clock (the owner's chosen pace for the studies).
-// Stand-ins, kept simple until they have phrases: fall (a crumble), stand, lower, yield, Press Advantage, recover (a walk
-// to the engine's range when it changes). How the flow works, what is weak and what is next:
-// docs/pits-animation-direction.md, "Fluid flow" and "Instructions for Opus".
+// Spring pair for the historical collision study and its physics regression tests.
 (function(root){
-const PM=root.PitsMotion||(typeof require==='function'?require('./pits-motion.js'):null);
-const PS=root.PitsSpring||(typeof require==='function'?require('./pits-spring.js'):null);
-const PW=root.PitsWriter||(typeof require==='function'?require('./pits-writer.js'):null);
+const PM=root.PitsMotion||(typeof require==='function'?require('../pits-motion.js'):null);
+const PS=root.PitsSpring||(typeof require==='function'?require('../pits-spring.js'):null);
+const PW=root.PitsWriter||(typeof require==='function'?require('../pits-writer.js'):null);
 const L0=PM.LIVE,PACE=1.65,REC=PS.REC;
 // Collision (owner, 2026-11-14): blades cannot pass through the other fighter (pits-spring.js, collide). A comparison
 // for now, off unless the page is opened with ?collide=on, so the same fight can be watched both ways.

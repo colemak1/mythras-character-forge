@@ -63,7 +63,7 @@ const fits=page=>page.evaluate(()=>{const d=document.querySelector('#root .bdeck
     assert(await click(page,'#root .bgo[data-act="attack"]'));
     await until(page,s=>s.hasR,true);await click(page,'[data-act=roll]');
     await until(page,s=>s.pend==='reaction',true);await sleep(200);
-    assert.equal(await page.evaluate(()=>document.querySelector('#root .btrack .now').textContent),'Defence','the tracker is on Defence');
+    assert.equal(await page.evaluate(()=>document.querySelector('#root .bkick span').textContent),'Defence','the tracker is on Defence');
     const rows=await page.evaluate(()=>[...document.querySelectorAll('#root .brow.def:not(.off)')].map(e=>{const r=e.getBoundingClientRect();return {v:e.dataset.val,t:r.top,b:r.bottom};}));
     assert(rows.length>=2,'defences are live');for(const r of rows)assert(r.t>=0&&r.b<=vp.height,'each defence is visible');
     await page.hover('#root .brow[data-val="evade"]');await sleep(80);
@@ -73,12 +73,13 @@ const fits=page=>page.evaluate(()=>{const d=document.querySelector('#root .bdeck
     await click(page,'#root .bgo[data-act="react"]');
     await until(page,s=>s.pend==='effect'&&!s.hasR&&!s.busy);await sleep(200);
     assert.equal(await page.evaluate(()=>document.querySelectorAll('.modal').length),0,'Special Effects open in the deck, not a window');
-    assert.equal(await page.evaluate(()=>document.querySelector('#root .btrack .now').textContent),'Effects');
+    assert.equal(await page.evaluate(()=>document.querySelector('#root .bkick span').textContent),'Effects');
     const fx=await page.evaluate(()=>[...document.querySelectorAll('#root .bfx')].map(e=>e.dataset.val));
     assert(fx.length>=2&&fx.includes('choose'),'effects are listed: '+fx);
     await page.hover('#root .bfx[data-val="choose"]');await sleep(80);
     assert(/Choose Location/.test(await page.evaluate(()=>document.querySelector('#root .binfo h4').textContent)),'hovering an effect describes it');
-    assert.deepEqual(await inView(page,'#root .bdeck button'),[],'every effect inside the window');
+    const clipped=await inView(page,'#root .bdeck button');
+    assert.deepEqual(clipped,[],'every effect inside the window: '+clipped.join(', '));
     await click(page,'[data-pa="fx"][data-val="choose"]');await sleep(80);await click(page,'#root .bgo[data-act="effect"]');await sleep(200);
     assert.equal((await st(page)).pend,'location');
     assert.equal(await page.evaluate(()=>document.querySelectorAll('.modal').length),0,'Choose Location is in the deck too');
@@ -116,7 +117,7 @@ const fits=page=>page.evaluate(()=>{const d=document.querySelector('#root .bdeck
     const off=await page.evaluate(async()=>{
       const f=PS.fig.b,g=psReticle(psBodyPt(f,'head'),f,'head');
       // the figure steps away while the marker is up: it must go with the head
-      PS.busyUntil=Math.max(PS.busyUntil,PitsMotion.LIVE.walk(PS.M.b,PS.clock,-80));
+      PS.busyUntil=Math.max(PS.busyUntil,PitsCine.recover(PS.M.b,PS.clock,PS.gap+160));
       let worst=0;for(let i=0;i<20;i++){await new Promise(r=>requestAnimationFrame(r));if(!g.isConnected)break;
         const m=/translate\(([-\d.]+),([-\d.]+)\)/.exec(g.getAttribute('transform')),w=psBodyPt(f,'head');
         worst=Math.max(worst,Math.hypot(+m[1]-w[0],+m[2]-w[1]));}

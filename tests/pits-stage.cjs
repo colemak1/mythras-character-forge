@@ -113,26 +113,8 @@ test('a critical attack is named at the roll stage and the hit cue carries the e
  const d=cue('No Damaging Hit',"Kethan's attack failed to connect.",{actor:'a',px:{evaded:false,react:'parry',reactGrade:3,aGrade:1}});
  assert.equal(d.type,'deflect');assert.equal(d.px.reactGrade,3);
 });
-test('aim: the weapon tip ends on the struck body part, and head, torso and leg strikes sit at different heights',()=>{
- const wk={kind:'blade',len:92},base=J('PS_POSE.lunge');
- const parts={head:[170,-165],chest:[170,-105],abdomen:[170,-70],lleg:[170,-30]};
- const tipY={},ang={};
- for(const [loc,T] of Object.entries(parts)){
-  const r=J(`pitsStageAim(PS_POSE.lunge,${JSON.stringify(wk)},false,${JSON.stringify(T)},{})`);
-  assert.equal(r.ok,true,loc+' is reachable');
-  assert(Math.hypot(r.tip[0]-T[0],r.tip[1]-T[1])<=14,`${loc}: tip within 14 of the target, got ${r.tip}`);
-  tipY[loc]=r.tip[1];ang[loc]=r.angle;
- }
- assert(tipY.head<tipY.chest&&tipY.chest<tipY.abdomen&&tipY.abdomen<tipY.lleg,'contact height follows the location');
- assert(ang.head>ang.chest&&ang.chest>ang.lleg,'the weapon points up at the head and down at the leg');
- const sp=J(`pitsStageAim(PS_POSE.lunge,{kind:'spear',len:150},false,[200,-60],{})`);
- assert.equal(sp.ok,true);assert(Math.hypot(sp.tip[0]-200,sp.tip[1]+60)<=14);
- const far=J(`pitsStageAim(PS_POSE.lunge,${JSON.stringify(wk)},false,[600,-60],{maxDx:100})`);
- assert.equal(far.ok,false,'out of reach is reported, not faked');
-});
-test('aim: a shield bash uses the off arm; a left-handed wielder keeps role-based arms',()=>{
- const r=J(`pitsStageAim(PS_POSE.lunge,{kind:'blade',len:92},false,[110,-90],{arm:'off',shieldR:16,pen:0})`);
- assert.equal(r.ok,true);assert.notEqual(r.pose.ba1,J('PS_POSE.lunge').ba1,'the off arm moved');assert.equal(r.pose.a1,J('PS_POSE.lunge').a1,'the weapon arm did not');
+// (the aim and shield-bash checks of the retired pose stage now run on the cinematic rig: tests/pits-cine.cjs, pits-cine-grip.cjs)
+test('a left-handed wielder keeps role-based arms',()=>{
  const l=J(`pitsStageLook({weapon:'sword',weaponHand:'Left Arm',hp:{'Right Arm':5,'Left Arm':0,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},maxHp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},shield:'none',siz:13})`);
  assert.equal(l.swap,true);assert.equal(l.armed,true,'a resisted Serious Wound leaves the weapon in the hand: the engine says when it drops (disarmed)');
  assert.equal(J(`pitsStageLook({weapon:'sword',weaponHand:'Left Arm',disarmed:true,hp:{'Right Arm':5,'Left Arm':0,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6},maxHp:{'Right Arm':5,'Left Arm':5,Head:6,Chest:8,Abdomen:7,'Right Leg':6,'Left Leg':6}})`).armed,false,'a weapon the engine dropped is not drawn in the hand');
@@ -334,7 +316,7 @@ test('Compel Surrender ends in a surrender (white flag), not a collapse',()=>{
  assert.equal(cue('FIGHT ENDS','Kethan wins. Marek capitulates after Force Failure.',{}).how,'surrender');
  assert.equal(cue('FIGHT ENDS','Kethan wins. Marek concedes.',{}).how,'concede');
  const st=fs.readFileSync(path.join(root,'experiments/pits-stage.js'),'utf8');
- assert(/cue\.how==='surrender'\)\{lo\.mEnd='yield'[^\n]*\n[^\n]*lo\.flag=true/.test(st),'the cinematic stage raises the flag');
+ assert(st.includes("if(cue.how==='surrender')end=L.surrender(loser,t)")&&st.includes("if(cue.how==='surrender'){lo.flag=true;lo.flagAt=result.tc+260;}"),'the surrender pose and flag share the recorded clock');
  assert(/function psDrawFlag/.test(st)&&/psDrawLodged\(now\);psDrawFlag\(now\);PS\.raf/.test(st),'the flag is drawn every frame');
 });
 test('a blow takes its effects and consequences into one record; those beats have no motion of their own',()=>{

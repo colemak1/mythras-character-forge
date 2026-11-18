@@ -34,8 +34,9 @@ const OUT=process.argv[3]||fs.mkdtempSync(path.join(os.tmpdir(),'pits-cine-sheet
       if(c.phrase==='range'){S.engagement=c.start||'long';psSetSpacing(true);PS.reachTags=null;PS.busyUntil=0;psDrawReach(true);const tags=PS.reachTags;t=PS.clock+50;PS.clock=t;PS.busyUntil=t;S.engagement=c.next||'short';psSetSpacing(false);
         window.__sheet={t,tags,r:{end:PS.busyUntil,contacts:[],move:'range'}};
         return {t,end:PS.busyUntil,move:'range '+(c.start||'long')+' to '+(c.next||'short'),contacts:[],w:S.fighters.a.weapon+' / '+S.fighters.b.weapon};}
-      const r=c.phrase==='trip'?L.trip(PS.M,'a',t,{fell:c.fell!==false,after:!!c.after}):c.phrase==='disarm'?L.disarm(PS.M,'a',t,{}):
-        c.phrase==='press'?{end:L.press(PS.M.a,PS.M.b,t),contacts:[],move:'press'}:c.withdraw?L.withdraw(PS.M,'a',t,{loc:c.loc||'chest',lost:c.lost||0,defeated:!!c.defeated}):L.blow(PS.M,'a',t,{outcome:c.outcome||'wound',loc:c.loc||'chest',lost:c.lost||0,strike:c.strike||null,shield:!!c.shieldWard,fall:c.fall||false,defeated:!!c.defeated,fx:c.fx||[],impale:!!c.impale,held:!!c.held,tried:c.tried||null});
+      const write=(M,t)=>c.phrase==='trip'?L.trip(M,'a',t,{fell:c.fell!==false,after:!!c.after}):c.phrase==='disarm'?L.disarm(M,'a',t,{}):
+        c.phrase==='press'?{end:L.press(M.a,M.b,t),contacts:[],move:'press'}:c.withdraw?L.withdraw(M,'a',t,{loc:c.loc||'chest',lost:c.lost||0,defeated:!!c.defeated}):L.exchange(M,'a',t,{trip:c.trip,outcome:c.outcome||'wound',loc:c.loc||'chest',lost:c.lost||0,strike:c.strike||null,shield:!!c.shieldWard,fall:c.fall||false,defeated:!!c.defeated,fx:c.fx||[],impale:!!c.impale,held:!!c.held,tried:c.tried||null});
+      const r=L.playTimeline(PS.M,L.authorTimeline(PS.M,t,t,write),t);
       if(L.fixChoices)L.fixChoices(null);
       // (a flexible weapon is laid onto each contact, as on the live stage)
       if(typeof psFlexHits==='function')psFlexHits(r);

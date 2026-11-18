@@ -12,7 +12,7 @@
 //   node tests/visual/pits-spring-scripted.cjs
 const assert=require('node:assert/strict');
 let chromium;try{({chromium}=require('playwright'));}catch(e){console.log('SKIP: playwright is not installed here');process.exit(0);}
-const BASE=process.env.PITS_URL||'http://localhost:8765/experiments/practice-combat.html',URL_=BASE+'?stage=spring';
+const BASE=process.env.PITS_URL||'http://localhost:8765/experiments/practice-combat.html',URL_=BASE+'?stage=spring&bottom=current';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const PS_LODGE_IN_MAX=14;   // the lodged point is drawn 10 inside the wound
 // sc: {config, react:[...], effect, pick:{pendingKind:selector}, rolls:{'a:Attack':n}, attacks}

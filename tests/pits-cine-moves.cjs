@@ -100,11 +100,13 @@ test('the same exchange key draws the same trip and disarm (the replay repeats t
   }
 });
 
-test('the stage uses the phrases on the cinematic stage and keeps the stand-ins for the spring stage',()=>{
-  const st=fs.readFileSync(path.join(__dirname,'..','experiments','pits-stage.js'),'utf8');
-  assert(/L\.trip\?L\.trip\(PS\.M,me\.id/.test(st),'the defender\'s Trip uses L.trip');
-  assert(/L\.disarm\?L\.disarm\(PS\.M,me\.id/.test(st),'the defender\'s Disarm uses L.disarm');
-  assert(/L\.trip\(PS\.M,atk\.id,PS\.clock,\{fell:tripFell,after:true/.test(st),'the attacker\'s Trip is a hook after its blow');
+test('the cinematic timeline authors both defensive effects and the attacking hook',()=>{
+  const st=fs.readFileSync(path.join(__dirname,'../experiments/pits-stage.js'),'utf8');
+  for(const phrase of ['trip','disarm'])assert(st.includes('psTimeline((M,t)=>L.'+phrase+'(M,me.id,t,'));
+  const M=pair('sword','sword',.4);
+  const clip=C.authorTimeline(M,0,100,(pair,t)=>C.exchange(pair,'a',t,{outcome:'wound',loc:'chest',lost:2,trip:{fell:true}}));
+  const hook=clip.result.phrases.find(p=>p.kind==='trip');
+  assert(hook.t>=clip.result.contacts[0].t&&hook.contacts.length===1&&clip.tracks.b.down);
 });
 
 // owner, 2026-11-16: "parry into disarm disarms twice": the blow's shown state already said disarmed, so the weapon
@@ -136,7 +138,7 @@ test('Impale: the point stays in the wound after the contact; the hand lets go, 
 });
 test('the stage draws the Impale at its contact and lets go at the release',()=>{
   const st=fs.readFileSync(path.join(__dirname,'..','experiments','pits-stage.js'),'utf8');
-  assert(/impale:!!impale&&lost>0&&!strike,held:!!\(impale&&impale\.held\)/.test(st),'the blow is told it impales, and whether it is kept hold of');
+  assert(/impale:!!impale&&lost>0&&!strike,held:pulled\?\(lodgedBy\?!!lodgedBy\.held:true\):!!\(impale&&impale\.held\)/.test(st),'the blow is told it impales, and whether it is kept hold of');
   assert(/PS\.lodgeAhead\[def\.id\]=\{loc,weapon:/.test(st),'the weapon is drawn in the wound from the contact');
   assert(/if\(r\.release&&PS\.lodgeAhead\[def\.id\]\)\{await psUntil\(r\.release\);/.test(st),'and let go at the release');
 });

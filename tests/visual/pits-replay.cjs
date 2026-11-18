@@ -29,7 +29,8 @@ async function playToEnd(page){
   const T=async(name,f)=>{try{await f();console.log('PASS '+name);pass++;}catch(e){console.log('FAIL '+name+': '+e.message.split('\n')[0]);fail++;}};
   const page=await browser.newPage({viewport:{width:1280,height:720}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{window.__psRecord=[];let a=0x2f6e2b1;const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
-    window.__pitsDie=n=>n===100?Math.ceil(rnd()*60):Math.ceil(rnd()*n);});
+    // Small early wounds keep this replay fixture long enough to inspect successive HP totals.
+    let blows=0;window.__pitsDie=n=>n===20&&blows<5?11:n===8&&blows++<5?2:n===100?Math.ceil(rnd()*60):Math.ceil(rnd()*n);});
   await page.goto(URL_+'?bottom=current');await page.evaluate(c=>{Object.assign(config,c);startRun(false);},CFG);await sleep(400);
   await click(page,'[data-act=speed]');
   await T('the range meter names the range by weapon length (sword, a Medium reach)',async()=>{
@@ -45,15 +46,20 @@ async function playToEnd(page){
   let over;
   await T('a whole fight plays to the end',async()=>{over=await playToEnd(page);assert(['between','over'].includes(over.phase));});
   await T('the result screen can be dismissed and opened again',async()=>{
-    assert(await page.evaluate(()=>!!document.querySelector('.result-modal')),'the result window is up at the end');
-    await click(page,'[data-act=dismissResult]');await sleep(150);
-    assert.equal(await page.evaluate(()=>!!document.querySelector('.result-modal')),false,'dismissed');
-    assert(await page.evaluate(()=>!!document.querySelector('#root [data-act="showResult"]')),'a Show result button is on the screen');
-    await click(page,'[data-act=showResult]');await sleep(150);
-    assert(await page.evaluate(()=>!!document.querySelector('.result-modal')),'the result window is back');
-    assert(await page.evaluate(()=>!!document.querySelector('.result-modal [data-act="replayFight"]')),'and offers the replay');
-    assert.equal(await page.evaluate(()=>/streak/i.test(document.querySelector('.result-modal').innerText)),false,'no streak line');
-    await click(page,'[data-act=dismissResult]');await sleep(150);
+    const legacy=await browser.newPage();
+    await legacy.goto(URL_+'?layout=classic');
+    // Exercise the dialog in the layout that still displays it, using this bout's result.
+    await legacy.evaluate(snapshot=>{S=snapshot.state;V.tape=snapshot.tape;render();},await page.evaluate(()=>JSON.parse(JSON.stringify({state:S,tape:V.tape}))));
+    assert(await legacy.evaluate(()=>!!document.querySelector('.result-modal')),'the result window is up at the end');
+    await click(legacy,'[data-act=dismissResult]');await sleep(150);
+    assert.equal(await legacy.evaluate(()=>!!document.querySelector('.result-modal')),false,'dismissed');
+    assert(await legacy.evaluate(()=>!!document.querySelector('#root [data-act="showResult"]')),'a Show result button is on the screen');
+    await click(legacy,'[data-act=showResult]');await sleep(150);
+    assert(await legacy.evaluate(()=>!!document.querySelector('.result-modal')),'the result window is back');
+    assert(await legacy.evaluate(()=>!!document.querySelector('.result-modal [data-act="replayFight"]')),'and offers the replay');
+    assert.equal(await legacy.evaluate(()=>/streak/i.test(document.querySelector('.result-modal').innerText)),false,'no streak line');
+    await click(legacy,'[data-act=dismissResult]');await sleep(150);
+    await legacy.close();
   });
   await T('Replay fight plays the whole fight again, uninterrupted, from the start to the end',async()=>{
     assert(await page.evaluate(()=>!!document.querySelector('#root [data-act="replayFight"]')),'a Replay fight button is on the screen');

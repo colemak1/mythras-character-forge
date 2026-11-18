@@ -200,3 +200,8 @@ body.pa-on #root .bE .bmid.bend .pa-end{flex:1 1 auto;padding:10px 14px 12px;bor
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .bE .bfxmore summary{cursor:pointer;font-size:12px;color:var(--pa-dim);margin:5px 0 4px}
 .bE .bfxmore .bidle{margin:-3px 0 4px;font-size:11px;color:var(--pa-dim);grid-column:1/-1}
+
+@media (min-width:901px) and (max-height:800px){
+  body.pa-on[data-bottom="E"]:has(.bdo.fx){--pa-deck:min(390px,54vh)}
+  .bE .bdo.fx .bfxs{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}
+}

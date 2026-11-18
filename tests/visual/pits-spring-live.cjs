@@ -14,11 +14,11 @@
 //   PITS_SHOTS=dir  also saves a stage screenshot at the first contact of each kind
 const assert=require('node:assert/strict'),path=require('node:path');
 let chromium;try{({chromium}=require('playwright'));}catch(e){console.log('SKIP: playwright is not installed here');process.exit(0);}
-const URL_=(process.env.PITS_URL||'http://localhost:8765/experiments/practice-combat.html')+'?stage=spring';
+const URL_=(process.env.PITS_URL||'http://localhost:8765/experiments/practice-combat.html')+'?stage=spring&bottom=current';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const st=page=>page.evaluate(()=>{const S=prototypeCombat.state(),V=prototypeCombat.presentation();
   return {phase:S.phase,busy:!!V.busy,pend:S.pending?S.pending.kind:null,hasR:!!prototypeCombat.pendingRoll(),turn:S.order?S.order[S.turnIndex]:null,
-    paused:PS.paused,clock:PS.clock,motion:PS_MOTION,spring:!!PS.springOn,round:S.round,
+    paused:PS.paused,clock:PS.clock,motion:PL()===PitsCine,cine:PL()===PitsCine&&!!PS.M.a?.cine,round:S.round,
     finite:['a','b'].every(i=>{const p=PS.fig[i].pts;return !p||['Sh','H','F','bF','Hn','tip'].every(k=>Number.isFinite(p[k][0])&&Number.isFinite(p[k][1]));})};});
 const click=(page,q)=>page.evaluate(q=>{const e=[...document.querySelectorAll(q)].find(x=>!x.disabled);if(!e)return false;e.click();return true;},q);
 async function bout(browser,cfg,seed,shots){
@@ -43,6 +43,13 @@ async function bout(browser,cfg,seed,shots){
     if(['between','over'].includes(s.phase)&&!s.busy)break;
     if(s.busy){if(!busySince)busySince=Date.now();if(Date.now()-busySince>4000){out.stalls++;await click(page,'[data-act=continue]');busySince=0;}await sleep(40);continue;}
     busySince=0;
+    if(s.hasR&&!out.paused){
+      // Leave a real input pending long enough for the declaration to reach its hold.
+      await page.waitForFunction(()=>PS.paused);
+      const held=await st(page);await sleep(120);
+      const later=await st(page);assert(later.paused);out.paused++;
+      if(held.clock!==later.clock)out.frozenMoves++;
+    }
     if(s.hasR)await click(page,'[data-act=roll]');
     // (the reaction depends on how many there have been, not on the loop's timing, so the same fight plays each run)
     else if(s.pend==='reaction'){nr++;await click(page,'[data-act=react][data-val='+(nr%3===1?'evade':nr%3===2?'parry':'none')+']')||await click(page,'[data-act=react][data-val=none]');}
@@ -81,7 +88,7 @@ async function bout(browser,cfg,seed,shots){
     await T(`a whole bout, ${w} against ${v}${sh?' with shields':''}, plays on the spring trial with no errors`,async()=>{
       const r=await bout(browser,{...base,weapon:w,pvpWeapon:v,...(sh||{})},seed,shots);
       if(!first)first=r.page;else await r.page.close();
-      assert(r.end.spring,'the spring trial is on for this bout');
+      assert(r.end.cine,'the cinematic stage plays this legacy URL');
       assert(['between','over'].includes(r.end.phase),'the bout ended ('+r.end.phase+')');
       assert.deepEqual(r.page.errors,[]);
       const errs=r.rec.filter(x=>x.type==='cue-error');assert.deepEqual(errs,[],'cue errors: '+JSON.stringify(errs));
@@ -123,7 +130,7 @@ async function bout(browser,cfg,seed,shots){
   await T('a longspear against a sword runs on the spring trial too',async()=>{
     const page=await browser.newPage();await page.goto(URL_);
     await page.evaluate(c=>{Object.assign(config,c);startRun(false);},{...base,weapon:'longspear',pvpWeapon:'sword'});await sleep(800);
-    const s=await st(page);assert.equal(s.spring,true);await page.close();
+    const s=await st(page);assert.equal(s.cine,true);await page.close();
   });
   await browser.close();console.log(`${pass} passed, ${fail} failed`);process.exit(fail?1:0);
 })();

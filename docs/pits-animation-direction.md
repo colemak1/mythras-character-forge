@@ -1,8 +1,14 @@
 # The Pits: animation direction (2026-11-12)
 
+## Exchange playback (2026-11-17)
+
+The stage records the declared poses, both fighters’ keyframes, contacts and timed picture cues against one local clock. The blow, any follow-up hook, recovery, Press Advantage or finishing reaction are authored before the blow plays. Replay installs those recorded tracks at its current clock. Old spring physics and comparison studies remain independent of the fight page.
+
+Approval sheets: [sword wound into Trip](pits-visual-checks/sword-trip.png) and [finishing spear withdrawal](pits-visual-checks/spear-withdrawal.png).
+
 ## The cinematic stage (owner, 2026-11-15): this is the Pits now
 
-The owner, after watching a hand-animated stick-figure fight: "I'm really not liking the fluidity of the movement ... right now it looks gimmicky and a bit stupid ... make it cooler, meatier, sexier ... Walk back whatever you need." The watched-back fight is the product. Everything below this section is the earlier work; it is kept for reference and stays reachable (`?stage=spring`, `?stage=classic`), but the Pits page now runs the cinematic stage.
+The owner, after watching a hand-animated stick-figure fight: "I'm really not liking the fluidity of the movement ... right now it looks gimmicky and a bit stupid ... make it cooler, meatier, sexier ... Walk back whatever you need." The watched-back fight is the product. Everything below this section is the earlier work; it is kept for reference. The former stage URLs open the same cinematic stage.
 
 **Sheets (replay, 40 ms a frame):** `docs/pits-visual-checks/cine-replay.jpg` (parry, leap, clash, a hit with its impact frame), `docs/pits-visual-checks/cine-finish.jpg` (the blow that ends a fight).
 
