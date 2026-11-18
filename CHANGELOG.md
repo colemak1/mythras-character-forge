@@ -5,6 +5,10 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## 2026-11-17 · The Pits exchange timeline
+
+Both fighters share the recorded movement and contacts of a resolved blow, including its follow-up effects. Replay reads back the recorded poses. The Pits uses the cinematic stage on all previous stage URLs.
+
 ## The Pits: a stun counts only the stunned fighter's own Turns (ruling D-R4)
 
 ChatGPT (Chat), Core pp.90–91, 110: a fighter with no Action Points left gets no Turn in a cycle, so a Serious Wound's "cannot attack for 1d3 Turns" does not count down then. It used to, so a fighter stunned for 3 Turns could attack on its third (report 20261117-184734). A Turn spent Delaying or on another permitted action still counts. Press Advantage, Overextend and Blind count the same way.

@@ -12,7 +12,7 @@
 // Needs playwright and a static server at the repository root (python3 -m http.server 8765).
 const path=require('node:path'),fs=require('node:fs'),os=require('node:os');
 let chromium;try{({chromium}=require('playwright'));}catch(e){console.log('SKIP: playwright is not installed here');process.exit(0);}
-const URL_=(process.env.PITS_URL||'http://localhost:8765/experiments/practice-combat.html')+'?stage=spring';
+const URL_=(process.env.PITS_URL||'http://localhost:8765/experiments/practice-combat.html')+'?stage=spring&bottom=current';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const cfg=JSON.parse(process.argv[2]||'{}'),seed=+(process.argv[3]||21),reacts=(process.argv[4]||'parry,evade,none').split(','),MAXF=+(process.argv[5]||96);
 const SLOW=+(process.env.SLOW||.2),STEP=+(process.env.STEP||50),COLS=+(process.env.COLS||8),FROM=+(process.env.FROM||0);
@@ -35,8 +35,8 @@ const OUT=process.env.OUT||fs.mkdtempSync(path.join(os.tmpdir(),'pits-film-'));
   for(let i=0;i<6000&&frames.length<MAXF;i++){
     const s=await page.evaluate(()=>{const S=prototypeCombat.state(),V=prototypeCombat.presentation();
       return {phase:S.phase,busy:!!V.busy,pend:S.pending?S.pending.kind:null,hasR:!!prototypeCombat.pendingRoll(),c:PS.clock,dice:!!(V.roll&&!V.roll.settled),
-        spring:!!PS.springOn,w:S.fighters.a.weapon+' against '+S.fighters.b.weapon};});
-    if(i===0)console.log(s.w+(s.spring?'':'  (NOT on the spring stage: a weapon has no family yet)'));
+        cine:PL()===PitsCine&&!!PS.M.a?.cine,w:S.fighters.a.weapon+' against '+S.fighters.b.weapon};});
+    if(i===0)console.log(s.w+(s.cine?'':'  (NOT on the spring stage: a weapon has no family yet)'));
     const moving=s.c>lastC+.01;lastC=s.c;
     if(s.c>=FROM&&s.phase==='fight'){
       if(moving){still=0;if(s.c>=lastShot+STEP){lastShot=s.c;await snap(String(Math.round(s.c)));}}

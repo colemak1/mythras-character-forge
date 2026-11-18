@@ -1,5 +1,5 @@
 // The Pits: collision comparison (owner, 2026-11-14). One seeded test fight is written twice through the live layer
-// (pits-spring-live.js), once with the collision rule off and once on (pits-spring.js, collide), and both are played
+// (studies/pits-spring-pair.js), once with the collision rule off and once on (pits-spring.js, collide), and both are played
 // side by side on one clock. Presentation only: the outcomes are random test fights, not rolled Mythras.
 (function(){
 const PM=window.PitsMotion,PS=window.PitsSpring,PL=window.PitsSpringLive;

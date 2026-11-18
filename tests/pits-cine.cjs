@@ -168,13 +168,13 @@ test('the rest of what the stage asks for: range, Press Advantage, a yield, a sn
   const limp=C.pose(M.a,e4+200,{weapon:true});assert(limp.Hn[1]<limp.wS[1]-40,'a disabled weapon arm does not hang');
 });
 
-test('the Pits page uses the cinematic stage by default, and keeps the earlier two behind a switch',()=>{
+test('the Pits page uses the cinematic stage for every route',()=>{
   const read=f=>fs.readFileSync(path.join(__dirname,'..','experiments',f),'utf8');
   const page=read('practice-combat.html'),stage=read('pits-stage.js');
   const at=n=>page.indexOf('src="'+n+'?v=');
   assert(at('pits-cine.js')>0&&at('pits-cine-fx.js')>at('pits-cine.js')&&at('pits-stage.js')>at('pits-cine-fx.js'),'the page loads the movement, its picture, then the stage');
   assert(/href="pits-cine\.css\?v=/.test(page),'the page loads the look');
-  assert(/const PS_CINE=/.test(stage)&&/stage=\(spring\|classic\|poses\)/.test(stage),'the earlier stages stay behind ?stage=');
-  assert(/PS\.cine\?PitsCine:/.test(stage));
+  for(const old of ['pits-spring-live.js','pits-spring.js','pits-motion.js','pits-writer.js'])assert.equal(at(old),-1,old);
+  assert.match(stage,/const PL=\(\)=>PitsCine;/);
 });
 console.log(passed+' passed');

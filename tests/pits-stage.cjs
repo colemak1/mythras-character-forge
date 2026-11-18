@@ -11,7 +11,7 @@ function arena(withStage,seed,search=''){
   window:{matchMedia:()=>({matches:false}),requestAnimationFrame(){}}};
  vm.createContext(ctx);
  vm.runInContext('Math.random=__rnd',Object.assign(ctx,{__rnd:rnd}));
- const files=['js/combat-rules.js','js/data.js','experiments/practice-character.js','experiments/practice-guidance.js','experiments/pits-view.js',...(withStage?['experiments/pits-stage.js','experiments/pits-arena.js']:[])];
+ const files=['js/combat-rules.js','js/data.js','experiments/practice-character.js','experiments/practice-guidance.js','experiments/pits-view.js',...(withStage?['experiments/pits-stage.js','tests/lib/pits-classic-aim.js','experiments/pits-arena.js']:[])];
  for(const f of files)vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx);
  vm.runInContext(fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1],ctx);
  return {run:x=>vm.runInContext(x,ctx),q};
@@ -334,7 +334,7 @@ test('Compel Surrender ends in a surrender (white flag), not a collapse',()=>{
  assert.equal(cue('FIGHT ENDS','Kethan wins. Marek capitulates after Force Failure.',{}).how,'surrender');
  assert.equal(cue('FIGHT ENDS','Kethan wins. Marek concedes.',{}).how,'concede');
  const st=fs.readFileSync(path.join(root,'experiments/pits-stage.js'),'utf8');
- assert(/cue\.how==='surrender'\)\{lo\.mEnd='yield'[^\n]*\n[^\n]*lo\.flag=true/.test(st),'the cinematic stage raises the flag');
+ assert(st.includes("if(cue.how==='surrender')end=L.surrender(loser,t)")&&st.includes("if(cue.how==='surrender'){lo.flag=true;lo.flagAt=result.tc+260;}"),'the surrender pose and flag share the recorded clock');
  assert(/function psDrawFlag/.test(st)&&/psDrawLodged\(now\);psDrawFlag\(now\);PS\.raf/.test(st),'the flag is drawn every frame');
 });
 test('a blow takes its effects and consequences into one record; those beats have no motion of their own',()=>{
