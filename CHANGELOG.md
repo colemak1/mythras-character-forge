@@ -5,6 +5,19 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: a defender's Disarm or Trip is one movement with the blow
+
+The owner asked for the defensive Special Effects to be single movements. Now, when a defender wins **Disarm Opponent**
+or **Trip Opponent**:
+
+- **after an attack that failed**, the swing misses and the defender strikes straight into the overcommitted attacker:
+  a cut across the weapon hand that takes the weapon, or a hook (a sweep with a long weapon) that takes the feet;
+- **after a good attack met by a better parry** (a critical parry), it is the parry itself: the force of it drives on
+  through the blade and flings it from the hand, or turns straight into the trip.
+
+No pause and no second movement. Rules and dice unchanged; a defender's Trip shows its resistance dice before the blow.
+Tests: `tests/pits-counter.cjs`. The frame-sheet tool takes a `counter` case.
+
 ## The Pits: the fight reports and Ideas of 17–18 November
 
 Rules and dice unchanged.

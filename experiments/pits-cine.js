@@ -1569,7 +1569,8 @@ function trip(M,aid,t,s){
   cut(A,t);cut(D,t);
   const f=faceOf(A),away=-faceOf(D),sD=sample(D,t,true),x=D.base;
   const T=[sD.ffx-f*4,9];
-  const move=A.down||(A.prof.two>30)?'sweep':s.after?'hook':pick(r,['hook','hook','sweep']);
+  // (a defender's counter trip with a long weapon sweeps the legs with the shaft from where it stands: s.counter)
+  const move=A.down||(A.prof.two>30)||(s.counter&&A.weapon.len>=130)?'sweep':s.after?'hook':pick(r,['hook','hook','sweep']);
   const tw=t+(s.after?90:160),tc=tw+(move==='sweep'?120:105);
   if(move==='hook'){
     // in close, the knee comes up, then the foot whips round behind the ankle and pulls
@@ -1639,6 +1640,51 @@ function disarm(M,aid,t,s){
   keyA(A,tf+460,fit(A,readyPose(A,r)),{e:'io'});
   keyA(D,tf+520,fit(D,readyPose(D,r)),{e:'io',plant:'both'});
   return {tc,contacts,end:tf+520,move:'bind'};
+}
+
+// A defender's Disarm as part of the blow it answers, one movement with no pause (owner, 2026-11-18: "a miss that gets
+// parried successfully and then disarm should look like a missed swing then the defender swipes the blade out of their
+// hand, all in one single motion ... a hit and critical parry ... should look like a parry where you also get the
+// effect: the force of the parry knocking the blade out of their hand"). did: the defender, who takes the weapon.
+// s.via: 'miss' (the attack failed: the swing has gone by and the attacker is overcommitted; the defender steps in and
+// cuts down across the weapon hand), 'parry' (a good attack met by a better parry: from the clash the defender's blade
+// drives on through the other's and flings it up out of the hand), 'evade'. Contact kind 'disarm' where it leaves.
+function counterDisarm(M,did,t,s){
+  s=s||{};const D=M[did],A=other(D);
+  if(!A||!D||A.over||D.over)return {tc:t,contacts:[],end:t,move:null};
+  const r=s.key!=null?rngKey(D.pair,s.key+'|strip'):rng(D.pair);
+  cut(A,t);cut(D,t);
+  const f=faceOf(D),away=-faceOf(A),x=A.base,via=s.via||'parry';
+  const tc=t+(via==='parry'?80:via==='miss'?150:200);
+  hold(A,tc);
+  // (just above the hand: a hand's breadth up the weapon, whatever its length)
+  const ja=joints(A,tc),qa=Math.min(.2,20/A.weapon.len),B=[ja.Hn[0]+(ja.tip[0]-ja.Hn[0])*qa,ja.Hn[1]+(ja.tip[1]-ja.Hn[1])*qa];
+  let move;
+  if(via==='parry'){
+    // the parry does not stop: it drives up and out through the other's blade, the weight going in behind it
+    move='beat';
+    const a=aimed(D,{hip:[10,60],lean:20,bend:4,head:-12,ff:[46,0],bf:[-46,0],turn:8,o:[-30,-18]},B,64,.42);
+    keyA(D,tc,a.P,{at:a.at,e:'in',ec:{w:'in3'},spin:{w:1}});
+    keyA(D,tc+140,{hip:[4,64],lean:6,head:-8,h:[a.P.h[0]-4,a.P.h[1]+30],eb:1,w:a.P.w+46},{at:a.at,e:'out',plant:'both',spin:{w:1}});
+    fx(D,{t:tc,kind:'thump',at:B,power:.7});
+  }else{
+    // in after the missed swing: a short cock and a cut down across the weapon hand, the blade carried on through
+    move='strip';
+    const a=aimed(D,{hip:[14,56],lean:26,bend:6,head:-14,ff:[54,0],bf:[-46,0],turn:10,o:[-36,-18]},B,-34,.4);
+    keyA(D,t+(via==='miss'?60:90),{hip:[-6,62],lean:10,bend:2,head:-8,ff:[36,0],bf:[-48,0],h:[16,26],eb:1,w:118,o:[-28,-16],turn:-2},{e:'out',plant:'bf'});
+    keyA(D,tc,a.P,{at:a.at,e:'io',ec:{w:'in3'},spin:{w:-1},slide:true});
+    keyA(D,tc+130,{hip:[a.P.hip[0]+4,a.P.hip[1]-2],lean:(a.P.lean||26)+4,h:[a.P.h[0]-4,a.P.h[1]-22],w:a.P.w-50},{at:a.at,e:'out',plant:'both',spin:{w:-1}});
+    fx(D,{t:t+40,kind:'swing',id:D.id,t1:tc+60,heavy:D.prof.heavy});
+    fx(D,{t:tc,kind:'thump',at:B,power:.45});
+  }
+  const contacts=[{t:tc,at:B,kind:'disarm'}];
+  // the emptied hand: thrown back (up for the beat, down and away for the cut), a step back, the hand brought in
+  keyA(A,tc+80,via==='parry'?{hip:[-12,64],lean:-12,bend:-6,head:12,h:[-8,46],eb:1,w:160,o:[10,-20]}
+    :{hip:[-10,60],lean:4,bend:2,head:8,h:[-14,-30],w:-120,o:[12,-24]},{e:'out5',plant:'both'});
+  keyA(A,tc+320,{hip:[-14,60],lean:6,bend:4,head:-6,h:[24,-10],w:50,o:[18,-16]},{at:x+away*30,e:'io'});
+  keyA(D,tc+460,fit(D,readyPose(D,r)),{e:'io'});
+  keyA(A,tc+520,fit(A,readyPose(A,r)),{e:'io',plant:'both'});
+  return {tc,contacts,end:tc+520,move};
 }
 
 // Press Advantage: the attacker beats the other's guard aside and drives on; the other gives two steps back and
@@ -1775,7 +1821,7 @@ function speed(m,t){
 // are the feet skidding at t (a key with `slide` is being travelled)
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
-const api={WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,celebrate,yieldTo,surrender,press,overextend,trip,disarm,react,pose,
+const api={WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,celebrate,yieldTo,surrender,press,overextend,trip,disarm,counterDisarm,react,pose,
   joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;

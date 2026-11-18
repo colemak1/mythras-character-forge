@@ -5,7 +5,7 @@
 //
 //   node tests/visual/pits-cine-sheet.cjs '<cases json>' [out folder]
 //   a case: {name, phrase ('trip'|'disarm'|'press'|'range'; fell, after for a trip; start, next for a range), weapon, pvpWeapon, shield, pvpShield, outcome, loc, lost, strike, shieldWard, down:'a'|'b', u (fixed
-//   choice, 0..1), from, to (ms after the blow), focus ('a' or 'b': crop to that fighter, for looking at a grip), defeated, fx (the
+//   choice, 0..1), counter ({kind:'disarm'|'trip', via:'miss'|'parry'|'evade', fell}: the defender's, in the same movement), from, to (ms after the blow), focus ('a' or 'b': crop to that fighter, for looking at a grip), defeated, fx (the
 //   final blow's Special Effects: 'bash','stun','bleed','choose'), impale, held, tried ('parry'|'shield': a failed parry)}
 //   env: PITS_URL (default http://localhost:8765/experiments/practice-combat.html), STEP (40), COLS (8), FW (240: a frame's width on the sheet), DARK (1)
 // Needs playwright and a static server at the repository root (python3 -m http.server 8765).
@@ -36,6 +36,10 @@ const OUT=process.argv[3]||fs.mkdtempSync(path.join(os.tmpdir(),'pits-cine-sheet
         return {t,end:PS.busyUntil,move:'range '+(c.start||'long')+' to '+(c.next||'short'),contacts:[],w:S.fighters.a.weapon+' / '+S.fighters.b.weapon};}
       const r=c.phrase==='trip'?L.trip(PS.M,'a',t,{fell:c.fell!==false,after:!!c.after}):c.phrase==='disarm'?L.disarm(PS.M,'a',t,{}):
         c.phrase==='press'?{end:L.press(PS.M.a,PS.M.b,t),contacts:[],move:'press'}:c.withdraw?L.withdraw(PS.M,'a',t,{loc:c.loc||'chest',lost:c.lost||0,defeated:!!c.defeated}):L.blow(PS.M,'a',t,{outcome:c.outcome||'wound',loc:c.loc||'chest',lost:c.lost||0,strike:c.strike||null,shield:!!c.shieldWard,fall:c.fall||false,defeated:!!c.defeated,fx:c.fx||[],impale:!!c.impale,held:!!c.held,tried:c.tried||null});
+      // (a defender's counter in the same movement: counter {kind:'disarm'|'trip', via:'miss'|'parry'|'evade', fell})
+      if(c.counter){const k=c.counter,via=k.via||'parry',start=via==='evade'?r.end:(r.contacts.length?r.contacts[0].t:r.tc)+(via==='miss'?60:30);
+        const rc=k.kind==='disarm'?L.counterDisarm(PS.M,'b',start,{via}):L.trip(PS.M,'b',start,{fell:k.fell!==false,after:true,counter:true});
+        r.contacts=r.contacts.filter(x=>x.t<start).concat(rc.contacts);r.end=rc.end;r.move=r.move+' then '+rc.move;}
       if(L.fixChoices)L.fixChoices(null);
       // (a flexible weapon is laid onto each contact, as on the live stage)
       if(typeof psFlexHits==='function')psFlexHits(r);

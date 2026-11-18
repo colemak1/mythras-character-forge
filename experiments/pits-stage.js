@@ -292,6 +292,9 @@ function pitsStageOrder(list,names){
     let j=-1;for(let n=i+1;n<out.length;n++){const kn=k(out[n]);if(kn==='attack')break;if(PSTAGE_BLOW.includes(kn)){j=n;break;}}
     if(j<0)continue;
     if(k(out[i])==='trip'&&cue(out[i]).actor&&cue(out[i]).actor===pitsStageBlowActor(out[j],names))continue;
+    // (the cinematic stage: a defender's Trip is drawn in the blow it answers, one movement, so it stays where it is
+    // and its dice are rolled before the blow, as for the attacker's; owner, 2026-11-18)
+    if(k(out[i])==='trip'&&PS_CINE)continue;
     let at=i;while(at>0&&(out[at-1].roll||out[at-1].checkpoint))at--;
     const [blow]=out.splice(j,1);out.splice(at,0,blow);i++;
   }
@@ -346,6 +349,11 @@ function pitsStageBeat(events,step,names){
     // the attacker's Trip (resolved before the location and the damage): the blow carries it, one movement (FR-03)
     const striker=pitsStageBlowActor(e,names)||attacker;
     const trip=striker?inEx(a0+1,step,['trip']).find(c=>c.actor===striker)||null:null;
+    // the defender's Trip or Disarm (won on the defence), drawn by the cinematic stage as the end of this blow's own
+    // movement: the miss or the parry, then the counter, no pause (owner, 2026-11-18)
+    const dTrip=PS_CINE&&striker?inEx(a0+1,step,['trip']).find(c=>c.actor&&c.actor!==striker)||null:null;
+    const counter=!PS_CINE||!striker?null:dTrip?{kind:'trip',actor:dTrip.actor,fell:!!dTrip.fell}
+      :disarm&&disarm.actor&&disarm.actor!==striker?{kind:'disarm',actor:disarm.actor,metres:disarm.metres}:null;
     // Impale: the weapon lodges in this blow's wound (the engine's entry comes before the blow); kept hold of unless the
     // wielder chose to leave it in the wound (a computer keeps hold)
     let impale=null;
@@ -357,12 +365,12 @@ function pitsStageBeat(events,step,names){
     const fx=[];
     for(let i=a0+1;i<a1;i++){const x=events[i];if(!x||x.roll||x.checkpoint||!x.meta||x.meta.actor!==striker)continue;
       const k=PSTAGE_FX[x.title];if(k&&!fx.includes(k))fx.push(k);}
-    return {cue:{...cue,record:{press:inEx(a0+1,step,['press'])[0]||null,overextend:inEx(a0+1,a1,['overextend'])[0]||null,after:inEx(step+1,a1,PSTAGE_AFTER),arise:arise?arise.actor:null,disarm,trip,impale,fx}},consumed:false};
+    return {cue:{...cue,record:{press:inEx(a0+1,step,['press'])[0]||null,overextend:inEx(a0+1,a1,['overextend'])[0]||null,after:inEx(step+1,a1,PSTAGE_AFTER),arise:arise?arise.actor:null,disarm,trip,counter,impale,fx}},consumed:false};
   }
   // the attacker's Trip has no movement of its own when a blow of its exchange follows: that blow draws it
   if(cue.type==='trip'){
     for(let i=step+1;i<a1;i++){const c=pitsStageCue(events[i],names);
-      if(c&&PSTAGE_BLOW.includes(c.type)&&!events[i].roll&&!events[i].checkpoint)return pitsStageBlowActor(events[i],names)===cue.actor?{cue,consumed:true}:{cue,consumed:false};}
+      if(c&&PSTAGE_BLOW.includes(c.type)&&!events[i].roll&&!events[i].checkpoint)return pitsStageBlowActor(events[i],names)===cue.actor||PS_CINE?{cue,consumed:true}:{cue,consumed:false};}
     return {cue,consumed:false};
   }
   if(cue.type==='disarm'&&inEx(a0+1,step,PSTAGE_BLOW).length)return {cue,consumed:true};
@@ -1576,12 +1584,28 @@ async function psMotionBlow(cue){
   // the move and the defence declared live are kept on the tape and given again.
   // (a weapon left in the wound is taken hold of first; one kept hold of is pulled at once)
   const lodgedBy=pulled?((PS.fighters.lodged&&PS.fighters.lodged[def.id])||[]).find(w=>w.holder===atk.id):null;
+  // The defender's Trip or Disarm, drawn as the end of this blow's own movement (owner, 2026-11-18): an attack that
+  // failed is a swing that goes by, and the defender strikes into the overcommitted attacker; a good attack met by a
+  // better parry is the parry itself, driving on into the effect; after an evade, from where the evade left them.
+  const counter=PS.cine&&!pulled&&!weaponHit&&!defeated&&cue.record&&cue.record.counter&&cue.record.counter.actor===def.id?cue.record.counter:null;
+  const aGrade=px.aGrade!=null?px.aGrade:ex.aGrade;
+  const via=!counter?null:evading?'evade':aGrade!=null&&aGrade<2?'miss':'parry';
+  const bOut=via==='miss'&&/^(parried|full-parry|full-ward)$/.test(out)?'miss':out;
   const r=pulled?L.withdraw(PS.M,atk.id,PS.clock,{loc,lost,defeated,flow:psReplaying(),held:lodgedBy?!!lodgedBy.held:true}):
-    psCineBlow(atk.id,{outcome:out,loc,lost,shield:weaponHit?false:shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,tried:parryTried,flow:psReplaying(),
+    psCineBlow(atk.id,{outcome:bOut,loc,lost,shield:weaponHit?false:shield,strike,fall:(leg||(evading&&!tried))&&!defeated,defeated,prone:tried,tried:parryTried,flow:psReplaying(),
       impale:!!impale&&lost>0&&!strike,held:!!(impale&&impale.held),fx:psExchangeFx(cue,atk.id).concat(
         trip&&trip.fell?['trip']:[],cue.record&&cue.record.disarm&&cue.record.disarm.actor===atk.id?['disarm']:[],
         // (Blind Opponent is a defender's effect: a blinded loser is drawn blind on the blow that ends it)
         psBlinded(def.id)?['blind']:[])});
+  let rc=null;
+  if(counter){
+    const start=via==='evade'?r.end:(r.contacts.length?r.contacts[0].t:r.tc)+(via==='miss'?60:30);
+    rc=counter.kind==='disarm'?L.counterDisarm(PS.M,def.id,start,{via,key:PS.cueFor})
+      :L.trip(PS.M,def.id,start,{fell:!!counter.fell,after:true,counter:true,key:PS.cueFor});
+    psEmit('move',{actor:def.id,key:PS.cueFor||null,move:rc.move,counter:counter.kind,via,replay:psReplaying()});
+    r.contacts=r.contacts.filter(c=>c.t<start).concat(rc.contacts.map(c=>({...c,counter:true})));
+    r.end=rc.end;atk.tripAhead=false;
+  }
   PS.busyUntil=r.end;psFlexHits(r);atk.spent=def.spent=true;
   // (the trip's fall is drawn when the blow's own movement has played out, from the pose it left: written into the blow
   // it overlapped the struck fighter's reaction and the head jumped, measured 47 px in one frame)
@@ -1590,24 +1614,39 @@ async function psMotionBlow(cue){
   // blow's contact (audit CA-01: the HUD said prone over a standing figure)
   if(PS.cine)for(const f of [def,atk]){const dn=!!PS.M[f.id].down;if(dn&&!f.mDown)f.downAt=f===def&&r.contacts.length?r.contacts[0].t:PS.clock;f.mDown=dn;}
   else if(defeated||leg||evading){if(!def.mDown)def.downAt=r.contacts.length?r.contacts[0].t:PS.clock;def.mDown=true;}
+  // (a counter trip: the attacker is shown down when it is seen to fall, not when the movement is written)
+  if(counter&&counter.kind==='trip'&&counter.fell&&rc&&rc.contacts.length)atk.downAt=rc.contacts[0].t+300;
   if(defeated)def.mEnd='lying';
   const disarm=cue.record&&cue.record.disarm;let flown=false,tripTold=false;
   // (on the cinematic stage the attacker's Trip is its own hook, straight after the blow: told at the ankle, not here)
   const hookAfter=!!(trip&&L.trip&&!defeated);
   for(const c of r.contacts){
     await psUntil(c.t);const w=psW(c.at);psHudConditions();
+    if(c.counter){
+      if(counter.kind==='disarm'){flown=true;atk.dropAhead=true;
+        psEmit('contact',{kind:'disarm',actor:def.id,target:atk.id,via,point:w.map(Math.round)});
+        psBurst(w,'spark',12);psRing(w);psSfx('pick');if(psFx())psFx().impact(w,'clash',.8,def.face);
+        psBanner('Disarmed','crit');psFlyWeapon(atk,counter.metres||1);await psHitStop(90);
+      }else{
+        psEmit('contact',{kind:'trip',actor:def.id,target:atk.id,fell:!!counter.fell,via,point:w.map(Math.round)});psBurst(w,'spark',8);psRing(w);
+        if(counter.fell){psBanner('Tripped','crit');psDom(psWorld(atk,atk.pts?atk.pts.hd:[0,-120]),'Tripped!','fx');
+          psUntil(c.t+340).then(()=>{psDust(atk);psShake();psPunch(4);}).catch(()=>{});}
+        else psDom(psWorld(atk,atk.pts?atk.pts.Sh:[0,-100]),'Resists the trip','blk');
+      }
+      continue;
+    }
     // the trip is told at the blow's first contact: the same blow sweeps the leg (or fails to)
     if(trip&&!tripTold&&!hookAfter){tripTold=true;psEmit('contact',{kind:'trip',actor:atk.id,target:def.id,fell:!!trip.fell,point:w.map(Math.round)});
       if(trip.fell){psBanner('Tripped','crit');psDom(psWorld(def,def.pts?def.pts.hd:[0,-120]),'Tripped!','fx');}
       else psDom(psWorld(def,def.pts?def.pts.Sh:[0,-100]),'Resists the trip','blk');}
     // the attacker's Disarm: the weapon leaves the defender's hand at the blow's (first) contact. The defender's Disarm
     // (won on the parry): the attacker's weapon leaves its hand at the parry, the same contact
-    if(disarm&&!flown&&(c.kind!=='miss'||disarm.actor===def.id)){flown=true;
+    if(disarm&&!flown&&!counter&&(c.kind!=='miss'||disarm.actor===def.id)){flown=true;
       const loser=disarm.target===atk.id?atk:def,winner=loser===atk?def:atk;loser.dropAhead=true;
       psEmit('contact',{kind:'disarm',actor:winner.id,target:loser.id,point:w.map(Math.round)});
       psBanner('Disarmed','crit');psFlyWeapon(loser,disarm.metres,{stick:r.finish==='disarmed'&&loser===def});}
     if(c.kind==='miss'){
-      psEmit('contact',{kind:out,actor:atk.id,target:def.id,point:w.map(Math.round)});
+      psEmit('contact',{kind:bOut,actor:atk.id,target:def.id,point:w.map(Math.round)});
       psBurst(w,'gray',5);psSfx('miss');if(psFx())psFx().impact(w,'miss',1,atk.face);
       if(out==='evaded'){psRing(w);psDom(psWorld(def,def.pts.Sh),'Evaded','blk');}
       else psDom(w,out==='fumble'?'Fumble!':'Miss','miss');
