@@ -510,10 +510,10 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 </style>
 <link rel="stylesheet" href="pits-stone.css?v=a495935cd5">
 <link rel="stylesheet" href="practice-combat-ux.css?v=f4c5d092a8">
-<link rel="stylesheet" href="pits-arena.css?v=782e9efc2c">
+<link rel="stylesheet" href="pits-arena.css?v=847984d6f6">
 <link rel="stylesheet" href="pits-stage.css?v=4b6c786d11">
 <link rel="stylesheet" href="pits-cine.css?v=5f257857a3">
-<link rel="stylesheet" href="pits-bottom.css?v=89217b87ba">
+<link rel="stylesheet" href="pits-bottom.css?v=d1a66cc265">
 <link rel="stylesheet" href="../sitota-theme.css?v=a47f8d5bd9">
 </head>
 <body class="pits-page">
@@ -554,18 +554,18 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="pits-view.js?v=76322a23e6"></script>
 <script src="pits-game.js?v=3769cec741"></script>
 <script src="pits-report.js?v=78c28f1bb3"></script>
-<script src="pits-arena.js?v=25e750b4bb"></script>
-<script src="pits-bottom.js?v=8cce484e7e"></script>
+<script src="pits-arena.js?v=945698686c"></script>
+<script src="pits-bottom.js?v=a27e8fce37"></script>
 <script src="pits-lost.js?v=f385014ea5"></script>
 <script src="pits-idea.js?v=e1791930b7"></script>
 <script src="pits-motion.js?v=5c6cf25c54"></script>
 <script src="pits-spring.js?v=d6e69e0c95"></script>
 <script src="pits-writer.js?v=e371f2e1b2"></script>
 <script src="pits-spring-live.js?v=8c9c8efa51"></script>
-<script src="pits-cine.js?v=78b7c5f201"></script>
+<script src="pits-cine.js?v=70b6d31d58"></script>
 <script src="pits-cine-fx.js?v=02003a23cc"></script>
 <script src="pits-flex.js?v=dff1553db0"></script>
-<script src="pits-stage.js?v=9fe2f14568"></script>
+<script src="pits-stage.js?v=1682d85eb2"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -3937,11 +3937,18 @@ function resolveWound(atk,def,loc,cls,wound,attackRoll,onContinue){
         +`roll ${attackRoll.roll} is now ${defendedAgainst.label}.`),'system','Core p.110: apply the excess over 100 retroactively to the attacking skill.',{actor:def.id});
      }
      const holds=opposedBetter(res,defendedAgainst);
+     // why, in words (report 20261117-205457: "it looked like they exceeded the needed endurance roll but still died": a
+     // success that loses to a higher successful attack roll)
+     const eg=res.grade,ag=defendedAgainst.grade;
+     const because=eg!==ag?(holds?'a better grade than the attack':'the attack has the better grade')
+       :eg<2?'both failed, so the attack stands'
+       :holds?`both succeeded and ${res.roll} is higher than the attack's ${defendedAgainst.roll}`
+       :`both succeeded and the attack's ${defendedAgainst.roll} is higher`;
      // (the target rolled against, not the sheet's: "54/55% FAILURE" was a roll against 28%, report 20261117-183744)
      const eff=res.effectiveTarget??def.endurance,why=eff!==def.endurance?skillPenaltyCauses(def).join(' + '):'';
      log(`${cls.toUpperCase()} WOUND · ${loc}`,
       `${def.name} Endurance ${res.roll}/${eff}% (${res.label}) versus the attack ${defendedAgainst.roll} (${defendedAgainst.label}). ${holds?
-      'Resists the additional consequence.':'Fails to resist.'}${eff!==def.endurance?
+      `Resists the additional consequence: ${because}.`:`Fails to resist: ${because}.`}${eff!==def.endurance?
       ` Endurance ${def.endurance}% made harder by ${why||'a penalty'}.`:''}`,'hurt',`Core p.110 · ${body} consequence`,{actor:def.id,dice:d100Dice(res.roll)});
      // What the wound does once the Endurance roll is known is the shared
      // rule (CombatRules.woundOutcome, Core pp.109–110).

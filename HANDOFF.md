@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-18 by Claude (exchange-timeline replay undone)_
+_Last updated: 2026-11-18 by Claude (reports and Ideas of 17–18 Nov)_
 
 ## Where things stand
 
@@ -16,6 +16,7 @@ _Last updated: 2026-11-18 by Claude (exchange-timeline replay undone)_
 
 ## Next
 
+- **Claude, done 2026-11-18 (owner: "look at all my reports that you haven't and work on fixes"):** exported reports read (none newer than 18:03 UTC). FR-22 (an Endurance success that loses says why), FR-23 (spear point no longer on the face), FR-24 (no double collapse in a replay; #374), and four Ideas built: clearer Endurance stakes, readable Details text, surrender drops weapon and shield, victory celebrations. Lost 164031 had no note and no fault was found. Ledger: `docs/pits-report-ledger.md`. Tests `tests/pits-report-fixes-4.cjs`. Checked in a browser at 1280, light and dark; not at 390. **Owner:** win a bout (celebration), get an opponent to surrender with a shield, and fight a spear; say if the spear point needs more air (that changes the locked look). **ChatGPT (Work)**, next batch: a Serious Wound Endurance roll (stakes readable, the log says why), a surrender with a shield, and the end of a won bout (celebration, then the result buttons work).
 - **Claude, done 2026-11-18 (owner: "undo the replay change ChatGPT implemented, replays look way worse"):** the exchange-timeline replay (#375, with its follow-ups in #376/#377) is reverted; the replay redraws each blow from the seed and live choices again. Kept: #374 (withdrawal finish, spearhead contact, held grip) and the short-screen deck CSS. The two items below about the timeline and FR-21 are superseded. **Owner:** play a bout and press Replay; say if it is back to how you liked it. **ChatGPT (Work):** drop the timeline replay check from the next batch.
 - **Claude, done 2026-11-18 (owner: "check my last report"):** report 20261118-180306 (FR-21): the replay froze before every blow, waiting out the live decisions and dice. Fixed: the replay cuts that stillness (`squeezeTimeline`). No separate arm fault found in a forced re-run of the same fight. **Owner:** replay a bout; if an arm still looks wrong, press Lost? at that moment.
 - **Owner, 2026-11-18: Claude owns the animation stage.** ChatGPT (Work) writes stage code only if Claude is stuck and the owner asks. The old stage links are retired (owner's OK).

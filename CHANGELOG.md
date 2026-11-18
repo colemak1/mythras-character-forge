@@ -5,6 +5,25 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: the fight reports and Ideas of 17–18 November
+
+Rules and dice unchanged.
+
+- **Endurance (FR-22):** a successful Endurance roll that still loses now says why: "Fails to resist: both succeeded and
+  the attack's 24 is higher" (Core p.110), in the log and in the deck. The dice tray shows what happens on a resist and a
+  fail on their own lines, larger and darker, with "Fail" in red (Idea). Golden bouts regenerated for the wording.
+- **Readability (Idea):** the Details panel's small lines (last result, odds, what an effect needs) are full-strength
+  text instead of dim.
+- **Spear guard (FR-23):** a spear or other long weapon no longer holds its point on the other fighter's hand and face
+  at an even range; it stops clear in front.
+- **Replay (FR-24):** a fight won by withdrawing a held Impale no longer collapses the loser twice in the replay
+  (fixed by #374; now tested with that fight's log).
+- **Surrender (Idea):** the one who surrenders drops the weapon and the shield before raising the white flag.
+- **Victory celebrations (Idea):** after the weapon comes down, the winner raises it overhead and pumps it, or salutes.
+  The bout's seed picks which, so a replay matches.
+
+Tests: `tests/pits-report-fixes-4.cjs`.
+
 ## The Pits: the replay is back to how it was before the exchange timeline (owner, 2026-11-18)
 
 The owner: replays have looked "way worse" since Work's exchange timeline (#375, merged in #376, patched in #377). That

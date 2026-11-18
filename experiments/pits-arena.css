@@ -382,3 +382,8 @@ body.pa-on .roll.end .r-s .r-cause{display:block;font-size:12px;margin-top:3px;c
   body.pa-on:has(.deck .acts){--pa-deck:300px}
   body.pa-on .deck .acts{grid-auto-rows:minmax(34px,auto);gap:3px}
 }
+
+/* An Endurance roll's stakes (Idea 20261117-210145): their own lines, full-strength text, the failure in the accent */
+body.pa-on .roll .r-stakes{margin:6px 0 2px;display:flex;flex-direction:column;gap:2px;font-size:14px;line-height:1.35;text-align:center}
+body.pa-on .roll .r-stakes p{margin:0;color:var(--st-text,var(--bone));font-weight:600}
+body.pa-on .roll .r-stakes .bad b{color:var(--accent)}
