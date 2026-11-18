@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-18 by Claude (reports and Ideas of 17–18 Nov)_
+_Last updated: 2026-11-18 by Claude (defensive counters as one movement)_
 
 ## Where things stand
 
@@ -16,6 +16,7 @@ _Last updated: 2026-11-18 by Claude (reports and Ideas of 17–18 Nov)_
 
 ## Next
 
+- **Claude, done 2026-11-18 (owner: defensive effects as single movements):** a defender's Disarm or Trip is drawn inside the blow it answered: after a failed attack, a miss and then the defender's cut or hook/sweep; after a critical parry, the parry driving on into the effect. Details: `docs/pits-animation-direction.md`, first section; tests `tests/pits-counter.cjs`; checked live in headless Chromium (a miss into Disarm, a critical parry into a spear sweep, no page errors). **Owner:** look at the four frame sheets sent in chat and play a few bouts choosing Disarm or Trip on defence. If it's right, the next candidates are Damage Weapon and Pin Weapon on defence. **ChatGPT (Work)**, next batch: on defence, win a Disarm after the opponent misses (one movement, weapon flies once) and a Trip off a critical parry (opponent goes down once); then Replay.
 - **Claude, done 2026-11-18 (owner: "look at all my reports that you haven't and work on fixes"):** exported reports read (none newer than 18:03 UTC). FR-22 (an Endurance success that loses says why), FR-23 (spear point no longer on the face), FR-24 (no double collapse in a replay; #374), and four Ideas built: clearer Endurance stakes, readable Details text, surrender drops weapon and shield, victory celebrations. Lost 164031 had no note and no fault was found. Ledger: `docs/pits-report-ledger.md`. Tests `tests/pits-report-fixes-4.cjs`. Checked in a browser at 1280, light and dark; not at 390. **Owner:** win a bout (celebration), get an opponent to surrender with a shield, and fight a spear; say if the spear point needs more air (that changes the locked look). **ChatGPT (Work)**, next batch: a Serious Wound Endurance roll (stakes readable, the log says why), a surrender with a shield, and the end of a won bout (celebration, then the result buttons work).
 - **Claude, done 2026-11-18 (owner: "undo the replay change ChatGPT implemented, replays look way worse"):** the exchange-timeline replay (#375, with its follow-ups in #376/#377) is reverted; the replay redraws each blow from the seed and live choices again. Kept: #374 (withdrawal finish, spearhead contact, held grip) and the short-screen deck CSS. The two items below about the timeline and FR-21 are superseded. **Owner:** play a bout and press Replay; say if it is back to how you liked it. **ChatGPT (Work):** drop the timeline replay check from the next batch.
 - **Claude, done 2026-11-18 (owner: "check my last report"):** report 20261118-180306 (FR-21): the replay froze before every blow, waiting out the live decisions and dice. Fixed: the replay cuts that stillness (`squeezeTimeline`). No separate arm fault found in a forced re-run of the same fight. **Owner:** replay a bout; if an arm still looks wrong, press Lost? at that moment.

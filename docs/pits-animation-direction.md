@@ -1,10 +1,32 @@
 # The Pits: animation direction (2026-11-12)
 
-## Exchange playback (2026-11-17)
+## Defensive counters: one movement (owner, 2026-11-18)
 
-The stage records the declared poses, both fighters’ keyframes, contacts and timed picture cues against one local clock. The blow, any follow-up hook, recovery, Press Advantage or finishing reaction are authored before the blow plays. Replay installs those recorded tracks at its current clock. Old spring physics and comparison studies remain independent of the fight page.
+The owner: "a miss that gets parried successfully and then disarm should look like a missed swing then the defender
+swipes the blade out of their hand, all in one single motion, a miss that leads to a trip should look like they missed
+on their swipe and then because of that you are able to kick their feet out or swipe ... depending on weapon. And this
+should be different from a hit and critical parry ... like a parry where you also get the effect ... the force of the
+parry knocking the blade out of their hand."
 
-Approval sheets: [sword wound into Trip](pits-visual-checks/sword-trip.png) and [finishing spear withdrawal](pits-visual-checks/spear-withdrawal.png).
+A defender's **Disarm** or **Trip** (won on the defence) is now drawn inside the blow it answered (`psMotionBlow`,
+`cue.record.counter`), with no beat of its own:
+
+- **The attack failed** (`via 'miss'`): the swing is drawn as a miss, and 60 ms after it goes by the defender strikes
+  into the overcommitted attacker. For a Disarm, a short cock and a cut down across the weapon hand
+  (`PitsCine.counterDisarm`, move `strip`). For a Trip, a hook behind the ankle.
+- **A good attack met by a better parry** (`via 'parry'`): the parry lands, and 30 ms later it drives on. For a Disarm,
+  up and out through the other's blade, flinging it from the hand (move `beat`). For a Trip, straight from the bind.
+- **After an evade** (`via 'evade'`): the counter follows from where the evade left the defender.
+- A long weapon (Reach 130 and over, or two-handed) trips with a sweep of the shaft along the floor; others hook with
+  the foot.
+- A Trip's resistance dice are shown before the blow (as for the attacker's own Trip), so the movement lands with its
+  result known. The attacker's own Trip and Disarm are unchanged.
+
+Sheets: `node tests/visual/pits-cine-sheet.cjs` with a case's `counter` (`{kind, via, fell}`). Tests:
+`tests/pits-counter.cjs`. Still separate beats: the defender's other effects (Damage Weapon, Pin Weapon, Blind
+Opponent and the rest).
+
+(The 2026-11-17 "exchange playback", a replay of recorded blows, was undone at the owner's request, #378.)
 
 ## The cinematic stage (owner, 2026-11-15): this is the Pits now
 

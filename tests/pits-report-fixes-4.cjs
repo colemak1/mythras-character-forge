@@ -134,7 +134,8 @@ test('Idea: a surrender drops the weapon and the shield before the flag goes up'
 // Idea 20261118-164233: "lets add some victory celebrations"
 test('Idea: the winner celebrates after lowering the weapon, the same way in a replay',()=>{
  const sword={kind:'blade',len:92};
- const make=()=>{const M={a:C.fighter('a',sword,false,{seed:7}),b:C.fighter('b',sword,false,{seed:7})};C.place(M.a,0,210,'guard');C.place(M.b,0,210,'guard');return M;};
+ // (the stage gives the pair the bout's seed, kept for its replay: here a fixed one)
+ const make=()=>{const M={a:C.fighter('a',sword,false,{}),b:C.fighter('b',sword,false,{})};M.a.pair.seed=7;C.place(M.a,0,210,'guard');C.place(M.b,0,210,'guard');return M;};
  C.fixChoices(0);   // the overhead raise
  let M=make();const t1=C.lower(M.a,10),t2=C.celebrate(M.a,t1);
  assert(t2>t1+2000,'it takes a moment');
