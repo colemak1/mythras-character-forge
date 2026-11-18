@@ -888,7 +888,8 @@ function psTimeline(write){
   const key=PS.cueFor,tape=psCineTape(),saved=key&&tape.by[key],now=PS.clock;
   const replay=psReplaying()&&saved&&saved.clip;
   const start=replay?now:Math.min(now,PS.timelineStart??now);
-  const clip=replay?saved.clip:PitsCine.authorTimeline(PS.M,start,now,write);
+  // (the replay leaves out the stillness while a person decided and the dice rolled: one movement per exchange)
+  const clip=replay?PitsCine.squeezeTimeline(saved.clip):PitsCine.authorTimeline(PS.M,start,now,write);
   const prefix=PS.prefixFx||[];
   PS.prefixFx=null;
   if(key&&!replay)tape.by[key]={move:clip.result.move,ward:clip.result.ward||null,clip};

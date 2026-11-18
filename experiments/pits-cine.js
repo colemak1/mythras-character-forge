@@ -1788,7 +1788,50 @@ function authorTimeline(M,start,resolve,write){
     tracks[id]=trackState(pair[id],0,0);
     delete tracks[id].timeline;
   }
-  return {tracks,fx:pair.fx,result,sequence:pair.n};
+  return {tracks,fx:pair.fx,result,sequence:pair.n,resolve:resolve-start};
+}
+// The replay plays each exchange as one movement (owner, 2026-11-18: "the replay lost its fluidity"). A clip recorded
+// live holds still while a person decides and the dice roll; those stretches, where neither figure moves and no
+// picture cue falls, are cut back to `keep` ms. Everything after a cut comes that much earlier; nothing else changes.
+function remapMarker(marker,f){
+  const out={...marker};
+  for(const field of ['t','t0','t1','tc','end','blowEnd','release','drop'])if(typeof out[field]==='number')out[field]=f(out[field]);
+  if(marker.contacts)out.contacts=marker.contacts.map(c=>remapMarker(c,f));
+  if(marker.whirl)out.whirl=remapMarker(marker.whirl,f);
+  return out;
+}
+const sameKey=(a,b)=>!(b.lift&&(b.lift.ff||b.lift.bf))&&!b.arc&&a.face===b.face&&CH.every(c=>a.v[c]===b.v[c]);
+function stillSpans(track,upTo){
+  const ks=track.keys,out=[];
+  for(let i=0;i<ks.length;i++){
+    const a=ks[i],b=ks[i+1],s=Math.max(0,a.t),e=Math.min(upTo,b?b.t:upTo);
+    if(e>s&&(!b||sameKey(a,b)))out.push([s,e]);
+  }
+  return out;
+}
+function squeezeTimeline(clip,keep){
+  keep=keep==null?160:keep;
+  const upTo=clip.resolve;if(!(upTo>0))return clip;
+  const sa=stillSpans(clip.tracks.a,upTo),sb=stillSpans(clip.tracks.b,upTo),cues=clip.fx.map(e=>e.t);
+  const cuts=[];
+  for(const [a0,a1] of sa)for(const [b0,b1] of sb){
+    const s=Math.max(a0,b0),e=Math.min(a1,b1);if(e<=s)continue;
+    // a picture cue inside the stillness keeps everything up to it
+    const from=Math.max(s,...cues.filter(t=>t>=s&&t<e))+keep;
+    if(e-from>40)cuts.push([from,e]);
+  }
+  if(!cuts.length)return clip;
+  cuts.sort((x,y)=>x[0]-y[0]);
+  const f=t=>{let d=0;for(const [c0,c1] of cuts){if(t>=c1)d+=c1-c0;else if(t>c0)d+=t-c0;}return t-d;};
+  const tracks={};
+  for(const id of ['a','b']){
+    const tr={...clip.tracks[id],keys:clip.tracks[id].keys.map(k=>remapMarker(k,f))};
+    for(const field of ['ward','chamber','whirl'])if(tr[field])tr[field]=remapMarker(tr[field],f);
+    tracks[id]=tr;
+  }
+  const result=remapMarker(clip.result,f);
+  if(clip.result.phrases)result.phrases=clip.result.phrases.map(p=>remapMarker(p,f));
+  return {...clip,tracks,fx:clip.fx.map(e=>remapMarker(e,f)),result,resolve:f(upTo),squeezed:true};
 }
 function playTimeline(M,clip,start){
   for(const id of ['a','b'])Object.assign(M[id],trackState(clip.tracks[id],0,start));
@@ -1819,7 +1862,7 @@ function exchange(M,actor,t,s){
   return {...result,blowEnd:result.end,end,down,phrases};
 }
 
-const api={authorTimeline,playTimeline,exchange,WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,overextend,trip,disarm,react,pose,
+const api={authorTimeline,playTimeline,squeezeTimeline,exchange,WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,yieldTo,surrender,press,overextend,trip,disarm,react,pose,
   joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;

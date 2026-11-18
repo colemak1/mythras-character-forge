@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: the replay flows again (fight report FR-21)
+
+The owner's report of 2026-11-18: "the replay of this fight looks horrible". Since #376 each blow's recording kept the
+wait while the player decided and the dice rolled, so the replay froze both fighters in their declared poses before
+every blow (almost 3 s before the finishing Impale). The replay now cuts that stillness out of each recording, keeping
+a 160 ms beat; the wind-up and the blow are drawn exactly as live. Live play is unchanged.
+
+- `squeezeTimeline` in `experiments/pits-cine.js`; the stage replays the squeezed recording (`psTimeline`).
+- Test: `tests/pits-exchange-timeline.cjs` (the wait is cut, every frame of the blow matches live, no stillness over 200 ms).
+
 ## The Pits: replay plays back what was recorded; the old stages retired
 
 Built by ChatGPT (Work) as an owner-assigned trial (#374, #375), reviewed and finished by Claude. Rules and dice unchanged.
