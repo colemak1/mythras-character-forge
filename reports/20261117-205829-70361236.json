@@ -1,0 +1,2095 @@
+{
+ "id": "70361236-76c6-4656-929f-f521bb707663",
+ "created_at": "2026-11-17T20:58:29.658143+00:00",
+ "reporter": null,
+ "note": "when playing against a spear it always looks like the spear is already hitting my head",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=25e750b4bb;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=78b7c5f201;cine-fx=02003a23cc;stage=9de0ef1f33",
+ "record": {
+  "at": "2026-11-17T20:58:03.578Z",
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+  "log": [
+   {
+    "b": "Kethan Voss rolls 10 + 13 − 2 armour penalty = 21.",
+    "t": "Kethan Voss · Initiative",
+    "id": 34
+   },
+   {
+    "b": "Border Deserter rolls 2 + 12 − 0 armour penalty = 14.",
+    "t": "Border Deserter · Initiative",
+    "id": 35
+   },
+   {
+    "b": "Kethan Voss: 10+13−2 = 21. Border Deserter: 2+12−0 = 14. Kethan Voss acts first.",
+    "t": "Encounter 1 · Initiative",
+    "id": 36
+   },
+   {
+    "b": "24 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 37
+   },
+   {
+    "b": "58 vs 47% — FAILURE. 1 AP remaining.",
+    "t": "Border Deserter parries",
+    "id": 38
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 39
+   },
+   {
+    "b": "Weapon damage will be rolled twice; choose a result.",
+    "t": "Impale",
+    "id": 40
+   },
+   {
+    "b": "Kethan Voss rolls 9 (d20): Abdomen.",
+    "t": "Hit Location",
+    "id": 41
+   },
+   {
+    "b": "Kethan Voss chooses option A: 7 weapon damage before the Damage Modifier.",
+    "t": "Impale · Damage selected",
+    "id": 42
+   },
+   {
+    "b": "7 weapon (7) +1d2 (+1) = 8 total; 0 parry; 0 armour; 8 HP lost.",
+    "t": "Kethan Voss hits Abdomen",
+    "id": 43
+   },
+   {
+    "b": "Kethan Voss's Broadsword lodges in Border Deserter's Abdomen. Choose: keep hold and pull it free on a later turn, or leave it in the wound.",
+    "t": "Impaled Weapon",
+    "id": 44
+   },
+   {
+    "b": "Kethan Voss keeps hold of the weapon and can pull it free on a later turn (Ready Weapon).",
+    "t": "Impale · Keeps hold",
+    "id": 45
+   },
+   {
+    "b": "Border Deserter cannot attack for the next 1 Turn; other actions remain possible.",
+    "t": "Serious Wound · Stunned",
+    "id": 46
+   },
+   {
+    "b": "Border Deserter Endurance 16/27% (SUCCESS) versus the attack 24 (SUCCESS). Fails to resist. Endurance 53% made harder by impaled weapon.",
+    "t": "SERIOUS WOUND · Abdomen",
+    "id": 47
+   },
+   {
+    "b": "Kethan Voss wins. Border Deserter loses consciousness from a Serious Wound to Abdomen.",
+    "t": "FIGHT ENDS",
+    "id": 48
+   },
+   {
+    "b": "Border Deserter steps forward. Your HP was restored.",
+    "t": "New Opponent",
+    "id": 49
+   },
+   {
+    "b": "Kethan Voss rolls 8 + 13 − 2 armour penalty = 19.",
+    "t": "Kethan Voss · Initiative",
+    "id": 50
+   },
+   {
+    "b": "Border Deserter rolls 1 + 12 − 0 armour penalty = 13.",
+    "t": "Border Deserter · Initiative",
+    "id": 51
+   },
+   {
+    "b": "Kethan Voss: 8+13−2 = 19. Border Deserter: 1+12−0 = 13. Kethan Voss acts first.",
+    "t": "Encounter 2 · Initiative",
+    "id": 52
+   },
+   {
+    "b": "98 against Combat Style 67% — FAILURE.",
+    "t": "Kethan Voss attacks",
+    "id": 53
+   },
+   {
+    "b": "Border Deserter chooses not to defend and keeps their Action Points. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 54
+   },
+   {
+    "b": "Kethan Voss's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 55
+   },
+   {
+    "b": "64 against Combat Style 53% — FAILURE.",
+    "t": "Border Deserter attacks",
+    "id": 56
+   },
+   {
+    "b": "59 vs 67% — SUCCESS. 1 AP remaining.",
+    "t": "Kethan Voss parries",
+    "id": 57
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Defensive Special Effects",
+    "id": 58
+   },
+   {
+    "b": "Border Deserter rolls 24 against 53% (SUCCESS). Loses weapon.",
+    "t": "Disarm Opponent",
+    "id": 59
+   },
+   {
+    "b": "Border Deserter's weapon lands 2m away. A distant weapon must be approached, then picked up and readied.",
+    "t": "Disarm Opponent",
+    "id": 60
+   },
+   {
+    "b": "Border Deserter's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 61
+   },
+   {
+    "b": "99 against Combat Style 67% — FUMBLE.",
+    "t": "Kethan Voss attacks",
+    "id": 62
+   },
+   {
+    "b": "Border Deserter chooses not to defend and keeps their Action Points. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 63
+   },
+   {
+    "b": "Kethan Voss's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 64
+   },
+   {
+    "b": "Border Deserter picks up their weapon with the right hand; it must be readied on a later action (Core p.92).",
+    "t": "Pick Up Weapon",
+    "id": 65
+   },
+   {
+    "b": "AP refresh. Fatigue and blood loss carry forward.",
+    "t": "Round 2",
+    "id": 66
+   },
+   {
+    "b": "56 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 67
+   },
+   {
+    "b": "Border Deserter chooses not to defend and keeps their Action Points. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 68
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 69
+   },
+   {
+    "b": "Border Deserter Willpower 43/52% (SUCCESS) versus Kethan Voss's original 56 (SUCCESS): capitulates. No bodily damage is inflicted.",
+    "t": "Compel Surrender",
+    "id": 70
+   },
+   {
+    "b": "Kethan Voss wins. Border Deserter surrenders under threat after failing Willpower.",
+    "t": "FIGHT ENDS",
+    "id": 71
+   },
+   {
+    "b": "Arena Novice steps forward. Your HP was restored.",
+    "t": "New Opponent",
+    "id": 72
+   },
+   {
+    "b": "Kethan Voss rolls 2 + 13 − 2 armour penalty = 13.",
+    "t": "Kethan Voss · Initiative",
+    "id": 73
+   },
+   {
+    "b": "Arena Novice rolls 9 + 12 − 0 armour penalty = 21.",
+    "t": "Arena Novice · Initiative",
+    "id": 74
+   },
+   {
+    "b": "Kethan Voss: 2+13−2 = 13. Arena Novice: 9+12−0 = 21. Arena Novice acts first.",
+    "t": "Encounter 3 · Initiative",
+    "id": 75
+   },
+   {
+    "b": "37 against Combat Style 56% — SUCCESS.",
+    "t": "Arena Novice attacks",
+    "id": 76
+   }
+  ],
+  "auto": false,
+  "cine": {
+   "seed": 637849308,
+   "choices": {}
+  },
+  "lost": [],
+  "mode": "normal",
+  "page": "",
+  "quick": false,
+  "stage": [
+   [
+    0,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    0,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    230,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    230,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    230,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    447,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    995,
+    "intent",
+    "attack",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    1225,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    1225,
+    "intent",
+    "parry",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    1445,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    1445,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    1445,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    1578,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    2110,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    2340,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    2340,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    2340,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    2557,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    3105,
+    "intent",
+    "attack",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    3335,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    3335,
+    "locate",
+    "",
+    "",
+    "a",
+    "lleg",
+    0
+   ],
+   [
+    3335,
+    "resolve",
+    "wound",
+    "b",
+    "a",
+    "lleg",
+    2
+   ],
+   [
+    3335,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    3468,
+    "lodge",
+    "",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    3468,
+    "contact",
+    "wound",
+    "b",
+    "a",
+    "lleg",
+    2
+   ],
+   [
+    3940,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    4170,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    4170,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    4170,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    4320,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    4875,
+    "withdraw",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    4875,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    5105,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    5105,
+    "locate",
+    "",
+    "",
+    "b",
+    "head",
+    0
+   ],
+   [
+    12672,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "head",
+    7
+   ],
+   [
+    12672,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    12888,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "head",
+    7
+   ],
+   [
+    12888,
+    "collapse",
+    "injury",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    16633,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    16633,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    16633,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    16633,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    16983,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    17233,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    17233,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    17233,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    17233,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    17466,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    17749,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    17749,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    17749,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    18099,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    18349,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    18349,
+    "resolve",
+    "wound",
+    "b",
+    "a",
+    "lleg",
+    2
+   ],
+   [
+    18349,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    18583,
+    "lodge",
+    "",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    18583,
+    "contact",
+    "wound",
+    "b",
+    "a",
+    "lleg",
+    2
+   ],
+   [
+    18999,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    18999,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    18999,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    19299,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    19549,
+    "withdraw",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    19549,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    19549,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "head",
+    7
+   ],
+   [
+    19549,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    19900,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "head",
+    7
+   ],
+   [
+    19900,
+    "collapse",
+    "injury",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    24594,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    24594,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    24594,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    24594,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    24944,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    25194,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    25194,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    25194,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    25194,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    25427,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    25711,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    25711,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    25711,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    26061,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    26311,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    26311,
+    "resolve",
+    "wound",
+    "b",
+    "a",
+    "lleg",
+    2
+   ],
+   [
+    26311,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    26544,
+    "lodge",
+    "",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    26544,
+    "contact",
+    "wound",
+    "b",
+    "a",
+    "lleg",
+    2
+   ],
+   [
+    26944,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    26944,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    26944,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    27244,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    27494,
+    "withdraw",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    27494,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    27494,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "head",
+    7
+   ],
+   [
+    27494,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    27844,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "head",
+    7
+   ],
+   [
+    27844,
+    "collapse",
+    "injury",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    30838,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    35438,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    35438,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    35668,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    35668,
+    "intent",
+    "parry",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    35888,
+    "guard",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    35888,
+    "locate",
+    "",
+    "",
+    "b",
+    "abdomen",
+    0
+   ],
+   [
+    40921,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "abdomen",
+    8
+   ],
+   [
+    40921,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    41072,
+    "lodge",
+    "",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    41072,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "abdomen",
+    8
+   ],
+   [
+    41072,
+    "collapse",
+    "injury",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    41667,
+    "release",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    45200,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    45200,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    45200,
+    "guard",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    45200,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "abdomen",
+    8
+   ],
+   [
+    45200,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    45500,
+    "lodge",
+    "",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    45500,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "abdomen",
+    8
+   ],
+   [
+    45500,
+    "collapse",
+    "injury",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    46095,
+    "release",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    74112,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    74829,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    74829,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    75059,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    75059,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    75059,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    75325,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    75874,
+    "intent",
+    "attack",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    76104,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    76104,
+    "intent",
+    "parry",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    76324,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    76884,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    76884,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    77067,
+    "contact",
+    "disarm",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    77067,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    77765,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    77995,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    77995,
+    "resolve",
+    "fumble",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    77995,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    78211,
+    "contact",
+    "fumble",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    78960,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    79190,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    82023,
+    "yield",
+    "surrender",
+    "",
+    "b",
+    "",
+    0
+   ],
+   [
+    84823,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    84823,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    84823,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    84823,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    85222,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    85473,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    85473,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    85473,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    85473,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    85839,
+    "contact",
+    "disarm",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    85839,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    86239,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    86239,
+    "resolve",
+    "fumble",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    86239,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    86589,
+    "contact",
+    "fumble",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    86839,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    86839,
+    "yield",
+    "surrender",
+    "",
+    "b",
+    "",
+    0
+   ],
+   [
+    92089,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    92089,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    92089,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    92089,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    92489,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    92739,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    92739,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    92739,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    92739,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    93106,
+    "contact",
+    "disarm",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    93106,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    93523,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    93523,
+    "resolve",
+    "fumble",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    93523,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    93873,
+    "contact",
+    "fumble",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    94122,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    94122,
+    "yield",
+    "surrender",
+    "",
+    "b",
+    "",
+    0
+   ],
+   [
+    96223,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    96223,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    96223,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    96223,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    96623,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    96873,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    96873,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    96873,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    96873,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    97239,
+    "contact",
+    "disarm",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    97239,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    97656,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    97656,
+    "resolve",
+    "fumble",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    97656,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    98006,
+    "contact",
+    "fumble",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    98256,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    98256,
+    "yield",
+    "surrender",
+    "",
+    "b",
+    "",
+    0
+   ],
+   [
+    104006,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    104772,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ]
+  ],
+  "bottom": "E",
+  "config": {
+   "con": 13,
+   "dex": 13,
+   "int": 13,
+   "siz": 13,
+   "str": 13,
+   "mode": "normal",
+   "armor": 2,
+   "evade": 46,
+   "style": 67,
+   "pvpCon": 12,
+   "pvpDex": 12,
+   "pvpInt": 12,
+   "pvpSiz": 12,
+   "pvpStr": 12,
+   "shield": "none",
+   "weapon": "sword",
+   "pvpName": "Second Player",
+   "charname": "Kethan Voss",
+   "firstAid": 40,
+   "pvpArmor": 1,
+   "pvpEvade": 50,
+   "pvpSkill": 65,
+   "username": "Guest",
+   "pvpShield": "none",
+   "pvpWeapon": "dagger",
+   "willpower": 55,
+   "leftHanded": false,
+   "mixedArmour": false,
+   "pvpMixedArmour": false,
+   "armourByLocation": {
+    "Head": 2,
+    "Chest": 2,
+    "Abdomen": 2,
+    "Left Arm": 2,
+    "Left Leg": 2,
+    "Right Arm": 2,
+    "Right Leg": 2
+   },
+   "pvpArmourByLocation": {}
+  },
+  "record": "pits-spring-1",
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Arena Novice",
+    "shield": "heater",
+    "weapon": "spear"
+   }
+  },
+  "guidance": true,
+  "presented": [
+   {
+    "roll": [
+     "a",
+     "Initiative · d10",
+     [
+      2
+     ]
+    ]
+   },
+   {
+    "b": "Kethan Voss rolls 2 + 13 − 2 armour penalty = 13.",
+    "t": "Kethan Voss · Initiative",
+    "id": 73
+   },
+   {
+    "roll": [
+     "b",
+     "Initiative · d10",
+     [
+      9
+     ]
+    ]
+   },
+   {
+    "b": "Arena Novice rolls 9 + 12 − 0 armour penalty = 21.",
+    "t": "Arena Novice · Initiative",
+    "id": 74
+   },
+   {
+    "b": "Kethan Voss: 2+13−2 = 13. Arena Novice: 9+12−0 = 21. Arena Novice acts first.",
+    "t": "Encounter 3 · Initiative",
+    "id": 75
+   },
+   {
+    "cp": 1
+   },
+   {
+    "roll": [
+     "b",
+     "Attack · Combat Style 56%",
+     [
+      37
+     ]
+    ]
+   },
+   {
+    "b": "37 against Combat Style 56% — SUCCESS.",
+    "t": "Arena Novice attacks",
+    "id": 76
+   }
+  ],
+  "stageName": "cine"
+ }
+}

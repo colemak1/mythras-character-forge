@@ -1,0 +1,31 @@
+{
+ "id": "ec8e74fd-9407-40ed-be18-caf2cc60813a",
+ "created_at": "2026-11-17T20:57:26.011567+00:00",
+ "reporter": null,
+ "note": "[Idea] the most important text in the bottom right of the screen i also the most diffucult to read, bold it a bit",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=25e750b4bb;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=78b7c5f201;cine-fx=02003a23cc;stage=9de0ef1f33",
+ "record": {
+  "at": "2026-11-17T20:57:24.844Z",
+  "mode": "normal",
+  "phase": "effects",
+  "round": 2,
+  "record": "pits-idea",
+  "screen": {
+   "step": "",
+   "headline": ""
+  },
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Border Deserter",
+    "shield": "none",
+    "weapon": "mace"
+   }
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "id": "562d497f-6be0-4f2c-88cb-f1041f215a9a",
+ "created_at": "2026-11-17T20:54:57.641109+00:00",
+ "reporter": null,
+ "note": "[Lost #1 note] it looked like they exceeded the needed endurance roll but still died",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=25e750b4bb;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=78b7c5f201;cine-fx=02003a23cc;stage=9de0ef1f33",
+ "record": {
+  "at": "2026-11-17T20:54:35.141Z",
+  "mark": 1,
+  "round": 1,
+  "record": "pits-lost-note",
+  "fighters": [
+   "Kethan Voss",
+   "Border Deserter"
+  ]
+ }
+}

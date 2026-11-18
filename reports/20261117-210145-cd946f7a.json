@@ -1,0 +1,31 @@
+{
+ "id": "cd946f7a-f3a7-410e-b513-cce20ab780d0",
+ "created_at": "2026-11-17T21:01:45.992675+00:00",
+ "reporter": null,
+ "note": "[Idea] the texxt in the edurance roll box that tells me if i miss i die is hard to read because its too small and too light",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=25e750b4bb;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=78b7c5f201;cine-fx=02003a23cc;stage=9de0ef1f33",
+ "record": {
+  "at": "2026-11-17T21:01:45.268Z",
+  "mode": "normal",
+  "phase": "rolling",
+  "round": 2,
+  "record": "pits-idea",
+  "screen": {
+   "step": "",
+   "headline": "Kethan Voss: roll the dice"
+  },
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Border Deserter",
+    "shield": "none",
+    "weapon": "greatsword"
+   }
+  }
+ }
+}

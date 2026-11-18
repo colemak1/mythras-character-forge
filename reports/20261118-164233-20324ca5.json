@@ -1,0 +1,31 @@
+{
+ "id": "20324ca5-f464-4ff1-a1bb-303facaf2f8d",
+ "created_at": "2026-11-18T16:42:33.635435+00:00",
+ "reporter": null,
+ "note": "[Idea] lets add some victory celebrations",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=25e750b4bb;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=78b7c5f201;cine-fx=02003a23cc;stage=9de0ef1f33",
+ "record": {
+  "at": "2026-11-18T16:42:33.434Z",
+  "mode": "normal",
+  "phase": "recap",
+  "round": 2,
+  "record": "pits-idea",
+  "screen": {
+   "step": "",
+   "headline": "Kethan Voss wins"
+  },
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Arena Novice",
+    "shield": "heater",
+    "weapon": "dagger"
+   }
+  }
+ }
+}
