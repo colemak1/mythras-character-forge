@@ -5,12 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
-## 2026-11-17 · The Pits exchange timeline
+## The Pits: replay plays back what was recorded; the old stages retired
 
-Both fighters share the recorded movement and contacts of a resolved blow, including its follow-up effects. Replay reads back the recorded poses. The Pits uses the cinematic stage on all previous stage URLs.
-## The Pits replay and weapon contact
+Built by ChatGPT (Work) as an owner-assigned trial (#374, #375), reviewed and finished by Claude. Rules and dice unchanged.
 
-A finishing withdrawal gets its own collapse. Spearheads end at the contact point used by the animation, and a held embedded weapon follows the wound while the wielder stays on its grip.
+- **Replay matches the live fight.** Each blow records both fighters' movement, contacts and follow-ups (a Trip hook, Press Advantage, a finish) before it plays; Replay plays those recordings back instead of re-creating them. Test `tests/pits-exchange-timeline.cjs` checks every frame of three chained blows.
+- **The old stages are gone from the fight page.** `?stage=spring`, `?stage=classic` and `?stage=poses` now open the cinematic stage (owner, 2026-11-18). The spring study stays on the collision comparison page (`experiments/studies/pits-spring-pair.js`).
+- **Tied initiative after a disabling hit:** the fallen fighter stays down through the second fighter's action.
+- **Withdrawals and held weapons:** a finishing withdrawal has its own collapse; a spearhead ends at the point of contact; a held weapon follows the wound while the wielder keeps its grip, and lets go smoothly.
+- **Fits at 1280×720:** the deck is a little shorter on short desktop screens, so every action and Special Effect is on screen (two browser tests that were already failing now pass).
+- **Tests:** the reach and handedness checks of the retired stage now run on the cinematic rig (`tests/pits-cine.cjs`); the leg-injury browser check requires the fall itself, not either of two signs.
 
 ## The Pits: a stun counts only the stunned fighter's own Turns (ruling D-R4)
 

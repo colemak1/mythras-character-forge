@@ -157,15 +157,17 @@ const pose=page=>page.evaluate(()=>['a','b'].map(id=>PitsCine.joints(PS.M[id],PS
   });
   await T('a disabling leg injury buckles the leg and puts the figure down; a concession looks like yielding; nothing is inferred about severing',async()=>{
     const page=await synthetic();
+    // the engine marks the fighter prone with the disabled leg (applyLimbDisabled); without it the stage stands it up again
     await page.evaluate(()=>{S.fighters.b.prone=true;psRunCue({type:'hit',actor:'a',target:'b',loc:'rleg',lost:5,px:{total:5,wound:5,loc:'Right Leg',tool:'weapon'},
       record:{press:null,after:[{type:'wound',level:'serious',loc:'rleg'},{type:'limb',leg:true,loc:'rleg',who:'b'}]}});});
     const samples=[];for(let i=0;i<26;i++){samples.push(await page.evaluate(()=>PitsCine.joints(PS.M.b,PS.clock).P[1]));await sleep(60);}
-    assert(Math.min(...samples)<40,'the front knee dropped (l1 reached '+Math.max(...samples).toFixed(0)+')');
-    const end=await page.evaluate(()=>PitsCine.sample(PS.M.b,PS.clock).lean);assert(end<-25||await page.evaluate(()=>!!PS.M.b.down&&PitsCine.joints(PS.M.b,PS.clock).P[1]<40),'and the figure goes down (torso '+end.toFixed(0)+')');
+    assert(Math.min(...samples)<40,'the hips dropped (lowest '+Math.min(...samples).toFixed(0)+')');
+    const end=await page.evaluate(()=>({lean:PitsCine.sample(PS.M.b,PS.clock).lean,down:!!PS.M.b.down,hip:PitsCine.joints(PS.M.b,PS.clock).P[1]}));
+    assert(end.down&&end.hip<40&&end.lean<-25,'and the figure goes down from the blow alone (torso '+end.lean.toFixed(0)+', hips '+end.hip.toFixed(0)+')');
     const p2=await synthetic();
     await p2.evaluate(()=>{window.__psRecord.length=0;psRunCue({type:'end',winner:'a',how:'concede'});});await sleep(900);
     const y=await p2.evaluate(()=>({yield:window.__psRecord.some(r=>r.type==='yield'),t:PitsCine.sample(PS.M.b,PS.clock).lean,col:window.__psRecord.some(r=>r.type==='collapse')}));
-    assert(y.yield&&!y.col,'a concession yields; it is not a collapse');assert(y.t>8&&y.t<50,'bowed, not fallen (torso '+y.t.toFixed(0)+')');
+    assert(y.yield&&!y.col,'a concession yields; it is not a collapse');assert(y.t>8&&y.t<30,'bowed, not fallen (torso '+y.t.toFixed(0)+')');
     const full=await p2.evaluate(()=>/sever|ampu|dismember/i.test(pitsStageCue.toString()+pitsStageBeat.toString()));
     assert.equal(full,false,'no severing is inferred anywhere in the cue logic');
     await page.close();await p2.close();

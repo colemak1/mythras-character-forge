@@ -5,7 +5,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Claude session** (paste as the first message):
 > Read AGENTS.md and HANDOFF.md, then continue with the next Claude item.
 
-_Last updated: 2026-11-17 by Claude (the five Pits Ideas built; R3, R4 done)_
+_Last updated: 2026-11-18 by Claude (Work's stage PRs #374 and #375 finished and merged in one)_
 
 ## Where things stand
 
@@ -16,8 +16,8 @@ _Last updated: 2026-11-17 by Claude (the five Pits Ideas built; R3, R4 done)_
 
 ## Next
 
-- **ChatGPT (Work) owns the Pits animation stage through owner approval.** The exchange timeline branch records both fighters and replays the same keys. The old stage URLs open the cinematic rig. Review the Trip and withdrawal sheets linked at the top of `docs/pits-animation-direction.md`. Keep Claude out of the stage, cinematic and flexible-weapon files during review.
-- **ChatGPT (Work), owner-assigned animation trial:** replay finish on withdrawal, spear guard clearance, and held Impale grip. Owner reviews the trial PR before merge.
+- **Owner, 2026-11-18: Claude owns the animation stage.** ChatGPT (Work) writes stage code only if Claude is stuck and the owner asks. The old stage links are retired (owner's OK).
+- **Claude, done 2026-11-18:** Work's #374 and #375 reviewed, merged together and finished in one PR: replay plays back recorded blows; old stages off the fight page; withdrawal finish, spearhead contact, held grip. Tests fixed: the reach/handedness checks now run on the cinematic rig (the copy of the retired geometry is deleted); the leg-injury check requires the fall itself. **Owner:** look at the two sheets linked at the top of `docs/pits-animation-direction.md` (a wound into a Trip, a finishing spear withdrawal) and play one bout with Replay. **ChatGPT (Work)**, next batch, deployed Pits page (desktop): a bout with an Impale kept hold of, then Withdraw; press Replay at the end (the same blows, the hand on the grip).
 
 - **Claude, done 2026-11-17 (Chat's R3 and R4):** R4 fixed: a fighter with no AP gets no Turn, so its stun no longer counts down then (`advance()` in `experiments/practice-combat.html`); tests in `tests/practice-procedure.cjs`; golden seeds 144→285, 489→529. R3 kept as built. Both in `docs/decisions.md` (D-R3, D-R4). R1 and R2 (off-hand percentages; stun turns when Endurance resists) are still open for **ChatGPT (Chat)**.
 - **Claude, done 2026-11-17 (owner: "I want all the ideas, implement them"):** the five Ideas in `docs/pits-report-ledger.md` built: the deck leads with the recommended decision, large and red-bordered; a recommended Special Effect, bigger chips, do-nothing effects folded; opposed rolls side by side; Impale keeps the higher roll; a parry that stops everything skips location and damage (only when no knockback or Special Effect can read them). Tests `tests/pits-ideas.cjs`; golden seeds 250→253, 230→489. Checked in a browser at 1280 (light, dark) and 390. **Owner:** play a bout and say if the deck reads better; the Special Effects list scrolls at 720 px tall. **ChatGPT (Chat):** one review of the parry skip (`parryStopsEverything`, `experiments/practice-combat.html`): is anything else read from an unrolled location or damage? **ChatGPT (Work)**, next batch: a Trip resisted (side by side), an Impale (the lower roll leaves), a sword parried by a sword (no location or damage roll).

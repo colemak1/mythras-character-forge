@@ -38,6 +38,8 @@ test('a concurrent turn keeps the fall already shown while the engine grants the
   assert(!S.ev().some(([type,data])=>type==='reconcile'&&data.kind==='up'));
   S.run('S.tie=null;psLull()');
   assert(S.ev().some(([type,data])=>type==='reconcile'&&data.kind==='up'));
+});
+
 test('a later withdrawal owns its victory after a nonterminal left-arm Impale',()=>{
   const S=stage(true);
   const names={a:'Kethan Voss',b:'Border Deserter'};
