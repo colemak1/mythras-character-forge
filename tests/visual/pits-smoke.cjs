@@ -1,0 +1,150 @@
+// The Pits: browser smoke bouts (AGENTS.md, "Forwards, not backwards", rule 4; owner, 2026-11-18).
+// Whole bouts on the deployed page's default stage, with seeded dice and a seeded player who clicks any game button the
+// page offers (actions, defences, every Special Effect, Impale choices, withdrawals), then Replay. A bout fails on:
+//   - any page error or stage cue error (report 20261118-213134: a Damage Weapon hit threw in the dice tray and the fight
+//     stopped, "stuck resolving the exchange");
+//   - a stall: the screen stays busy for 20 s with no dice rolling, or nothing can be clicked while the fight goes on;
+//   - the loser collapsing more than once in the fight, or more than once in its replay (report 20261118-022241);
+//   - a weapon going back into a wound it has been pulled out of, live or in the replay (reports 20261118-213426, -213447).
+//
+//   node tests/visual/pits-smoke.cjs     (needs playwright and a static server on :8765, see pits-layout.cjs)
+//   PITS_SMOKE=n  plays n bouts (default 8)
+const assert=require('node:assert/strict');
+let chromium;try{({chromium}=require('playwright'));}catch(e){console.log('SKIP: playwright is not installed here');process.exit(0);}
+const URL_=process.env.PITS_URL||'http://localhost:8765/experiments/practice-combat.html';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const lcg=seed=>{let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};};
+// the buttons that play the game (the page's own list in decoratedClick); not menus, speed, replay or reports
+const GAME=['attack','shieldAttack','react','changeRange','rangeRespond','effect','skipEffect','pickloc','impaleChoose','impaleLeave',
+ 'impaleResist','withdrawImpale','recoverWeapon','freePin','freeEntangle','entangleTrip','pinChoose','counterWatch','counterReturn',
+ 'tripResist','blindResist','footingSkill','footingDefend','reengage','brace','delay','stand'];
+const WEAPONS=[['sword','dagger'],['rapier','mace'],['spear','sword'],['longspear','shortsword'],['battleaxe-2h','sword'],
+ ['flail','rapier'],['trident','net'],['greatsword','dagger'],['whip','mace'],['sword','sword']];
+
+async function bout(browser,seed,force={}){
+  const [w,v]=force.weapons||WEAPONS[seed%WEAPONS.length];
+  const page=await browser.newPage({viewport:{width:1280,height:800}});const errors=[];
+  page.on('pageerror',e=>errors.push(e.message+' @ '+String(e.stack||'').split('\n')[1]));
+  await page.addInitScript(s=>{window.__psRecord=[];try{localStorage.setItem('sitota-practice-guidance-v1','off');}catch(e){}
+    let a=s;const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+    window.__pitsDie=n=>{if(n===100&&window.__next!=null){const v=window.__next;window.__next=null;return v;}return Math.ceil(rnd()*n);};
+    // the wound each lodged weapon is in, every frame: a weapon must not go back into a wound it has left
+    window.__lodged=[];window.__lodgedLog=[];const tick=()=>{try{window.__lodged.push(document.querySelectorAll('#pitsStage .ps-lodged').length);if(window.__lodgedLog){const n=window.__lodged.length;if(n>1&&window.__lodged[n-1]!==window.__lodged[n-2])window.__lodgedLog.push({to:window.__lodged[n-1],c:Math.round(PS.clock),st:(()=>{const S=prototypeCombat.state(),V=prototypeCombat.presentation();return {live:['a','b'].map(i=>(S.fighters[i].impaledWounds||[]).length+'/'+!!S.fighters[i].impaledWeapon),shown:V.shown?['a','b'].map(i=>(V.shown[i].impaledWounds||[]).length):null,busy:!!V.busy,hold:!!V.hold,ahead:Object.keys(PS.lodgeAhead),freshB:PS.fighters.b!==prototypeCombat.state().fighters.b,freshS:PS.run!==prototypeCombat.state(),title:(V.events[V.step]||{}).title}})(),rec:(window.__psRecord||[]).slice(-6).map(r=>r.type+':'+(r.kind||'')).join(' ')});}}catch(e){}requestAnimationFrame(tick);};
+    requestAnimationFrame(tick);},seed);
+  await page.goto(URL_);
+  await page.evaluate(c=>{Object.assign(config,c);startRun(false);prototypeCombat.presentation().quick=true;},
+    // (a forced effect: Aurel strong and armoured, so the bout lasts until the effect has come up)
+    {mode:'pvp',charname:'Aurel',pvpName:'Brann',style:force.effect?100:70+seed%25,pvpSkill:force.effect?40:60+seed%30,weapon:w,pvpWeapon:v,
+     armor:force.effect?4:seed%3,pvpArmor:force.effect?3:seed%2,pvpShield:force.shield||'none'});
+  if(process.env.PITS_DEBUG)await page.evaluate(()=>{window.__del=[];PS.lodgeAhead=new Proxy({},{deleteProperty(t,k){window.__del.push(Math.round(PS.clock)+' '+String(new Error().stack).split('\n').slice(2,4).join(' | '));delete t[k];return true;}});});
+  const pick=lcg(seed*7919);
+  const st=()=>page.evaluate(()=>{const S=prototypeCombat.state(),V=prototypeCombat.presentation();
+    const R=prototypeCombat.pendingRoll();
+    return {phase:S.phase,busy:!!V.busy,rolling:!!(V.roll&&!V.roll.settled),R:!!R,rLabel:R?R.actor+':'+R.label:'',pend:S.pending?S.pending.kind:null};});
+  // the buttons on screen, and the deck's action chips (an action is picked as a chip, then confirmed)
+  const offered=()=>page.evaluate(game=>{const seen=new Set(),out=[];
+    for(const e of document.querySelectorAll('#root [data-act],#pitsStage [data-act]'))if(!e.disabled&&game.includes(e.dataset.act)&&e.getClientRects().length){
+      const o={act:e.dataset.act,val:e.dataset.val??null};const k=o.act+'|'+o.val;if(!seen.has(k)){seen.add(k);out.push(o);}}
+    for(const e of document.querySelectorAll('[data-pa="sel"]'))if(!e.disabled&&!e.classList.contains('off')&&game.includes(e.dataset.val)&&!seen.has(e.dataset.val+'|null')){
+      seen.add(e.dataset.val+'|null');out.push({act:e.dataset.val,val:null,chip:true});}
+    // (and its defence chips: a defence is picked as a chip, then confirmed with the react button)
+    for(const e of document.querySelectorAll('[data-pa="def"]'))if(!e.disabled&&!e.classList.contains('off')&&!seen.has('react|'+e.dataset.val)){
+      seen.add('react|'+e.dataset.val);out.push({act:'react',val:e.dataset.val});}
+    return out;},GAME);
+  const click=(act,val)=>page.evaluate(([act,val])=>{const e=[...document.querySelectorAll(act==='roll'||act==='replayFight'?'[data-act="'+act+'"]':'#root [data-act="'+act+'"],#pitsStage [data-act="'+act+'"]')]
+    .find(x=>!x.disabled&&(val==null||x.dataset.val===val));if(!e)return false;e.dispatchEvent(new MouseEvent('click',{bubbles:true}));return true;},[act,val]);
+  const out={errors,stall:null,w,v};let busySince=0,idle=0,forced=false;
+  const t0=Date.now();
+  for(let i=0;i<20000&&!out.stall;i++){
+    const s=await st();
+    if(Date.now()-t0>240000){out.stall='the bout took over 4 minutes ('+JSON.stringify(s)+')';break;}
+    if(process.env.PITS_DEBUG&&i%50===0)console.log(i,JSON.stringify(s));
+    if(s.phase!=='fight')break;
+    if(s.busy){
+      if(s.rolling){busySince=0;await sleep(50);continue;}
+      if(!busySince)busySince=Date.now();
+      if(Date.now()-busySince>20000)out.stall='busy for 20 s with no dice rolling';
+      await sleep(50);continue;
+    }
+    busySince=0;
+    // forced: Aurel's attacks are criticals until the forced Special Effect has been chosen once
+    if(s.R){if(force.effect&&!forced&&/^a:Attack/.test(s.rLabel))await page.evaluate(()=>{window.__next=1;});await click('roll');await sleep(60);continue;}
+    // Choose Location: a body part is picked on the figure first, then confirmed
+    if(s.pend==='location')await page.evaluate(r=>{const l=[...document.querySelectorAll('[data-act="selectloc"]')].filter(e=>!e.disabled);
+      if(l.length)l[Math.floor(r*l.length)].dispatchEvent(new MouseEvent('click',{bubbles:true}));},pick());
+    const opts=await offered();
+    if(!opts.length){if(++idle>60)out.stall='nothing to click while the fight goes on (pending: '+s.pend+')';await sleep(50);continue;}
+    idle=0;
+    // attacks most of the time on a free turn, so bouts end; anything else evenly
+    const attack=opts.find(o=>o.act==='attack');
+    // (a forced bout keeps attacking once its effect is done, so it ends in time)
+    let o=attack&&(pick()<.6||forced)?attack:opts[Math.floor(pick()*opts.length)];
+    if(process.env.PITS_DEBUG&&s.pend==='effect')console.log('FX',await page.evaluate(()=>[...document.querySelectorAll('[data-pa="fx"]')].map(e=>e.dataset.val+(e.classList.contains('off')?'(off)':'')).join(' ')));
+    // the deck: an effect is a chip to pick, then confirmed
+    const want=s.pend==='effect'&&force.effect&&!forced&&await page.evaluate(v=>{const c=document.querySelector(`[data-pa="fx"][data-val="${v}"]`);
+      if(!c||c.disabled||c.classList.contains('off'))return false;c.dispatchEvent(new MouseEvent('click',{bubbles:true}));return true;},force.effect);
+    if(want){o={act:'effect',val:force.effect};forced=true;}
+    else if(s.pend==='reaction'&&force.react)o=opts.find(x=>x.act==='react'&&x.val===force.react)||o;
+    else if(force.effect&&!forced&&attack)o=attack;
+    else if(force.withdraw&&opts.find(x=>x.act==='impaleLeave'&&x.val==='hold'))o=opts.find(x=>x.act==='impaleLeave'&&x.val==='hold');
+    else if(force.withdraw&&forced&&opts.find(x=>x.act==='withdrawImpale')){o=opts.find(x=>x.act==='withdrawImpale');out.withdrew=true;}
+    if(o.act==='react'||o.act==='effect')await page.evaluate(([pa,val])=>{const e=document.querySelector(`[data-pa="${pa}"][data-val="${val}"]`);
+      if(e)e.dispatchEvent(new MouseEvent('click',{bubbles:true}));},[o.act==='react'?'def':'fx',o.val]);
+    if(process.env.PITS_DEBUG)console.log('CLICK',o.act,o.val||'',opts.map(x=>x.act+(x.val?'='+x.val:'')).join(' '));
+    if(o.chip){await page.evaluate(v=>{const c=document.querySelector(`[data-pa="sel"][data-val="${v}"]`);if(c)c.dispatchEvent(new MouseEvent('click',{bubbles:true}));},o.act);await sleep(40);}
+    await click(o.act,o.val);await sleep(60);
+  }
+  await sleep(2500);
+  out.end=await st();
+  out.live=await page.evaluate(()=>window.__psRecord.map(r=>r.type));
+  out.lodged=await page.evaluate(()=>window.__lodged);out.lodgedLog=await page.evaluate(()=>window.__lodgedLog);
+  if(!out.stall&&['between','over'].includes(out.end.phase)){
+    // the replay: the same bout again, to its end
+    await page.evaluate(()=>{window.__psRecord.length=0;window.__lodged.length=0;});
+    const ok=await click('replayFight')||await page.evaluate(()=>{if(typeof startFightReplay!=='function')return false;startFightReplay();return true;});
+    if(ok){const t0=Date.now();while(Date.now()-t0<90000&&(await st()).busy)await sleep(200);
+      out.replay=await page.evaluate(()=>window.__psRecord.map(r=>r.type));out.replayDone=!(await st()).busy;
+      out.replayLodged=await page.evaluate(()=>window.__lodged.slice());}
+  }
+  if(process.env.PITS_DEBUG)console.log('DEL',JSON.stringify(await page.evaluate(()=>window.__del)));
+  out.forced=forced;
+  await page.close();return out;
+}
+
+(async()=>{
+  const browser=await chromium.launch();let pass=0,fail=0;
+  const T=async(name,f)=>{try{await f();console.log('PASS '+name);pass++;}catch(e){console.log('FAIL '+name+': '+e.message.split('\n')[0]);fail++;}};
+  const n=+process.env.PITS_SMOKE||4;
+  // every Special Effect at least once (they are where the rare branches are: report 20261118-213134, Damage Weapon)
+  // (each with weapons that can do it: Impale needs a point, Bash and Stun Location a crushing weapon, Sunder an axe)
+  const EFFECTS=[['choose',['sword','dagger']],['press',['rapier','mace']],['trip',['spear','sword']],['disarm',['sword','sword']],
+   ['bleed',['battleaxe-2h','sword']],['impale',['spear','sword']],['bash',['mace','sword']],['stun',['mace','dagger']],
+   ['sunder',['battleaxe-2h','sword']],['damageWeapon',['sword','sword']],['maximize',['sword','dagger']],['bypassArmour',['rapier','mace']],
+   ['circumventParry',['spear','sword'],'heater']];
+  const only=process.env.PITS_ONLY?process.env.PITS_ONLY.split(','):null;
+  const runs=[...Array(only?0:n)].map((_,i)=>({seed:i+1,force:{}})).concat(EFFECTS.map(([effect,weapons],i)=>   // (Circumvent Parry exists only against a parry)
+   ({seed:100+i,force:{effect,weapons,shield:EFFECTS[i][2],react:effect==='circumventParry'||i%2?'parry':'none'}})).filter(r=>!only||only.includes(r.force.effect)));
+  for(const {seed,force} of runs){
+    const r=await bout(browser,seed,force);
+    await T(`smoke bout ${seed} (${r.w} against ${r.v}${force.effect?', '+force.effect+' forced':''}): no errors, no stall, one collapse, ended and replayed`,()=>{
+      if(force.effect)assert(r.forced,force.effect+' was never offered: change the weapons or the seed');
+      assert.deepEqual(r.errors,[],'page errors');
+      assert.equal(r.stall,null,'stalled: '+r.stall);
+      assert(['between','over'].includes(r.end.phase),'the bout ended ('+r.end.phase+')');
+      const cues=r.live.filter(t=>t==='cue-error');assert.equal(cues.length,0,'stage cue errors');
+      assert(r.live.filter(t=>t==='collapse').length<=1,'the loser collapsed '+r.live.filter(t=>t==='collapse').length+' times');
+      // lodged weapons over time: once a count falls, it never rises again without a new lodge
+      const lodges=r.live.filter(t=>t==='lodge').length;let rises=0;for(let i=1;i<r.lodged.length;i++)if(r.lodged[i]>r.lodged[i-1])rises++;
+      assert(rises<=lodges,`a weapon went back into a wound (${rises} times in, ${lodges} lodges): `+JSON.stringify(r.lodgedLog));
+      if(r.replay){assert(r.replayDone,'the replay finished');
+        assert(r.replay.filter(t=>t==='collapse').length<=1,'the replay collapsed the loser '+r.replay.filter(t=>t==='collapse').length+' times');
+        // (report 20261118-213447: the replay of a withdrawal put the blade back in too)
+        const lodges=r.replay.filter(t=>t==='lodge').length;let rises=0;const L=r.replayLodged||[];
+        for(let i=1;i<L.length;i++)if(L[i]>L[i-1])rises++;
+        assert(rises<=lodges,`the replay put a weapon back into a wound (${rises} times in, ${lodges} lodges)`);}
+    });
+  }
+  await browser.close();
+  console.log(pass+' passed, '+fail+' failed');
+  process.exit(fail?1:0);
+})();

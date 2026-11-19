@@ -45,7 +45,9 @@ check('Weapon and shield parries explain different Size outcomes against the sam
 });
 check('Shown attack and defense targets include existing fatigue penalties',()=>{
  a.run('S.fighters.a.fatigue=4;render()');
- const target=a.run('effectiveSkill(S.fighters.a,combatTarget(S.fighters.a))');assert.match(a.html(),new RegExp(target+'% attack target'));
+ // (combatTarget carries the fatigue grade itself since 2026-11-19, PR #336: the hardest grade applies once)
+ const target=a.run('combatTarget(S.fighters.a)');assert(target<a.run('S.fighters.a.style'),'fatigue lowers the target');
+ assert.match(a.html(),new RegExp(target+'% attack target'));
  a.run(`S.pending={kind:'reaction',atk:'b',def:'a',attackRoll:{grade:2,roll:22,label:'SUCCESS'}};render()`);
  assert.match(a.html(),new RegExp(target+'% parry target'));
 });

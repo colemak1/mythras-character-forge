@@ -1166,9 +1166,10 @@ function spiritSummonPreflight(m,mp,bindingPct,distanceKm){
 }
 // Core p.137: when the summoned spirit turns up. A failure allows a retry the
 // following day; a fumble suspends the bond until the animist makes amends.
+// (a success: 1d6 minutes, not 1d4 as the first spec said; ChatGPT (Chat) from the page, PR #288)
 function spiritSummonOutcome(tier){
   if(tier==="Critical")return {arrives:true,sides:3,unit:"round"};
-  if(tier==="Success")return {arrives:true,sides:4,unit:"minute"};
+  if(tier==="Success")return {arrives:true,sides:6,unit:"minute"};
   if(tier==="Failure")return {arrives:false,retryTomorrow:true};
   if(tier==="Fumble")return {arrives:false,suspended:true};
   return null;

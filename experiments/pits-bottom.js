@@ -37,19 +37,21 @@ function pbDefences(id,live){
   const f=S.fighters[id],p=S.pending,out=[];
   if(live&&p?.kind==='range'){
     out.push({val:'permit',act:'rangeRespond',label:'Allow the move',ap:0,enabled:true});
-    out.push({val:'oppose',act:'rangeRespond',label:'Oppose (Evade)',ap:1,pct:effectiveSkill(f,evadeTarget(f)),enabled:canOpposeRange(f)});
-    out.push({val:'intercept',act:'rangeRespond',label:'Intercept (attack)',ap:1,pct:effectiveSkill(f,combatTarget(f)),enabled:canInterceptRange(f)});
+    out.push({val:'oppose',act:'rangeRespond',label:'Oppose (Evade)',ap:1,pct:evadeTarget(f),enabled:canOpposeRange(f)});
+    out.push({val:'intercept',act:'rangeRespond',label:'Intercept (attack)',ap:1,pct:combatTarget(f),enabled:canInterceptRange(f)});
     return out;
   }
   const w=ARENA_WEAPONS[f.weapon]||{};
   // usable: the defence exists for this fighter now; enabled: it can be chosen now (a reaction is waiting for it).
   // why: the plain reason an unusable defence is unusable (a pinned weapon, a stunned head, no AP...)
-  const def=(o,why)=>{o.usable=!why;o.why=why||'';o.enabled=live&&o.usable;out.push(o);};
+  // (a defence at 0% is Hopeless: no attempt can be made, so it is not offered, Core p.38, PR #336)
+  const def=(o,why)=>{if(!why&&o.pct!=null&&o.pct<=0)why='Hopeless: no attempt can be made (Core p.38).';
+    o.usable=!why;o.why=why||'';o.enabled=live&&o.usable;out.push(o);};
   const parryWhy=f.ap<=0?'No Action Points remaining.':(unavailableReaction(f,'weapon')||(!canParryAtReach(f.id)?'You cannot parry at this reach.':''));
-  def({val:'parry',act:'react',label:'Parry ('+(f.disarmed?'weapon':w.name||'weapon')+')',ap:1,pct:effectiveSkill(f,combatTarget(f,'weapon'))},parryWhy);
-  if(f.shield!=='none')def({val:'shield',act:'react',label:'Parry ('+(SHIELDS[f.shield]?.name||'shield')+')',ap:1,pct:effectiveSkill(f,combatTarget(f,'shield'))},
+  def({val:'parry',act:'react',label:'Parry ('+(f.disarmed?'weapon':w.name||'weapon')+')',ap:1,pct:combatTarget(f,'weapon')},parryWhy);
+  if(f.shield!=='none')def({val:'shield',act:'react',label:'Parry ('+(SHIELDS[f.shield]?.name||'shield')+')',ap:1,pct:combatTarget(f,'shield')},
     f.ap<=0?'No Action Points remaining.':!canShieldParry(f)?(unavailableReaction(f,'shield')||'The shield cannot parry now.'):'');
-  def({val:'evade',act:'react',label:'Evade',ap:1,pct:effectiveSkill(f,evadeTarget(f))},f.ap<=0?'No Action Points remaining.':cannotRespond(f)?unavailableReaction(f,'evade'):'');
+  def({val:'evade',act:'react',label:'Evade',ap:1,pct:evadeTarget(f)},f.ap<=0?'No Action Points remaining.':cannotRespond(f)?unavailableReaction(f,'evade'):'');
   def({val:'none',act:'react',label:'Do not defend',ap:0},'');
   return out;
 }
@@ -396,7 +398,7 @@ function pbEffectOdds(id,p){
   }
   if(id==='blind'){
     const shield=target.shield!=='none'&&!ARENA_WEAPONS[target.weapon].twoHanded&&canShieldParry(target);
-    const ev=eff(evadeTarget(target)),sh=shield?eff(combatTarget(target,'shield')):0;
+    const ev=evadeTarget(target),sh=shield?combatTarget(target,'shield'):0;
     return pbResistHtml(shield&&sh>ev?'Shield style':'Evade',Math.max(ev,sh),origin,target.name,'');
   }
   if(id==='compel')return pbResistHtml('Willpower',eff(target.willpower),origin,target.name,'');
@@ -442,8 +444,8 @@ function pbActionInfo(act,c){
   if(pct!=null){
     body+=`<div class="bbig"><strong>${pct}%</strong><span>${act==='attack'||act==='shieldAttack'?'your attack roll':'your roll'}</span></div>${pbGradeLine(pbGrades(pct))}`;
     if(act==='attack'||act==='shieldAttack'){
-      const foe=c.foe,par=effectiveSkill(foe,combatTarget(foe,'weapon')),ev=effectiveSkill(foe,evadeTarget(foe));
-      body+=`<p class="bsmall">${esc(foe.name)} can then parry (${par}%${foe.shield!=='none'?', shield '+effectiveSkill(foe,combatTarget(foe,'shield'))+'%':''}), evade (${ev}%) or not defend. Beat their grade and you earn Special Effects.</p>`;
+      const foe=c.foe,par=combatTarget(foe,'weapon'),ev=evadeTarget(foe);
+      body+=`<p class="bsmall">${esc(foe.name)} can then parry (${par}%${foe.shield!=='none'?', shield '+combatTarget(foe,'shield')+'%':''}), evade (${ev}%) or not defend. Beat their grade and you earn Special Effects.</p>`;
     }
   }else body+='<p class="bsmall">No roll.</p>';
   return `<header><h4>${esc(a.label)}</h4>${pbRecWhy(c.rec,act)}<span class="btag">${pbCost(a)}</span></header>${body}`;

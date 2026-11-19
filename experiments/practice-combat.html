@@ -550,12 +550,12 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="../js/combat-rules.js?v=df867be054"></script>
 <script src="../js/data.js?v=e863ceddbb"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
-<script src="practice-guidance.js?v=648985b8c4"></script>
-<script src="pits-view.js?v=76322a23e6"></script>
+<script src="practice-guidance.js?v=cebd250af1"></script>
+<script src="pits-view.js?v=67441672c2"></script>
 <script src="pits-game.js?v=3769cec741"></script>
 <script src="pits-report.js?v=78c28f1bb3"></script>
-<script src="pits-arena.js?v=945698686c"></script>
-<script src="pits-bottom.js?v=a27e8fce37"></script>
+<script src="pits-arena.js?v=0668e33d79"></script>
+<script src="pits-bottom.js?v=10698893ad"></script>
 <script src="pits-lost.js?v=f385014ea5"></script>
 <script src="pits-idea.js?v=e1791930b7"></script>
 <script src="pits-motion.js?v=5c6cf25c54"></script>
@@ -565,7 +565,7 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <script src="pits-cine.js?v=6eb3edda87"></script>
 <script src="pits-cine-fx.js?v=02003a23cc"></script>
 <script src="pits-flex.js?v=dff1553db0"></script>
-<script src="pits-stage.js?v=01bb94f293"></script>
+<script src="pits-stage.js?v=ed0226be94"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -697,11 +697,18 @@ function impaleIncapacitated(f){
  ensureEffectState(f);
  return f.impaledWounds.find(w=>CombatRules.impaleIncapacitates(f.siz,w.weaponSize))||null;
 }
+// The difficulty grades every skill of this fighter suffers: Fatigue, a lodged Impale, an entangled torso. They do not
+// add up: the hardest one applies (Core p.38, ChatGPT (Chat) from the page, PR #336; they used to be added, so Wearied
+// and a lodged weapon made a roll Hopeless).
+function generalGradeSteps(f){
+ if(!f)return 0;ensureEffectState(f);
+ return CombatRules.mostSevereGrade(FATIGUE_GRADES[Math.min(9,f.fatigue)]||0,Math.min(4,impaleGrade(f)),entangledTorso(f)?1:0);
+}
+// A skill other than Combat Style and Evade, with those grades. (combatTarget and evadeTarget already include them,
+// with their own situational grades, the hardest of all applying: do not pass their result through here again.)
 function effectiveSkill(f,pct){
- if(!f)return pct;ensureEffectState(f);
- const fatigueGrades=FATIGUE_GRADES[Math.min(9,f.fatigue)]||0;
- const grade=Math.min(4,fatigueGrades+Math.min(4,impaleGrade(f))+(entangledTorso(f)?1:0));
- return CombatRules.skillAtGrade(pct,grade);
+ if(!f)return pct;
+ return CombatRules.skillAtGrade(pct,generalGradeSteps(f));
 }
 function cannotRespond(f){ensureEffectState(f);return f.fatigue>=7||!!f.stunnedLocations.Head;}
 function cannotAttackDueToStun(f){ensureEffectState(f);return !!(f.stunnedLocations.Head||f.stunnedLocations.Chest||f.stunnedLocations.Abdomen);}
@@ -1008,8 +1015,10 @@ function skillPenaltyCauses(f){
  if(entangledTorso(f))causes.push('entangled '+f.entangled.loc.toLowerCase());
  return causes;
 }
-function requestSkill(actor,percent,label,callback){
- const effective=effectiveSkill(S.fighters?.[actor],percent);
+// graded: the percentage already carries every grade (combatTarget, evadeTarget): not graded again.
+function requestGradedSkill(actor,percent,label,callback){return requestSkill(actor,percent,label,callback,true);}
+function requestSkill(actor,percent,label,callback,graded=false){
+ const effective=graded?percent:effectiveSkill(S.fighters?.[actor],percent);
  const f=S.fighters?.[actor],causes=skillPenaltyCauses(f);
  const shown=effective!==percent?`${label} · ${effective}% (${causes.join(' + ')||'adjusted'})`:label;
  NEXT_PCT=effective;
@@ -1046,7 +1055,7 @@ function rollDifficultyHtml(actor){
  const base=Number(isEvade?f.evade:f.style);
  if(!Number.isFinite(base)||!Number.isFinite(final)||final>=base)return '';
  const conditionTarget=isEvade?evadeTarget(f):combatTarget(f);
- const expected=effectiveSkill(f,conditionTarget);
+ const expected=conditionTarget;
  // If another rule has adjusted the target, don't claim our listed conditions
  // explain the entire numerical difference.
  if(expected!==final)return '';
@@ -1697,7 +1706,8 @@ function playBeat(){
   const names={a:S.fighters.a.name,b:S.fighters.b.name};
   const beat=typeof pitsStageBeat==='function'?pitsStageBeat(V.events,V.step,names):{cue:null,consumed:false};
   const upto=S.logs.filter(entry=>entry.id<=e.id).length;
-  if(e.view){
+  // (a beat its blow carries, a Disarm or a withdrawal, changes the picture only when that blow lands)
+  if(e.view&&!beat.carried){
     const view=clone(e.view);
     if(beat.cue&&['hit','deflect'].includes(beat.cue.type)){
       V.visibleCount=upto-1;V.pendingShown={view,rng:e.rng||null,visible:upto};   // shown at contact
@@ -1936,9 +1946,10 @@ function rangeReact(option){
     });
   }
 }
+// (its callers pass combatTarget and evadeTarget, which already carry every grade)
 function requestOpposedSkills(a,aPct,aLabel,b,bPct,bLabel,resolve){
   // Core p.51: skills over 100% reduce both sides by the excess.
-  const targets=CombatRules.opposedTargets(effectiveSkill(a,aPct),effectiveSkill(b,bPct));
+  const targets=CombatRules.opposedTargets(aPct,bPct);
   const aTarget=targets.a,bTarget=targets.b;
   requestDice(a.id,[{sides:100,label:'d100'}],`${aLabel} · ${a.name} ${aTarget}%`,([ar])=>{
     opposing(a,'Evade',rollSkill(aTarget,ar));
@@ -2755,25 +2766,30 @@ function weaponRoll(w,maxDie,cramped=false,forcedRolls=null){let v=cramped?Comba
 // Several situational grades (prone, a seriously wounded arm, blinded) do not
 // multiply: the most severe one applies (Core pp.38, 101; RC-12).
 // The arms a weapon is used with: both for a two-handed weapon (owner, 2026-11-17: "both arms should count"), else the
-// one that holds it. Each with a Serious Wound makes the task one grade harder, as each injured leg does for Evade.
+// one that holds it. A Serious Wound to either makes the task Hard; both are still Hard (Core p.38, PR #336).
 function weaponArms(f,tool='weapon'){
  if(tool==='shield')return [shieldArmOf(f)];
  return ARENA_WEAPONS[f.weapon]?.twoHanded?['Right Arm','Left Arm']:[f.weaponHand].filter(Boolean);
 }
+// The final Combat Style percentage: the hardest of every grade that applies (prone, a seriously wounded arm the weapon
+// is used with, blinded, and the fighter's general grades), never two of them together (Core pp.38, 101, 110; PR #336).
+// A wounded arm is Hard; two of them are still Hard (the hardest applies, Core p.38).
+function situationalTarget(f,base,limbs){
+ const steps=CombatRules.mostSevereGrade(f.prone?2:0,limbs>0?1:0,f.blindedTurns>0?3:0,generalGradeSteps(f));
+ return steps===3?Math.max(1,CombatRules.skillAtGrade(base,steps)):CombatRules.skillAtGrade(base,steps);
+}
 function combatTarget(f,tool='weapon'){
- const arms=weaponArms(f,tool).filter(a=>skillZoneClass(f,a)==='serious').length;
- const steps=CombatRules.mostSevereGrade(f.prone?2:0,arms,f.blindedTurns>0?3:0);
- return steps>=3?Math.max(1,CombatRules.skillAtGrade(f.style,steps)):CombatRules.skillAtGrade(f.style,steps);
+ return situationalTarget(f,f.style,weaponArms(f,tool).filter(a=>skillZoneClass(f,a)==='serious').length);
 }
 // Core p.110: a usable but seriously injured leg makes leg-dependent tasks
 // one difficulty grade harder until healed to a Minor Wound. Two injured legs
-// each impose a grade. Partial function after First Aid does not double-count.
-// Prone and blinded are separate grades: the most severe applies (RC-12).
+// are still one grade, Hard: the hardest applies (Core p.38; PR #336, they used to make it Formidable).
+// Partial function after First Aid does not double-count.
+// Prone, blinded and the general grades are separate grades: the most severe applies (RC-12).
 function evadeTarget(f){
  let legs=0;
  for(const loc of ['Right Leg','Left Leg'])if(skillZoneClass(f,loc)==='serious'||f.partialLimbs?.[loc])legs++;
- const steps=CombatRules.mostSevereGrade(f.prone?2:0,legs,f.blindedTurns>0?3:0);
- return steps>=3?Math.max(1,CombatRules.skillAtGrade(f.evade,steps)):CombatRules.skillAtGrade(f.evade,steps);
+ return situationalTarget(f,f.evade,legs);
 }
 function limbDisabled(f,loc){return f.disabled.includes(loc)&&!f.partialLimbs?.[loc];}
 function releasePinnedBy(f){
@@ -3328,7 +3344,7 @@ function beginAttack(id,isRemise=false,tool='weapon'){
   {const held=entangling(f);if(held)releaseEntangle(held,`${f.name} pulls the ${ARENA_WEAPONS[f.weapon].name} free of ${held.name} to attack.`);}
   if(!isRemise)f.ap--;reopenBandage(f,isRemise?'a Remise attack':'an attack');
   const target=combatTarget(f,shieldStrike?'shield':'weapon');
-  requestSkill(f.id,target,`${shieldStrike?'Shield strike':'Attack'} · Combat Style ${target}%`,at=>{
+  requestGradedSkill(f.id,target,`${shieldStrike?'Shield strike':'Attack'} · Combat Style ${target}%`,at=>{
     S.pending={kind:'reaction',atk:id,def:t.id,attackTarget:target,attackRoll:at,reaction:'none',defenseRoll:null,owner:null,other:null,effectsLeft:0,
      chosen:[],chosenLoc:null,maximize:0,evaded:false,isRemise,attackKey,vsWeapon:shieldStrike?false:mustTargetWeapon(id),exid:++nextExId};
     log(`${f.name} ${isRemise?'makes a Remise attack':shieldStrike?'strikes with the shield':'attacks'}`,
@@ -3351,6 +3367,8 @@ function react(action){
   if(action==='shield'&&!canShieldParry(d))action='none';
   p.parryTool=action==='shield'?'shield':'weapon';
   if(action==='shield'){d.warded=[];action='parry';}
+  // Hopeless (0%): no attempt can be made, so nothing is rolled and no AP is spent (Core p.38, PR #336)
+  if(action!=='none'&&(action==='parry'?combatTarget(d,p.parryTool):evadeTarget(d))<=0)action='none';
   p.reaction=action;
   if(action!=='none')reopenBandage(d,action==='evade'?'an evasion':'a parry');
   const finalize=(dr)=>{
@@ -3373,7 +3391,7 @@ function react(action){
   if(action!=='none'&&d.ap>0){
     spendReaction(d);
     const pct=action==='parry'?combatTarget(d,p.parryTool):evadeTarget(d);
-    requestSkill(d.id,pct,`${action==='parry'?'Parry':'Evade'} · ${pct}%`,dr=>{
+    requestGradedSkill(d.id,pct,`${action==='parry'?'Parry':'Evade'} · ${pct}%`,dr=>{
       log(`${d.name} ${action==='parry'?(p.parryTool==='shield'?'parries with shield':'parries'):'evades'}`,
        `${dr.roll} vs ${pct}% — ${dr.label}. ${d.ap} AP remaining.`,'system','',{actor:d.id,exid:p.exid,tool:p.parryTool,dice:d100Dice(dr.roll)});
       finalize(dr);
@@ -3544,7 +3562,7 @@ function applyEffect(effect){
      const shieldDefense=skill==='shield'&&usesShield;
      const pct=shieldDefense?shieldPct:evadePct;
      opposing(S.fighters[p.owner],p.owner===p.atk?'attack':'parry',origin);
-     requestSkill(target.id,pct,`Blind Opponent · ${target.name} ${shieldDefense?'Shield style':'Evade'} resistance`,res=>{
+     requestGradedSkill(target.id,pct,`Blind Opponent · ${target.name} ${shieldDefense?'Shield style':'Evade'} resistance`,res=>{
        const resists=p.forceFailure?false:opposedBetter(res,origin);p.forceFailure=false;
        if(resists){note('Blind Opponent',`${target.name} resists with ${shieldDefense?'shield':'Evade'} (${res.roll}/${res.effectiveTarget??pct}%).`);finishOneEffect();return;}
        requestDice(target.id,[{sides:3,label:'Blinded turns'}],`Blind Opponent · 1d3 turns`,([turns])=>{
@@ -3555,7 +3573,7 @@ function applyEffect(effect){
      });
    };
    if(usesShield&&target.kind==='human'){p.kind='blindResistChoice';p.resistBlind=defend;render();}
-   else defend(usesShield&&effectiveSkill(target,shieldPct)>effectiveSkill(target,evadePct)?'shield':'evade');
+   else defend(usesShield&&shieldPct>evadePct?'shield':'evade');
    return;
  }else if(effect==='scar'){
    target.scars??=[];target.scars.push({loc:'Visible',from:actor.name});note('Scar Foe',`${actor.name} leaves ${target.name} with a lasting scar. This effect is cosmetic.`);

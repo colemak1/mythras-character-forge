@@ -58,13 +58,14 @@ test('AN-F02 summoning: known spirit, distance within Binding % km, Intensity MP
  animist('r2',[spirit({intensity:4})],3);run('APP.summonSpirit(0,"10")');assert.match(msg(),/needs 4 Magic Points/);
  assert.equal(run('S.rollLog.length'),0,'no roll when refused');
 });
-test('AN-F02 summoning outcomes: critical 1d3 rounds, success 1d4 minutes; never bound',()=>{
+test('AN-F02 summoning outcomes: critical 1d3 rounds, success 1d6 minutes (Core p.137); never bound',()=>{
+ assert.equal(run('JSON.stringify(spiritSummonOutcome("Success"))'),JSON.stringify({arrives:true,sides:6,unit:'minute'}));
  animist('r2');dice([3,41]);run('APP.summonSpirit(0,"50")');
  assert.equal(run('S.play.magic'),8,'Intensity 2 MP');assert.equal(run('S.magic.known[0].summon.arrival'),'2 rounds');
  assert.equal(run('S.magic.known[0].spiritStatus'),'unbound');assert.match(msg(),/arrives in 2 rounds/);
  assert.match(run('S.rollLog[0].label'),/Summon Hearth Spirit/);
  run('APP.summonSpirit(0,"5")');assert.match(msg(),/already been summoned/);
- animist('r2');dice([30,76]);run('APP.summonSpirit(0,"5")');assert.equal(run('S.magic.known[0].summon.arrival'),'4 minutes');
+ animist('r2');dice([30,61]);run('APP.summonSpirit(0,"5")');assert.equal(run('S.magic.known[0].summon.arrival'),'4 minutes');   // (61 on the stub is a 4 on a d6)
 });
 test('AN-F02 a failure waits a day; a fumble suspends the bond until amends',()=>{
  animist('r2');dice([70]);run('APP.summonSpirit(0,"5")');

@@ -5,6 +5,50 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Clearing the old PRs (rule 7), and the rule fixes they held
+
+The 13 PRs open on 19 November were cleared: their reports are in `docs/`, and their open findings are in
+`docs/pits-report-ledger.md` ("Findings from old PRs").
+
+- **Difficulty grades do not add up (Severity 1, ChatGPT (Chat) from Core p.38, PR #336):** Fatigue, a lodged Impale and an
+  entangled torso were added to each other and to prone, blinded or a wounded limb. A prone, Wearied fighter parried
+  at a quarter of their skill; it is now half (Formidable), the hardest grade alone. The shown percentages, the dice
+  and the deck all use the same number now. Ruling D-G1 in `docs/decisions.md`.
+- **Two wounded legs, or both arms on a two-handed weapon, are Hard,** not Formidable (Core p.38 with p.110). Either arm
+  still counts (#373). The owner and Chat are asked to confirm the two-arm case.
+- **A Hopeless (0%) parry or evade** is no longer offered or rolled (Core p.38).
+- **Summoned spirits** arrive in 1d6 minutes on a success, not 1d4 (Core p.137, ChatGPT (Chat) in PR #288).
+- **An Impale stays in the wound through a concurrent turn** (found by the smoke bouts): in a tied Initiative turn the
+  stage showed the victim as before the blow, and the weapon disappeared from the wound for that turn.
+- Tests: `tests/pits-grades.cjs` (fails on the old code), `tests/magic-animism.cjs`; the smoke bouts now pick the
+  deck's action and defence chips. Golden bouts regenerated for the grade change (each still covers its rules).
+
+## The Pits: forwards, not backwards (gates, and the reports of 18 November evening)
+
+The owner: "it's starting to feel like our bugs are getting worse". New rules in `AGENTS.md` ("Forwards, not backwards"),
+and the checks that hold them. Rules and dice unchanged.
+
+- **Ordering gate** (`tests/pits-order.cjs`, in the Tests check): 150 seeded bouts on the presentation layer. It fails if
+  a blow is shown before the dice that decide it, anything is shown twice or never, the fight ends twice, or a bout
+  stalls. On the old code 34 of 120 bouts failed.
+- **Browser smoke bouts** (`tests/visual/pits-smoke.cjs`): whole bouts with every Special Effect forced once, then Replay.
+  They fail on any page error, a stall, a second collapse, or a weapon going back into a wound. The Tests check now
+  runs them and `tests/visual/pits-spring-scripted.cjs` in a browser job.
+- **Disarm (FR-25, Severity 1):** an attacker's Disarm drew the hit and the knockout before the location and damage
+  dice were shown. The blow now comes after all its dice and carries the Disarm; the weapon is thrown once.
+- **Damage Weapon (FR-26, Severity 1):** every Damage Weapon hit threw a script error in the dice tray and stopped the
+  fight ("stuck resolving the exchange"). Fixed.
+- **Apart, no way back in (Severity 1, found by the new smoke bouts):** after a Knockback or a Disengage left the
+  fighters apart, the action deck offered no Move to Engage, so neither could attack again and the fight could only be
+  yielded. The deck now offers it, and recommends it. Test in `tests/pits-order.cjs`.
+- **Withdrawing an Impale (FR-27, FR-28):** the weapon left the wound before the withdrawal's damage was rolled, then
+  went back in and was pulled out again (in play and in the replay). It now stays in until the dice are shown, then
+  comes out in one pull.
+- **Browser tests that were already failing:** the scripted harness stopped after 500 steps, too few since the dice
+  hold; the attacker's-Disarm test ran on the retired spring link; the parry-Disarm test still expected the 16 Nov
+  timing, before the owner's one-movement counter (#380). The first two are fixed. The third is **loosened**: the Disarm
+  may now land up to 300 ms after the parry contact instead of on it, to match #380 (the owner confirmed this look, 2026-11-19).
+
 ## The Pits: a concurrent attack keeps its pre-wound skill (rulings D-R1, D-R2)
 
 ChatGPT (Chat), Core pp.87–88, 90–91, 110. At tied Initiative a fighter wounded in the other's turn still makes its own committed attack at the same moment; that attack now uses its skill from before the wound. In report 20261117-032318 it rolled against 32%, its 48% made Hard by the arm wound it was concurrent with. Its weapon, arm and stun were already held back until after the action; its hit points were not.

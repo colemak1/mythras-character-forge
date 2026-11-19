@@ -7,6 +7,8 @@
 // later dice of those bouts changed and they no longer showed every rule they must cover)
 // (then 144 to 285 and 489 to 529, same day: a fighter with no AP gets no Turn, so its stun no longer counts down then,
 // ruling D-R4; the stunned fighters fought differently afterwards)
+// (regenerated 2026-11-19: difficulty grades no longer add up, the hardest applies, Core p.38, PR #336; a tired or
+// wounded fighter's rolls changed, and with them the fights. Every bout still shows what it must cover)
 const P={
  halfParry:['parry by a weapon one Size smaller (half blocked)',/Successful weapon parry: \d+ absorbed \(Size 2 vs 3\)/],
  serious:['a Serious Wound',/ \| SERIOUS WOUND · /],
