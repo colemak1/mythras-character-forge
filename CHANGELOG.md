@@ -5,6 +5,16 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: Evade odds and the attack preview tell the truth
+
+- **Evade odds** in the details panel now count only the rolls that beat the attack, as the engine resolves it
+  (opposed, Core pp.50, 103; skills over 100% reduced first, p.51). In the audit's case the deck said 60%; the real
+  chance was 9%. The panel says why the number is lower than the skill and that Evade costs 1 AP and leaves you prone.
+- **The attack preview** lists only the defences the opponent can really make. With no AP left it says so instead of
+  showing parry and evade percentages.
+- Tests: `tests/pits-odds-fixes.cjs`; the Evade figure in `tests/pits-bottom.cjs` corrected (50% to 44%).
+- Session Zero item 11 is Ready (the owner's two-device check): **14 of 14**.
+
 ## Clearing the old PRs (rule 7), and the rule fixes they held
 
 The 13 PRs open on 19 November were cleared: their reports are in `docs/`, and their open findings are in

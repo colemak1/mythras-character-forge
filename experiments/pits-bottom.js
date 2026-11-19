@@ -417,20 +417,25 @@ function pbDefenceOdds(d,c){
   const atk=p?.attackRoll,f=c.me,attacker=S.fighters[p?.atk];
   if(d.val==='none')return `<p>${esc(atk&&atk.grade<2?'Their attack missed. Not defending keeps your AP but gives up the chance to earn defensive Special Effects.':'You keep your AP. If their attack succeeded it hits you, and they may earn Special Effects.')}</p>`;
   if(!atk)return `<p>${d.pct}% to succeed.</p>${pbGradeLine(pbGrades(d.pct))}`;
+  // Graded as react() grades it: skills over 100% are reduced first (Core p.51); an Evade gets out of the way only
+  // when it beats the attack roll (opposed, Core pp.50, 103), a parry whenever it succeeds (wide audit 2026-11-16, #360).
+  const t=CombatRules.opposedTargets(atk.effectiveTarget??p.attackTarget??0,d.pct),cut=t.reduction||0;
+  const atkG=cut?rollSkill(t.a,atk.roll):atk,defPct=cut?t.b:d.pct;
   const n={you:{},them:{},even:0,stop:0};
   for(let v=1;v<=100;v++){
-    const r=rollSkill(d.pct,v),k=effectsWonBy(r.grade,atk.grade);
-    if(r.grade>=2)n.stop++;
+    const r=rollSkill(defPct,v),k=effectsWonBy(r.grade,atkG.grade);
+    if(d.val==='evade'?opposedBetter(r,atkG):r.grade>=2)n.stop++;
     if(k>0)n.you[k]=(n.you[k]||0)+1;else if(k<0)n.them[-k]=(n.them[-k]||0)+1;else n.even++;
   }
   const sum=o=>Object.values(o).reduce((a,b)=>a+b,0),you=sum(n.you),them=sum(n.them);
   const rows=[...Object.entries(n.you).sort((a,b)=>b[0]-a[0]).map(([k,v])=>`<li class="ok"><span>You earn ${k} Special Effect${k>1?'s':''}</span><b>${v}%</b></li>`),
     n.even?`<li><span>No Special Effects either way</span><b>${n.even}%</b></li>`:'',
     ...Object.entries(n.them).sort((a,b)=>a[0]-b[0]).map(([k,v])=>`<li class="no"><span>${esc(attacker?.name||'They')} earns ${k}</span><b>${v}%</b></li>`)].join('');
-  const what=d.val==='evade'?'get out of the way (you end up prone)':'parry';
+  const what=d.val==='evade'?'get out of the way (costs 1 AP; you end up prone either way)':'parry';
   const block=d.val==='evade'?'':`<p class="bsmall">${esc(pbClip((parryChoiceHelp(f,attacker,d.val==='shield'?'shield':'weapon').split('. ')[1]||''),110))}</p>`;
+  const evWhy=d.val==='evade'&&atk.grade>=2?`<p class="bsmall">Your Evade is ${d.pct}%${cut?` (${defPct}% after the over-100% reduction)`:''}, but it must beat their roll: a better grade, or the same grade with a higher roll.</p>`:'';
   return `<p>Their attack: <b>${pbOriginWord(atk)}</b>.${atk.grade<2?' It already missed; defending can still earn you Special Effects.':''}</p>
-    <div class="bbig"><strong>${n.stop}%</strong><span>chance to ${what}</span></div>${block}
+    ${evWhy}<div class="bbig"><strong>${n.stop}%</strong><span>chance to ${what}</span></div>${block}
     ${pbBar([['ok',you],['even',n.even],['no',them]])}<ul class="bodds">${rows}</ul>`;
 }
 const pbRecWhy=(rec,key)=>rec&&(rec.act??rec.val)===key?'<span class="btag brec-tag">Recommended</span>':'';
@@ -444,8 +449,12 @@ function pbActionInfo(act,c){
   if(pct!=null){
     body+=`<div class="bbig"><strong>${pct}%</strong><span>${act==='attack'||act==='shieldAttack'?'your attack roll':'your roll'}</span></div>${pbGradeLine(pbGrades(pct))}`;
     if(act==='attack'||act==='shieldAttack'){
-      const foe=c.foe,par=combatTarget(foe,'weapon'),ev=evadeTarget(foe);
-      body+=`<p class="bsmall">${esc(foe.name)} can then parry (${par}%${foe.shield!=='none'?', shield '+combatTarget(foe,'shield')+'%':''}), evade (${ev}%) or not defend. Beat their grade and you earn Special Effects.</p>`;
+      // only the defences the foe could really use (the same checks as its defence rows; wide audit 2026-11-16, #360)
+      const foe=c.foe,can=pbDefences(foe.id,false).filter(d=>d.usable&&d.val!=='none');
+      const word={parry:'parry',shield:'shield',evade:'evade'};
+      body+=foe.ap<=0?`<p class="bsmall">${esc(foe.name)} has no AP left to defend: a successful attack hits. Beat their grade (a Failure) and you earn Special Effects.</p>`
+        :can.length?`<p class="bsmall">${esc(foe.name)} can then ${can.map(d=>word[d.val]+' ('+d.pct+'%)').join(', ')} or not defend. Beat their grade and you earn Special Effects.</p>`
+        :`<p class="bsmall">${esc(foe.name)} cannot defend now: a successful attack hits. Beat their grade (a Failure) and you earn Special Effects.</p>`;
     }
   }else body+='<p class="bsmall">No roll.</p>';
   return `<header><h4>${esc(a.label)}</h4>${pbRecWhy(c.rec,act)}<span class="btag">${pbCost(a)}</span></header>${body}`;
