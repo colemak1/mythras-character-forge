@@ -57,6 +57,9 @@ function pitsLegalActions(id){
   const add=(act,label,cost,why)=>out.push({act,label,ap:cost,enabled:!why,reason:why||''});
   const needs=cost=>ap<cost?`Needs ${cost} AP`:'';
   const pressed=()=>pitsNoAttackWhy(f);
+  // apart (a Disengage, or a Knockback that threw one back): the way back in (the deck had none, so neither fighter
+  // could attack again and the fight could only be yielded; found by tests/visual/pits-smoke.cjs, 2026-11-19)
+  if(S.disengaged)add('reengage','Move to Engage',(S.gapMetres||0)>3?1:0,(S.gapMetres||0)>3?needs(1)||(f.prone?'Regain footing first':''):(f.prone?'Regain footing first':''));
   add('attack','Attack',1,needs(1)||pressed()||(!canUseWeapon(f)?(typeof weaponBlockedWhy==='function'?weaponBlockedWhy(f):'Weapon unusable'):!(canAttackBody(id)||mustTargetWeapon(id))?'Out of reach':''));
   if(typeof canShieldStrike==='function'&&canShieldStrike(f))
     add('shieldAttack','Shield Strike',1,needs(1)||pressed()||(!shieldReachesBody(id)?'Out of reach':''));
@@ -88,6 +91,7 @@ function pitsRecommendedAction(id){
     ||(f.pinnedGear?pick('freePin',`Your ${gear} is pinned. Free it so you can attack and parry with it again.`):null)
     ||pick('freeEntangle','You are entangled. Break free before it is used to trip you.')
     ||(f.disarmed?pick('recoverWeapon','You have no weapon in hand. Get it back before anything else.'):null)
+    ||pick('reengage','You are apart. Close in again before you can attack.')
     ||pick('attack','Attacking is how a bout is won. Each parry or evade later costs 1 AP, so watch what you keep.')
     ||pick('shieldAttack','Your weapon cannot attack now; the shield still can.')
     ||pick('withdrawImpale','Your weapon is stuck in them. Pull it out to fight with it again.')

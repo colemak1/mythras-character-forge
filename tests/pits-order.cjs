@@ -6,7 +6,8 @@
 //   - nothing is presented twice, and everything is presented by the end of the bout;
 //   - dice are never shown after a log entry the engine produced after them (a blow is never drawn before the dice that
 //     decide it: report 20261118-212902, "my guy moved before the disarm dice were rolled");
-//   - log entries are presented in the engine's order, except that a Trip or Disarm may be carried by its blow;
+//   - log entries are presented in the engine's order;
+//   - the bouts between them reach Disarm, Trip, Impale, a withdrawal and Damage Weapon (so the gate keeps covering them);
 //   - the fight ends once, and every bout finishes (no stall).
 // Before 2026-11-18 a Disarm moved its blow ahead of the Disarm's, the location's and the damage's dice: 34 of 120 bouts
 // failed here.
@@ -74,7 +75,6 @@ function bout(spec){
 }
 
 // the faults of one bout, in words (empty: the bout is presented in order)
-const CARRIED=/^(Trip Opponent|Disarm Opponent)/;
 function faults(r){
  if(r.stall)return [r.stall];
  const bad=[],pos=new Map();
@@ -82,7 +82,7 @@ function faults(r){
  for(const e of r.eng)if(!e.cp&&!pos.has(e.k))bad.push('never presented: '+e.title);
  const logs=r.eng.filter(e=>!e.roll&&!e.cp&&pos.has(e.k));
  for(let i=1;i<logs.length;i++)
-  if(pos.get(logs[i].k)<pos.get(logs[i-1].k)&&!CARRIED.test(logs[i-1].title))
+  if(pos.get(logs[i].k)<pos.get(logs[i-1].k))
    bad.push(`log "${logs[i].title}" presented before the earlier "${logs[i-1].title}"`);
  for(let i=0;i<r.eng.length;i++){const d=r.eng[i];if(!d.roll||!pos.has(d.k))continue;
   const later=r.eng.slice(i+1).find(l=>!l.roll&&!l.cp&&pos.has(l.k)&&pos.get(l.k)<pos.get(d.k));
@@ -112,10 +112,27 @@ for(const {report,spec:s,must} of REPORTS)test('report '+report,()=>{
  assert.deepEqual(faults(r),[]);
 });
 const BOUTS=150;
+const COVERS=[/^Disarm Opponent/,/^Trip Opponent/,/^Impaled Weapon/,/^Withdraw Impale/,/^Damage Weapon/];
 test(`${BOUTS} seeded bouts are presented in order: no blow before its dice, nothing twice, one end, no stall`,()=>{
- const failed=[];
- for(let seed=1;seed<=BOUTS;seed++){const f=faults(bout(spec(seed)));if(f.length)failed.push(`seed ${seed} (${spec(seed).a.weapon} v ${spec(seed).b.weapon}): ${f[0]}`);}
+ const failed=[],seen=new Set();
+ for(let seed=1;seed<=BOUTS;seed++){const r=bout(spec(seed)),f=faults(r);
+  if(f.length)failed.push(`seed ${seed} (${spec(seed).a.weapon} v ${spec(seed).b.weapon}): ${f[0]}`);
+  for(const e of r.eng||[])COVERS.forEach((c,i)=>{if(c.test(e.title))seen.add(i);});}
  assert.deepEqual(failed,[],failed.length+' of '+BOUTS+' bouts out of order');
+ assert.deepEqual(COVERS.filter((c,i)=>!seen.has(i)).map(String),[],'the bouts no longer reach these: change the weapons or seeds');
+});
+// (the deck, not the page's older prompt that the bouts above click through: apart after a Knockback or a Disengage, the
+// deck offered no way back in, so the fight could only be yielded; found by tests/visual/pits-smoke.cjs, 2026-11-19)
+test('the deck offers a way back in when the fighters are apart, and recommends it',()=>{
+ const A=arena(1);
+ A.run(`startRun();R=null;V.busy=false;S.logs=[];S.fighters={a:${fighter('a',spec(1).a)},b:${fighter('b',spec(1).b)}};beginEncounter();`);
+ const r=JSON.parse(A.run(`(()=>{S.phase='fight';S.pending=null;S.order=['a','b'];S.turnIndex=0;S.disengaged=true;S.gapMetres=2;S.fighters.a.ap=3;
+   S.fighters.a.prone=false;const acts=pitsLegalActions('a');
+   return JSON.stringify({re:acts.find(x=>x.act==='reengage')||null,rec:(pitsRecommendedAction('a')||{}).act,
+    usable:acts.filter(x=>x.enabled&&!['delay','dither','yield','swapHand'].includes(x.act)).map(x=>x.act)});})()`));
+ assert(r.re&&r.re.enabled,'Move to Engage is offered: '+JSON.stringify(r));
+ assert.equal(r.rec,'reengage');
+ assert(r.usable.length>0,'something other than waiting or yielding can be done');
 });
 test('the gate sees the fault it is for: a blow moved ahead of its dice fails',()=>{
  const r={eng:[{k:0,roll:true,title:'Hit Location · d20'},{k:1,roll:false,title:'Goat hits Head'}],shown:[1,0]};

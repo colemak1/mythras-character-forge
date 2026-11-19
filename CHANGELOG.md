@@ -20,12 +20,16 @@ and the checks that hold them. Rules and dice unchanged.
   dice were shown. The blow now comes after all its dice and carries the Disarm; the weapon is thrown once.
 - **Damage Weapon (FR-26, Severity 1):** every Damage Weapon hit threw a script error in the dice tray and stopped the
   fight ("stuck resolving the exchange"). Fixed.
+- **Apart, no way back in (Severity 1, found by the new smoke bouts):** after a Knockback or a Disengage left the
+  fighters apart, the action deck offered no Move to Engage, so neither could attack again and the fight could only be
+  yielded. The deck now offers it, and recommends it. Test in `tests/pits-order.cjs`.
 - **Withdrawing an Impale (FR-27, FR-28):** the weapon left the wound before the withdrawal's damage was rolled, then
   went back in and was pulled out again (in play and in the replay). It now stays in until the dice are shown, then
   comes out in one pull.
 - **Browser tests that were already failing:** the scripted harness stopped after 500 steps, too few since the dice
   hold; the attacker's-Disarm test ran on the retired spring link; the parry-Disarm test still expected the 16 Nov
-  timing, before the owner's one-movement counter (#380). All three are updated, none weakened.
+  timing, before the owner's one-movement counter (#380). The first two are fixed. The third is **loosened**: the Disarm
+  may now land up to 300 ms after the parry contact instead of on it, to match #380 (the owner to confirm the look).
 
 ## The Pits: a concurrent attack keeps its pre-wound skill (rulings D-R1, D-R2)
 

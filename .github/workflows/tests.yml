@@ -32,10 +32,14 @@ jobs:
           node tests/db/permissions.cjs
   browser-tests:
     # The Pits in a real browser (AGENTS.md, "Forwards, not backwards", rule 4): whole bouts with every Special Effect,
-    # then Replay (tests/visual/pits-smoke.cjs), and the scripted moments of the cinematic stage
-    # (tests/visual/pits-spring-scripted.cjs). A failure here fails the Tests check like any other test.
+    # then Replay (pits-smoke), and the scripted moments of the cinematic stage (pits-spring-scripted). Two jobs side by
+    # side; a failure in either fails the Tests check like any other test.
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        test: [tests/visual/pits-smoke.cjs, tests/visual/pits-spring-scripted.cjs]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,16 +49,10 @@ jobs:
         run: |
           npm install --no-save --no-audit --no-fund --prefix .ci-deps playwright@1.63.0
           .ci-deps/node_modules/.bin/playwright install --with-deps chromium
-      - name: Browser tests
+      - name: ${{ matrix.test }}
         env:
           NODE_PATH: ${{ github.workspace }}/.ci-deps/node_modules
         run: |
           python3 -m http.server 8765 >/dev/null 2>&1 &
           sleep 2
-          failed=0
-          for f in tests/visual/pits-smoke.cjs tests/visual/pits-spring-scripted.cjs; do
-            echo "::group::$f"
-            if node "$f"; then echo "ok $f"; else echo "::error file=$f::$f failed"; failed=1; fi
-            echo "::endgroup::"
-          done
-          exit $failed
+          node "${{ matrix.test }}"

@@ -5,7 +5,7 @@
 //     stopped, "stuck resolving the exchange");
 //   - a stall: the screen stays busy for 20 s with no dice rolling, or nothing can be clicked while the fight goes on;
 //   - the loser collapsing more than once in the fight, or more than once in its replay (report 20261118-022241);
-//   - a weapon going back into a wound it has been pulled out of (report 20261118-213426).
+//   - a weapon going back into a wound it has been pulled out of, live or in the replay (reports 20261118-213426, -213447).
 //
 //   node tests/visual/pits-smoke.cjs     (needs playwright and a static server on :8765, see pits-layout.cjs)
 //   PITS_SMOKE=n  plays n bouts (default 8)
@@ -33,13 +33,20 @@ async function bout(browser,seed,force={}){
     requestAnimationFrame(tick);},seed);
   await page.goto(URL_);
   await page.evaluate(c=>{Object.assign(config,c);startRun(false);prototypeCombat.presentation().quick=true;},
-    {mode:'pvp',charname:'Aurel',pvpName:'Brann',style:70+seed%25,pvpSkill:60+seed%30,weapon:w,pvpWeapon:v,armor:seed%3,pvpArmor:seed%2});
+    // (a forced effect: Aurel strong and armoured, so the bout lasts until the effect has come up)
+    {mode:'pvp',charname:'Aurel',pvpName:'Brann',style:force.effect?100:70+seed%25,pvpSkill:force.effect?40:60+seed%30,weapon:w,pvpWeapon:v,
+     armor:force.effect?4:seed%3,pvpArmor:force.effect?3:seed%2});
   const pick=lcg(seed*7919);
   const st=()=>page.evaluate(()=>{const S=prototypeCombat.state(),V=prototypeCombat.presentation();
     const R=prototypeCombat.pendingRoll();
     return {phase:S.phase,busy:!!V.busy,rolling:!!(V.roll&&!V.roll.settled),R:!!R,rLabel:R?R.actor+':'+R.label:'',pend:S.pending?S.pending.kind:null};});
-  const offered=()=>page.evaluate(game=>[...document.querySelectorAll('#root [data-act],#pitsStage [data-act]')].filter(e=>!e.disabled&&game.includes(e.dataset.act)&&e.getClientRects().length)
-    .map(e=>({act:e.dataset.act,val:e.dataset.val??null})),GAME);
+  // the buttons on screen, and the deck's action chips (an action is picked as a chip, then confirmed)
+  const offered=()=>page.evaluate(game=>{const seen=new Set(),out=[];
+    for(const e of document.querySelectorAll('#root [data-act],#pitsStage [data-act]'))if(!e.disabled&&game.includes(e.dataset.act)&&e.getClientRects().length){
+      const o={act:e.dataset.act,val:e.dataset.val??null};const k=o.act+'|'+o.val;if(!seen.has(k)){seen.add(k);out.push(o);}}
+    for(const e of document.querySelectorAll('[data-pa="sel"]'))if(!e.disabled&&!e.classList.contains('off')&&game.includes(e.dataset.val)&&!seen.has(e.dataset.val+'|null')){
+      seen.add(e.dataset.val+'|null');out.push({act:e.dataset.val,val:null,chip:true});}
+    return out;},GAME);
   const click=(act,val)=>page.evaluate(([act,val])=>{const e=[...document.querySelectorAll(act==='roll'||act==='replayFight'?'[data-act="'+act+'"]':'#root [data-act="'+act+'"],#pitsStage [data-act="'+act+'"]')]
     .find(x=>!x.disabled&&(val==null||x.dataset.val===val));if(!e)return false;e.dispatchEvent(new MouseEvent('click',{bubbles:true}));return true;},[act,val]);
   const out={errors,stall:null,w,v};let busySince=0,idle=0,forced=false;
@@ -66,15 +73,21 @@ async function bout(browser,seed,force={}){
     idle=0;
     // attacks most of the time on a free turn, so bouts end; anything else evenly
     const attack=opts.find(o=>o.act==='attack');
-    let o=attack&&pick()<.6?attack:opts[Math.floor(pick()*opts.length)];
+    // (a forced bout keeps attacking once its effect is done, so it ends in time)
+    let o=attack&&(pick()<.6||forced)?attack:opts[Math.floor(pick()*opts.length)];
+    if(process.env.PITS_DEBUG&&s.pend==='effect')console.log('FX',await page.evaluate(()=>[...document.querySelectorAll('[data-pa="fx"]')].map(e=>e.dataset.val+(e.classList.contains('off')?'(off)':'')).join(' ')));
     // the deck: an effect is a chip to pick, then confirmed
     const want=s.pend==='effect'&&force.effect&&!forced&&await page.evaluate(v=>{const c=document.querySelector(`[data-pa="fx"][data-val="${v}"]`);
       if(!c||c.disabled||c.classList.contains('off'))return false;c.dispatchEvent(new MouseEvent('click',{bubbles:true}));return true;},force.effect);
     if(want){o={act:'effect',val:force.effect};forced=true;}
     else if(s.pend==='reaction'&&force.react)o=opts.find(x=>x.act==='react'&&x.val===force.react)||o;
     else if(force.effect&&!forced&&attack)o=attack;
+    else if(force.withdraw&&opts.find(x=>x.act==='impaleLeave'&&x.val==='hold'))o=opts.find(x=>x.act==='impaleLeave'&&x.val==='hold');
+    else if(force.withdraw&&forced&&opts.find(x=>x.act==='withdrawImpale')){o=opts.find(x=>x.act==='withdrawImpale');out.withdrew=true;}
     if(o.act==='react'||o.act==='effect')await page.evaluate(([pa,val])=>{const e=document.querySelector(`[data-pa="${pa}"][data-val="${val}"]`);
       if(e)e.dispatchEvent(new MouseEvent('click',{bubbles:true}));},[o.act==='react'?'def':'fx',o.val]);
+    if(process.env.PITS_DEBUG)console.log('CLICK',o.act,o.val||'',opts.map(x=>x.act+(x.val?'='+x.val:'')).join(' '));
+    if(o.chip){await page.evaluate(v=>{const c=document.querySelector(`[data-pa="sel"][data-val="${v}"]`);if(c)c.dispatchEvent(new MouseEvent('click',{bubbles:true}));},o.act);await sleep(40);}
     await click(o.act,o.val);await sleep(60);
   }
   await sleep(2500);
@@ -83,10 +96,11 @@ async function bout(browser,seed,force={}){
   out.lodged=await page.evaluate(()=>window.__lodged);
   if(!out.stall&&['between','over'].includes(out.end.phase)){
     // the replay: the same bout again, to its end
-    await page.evaluate(()=>{window.__psRecord.length=0;});
+    await page.evaluate(()=>{window.__psRecord.length=0;window.__lodged.length=0;});
     const ok=await click('replayFight')||await page.evaluate(()=>{if(typeof startFightReplay!=='function')return false;startFightReplay();return true;});
     if(ok){const t0=Date.now();while(Date.now()-t0<90000&&(await st()).busy)await sleep(200);
-      out.replay=await page.evaluate(()=>window.__psRecord.map(r=>r.type));out.replayDone=!(await st()).busy;}
+      out.replay=await page.evaluate(()=>window.__psRecord.map(r=>r.type));out.replayDone=!(await st()).busy;
+      out.replayLodged=await page.evaluate(()=>window.__lodged.slice());}
   }
   out.forced=forced;
   await page.close();return out;
@@ -103,8 +117,8 @@ async function bout(browser,seed,force={}){
    ['sunder',['battleaxe-2h','sword']],['damageWeapon',['sword','sword']],['maximize',['sword','dagger']],['bypassArmour',['rapier','mace']],
    ['circumventParry',['spear','sword']]];
   const only=process.env.PITS_ONLY?process.env.PITS_ONLY.split(','):null;
-  const runs=[...Array(only?0:n)].map((_,i)=>({seed:i+1,force:{}})).concat(EFFECTS.filter(([e])=>!only||only.includes(e))
-   .map(([effect,weapons],i)=>({seed:100+i,force:{effect,weapons,react:i%2?'parry':'none'}})));
+  const runs=[...Array(only?0:n)].map((_,i)=>({seed:i+1,force:{}})).concat(EFFECTS.map(([effect,weapons],i)=>
+   ({seed:100+i,force:{effect,weapons,react:i%2?'parry':'none'}})).filter(r=>!only||only.includes(r.force.effect)));
   for(const {seed,force} of runs){
     const r=await bout(browser,seed,force);
     await T(`smoke bout ${seed} (${r.w} against ${r.v}${force.effect?', '+force.effect+' forced':''}): no errors, no stall, one collapse, ended and replayed`,()=>{
@@ -118,7 +132,11 @@ async function bout(browser,seed,force={}){
       const lodges=r.live.filter(t=>t==='lodge').length;let rises=0;for(let i=1;i<r.lodged.length;i++)if(r.lodged[i]>r.lodged[i-1])rises++;
       assert(rises<=lodges,`a weapon went back into a wound (${rises} times in, ${lodges} lodges)`);
       if(r.replay){assert(r.replayDone,'the replay finished');
-        assert(r.replay.filter(t=>t==='collapse').length<=1,'the replay collapsed the loser '+r.replay.filter(t=>t==='collapse').length+' times');}
+        assert(r.replay.filter(t=>t==='collapse').length<=1,'the replay collapsed the loser '+r.replay.filter(t=>t==='collapse').length+' times');
+        // (report 20261118-213447: the replay of a withdrawal put the blade back in too)
+        const lodges=r.replay.filter(t=>t==='lodge').length;let rises=0;const L=r.replayLodged||[];
+        for(let i=1;i<L.length;i++)if(L[i]>L[i-1])rises++;
+        assert(rises<=lodges,`the replay put a weapon back into a wound (${rises} times in, ${lodges} lodges)`);}
     });
   }
   await browser.close();
