@@ -99,12 +99,14 @@ test('R2: parry and evade stay open while attacks are stopped; the stop ends aft
  run(`advanceStun(S.fighters.b)`);assert.equal(fighter('b').canAttack,true,'expired after its 2 Turns');
 });
 
-test('two-handed weapon: a Serious Wound to either arm makes attacks a grade harder; to both, two (owner, 2026-11-17)',()=>{
+// (owner, 2026-11-17: both arms count. Two wounded arms are still Hard, not Formidable: the hardest grade applies,
+// Core p.38 with p.110, ChatGPT (Chat) from the page, PR #336; owner and Chat to confirm, 2026-11-19)
+test('two-handed weapon: a Serious Wound to either arm makes attacks Hard; to both, still Hard (the hardest applies)',()=>{
  bout();run(`(()=>{const b=S.fighters.b;b.weapon='greatsword';b.weaponGuard=null;ensureEffectState(b);b.weaponHand='Right Arm';b.style=60;})()`);
  assert.equal(fighter('b').target,60);
  run(`S.fighters.b.hp['Left Arm']=-1`);assert.equal(fighter('b').target,40,'the arm that does not "hold" it counts too: Hard');
- run(`S.fighters.b.hp['Right Arm']=-1`);assert.equal(fighter('b').target,30,'both arms: Formidable');
- run(`R={actor:'b',label:'Attack · Combat Style 30%',defs:[{sides:100}]}`);
+ run(`S.fighters.b.hp['Right Arm']=-1`);assert.equal(fighter('b').target,40,'both arms: still Hard, not Formidable');
+ run(`R={actor:'b',label:'Attack · Combat Style 40%',defs:[{sides:100}]}`);
  assert.match(run(`rollDifficultyHtml('b')`),/Serious Right Arm wound[\s\S]*Serious Left Arm wound/);run('R=null');
  // a one-handed weapon: only the arm that holds it
  run(`(()=>{const b=S.fighters.b;b.weapon='sword';b.weaponGuard=null;ensureEffectState(b);b.hp['Right Arm']=5;})()`);

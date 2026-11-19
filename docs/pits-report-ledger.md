@@ -9,6 +9,30 @@ write here; take a report by putting your name in **Who** before diagnosing it. 
 was never right. `?` on rows written before the column existed. Each batch reports the fixes made and the regressions
 caused.
 
+## Findings from old PRs (rule 7, Claude, 2026-11-19)
+
+The 13 PRs open on 2026-11-19 were cleared. Their dated report files are in `docs/` (brought in by #381, without their
+`HANDOFF.md` edits); each PR is closed with a pointer here. #315 (an old sword choreography on the retired stage) was
+closed unmerged. What each held that was still open:
+
+| From | Finding | Severity | Status |
+|---|---|---|---|
+| #336 (Chat, Core p.38) | Difficulty grades from Fatigue, a lodged Impale and an entangled torso are added to each other and to prone or a wounded arm (`effectiveSkill`), where only the hardest applies. Prone and Wearied made Hopeless instead of Formidable. | 1 (common at the table: a tired, prone fighter) | fixed in #381 (D-G1, `tests/pits-grades.cjs`) |
+| #336 | Two seriously wounded (still usable) legs are Formidable for Evade; Core p.110 with p.38: Hard. #373 copied the same rule to two-handed weapons (both arms Formidable). | 2 | fixed in #381: either limb makes it Hard; owner and Chat to confirm for the arms |
+| #336 | A Hopeless defence must not be offered or rolled. Reachable only through the stacking above. | 2 | fixed in #381: not offered, not rolled |
+| #360 (2) | The Evade odds in the deck count any success, not a success that beats this attack: 60% shown, 9% real in the audit's case. | 2 | open |
+| #360 (3) | The attack preview still lists parry and evade odds when the defender has no AP. | 2 | open |
+| #360 (4) | Attacking from the ground, the rear knee slides across the floor (frame sheet). | 2 | open, owner's look |
+| #360 (5, 6) | A second accent in the withdrawal finish; flexible weapons not inspected moving. | 3 | Known limits |
+| #288 (Chat, Core p.137) | A summoned spirit arrived in 1d4 minutes, not 1d6. | 2 | fixed in #381 (`tests/magic-animism.cjs`) |
+| #185 | IS-L07 (item names 18 px wide at 1363 px) and PIT-R02a (a blow at the longer weapon ignored a parry), from 6 Nov. | 2 | to verify in the next batch |
+| #270 | Creature body cards cramped at desktop width. | 3 | Known limits (the stale help text it named is already fixed) |
+| #346 | The deck kept the Impale result after a withdrawal; a passing prone pose. | 2 | the first fixed by #343 (`paBlowLine`, "Withdrawal injury"); the second to watch in Work's next batch |
+| #325 (C1) | Endurance dice shown after the blow. | 1 | fixed 2026-11-14; now guarded by `tests/pits-order.cjs` |
+| #262, #334, #350 | Checks blocked in Work's browser. | 3 | Known limits |
+| #214 | An inventory of the site's images to review. | - | owner, when convenient |
+| #305, #327 | Passes and a setup record. | - | nothing to do |
+
 | Report file | Note (short) | Who | Status | Finding | Fix | Caused by |
 |---|---|---|---|---|---|---|
 | `20261118-215121-b6bf5c97.json` | Impale looks horrible, no idea how I won; the impaled sword moved around with the impaled arm | Claude | diagnosing | FR-29, Sev 2. Rule right: a Major Wound to the arm, Endurance failed; the wounded fighter's tied concurrent attack happened before it fell (Core p.110, FR-15). The held sword follows the wound by design (#374), so it swings with the arm during that attack. The record stops before the last blow was drawn: the report may have been sent mid-blow. | Owner: should a held weapon stay still while the arm it is in moves? That changes the locked look. | #374 |

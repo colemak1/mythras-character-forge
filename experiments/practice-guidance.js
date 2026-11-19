@@ -96,8 +96,8 @@ function parryChoiceHelp(f,attacker,tool){
  const diff=attackingSize-size;
  const protection=diff<=0?'all':diff===1?'half':'no';
  const missed=S.pending?.attackRoll?.grade<2;
- if(missed)return `${effectiveSkill(f,combatTarget(f,tool))}% parry target. Try to earn defensive Special Effects${tool==='shield'&&f.warded.length?'; releases your ward':''}.`;
- return `${effectiveSkill(f,combatTarget(f,tool))}% parry target. Size comparison: ${protection} damage blocked on a successful parry${tool==='shield'&&f.warded.length?'; releases your ward':''}.`;
+ if(missed)return `${combatTarget(f,tool)}% parry target. Try to earn defensive Special Effects${tool==='shield'&&f.warded.length?'; releases your ward':''}.`;
+ return `${combatTarget(f,tool)}% parry target. Size comparison: ${protection} damage blocked on a successful parry${tool==='shield'&&f.warded.length?'; releases your ward':''}.`;
 }
 function reactionChoicesHtml(p){
  const f=S.fighters[p.def],attacker=S.fighters[p.atk];
@@ -106,7 +106,7 @@ function reactionChoicesHtml(p){
  return `<div class="turnline"><h3>Choose your defense</h3><span>${f.ap} AP available</span></div><div class="choicegrid reaction-choices">`+
   button('parry','Parry (Weapon) · 1 AP',parryChoiceHelp(f,attacker,'weapon'),f.ap<=0||!canParryAtReach(f.id))+
   (f.shield!=='none'?button('shield','Parry (Shield) · 1 AP',parryChoiceHelp(f,attacker,'shield'),f.ap<=0||!canShieldParry(f)):'')+
-  button('evade','Evade · 1 AP',f.ap<=0||cannotRespond(f)?unavailableReaction(f,'evade'):`${effectiveSkill(f,evadeTarget(f))}% Evade target. ${missed?'Try for defensive Special Effects; you still finish prone.':'Try to avoid the attack; you finish prone.'}`,f.ap<=0||cannotRespond(f))+
+  button('evade','Evade · 1 AP',f.ap<=0||cannotRespond(f)?unavailableReaction(f,'evade'):`${evadeTarget(f)}% Evade target. ${missed?'Try for defensive Special Effects; you still finish prone.':'Try to avoid the attack; you finish prone.'}`,f.ap<=0||cannotRespond(f))+
   button('none','Do Not Defend · 0 AP',missed?'Keep your AP; pass up the chance to earn defensive Special Effects.':'Keep your AP; a successful attack can damage you and earn Special Effects.')+'</div>';
 }
 function actionChoiceHelp(act,f){
@@ -122,7 +122,7 @@ function actionChoiceHelp(act,f){
    if(!canUseWeapon(f))return unavailableReaction(f,'weapon')||'Your weapon cannot be used in the current condition.';
    if(isCrampedAtReach(f.id))return 'Cramped strike · 1d3+1 plus Damage Modifier; reduced weapon Size.';
    if(!canAttackBody(f.id))return 'Their body is beyond your reach. Close Inside first.';
-   return `${effectiveSkill(f,combatTarget(f))}% attack target. Spend 1 AP to attack; the opponent can react.`;
+   return `${combatTarget(f)}% attack target. Spend 1 AP to attack; the opponent can react.`;
   case 'delay':return 'Hold an AP for a reaction. If unused before your next turn, that AP is lost.';
   case 'ward':return `Passively cover up to ${SHIELDS[f.shield].coverage} locations. An active shield parry releases the ward.`;
   case 'stand':return !f.prone?'You are already standing.':canRegainFooting(f)?'Stand using an opposed Brawn or Athletics test while engaged.':'A disabled or stunned leg prevents standing.';

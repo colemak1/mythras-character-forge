@@ -97,7 +97,7 @@ test('each opposed roll in the engine names what it is against',()=>{
  const src=fs.readFileSync(path.join(root,'experiments/practice-combat.html'),'utf8');
  for(const label of ['Trip · \\$\\{target','Resist disarm','Resist surrender','Blind Opponent · \\$\\{target','Stun Location · \\$\\{def','Bleed · \\$\\{def',
    'Endurance · \\$\\{cls\\} wound','Hold on · ','Hold pin · ','Oppose standing','Resist withdrawal','Trip · \\$\\{victim'])
-  assert.match(src,new RegExp('opposing\\([^\\n]*\\);?\\s*(?:\\n\\s*)?(?:if\\(opposed\\)\\{opposing[^\\n]*)?requestSkill\\([^\\n]*`'+label),label);
+  assert.match(src,new RegExp('opposing\\([^\\n]*\\);?\\s*(?:\\n\\s*)?(?:if\\(opposed\\)\\{opposing[^\\n]*)?request(?:Graded)?Skill\\([^\\n]*`'+label),label);   // (requestGradedSkill: a roll whose percentage already carries its grades)
 });
 
 test('Impale: the tray shows both weapon rolls and the lower one leaves',()=>{

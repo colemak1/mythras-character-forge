@@ -1941,7 +1941,11 @@ function pitsStageSync(){
   PS.fighters.lodged={a:pitsStageLodged(view,'a'),b:pitsStageLodged(view,'b')};
   // an Impale drawn at its contact stays drawn while the shown state catches up; then the engine's state is the picture
   for(const id of ['a','b']){const la=PS.lodgeAhead[id];if(!la)continue;
-    if(fresh||(!V.busy&&!V.hold)){delete PS.lodgeAhead[id];continue;}
+    // (kept until playback has stopped and the engine's live state holds the wound, or the fight is over. A shown state
+    // can go back in time: in a tied Initiative concurrent turn the victim is shown as before the blow, and the weapon
+    // vanished from the wound for that turn; tests/visual/pits-smoke.cjs, 2026-11-19)
+    const caught=pitsStageLodged(S.fighters,id).some(w=>w.holder===la.holder);
+    if(fresh||(!V.busy&&!V.hold&&(caught||S.phase!=='fight'))){delete PS.lodgeAhead[id];continue;}
     PS.fighters.lodged[id]=psMergeLodge(PS.fighters.lodged[id],la);
     const hf=PS.fig[la.holder];if(hf&&hf.look&&!la.held)hf.look.armed=false;}
   PS.fighters.tether={a:pitsStageEntangle(view,'a'),b:pitsStageEntangle(view,'b')};

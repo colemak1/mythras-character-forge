@@ -5,6 +5,24 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Clearing the old PRs (rule 7), and the rule fixes they held
+
+The 13 PRs open on 19 November were cleared: their reports are in `docs/`, and their open findings are in
+`docs/pits-report-ledger.md` ("Findings from old PRs").
+
+- **Difficulty grades do not add up (Severity 1, ChatGPT (Chat) from Core p.38, PR #336):** Fatigue, a lodged Impale and an
+  entangled torso were added to each other and to prone, blinded or a wounded limb. A prone, Wearied fighter parried
+  at a quarter of their skill; it is now half (Formidable), the hardest grade alone. The shown percentages, the dice
+  and the deck all use the same number now. Ruling D-G1 in `docs/decisions.md`.
+- **Two wounded legs, or both arms on a two-handed weapon, are Hard,** not Formidable (Core p.38 with p.110). Either arm
+  still counts (#373). The owner and Chat are asked to confirm the two-arm case.
+- **A Hopeless (0%) parry or evade** is no longer offered or rolled (Core p.38).
+- **Summoned spirits** arrive in 1d6 minutes on a success, not 1d4 (Core p.137, ChatGPT (Chat) in PR #288).
+- **An Impale stays in the wound through a concurrent turn** (found by the smoke bouts): in a tied Initiative turn the
+  stage showed the victim as before the blow, and the weapon disappeared from the wound for that turn.
+- Tests: `tests/pits-grades.cjs` (fails on the old code), `tests/magic-animism.cjs`; the smoke bouts now pick the
+  deck's action and defence chips. Golden bouts regenerated for the grade change (each still covers its rules).
+
 ## The Pits: forwards, not backwards (gates, and the reports of 18 November evening)
 
 The owner: "it's starting to feel like our bugs are getting worse". New rules in `AGENTS.md` ("Forwards, not backwards"),
