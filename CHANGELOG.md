@@ -29,7 +29,7 @@ and the checks that hold them. Rules and dice unchanged.
 - **Browser tests that were already failing:** the scripted harness stopped after 500 steps, too few since the dice
   hold; the attacker's-Disarm test ran on the retired spring link; the parry-Disarm test still expected the 16 Nov
   timing, before the owner's one-movement counter (#380). The first two are fixed. The third is **loosened**: the Disarm
-  may now land up to 300 ms after the parry contact instead of on it, to match #380 (the owner to confirm the look).
+  may now land up to 300 ms after the parry contact instead of on it, to match #380 (the owner confirmed this look, 2026-11-19).
 
 ## The Pits: a concurrent attack keeps its pre-wound skill (rulings D-R1, D-R2)
 
