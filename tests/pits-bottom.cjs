@@ -68,9 +68,10 @@ test('when attacked: the defences are live, the actions fold to one line, and Co
 
 test('defence odds against the roll already made (Evade 50% against an 11 Success)',()=>{
  // Critical 01-05 beats a Success: 5% you earn one. Success 06-50: equal grades, no effects: 45%.
- // Failure 51-98: they earn one, 48%. Fumble 99-00: they earn two, 2%. 50% get out of the way.
+ // Failure 51-98: they earn one, 48%. Fumble 99-00: they earn two, 2%. Getting out of the way needs a roll that beats the
+ // 11 (opposed, Core pp.50, 103): the critical 01-05 and the successes 12-50, 44% (was 50%: wide audit 2026-11-16, #360).
  const info=A.run(`pbInfoHtml(pbCtx(),'def:evade')`);
- assert.match(info,/<strong>50%<\/strong><span>chance to get out of the way/);
+ assert.match(info,/<strong>44%<\/strong><span>chance to get out of the way/);
  assert.match(info,/You earn 1 Special Effect<\/span><b>5%/);
  assert.match(info,/No Special Effects either way<\/span><b>45%/);
  assert.match(info,/earns 1<\/span><b>48%/);assert.match(info,/earns 2<\/span><b>2%/);

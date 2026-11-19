@@ -20,8 +20,8 @@ closed unmerged. What each held that was still open:
 | #336 (Chat, Core p.38) | Difficulty grades from Fatigue, a lodged Impale and an entangled torso are added to each other and to prone or a wounded arm (`effectiveSkill`), where only the hardest applies. Prone and Wearied made Hopeless instead of Formidable. | 1 (common at the table: a tired, prone fighter) | fixed in #381 (D-G1, `tests/pits-grades.cjs`) |
 | #336 | Two seriously wounded (still usable) legs are Formidable for Evade; Core p.110 with p.38: Hard. #373 copied the same rule to two-handed weapons (both arms Formidable). | 2 | fixed in #381: either limb makes it Hard; owner and Chat to confirm for the arms |
 | #336 | A Hopeless defence must not be offered or rolled. Reachable only through the stacking above. | 2 | fixed in #381: not offered, not rolled |
-| #360 (2) | The Evade odds in the deck count any success, not a success that beats this attack: 60% shown, 9% real in the audit's case. | 2 | open |
-| #360 (3) | The attack preview still lists parry and evade odds when the defender has no AP. | 2 | open |
+| #360 (2) | The Evade odds in the deck count any success, not a success that beats this attack: 60% shown, 9% real in the audit's case. | 2 | fixed 2026-11-19: Evade counts only rolls that beat the attack, after the over-100% reduction (`tests/pits-odds-fixes.cjs`) |
+| #360 (3) | The attack preview still lists parry and evade odds when the defender has no AP. | 2 | fixed 2026-11-19: the preview lists only the defences the foe can make, and says when it has no AP (`tests/pits-odds-fixes.cjs`) |
 | #360 (4) | Attacking from the ground, the rear knee slides across the floor (frame sheet). | 2 | open, owner's look |
 | #360 (5, 6) | A second accent in the withdrawal finish; flexible weapons not inspected moving. | 3 | Known limits |
 | #288 (Chat, Core p.137) | A summoned spirit arrived in 1d4 minutes, not 1d6. | 2 | fixed in #381 (`tests/magic-animism.cjs`) |
