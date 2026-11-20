@@ -159,17 +159,19 @@ function atlasLevelOf(data,sel){
  return {level:'nation',nation,town:null};
 }
 function atlasDepth(level){return level==='town'?2:level==='nation'?1:0;}
-// Inside a nation's own map the view is locked to it: along an axis where
-// the map is smaller than the box (screen px) it sits in the middle,
-// otherwise its edges stop at the box's edges. rect is in map units.
+// Inside a nation's own map the view is locked to it: its edges stop at the
+// box's edges (screen px), so nothing beyond the map ever shows. (Along an
+// axis where it is smaller than the box, which atlasLockMin prevents, it
+// would sit in the middle.) rect is in map units.
 function atlasLockClamp(v,box,rect,kMin,kMax){
  const k=Math.min(kMax,Math.max(kMin,v.k));
  const axis=(pos,b0,bs,r0,r1)=>{const size=(r1-r0)*k;
   return size<=bs?b0+(bs-size)/2-r0*k:Math.min(b0-r0*k,Math.max(b0+bs-r1*k,pos));};
  return {k,x:axis(v.x,box.x,box.w,rect[0],rect[2]),y:axis(v.y,box.y,box.h,rect[1],rect[3])};
 }
-// Smallest zoom of a nation's map: all of it fits in the box.
-function atlasLockMin(box,rect){return Math.min(box.w/(rect[2]-rect[0]),box.h/(rect[3]-rect[1]));}
+// Smallest zoom of a nation's map: it still fills the whole w x h map area,
+// as if there were nothing else in the world (owner, 2026-11-20).
+function atlasLockMin(w,h,rect){return Math.max(w/(rect[2]-rect[0]),h/(rect[3]-rect[1]));}
 
 /* ---------- markup ---------- */
 function atlasLayersState(){
@@ -292,8 +294,9 @@ function atlasMount(){
 function atlasDesktop(){return !(typeof matchMedia==='function'&&matchMedia('(max-width:899px)').matches);}
 function atlasReduced(){return typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;}
 function atlasSize(){const m=atlasEl('atlasMap');return m?{w:m.clientWidth,h:m.clientHeight}:{w:1,h:1};}
-// The part of the screen a nation's map is locked into: beside the panel on
-// a desktop; the whole map on a phone, where the panel is a sheet that closes.
+// The part of the screen a nation's map is locked into. It always fills the
+// whole map area; on a desktop its east edge can come as far as the panel,
+// so all of it can be seen. On a phone the panel is a sheet that closes.
 function atlasLockBox(){
  if(atlasDesktop())return atlasFreeBox();
  const {w,h}=atlasSize();return {x:0,y:0,w,h};
@@ -303,7 +306,7 @@ function atlasLimits(){
  const fit=Math.min(w/d.width,h/d.height);ATLAS.fit=fit;
  if(det){
   const rect=[det.x,det.y,det.x+det.w,det.y+det.h],box=atlasLockBox();
-  return {kMin:atlasLockMin(box,rect),kMax:Math.max(ATLAS_K_MAX,atlasDetailScale(det)*1.25),rect,box};
+  return {kMin:atlasLockMin(w,h,rect),kMax:Math.max(ATLAS_K_MAX,atlasDetailScale(det)*1.25),rect,box};
  }
  return {kMin:fit*.8,kMax:Math.max(fit*2,ATLAS_K_MAX)};
 }
@@ -315,7 +318,7 @@ function atlasClampView(v){
 // While flying (or travelling through the clouds) the view is drawn as it
 // comes; it was clamped where it is going.
 function atlasApply(v){
- if(!ATLAS.flying)v=atlasClampView(v);
+ if(!(ATLAS.flying&&ATLAS.flyFree))v=atlasClampView(v);
  ATLAS.view=v;
  const world=atlasEl('atlasWorld'),root=atlasEl('atlasRoot');if(!world)return;
  world.style.transform='translate('+v.x.toFixed(1)+'px,'+v.y.toFixed(1)+'px) scale('+v.k.toFixed(4)+')';
@@ -335,7 +338,7 @@ function atlasAnimateTo(target,instant,opts){
  if(!opts.free)target=atlasClampView(target);
  const from=ATLAS.view;
  if(!from||instant||atlasReduced()){ATLAS.flying=false;atlasApply(target);return Promise.resolve();}
- const t0=performance.now(),dur=opts.dur||520,ease=ATLAS_EASE[opts.ease||'inOut'];ATLAS.flying=true;
+ const t0=performance.now(),dur=opts.dur||520,ease=ATLAS_EASE[opts.ease||'inOut'];ATLAS.flying=true;ATLAS.flyFree=!!opts.free;
  return new Promise(done=>{
   const step=now=>{
    const t=Math.min(1,(now-t0)/dur),e=ease(t);
@@ -571,7 +574,11 @@ async function atlasTravel(to,opts){
  await Promise.race([ready,atlasWait(2500)]);
  if(id!==ATLAS.travel)return;
  const f=atlasLockBox();
- ATLAS.flying=true;atlasApply(atlasZoomAt(target,deeper?.4:2.4,f.x+f.w/2,f.y+f.h/2));
+ // The new level starts a little further out (in, going deeper) and
+ // settles in as the clouds part; a nation's map still fills the screen.
+ ATLAS.flying=false;
+ const lim=atlasLimits(),k0=deeper?Math.max(lim.kMin,target.k*.4):target.k*2.4;
+ atlasApply(atlasZoomAt(target,k0/target.k,f.x+f.w/2,f.y+f.h/2));
  const tv=atlasEl('atlasTownView');
  if(to.level==='town'&&tv)tv.animate([{transform:'scale('+(deeper?.6:1.5)+')'},{transform:'scale(1)'}],{duration:ATLAS_TRAVEL_OUT,easing:'cubic-bezier(.2,.6,.3,1)'});
  clouds.part();
@@ -605,7 +612,12 @@ function atlasLevelView(to,from){
  const back=from&&from.level==='town'&&from.nation===to.nation&&atlasSettlement(d,from.town);
  const s=back||(p&&p.kind==='s'?atlasSettlement(d,p.id):null);
  if(s){const f=atlasLockBox(),k=Math.max(3,atlasDetailScale(atlasDetail(d,to.nation))*.55);return {k,x:f.x+f.w/2-s.x*k,y:f.y+f.h/2-s.y*k};}
- return atlasBoxView(atlasNation(d,to.nation).box,0);
+ // The nation fitted, but a little closer than its map's smallest zoom, so
+ // the arrival can settle inward without ever showing past its edges.
+ const n=atlasNation(d,to.nation),v=atlasBoxView(n.box,0),kMin=atlasLimits().kMin;
+ if(v.k>=kMin*1.35)return v;
+ const f=atlasLockBox(),k=kMin*1.35,cx=(n.box[0]+n.box[2])/2,cy=(n.box[1]+n.box[3])/2;
+ return {k,x:f.x+f.w/2-cx*k,y:f.y+f.h/2-cy*k};
 }
 // Show a level: the nation's own map alone (the whole map and the other
 // nations hidden, its settlements shown), or a town's map over everything.

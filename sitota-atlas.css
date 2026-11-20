@@ -51,6 +51,11 @@ html[data-mode="dark"] .atlas[data-nation] .atlas-base{filter:saturate(.5) brigh
 .atlas[data-level="nation"] .atlas-base{visibility:hidden}
 .atlas[data-level="nation"] .atlas-details img.is-on{transition:none}
 .atlas[data-level="nation"] .atlas-svg path.atlas-nation{display:none}
+/* nothing from the whole map inside a nation: its rivers, roads and sea
+   routes are drawn for the whole map, the nation's map draws its own */
+.atlas[data-level="nation"] :is(.atlas-g-rivers,.atlas-g-roads,.atlas-g-sea){display:none}
+.atlas[data-level="nation"] .atlas-details img{box-shadow:none}
+.atlas[data-level="nation"] .atlas-map{background:var(--paper)}
 .atlas[data-level="town"] .atlas-map,.atlas[data-level="town"] .atlas-zoom{visibility:hidden}
 .atlas-townview{position:absolute;inset:0;z-index:1;background:var(--map-paper);transform-origin:50% 50%}
 .atlas-townview[hidden]{display:none}

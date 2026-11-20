@@ -8,8 +8,9 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 ## Atlas: fly through the clouds into nations and towns
 
 - **Choosing a nation flies in through the clouds** (owner, 2026-11-20): the map dives toward it, clouds close in, and
-  they part on the nation's own map. The map then stays **locked to that nation**: drag and zoom it, but it stops at
-  its edges, and the whole map and the other nations are hidden. **‹ Sit’ota** flies back out the same way.
+  they part on the nation's own map. The map then stays **locked to that nation**, as if nothing else existed: it
+  always fills the screen (you can't zoom out past that), drags stop at its edges, and nothing from the whole map is
+  drawn over it (its borders, rivers, roads and sea routes are hidden). **‹ Sit’ota** flies back out the same way.
 - **Choosing a city, town or village flies on into its town map**, which fills the map (beside the panel on a desktop).
   **‹ <nation>** comes back out over the town you left. Forts, which have no town map, stay on the nation's map.
   The panel's small town preview and its Enlarge window are gone; the panel links to the generator instead.
