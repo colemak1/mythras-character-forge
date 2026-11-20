@@ -15,5 +15,16 @@ for(const page of pages){
   checked++;
  }
 }
+// The atlas script loads its own data, picture and plates (stamped by the same script).
+const atlas=fs.readFileSync(path.join(root,'js/atlas.js'),'utf8');
+for(const [re,base] of [[/'(assets\/atlas\/[^'?]+)\?v=([^']*)'/g,''],[/'([a-z-]+\.webp)\?v=([^']*)'/g,'assets/atlas/plates']]){
+ for(const m of atlas.matchAll(re)){
+  const file=path.join(root,base,m[1]);
+  assert(fs.existsSync(file),'js/atlas.js: '+m[1]+' does not exist');
+  const want=crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').slice(0,10);
+  assert.equal(m[2],want,'js/atlas.js: '+m[1]+'?v='+m[2]+' is stale. Run python3 scripts/stamp-assets.py');
+  checked++;
+ }
+}
 assert(checked>=19,'expected the site\'s scripts and stylesheets to be version-stamped, found '+checked);
 console.log('PASS '+checked+' asset version stamps match their files');

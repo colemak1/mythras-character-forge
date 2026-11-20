@@ -98,6 +98,8 @@ function renderInner(){
   if(APPVIEW!=="play"&&typeof pmDiceHide==="function")pmDiceHide();
   // Only Play Mode fits the window (see play-clean.css); every other view scrolls.
   document.body.classList.remove("pm-fit");
+  // The atlas fills the window too; renderWorldView sets it again.
+  document.body.classList.remove("atlas-mode");
   // Party Board runs a realtime subscription + a couple of timers for as
   // long as it's on screen — tear all of that down the instant navigation
   // moves anywhere else, so a stale subscription never keeps polling/pushing

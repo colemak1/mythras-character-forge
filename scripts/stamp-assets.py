@@ -14,7 +14,27 @@ REF = re.compile(r'((?:src|href)=")([^"?#]+)\?v=[^"]*(")')
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()[:10]
 
+# Scripts that load assets themselves: (script, pattern, folder the matched
+# path is relative to). Stamped before the pages, since this changes the
+# script's own hash.
+SCRIPT_REFS = [
+    ("js/atlas.js", re.compile(r"(')(assets/atlas/[^'?]+)\?v=[^']*(')"), ""),
+    ("js/atlas.js", re.compile(r"(')([a-z-]+\.webp)\?v=[^']*(')"), "assets/atlas/plates"),
+]
+
 changed = 0
+for script, pattern, base in SCRIPT_REFS:
+    p = root / script
+    src = p.read_text(encoding="utf-8")
+    def stamp_ref(m):
+        target = root / base / m.group(2)
+        if not target.is_file():
+            sys.exit(f"{script}: {base}/{m.group(2)} does not exist")
+        return f"{m.group(1)}{m.group(2)}?v={digest(target)}{m.group(3)}"
+    new = pattern.sub(stamp_ref, src)
+    if new != src:
+        p.write_text(new, encoding="utf-8"); changed += 1
+
 for page in PAGES:
     p = root / page
     html = p.read_text(encoding="utf-8")
@@ -26,4 +46,4 @@ for page in PAGES:
     new = REF.sub(stamp, html)
     if new != html:
         p.write_text(new, encoding="utf-8"); changed += 1
-print(f"Stamped asset versions in {changed} page(s).")
+print(f"Stamped asset versions in {changed} file(s).")

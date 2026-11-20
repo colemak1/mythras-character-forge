@@ -5,6 +5,22 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## World Guide: an interactive atlas and timeline
+
+The World Guide now opens on an atlas of Sit’ota (`#/world/atlas`), after the Roshar atlas the owner pointed at.
+
+- **The map** (the owner's stand-in reference map) drags, zooms with the wheel, a pinch or the buttons, and shows more
+  settlements and their names the closer you zoom. Nation borders, settlements, rivers, roads and sea routes come from
+  the Azgaar export and line up with the picture; each is a layer you can turn on or off.
+- **Choose a nation or settlement** on the map, in the Nations list or by search: a panel shows its entry, capital,
+  settlements, events and, for a nation, its stand-in national map full size. Every selection has its own link.
+- **The timeline** under the map lists events by year and era; choosing one lights up its nations and places and
+  flies the map there. It is empty until events are written, and shows the present day (845 PE, from the map file).
+- Lore lives in `js/atlas-lore.js`, never in the generated map data: Valeshar's capital shows as **Shamur**
+  (Golshehr on the map file). How to add lore and events, or swap in the final maps: `docs/world-atlas.md`.
+- The guide chapters are still there (Guide button, `#/world/welcome`). Header, home and More links go to the atlas.
+- Tests: `tests/atlas.cjs`; `tests/asset-versions.cjs` also checks the atlas's own data and picture stamps.
+
 ## The Pits: Evade odds and the attack preview tell the truth
 
 - **Evade odds** in the details panel now count only the rolls that beat the attack, as the engine resolves it
