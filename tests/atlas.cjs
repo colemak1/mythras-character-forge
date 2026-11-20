@@ -48,7 +48,7 @@ test('town maps: Azgaar\'s Watabou links, with the lore name',()=>{
   else if(s.group==='village')assert.match(s.map,/^https:\/\/watabou\.github\.io\/village-generator\/\?pop=/,s.id);
   else assert.match(s.map,/^https:\/\/watabou\.github\.io\/city-generator\/\?name=/,s.id);
  }
- assert.match(run('atlasTownHTML')(g,'Shamur'),/<iframe src="https:\/\/watabou[^"]*preview=1"/);
+ assert.match(run('atlasTownHTML')(g,'Shamur'),/href="https:\/\/watabou[^"]*name=Shamur/,'the panel links to the generator');
 });
 test('a nation or its settlement opens the nation\'s own map; events and nothing do not',()=>{
  const of=run('atlasNationOf');
@@ -58,6 +58,31 @@ test('a nation or its settlement opens the nation\'s own map; events and nothing
  assert(run('atlasDetailScale')(det)>5,'the stand-in plate is sharper than the whole map');
  const c=run('atlasClamp')({k:6,x:99999,y:99999},800,600,1024,768,.5,10,[det.x,det.y,det.x+det.w,det.y+det.h]);
  assert.equal(c.x,400-det.x*6,'panning stops at the nation map\'s edge');
+});
+test('three levels: a nation opens its own map, a settlement its town map, a fort stays on the nation map (owner, 2026-11-20)',()=>{
+ const lv=sel=>J('atlasLevelOf(DATA,'+JSON.stringify(sel)+')');
+ assert.deepEqual(lv(null),{level:'world',nation:null,town:null});
+ assert.deepEqual(lv('e-anything'),{level:'world',nation:null,town:null});
+ assert.deepEqual(lv('n-valeshar'),{level:'nation',nation:'valeshar',town:null});
+ assert.deepEqual(lv('s-golshehr'),{level:'town',nation:'valeshar',town:'golshehr'});
+ const fort=data.settlements.find(s=>s.group==='fort'&&s.nation);
+ assert.deepEqual(lv('s-'+fort.id),{level:'nation',nation:fort.nation,town:null});
+ assert(run('atlasDepth("town")>atlasDepth("nation")&&atlasDepth("nation")>atlasDepth("world")'));
+});
+test('inside a nation the map is locked: it stops at its edges and is never smaller than all of it',()=>{
+ const lock=run('atlasLockClamp'),min=run('atlasLockMin'),box={x:0,y:0,w:800,h:600},rect=[100,100,300,200];
+ const kMin=min(box,rect);assert.equal(kMin,4,'all of the map fits: the smaller of 800/200 and 600/100');
+ const far=lock({k:8,x:99999,y:-99999},box,rect,kMin,20);
+ assert.equal(far.x,-100*8,'the left edge stops at the screen\'s left edge');
+ assert.equal(far.y,600-200*8,'the bottom edge stops at the screen\'s bottom edge');
+ const other=lock({k:8,x:-99999,y:99999},box,rect,kMin,20);
+ assert.equal(other.x,800-300*8);assert.equal(other.y,-100*8);
+ const small=lock({k:1,x:0,y:0},box,rect,kMin,20);
+ assert.equal(small.k,4,'cannot zoom out past all of it');
+ assert.equal(small.y,(600-100*4)/2-100*4,'shorter than the screen: it sits in the middle');
+ assert.equal(small.x,-100*4,'as wide as the screen: edge to edge');
+ const side=lock({k:3,x:0,y:0},{x:0,y:0,w:400,h:600},rect,1,20);
+ assert(side.x<=-100*3&&side.x+300*3>=400,'a box beside the panel is filled too');
 });
 test('no present day until the owner sets one (845 PE is Azgaar\'s placeholder)',()=>{
  assert.equal(run('ATLAS_LORE.calendar'),null);assert.equal(run('atlasCalendar()'),null);
