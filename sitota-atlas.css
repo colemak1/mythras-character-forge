@@ -25,6 +25,26 @@ body[data-sitota-view="world"].atlas-mode{overscroll-behavior:none}
   box-shadow:0 10px 40px -12px color-mix(in srgb,var(--bone) 35%,transparent)}
 html[data-mode="dark"] .atlas-base{filter:brightness(.86) saturate(.92)}
 .atlas-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+
+/* a nation's own map, faded in over the whole map (js atlasSetNation) */
+.atlas-details{position:absolute;inset:0;pointer-events:none}
+.atlas-details img{position:absolute;display:block;opacity:0;transition:opacity .5s ease;box-shadow:0 0 0 1px color-mix(in srgb,var(--map-ink) 40%,transparent),0 12px 40px -10px color-mix(in srgb,var(--bone) 45%,transparent)}
+.atlas-details img.is-on{opacity:1}
+@media(prefers-reduced-motion:reduce){.atlas-details img{transition:none}}
+.atlas[data-nation] .atlas-base{filter:saturate(.6) brightness(.82)}
+html[data-mode="dark"] .atlas[data-nation] .atlas-base{filter:saturate(.5) brightness(.6)}
+.atlas[data-nation] .atlas-svg path.atlas-nation{stroke:transparent;fill:transparent}
+.atlas[data-nation] .atlas-svg path.atlas-nation:not(.is-current):hover{fill:color-mix(in srgb,var(--map-accent) 10%,transparent)}
+.atlas-svg path.atlas-nation.is-current{pointer-events:none}
+.atlas[data-nation] .atlas-g-places .atlas-pl:not(.in-nation){display:none}
+.atlas[data-nation] .atlas-g-places .atlas-pl.in-nation{display:inline}
+.atlas[data-nation] .atlas-g-places .atlas-pl.in-nation .atlas-pl-dot{fill:transparent;stroke:transparent}
+.atlas[data-nation] .atlas-g-places .atlas-pl.in-nation .atlas-pl-ring{stroke:transparent}
+.atlas[data-nation] .atlas-g-places .atlas-pl.in-nation:is(:hover,.is-sel,.is-lit) .atlas-pl-dot{fill:var(--map-accent);stroke:var(--map-paper)}
+.atlas[data-labels] .atlas-g-places .atlas-pl.in-nation text{display:none}
+.atlas[data-labels] .atlas-g-places .atlas-pl.in-nation:is(:hover,.is-sel,.is-lit) text{display:inline}
+.atlas-tool-out{display:none}
+.atlas[data-nation] .atlas-tool-out{display:inline-flex;border-color:var(--accent);color:var(--accent)}
 /* Strokes are divided by the zoom (--k): the CSS scale is outside the SVG,
    so vector-effect can't keep them thin. */
 .atlas-svg path{fill:none}
@@ -132,9 +152,12 @@ html[data-mode="dark"] .atlas-base{filter:brightness(.86) saturate(.92)}
   text-decoration-color:color-mix(in srgb,var(--accent) 40%,transparent);text-underline-offset:3px;cursor:pointer}
 .atlas-where .atlas-link{display:inline-flex;align-items:center;min-height:36px;margin:0 8px 6px 0;padding:0 12px;border:1px solid var(--line);
   border-radius:99px;text-decoration:none}
-.atlas-plate-btn{display:block;position:relative;width:100%;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--ink-2);cursor:zoom-in}
-.atlas-plate-btn img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
-.atlas-plate-btn span{position:absolute;left:8px;bottom:8px;padding:4px 10px;border-radius:99px;background:var(--scrim);color:var(--bone);font-size:13px}
+/* the town map (Azgaar via Watabou) */
+.atlas-town{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--map-paper)}
+.atlas-town iframe{display:block;width:100%;aspect-ratio:4/3;border:0}
+.atlas-town-big{position:absolute;right:8px;bottom:8px;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:99px;
+  background:var(--paper);color:var(--bone);font:inherit;font-size:13.5px;cursor:pointer;box-shadow:var(--card-shadow)}
+.atlas-town-big:hover{border-color:var(--accent);color:var(--accent)}
 .atlas-list,.atlas-places,.atlas-evlist{list-style:none;margin:0;padding:0}
 .atlas-list button{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:0 10px;border:0;border-radius:10px;background:none;
   color:var(--bone);font:500 16px var(--font-display);text-align:left;cursor:pointer}
@@ -142,7 +165,8 @@ html[data-mode="dark"] .atlas-base{filter:brightness(.86) saturate(.92)}
 .atlas-list small{margin-left:auto;color:var(--bone-dim);font:13px var(--font-ui)}
 .atlas-swatch{width:10px;height:10px;border-radius:2px;border:1.5px solid var(--accent);transform:rotate(45deg)}
 .atlas-places{columns:2;column-gap:16px}
-.atlas-places li{break-inside:avoid;display:flex;flex-direction:column;padding:4px 0}
+.atlas-places li{break-inside:avoid;display:flex;flex-direction:column;align-items:flex-start;padding:4px 0}
+.atlas-places .atlas-link{text-align:left}
 .atlas-places small{color:var(--bone-dim);font-size:12px}
 .atlas-evlist button{display:flex;flex-direction:column;align-items:flex-start;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line-soft);
   border-radius:10px;margin-bottom:6px;background:var(--ink-1);color:var(--bone);font:inherit;text-align:left;cursor:pointer}
@@ -179,18 +203,26 @@ html[data-mode="dark"] .atlas-base{filter:brightness(.86) saturate(.92)}
 .atlas-tl-yr{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--accent)}
 .atlas-tl-ev b{font:500 15px/1.3 var(--font-display)}
 
-/* the national map viewer */
-.atlas-plate{max-width:min(1200px,96vw);width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--bone)}
-.atlas-plate::backdrop{background:color-mix(in srgb,var(--ink-0) 70%,transparent)}
-.atlas-plate img{display:block;width:100%;height:auto;border-radius:8px}
-.atlas-plate p{margin:8px 4px 0;color:var(--bone-dim);font-size:14px}
-.atlas-plate-close{float:right;width:40px;height:40px;margin:-4px -4px 6px 8px;border:0;border-radius:50%;background:var(--ink-2);color:var(--bone);font-size:22px;cursor:pointer}
+/* the town map, full size */
+.atlas-town-dlg{width:min(1200px,96vw);height:min(860px,90vh);max-width:none;max-height:none;padding:0;border:1px solid var(--line);border-radius:14px;
+  background:var(--paper);color:var(--bone);overflow:hidden}
+.atlas-town-dlg[open]{display:flex;flex-direction:column}
+.atlas-town-dlg::backdrop{background:color-mix(in srgb,var(--ink-0) 70%,transparent)}
+.atlas-town-dlg-bar{display:flex;align-items:center;gap:14px;padding:10px 12px 10px 18px;border-bottom:1px solid var(--line)}
+.atlas-town-dlg-bar h2{margin:0;font:500 22px var(--font-display)}
+.atlas-town-dlg-bar a{margin-left:auto;color:var(--accent);font-size:14px}
+.atlas-town-dlg-bar form{margin:0}
+.atlas-town-dlg-bar .atlas-panel-x{position:static;float:none;margin:0}
+.atlas-town-dlg iframe{flex:1;width:100%;border:0;background:var(--map-paper)}
+
+@media(max-width:479px){.atlas-tool-icon span{display:none}.atlas-tool-icon{padding:0 11px}}
 
 /* ---- phones: the panel is a sheet over the bottom of the map ---- */
 @media(max-width:899px){
   .atlas-top{top:8px;left:8px;right:8px}
   .atlas-search{flex-basis:100%;max-width:none}
   .atlas-tool{height:40px;padding:0 12px;font-size:14px}
+  .atlas-tools{flex-wrap:nowrap;min-width:0}
   .atlas-layers{top:100px}
   .atlas-zoom{left:auto;right:8px;bottom:8px}
   .atlas-panel{top:auto;left:0;right:0;bottom:0;width:auto;max-height:62%;border-radius:18px 18px 0 0;border-bottom:0;padding:18px 18px 22px}

@@ -19,7 +19,6 @@ def digest(path):
 # script's own hash.
 SCRIPT_REFS = [
     ("js/atlas.js", re.compile(r"(')(assets/atlas/[^'?]+)\?v=[^']*(')"), ""),
-    ("js/atlas.js", re.compile(r"(')([a-z-]+\.webp)\?v=[^']*(')"), "assets/atlas/plates"),
 ]
 
 changed = 0

@@ -5,6 +5,18 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Atlas: nation maps, town maps and Katalli's border
+
+- **Choosing a nation zooms into its own map**, faded in over the whole map, with every settlement in place and
+  nothing from the neighbours; **‹ Sit’ota** (or a click outside it) zooms back out. Until the detailed maps are drawn,
+  the nation maps are the stand-in plates cropped to their map (`scripts/build-atlas-plates.py`). The "National map"
+  picture in the panel is gone, since the map is now the view itself.
+- **A settlement shows its town map:** the city or village Azgaar generates for it with Watabou's generators, built
+  the same way as Azgaar's own preview, under its lore name (Shamur), in the panel and full size.
+- **Katalli holds the whole peninsula** (owner): its unclaimed south-western arm, with 26 settlements, is now Katalli's.
+- **No "Now · 845 PE"** on the timeline: that date was Azgaar's placeholder; it returns when a real present day is set.
+- Tests: `tests/atlas.cjs` (13).
+
 ## World Guide: an interactive atlas and timeline
 
 The World Guide now opens on an atlas of Sit’ota (`#/world/atlas`), after the Roshar atlas the owner pointed at.
