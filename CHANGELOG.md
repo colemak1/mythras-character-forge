@@ -5,6 +5,19 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Atlas: the scroll wheel goes between levels
+
+- **Scroll in over a nation** and, past the zoom where towns appear, the atlas flies through the clouds into that
+  nation's map (over the sea it just keeps zooming). **Keep scrolling out** at a nation's widest view and it flies back
+  out to Sit’ota; **keep scrolling in** at its closest view near a city, town or village and it flies into that town
+  (owner, 2026-11-20). A couple of notches against the limit are needed, so a stray one doesn't travel.
+- **A nation's map moves like the whole map** (owner: "locked" meant nothing else of Sit’ota shows, not that the map
+  can't move): it drags and zooms out with the same grey space around it, stopping when the middle of the screen
+  reaches its edge. Still nothing from the whole map is drawn.
+- **The clouds are much quicker**: about 0.7 s for a whole trip instead of 1.6 s.
+- Fixed: zooming against the closest or widest limit slid the map away from the pointer; the point under the pointer
+  now stays put (wheel, pinch and the zoom buttons). Tests: `tests/atlas.cjs`.
+
 ## Atlas: fly through the clouds into nations and towns
 
 - **Choosing a nation flies in through the clouds** (owner, 2026-11-20): the map dives toward it, clouds close in, and

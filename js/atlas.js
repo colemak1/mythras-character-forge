@@ -158,20 +158,27 @@ function atlasLevelOf(data,sel){
  if(p.kind==='s'){const s=atlasSettlement(data,p.id);if(s&&s.map)return {level:'town',nation,town:s.id};}
  return {level:'nation',nation,town:null};
 }
-function atlasDepth(level){return level==='town'?2:level==='nation'?1:0;}
-// Inside a nation's own map the view is locked to it: its edges stop at the
-// box's edges (screen px), so nothing beyond the map ever shows. (Along an
-// axis where it is smaller than the box, which atlasLockMin prevents, it
-// would sit in the middle.) rect is in map units.
-function atlasLockClamp(v,box,rect,kMin,kMax){
- const k=Math.min(kMax,Math.max(kMin,v.k));
- const axis=(pos,b0,bs,r0,r1)=>{const size=(r1-r0)*k;
-  return size<=bs?b0+(bs-size)/2-r0*k:Math.min(b0-r0*k,Math.max(b0+bs-r1*k,pos));};
- return {k,x:axis(v.x,box.x,box.w,rect[0],rect[2]),y:axis(v.y,box.y,box.h,rect[1],rect[3])};
+// Scroll-wheel trips between levels (owner, 2026-11-20). On the whole map,
+// zooming in past ATLAS_DIVE_K over a nation dives into it. Inside a nation,
+// scrolling on past its widest view flies back out, and past its closest
+// view over a town goes into the town. push carries the scroll already spent
+// against a limit (log of the zoom asked for), so a stray notch doesn't go.
+const ATLAS_DIVE_K=ATLAS_LOD[1],ATLAS_WHEEL_PUSH=.3;
+function atlasWheelIntent(s){
+ const dir=s.factor>1?1:s.factor<1?-1:0;let push=s.push||0;
+ if(!dir||Math.sign(push)===-dir)push=0;
+ if(s.level==='world')return {push:0,go:dir>0&&s.k*s.factor>=ATLAS_DIVE_K?'in':null};
+ if(s.level!=='nation')return {push:0,go:null};
+ const atLimit=dir<0?s.k<=s.kMin*1.001:s.k>=s.kMax*.999;
+ if(!atLimit)return {push:0,go:null};
+ push+=Math.log(s.factor);
+ return Math.abs(push)>=ATLAS_WHEEL_PUSH?{push:0,go:dir>0?'in':'out'}:{push,go:null};
 }
-// Smallest zoom of a nation's map: it still fills the whole w x h map area,
-// as if there were nothing else in the world (owner, 2026-11-20).
-function atlasLockMin(w,h,rect){return Math.max(w/(rect[2]-rect[0]),h/(rect[3]-rect[1]));}
+function atlasDepth(level){return level==='town'?2:level==='nation'?1:0;}
+// Smallest zoom of a nation's map: as on the whole map, all of it fits with
+// grey space around it (owner, 2026-11-20: "locked" means nothing else of
+// Sit'ota shows, not that the map can't move).
+function atlasNationMin(w,h,rect){return Math.min(w/(rect[2]-rect[0]),h/(rect[3]-rect[1]))*.8;}
 
 /* ---------- markup ---------- */
 function atlasLayersState(){
@@ -294,9 +301,8 @@ function atlasMount(){
 function atlasDesktop(){return !(typeof matchMedia==='function'&&matchMedia('(max-width:899px)').matches);}
 function atlasReduced(){return typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;}
 function atlasSize(){const m=atlasEl('atlasMap');return m?{w:m.clientWidth,h:m.clientHeight}:{w:1,h:1};}
-// The part of the screen a nation's map is locked into. It always fills the
-// whole map area; on a desktop its east edge can come as far as the panel,
-// so all of it can be seen. On a phone the panel is a sheet that closes.
+// The part of the screen a nation's map is centred in: beside the panel on
+// a desktop; the whole map on a phone, where the panel is a sheet.
 function atlasLockBox(){
  if(atlasDesktop())return atlasFreeBox();
  const {w,h}=atlasSize();return {x:0,y:0,w,h};
@@ -305,15 +311,15 @@ function atlasLimits(){
  const {w,h}=atlasSize(),d=ATLAS_DATA,det=ATLAS.level==='nation'?atlasDetail(d,ATLAS.nation):null;
  const fit=Math.min(w/d.width,h/d.height);ATLAS.fit=fit;
  if(det){
-  const rect=[det.x,det.y,det.x+det.w,det.y+det.h],box=atlasLockBox();
-  return {kMin:atlasLockMin(w,h,rect),kMax:Math.max(ATLAS_K_MAX,atlasDetailScale(det)*1.25),rect,box};
+  const rect=[det.x,det.y,det.x+det.w,det.y+det.h];
+  return {kMin:atlasNationMin(w,h,rect),kMax:Math.max(ATLAS_K_MAX,atlasDetailScale(det)*1.25),rect};
  }
  return {kMin:fit*.8,kMax:Math.max(fit*2,ATLAS_K_MAX)};
 }
 // The view kept inside the current level's limits.
 function atlasClampView(v){
  const d=ATLAS_DATA,{w,h}=atlasSize(),lim=atlasLimits();
- return lim.rect?atlasLockClamp(v,lim.box,lim.rect,lim.kMin,lim.kMax):atlasClamp(v,w,h,d.width,d.height,lim.kMin,lim.kMax);
+ return atlasClamp(v,w,h,d.width,d.height,lim.kMin,lim.kMax,lim.rect);
 }
 // While flying (or travelling through the clouds) the view is drawn as it
 // comes; it was clamped where it is going.
@@ -362,10 +368,45 @@ function atlasUp(){
  if(ATLAS.level==='town'&&ATLAS.nation)atlasSelect('n-'+ATLAS.nation,{fly:true});
  else atlasSelect(null);
 }
+// A zoom about a point, stopped at the level's zoom limits: the point under
+// the pointer stays put even at the limit (the map used to slide away).
+function atlasZoomIn(v,f,px,py){
+ const lim=atlasLimits(),k=Math.min(lim.kMax,Math.max(lim.kMin,v.k*f));
+ return atlasZoomAt(v,k/v.k,px,py);
+}
+// The wheel at a level's edge: true when it set off a trip.
+function atlasWheelLevel(f,px,py,cx,cy){
+ if(!ATLAS.view||!ATLAS_DATA)return false;
+ const now=Date.now();if(now-(ATLAS.wheelAt||0)>500)ATLAS.push=0;ATLAS.wheelAt=now;
+ const lim=atlasLimits(),v=ATLAS.view;
+ const it=atlasWheelIntent({level:ATLAS.level,k:v.k,kMin:lim.kMin,kMax:lim.kMax,factor:f,push:ATLAS.push});
+ ATLAS.push=it.push;
+ if(!it.go)return false;
+ if(ATLAS.level==='world'){
+  // The nation under the pointer (a settlement's dot counts as its nation).
+  const hits=document.elementsFromPoint?document.elementsFromPoint(cx,cy):[];
+  let id=null;
+  for(const el of hits){
+   const n=el.closest&&el.closest('path.atlas-nation,.atlas-pl');
+   if(n){id=n.classList.contains('atlas-pl')?n.getAttribute('data-n'):n.getAttribute('data-sel').slice(2);break;}
+  }
+  if(!id||!atlasDetail(ATLAS_DATA,id))return false; // over the sea: keep zooming
+  atlasSelect('n-'+id,{fly:true});return true;
+ }
+ if(it.go==='out'){atlasUp();return true;}
+ // In: the town nearest the pointer, if one is close.
+ let best=null,bd=48;
+ (ATLAS_DATA.settlements||[]).forEach(s=>{
+  if(s.nation!==ATLAS.nation||!s.map)return;
+  const d=Math.hypot(v.x+s.x*v.k-px,v.y+s.y*v.k-py);if(d<bd){bd=d;best=s;}
+ });
+ if(!best)return false;
+ atlasSelect('s-'+best.id,{fly:true});return true;
+}
 function atlasZoomBy(f,px,py){
  if(!ATLAS.view||ATLAS.level==='town')return;
  const {w,h}=atlasSize();
- atlasAnimateTo(atlasZoomAt(ATLAS.view,f,px==null?w/2:px,py==null?h/2:py));
+ atlasAnimateTo(atlasZoomIn(ATLAS.view,f,px==null?w/2:px,py==null?h/2:py));
 }
 // The panel covers part of the map: fly to the part it leaves free.
 function atlasFreeBox(){
@@ -393,7 +434,9 @@ function atlasBind(){
   e.preventDefault();if(ATLAS.travelling)return;
   cancelAnimationFrame(ATLAS.anim);ATLAS.flying=false;
   const r=map.getBoundingClientRect(),dy=e.deltaMode===1?e.deltaY*16:e.deltaY;
-  atlasApply(atlasZoomAt(ATLAS.view,Math.exp(-dy*.0016),e.clientX-r.left,e.clientY-r.top));
+  const f=Math.exp(-dy*.0016),px=e.clientX-r.left,py=e.clientY-r.top;
+  if(atlasWheelLevel(f,px,py,e.clientX,e.clientY))return;
+  atlasApply(atlasZoomIn(ATLAS.view,f,px,py));
  },{passive:false});
  map.addEventListener('pointerdown',e=>{
   if(e.button>0||ATLAS.travelling)return;
@@ -412,7 +455,7 @@ function atlasBind(){
   if(d.pinch&&ATLAS.pointers.size>=2){
    const [a,b]=[...ATLAS.pointers.values()];
    const dist=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
-   const v=atlasZoomAt(d.view,dist/d.pinch.dist,d.pinch.mx-r.left,d.pinch.my-r.top);
+   const v=atlasZoomIn(d.view,dist/d.pinch.dist,d.pinch.mx-r.left,d.pinch.my-r.top);
    atlasApply({k:v.k,x:v.x+mx-d.pinch.mx,y:v.y+my-d.pinch.my});return;
   }
   const dx=e.clientX-d.x,dy=e.clientY-d.y;
@@ -544,7 +587,7 @@ function atlasSelect(sel,opts){
 }
 
 /* ---------- levels and the trip through the clouds ---------- */
-const ATLAS_TRAVEL_IN=650,ATLAS_TRAVEL_OUT=950;
+const ATLAS_TRAVEL_IN=280,ATLAS_TRAVEL_OUT=420; // owner: the first cut (650/950) was far too slow
 function atlasWait(ms){return new Promise(r=>setTimeout(r,ms));}
 // Go to another level (owner, 2026-11-20): the view dives toward where it
 // is going while clouds close in, the level changes behind them, and the
@@ -575,7 +618,7 @@ async function atlasTravel(to,opts){
  if(id!==ATLAS.travel)return;
  const f=atlasLockBox();
  // The new level starts a little further out (in, going deeper) and
- // settles in as the clouds part; a nation's map still fills the screen.
+ // settles in as the clouds part.
  ATLAS.flying=false;
  const lim=atlasLimits(),k0=deeper?Math.max(lim.kMin,target.k*.4):target.k*2.4;
  atlasApply(atlasZoomAt(target,k0/target.k,f.x+f.w/2,f.y+f.h/2));
@@ -612,12 +655,7 @@ function atlasLevelView(to,from){
  const back=from&&from.level==='town'&&from.nation===to.nation&&atlasSettlement(d,from.town);
  const s=back||(p&&p.kind==='s'?atlasSettlement(d,p.id):null);
  if(s){const f=atlasLockBox(),k=Math.max(3,atlasDetailScale(atlasDetail(d,to.nation))*.55);return {k,x:f.x+f.w/2-s.x*k,y:f.y+f.h/2-s.y*k};}
- // The nation fitted, but a little closer than its map's smallest zoom, so
- // the arrival can settle inward without ever showing past its edges.
- const n=atlasNation(d,to.nation),v=atlasBoxView(n.box,0),kMin=atlasLimits().kMin;
- if(v.k>=kMin*1.35)return v;
- const f=atlasLockBox(),k=kMin*1.35,cx=(n.box[0]+n.box[2])/2,cy=(n.box[1]+n.box[3])/2;
- return {k,x:f.x+f.w/2-cx*k,y:f.y+f.h/2-cy*k};
+ return atlasBoxView(atlasNation(d,to.nation).box,0);
 }
 // Show a level: the nation's own map alone (the whole map and the other
 // nations hidden, its settlements shown), or a town's map over everything.
@@ -687,14 +725,14 @@ function atlasClouds(deeper,fx,fy){
   const away=(m,sc)=>C+'translate('+(Math.cos(a)*R*m).toFixed(0)+'px,'+(Math.sin(a)*R*m).toFixed(0)+'px) scale('+sc+')';
   el.animate(deeper?[{transform:C+'scale(.15)',opacity:0},{transform:C+'scale(1)',opacity:1}]
    :[{transform:away(.6,3),opacity:0},{transform:C+'scale(1)',opacity:1}],
-   {duration:ATLAS_TRAVEL_IN,delay:i*12,easing:'ease-in',fill:'forwards'});
+   {duration:ATLAS_TRAVEL_IN,delay:i*5,easing:'ease-in',fill:'forwards'});
   puffs.push({el,gone:deeper?away(.8,3.4):C+'scale(.2)'});
  }
  return {part(){
   haze.animate([{opacity:1},{opacity:0}],{duration:ATLAS_TRAVEL_OUT*.3,easing:'ease-out',fill:'forwards'});
   puffs.forEach((p,i)=>p.el.animate([{transform:C+'scale(1)',opacity:1},{transform:p.gone,opacity:0}],
-   {duration:ATLAS_TRAVEL_OUT,delay:i*10,easing:'cubic-bezier(.2,.6,.3,1)',fill:'forwards'}));
-  setTimeout(()=>{if(haze.parentNode===box)atlasCloudsClear();},ATLAS_TRAVEL_OUT+n*10+60);
+   {duration:ATLAS_TRAVEL_OUT,delay:i*4,easing:'cubic-bezier(.2,.6,.3,1)',fill:'forwards'}));
+  setTimeout(()=>{if(haze.parentNode===box)atlasCloudsClear();},ATLAS_TRAVEL_OUT+n*4+60);
  }};
 }
 function atlasCloudsClear(){const box=atlasEl('atlasClouds');if(box){box.hidden=true;box.innerHTML='';}}

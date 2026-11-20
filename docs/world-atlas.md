@@ -5,10 +5,13 @@ The World Guide opens on an interactive atlas (`#/world/atlas`), modelled on the
 timeline under the map whose events light up the places they happened.
 
 The atlas has three levels (owner, 2026-11-20): the whole map, a nation's own map, and a town's map. Choosing a nation
-**flies in through the clouds** to the nation's own map and **locks there**, as if the whole map weren't there: it
-always fills the screen, drags stop at its edges, and nothing from the whole map is drawn over it. Choosing a settlement flies on through the clouds into **its town map** (the city
+**flies in through the clouds** to the nation's own map and **stays there**, as if the whole map weren't there: it
+drags and zooms like the whole map, with the same grey space around it, and nothing from the whole map shows. Choosing a settlement flies on through the clouds into **its town map** (the city
 or village Azgaar generates for it with Watabou's generators), which fills the map. **‹** goes back up one level the
-same way (Escape too); forts have no town map and stay on the nation's map. Reduced motion skips the clouds. The old guide chapters are still there
+same way (Escape too); forts have no town map and stay on the nation's map. Reduced motion skips the clouds.
+The scroll wheel does the same: scrolling in over a nation past the zoom where towns appear dives into it; scrolling
+on out at a nation's widest view flies back out; scrolling on in at its closest view near a town goes into the town.
+Inside a town map the wheel belongs to the generator, so leaving a town is the **‹** button. The old guide chapters are still there
 (`#/world/welcome`, the **Guide** button).
 
 ## Files
