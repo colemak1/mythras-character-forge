@@ -158,6 +158,22 @@ function atlasLevelOf(data,sel){
  if(p.kind==='s'){const s=atlasSettlement(data,p.id);if(s&&s.map)return {level:'town',nation,town:s.id};}
  return {level:'nation',nation,town:null};
 }
+// Scroll-wheel trips between levels (owner, 2026-11-20). On the whole map,
+// zooming in past ATLAS_DIVE_K over a nation dives into it. Inside a nation,
+// scrolling on past its widest view flies back out, and past its closest
+// view over a town goes into the town. push carries the scroll already spent
+// against a limit (log of the zoom asked for), so a stray notch doesn't go.
+const ATLAS_DIVE_K=ATLAS_LOD[1],ATLAS_WHEEL_PUSH=.3;
+function atlasWheelIntent(s){
+ const dir=s.factor>1?1:s.factor<1?-1:0;let push=s.push||0;
+ if(!dir||Math.sign(push)===-dir)push=0;
+ if(s.level==='world')return {push:0,go:dir>0&&s.k*s.factor>=ATLAS_DIVE_K?'in':null};
+ if(s.level!=='nation')return {push:0,go:null};
+ const atLimit=dir<0?s.k<=s.kMin*1.001:s.k>=s.kMax*.999;
+ if(!atLimit)return {push:0,go:null};
+ push+=Math.log(s.factor);
+ return Math.abs(push)>=ATLAS_WHEEL_PUSH?{push:0,go:dir>0?'in':'out'}:{push,go:null};
+}
 function atlasDepth(level){return level==='town'?2:level==='nation'?1:0;}
 // Inside a nation's own map the view is locked to it: its edges stop at the
 // box's edges (screen px), so nothing beyond the map ever shows. (Along an
@@ -362,10 +378,45 @@ function atlasUp(){
  if(ATLAS.level==='town'&&ATLAS.nation)atlasSelect('n-'+ATLAS.nation,{fly:true});
  else atlasSelect(null);
 }
+// A zoom about a point, stopped at the level's zoom limits: the point under
+// the pointer stays put even at the limit (the map used to slide away).
+function atlasZoomIn(v,f,px,py){
+ const lim=atlasLimits(),k=Math.min(lim.kMax,Math.max(lim.kMin,v.k*f));
+ return atlasZoomAt(v,k/v.k,px,py);
+}
+// The wheel at a level's edge: true when it set off a trip.
+function atlasWheelLevel(f,px,py,cx,cy){
+ if(!ATLAS.view||!ATLAS_DATA)return false;
+ const now=Date.now();if(now-(ATLAS.wheelAt||0)>500)ATLAS.push=0;ATLAS.wheelAt=now;
+ const lim=atlasLimits(),v=ATLAS.view;
+ const it=atlasWheelIntent({level:ATLAS.level,k:v.k,kMin:lim.kMin,kMax:lim.kMax,factor:f,push:ATLAS.push});
+ ATLAS.push=it.push;
+ if(!it.go)return false;
+ if(ATLAS.level==='world'){
+  // The nation under the pointer (a settlement's dot counts as its nation).
+  const hits=document.elementsFromPoint?document.elementsFromPoint(cx,cy):[];
+  let id=null;
+  for(const el of hits){
+   const n=el.closest&&el.closest('path.atlas-nation,.atlas-pl');
+   if(n){id=n.classList.contains('atlas-pl')?n.getAttribute('data-n'):n.getAttribute('data-sel').slice(2);break;}
+  }
+  if(!id||!atlasDetail(ATLAS_DATA,id))return false; // over the sea: keep zooming
+  atlasSelect('n-'+id,{fly:true});return true;
+ }
+ if(it.go==='out'){atlasUp();return true;}
+ // In: the town nearest the pointer, if one is close.
+ let best=null,bd=48;
+ (ATLAS_DATA.settlements||[]).forEach(s=>{
+  if(s.nation!==ATLAS.nation||!s.map)return;
+  const d=Math.hypot(v.x+s.x*v.k-px,v.y+s.y*v.k-py);if(d<bd){bd=d;best=s;}
+ });
+ if(!best)return false;
+ atlasSelect('s-'+best.id,{fly:true});return true;
+}
 function atlasZoomBy(f,px,py){
  if(!ATLAS.view||ATLAS.level==='town')return;
  const {w,h}=atlasSize();
- atlasAnimateTo(atlasZoomAt(ATLAS.view,f,px==null?w/2:px,py==null?h/2:py));
+ atlasAnimateTo(atlasZoomIn(ATLAS.view,f,px==null?w/2:px,py==null?h/2:py));
 }
 // The panel covers part of the map: fly to the part it leaves free.
 function atlasFreeBox(){
@@ -393,7 +444,9 @@ function atlasBind(){
   e.preventDefault();if(ATLAS.travelling)return;
   cancelAnimationFrame(ATLAS.anim);ATLAS.flying=false;
   const r=map.getBoundingClientRect(),dy=e.deltaMode===1?e.deltaY*16:e.deltaY;
-  atlasApply(atlasZoomAt(ATLAS.view,Math.exp(-dy*.0016),e.clientX-r.left,e.clientY-r.top));
+  const f=Math.exp(-dy*.0016),px=e.clientX-r.left,py=e.clientY-r.top;
+  if(atlasWheelLevel(f,px,py,e.clientX,e.clientY))return;
+  atlasApply(atlasZoomIn(ATLAS.view,f,px,py));
  },{passive:false});
  map.addEventListener('pointerdown',e=>{
   if(e.button>0||ATLAS.travelling)return;
@@ -412,7 +465,7 @@ function atlasBind(){
   if(d.pinch&&ATLAS.pointers.size>=2){
    const [a,b]=[...ATLAS.pointers.values()];
    const dist=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
-   const v=atlasZoomAt(d.view,dist/d.pinch.dist,d.pinch.mx-r.left,d.pinch.my-r.top);
+   const v=atlasZoomIn(d.view,dist/d.pinch.dist,d.pinch.mx-r.left,d.pinch.my-r.top);
    atlasApply({k:v.k,x:v.x+mx-d.pinch.mx,y:v.y+my-d.pinch.my});return;
   }
   const dx=e.clientX-d.x,dy=e.clientY-d.y;

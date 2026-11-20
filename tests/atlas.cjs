@@ -86,6 +86,20 @@ test('inside a nation the map is locked and fills the screen: nothing past its e
  const side=lock({k:6,x:-99999,y:0},{x:0,y:0,w:500,h:600},rect,kMin,20);
  assert.equal(side.x+300*6,500,'on a desktop the east edge can come as far as the panel');
 });
+test('the scroll wheel goes between levels: in over a nation, out past a nation\'s widest view (owner, 2026-11-20)',()=>{
+ const w=o=>J('atlasWheelIntent('+JSON.stringify(o)+')'),dive=run('ATLAS_DIVE_K');
+ assert.equal(w({level:'world',k:dive*.5,factor:1.2}).go,null,'far out: just zooms');
+ assert.equal(w({level:'world',k:dive*.9,factor:1.2}).go,'in','crossing the dive zoom goes in');
+ assert.equal(w({level:'world',k:dive*.9,factor:.8}).go,null,'zooming out on the whole map never travels');
+ const n={level:'nation',kMin:3,kMax:8};
+ assert.equal(w({...n,k:5,factor:.8}).go,null,'inside the range: just zooms');
+ let r=w({...n,k:3,factor:.9});assert.equal(r.go,null,'one small notch at the widest view is not enough');
+ r=w({...n,k:3,factor:.9,push:r.push});r=w({...n,k:3,factor:.9,push:r.push});
+ assert.equal(r.go,'out','keeping on scrolling out leaves the nation');
+ assert.equal(w({...n,k:8,factor:.9,push:.25}).go,null,'turning round starts the count again');
+ assert.equal(w({...n,k:8,factor:1.5}).go,'in','scrolling on at the closest view goes into a town');
+ assert.equal(w({level:'town',k:8,factor:.5}).go,null);
+});
 test('no present day until the owner sets one (845 PE is Azgaar\'s placeholder)',()=>{
  assert.equal(run('ATLAS_LORE.calendar'),null);assert.equal(run('atlasCalendar()'),null);
  run('ATLAS_DATA=DATA;ATLAS.era="all";');assert.doesNotMatch(run('atlasTimelineHTML()'),/Now ·/);
