@@ -166,7 +166,7 @@ test('Play Mode keeps the site header (owner, 2026-11-09); Rules reference and S
  assert.equal(run('typeof pmSiteMenuHTML'),'undefined','the old site-menu dropdown is gone');
  assert.doesNotMatch(fs.readFileSync(path.join(root,'play-stone.css'),'utf8'),/body\.play-mode \.sitota-header\{display:none\}/);
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
- for(const href of ['#/','#/my-characters','#/my-campaigns','#/the-pits','#/wiki','#/world/welcome','#/account'])assert(html.includes('href="'+href+'"'),'site nav: '+href);
+ for(const href of ['#/','#/my-characters','#/my-campaigns','#/the-pits','#/wiki','#/world/atlas','#/account'])assert(html.includes('href="'+href+'"'),'site nav: '+href);
  const clean=fs.readFileSync(path.join(root,'play-clean.css'),'utf8');
  assert.match(clean,/\.pmx-dash\{height:max\(620px,100dvh\)/,'the sheet fills the screen once the header scrolls away');
  assert.doesNotMatch(clean,/body\.pm-fit\{overflow:hidden\}/,'the page itself is not locked');

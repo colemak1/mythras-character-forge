@@ -98,7 +98,7 @@ function homeHeroHTML(){
   :'<picture><source srcset="assets/sitota-hero.avif" type="image/avif"><img class="st-bd-img" src="assets/sitota-hero.webp" alt=""></picture>';
  return '<section class="st-bd-hero">'+img
   +'<div class="st-frame st-bd-inner"><div class="st-bd-copy"><p class="st-bd-kicker">'+kicker+'</p>'+words+homeNextSessionHTML(home)
-  +'<div class="st-bd-links"><a class="st-bd-world" href="#/world/welcome">Explore Sit’ota <span aria-hidden="true">→</span></a></div>'
+  +'<div class="st-bd-links"><a class="st-bd-world" href="#/world/atlas">Explore Sit’ota <span aria-hidden="true">→</span></a></div>'
   +'</div></div></section>';
 }
 
@@ -116,7 +116,7 @@ function sitotaHomeHTML(){
  +tile('#/my-campaigns',svg('<path d="M6 21V3M6 4h11l-2 4 2 4H6"/>'),'Campaign','Party board, sessions and shared notes.','')
  +tile('#/the-pits',svg('<path d="M4 4l10 10M14 14l-2 2 4 4 2-2zM20 4L10 14M10 14l2 2-4 4-2-2z"/>'),'The Pits','Practise Mythras combat. Wounds never touch your character.',pits,'st-dest-pits')
  +tile('#/wiki',svg('<path d="M12 6C9 4 6 4 3 5v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1Zm0 0v14"/>'),'Rules','Search the Mythras rules by chapter.','')
- +tile('#/world/welcome',svg('<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14"/>'),'World Guide','People, places and history of Sit’ota.','')
+ +tile('#/world/atlas',svg('<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14"/>'),'World Guide','People, places and history of Sit’ota.','')
  +'</div>'+(homeCharacterOwner()?'<div class="st-table-actions"><span>Starting a table?</span><button type="button" class="st-btn st-btn-sm" onclick="APP.newCampaign()">Create campaign</button><button type="button" class="st-btn st-btn-sm" onclick="APP.homeJoinCampaign()">Join a campaign</button></div>':'')+'</div></section>'
  +'<div class="st-frame st-orc"><p>'+homeArtCreditHTML()+'Rules text is drawn from Mythras Imperative and Classic Fantasy Imperative by The Design Mechanism, used under the ORC licence. Mythras and Classic Fantasy are Reserved Material.</p></div>'
  +'</div>';
@@ -128,18 +128,22 @@ function worldChapterNavHTML(){
   .map(c=>'<a href="#/world/'+c.id+'" '+(c.id===WORLD_CHAPTER?'aria-current="page"':'')+'>'+esc(c.label)+'</a>').join('')||'<p>No chapters found.</p>';
 }
 function worldHTML(){
+ if(WORLD_CHAPTER==='atlas'&&typeof atlasHTML==='function')return atlasHTML();
  const c=WORLD_CHAPTERS.find(c=>c.id===WORLD_CHAPTER)||WORLD_CHAPTERS[0];
- return '<section class="sitota-public st-world"><div class="st-frame"><div class="st-world-intro"><div class="st-eyebrow">A guide for the players</div><h1>Sit’ota</h1><p>Places, people, and history as we discover them.</p></div><div class="st-guide"><aside><label for="worldSearch">Search the guide</label><input id="worldSearch" type="search" autocomplete="off" placeholder="Search chapters" value="'+esc(WORLD_SEARCH)+'" oninput="siteSearchWorld(this.value)"><nav class="st-chapters" id="worldChapterNav" aria-label="Guide chapters">'+worldChapterNavHTML()+'</nav></aside><article aria-live="polite" id="worldArticle"><div class="st-eyebrow">The Sit’ota world guide</div><h2>'+c.heading+'</h2><p class="st-deck">'+c.deck+'</p><div class="st-copy">'+c.body+'</div></article></div></div></section>';
+ return '<section class="sitota-public st-world"><div class="st-frame"><div class="st-world-intro"><div class="st-eyebrow">A guide for the players</div><h1>Sit’ota</h1><p>Places, people, and history as we discover them.</p></div><div class="st-guide"><aside><label for="worldSearch">Search the guide</label><input id="worldSearch" type="search" autocomplete="off" placeholder="Search chapters" value="'+esc(WORLD_SEARCH)+'" oninput="siteSearchWorld(this.value)"><nav class="st-chapters" id="worldChapterNav" aria-label="Guide chapters"><a href="#/world/atlas" class="st-chapter-atlas">Atlas &amp; timeline</a>'+worldChapterNavHTML()+'</nav></aside><article aria-live="polite" id="worldArticle"><div class="st-eyebrow">The Sit’ota world guide</div><h2>'+c.heading+'</h2><p class="st-deck">'+c.deck+'</p><div class="st-copy">'+c.body+'</div></article></div></div></section>';
 }
 function siteSearchWorld(value){
  WORLD_SEARCH=value;
- document.getElementById('worldChapterNav').innerHTML=worldChapterNavHTML();
+ document.getElementById('worldChapterNav').innerHTML='<a href="#/world/atlas" class="st-chapter-atlas">Atlas &amp; timeline</a>'+worldChapterNavHTML();
 }
 function renderWorldView(){
  document.body.classList.remove('play-mode','sheet-mode');
  document.body.classList.add('menu-mode');
- document.title=(WORLD_CHAPTERS.find(c=>c.id===WORLD_CHAPTER)||WORLD_CHAPTERS[0]).heading+' — Sit’ota';
+ const atlas=WORLD_CHAPTER==='atlas'&&typeof atlasHTML==='function';
+ document.body.classList.toggle('atlas-mode',atlas);
+ document.title=(atlas?'Atlas':(WORLD_CHAPTERS.find(c=>c.id===WORLD_CHAPTER)||WORLD_CHAPTERS[0]).heading)+' — Sit’ota';
  $('#main').innerHTML=worldHTML();
+ if(atlas)atlasMount();
 }
 // Use the existing new-character confirmation instead of bypassing it with a
 // warm #/character/new link. Modified clicks still open a normal bookmark URL.

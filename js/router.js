@@ -20,7 +20,10 @@
    Route scheme (deliberately one URL per *major screen*, not per wizard
    step -- see PR description):
      #/                              home / main menu
-     #/world/<chapter>               public Sit’ota world guide
+     #/world, #/world/atlas          public atlas of Sit’ota with its timeline
+     #/world/atlas/<n|s|e>-<id>      the atlas with a nation, settlement or
+                                      event selected (see js/atlas.js)
+     #/world/<chapter>               public Sit’ota world guide chapters
      #/account                       account / sign in
      #/my-characters                 "My Characters" library
      #/my-campaigns                  "My Campaigns" list
@@ -39,7 +42,7 @@
 */
 
 function currentRoute(){
-  if(APPVIEW==="world")return "/world/"+encodeURIComponent(WORLD_CHAPTER);
+  if(APPVIEW==="world")return "/world/"+encodeURIComponent(WORLD_CHAPTER)+(WORLD_CHAPTER==="atlas"&&typeof WORLD_PLACE==="string"&&WORLD_PLACE?"/"+WORLD_PLACE:"");
   if(APPVIEW==="account")return "/account";
   if(APPVIEW==="library")return "/my-characters";
   if(APPVIEW==="campaigns")return "/my-campaigns";
@@ -65,7 +68,8 @@ function parseRoute(hash){
   const path=(hash||"").replace(/^#/,"")||"/";
   let m;
   if(path==="/")return {view:"menu"};
-  if(path==="/world")return {view:"world",chapterId:"welcome"};
+  if(path==="/world")return {view:"world",chapterId:"atlas"};
+  if((m=path.match(/^\/world\/atlas\/([nse]-[a-z0-9-]+)$/)))return {view:"world",chapterId:"atlas",place:m[1]};
   if((m=path.match(/^\/world\/([a-z-]+)$/)))return {view:"world",chapterId:m[1]};
   if(path==="/account")return {view:"account"};
   if(path==="/my-characters")return {view:"library"};
@@ -135,6 +139,13 @@ async function applyRoute(route,opts){
   switch(route.view){
     case "menu": APPVIEW="menu";render();break;
     case "world":
+      // The atlas is its own page (js/atlas.js); a change of selection only
+      // (back/forward between places) moves the map instead of rebuilding it.
+      if(route.chapterId==="atlas"&&typeof atlasHTML==="function"){
+        const place=route.place||null;
+        if(APPVIEW==="world"&&WORLD_CHAPTER==="atlas"&&atlasRouteTo(place))break;
+        WORLD_PLACE=place;WORLD_CHAPTER="atlas";APPVIEW="world";render();window.scrollTo(0,0);break;
+      }
       WORLD_CHAPTER=WORLD_CHAPTERS.some(c=>c.id===route.chapterId)?route.chapterId:"welcome";
       APPVIEW="world";render();window.scrollTo(0,0);break;
     case "account": APPVIEW="account";render();break;

@@ -24,6 +24,7 @@ closed unmerged. What each held that was still open:
 | #360 (3) | The attack preview still lists parry and evade odds when the defender has no AP. | 2 | fixed 2026-11-19: the preview lists only the defences the foe can make, and says when it has no AP (`tests/pits-odds-fixes.cjs`) |
 | #360 (4) | Attacking from the ground, the rear knee slides across the floor (frame sheet). | 2 | open, owner's look |
 | #360 (5, 6) | A second accent in the withdrawal finish; flexible weapons not inspected moving. | 3 | Known limits |
+| #382 (Work, 2026-11-18, check 3) | Replay keeps a withdrawn dagger drawn in the wound through a later Disarm of that dagger (live play is right). Report `pits-live-373-381-20261118.md`; checks 1, 2, 4 and 5 passed. | 2 | open (Caused by: not known) |
 | #288 (Chat, Core p.137) | A summoned spirit arrived in 1d4 minutes, not 1d6. | 2 | fixed in #381 (`tests/magic-animism.cjs`) |
 | #185 | IS-L07 (item names 18 px wide at 1363 px) and PIT-R02a (a blow at the longer weapon ignored a parry), from 6 Nov. | 2 | to verify in the next batch |
 | #270 | Creature body cards cramped at desktop width. | 3 | Known limits (the stale help text it named is already fixed) |

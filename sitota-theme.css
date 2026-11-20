@@ -15,6 +15,9 @@
   --grain-page:.05; --grain-paper:.15;
   /* The printed official sheet is paper in both modes: never redefined. */
   --sheet-paper:#ffffff; --sheet-ink:#1c2a4a; --sheet-rule:#b3392a;
+  /* The atlas picture is parchment in both modes, so the marks drawn on it
+     (sitota-atlas.css) are never redefined either. */
+  --map-ink:#3b2416; --map-paper:#f3e6c8; --map-accent:#a3301f; --map-water:#4f7d97; --map-road:#7a5233;
   --font-display:"Fraunces",Georgia,serif;
   --font-ui:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
