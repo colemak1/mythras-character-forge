@@ -69,22 +69,13 @@ test('three levels: a nation opens its own map, a settlement its town map, a for
  assert.deepEqual(lv('s-'+fort.id),{level:'nation',nation:fort.nation,town:null});
  assert(run('atlasDepth("town")>atlasDepth("nation")&&atlasDepth("nation")>atlasDepth("world")'));
 });
-test('inside a nation the map is locked and fills the screen: nothing past its edges ever shows (owner, 2026-11-20)',()=>{
- const lock=run('atlasLockClamp'),min=run('atlasLockMin'),box={x:0,y:0,w:800,h:600},rect=[100,100,300,200];
- const kMin=min(800,600,rect);assert.equal(kMin,6,'it fills both ways: the larger of 800/200 and 600/100');
- const far=lock({k:8,x:99999,y:-99999},box,rect,kMin,20);
- assert.equal(far.x,-100*8,'the left edge stops at the screen\'s left edge');
- assert.equal(far.y,600-200*8,'the bottom edge stops at the screen\'s bottom edge');
- const other=lock({k:8,x:-99999,y:99999},box,rect,kMin,20);
- assert.equal(other.x,800-300*8);assert.equal(other.y,-100*8);
- const out=lock({k:1,x:500,y:500},box,rect,kMin,20);
- assert.equal(out.k,6,'cannot zoom out past filling the screen');
- for(const v of [out,far,other]){
-  assert(v.x+rect[0]*v.k<=0&&v.x+rect[2]*v.k>=800,'covers the width');
-  assert(v.y+rect[1]*v.k<=0&&v.y+rect[3]*v.k>=600,'covers the height');
- }
- const side=lock({k:6,x:-99999,y:0},{x:0,y:0,w:500,h:600},rect,kMin,20);
- assert.equal(side.x+300*6,500,'on a desktop the east edge can come as far as the panel');
+test('inside a nation it moves like the whole map, with grey space around, but never off the nation (owner, 2026-11-20)',()=>{
+ const min=run('atlasNationMin'),clamp=run('atlasClamp'),rect=[100,100,300,200];
+ const kMin=min(800,600,rect);assert.equal(kMin,4*.8,'zooms out until all of it fits, with room around it');
+ const far=clamp({k:6,x:99999,y:-99999},800,600,1024,768,kMin,20,rect);
+ assert.equal(far.x,400-100*6,'the middle of the screen stops at its west edge (grey space beyond)');
+ assert.equal(far.y,300-200*6,'and at its south edge');
+ assert.equal(clamp({k:1,x:0,y:0},800,600,1024,768,kMin,20,rect).k,kMin);
 });
 test('the scroll wheel goes between levels: in over a nation, out past a nation\'s widest view (owner, 2026-11-20)',()=>{
  const w=o=>J('atlasWheelIntent('+JSON.stringify(o)+')'),dive=run('ATLAS_DIVE_K');
