@@ -16,6 +16,9 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 - **Katalli holds the whole peninsula** (owner): its unclaimed south-western arm, with 26 settlements, is now Katalli's.
 - **No "Now · 845 PE"** on the timeline: that date was Azgaar's placeholder; it returns when a real present day is set.
 - Tests: `tests/atlas.cjs` (13).
+- **The Pits browser bouts only run when a change can reach The Pits** (its page, a file it loads, `experiments/`,
+  `tests/visual/`, the workflow) and on pushes to `main` (owner). Other PRs pass that job without playing.
+  `scripts/pits-changed.py`, tested by `tests/pits-changed.cjs`; `AGENTS.md` rule 4 updated.
 
 ## World Guide: an interactive atlas and timeline
 

@@ -42,14 +42,31 @@ jobs:
         test: [tests/visual/pits-smoke.cjs, tests/visual/pits-spring-scripted.cjs]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # The bouts run only when the change touches The Pits (owner, 2026-11-20): the page, a file it loads,
+      # experiments/, tests/visual/ or this workflow. Pushes to main always run them. Otherwise the job passes
+      # without playing, so its check name stays the same for the merge rules.
+      - name: Does this change touch The Pits?
+        id: scope
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then base="${{ github.event.pull_request.base.sha }}"
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then echo "pits=true" >> "$GITHUB_OUTPUT"; exit 0
+          else git fetch --quiet origin main && base=$(git merge-base origin/main HEAD); fi
+          pits=$(git diff --name-only "$base" HEAD | python3 scripts/pits-changed.py)
+          echo "pits=$pits" >> "$GITHUB_OUTPUT"
+          echo "Touches The Pits: $pits"
       - uses: actions/setup-node@v4
+        if: steps.scope.outputs.pits == 'true'
         with:
           node-version: 22
       - name: Install Playwright and Chromium
+        if: steps.scope.outputs.pits == 'true'
         run: |
           npm install --no-save --no-audit --no-fund --prefix .ci-deps playwright@1.63.0
           .ci-deps/node_modules/.bin/playwright install --with-deps chromium
       - name: ${{ matrix.test }}
+        if: steps.scope.outputs.pits == 'true'
         env:
           NODE_PATH: ${{ github.workspace }}/.ci-deps/node_modules
         run: |
