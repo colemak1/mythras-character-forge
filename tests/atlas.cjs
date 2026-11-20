@@ -134,7 +134,28 @@ test('selection ids round-trip and invalid ones are refused',()=>{
  const ok=run('atlasSelValid');
  assert(ok(data,'n-zhalin'));assert(ok(data,'s-golshehr'));assert(!ok(data,'n-rove'));assert(!ok(data,'e-nothing'));
 });
+test('sample events: marked as samples, and each shows where it happened (owner, 2026-11-20)',()=>{
+ const evs=run('ATLAS_LORE.events');assert(evs.length>=8&&evs.every(e=>e.sample),'every made-up event is marked sample');
+ run('ATLAS_DATA=DATA;ATLAS.era="all";');assert.match(run('atlasTimelineHTML()'),/Sample events/);
+ for(const e of evs){
+  const pts=J('atlasEventPoints(DATA,ATLAS_LORE.events.find(x=>x.id==='+JSON.stringify(e.id)+'))');
+  const box=J('atlasSelBox({kind:"e",id:'+JSON.stringify(e.id)+'})');
+  assert(box&&box[2]>box[0],e.id+' has somewhere to fly to');
+  if(!(e.nations||[]).length||(e.places||[]).length||e.at)assert(pts.length,e.id+' has a pin');
+ }
+ const of=run('atlasNationOf');
+ assert.equal(of(data,'e-founding-of-shamur'),'valeshar','an event in one nation opens on its map');
+ assert.equal(of(data,'e-battle-of-the-steppe'),'khor','a battlefield of its own, in Khor');
+ assert.equal(of(data,'e-treaty-of-cantia'),null,'two nations: the whole map');
+ assert.equal(of(data,'e-long-winter'),null);
+ const marks=run('atlasEventMarksSVG(atlasEventPoints(DATA,atlasEvent("battle-of-the-steppe")),"Battle of the Khor Steppe")');
+ assert.match(marks,/translate\(445 478\)/);assert.match(marks,/>Battle of the Khor Steppe</);assert.match(marks,/>Khor steppe</);
+ const two=run('atlasEventMarksSVG(atlasEventPoints(DATA,atlasEvent("salt-war")),"The Salt War")');
+ assert.equal((two.match(/class="atlas-ev"/g)||[]).length,2,'a pin at each place');
+ assert.equal((two.match(/>The Salt War</g)||[]).length,1,'the title once');
+});
 test('events sort by year, filter by era and attach to their nations and places',()=>{
+ run('ATLAS_LORE.events.length=0;ATLAS_LORE.eras.length=0;'); // without the samples
  run(`ATLAS_LORE.eras.push({id:'a',name:'Age A',short:'AA'});
   ATLAS_LORE.events.push({id:'late',year:50,era:'a',title:'Late',places:['golshehr']},{id:'early',year:3,era:'a',title:'Early',nations:['khor']},{id:'undated',title:'Undated',label:'Long ago'});`);
  assert.deepEqual(J('atlasSortedEvents("all").map(e=>e.id)'),['early','late','undated']);

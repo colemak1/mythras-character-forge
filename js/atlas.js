@@ -62,7 +62,22 @@ function atlasNationOf(data,sel){
  const p=atlasParseSel(sel);if(!p||!data)return null;
  if(p.kind==='n')return atlasNation(data,p.id)?p.id:null;
  if(p.kind==='s'){const s=atlasSettlement(data,p.id);return s&&s.nation||null;}
- return null;
+ // An event that happened inside one nation opens on that nation's map.
+ const ev=atlasEvent(p.id),ns=ev?atlasEventNations(data,ev):[];
+ return ns.length===1?ns[0]:null;
+}
+// Where an event happened: its settlements, and its own point (at: {x, y,
+// name} in map units) for a place that isn't a settlement, like a battlefield.
+function atlasEventPoints(data,ev){
+ const pts=(ev.places||[]).map(id=>atlasSettlement(data,id)).filter(Boolean).map(s=>({x:s.x,y:s.y,name:atlasPlaceName(s)}));
+ if(ev.at&&isFinite(ev.at.x)&&isFinite(ev.at.y))pts.unshift({x:ev.at.x,y:ev.at.y,name:ev.at.name||'',own:true});
+ return pts;
+}
+// The nations an event belongs to: those it names, and its settlements'.
+function atlasEventNations(data,ev){
+ const ns=(ev.nations||[]).slice();
+ (ev.places||[]).forEach(id=>{const s=atlasSettlement(data,id);if(s&&s.nation&&!ns.includes(s.nation))ns.push(s.nation);});
+ return ns;
 }
 function atlasDetail(data,id){return id&&data&&data.details&&data.details[id]||null;}
 // Pixels per map unit of a nation map: past this zoom it only gets blurrier.
@@ -78,9 +93,12 @@ function atlasYearText(ev,cal){
  const short=era&&era.short||cal&&cal.eraShort||'';
  return ev.year==null?'':String(ev.year)+(short?' '+short:'');
 }
+// In era order (as listed in the lore), then by year; undated last in
+// their era, and events with no era after all the eras.
 function atlasSortedEvents(era){
+ const eras=(atlasLore().eras||[]).map(e=>e.id),ei=e=>{const i=eras.indexOf(e.era);return i<0?eras.length:i;};
  return (atlasLore().events||[]).filter(e=>!era||era==='all'||e.era===era)
-  .slice().sort((a,b)=>(a.year==null?Infinity:a.year)-(b.year==null?Infinity:b.year));
+  .slice().sort((a,b)=>ei(a)-ei(b)||(a.year==null?Infinity:a.year)-(b.year==null?Infinity:b.year));
 }
 // Events that mention a nation or settlement (a settlement's nation counts too).
 function atlasEventsFor(data,kind,id){
@@ -243,6 +261,7 @@ function atlasTimelineHTML(){
  return '<section class="atlas-tl" id="atlasTimeline" aria-label="Timeline">'
   +'<div class="atlas-tl-bar">'
   +'<button type="button" class="atlas-tl-toggle" aria-expanded="'+(ATLAS.timeline?'true':'false')+'" aria-controls="atlasTlBody" onclick="atlasToggleTimeline()"><span>Timeline</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>'
+  +((atlasLore().events||[]).some(e=>e.sample)?'<span class="atlas-tl-sample" title="Made up to show how the timeline looks; not canon.">Sample events</span>':'')
   +(cal?'<span class="atlas-tl-now" title="The present day">Now · '+esc(String(cal.year)+' '+(cal.eraShort||cal.era||''))+'</span>':'')
   +(eras.length?'<div class="atlas-tl-eras" role="group" aria-label="Era">'+[{id:'all',name:'All eras'}].concat(eras).map(e=>'<button type="button" aria-pressed="'+(ATLAS.era===e.id)+'" onclick="atlasSetEra(\''+esc(e.id)+'\')">'+esc(e.name)+'</button>').join('')+'</div>':'')
   +(evs.length?'<div class="atlas-tl-step"><button type="button" onclick="atlasStep(-1)" aria-label="Earlier event">‹</button><button type="button" onclick="atlasStep(1)" aria-label="Later event">›</button></div>':'')
@@ -260,7 +279,8 @@ function atlasSvgHTML(data){
   +'<g class="atlas-g-rivers">'+rivers+'</g>'
   +'<g class="atlas-g-roads">'+route(['trails','roads'])+'</g>'
   +'<g class="atlas-g-nations">'+nations+'</g>'
-  +'<g class="atlas-g-places">'+places+'</g>';
+  +'<g class="atlas-g-places">'+places+'</g>'
+  +'<g class="atlas-g-events" id="atlasEvMarks"></g>';
 }
 
 /* ---------- mounting ---------- */
@@ -409,22 +429,27 @@ function atlasZoomBy(f,px,py){
  atlasAnimateTo(atlasZoomIn(ATLAS.view,f,px==null?w/2:px,py==null?h/2:py));
 }
 // The panel covers part of the map: fly to the part it leaves free.
+// On a phone the search bar and buttons cover the top too.
 function atlasFreeBox(){
  const {w,h}=atlasSize(),panel=atlasEl('atlasPanel');
- if(!panel||panel.hidden)return {x:0,y:0,w,h};
- if(atlasDesktop())return {x:0,y:0,w:Math.max(200,w-panel.offsetWidth-16),h};
- return {x:0,y:0,w,h:Math.max(140,h-panel.offsetHeight)};
+ if(atlasDesktop())return {x:0,y:0,w:panel&&!panel.hidden?Math.max(200,w-panel.offsetWidth-16):w,h};
+ const top=atlasEl('atlasRoot')&&atlasEl('atlasRoot').querySelector('.atlas-top'),y=top?Math.min(h*.4,top.offsetTop+top.offsetHeight):0;
+ const bottom=panel&&!panel.hidden?panel.offsetHeight:0;
+ return {x:0,y,w,h:Math.max(140,h-y-bottom)};
 }
 // The view that shows box: nations fit their free space (up to zoom 3, or
 // their own map's sharpness); settlements go to at least kMin.
-function atlasBoxView(box,kMin){
+// kCap: no closer than this (an event keeps some of its surroundings).
+const ATLAS_EVENT_K=3.6;
+function atlasBoxView(box,kMin,kCap){
  const f=atlasFreeBox(),fit=atlasFit(box,f.w,f.h,Math.min(60,f.w*.1));
  const sharp=atlasDetailScale(atlasDetail(ATLAS_DATA,ATLAS.level==='nation'?ATLAS.nation:null))||3,kTop=Math.max(ATLAS_K_MAX,sharp);
- const k=kMin?Math.max(kMin,Math.min(fit.k,kTop),ATLAS.view?Math.min(ATLAS.view.k,kTop):0):Math.min(fit.k,sharp);
+ let k=kMin?Math.max(kMin,Math.min(fit.k,kTop),ATLAS.view?Math.min(ATLAS.view.k,kTop):0):Math.min(fit.k,sharp);
+ if(kCap)k=Math.min(k,kCap);
  const cx=(box[0]+box[2])/2,cy=(box[1]+box[3])/2;
  return {k,x:f.x+f.w/2-cx*k,y:f.y+f.h/2-cy*k};
 }
-function atlasFlyToBox(box,instant,kMin){return atlasAnimateTo(atlasBoxView(box,kMin),instant);}
+function atlasFlyToBox(box,instant,kMin,kCap){return atlasAnimateTo(atlasBoxView(box,kMin,kCap),instant);}
 
 /* ---------- interaction ---------- */
 function atlasBind(){
@@ -557,16 +582,33 @@ function atlasSearchKey(e){
 /* ---------- selection and the panel ---------- */
 function atlasMark(sel){
  const svg=atlasEl('atlasSvg');if(!svg)return;
+ atlasEventMarks(null);
  svg.querySelectorAll('.is-sel,.is-lit').forEach(el=>el.classList.remove('is-sel','is-lit'));
  const p=atlasParseSel(sel);if(!p)return;
  if(p.kind==='e'){
   const ev=atlasEvent(p.id)||{};
   (ev.nations||[]).forEach(id=>{const el=svg.querySelector('[data-sel="n-'+id+'"]');if(el)el.classList.add('is-lit');});
   (ev.places||[]).forEach(id=>{const el=svg.querySelector('[data-sel="s-'+id+'"]');if(el)el.classList.add('is-lit');});
+  atlasEventMarks(ev);
   return;
  }
  const el=svg.querySelector('[data-sel="'+sel+'"]');if(el)el.classList.add('is-sel');
  if(p.kind==='s'){const s=atlasSettlement(ATLAS_DATA,p.id),n=s&&svg.querySelector('[data-sel="n-'+s.nation+'"]');if(n)n.classList.add('is-lit');}
+}
+// Pins where the chosen event happened: the first carries its title, each
+// the name of its place.
+function atlasEventMarks(ev){
+ const g=atlasEl('atlasEvMarks');if(!g)return;
+ g.innerHTML=ev&&ATLAS_DATA?atlasEventMarksSVG(atlasEventPoints(ATLAS_DATA,ev),ev.title):'';
+}
+function atlasEventMarksSVG(pts,title){
+ return pts.map((p,i)=>'<g class="atlas-ev" transform="translate('+p.x+' '+p.y+')"><g class="atlas-ev-s">'
+  +'<circle class="atlas-ev-pulse" r="9"/>'
+  +'<path class="atlas-ev-pin" d="M0 0C-4 -7 -9 -11 -9 -18A9 9 0 1 1 9 -18C9 -11 4 -7 0 0Z"/><circle class="atlas-ev-eye" cy="-18" r="3.4"/>'
+  +(i===0?'<text class="atlas-ev-title" y="-34">'+esc(title)+'</text>':'')
+  // A settlement shows its own name already; a point of its own gets one here.
+  +(p.own&&p.name?'<text class="atlas-ev-sub" x="13" y="-14">'+esc(p.name)+'</text>':'')
+  +'</g></g>').join('');
 }
 function atlasSelect(sel,opts){
  opts=opts||{};
@@ -582,7 +624,7 @@ function atlasSelect(sel,opts){
  if(to.level!==ATLAS.level||to.nation!==ATLAS.nation||to.town!==ATLAS.town){atlasTravel(to,opts);return;}
  if(WORLD_PLACE&&opts.fly&&to.level!=='town'){
   const p=atlasParseSel(WORLD_PLACE),box=atlasSelBox(p);
-  if(box)atlasFlyToBox(box,opts.instant,p.kind==='s'?3:0);
+  if(box)atlasFlyToBox(box,opts.instant,p.kind==='s'?3:0,p.kind==='e'?ATLAS_EVENT_K:0);
  }
 }
 
@@ -649,13 +691,15 @@ function atlasLevelView(to,from){
  const d=ATLAS_DATA,p=atlasParseSel(WORLD_PLACE);
  if(to.level==='world'){
   const box=p&&p.kind==='e'?atlasSelBox(p):null;
-  return box?atlasBoxView(box,0):atlasHomeView(d,atlasFreeBox());
+  return box?atlasBoxView(box,0,ATLAS_EVENT_K):atlasHomeView(d,atlasFreeBox());
  }
  if(to.level==='town')return ATLAS.view;
  const back=from&&from.level==='town'&&from.nation===to.nation&&atlasSettlement(d,from.town);
  const s=back||(p&&p.kind==='s'?atlasSettlement(d,p.id):null);
  if(s){const f=atlasLockBox(),k=Math.max(3,atlasDetailScale(atlasDetail(d,to.nation))*.55);return {k,x:f.x+f.w/2-s.x*k,y:f.y+f.h/2-s.y*k};}
- return atlasBoxView(atlasNation(d,to.nation).box,0);
+ // An event inside the nation: its pins.
+ const ebox=p&&p.kind==='e'?atlasSelBox(p):null;
+ return ebox?atlasBoxView(ebox,0,ATLAS_EVENT_K):atlasBoxView(atlasNation(d,to.nation).box,0);
 }
 // Show a level: the nation's own map alone (the whole map and the other
 // nations hidden, its settlements shown), or a town's map over everything.
@@ -741,7 +785,9 @@ function atlasSelBox(p){
  if(p.kind==='n'){const n=atlasNation(d,p.id);return n&&n.box;}
  if(p.kind==='s'){const s=atlasSettlement(d,p.id);return s&&[s.x-14,s.y-10,s.x+14,s.y+10];}
  const ev=atlasEvent(p.id);if(!ev)return null;
- const boxes=(ev.nations||[]).map(id=>(atlasNation(d,id)||{}).box).concat((ev.places||[]).map(id=>{const s=atlasSettlement(d,id);return s&&[s.x-14,s.y-10,s.x+14,s.y+10];})).filter(Boolean);
+ // Its pins when it has any; otherwise the nations it names.
+ const pts=atlasEventPoints(d,ev);
+ const boxes=(pts.length?pts.map(s=>[s.x-40,s.y-26,s.x+40,s.y+10]):(ev.nations||[]).map(id=>(atlasNation(d,id)||{}).box)).filter(Boolean);
  if(!boxes.length)return null;
  return [Math.min(...boxes.map(b=>b[0])),Math.min(...boxes.map(b=>b[1])),Math.max(...boxes.map(b=>b[2])),Math.max(...boxes.map(b=>b[3]))];
 }
@@ -813,6 +859,7 @@ function atlasDetailHTML(p){
  const links=(e.nations||[]).map(id=>{const n=atlasNation(d,id);return n&&atlasLink('n-'+id,n.name);})
   .concat((e.places||[]).map(id=>{const s=atlasSettlement(d,id);return s&&atlasLink('s-'+id,atlasPlaceName(s));})).filter(Boolean);
  return atlasCloseBtn()+'<p class="atlas-kicker">'+esc(atlasYearText(e,cal))+(era?' · '+esc(era.name):'')+'</p><h2 tabindex="-1">'+esc(e.title)+'</h2>'
+  +(e.sample?'<p class="atlas-alias">A sample event, made up to show the timeline. Not canon.</p>':'')
   +atlasLoreBody(e.summary||e.body?{summary:e.summary,body:e.body}:null)
   +(links.length?'<h3>Where</h3><p class="atlas-where">'+links.join('')+'</p>':'');
 }

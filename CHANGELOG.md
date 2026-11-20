@@ -5,6 +5,18 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Atlas: sample timeline events, and pins where events happened
+
+- **Ten sample events in two sample eras** (Age of Crowns, Age of Embers), so the owner can see the timeline filled
+  (owner, 2026-11-20). They are made up and marked so: a "Sample events" tag on the timeline and a note on each
+  event. Replace or delete them in `js/atlas-lore.js` (each has `sample: true`).
+- **Choosing an event shows where it happened**: a pin at each of its places, the first with the event's title, and
+  the map framed on them without zooming in so far that the surroundings are lost. An event inside one nation opens on that nation's map (through the
+  clouds); one across several nations stays on the whole map with those nations lit. An event can have its own point
+  (`at: {x, y, name}`) for a place that isn't a settlement, like the sample battle on the Khor steppe.
+- The timeline now runs in era order, then by year (3 AE came before 12 AC). On a phone, framing a place leaves room
+  for the search bar and buttons. Tests: `tests/atlas.cjs`.
+
 ## Atlas: the scroll wheel goes between levels
 
 - **Scroll in over a nation** and, past the zoom where towns appear, the atlas flies through the clouds into that
