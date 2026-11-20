@@ -37,7 +37,7 @@ The Pits got worse while bugs were being fixed: fixes broke things that already 
 
    A new gate must first be shown failing on the reports it is meant to catch.
 3. **A fixed report becomes a test.** Each fixed report's seed and choices go under `tests/`, and the gate re-runs it on every push. A report fixed once stays fixed.
-4. **Browser checks in CI.** A short browser job plays three full bouts and fails on a console error or a stall. A failing test is fixed, not left red or skipped.
+4. **Browser checks in CI.** A short browser job plays three full bouts and fails on a console error or a stall. It runs when a change touches The Pits (its page, a file the page loads, `experiments/` or `tests/visual/`) and on every push to `main`; other changes skip it (owner, 2026-11-20). The unit tests, the ordering gate included, run on every change. A failing test is fixed, not left red or skipped.
 5. **New stage work goes behind a flag.** New animation or stage work is reached through a `?stage=` link until the owner has played it, and only then becomes the default. Fixes go straight to the default.
 6. **Count what went backwards.** The ledger has a **Caused by** column: the PR that broke it, or "old". Each batch's last line reports the fixes made and the regressions caused, next to the two `session-zero.md` numbers.
 7. **Clear the queue.** Each Claude session starts by merging or closing open docs PRs. Any finding in them goes into the ledger or `session-zero.md`, so nothing is lost in an old PR.

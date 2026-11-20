@@ -9,8 +9,8 @@
    nations  {<nation id>: {summary, body}}     ids: valeshar, zhalin, the-hix ...
    places   {<settlement id>: {name, summary, body}}
             name replaces the stand-in map's name (Golshehr is Shamur).
-   calendar {era, eraShort, year}               the present day; null uses the
-            map file's calendar.
+   calendar {era, eraShort, year}               the present day; null shows none
+            (the map file's 845 PE is only Azgaar's, owner 2026-11-20).
    eras     [{id, name, short, start, end}]     in order; end null = ongoing.
    events   [{id, year, label, era, title, summary, nations:[ids],
              places:[ids]}]                     label overrides the year text

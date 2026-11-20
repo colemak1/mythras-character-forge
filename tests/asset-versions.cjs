@@ -17,7 +17,7 @@ for(const page of pages){
 }
 // The atlas script loads its own data, picture and plates (stamped by the same script).
 const atlas=fs.readFileSync(path.join(root,'js/atlas.js'),'utf8');
-for(const [re,base] of [[/'(assets\/atlas\/[^'?]+)\?v=([^']*)'/g,''],[/'([a-z-]+\.webp)\?v=([^']*)'/g,'assets/atlas/plates']]){
+for(const [re,base] of [[/'(assets\/atlas\/[^'?]+)\?v=([^']*)'/g,'']]){
  for(const m of atlas.matchAll(re)){
   const file=path.join(root,base,m[1]);
   assert(fs.existsSync(file),'js/atlas.js: '+m[1]+' does not exist');

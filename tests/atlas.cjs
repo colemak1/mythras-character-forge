@@ -21,10 +21,47 @@ test('the data has the 20 nations of the overview map, on the picture\'s 4:3 can
   assert(data.settlements.some(s=>s.i===n.capital&&s.capital&&s.nation===n.id),n.name+' capital is one of its settlements');
  }
 });
-test('every nation has its stand-in plate, and every stamped atlas file exists',()=>{
- const plates=run('ATLAS_PLATES');
- for(const n of data.nations){assert(plates[n.id],n.id+' plate');assert(fs.existsSync(path.join(root,'assets/atlas/plates',plates[n.id].split('?')[0])),n.id+' plate file');}
+test('every nation has its own map, stamped, and its rectangle holds the nation',()=>{
+ const crypto=require('node:crypto');
+ for(const n of data.nations){
+  const det=data.details[n.id];assert(det,n.id+' nation map');
+  const [file,v]=det.src.split('?v=');
+  assert(fs.existsSync(path.join(root,file)),det.src);
+  assert.equal(v,crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex').slice(0,10),det.src+' stamp (rerun scripts/build-atlas-plates.py)');
+  assert(det.x<=n.box[0]&&det.y<=n.box[1]&&det.x+det.w>=n.box[2]&&det.y+det.h>=n.box[3],n.id+' map covers the nation');
+  assert(Math.abs(det.px[0]/det.w-det.px[1]/det.h)<.05,n.id+' one scale both ways');
+ }
  for(const u of [run('ATLAS_DATA_URL'),run('ATLAS_MAP_URL')])assert(fs.existsSync(path.join(root,u.split('?')[0])),u);
+});
+test('Katalli holds the whole peninsula (owner, 2026-11-20)',()=>{
+ const k=data.nations.find(n=>n.id==='katalli');
+ assert(k.box[1]<495&&k.box[3]>585&&k.box[0]<40,'the outline reaches the south-western tip: '+k.box);
+ assert(data.settlements.filter(s=>s.nation==='katalli').length>=50);
+ assert(!data.settlements.some(s=>!s.nation&&s.x<120&&s.y>480&&s.y<640),'no unclaimed settlement left on the peninsula');
+});
+test('town maps: Azgaar\'s Watabou links, with the lore name',()=>{
+ const g=data.settlements.find(s=>s.id==='golshehr');
+ assert.equal(g.map,'https://watabou.github.io/city-generator/?name=Golshehr&population=88943&size=77&seed=693271150001&river=0&coast=0&farms=0&citadel=1&urban_castle=0&hub=0&plaza=0&greens=0&temple=0&walls=1&shantytown=0&style=natural');
+ assert.match(run('atlasTownLink')(g,'Shamur'),/\?name=Shamur&population=88943&/);
+ for(const s of data.settlements){
+  if(s.group==='fort')assert.equal(s.map,null,s.id);
+  else if(s.group==='village')assert.match(s.map,/^https:\/\/watabou\.github\.io\/village-generator\/\?pop=/,s.id);
+  else assert.match(s.map,/^https:\/\/watabou\.github\.io\/city-generator\/\?name=/,s.id);
+ }
+ assert.match(run('atlasTownHTML')(g,'Shamur'),/<iframe src="https:\/\/watabou[^"]*preview=1"/);
+});
+test('a nation or its settlement opens the nation\'s own map; events and nothing do not',()=>{
+ const of=run('atlasNationOf');
+ assert.equal(of(data,'n-valeshar'),'valeshar');assert.equal(of(data,'s-golshehr'),'valeshar');
+ assert.equal(of(data,'e-anything'),null);assert.equal(of(data,null),null);
+ const det=data.details.valeshar;
+ assert(run('atlasDetailScale')(det)>5,'the stand-in plate is sharper than the whole map');
+ const c=run('atlasClamp')({k:6,x:99999,y:99999},800,600,1024,768,.5,10,[det.x,det.y,det.x+det.w,det.y+det.h]);
+ assert.equal(c.x,400-det.x*6,'panning stops at the nation map\'s edge');
+});
+test('no present day until the owner sets one (845 PE is Azgaar\'s placeholder)',()=>{
+ assert.equal(run('ATLAS_LORE.calendar'),null);assert.equal(run('atlasCalendar()'),null);
+ run('ATLAS_DATA=DATA;ATLAS.era="all";');assert.doesNotMatch(run('atlasTimelineHTML()'),/Now ·/);
 });
 test('settlement ids are unique and lore keys point at real places',()=>{
  const ids=new Set(data.settlements.map(s=>s.id));assert.equal(ids.size,data.settlements.length);
