@@ -4,9 +4,11 @@ The World Guide opens on an interactive atlas (`#/world/atlas`), modelled on the
 (2026-11-20): a map you can drag and zoom, nations and settlements you can choose, search, map layers, and a
 timeline under the map whose events light up the places they happened.
 
-Choosing a nation zooms into **the nation's own map**, faded in over the whole map; **‹ Sit’ota** zooms back out.
-Choosing a settlement shows **its town map**: the city or village Azgaar generates for it (Watabou's generators),
-in the panel and full size (owner, 2026-11-20). The old guide chapters are still there
+The atlas has three levels (owner, 2026-11-20): the whole map, a nation's own map, and a town's map. Choosing a nation
+**flies in through the clouds** to the nation's own map and **locks there**, as if the whole map weren't there: it
+always fills the screen, drags stop at its edges, and nothing from the whole map is drawn over it. Choosing a settlement flies on through the clouds into **its town map** (the city
+or village Azgaar generates for it with Watabou's generators), which fills the map. **‹** goes back up one level the
+same way (Escape too); forts have no town map and stay on the nation's map. Reduced motion skips the clouds. The old guide chapters are still there
 (`#/world/welcome`, the **Guide** button).
 
 ## Files
@@ -16,7 +18,7 @@ in the panel and full size (owner, 2026-11-20). The old guide chapters are still
 | Map picture (stand-in) | `assets/atlas/sitota-map.webp` | replaced when the final map arrives |
 | Borders, settlements, rivers, roads | `assets/atlas/atlas-data.json` | built by `scripts/build-atlas-data.py` |
 | Nation maps (stand-in: the plates cropped to their map) | `assets/atlas/nations/<nation id>.webp`, placed by `data.details` | built by `scripts/build-atlas-plates.py`; replaced when the detailed maps are drawn |
-| Town maps | links in `atlas-data.json` (`settlement.map`) | built with the data, the same as Azgaar's burg preview |
+| Town maps | links in `atlas-data.json` (`settlement.map`), shown full size at the town level | built with the data, the same as Azgaar's burg preview |
 | Descriptions, lore names, eras, events | `js/atlas-lore.js` (`ATLAS_LORE`) | owner content; Claude types it in |
 | The page | `js/atlas.js`, `sitota-atlas.css` | Claude |
 | Tests | `tests/atlas.cjs` | Claude |
@@ -78,7 +80,7 @@ re-exporting makes the override unnecessary (it then claims nothing).
   (Golshehr on the map file); the panel says when a name differs.
 - The stand-in nation maps print the map file's names, so a lore name (Shamur) sits next to the printed Golshehr.
 - Town maps come live from watabou.github.io; if that site changes its generator, a town can change. The panel
-  (Enlarge) links to the generator, so a map you like can be saved (its PNG or SVG export) and sent in to replace it.
+  links to the generator, so a map you like can be saved (its PNG or SVG export) and sent in to replace it.
 - The timeline is empty until events are written, and shows no present day until one is set (845 PE in the map
   file is Azgaar's placeholder).
 
@@ -88,3 +90,5 @@ Headless Chromium at 1280 × 800 and 390 × 844, light and dark: the whole map, 
 (Shamur), and three sample events with rivers and roads on. No page errors. Not checked on a real phone (pinch zoom).
 2026-11-20, second batch: clicking Valeshar on the map opens its map; Katalli and Khor maps; Shamur's town map in the
 panel (desktop and phone).
+2026-11-20, third batch: the trip through the clouds into Valeshar and Khor, then Shamur, and back out, at 1280 × 800
+(light, dark) and on a phone (iPhone 13); dragging and zooming out stop at Valeshar's edges. Not on a real phone.

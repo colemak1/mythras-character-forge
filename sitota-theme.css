@@ -18,11 +18,14 @@
   /* The atlas picture is parchment in both modes, so the marks drawn on it
      (sitota-atlas.css) are never redefined either. */
   --map-ink:#3b2416; --map-paper:#f3e6c8; --map-accent:#a3301f; --map-water:#4f7d97; --map-road:#7a5233;
+  /* the clouds the atlas flies through between levels (sitota-atlas.css) */
+  --atlas-cloud:#fbf9f4; --atlas-cloud-shade:#d8dce2;
   --font-display:"Fraunces",Georgia,serif;
   --font-ui:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
 }
 html[data-mode="dark"]{
+  --atlas-cloud:#4a4f59; --atlas-cloud-shade:#2b2e35;
   --ink-0:#121313; --ink-1:#1a1b1b; --ink-2:#232424;
   --line:#333536; --line-soft:#262828; --inner:#262828; --btn-line:#3e4041;
   --bone:#ecebe7; --bone-dim:#9d9b96; --prose:#d9d8d4;
