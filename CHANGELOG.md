@@ -5,6 +5,26 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: who won an opposed roll, the Endurance story, and four stage fixes (reports of 18 and 20 Nov)
+
+- **Opposed rolls say who won and why** (report 20261120-214915, "hard to see if you won the roll or not"). The dice
+  tray named the wrong winner when the first roll was the one that had to win (freeing a pinned weapon or an
+  entangle, standing up, pulling out an Impale, changing range): on two failures it said the one trying had won while
+  the pin held. It now names the right winner, its chance to win and the reason. Every opposed roll in the log gives
+  both grades and the reason, naming the winner ("both failed, and Border Deserter had to beat the other roll").
+  Rules and dice are unchanged.
+- **The Endurance story leads with what happened** (report 20261120-214527, "it looks like he should have died"): "Border
+  Deserter's left arm is useless until healed. The fight goes on.", then the rolls.
+- **Replay: no second sword** (report 20261120-214648, and Work's #382): a held Impale stayed drawn in the wound
+  through its withdrawal in the replay while the hand pulled the weapon out.
+- **Press Advantage after its blow** (report 20261120-215045): the pair took the press stance as soon as it was chosen,
+  before the location and damage dice and the blow.
+- **A pinned or disabled arm turns to its pose over a moment** instead of snapping in one frame (report 20261120-214809).
+- Not changed: knees and elbows that bend backwards (reports 20261118-232203, 20261120-215045). The cause is found, but
+  the fix changes the locked look; it waits for the owner (`docs/pits-report-ledger.md`, FR-35).
+- Tests: `tests/pits-report-fixes-5.cjs`, `tests/pits-stage.cjs`, `tests/combat-rules.cjs`, and a replay check in
+  `tests/visual/pits-spring-scripted.cjs`. Golden bouts regenerated for the new wording only.
+
 ## Atlas: sample timeline events, and pins where events happened
 
 - **Ten sample events in two sample eras** (Age of Crowns, Age of Embers), so the owner can see the timeline filled

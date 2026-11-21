@@ -131,11 +131,14 @@ function solve(v,f,m,opt){
   const Hd=[S[0]+f*Math.sin(a3)*DIM.neck,S[1]+Math.cos(a3)*DIM.neck];
   const D=a=>{const d=dirL(a);return [f*d[0],d[1]];};
   let ua=v.ua,fa=v.fa,oua=v.oua,ofa=v.ofa,w=v.w;
-  if(opt.weapon){ua=-84;fa=-96;w=-100;}            // a disabled arm hangs
+  // (each of these is true, or how far the arm has gone there, 0 to 1: the stage turns it from where the movement has
+  // it over a moment, report 20261120-214809: a pinned weapon snapped down in one frame)
+  const to=(a,b,u)=>a+(((b-a)%360+540)%360-180)*Math.min(1,+u);
+  if(opt.weapon){ua=to(ua,-84,opt.weapon);fa=to(fa,-96,opt.weapon);w=to(w,-100,opt.weapon);}            // a disabled arm hangs
   // a pinned weapon or shield is held down where it is pinned until it is freed (audit CA-12)
-  else if(opt.pinW){ua=-48;fa=-60;w=-58;}
-  if(opt.off){oua=-94;ofa=-86;}
-  else if(opt.pinS){oua=-58;ofa=-40;}
+  else if(opt.pinW){ua=to(ua,-48,opt.pinW);fa=to(fa,-60,opt.pinW);w=to(w,-58,opt.pinW);}
+  if(opt.off){oua=to(oua,-94,opt.off);ofa=to(ofa,-86,opt.off);}
+  else if(opt.pinS){oua=to(oua,-58,opt.pinS);ofa=to(ofa,-40,opt.pinS);}
   const du=D(ua),df=D(fa);let E=[wS[0]+du[0]*DIM.upper,wS[1]+du[1]*DIM.upper],Hn=[E[0]+df[0]*DIM.fore,E[1]+df[1]*DIM.fore];
   // an arm lying on the ground rests on it
   if(Hn[1]<1||E[1]<1){const r=ik2(wS,[Hn[0],Math.max(1,Hn[1])],DIM.upper,DIM.fore,[0,1]);E=r.mid;Hn=r.end;}

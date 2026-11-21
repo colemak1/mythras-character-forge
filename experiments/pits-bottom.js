@@ -174,7 +174,12 @@ function pbWoundLine(l){
   const level=t[1].toLowerCase(),loc=t[2],ok=m[7]==='Resists',owner=S.fighters[l.meta?.actor];
   const you=owner&&pbHuman(owner.id)&&!pbHuman(pbOther(owner.id)),who=you?'You':esc(m[1]);
   const st=paWoundStakes(level,loc,you?'you':m[1]),word=g=>esc(PB_GRADE_WORD[g.toLowerCase()]||g);
-  return {cls:ok?'fx':'hurt',html:`<b>${who} ${ok?(you?'resist':'resists'):(you?'fail':'fails')} the ${level==='major'?'Major':'Serious'} Wound to the ${esc(loc)}</b>: `
+  // what it did, first and in plain words (report 20261120-214527: "it looks like he should have died there": a failed
+  // Endurance roll on a Serious Wound to an arm costs the arm, and the fight goes on)
+  const said=ok?st.ok:st.bad,over=/the bout is over/.test(said);
+  const raw=you?'You':m[1],lead=ok?`${raw} ${you?'resist':'resists'}: ${said}`:said.replace(/^the /,you?'Your ':`${raw}'s `).replace(/^./,c=>c.toUpperCase());
+  return {cls:ok?'fx':'hurt',html:`<b>${esc(lead)}${over?'':' The fight goes on.'}</b> `
+    +`${who} ${ok?(you?'resist':'resists'):(you?'fail':'fails')} the ${level==='major'?'Major':'Serious'} Wound to the ${esc(loc)}: `
     +`Endurance <b>${m[2]}</b> against ${m[3]}%${m[9]?` (${m[9]}%, made harder by ${esc(m[10])})`:''} · ${word(m[4])}, against the attack roll of <b>${m[5]}</b> · ${word(m[6])}`
     +(m[8]?`: <b>${esc(m[8])}</b>. `:'. ')
     +`To resist, Endurance must beat the attack roll: a better grade, or the same grade and a higher roll (Core p.110). `

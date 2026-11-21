@@ -79,7 +79,7 @@ test('an opposed roll carries the roll it must beat, and the tray shows both sid
  const A=arena();
  A.run(`render=()=>{};S.logs=[];V.busy=false;R=null;S.fighters.b.kind='human';S.fighters.b.brawn=53;
   opposing(S.fighters.a,'attack',{roll:30,grade:2});requestSkill('b',53,'Trip · Border Deserter Brawn',()=>{});`);
- assert.deepEqual(JSON.parse(A.run('JSON.stringify(R.vs)')),{who:'Kethan Voss',what:'attack',roll:30,grade:2});
+ assert.deepEqual(JSON.parse(A.run('JSON.stringify(R.vs)')),{who:'Kethan Voss',what:'attack',roll:30,grade:2,mustBeat:'second'});
  assert.equal(A.run('R.pct'),53,'the target travels with the roll');
  const before=text(A.run('paTrayHtml()'));
  // Brawn 53 against a 30 Success: 01-06 critical and 31-53 higher successes win: 29

@@ -388,4 +388,24 @@ test('Work C1: an automatic opponent\'s Major Wound Endurance roll is shown befo
  assert(order.indexOf('Endurance')<order.indexOf('Kethan hits Right Arm'),'Endurance dice before the blow: '+order.join(' | '));
  assert(order.indexOf('Kethan hits Right Arm')<order.indexOf('FIGHT ENDS'));
 });
+// report 20261120-215045: "for press advantage it looks like your pressing advantage before the blow even hits, it should
+// be after". The engine has the press from the moment it is chosen, before the location and damage dice; the stage
+// takes the press stance only once the blow of that exchange has been drawn.
+test('Press Advantage waits for its blow to be drawn before the pair take the press stance',()=>{
+ A.run(`S.logs=[{id:57,title:'Kethan attacks',body:'47 against Combat Style 67% — SUCCESS.',kind:'roll',meta:{actor:'a'}},
+  {id:60,title:'Press Advantage',body:'Marek cannot attack on the next Turn, but may act otherwise.',kind:'hit',meta:{actor:'a'}}];
+  PS.blowDrawn=0;V.busy=false;V.replaying=false;`);
+ const waits=()=>A.run(`psPressWaits(${JSON.stringify(names)})`);
+ assert.equal(waits(),true,'chosen, the location and damage still to roll');
+ A.run(`S.logs.push({id:62,title:'Kethan hits Right Arm',body:'8 total; 0 parry; 0 armour; 8 HP lost.',kind:'hit',meta:{actor:'a',impact:{target:'b',location:'Right Arm',hpLost:8}}});`);
+ assert.equal(waits(),true,'the blow is logged but not drawn yet');
+ A.run('PS.blowDrawn=62;');
+ assert.equal(waits(),false,'the blow has been drawn');
+ A.run(`PS.blowDrawn=0;S.logs.splice(2,1,{id:61,title:'No Damaging Hit',body:'x',kind:'system',meta:{actor:'a'}});`);
+ assert.equal(waits(),true,'a parried blow carries it too');
+ A.run('PS.blowDrawn=61;');assert.equal(waits(),false,'the parried blow has been drawn');
+ A.run(`PS.blowDrawn=0;S.logs.splice(2,1,{id:70,title:'Kethan attacks',body:'40 against Combat Style 67% — SUCCESS.',kind:'roll',meta:{actor:'a'}});`);
+ assert.equal(waits(),false,'a new exchange has begun');
+ A.run('S.logs=[];');assert.equal(waits(),false,'no press at all');
+});
 console.log(passed+' pits stage tests passed');
