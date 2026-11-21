@@ -26,6 +26,11 @@ Inside a town map the wheel belongs to the generator, so leaving a town is the *
 | The page | `js/atlas.js`, `sitota-atlas.css` | Claude |
 | Tests | `tests/atlas.cjs` | Claude |
 
+Choosing an event puts a pin at each of its places (the first carries its title) and frames them; an event inside
+one nation opens on that nation's map. **The timeline holds ten sample events** (owner, 2026-11-20, "so I can see how
+that looks"): made up, marked `sample: true` and tagged "Sample events" on the page. Delete them (and the two sample
+eras) when the real ones arrive.
+
 Links: `#/world/atlas/n-valeshar` (a nation), `#/world/atlas/s-golshehr` (a settlement), `#/world/atlas/e-<id>` (an event).
 
 ## Adding lore and events
@@ -39,6 +44,7 @@ calendar: { year: 1200, era: 'Example Era', eraShort: 'EE' },                 //
 eras:    [ { id: 'pe', name: 'Persterbu Era', short: 'PE' } ],
 events:  [ { id: 'treaty-of-shamur', year: 300, era: 'pe', title: 'The Treaty of Shamur',
              summary: 'One or two sentences.', nations: ['valeshar'], places: ['golshehr'] } ],
+// at: {x, y, name} pins a place that isn't a settlement (map units, 1024 × 768; Claude can find them)
 ```
 
 Ids are the ones in the map data: nation ids are the names in lower case with hyphens (`the-hix`, `vishka`, `lzar`,
