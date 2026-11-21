@@ -1,0 +1,1701 @@
+{
+ "id": "d0dfc616-cd70-4258-8bd8-89d966459dcb",
+ "created_at": "2026-11-20T21:48:53.276895+00:00",
+ "reporter": null,
+ "note": "[Lost #1] Pressed \"What just happened?\" in round 2.",
+ "page": "experiments/practice-combat.html",
+ "build": "arena=0668e33d79;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=6eb3edda87;cine-fx=02003a23cc;stage=ed0226be94",
+ "record": {
+  "at": "2026-11-20T21:48:53.071Z",
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+  "log": [
+   {
+    "b": "Kethan Voss rolls 10 + 13 − 2 armour penalty = 21.",
+    "t": "Kethan Voss · Initiative",
+    "id": 1
+   },
+   {
+    "b": "Border Deserter rolls 10 + 12 − 0 armour penalty = 22.",
+    "t": "Border Deserter · Initiative",
+    "id": 2
+   },
+   {
+    "b": "Kethan Voss: 10+13−2 = 21. Border Deserter: 10+12−0 = 22. Border Deserter acts first.",
+    "t": "Encounter 1 · Initiative",
+    "id": 3
+   },
+   {
+    "b": "9 against Combat Style 48% — SUCCESS.",
+    "t": "Border Deserter attacks",
+    "id": 4
+   },
+   {
+    "b": "65 vs 67% — SUCCESS. 2 AP remaining.",
+    "t": "Kethan Voss parries",
+    "id": 5
+   },
+   {
+    "b": "Kethan Voss's Broadsword parry stops the whole blow (Core p.95: a parrying weapon as large as the attacking one blocks all its damage), and it cannot land hard enough to knock them back, so no location or damage is rolled.",
+    "t": "No Damaging Hit",
+    "id": 6
+   },
+   {
+    "b": "10 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 7
+   },
+   {
+    "b": "15 vs 48% — SUCCESS. 0 AP remaining.",
+    "t": "Border Deserter parries",
+    "id": 8
+   },
+   {
+    "b": "Border Deserter's Mace parry stops the whole blow (Core p.95: a parrying weapon as large as the attacking one blocks all its damage), and it cannot land hard enough to knock them back, so no location or damage is rolled.",
+    "t": "No Damaging Hit",
+    "id": 9
+   },
+   {
+    "b": "60 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 10
+   },
+   {
+    "b": "Border Deserter has no Action Points left, so cannot parry or evade. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 11
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 12
+   },
+   {
+    "b": "Weapon damage will be rolled twice; choose a result.",
+    "t": "Impale",
+    "id": 13
+   },
+   {
+    "b": "Kethan Voss rolls 18 (d20): Left Arm.",
+    "t": "Hit Location",
+    "id": 14
+   },
+   {
+    "b": "Kethan Voss chooses option B: 5 weapon damage before the Damage Modifier.",
+    "t": "Impale · Damage selected",
+    "id": 15
+   },
+   {
+    "b": "5 weapon (5) +1d2 (+2) = 7 total; 0 parry; 0 armour; 7 HP lost.",
+    "t": "Kethan Voss hits Left Arm",
+    "id": 16
+   },
+   {
+    "b": "Kethan Voss's Broadsword lodges in Border Deserter's Left Arm. Choose: keep hold and pull it free on a later turn, or leave it in the wound.",
+    "t": "Impaled Weapon",
+    "id": 17
+   },
+   {
+    "b": "Kethan Voss keeps hold of the weapon and can pull it free on a later turn (Ready Weapon).",
+    "t": "Impale · Keeps hold",
+    "id": 18
+   },
+   {
+    "b": "Border Deserter cannot attack for the next 1 Turn; other actions remain possible.",
+    "t": "Serious Wound · Stunned",
+    "id": 19
+   },
+   {
+    "b": "Border Deserter Endurance 96/27% (FAILURE) versus the attack 60 (SUCCESS). Fails to resist: the attack has the better grade. Endurance 53% made harder by impaled weapon.",
+    "t": "SERIOUS WOUND · Left Arm",
+    "id": 20
+   },
+   {
+    "b": "Border Deserter's Left Arm becomes unusable until healed to positive HP. They cannot use that arm.",
+    "t": "Limb Disabled",
+    "id": 21
+   },
+   {
+    "b": "AP refresh. Fatigue and blood loss carry forward.",
+    "t": "Round 2",
+    "id": 22
+   },
+   {
+    "b": "Border Deserter holds an Action Point for a reaction until their next turn.",
+    "t": "Delay",
+    "id": 23
+   },
+   {
+    "b": "Kethan Voss Brawn 81 (FAILURE) versus Border Deserter Brawn 85 (FAILURE): weapon remains lodged.",
+    "t": "Withdraw Impale",
+    "id": 24
+   },
+   {
+    "b": "Border Deserter did not use the held reaction and loses the Action Point.",
+    "t": "Delay expires",
+    "id": 25
+   },
+   {
+    "b": "97 against Combat Style 24% — FAILURE.",
+    "t": "Border Deserter attacks",
+    "id": 26
+   },
+   {
+    "b": "41 vs 46% — SUCCESS. 1 AP remaining.",
+    "t": "Kethan Voss evades",
+    "id": 27
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Defensive Special Effects",
+    "id": 28
+   },
+   {
+    "b": "Kethan Voss regains their feet immediately using the defensive opening (Core p.96).",
+    "t": "Arise",
+    "id": 29
+   },
+   {
+    "b": "Kethan Voss evades the incoming strike and is already back on their feet.",
+    "t": "No Damaging Hit",
+    "id": 30
+   },
+   {
+    "b": "Kethan Voss Brawn 33 (SUCCESS) versus Border Deserter Brawn 74 (FAILURE): weapon withdrawn.",
+    "t": "Withdraw Impale",
+    "id": 31
+   },
+   {
+    "b": "Kethan Voss withdraws Broadsword: 2 normal weapon damage, halved to 1. No Damage Modifier or armour reduction. Border Deserter's Left Arm is now -4 HP.",
+    "t": "Withdrawal injury",
+    "id": 32
+   },
+   {
+    "b": "Border Deserter Endurance 13/53% (SUCCESS) versus the attack 33 (SUCCESS). Fails to resist: both succeeded and the attack's 33 is higher.",
+    "t": "MAJOR WOUND · Left Arm",
+    "id": 33
+   },
+   {
+    "b": "Kethan Voss wins. Border Deserter has a Major Limb Wound to the Left Arm: incapacitated and prone. Falls unconscious from agony. If the GM rules the limb severed, punctured or ripped off, untreated blood loss becomes fatal after 10 minutes.",
+    "t": "FIGHT ENDS",
+    "id": 34
+   },
+   {
+    "b": "Border Deserter steps forward. Your HP was restored.",
+    "t": "New Opponent",
+    "id": 35
+   },
+   {
+    "b": "Kethan Voss rolls 8 + 13 − 2 armour penalty = 19.",
+    "t": "Kethan Voss · Initiative",
+    "id": 36
+   },
+   {
+    "b": "Border Deserter rolls 6 + 12 − 0 armour penalty = 18.",
+    "t": "Border Deserter · Initiative",
+    "id": 37
+   },
+   {
+    "b": "Kethan Voss: 8+13−2 = 19. Border Deserter: 6+12−0 = 18. Kethan Voss acts first.",
+    "t": "Encounter 2 · Initiative",
+    "id": 38
+   },
+   {
+    "b": "75 against Combat Style 67% — FAILURE.",
+    "t": "Kethan Voss attacks",
+    "id": 39
+   },
+   {
+    "b": "Border Deserter chooses not to defend and keeps their Action Points. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 40
+   },
+   {
+    "b": "Kethan Voss's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 41
+   },
+   {
+    "b": "57 against Combat Style 52% — FAILURE.",
+    "t": "Border Deserter attacks",
+    "id": 42
+   },
+   {
+    "b": "1 vs 67% — CRITICAL. 1 AP remaining.",
+    "t": "Kethan Voss parries",
+    "id": 43
+   },
+   {
+    "b": "Kethan Voss gains 2 Special Effects from superior success.",
+    "t": "Defensive Special Effects",
+    "id": 44
+   },
+   {
+    "b": "Kethan Voss pins Border Deserter's weapon. The item cannot be used until freed with an Action Point and opposed Brawn (Core pp.97–98).",
+    "t": "Pin Weapon",
+    "id": 45
+   },
+   {
+    "b": "Border Deserter is blinded for 1 turns (situational Blindness penalty).",
+    "t": "Blind Opponent",
+    "id": 46
+   },
+   {
+    "b": "Border Deserter's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 47
+   },
+   {
+    "b": "74 against Combat Style 67% — FAILURE.",
+    "t": "Kethan Voss attacks",
+    "id": 48
+   },
+   {
+    "b": "Border Deserter chooses not to defend and keeps their Action Points. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 49
+   },
+   {
+    "b": "Kethan Voss's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 50
+   },
+   {
+    "b": "Border Deserter Brawn 77/52% versus Kethan Voss Brawn 80/53%. The weapon remains pinned.",
+    "t": "Pin Weapon · Escape",
+    "id": 51
+   },
+   {
+    "b": "AP refresh. Fatigue and blood loss carry forward.",
+    "t": "Round 2",
+    "id": 52
+   },
+   {
+    "b": "73 against Combat Style 67% — FAILURE.",
+    "t": "Kethan Voss attacks",
+    "id": 53
+   },
+   {
+    "b": "Border Deserter chooses not to defend and keeps their Action Points. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 54
+   },
+   {
+    "b": "Kethan Voss's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 55
+   },
+   {
+    "b": "Border Deserter Brawn 59/52% versus Kethan Voss Brawn 56/53%. The weapon remains pinned.",
+    "t": "Pin Weapon · Escape",
+    "id": 56
+   },
+   {
+    "b": "47 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 57
+   },
+   {
+    "b": "Border Deserter chooses not to defend and keeps their Action Points. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 58
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 59
+   }
+  ],
+  "auto": false,
+  "cine": {
+   "seed": 626614768,
+   "choices": {
+    "41": {
+     "move": "spin",
+     "ward": null
+    },
+    "47": {
+     "move": "over",
+     "ward": "wardMid"
+    },
+    "50": {
+     "move": "rise",
+     "ward": null
+    },
+    "55": {
+     "move": "rise",
+     "ward": null
+    }
+   }
+  },
+  "lost": [
+   {
+    "n": 1,
+    "at": "2026-11-20T21:48:53.070Z",
+    "beat": null,
+    "roll": null,
+    "tape": 41,
+    "turn": "a",
+    "beats": null,
+    "cycle": 2,
+    "phase": "effects",
+    "round": 2,
+    "recent": [
+     {
+      "k": "head",
+      "text": "Kethan Voss attacked"
+     },
+     {
+      "k": "roll",
+      "text": "Kethan Voss attacks: rolled 73, needed 67 or less · Failure"
+     },
+     {
+      "k": "fx",
+      "text": "Border Deserter does not defend and keeps their Action Points."
+     },
+     {
+      "k": "end",
+      "text": "Missed · No damage."
+     },
+     {
+      "k": "head",
+      "text": "Kethan Voss attacked (still going)"
+     },
+     {
+      "k": "roll",
+      "text": "Kethan Voss attacks: rolled 47, needed 67 or less · Success"
+     },
+     {
+      "k": "fx",
+      "text": "Border Deserter does not defend and keeps their Action Points."
+     },
+     {
+      "k": "fx",
+      "text": "Offensive Special Effects: Kethan Voss gains 1 Special Effect from superior success."
+     },
+     {
+      "k": "last",
+      "text": "Still pinned: Border Deserter's broadsword, by Kethan Voss. No attacks or parries with it until Border Deserter frees it (Free Pinned Weapon: 1 AP, opposed Brawn)."
+     }
+    ],
+    "screen": {
+     "deck": "",
+     "step": "",
+     "tray": "Last roll Kethan Voss attacks 47 47 against 67% — Success",
+     "story": "",
+     "strip": "ROUND 2 Special Effects Engaged Initiative: Kethan Voss 19 · Border Deserter 18",
+     "details": "Impale attacker Roll weapon damage twice; weapon may lodge Needs: Impaling Weapons No roll: it happens as soon as you choose it. Core pp.95–101",
+     "headline": ""
+    },
+    "pending": "effect",
+    "playing": false,
+    "logShown": 59,
+    "logTotal": 59,
+    "replaying": false,
+    "stageClock": 75373,
+    "stageEvents": 109,
+    "lastLogShown": 59
+   }
+  ],
+  "mode": "normal",
+  "page": "",
+  "quick": false,
+  "stage": [
+   [
+    0,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    0,
+    "intent",
+    "attack",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    230,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    230,
+    "intent",
+    "parry",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    450,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    450,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    450,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    633,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    1331,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    1561,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    1561,
+    "intent",
+    "parry",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    1781,
+    "guard",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    1781,
+    "resolve",
+    "parried",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    1781,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    1998,
+    "contact",
+    "parried",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    2546,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    2776,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    2776,
+    "locate",
+    "",
+    "",
+    "b",
+    "larm",
+    0
+   ],
+   [
+    2776,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "larm",
+    7
+   ],
+   [
+    2776,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    2993,
+    "lodge",
+    "",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    2993,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "larm",
+    7
+   ],
+   [
+    3461,
+    "withdraw",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    3461,
+    "intent",
+    "attack",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    3691,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    3691,
+    "intent",
+    "evade",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    3911,
+    "brace",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    3911,
+    "resolve",
+    "evaded",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    3911,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    4094,
+    "contact",
+    "evaded",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    9826,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "larm",
+    1
+   ],
+   [
+    10292,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "larm",
+    1
+   ],
+   [
+    10292,
+    "collapse",
+    "injury",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    14660,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    14660,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    14660,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    14660,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    14660,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    15027,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    15310,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    15310,
+    "guard",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    15310,
+    "resolve",
+    "parried",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    15310,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    15660,
+    "contact",
+    "parried",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    15960,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    15960,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "larm",
+    7
+   ],
+   [
+    15960,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    16310,
+    "lodge",
+    "",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    16310,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "larm",
+    7
+   ],
+   [
+    17010,
+    "withdraw",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    17010,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    17010,
+    "brace",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    17160,
+    "resolve",
+    "evaded",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    17160,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    17527,
+    "contact",
+    "evaded",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    17910,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "larm",
+    1
+   ],
+   [
+    18444,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "larm",
+    1
+   ],
+   [
+    18444,
+    "collapse",
+    "injury",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    55912,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    55912,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    55912,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    55912,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    55912,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    56279,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    56562,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    56562,
+    "guard",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    56562,
+    "resolve",
+    "parried",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    56562,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    56912,
+    "contact",
+    "parried",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    57212,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    57212,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "larm",
+    7
+   ],
+   [
+    57212,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    57562,
+    "lodge",
+    "",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    57562,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "larm",
+    7
+   ],
+   [
+    58262,
+    "withdraw",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    58262,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    58262,
+    "brace",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    58412,
+    "resolve",
+    "evaded",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    58412,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    58779,
+    "contact",
+    "evaded",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    59162,
+    "resolve",
+    "wound",
+    "a",
+    "b",
+    "larm",
+    1
+   ],
+   [
+    59695,
+    "contact",
+    "wound",
+    "a",
+    "b",
+    "larm",
+    1
+   ],
+   [
+    59695,
+    "collapse",
+    "injury",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    70079,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    70863,
+    "settle",
+    "",
+    "",
+    "",
+    "",
+    0
+   ],
+   [
+    70863,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    71093,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    71093,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    71093,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    71309,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    71858,
+    "intent",
+    "attack",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    72088,
+    "attack",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    72088,
+    "intent",
+    "parry",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    72308,
+    "guard",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    72308,
+    "resolve",
+    "parried",
+    "b",
+    "a",
+    "chest",
+    0
+   ],
+   [
+    72308,
+    "move",
+    "",
+    "b",
+    "",
+    "",
+    0
+   ],
+   [
+    72574,
+    "contact",
+    "parried",
+    "b",
+    "a",
+    "",
+    0
+   ],
+   [
+    73273,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    73503,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    73503,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    73503,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    73652,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    74208,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    74438,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    74438,
+    "resolve",
+    "miss",
+    "a",
+    "b",
+    "chest",
+    0
+   ],
+   [
+    74438,
+    "move",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    74588,
+    "contact",
+    "miss",
+    "a",
+    "b",
+    "",
+    0
+   ],
+   [
+    75143,
+    "intent",
+    "attack",
+    "a",
+    "",
+    "",
+    0
+   ],
+   [
+    75373,
+    "attack",
+    "",
+    "a",
+    "",
+    "",
+    0
+   ]
+  ],
+  "bottom": "E",
+  "config": {
+   "con": 13,
+   "dex": 13,
+   "int": 13,
+   "siz": 13,
+   "str": 13,
+   "mode": "normal",
+   "armor": 2,
+   "evade": 46,
+   "style": 67,
+   "pvpCon": 12,
+   "pvpDex": 12,
+   "pvpInt": 12,
+   "pvpSiz": 12,
+   "pvpStr": 12,
+   "shield": "none",
+   "weapon": "sword",
+   "pvpName": "Second Player",
+   "charname": "Kethan Voss",
+   "firstAid": 40,
+   "pvpArmor": 1,
+   "pvpEvade": 50,
+   "pvpSkill": 65,
+   "username": "Guest",
+   "pvpShield": "none",
+   "pvpWeapon": "dagger",
+   "willpower": 55,
+   "leftHanded": false,
+   "mixedArmour": false,
+   "pvpMixedArmour": false,
+   "armourByLocation": {
+    "Head": 2,
+    "Chest": 2,
+    "Abdomen": 2,
+    "Left Arm": 2,
+    "Left Leg": 2,
+    "Right Arm": 2,
+    "Right Leg": 2
+   },
+   "pvpArmourByLocation": {}
+  },
+  "record": "pits-spring-1",
+  "fighters": {
+   "a": {
+    "name": "Kethan Voss",
+    "shield": "none",
+    "weapon": "sword"
+   },
+   "b": {
+    "name": "Border Deserter",
+    "shield": "none",
+    "weapon": "sword"
+   }
+  },
+  "guidance": true,
+  "lostMark": 1,
+  "presented": [
+   {
+    "roll": [
+     "a",
+     "Initiative · d10",
+     [
+      8
+     ]
+    ]
+   },
+   {
+    "b": "Kethan Voss rolls 8 + 13 − 2 armour penalty = 19.",
+    "t": "Kethan Voss · Initiative",
+    "id": 36
+   },
+   {
+    "roll": [
+     "b",
+     "Initiative · d10",
+     [
+      6
+     ]
+    ]
+   },
+   {
+    "b": "Border Deserter rolls 6 + 12 − 0 armour penalty = 18.",
+    "t": "Border Deserter · Initiative",
+    "id": 37
+   },
+   {
+    "b": "Kethan Voss: 8+13−2 = 19. Border Deserter: 6+12−0 = 18. Kethan Voss acts first.",
+    "t": "Encounter 2 · Initiative",
+    "id": 38
+   },
+   {
+    "roll": [
+     "a",
+     "Attack · Combat Style 67%",
+     [
+      75
+     ]
+    ]
+   },
+   {
+    "b": "75 against Combat Style 67% — FAILURE.",
+    "t": "Kethan Voss attacks",
+    "id": 39
+   },
+   {
+    "b": "Border Deserter chooses not to defend and keeps their Action Points. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 40
+   },
+   {
+    "b": "Kethan Voss's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 41
+   },
+   {
+    "cp": 1
+   },
+   {
+    "roll": [
+     "b",
+     "Attack · Combat Style 52%",
+     [
+      57
+     ]
+    ]
+   },
+   {
+    "b": "57 against Combat Style 52% — FAILURE.",
+    "t": "Border Deserter attacks",
+    "id": 42
+   },
+   {
+    "roll": [
+     "a",
+     "Parry · 67%",
+     [
+      1
+     ]
+    ]
+   },
+   {
+    "b": "1 vs 67% — CRITICAL. 1 AP remaining.",
+    "t": "Kethan Voss parries",
+    "id": 43
+   },
+   {
+    "b": "Kethan Voss gains 2 Special Effects from superior success.",
+    "t": "Defensive Special Effects",
+    "id": 44
+   },
+   {
+    "b": "Kethan Voss pins Border Deserter's weapon. The item cannot be used until freed with an Action Point and opposed Brawn (Core pp.97–98).",
+    "t": "Pin Weapon",
+    "id": 45
+   },
+   {
+    "roll": [
+     "b",
+     "Blind Opponent · Border Deserter Evade resistance",
+     [
+      85
+     ]
+    ]
+   },
+   {
+    "roll": [
+     "b",
+     "Blind Opponent · 1d3 turns",
+     [
+      1
+     ]
+    ]
+   },
+   {
+    "b": "Border Deserter is blinded for 1 turns (situational Blindness penalty).",
+    "t": "Blind Opponent",
+    "id": 46
+   },
+   {
+    "b": "Border Deserter's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 47
+   },
+   {
+    "roll": [
+     "a",
+     "Attack · Combat Style 67%",
+     [
+      74
+     ]
+    ]
+   },
+   {
+    "b": "74 against Combat Style 67% — FAILURE.",
+    "t": "Kethan Voss attacks",
+    "id": 48
+   },
+   {
+    "b": "Border Deserter chooses not to defend and keeps their Action Points. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 49
+   },
+   {
+    "roll": [
+     "b",
+     "Free weapon · Border Deserter Brawn",
+     [
+      77
+     ]
+    ]
+   },
+   {
+    "roll": [
+     "a",
+     "Hold pin · Kethan Voss Brawn",
+     [
+      80
+     ]
+    ]
+   },
+   {
+    "b": "Kethan Voss's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 50
+   },
+   {
+    "cp": 1
+   },
+   {
+    "b": "Border Deserter Brawn 77/52% versus Kethan Voss Brawn 80/53%. The weapon remains pinned.",
+    "t": "Pin Weapon · Escape",
+    "id": 51
+   },
+   {
+    "b": "AP refresh. Fatigue and blood loss carry forward.",
+    "t": "Round 2",
+    "id": 52
+   },
+   {
+    "roll": [
+     "a",
+     "Attack · Combat Style 67%",
+     [
+      73
+     ]
+    ]
+   },
+   {
+    "b": "73 against Combat Style 67% — FAILURE.",
+    "t": "Kethan Voss attacks",
+    "id": 53
+   },
+   {
+    "b": "Border Deserter chooses not to defend and keeps their Action Points. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 54
+   },
+   {
+    "roll": [
+     "b",
+     "Free weapon · Border Deserter Brawn",
+     [
+      59
+     ]
+    ]
+   },
+   {
+    "roll": [
+     "a",
+     "Hold pin · Kethan Voss Brawn",
+     [
+      56
+     ]
+    ]
+   },
+   {
+    "b": "Kethan Voss's attack failed to connect.",
+    "t": "No Damaging Hit",
+    "id": 55
+   },
+   {
+    "cp": 1
+   },
+   {
+    "b": "Border Deserter Brawn 59/52% versus Kethan Voss Brawn 56/53%. The weapon remains pinned.",
+    "t": "Pin Weapon · Escape",
+    "id": 56
+   },
+   {
+    "roll": [
+     "a",
+     "Attack · Combat Style 67%",
+     [
+      47
+     ]
+    ]
+   },
+   {
+    "b": "47 against Combat Style 67% — SUCCESS.",
+    "t": "Kethan Voss attacks",
+    "id": 57
+   },
+   {
+    "b": "Border Deserter chooses not to defend and keeps their Action Points. The attack is undefended.",
+    "t": "Border Deserter does not defend",
+    "id": 58
+   },
+   {
+    "b": "Kethan Voss gains 1 Special Effect from superior success.",
+    "t": "Offensive Special Effects",
+    "id": 59
+   }
+  ],
+  "stageName": "cine"
+ }
+}
