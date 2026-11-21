@@ -106,6 +106,15 @@ function gradeRoll(roll,skill,tierSkill=skill){
 function opposedWins(mine,theirs){
   return mine.grade>theirs.grade||(mine.grade===theirs.grade&&mine.grade>=2&&mine.roll>theirs.roll);
 }
+// Who wins an opposed roll and why, in one of four plain reasons. `mustBeat` names the side that has to beat the
+// other ('a' or 'b'): a tie or two failures go to the other side (Core p.51; report 20261120-214915, "hard to see if
+// you won the roll or not"). why: 'grade' (a better grade), 'higher' (both succeeded, the higher roll), 'tie' (the same
+// roll) or 'bothFailed'.
+function opposedVerdict(a,b,mustBeat){
+  const aWins=mustBeat==='a'?opposedWins(a,b):!opposedWins(b,a);
+  const why=a.grade!==b.grade?'grade':a.grade<2?'bothFailed':a.roll===b.roll?'tie':'higher';
+  return {aWins,winner:aWins?'a':'b',why};
+}
 // Core p.51: when a skill is over 100%, the excess of the highest is taken
 // off every participant before anyone's result is read.
 function opposedTargets(a,b){
@@ -416,7 +425,7 @@ return {
   actionPoints,initiativeBonus,healingRate,locationHitPoints,
   DAMAGE_MODIFIER_STEPS,damageModifier,damageModifierValue,totalDamage,
   HUMAN_HIT_LOCATIONS,HUMAN_LOCATION_ORDER,hitLocation,hitLocationFaces,hitLocationRanges,hitPointsByLocation,isLimb,
-  GRADE_VALUE,gradeRoll,gradeAttempt,opposedWins,opposedTargets,skillAtGrade,mostSevereGrade,HOPELESS_STEPS,
+  GRADE_VALUE,gradeRoll,gradeAttempt,opposedWins,opposedVerdict,opposedTargets,skillAtGrade,mostSevereGrade,HOPELESS_STEPS,
   contestLevels,impaleGrades,impaleIncapacitates,IMPALE_INCAPACITATED,
   effectsWon,
   SIZE_STEP,SIZE_NAMES,REACH_STEP,REACH_NAMES,parryReduction,crampedSize,CRAMPED_STRIKE,

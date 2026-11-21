@@ -547,25 +547,25 @@ body{background:radial-gradient(ellipse at 50% 5%,var(--ink-2),var(--ink-0) 70%)
 <div class="pits-subbar"><a href="../index.html#/the-pits">&larr; Choose a character</a><a href="#" id="homeLink">Reset bout</a></div>
 <main class="main" id="root"></main>
 
-<script src="../js/combat-rules.js?v=df867be054"></script>
+<script src="../js/combat-rules.js?v=86e78468c5"></script>
 <script src="../js/data.js?v=e863ceddbb"></script>
 <script src="practice-character.js?v=0c0d2375a0"></script>
 <script src="practice-guidance.js?v=cebd250af1"></script>
 <script src="pits-view.js?v=67441672c2"></script>
 <script src="pits-game.js?v=3769cec741"></script>
 <script src="pits-report.js?v=78c28f1bb3"></script>
-<script src="pits-arena.js?v=0668e33d79"></script>
-<script src="pits-bottom.js?v=d79679ddc3"></script>
+<script src="pits-arena.js?v=5d92e70c91"></script>
+<script src="pits-bottom.js?v=a268a89196"></script>
 <script src="pits-lost.js?v=f385014ea5"></script>
 <script src="pits-idea.js?v=e1791930b7"></script>
 <script src="pits-motion.js?v=5c6cf25c54"></script>
 <script src="pits-spring.js?v=d6e69e0c95"></script>
 <script src="pits-writer.js?v=e371f2e1b2"></script>
 <script src="pits-spring-live.js?v=8c9c8efa51"></script>
-<script src="pits-cine.js?v=6eb3edda87"></script>
+<script src="pits-cine.js?v=c8e7f37e02"></script>
 <script src="pits-cine-fx.js?v=02003a23cc"></script>
 <script src="pits-flex.js?v=dff1553db0"></script>
-<script src="pits-stage.js?v=ed0226be94"></script>
+<script src="pits-stage.js?v=26a1067db6"></script>
 <script>
 'use strict';
 // The combat rules themselves live in ../js/combat-rules.js (CombatRules),
@@ -996,7 +996,22 @@ function resolveDice(actor,defs,label,callback,vs=null,pct=null){
 // "see the rolls going against each other"). Set with opposing() on the line before the requestSkill it belongs to;
 // the next roll requested takes it. {who, what, roll, grade (0-3)}
 let NEXT_VS=null,NEXT_PCT=null;   // (NEXT_PCT: a skill roll's target, set by requestSkill)
-function opposing(who,what,r){NEXT_VS=r&&r.roll>0?{who:who?.name||'',what,roll:r.roll,grade:r.grade}:null;}
+// mustBeat: which roll has to beat the other, 'second' (a resist: the default) or 'first' (an attempt the second roll
+// opposes: freeing a pin, standing, withdrawing). A tie or two failures go to the side that did not have to beat.
+function opposing(who,what,r,mustBeat='second'){NEXT_VS=r&&r.roll>0?{who:who?.name||'',what,roll:r.roll,grade:r.grade,mustBeat}:null;}
+// The reason an opposed roll went the way it did, in plain words (report 20261120-214915). x is the roll that had to
+// beat y; beater is the name of whoever rolled x, other of whoever rolled y.
+function opposedWhy(x,y,beater,other){
+ const v=CombatRules.opposedVerdict(x,y,'a'),w=v.aWins?beater:other;
+ return {grade:`${w} has the better grade`,higher:`both succeeded and ${w}'s roll is higher`,tie:`the same roll, and ${beater} had to beat it`,
+  bothFailed:`both failed, and ${beater} had to beat the other roll`}[v.why];
+}
+// A resist's reason as its own sentence, after the outcome: res had to beat origin (whose word names it, "the attack").
+const originWord=p=>[S.fighters[p.owner].name,p.owner===p.atk?'attack':'parry'];
+function resistWhy(res,origin,who,[owner,what]){
+ return ` Against ${owner}'s ${what} ${origin.roll} (${origin.label||''}): ${opposedBetter(res,origin)?'resisted':'not resisted'}, `
+  +`${opposedWhy(res,origin,who,owner)}.`;
+}
 function requestDice(actor,defs,label,callback){
   if(!Array.isArray(defs)||!defs.length)throw Error('Missing dice for '+label);
   const vs=NEXT_VS,pct=NEXT_PCT;NEXT_VS=null;NEXT_PCT=null;
@@ -1918,7 +1933,7 @@ function rangeReact(option){
         const winner=opposedBetter(mr,dr);
         log('Change Range · Evade contest',
          `${mover.name} Evade ${mr.roll}/${mr.effectiveTarget}% (${mr.label}) vs ${d.name} Evade ${dr.roll}/${dr.effectiveTarget}% (${dr.label}). ${winner?
-         'Change succeeds.':'Original range maintained.'}`,'system','',{sideDice:{[mover.id]:d100Dice(mr.roll),[d.id]:d100Dice(dr.roll)}});
+         'Change succeeds':'Original range maintained'}: ${opposedWhy(mr,dr,mover.name,d.name)}.`,'system','',{sideDice:{[mover.id]:d100Dice(mr.roll),[d.id]:d100Dice(dr.roll)}});
         if(winner&&apart){p.withdrawAfter=mover.id;p.withdrawTitle='Disengage';}
         else if(winner)setCombatRange(p.desired,`${mover.name} ${p.desired==='short'?'closes to the shorter':'opens to the longer'} reach.`);
         endRangeAction();
@@ -1952,7 +1967,7 @@ function requestOpposedSkills(a,aPct,aLabel,b,bPct,bLabel,resolve){
   const targets=CombatRules.opposedTargets(aPct,bPct);
   const aTarget=targets.a,bTarget=targets.b;
   requestDice(a.id,[{sides:100,label:'d100'}],`${aLabel} · ${a.name} ${aTarget}%`,([ar])=>{
-    opposing(a,'Evade',rollSkill(aTarget,ar));
+    opposing(a,aLabel,rollSkill(aTarget,ar),'first');
     requestDice(b.id,[{sides:100,label:'d100'}],`${bLabel} · ${b.name} ${bTarget}%`,([br])=>{
       resolve({...rollSkill(aTarget,ar),effectiveTarget:aTarget},{...rollSkill(bTarget,br),effectiveTarget:bTarget});
     });
@@ -2849,7 +2864,7 @@ function beginEntangleTrip(id){
    if(!stands)victim.prone=true;
    log('Entangle · Trip',`${victim.name} ${TRIP_SKILL_NAMES[
     k]} ${res.roll}/${res.effectiveTarget??base}% (${res.label}) against ${f.name}'s original Entangle roll ${origin.roll} (${origin.label}): ${stands?
-    'stays standing':'falls prone'}.`,'hit','Core pp.97, 101: 1 AP, opposed against the roll that won Entangle.',{actor:f.id,target:victim.id});
+    'stays standing':'falls prone'}: ${opposedWhy(res,origin,victim.name,f.name)}.`,'hit','Core pp.97, 101: 1 AP, opposed against the roll that won Entangle.',{actor:f.id,target:victim.id});
    advanceStun(f);S.turnIndex++;advance();
   });
  };
@@ -2864,14 +2879,15 @@ function beginFreeEntangle(id){
  const holder=S.fighters[f.entangled.by];
  f.ap--;reopenBandage(f,'pulling free of an entangling weapon');
  requestSkill(f.id,f.brawn,`Break free · ${f.name} Brawn`,attempt=>{
-  opposing(f,'Brawn',attempt);
+  opposing(f,'Brawn',attempt,'first');
   requestSkill(holder.id,holder.brawn,`Hold on · ${holder.name} Brawn`,resistance=>{
    const freed=opposedBetter(attempt,resistance),loc=f.entangled.loc;
    if(freed)f.entangled=null;
    log('Entangle · Break free',
-    (`${f.name} Brawn ${attempt.roll}/${attempt.effectiveTarget??f.brawn}% ver`
-    +`sus ${holder.name} Brawn ${resistance.roll}/${resistance.effectiveTarget??holder.brawn}%. ${freed?`The ${loc} is free.`:
-    `The ${loc} stays entangled.`}`),'system','Core p.97: opposed Brawn to yank free.',{actor:f.id,sideDice:{[f.id]:d100Dice(attempt.roll),[holder.id]:d100Dice(resistance.roll)}});
+    (`${f.name} Brawn ${attempt.roll}/${attempt.effectiveTarget??f.brawn}% (${attempt.label}) ver`
+    +`sus ${holder.name} Brawn ${resistance.roll}/${resistance.effectiveTarget??holder.brawn}% (${resistance.label}). ${freed?`The ${loc} is free`:
+    `The ${loc} stays entangled`}: ${opposedWhy(attempt,resistance,f.name,holder.name)}.`),'system','Core p.97: opposed Brawn to yank free.',
+    {actor:f.id,sideDice:{[f.id]:d100Dice(attempt.roll),[holder.id]:d100Dice(resistance.roll)}});
    advanceStun(f);S.turnIndex++;advance();
   });
  });
@@ -2884,12 +2900,13 @@ function beginFreePinnedGear(id){
  const gear=f.pinnedGear;
  f.ap--;reopenBandage(f,'wrestling a pinned weapon');
  requestSkill(f.id,f.brawn,`Free ${gear} · ${f.name} Brawn`,attempt=>{
-  opposing(f,'Brawn',attempt);
+  opposing(f,'Brawn',attempt,'first');
   requestSkill(holder.id,holder.brawn,`Hold pin · ${holder.name} Brawn`,resistance=>{
    const freed=opposedBetter(attempt,resistance);
    if(freed){f.pinnedGear=null;f.pinnedBy=null;}
-   log('Pin Weapon · Escape',`${f.name} Brawn ${attempt.roll}/${f.brawn}% versus ${holder.name} Brawn ${resistance.roll}/${holder.brawn}%. ${freed?
-    `Frees ${gear}.`:`The ${gear} remains pinned.`}`,'system','Core pp.97–98: one AP and opposed Brawn to free a pinned item.',{actor:f.id,sideDice:{
+   log('Pin Weapon · Escape',(`${f.name} Brawn ${attempt.roll}/${attempt.effectiveTarget??f.brawn}% (${attempt.label}) versus ${holder.name} Brawn `
+    +`${resistance.roll}/${resistance.effectiveTarget??holder.brawn}% (${resistance.label}). ${freed?`Frees ${gear}`:`The ${gear} remains pinned`}: `
+    +`${opposedWhy(attempt,resistance,f.name,holder.name)}.`),'system','Core pp.97–98: one AP and opposed Brawn to free a pinned item.',{actor:f.id,sideDice:{
     [f.id]:d100Dice(attempt.roll),[holder.id]:d100Dice(resistance.roll)}});
    advanceStun(f);S.turnIndex++;advance();
   });
@@ -3028,13 +3045,14 @@ function finishRegainFooting(f,other,skill){
    const defend=(defSkill)=>{
      const what=defSkill==='athletics'?'athletics':'brawn',pct=other[what];
      S.pending={kind:'footingResolution',actor:f.id,target:other.id};
-     opposing(f,'stand',br);
+     opposing(f,'stand',br,'first');
      requestSkill(other.id,pct,`Oppose standing · ${other.name} ${what}`,res=>{
        const success=opposedBetter(br,res);
        if(success)f.prone=false;
        log('Regain Footing',
-        `${f.name} ${chosen} ${br.roll}/${br.effectiveTarget??base}% versus ${other.name} ${what} ${res.roll}/${res.effectiveTarget??pct}%. ${success?
-        'Stands up.':'Remains prone.'}`,'system','Engaged combatants oppose Brawn or Athletics (Core p.92).',{sideDice:{[f.id]:d100Dice(br.roll),[other.id]:d100Dice(res.roll)}});
+        (`${f.name} ${chosen} ${br.roll}/${br.effectiveTarget??base}% (${br.label}) versus ${other.name} ${what} ${res.roll}/${res.effectiveTarget??pct}% `
+        +`(${res.label}). ${success?'Stands up':'Remains prone'}: ${opposedWhy(br,res,f.name,other.name)}.`),'system','Engaged combatants oppose Brawn or Athletics (Core p.92).',
+        {sideDice:{[f.id]:d100Dice(br.roll),[other.id]:d100Dice(res.roll)}});
        S.pending=null;advanceStun(f);S.turnIndex++;advance();
      });
    };
@@ -3591,7 +3609,7 @@ function applyEffect(effect){
      const resists=opposedBetter(res,origin);
      note('Compel Surrender',
       `${target.name} Willpower ${res.roll}/${target.willpower}% (${res.label}) versus ${actor.name}'s original ${origin.roll} (${origin.label}): ${resists?
-      'refuses to surrender':'capitulates'}. No bodily damage is inflicted.`);
+      'refuses to surrender':'capitulates'}: ${opposedWhy(res,origin,target.name,actor.name)}. No bodily damage is inflicted.`);
      if(!resists){endFight(actor.id,`${target.name} surrenders under threat after failing Willpower.`);return;}
      if(S.pending===at){S.pending=null;endActionAfterCompel();}
    });return;
@@ -3604,7 +3622,7 @@ function applyEffect(effect){
    opposing(S.fighters[p.owner],p.owner===p.atk?'attack':'parry',origin);
    requestSkill(target.id,pct,`Resist disarm · ${target.name}`,res=>{
      const resists=opposedBetter(res,origin);
-     note('Disarm Opponent',`${target.name} rolls ${res.roll} against ${pct}% (${res.label}). ${resists?'Keeps weapon.':'Loses weapon.'}`);
+     note('Disarm Opponent',`${target.name} rolls ${res.roll} against ${pct}% (${res.label}). ${resists?'Keeps weapon.':'Loses weapon.'}${resistWhy(res,origin,target.name,originWord(p))}`);
      if(!resists){disarmAndScatter(actor,target,()=>finishOneEffect());return;}
      finishOneEffect();
    });return;
@@ -3647,7 +3665,8 @@ function applyEffect(effect){
      requestSkill(target.id,base,`Trip · ${target.name} ${TRIP_SKILL_NAMES[choice]}`,res=>{
        const stands=opposedBetter(res,origin);
        if(!stands)target.prone=true;
-       note('Trip Opponent',`${target.name} ${TRIP_SKILL_NAMES[choice]} ${res.roll}/${res.effectiveTarget??base}% (${res.label}): ${stands?'remains standing':'falls prone'}.`);
+       note('Trip Opponent',`${target.name} ${TRIP_SKILL_NAMES[choice]} ${res.roll}/${res.effectiveTarget??base}% (${res.label}): `
+        +`${stands?'remains standing':'falls prone'}.${resistWhy(res,origin,target.name,originWord(p))}`);
        finishOneEffect();
      });
    };
@@ -3846,7 +3865,8 @@ function resolveHit(){
             const resists=opposedBetter(test,p.attackRoll);
             if(!resists){ensureEffectState(def);def.stunnedLocations[loc]=Math.max(def.stunnedLocations[loc]||0,wound);}
             log('Stun Location',`${def.name} Endurance ${test.roll} (${test.label}) vs attack ${p.attackRoll.roll}: ${resists?'resists':
-             'the '+loc+' is stunned for '+wound+' turns'}.`,'hurt','',{actor:def.id,dice:d100Dice(test.roll),location:loc,target:def.id});
+             'the '+loc+' is stunned for '+wound+' turns'}: ${opposedWhy(test,p.attackRoll,def.name,S.fighters[p.atk].name)}.`,'hurt','',
+             {actor:def.id,dice:d100Dice(test.roll),location:loc,target:def.id});
             collisionThenWound();
           });
         };
@@ -3859,7 +3879,8 @@ function resolveHit(){
             const resists=opposedBetter(test,p.attackRoll);
             if(!resists){ensureEffectState(def);def.bleeding=true;if(sourceWound){sourceWound.bleeding=true;sourceWound.wasBleeding=true;}}
             log('Bleed',`${def.name} Endurance ${test.roll} (${test.label}) vs attack ${p.attackRoll.roll}: ${resists?'the bleed is avoided':
-             'bleeding begins; lose one Fatigue level each new Combat Round'}.`,'hurt','',{actor:def.id,dice:d100Dice(test.roll),location:loc,target:def.id});
+             'bleeding begins; lose one Fatigue level each new Combat Round'}: ${opposedWhy(test,p.attackRoll,def.name,S.fighters[p.atk].name)}.`,'hurt','',
+             {actor:def.id,dice:d100Dice(test.roll),location:loc,target:def.id});
             stunCheck();
           });
         }else{
@@ -3918,7 +3939,7 @@ function finishWithdrawImpale(id,opposed){
   const resolve=(res)=>{
    const success=res?opposedBetter(br,res):br.grade>=2;
    log('Withdraw Impale',`${f.name} Brawn ${br.roll} (${br.label})${res?` versus ${target.name} Brawn ${res.roll} (${res.label})`:''}: ${success?
-    'weapon withdrawn':'weapon remains lodged'}.`,'hit','',{actor:f.id,dice:d100Dice(br.roll)});
+    'weapon withdrawn':'weapon remains lodged'}${res?` (${opposedWhy(br,res,f.name,target.name)})`:''}.`,'hit','',{actor:f.id,dice:d100Dice(br.roll)});
    if(!success){endAction();return;}
    f.impaledWeapon=null;
    target.impaledWounds=(target.impaledWounds||[]).filter(w=>w.attacker!==f.id);
@@ -3937,7 +3958,7 @@ function finishWithdrawImpale(id,opposed){
     }else endAction();
    });
   };
-  if(opposed){opposing(f,'Brawn',br);requestSkill(target.id,target.brawn,`Resist withdrawal · ${target.name} Brawn`,res=>resolve(res));}
+  if(opposed){opposing(f,'Brawn',br,'first');requestSkill(target.id,target.brawn,`Resist withdrawal · ${target.name} Brawn`,res=>resolve(res));}
   else resolve(null);
  });
 }

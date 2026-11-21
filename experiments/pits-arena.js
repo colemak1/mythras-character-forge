@@ -220,12 +220,18 @@ function paVersusHtml(r,pct,value){
   const vs=r&&r.vs;if(!vs||pct==null)return '';
   const me=S.fighters[r.actor],word=g=>esc(PITS_ZONE_WORD[PA_GRADE_NAME[g]]||'');
   const mine=value!=null?{roll:value,grade:paGradeOf(value,pct)}:null;
-  let n=0;for(let v=1;v<=100;v++)if(CombatRules.opposedWins({roll:v,grade:paGradeOf(v,pct)},vs))n++;
-  const won=mine?CombatRules.opposedWins(mine,vs):null;
+  // which roll has to beat the other: a resist (the default) must beat the roll before it; freeing a pin, standing or
+  // withdrawing must be beaten by nothing better (a tie or two failures keep things as they are: report 20261120-214915)
+  const first=vs.mustBeat==='first',iWin=m=>CombatRules.opposedVerdict(m,vs,first?'b':'a').aWins;
+  let n=0;for(let v=1;v<=100;v++)if(iWin({roll:v,grade:paGradeOf(v,pct)}))n++;
+  const won=mine?iWin(mine):null;
   const meName=paHuman(r.actor)&&!paHuman(r.actor==='a'?'b':'a')?'You':esc(me?.name||'');
-  const why=mine?(mine.grade!==vs.grade?'the better grade':mine.grade>=2?'the same grade, the higher roll':'both failed, so it is not beaten'):'';
-  const verdict=mine?`<div class="rvs-out ${won?'won':'lost'}">${won?`${meName} ${meName==='You'?'win':'wins'}`:`${esc(vs.who)} ${vs.who==='You'?'win':'wins'}`}: ${why}</div>`
-    :`<div class="rvs-out">Chance to win: <b>${n}%</b> · a better grade wins; the same grade, the higher roll</div>`;
+  const beater=first?esc(vs.who):meName,why=mine?{grade:'the better grade',higher:'the same grade, the higher roll',
+    tie:`the same roll, and ${beater} had to beat it`,bothFailed:`both failed, and ${beater} had to beat the other roll`}[
+    CombatRules.opposedVerdict(mine,vs,'a').why]:'';
+  const wins=n=>`${n} ${n==='You'?'win':'wins'}`;
+  const verdict=mine?`<div class="rvs-out ${won?'won':'lost'}">${won?wins(meName):wins(esc(vs.who))}: ${why}</div>`
+    :`<div class="rvs-out">Chance to win: <b>${n}%</b> · a better grade wins; the same grade, the higher roll${first?`; a tie or two failures: ${meName}`:''}</div>`;
   return `<div class="rvs" aria-label="Opposed roll"><div class="rvs-side them"><small>${esc(vs.who)} · ${esc(vs.what)}</small><b>${String(vs.roll).padStart(2,'0')}</b>`
     +`<span class="o-${PA_GRADE_NAME[vs.grade]}">${word(vs.grade)}</span></div><div class="rvs-mark">vs</div>`
     +`<div class="rvs-side me${mine?(won?' won':' lost'):''}"><small>${meName} · ${pct}%</small><b>${mine?String(mine.roll).padStart(2,'0'):'?'}</b>`

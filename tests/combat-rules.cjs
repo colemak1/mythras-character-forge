@@ -87,6 +87,17 @@ test('opposedWins: better level wins, then the higher roll; two failures have no
  assert.equal(C.opposedWins(r(2,30),r(2,30)),false,'a tie is not a win');
  assert.equal(C.opposedWins(r(1,80),r(1,70)),false);assert.equal(C.opposedWins(r(1,80),r(0,99)),true);
 });
+test('opposedVerdict: the side that must beat loses a tie or two failures, with the reason (report 20261120-214915)',()=>{
+ const r=(grade,roll)=>({grade,roll});
+ // freeing a pin: the attempt (a) must beat the hold; both failed, so the hold stays
+ assert.deepEqual(C.opposedVerdict(r(1,59),r(1,56),'a'),{aWins:false,winner:'b',why:'bothFailed'});
+ // the holder's side of the same roll (b must beat a): still the holder's
+ assert.deepEqual(C.opposedVerdict(r(1,56),r(1,59),'b'),{aWins:true,winner:'a',why:'bothFailed'});
+ assert.deepEqual(C.opposedVerdict(r(2,40),r(2,30),'a'),{aWins:true,winner:'a',why:'higher'});
+ assert.deepEqual(C.opposedVerdict(r(2,30),r(2,30),'a'),{aWins:false,winner:'b',why:'tie'});
+ assert.deepEqual(C.opposedVerdict(r(2,30),r(2,30),'b'),{aWins:true,winner:'a',why:'tie'});
+ assert.deepEqual(C.opposedVerdict(r(3,5),r(2,60),'a'),{aWins:true,winner:'a',why:'grade'});
+});
 test('opposedTargets: the excess over 100 comes off both skills (Core p.51)',()=>{
  assert.deepEqual(C.opposedTargets(80,60),{reduction:0,a:80,b:60});
  assert.deepEqual(C.opposedTargets(130,60),{reduction:30,a:100,b:30});

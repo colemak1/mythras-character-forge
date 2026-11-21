@@ -563,8 +563,13 @@ function psDraw(f,now){
 // what the rig is told about the fighter's arms and equipment (also used for the afterimages, CL-03)
 function psPoseOpt(f,L){
   const wLimp=L.swap?L.limp.larm:L.limp.rarm,oLimp=L.swap?L.limp.rarm:L.limp.larm,armed=!!L.armed&&!f.dropEl;
-  return {weapon:wLimp,off:oLimp,unarmed:!armed,pinW:L.pinned==='weapon'&&armed,pinS:L.pinned==='shield'&&!!L.shield};
+  // (an arm going limp or pinned gets there over PS_ARM_TO ms from where the movement has it, instead of in one frame:
+  // report 20261120-214809, a pinned weapon snapped down)
+  const os=f.armSince||(f.armSince={}),to=(k,on)=>{if(!on){delete os[k];return false;}if(os[k]==null||PS.clock<os[k])os[k]=PS.clock;
+    return Math.max(.001,Math.min(1,(PS.clock-os[k])/PS_ARM_TO));};
+  return {weapon:to('w',wLimp),off:to('o',oLimp),unarmed:!armed,pinW:to('pw',L.pinned==='weapon'&&armed),pinS:to('ps',L.pinned==='shield'&&!!L.shield)};
 }
+const PS_ARM_TO=280;
 function psDrawMotion(f,L,now){
   const m=PS.M[f.id],wLimp=L.swap?L.limp.larm:L.limp.rarm,oLimp=L.swap?L.limp.rarm:L.limp.larm;
   // (unarmed: a two-handed grip lets go too)
@@ -624,6 +629,18 @@ function psExchangeFx(cue,striker){
   for(i=i-1;i>=0;i--){const l=logs[i];if(pitsStageKind(l,names)==='attack')break;
     const k=l.meta&&l.meta.actor===striker&&PSTAGE_FX[l.title];if(k&&!fx.includes(k))fx.push(k);}
   return fx;
+}
+// Press Advantage waits for its blow: true while the newest Press Advantage shown has a blow in its exchange that has
+// not been drawn yet (or not logged yet: the location and damage dice come after the choice). A new exchange ends it.
+function psPressWaits(names){
+  if(typeof S==='undefined'||!S||!S.logs)return false;
+  const upto=pitsPresenting()&&PS.cueFor?PS.cueFor:Infinity,logs=S.logs;
+  let i=logs.length-1;while(i>=0&&!(logs[i].id<=upto&&logs[i].title==='Press Advantage'))i--;
+  if(i<0)return false;
+  for(let j=i+1;j<logs.length;j++){const k=pitsStageKind(logs[j],names);
+    if(PSTAGE_BLOW.includes(k))return (PS.blowDrawn||0)<logs[j].id;
+    if(k==='attack'||k==='withdraw')return false;}
+  return true;
 }
 // a weapon in a wound with its wielder's hand still on it: the two are joined by it
 function psTiedByLodge(){for(const list of Object.values(PS.fighters.lodged||{}))for(const w of list||[])if(w.held)return true;return false;}
@@ -1596,6 +1613,12 @@ async function psMotionBlow(cue){
   // the move and the defence declared live are kept on the tape and given again.
   // (a weapon left in the wound is taken hold of first; one kept hold of is pulled at once)
   const lodgedBy=pulled?((PS.fighters.lodged&&PS.fighters.lodged[def.id])||[]).find(w=>w.holder===atk.id):null;
+  // the pull takes the weapon out: the Impale drawn ahead of the engine's state at its contact is let go of here (a
+  // replay is busy from start to end, so it was kept to the end, and the weapon was drawn in the wound and in the hand
+  // pulling it: report 20261120-214648, "a duplicated sword"; Work's #382, kept in the wound through a later Disarm)
+  // (and from the weapons drawn in wounds, which are rebuilt only at the next beat)
+  if(pulled&&PS.lodgeAhead[def.id]&&PS.lodgeAhead[def.id].holder===atk.id){delete PS.lodgeAhead[def.id];
+    if(PS.fighters.lodged&&PS.fighters.lodged[def.id])PS.fighters.lodged[def.id]=PS.fighters.lodged[def.id].filter(w=>w.holder!==atk.id);}
   // The defender's Trip or Disarm, drawn as the end of this blow's own movement (owner, 2026-11-18): an attack that
   // failed is a swing that goes by, and the defender strikes into the overcommitted attacker; a good attack met by a
   // better parry is the parry itself, driving on into the effect; after an evade, from where the evade left them.
@@ -1709,6 +1732,7 @@ async function psMotionBlow(cue){
   if(r.release&&PS.lodgeAhead[def.id]){await psUntil(r.release);const la=PS.lodgeAhead[def.id];la.held=false;
     PS.fighters.lodged[def.id]=psMergeLodge(PS.fighters.lodged[def.id],la);atk.look.armed=false;psEmit('release',{actor:atk.id});}
   await psUntil(r.end);
+  PS.blowDrawn=Math.max(PS.blowDrawn||0,PS.cueFor||0);
   if(hookAfter&&PS.M[def.id]&&!PS.M[def.id].down&&!(tripFell&&def.mDown)){
     // the attacker's Trip: the hook behind the ankle, out of the blow's follow-through
     const h=L.trip(PS.M,atk.id,PS.clock,{fell:tripFell,after:true,key:PS.cueFor});PS.busyUntil=Math.max(PS.busyUntil,h.end);psFlexHits(h);
@@ -1887,7 +1911,7 @@ function pitsStageSync(){
   const fresh=PS.run!==S||PS.fighters.b!==S.fighters.b;
   if(fresh){psSettle();for(const k of Object.keys(PS.lodge)){PS.lodge[k].remove();delete PS.lodge[k];}
     for(const id of ['a','b']){const f=PS.fig[id];if(f.dropEl){f.dropEl.remove();f.dropEl=null;}if(f.shieldDropEl){f.shieldDropEl.remove();f.shieldDropEl=null;}f.shieldDropped=false;f.look=null;}
-    PS.run=S;PS.seeded=false;PS.lastId=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};if(!psReplaying())PS.cineTape=null;
+    PS.run=S;PS.seeded=false;PS.lastId=0;PS.blowDrawn=0;PS.fighters={a:S.fighters.a,b:S.fighters.b};if(!psReplaying())PS.cineTape=null;
     PS.M={};PS.gap=0;PS.go=0;PS.intents={};PS.reachTags=null;for(const id of ['a','b']){const f=PS.fig[id];f.mEnd=null;f.heldPose=null;f.flag=false;f.finishDrop=false;f.mDown=false;f.downAt=0;f.spent=false;f.relocate=false;f.tripAhead=false;f.forceLimp=null;f.dropAhead=false;f.standX=null;}}
   for(const id of ['a','b']){
     const f=PS.fig[id];f.look=pitsStageLook(view[id]);
@@ -1933,7 +1957,9 @@ function pitsStageSync(){
     f.end=null;
   }
   // Press Advantage: the effect is active while the engine says the opponent still cannot attack (pressedTurns).
-  {const pr=['a','b'].filter(i=>view[i]&&(view[i].pressedTurns||0)>0),active=S.phase==='fight'&&pr.length===1?pr[0]:null;
+  // (not before the blow that wins it has been drawn: the press is chosen before the location and damage dice, and the
+  // engine's state has it from then, so the pair took the press stance before the blow landed: report 20261120-215045)
+  {const pr=['a','b'].filter(i=>view[i]&&(view[i].pressedTurns||0)>0),active=S.phase==='fight'&&pr.length===1&&!psPressWaits(names)?pr[0]:null;
    for(const id of ['a','b']){const f=PS.fig[id];f.pressRole=active?(id===active?'cover':'press'):null;
      // released: the pair stays where the press left it, and the next movement starts from there, as in the replay
      // (it used to walk both back to a neutral guard at the next lull: report review FR-06)

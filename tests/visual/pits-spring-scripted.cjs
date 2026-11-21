@@ -33,7 +33,7 @@ async function bout(browser,sc){
     return {phase:S.phase,busy:!!V.busy,pend:S.pending?S.pending.kind:null,R:R?R.actor+':'+R.label.split(' ')[0]:null};});
   const click=q=>p.evaluate(q=>{const e=[...document.querySelectorAll(q)].find(x=>!x.disabled);if(!e)return false;
     e.dispatchEvent(new MouseEvent('click',{bubbles:true}));return true;},q);
-  let attacks=0,nr=0,bz=0;const probes=[];
+  let attacks=0,nr=0,bz=0,effects=0;const probes=[];
   // (1500 steps: since the dice hold of 2026-11-17 a bout with many manual rolls needs more than 500)
   for(let i=0;i<1500;i++){const s=await st();
     if(s.busy){if(++bz>250)break;await sleep(40);continue;}bz=0;
@@ -42,7 +42,7 @@ async function bout(browser,sc){
     if(s.R){await p.evaluate(v=>{window.__next=v==null?null:v;},(sc.rolls||{})[s.R]);await click('[data-act=roll]');}
     else if(s.pend==='reaction'){const r=(sc.react||[])[nr++]||'none';await click('[data-pa=def][data-val='+r+']');   // the deck: pick, then confirm
       await click('[data-act=react][data-val='+r+']')||await click('[data-act=react][data-val=none]');}
-    else if(s.pend==='effect'){if(sc.effect)await click('[data-pa=fx][data-val="'+sc.effect+'"]');   // the deck: pick the chip, then confirm
+    else if(s.pend==='effect'){if(sc.effectOnce&&effects++)sc.effect=null;if(sc.effect)await click('[data-pa=fx][data-val="'+sc.effect+'"]');   // the deck: pick the chip, then confirm
       if(!(sc.effect&&await click('[data-act=effect][data-val="'+sc.effect+'"]')))await click('[data-act=skipEffect]');}
     else if(s.pend&&sc.pick&&sc.pick[s.pend])await click(sc.pick[s.pend]);
     else if(s.pend)await click('#root .prompt .choice:not([data-act=yield]):not([data-act=help])');
@@ -55,6 +55,12 @@ async function bout(browser,sc){
     prone:{a:!!prototypeCombat.state().fighters.a.prone,b:!!prototypeCombat.state().fighters.b.prone},
     hips:{a:PS.fig.a.pts&&PS.fig.a.pts.P?Math.round(PS.fig.a.pts.P[1]):null,b:PS.fig.b.pts&&PS.fig.b.pts.P?Math.round(PS.fig.b.pts.P[1]):null}}));
   const frames=await p.evaluate(()=>window.__fr);
+  // the end-of-fight replay, every frame (report 20261120-214648: the replay drew a withdrawn weapon twice)
+  let replay=null;
+  if(sc.replay&&['between','over'].includes((await st()).phase)){
+    await p.evaluate(()=>{window.__fr=[];window.__psRecord.length=0;startFightReplay();});const t0=Date.now();
+    while(Date.now()-t0<60000&&(await st()).busy)await sleep(150);
+    replay={frames:await p.evaluate(()=>window.__fr),rec:await p.evaluate(()=>window.__psRecord.map(r=>({type:r.type,kind:r.kind||r.outcome||'',c:Math.round(r.c||0)})))};}
   const held=await p.evaluate(()=>{const f=PS.fig.a,el=document.querySelector('#pitsStage .ps-lodged');
     const shaft=f.e&&f.e.shaft?getComputedStyle(f.e.shaft).display:'?';
     // the lodged weapon's far end (its grip) against the hand, in stage coordinates
@@ -67,7 +73,7 @@ async function bout(browser,sc){
         const tip=[c[0]+Math.cos(a)*len/2,c[1]+Math.sin(a)*len/2],grip=[c[0]-Math.cos(a)*len/2,c[1]-Math.sin(a)*len/2];
         pointIn={tip:Math.round(Math.hypot(tip[0]-P[0],tip[1]-P[1])),grip:Math.round(Math.hypot(grip[0]-P[0],grip[1]-P[1]))};}}
     return {shaft,gap,pointIn,lodged:document.querySelectorAll('#pitsStage .ps-lodged').length};});
-  await p.close();return {...out,errors,probes,frames,held};
+  await p.close();return {...out,errors,probes,frames,held,replay};
 }
 (async()=>{
   const browser=await chromium.launch();let pass=0,fail=0;
@@ -181,6 +187,21 @@ async function bout(browser,sc){
     const pull=r.rec.filter(x=>x.type==='resolve'&&x.kind==='wound').pop(),out=r.frames.find((f,i)=>i&&f.lodged===0&&r.frames[i-1].lodged===1);
     assert(pull&&out&&out.c>=pull.c,'the weapon leaves the wound with the pull, not before it: '+JSON.stringify({pull,out}));
     assert.deepEqual(r.rec.filter(x=>x.type==='withdraw'),[],'a withdrawal that worked is drawn by its injury only');
+  });
+  // report 20261120-214648: "withdraw looked good in actual fight but looked very buggy in the replay including a
+  // duplicated sword" (and Work's #382: the replay kept a withdrawn dagger in the wound). The same bout to its end, then
+  // Replay: the weapon goes into the wound once and comes out once there too, never drawn in the wound and the hand.
+  await T('the replay of a held Impale and its withdrawal: in the wound once, out once, no second weapon',async()=>{
+    const r=await bout(browser,{url:BASE,config:{weapon:'rapier'},react:Array(40).fill('none'),effect:'impale',effectOnce:true,
+      rolls:{'a:Attack':1},pick:{impaleLeave:'[data-act=impaleLeave][data-val=hold]'},attacks:40,withdraw:true,replay:true});
+    assert.deepEqual(r.errors,[]);
+    assert(r.replay&&r.replay.frames.length,'the bout ended and was replayed');
+    const F=r.replay.frames,changes=[];let last=-1;for(const f of F)if(f.lodged!==last){changes.push(f.lodged);last=f.lodged;}
+    assert.deepEqual(changes.slice(changes.indexOf(1)),[1,0],'in the replay, in the wound once, then out for good: '+JSON.stringify(changes));
+    // the pull is the last blow (the withdrawal's injury): the weapon is out of the wound by the time it lands, not left
+    // there while the hand pulls a second one out (it stayed in until the replay ended)
+    const pull=r.replay.rec.filter(x=>x.type==='contact'&&x.kind==='wound').pop(),out=F.find((f,i)=>i&&f.lodged===0&&F[i-1].lodged===1);
+    assert(pull&&out&&out.c<=pull.c+50,'out of the wound by the pull\'s contact: '+JSON.stringify({pull,out}));
   });
   await T('a successful Trip: the tripped fighter goes down onto the floor',async()=>{
     const r=await bout(browser,{react:['none'],effect:'trip',rolls:{'a:Attack':10,'b:Trip':99,'b:Brawn':99,'b:Evade':99},attacks:1});
