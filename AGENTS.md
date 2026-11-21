@@ -1,17 +1,19 @@
 # Working agreement for AI assistants
 
-Three assistants work on this project: **Claude** (Claude Code), **ChatGPT** and **v0** (design mockups only). Read `HANDOFF.md` before starting, and update it before ending a session.
+Four assistants work on this project: **Gemini** (Neon model, the architect), **Claude** (Claude Code, the implementer), **ChatGPT** (testing, rules and side tasks) and **v0** (design mockups only). Workflow set by the owner on 2026-11-21. Read `HANDOFF.md` before starting, and update it before ending a session.
 
 ## Roles
 
+- **Gemini (Neon) is the lead architect.** It owns technical direction: how systems fit together, module boundaries, data models and saved-data shapes, Supabase schema design, and the build plan for big new systems and refactors. It writes architecture specs in `docs/architecture/` (one short file per system or decision, naming the files and tests Claude will touch), records lasting decisions in `docs/decisions.md` (prefixed "Architecture:"), and proposes the order of work to the owner, who still sets priorities. It reviews the architecture of a big system once, at its milestone (see Reviews). It does not write production code or merge, and it never overrides a Core rules ruling: rules accuracy stays with ChatGPT (Chat). If it needs code it hasn't been shown, it asks the owner or Claude rather than guessing.
 - **Claude owns all production code.** That covers everything under `js/`, `experiments/`, `tests/`, the HTML and CSS files, `supabase/` and `.github/`, including small rule fixes.
-- **Claude builds and fixes.** Its job is to change the site: missing features, bugs, rule fixes. It keeps `docs/session-zero.md` current and may close a subsystem itself when the close rule below is met.
-- **ChatGPT (Chat) owns rules accuracy.** It checks rules against Core rulebook text the owner has given it, with page references. If it doesn't have the page, it says so and asks the owner; it never rules from memory of the book. It writes short code-needed specs and reviews milestones (see Reviews). It writes to `docs/` and `HANDOFF.md`, not to code.
-- **ChatGPT (Work) tests the live site.** Signed-in checks of new or changed features in realistic play, plus Supabase tasks (below). It reports failures with a severity. It does not re-test things that already passed, and it does not reconcile other documents.
-- **The owner decides.** What "done" means, which severity a disputed finding gets, priorities, and the checks only a real table can do (real phones, two real people).
-- **v0 designs, it doesn't commit.** v0 (by Vercel) makes clickable UI mockups of one screen at a time, matched to the owner's direction, for the owner to choose between. It never opens PRs or pushes to this repository: its React/Tailwind output can't drop into this plain-JS site. Claude rebuilds the chosen design in the existing code (`js/`, the CSS files) with tests, so rules and saved data stay intact. Approved looks can become themes for the planned player style picker (token sets under `data-pm-style`). v0 needs no `HANDOFF.md` access; the owner pastes its brief and Claude's follow-up questions.
+- **Claude builds and fixes.** Its job is to change the site: missing features, bugs, rule fixes. For a big new system or a cross-cutting refactor it builds to Gemini's spec; if the spec doesn't fit the code, Claude says why in one line and hands back to Gemini rather than quietly redesigning. Fixes and features that stay inside one module need no architecture spec. It keeps `docs/session-zero.md` current and may close a subsystem itself when the close rule below is met.
+- **ChatGPT (Chat) owns rules accuracy** (a side task alongside Work's testing). It checks rules against Core rulebook text the owner has given it, with page references. If it doesn't have the page, it says so and asks the owner; it never rules from memory of the book. It writes short code-needed specs and reviews milestones (see Reviews). It writes to `docs/` and `HANDOFF.md`, not to code.
+- **ChatGPT (Work) is in charge of testing the live site.** Signed-in checks of new or changed features in realistic play, plus Supabase tasks (below). It reports failures with a severity. It does not re-test things that already passed, and it does not reconcile other documents.
+- **The owner decides.** That includes choosing between Gemini's architecture options. What "done" means, which severity a disputed finding gets, priorities, and the checks only a real table can do (real phones, two real people).
+- **v0 designs, it doesn't commit.** v0 (by Vercel) makes clickable UI mockups of one screen at a time, matched to the owner's direction, for the owner to choose between. It never opens PRs or pushes to this repository: its React/Tailwind output can't drop into this plain-JS site. Claude rebuilds the chosen design in the existing code (`js/`, the CSS files) with tests, so rules and saved data stay intact. Approved looks can become themes for the planned player style picker (token sets under `data-pm-style`). v0 needs no `HANDOFF.md` access (Gemini does); the owner pastes its brief and Claude's follow-up questions.
 - A design change flows like this: the owner briefs v0, then picks a mockup and shares it (link or screenshots) with Claude. Claude builds it in a PR and screenshots the result, and ChatGPT (Work) can live-check it.
 - **Supabase goes to ChatGPT (Work)** (owner, 2026-11-09). Running migrations or read-only queries in the Supabase SQL editor and checking the dashboard are Work's job, not the owner's. Claude writes the SQL in `supabase/migrations/` or a `docs/` file and hands it to Work with "Next: ChatGPT (Work)". Work records the result, with no secrets, in a dated `docs/` file.
+- A big system flows like this: Gemini writes the architecture spec, Chat adds the rule cases it needs with Core pages, Claude builds it with tests, Work live-checks it, and Gemini reviews the architecture once at the milestone.
 - A rule fix flows like this: Chat documents the case in `docs/` ("given X → Core p.N says Y"), Claude implements it with a test. The test is the evidence; a live check is added to the next Work batch only if the fix changes something players see at the table.
 
 ## Priorities and severity (owner, 2026-11-10)
@@ -55,7 +57,7 @@ Severity 2 and 3 items are listed in its entry in `subsystem-plan.md` under Know
 
 ## Reviews
 
-- **One review per milestone.** A milestone is a subsystem close, a Session Zero item going Ready, or a big new system (spec first, as before). Nothing else gets a review.
+- **One review per milestone.** A milestone is a subsystem close, a Session Zero item going Ready, or a big new system (spec first, as before). Nothing else gets a review. Chat reviews the rules; for a big new system or refactor, Gemini also reviews the architecture once.
 - **No reviews of reviews.** Nobody writes a document whose job is to reconcile other documents. Status lives in two places only: `docs/session-zero.md` and `docs/subsystem-plan.md`.
 - **A failure goes straight to Claude.** Work reports it, Claude fixes it and adds a test, and the fix goes into Work's next batch. Chat is not in that loop unless the failure is a rules question.
 - **A pass is final.** Something that passed stays passed until code in that area changes.
@@ -79,9 +81,9 @@ Credits run out mid-task and block the project. Both assistants follow these:
 3. **Few screenshots.** Claude screenshots only what it needs to check, cropped where possible, and sends the owner the final ones.
 4. **Cheap files.** Prefer normal line lengths in code; very long single lines (as in `experiments/practice-combat.html`) make every read expensive. Split them when touching that code.
 5. **ChatGPT (Work) only for what Claude can't test.** Claude checks layouts at 390px and 1280px, light and dark, with a headless browser. Work is for signed-in tests against the real site and data, real phones and audio. If its browser blocks a check, it records "blocked" once and moves on: no retry, no second batch for the same check. The blocked check goes under Known limits. Work's report is one short dated file: pass/fail per check, severity for each failure.
-6. **Docs PRs stay out of shared files.** ChatGPT's docs-only PRs do not touch `CHANGELOG.md`, and change at most their own line in `HANDOFF.md`. This avoids merge conflicts Claude has to resolve.
-7. **Short rule specs.** ChatGPT (Chat) runs without credits, so spec-first stays. Specs list only the cases that need code, each with its Core page; skip "already correct" rows (one summary line is enough). Claude reads every line, and long specs cost Claude's credits.
-8. **One review pass.** For a small rule fix, Claude may build it straight from the rulebook and ChatGPT (Chat) reviews the PR once. Big systems (for example ranged combat) keep spec first. See Reviews above for what gets reviewed at all.
+6. **Docs PRs stay out of shared files.** ChatGPT's and Gemini's docs-only PRs do not touch `CHANGELOG.md`, and change at most their own line in `HANDOFF.md`. This avoids merge conflicts Claude has to resolve.
+7. **Short rule specs.** ChatGPT (Chat) runs without credits, so spec-first stays. The same goes for Gemini's architecture specs: only the decisions Claude needs, the files touched and the tests to add. Specs list only the cases that need code, each with its Core page; skip "already correct" rows (one summary line is enough). Claude reads every line, and long specs cost Claude's credits.
+8. **One review pass.** For a small rule fix, Claude may build it straight from the rulebook and ChatGPT (Chat) reviews the PR once. Big systems (for example ranged combat) keep spec first: Gemini's architecture spec, then Chat's rule cases. See Reviews above for what gets reviewed at all.
 9. **Owner messages.** If a session seems stuck, a short "continue" is cheaper than re-pasting an earlier message.
 10. **Short handoffs.** The paste-ready message says what changed and what to do next. It points to `AGENTS.md` rather than restating it.
 
@@ -91,7 +93,8 @@ The owner does not alternate messages between assistants. Each assistant works t
 
 - **Keep going** while the next step is yours. Don't hand off for something you can do yourself.
 - **When the next step is the other assistant's**, update `HANDOFF.md`, then end your reply with:
-  1. **Next: Claude**, **Next: ChatGPT (Chat)**, **Next: ChatGPT (Work)** or **Next: v0**, and one line saying why.
+  1. **Next: Gemini**, **Next: Claude**, **Next: ChatGPT (Chat)**, **Next: ChatGPT (Work)** or **Next: v0**, and one line saying why.
+     - **Gemini** (Neon model): architecture specs, design decisions, refactor plans and the architecture review of a big system. It writes to `docs/architecture/`, `docs/decisions.md` and its own line in `HANDOFF.md`. With a GitHub connector it opens docs-only PRs (Claude reviews and merges them); otherwise the owner pastes its answer to Claude.
      - **ChatGPT (Chat)**, the regular chat: rulebook work, case specs, rulings, milestone reviews. No credits needed. It can write files and open PRs through its GitHub connector, but can't run the tests. For large output (case tables, data), it opens a docs-only PR; Claude reviews and merges it. For short answers, it replies in chat and the owner pastes them to Claude.
      - **ChatGPT (Work)**, the agent session with a browser: only for signed-in testing on the live site. It uses Work credits, so batch live checks together.
      - Prefer Chat whenever a browser isn't needed.
