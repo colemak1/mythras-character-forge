@@ -5,6 +5,22 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Atlas: no border, open sea round the continent; every map zooms out to its whole subject
+
+Owner, 2026-11-22: "remove the border on the map and extend the ocean a bit so when fully zoomed out we can see the
+whole continent", then "extend any map in which I can't see the whole subject, including cities".
+
+- The picture's double-line frame fades out into open sea: a seamless parchment tile cut from the picture's own sea
+  (`assets/atlas/sea-tile.webp`, `scripts/build-atlas-sea.py`) runs on past every edge.
+- Zooming all the way out now fits the whole continent, with the Sit’ota cartouche, on any screen (a phone too),
+  with sea round it; zoomed in, panning stops a little past the coast. Still no grey anywhere.
+- **Nations and cities too.** A nation zooms out until all of it shows, its map fading into the same sea; a street
+  map until the whole city shows, its paper carrying on past the picture. Each opens that way, beside the drawer (on a
+  phone, above it; close the drawer to see the whole). Something smaller than the screen sits in the middle of the
+  free part of it; a zoom held at its limit keeps the middle of the screen (Khor opened on empty sea on a phone).
+
+---
+
 ## Atlas: full bleed, read-only street maps, breadcrumb (Atlas UX spec)
 
 Built to `docs/ux/atlas-20261121.md`.

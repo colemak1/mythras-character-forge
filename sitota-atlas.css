@@ -21,9 +21,15 @@ body[data-sitota-view="world"].atlas-mode{overscroll-behavior:none}
 .atlas-map.is-dragging{cursor:grabbing}
 .atlas-map:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
 .atlas-world{position:absolute;left:0;top:0;transform-origin:0 0;--k:1} /* no will-change: it would keep the first zoom's raster and blur the names */
-.atlas-base{display:block;width:100%;height:100%;pointer-events:none;-webkit-user-drag:none;
-  box-shadow:0 10px 40px -12px color-mix(in srgb,var(--bone) 35%,transparent)}
-html[data-mode="dark"] .atlas-base{filter:brightness(.86) saturate(.92)}
+/* The picture's framed edge fades into the open sea laid under and round it
+   (owner, 2026-11-22: no border; js ATLAS_SEA). The frame lies 1-2.3% in. */
+.atlas-base{position:relative;display:block;width:100%;height:100%;pointer-events:none;-webkit-user-drag:none;
+  -webkit-mask-image:linear-gradient(to right,transparent 2.2%,black 6%,black 94%,transparent 97.8%),linear-gradient(to bottom,transparent 2.8%,black 7.5%,black 92.5%,transparent 97.2%);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to right,transparent 2.2%,black 6%,black 94%,transparent 97.8%),linear-gradient(to bottom,transparent 2.8%,black 7.5%,black 92.5%,transparent 97.2%);
+  mask-composite:intersect}
+.atlas-sea{position:absolute;pointer-events:none;background-repeat:repeat}
+html[data-mode="dark"] :is(.atlas-base,.atlas-sea){filter:brightness(.86) saturate(.92)}
 .atlas-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 
 /* a nation's own map, faded in over the whole map (js atlasSetNation) */
@@ -50,6 +56,12 @@ html[data-mode="dark"] .atlas[data-nation] .atlas-base{filter:saturate(.5) brigh
 /* ---- levels (owner, 2026-11-20): inside a nation only its own map shows,
    locked to its edges; inside a town only its street map ---- */
 .atlas[data-level="nation"] .atlas-base{visibility:hidden}
+/* zoomed out past a nation's own map, its edge fades into the open sea */
+.atlas[data-level="nation"] .atlas-details img{
+  -webkit-mask-image:linear-gradient(to right,transparent,black 4%,black 96%,transparent),linear-gradient(to bottom,transparent,black 6%,black 94%,transparent);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to right,transparent,black 4%,black 96%,transparent),linear-gradient(to bottom,transparent,black 6%,black 94%,transparent);
+  mask-composite:intersect}
 .atlas[data-level="nation"] .atlas-details img.is-on{transition:none}
 .atlas[data-level="nation"] .atlas-svg path.atlas-nation{display:none}
 /* nothing from the whole map inside a nation: its rivers, roads and sea
@@ -58,8 +70,15 @@ html[data-mode="dark"] .atlas[data-nation] .atlas-base{filter:saturate(.5) brigh
 
 .atlas-town{position:absolute;left:0;top:0;display:block;max-width:none;pointer-events:none;-webkit-user-drag:none}
 .atlas-town[hidden]{display:none}
-.atlas[data-level="town"] :is(.atlas-base,.atlas-details,.atlas-svg){visibility:hidden}
+.atlas[data-level="town"] :is(.atlas-sea,.atlas-base,.atlas-details,.atlas-svg){visibility:hidden}
+/* zoomed out to see all of a city, its paper carries on past the picture */
+.atlas[data-level="town"] .atlas-map{background:var(--atlas-town-paper)}
+.atlas-town{-webkit-mask-image:linear-gradient(to right,transparent,black 3%,black 97%,transparent),linear-gradient(to bottom,transparent,black 3%,black 97%,transparent);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to right,transparent,black 3%,black 97%,transparent),linear-gradient(to bottom,transparent,black 3%,black 97%,transparent);
+  mask-composite:intersect}
 html[data-mode="dark"] .atlas-town{filter:brightness(.88)}
+html[data-mode="dark"] .atlas[data-level="town"] .atlas-map{background:color-mix(in srgb,var(--atlas-town-paper) 88%,black)}
 .atlas.is-travelling .atlas-map{cursor:default}
 
 /* the clouds a trip between levels flies through */

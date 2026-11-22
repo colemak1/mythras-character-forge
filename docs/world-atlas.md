@@ -10,7 +10,10 @@ drags and zooms like the whole map, edge to edge, and nothing from the whole map
 read-only picture baked from the Watabou city Azgaar generates for it, in the same pan and zoom. Settlements without
 one (forts, and towns not baked yet) stay on the nation's map. The **breadcrumb** (`Sit’ota › Valeshar › Shamur`) goes
 back to any level the same way (Escape goes up one). Reduced motion skips the clouds. At every level the picture
-covers the stage edge to edge, with no grey round it (Atlas UX spec, `docs/ux/atlas-20261121.md`).
+covers the stage edge to edge, with no grey round it (Atlas UX spec, `docs/ux/atlas-20261121.md`). On the whole map
+the picture has no frame and open sea runs on past it, so zoomed all the way out the whole continent fits on any
+screen (owner, 2026-11-22). Nations and street maps do the same: zoomed all the way out the whole nation or city
+shows, the nation's map fading into the sea and the city's paper carrying on past its picture.
 The scroll wheel does the same: scrolling in over a nation past the zoom where towns appear dives into it; scrolling
 on out at a nation's widest view flies back out; scrolling on in at its closest view near a street map goes into the
 town, and scrolling on out at a town's widest view goes back to the nation. The old guide chapters are still there
@@ -21,6 +24,7 @@ town, and scrolling on out at a town's widest view goes back to the nation. The 
 | What | Where | Who edits |
 |---|---|---|
 | Map picture (stand-in) | `assets/atlas/sitota-map.webp` | replaced when the final map arrives |
+| Open sea round it | `assets/atlas/sea-tile.webp`, laid round the picture (its framed edge faded out in `sitota-atlas.css`) | `python3 -I scripts/build-atlas-sea.py`; rerun when the picture is replaced |
 | Borders, settlements, rivers, roads | `assets/atlas/atlas-data.json` | built by `scripts/build-atlas-data.py` |
 | Nation maps (stand-in: the plates cropped to their map) | `assets/atlas/nations/<nation id>.webp`, placed by `data.details` | built by `scripts/build-atlas-plates.py`; replaced when the detailed maps are drawn |
 | Street maps | `assets/atlas/towns/<settlement id>.webp`, placed by `data.towns` (`{src, w, h, px}`) | `node scripts/bake-town-maps.cjs <id>...` exports each from Watabou (Azgaar's link, `settlement.map`, with the lore name) |

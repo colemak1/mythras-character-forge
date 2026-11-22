@@ -102,10 +102,39 @@ test('full bleed at every level: the map covers the screen, no grey round it (At
  assert.equal(far.x,-100*6,'its west edge stops at the screen\'s left');
  assert.equal(far.y,600-200*6,'its south edge at the screen\'s bottom');
  assert.equal(clamp({k:1,x:0,y:0},800,600,1024,768,kMin,20,rect).k,kMin);
- for(const [w,h] of [[1280,700],[390,560],[1920,800]]){
-  const k=cover(w,h,[0,0,data.width,data.height]),v=clamp({k:k*.5,x:500,y:500},w,h,data.width,data.height,k,20);
-  assert(v.x<=0&&v.y<=0&&v.x+data.width*v.k>=w-1e-9&&v.y+data.height*v.k>=h-1e-9,'the whole map covers '+w+' x '+h);
+});
+test('the whole map: no frame, open sea round it, and zoomed out the whole continent fits any screen (owner, 2026-11-22)',()=>{
+ const rect=J('atlasWorldRect(DATA)'),land=J('atlasLandBox(DATA)'),fitK=run('atlasFitK'),clamp=run('atlasClamp'),S=run('ATLAS_SEA');
+ assert(rect[0]<land[0]&&rect[1]<land[1]&&rect[2]>land[2]&&rect[3]>land[3],'a margin of sea round the land');
+ for(const [w,h] of [[1280,700],[1920,800],[390,560],[360,740],[820,1000]]){
+  const k=fitK(w,h,rect),v=clamp({k:k*.5,x:9999,y:-9999},w,h,data.width,data.height,k,20,rect);
+  assert.equal(v.k,k);
+  const vis=[-v.x/v.k,-v.y/v.k,(w-v.x)/v.k,(h-v.y)/v.k];
+  assert(vis[0]<=land[0]&&vis[1]<=land[1]&&vis[2]>=land[2]&&vis[3]>=land[3],'zoomed out, all the land shows on '+w+' x '+h);
+  assert(vis[0]>=-S&&vis[1]>=-S&&vis[2]<=data.width+S&&vis[3]<=data.height+S,'and the sea fills the rest of '+w+' x '+h);
  }
+ const css=fs.readFileSync(path.join(root,'sitota-atlas.css'),'utf8');
+ assert.match(css,/\.atlas-base\{[^}]*mask-image:linear-gradient\(to right,transparent 2/,'the picture\'s framed edge is faded out');
+ assert(fs.existsSync(path.join(root,run('ATLAS_SEA_URL').split('?')[0])),'the sea tile');
+});
+test('every level zooms out until its whole subject shows: a nation, a whole city (owner, 2026-11-22)',()=>{
+ const fitK=run('atlasFitK'),clamp=run('atlasClamp');
+ const inView=(v,w,h,b)=>{const vis=[-v.x/v.k,-v.y/v.k,(w-v.x)/v.k,(h-v.y)/v.k];return vis[0]<=b[0]+1e-6&&vis[1]<=b[1]+1e-6&&vis[2]>=b[2]-1e-6&&vis[3]>=b[3]-1e-6;};
+ const t=data.towns.golshehr,trect=J('atlasTownRect(DATA.towns.golshehr)');
+ for(const [w,h] of [[1280,700],[390,560],[1920,800]]){
+  for(const n of data.nations){
+   const rect=J('atlasNationRect(atlasNation(DATA,'+JSON.stringify(n.id)+'))'),k=fitK(w,h,rect);
+   const v=clamp({k:k*.3,x:-9999,y:9999},w,h,data.width,data.height,k,40,rect);
+   assert.equal(v.k,k);assert(inView(v,w,h,n.box),'all of '+n.id+' on '+w+' x '+h);
+  }
+  const k=fitK(w,h,trect),v=clamp({k:k*.3,x:9999,y:-9999},w,h,0,0,k,40,trect);
+  assert(inView(v,w,h,[0,0,t.w,t.h]),'all of Shamur on '+w+' x '+h);
+  const z=clamp({k:k*3,x:9999,y:9999},w,h,0,0,k,40,trect);
+  assert.equal(z.x,-trect[0]*z.k,'zoomed in, panning stops at the city\'s margin');
+ }
+ const css=fs.readFileSync(path.join(root,'sitota-atlas.css'),'utf8');
+ assert.match(css,/\[data-level="town"\] \.atlas-map\{background:var\(--atlas-town-paper\)\}/,'the city\'s paper carries on past its picture');
+ assert.match(css,/\[data-level="nation"\] \.atlas-details img\{\s*-webkit-mask-image/,'a nation\'s map fades into the sea');
 });
 test('the breadcrumb: Sit’ota › Valeshar › Shamur, every step but the last goes back (Atlas UX spec)',()=>{
  const c=at=>J('atlasCrumbs(DATA,'+JSON.stringify(at)+')');
@@ -175,7 +204,10 @@ test('zoom levels, fitting and clamping',()=>{
  assert.deepEqual([0.5,1.3,1.6,2.5,5].map(lod),[0,0,1,2,3],'a desktop landing (k about 1.25) shows no settlement names over the nations\' own');
  const f=run('atlasFit')([100,100,300,200],1000,500,0);
  assert.equal(f.k,5);assert.equal(f.x+200*f.k,500);assert.equal(f.y+150*f.k,250);
- const c=run('atlasClamp')({k:99,x:5000,y:-5000},800,600,1024,768,.5,6);
+ assert.equal(run('atlasClamp')({k:99,x:0,y:0},800,600,1024,768,.5,6).k,6,'the zoom stops at its limit');
+ const held=run('atlasClamp')({k:12,x:400-500*12,y:300-380*12},800,600,1024,768,.5,6);
+ assert.deepEqual([(400-held.x)/held.k,(300-held.y)/held.k],[500,380],'a zoom held at its limit keeps the middle of the screen (Khor opened on empty sea on a phone)');
+ const c=run('atlasClamp')({k:6,x:5000,y:-5000},800,600,1024,768,.5,6);
  assert.equal(c.k,6);assert.equal(c.x,0,'the map\'s left edge stops at the screen\'s');assert.equal(c.y,600-768*6);
  const z=run('atlasZoomAt')({k:1,x:0,y:0},2,100,50);assert.deepEqual({...z},{k:2,x:-100,y:-50},'the point under the pointer stays put');
  const home=run('atlasHomeView')(data,{x:0,y:0,w:390,h:600});
