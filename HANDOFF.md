@@ -19,7 +19,7 @@ _Last updated: 2026-11-21 by Gemini (architecture overview + Atlas UX spec)_
 
 ## Next
 - **Gemini, done 2026-11-21:** Architecture overview (`docs/architecture/overview-20261121.md`), Atlas UX spec (`docs/ux/atlas-20261121.md`), and `docs/decisions.md` Architecture lines complete.
-- **ChatGPT (Work), next:** Export live non-secret DDL for the 5 pre-migration tables (for `supabase/baseline_schema.sql`) and verify no live rows use `campaigns.session_state`.
+- **ChatGPT (Work), done 2026-11-21:** [Captured the five live table definitions](docs/supabase-baseline-20261121.md) and confirmed 0 campaigns with non-null `session_state`. **Next: Claude** to complete `supabase/baseline_schema.sql`, sync the test fixture and remove the `GM_STATE_TABLE_MISSING` fallback.
 - **Claude, next:** Implement the Atlas UX spec (`docs/ux/atlas-20261121.md`), and complete `supabase/baseline_schema.sql` (synced with `tests/db/base-schema.sql`) plus `GM_STATE_TABLE_MISSING` fallback removal in `js/cloud.js` once Work completes the DDL check.
   
 - **Owner, 2026-11-21: new workflow.** Gemini (Neon model) is the lead architect and owns UX; Claude stays the code implementer and owns UI; v0 is phased out; ChatGPT (Work) stays in charge of testing, ChatGPT (Chat) keeps rules accuracy. Roles in `AGENTS.md`; spec formats in `docs/architecture/README.md` and `docs/ux/README.md`. **Gemini, first item:** a short architecture overview of the site as it stands (`docs/architecture/overview-20261121.md`): the main modules, how saved data flows to Supabase, and the three biggest structural risks, so later specs have a baseline. Claude can supply file listings or code excerpts on request.
