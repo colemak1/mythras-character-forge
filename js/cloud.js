@@ -44,18 +44,12 @@ let MOCK_AUTH=(()=>{try{return GUEST_TEST_ENABLED&&localStorage.getItem(GUEST_SE
 const anyAuth=()=>AUTH_USER||MOCK_AUTH;
 let CAMP_CACHE=null;     // array once loaded from the cloud, else null ("loading")
 let CAMPAIGN_VIEW=null;  // {campaign,members,chars,unassigned} for whatever campaign is open
-/* GM session tools (Combat Tracker, session notes) live in one jsonb column
-   on the campaign row -- campaigns.session_state -- rather than a new
-   table, so they ride the exact same read/write/realtime path as `notes`
-   already does. Requires a DB-side migration this app can't run itself (no
-   service-role key on the client, only the anon key): run
-   `alter table campaigns add column session_state jsonb;` and, if the
-   `campaigns` table isn't already in the realtime publication (`characters`
-   clearly is, `campaigns` never needed live updates before now),
-   `alter publication supabase_realtime add table campaigns;`. Until that
-   migration lands, cloud writes below fail gracefully (caught, surfaced as
-   inline feedback like every other campaign write) and local-only mode
-   works immediately. */
+/* GM session tools (Combat Tracker, session notes) are one jsonb blob. In
+   the cloud it lives in the GM-only campaign_gm_state table (migration
+   20261106120000) and is copied onto the in-memory campaign object as
+   `session_state` for the GM only; locally it is the campaign's
+   sessionState. The old campaigns.session_state column is cleared and
+   blocked by that migration and never read or written here. */
 function emptySessionState(){return {combatants:[],round:1,turnIdx:0,activeId:null,sessionNotes:""};}
 // Migrates the old, pre-overhaul shape (separate `initiative` turn-order
 // list and `npcs` prep list, never actually linked to each other -- adding
@@ -379,7 +373,6 @@ async function buildCampaignBackup(campaignId){
     campaign=Object.assign({},data);delete campaign.session_state;
     if(AUTH_USER&&data.dm_id===AUTH_USER.id){
       try{gmState=await fetchGmSessionState(campaignId);}catch(e){gmState=null;}
-      if(gmState==null&&data.session_state)gmState=data.session_state;
     }
     members=(await cloudFetchMembers(campaignId)).map(m=>({user_id:m.userId,name:m.name,role:m.role,joined_at:m.joinedAt}));
     characters=await cloudFetchCharacters({campaignId});
@@ -878,33 +871,28 @@ async function noteCampaignUnified(id,notes){
   if(cloudActive())return cloudUpdateCampaign(id,{notes});
   const camp=getCampaignLocal(id);if(!camp)return;camp.notes=notes;upsertCampaignLocal(camp);
 }
-// GM session state (Combat Tracker, private session notes) lives in the
-// GM-only campaign_gm_state table (migration 20261106120000). Until that
-// migration is applied, fall back to the old campaigns.session_state column.
-let GM_STATE_TABLE_MISSING=false;
-function isMissingTableError(e){return !!e&&(e.code==="PGRST205"||e.code==="42P01"||/campaign_gm_state/.test(String(e.message||""))&&/does not exist|schema cache|not find/i.test(String(e.message||"")));}
+// GM session state (Combat Tracker, private session notes) lives only in the
+// GM-only campaign_gm_state table (migration 20261106120000). The old
+// campaigns.session_state column is never read or written (0 live rows used
+// it, docs/supabase-baseline-20261121.md).
 async function fetchGmSessionState(campaignId){
-  if(GM_STATE_TABLE_MISSING)return undefined;
   const {data,error}=await sb.from("campaign_gm_state").select("session_state").eq("campaign_id",campaignId).maybeSingle();
-  if(error){if(isMissingTableError(error)){GM_STATE_TABLE_MISSING=true;return undefined;}throw error;}
+  if(error)throw error;
   return data?data.session_state:null;
 }
-// Only the campaign's GM ever asks for its session state.
+// Only the campaign's GM ever asks for its session state. Anyone else gets
+// the campaign row without the column, whatever it holds.
 async function withGmSessionState(camp){
-  if(!camp||!AUTH_USER||camp.dm_id!==AUTH_USER.id)return camp;
-  const st=await fetchGmSessionState(camp.id);
-  if(st!==undefined&&(st!==null||!camp.session_state))camp.session_state=st;
+  if(!camp)return camp;
+  if(!AUTH_USER||camp.dm_id!==AUTH_USER.id){camp.session_state=null;return camp;}
+  camp.session_state=await fetchGmSessionState(camp.id);
   return camp;
 }
 async function sessionStateCampaignUnified(id,sessionState){
   if(cloudActive()){
-    if(!GM_STATE_TABLE_MISSING){
-      const {error}=await sb.from("campaign_gm_state").upsert({campaign_id:id,session_state:sessionState,updated_at:new Date().toISOString()},{onConflict:"campaign_id"});
-      if(!error)return;
-      if(!isMissingTableError(error))throw error;
-      GM_STATE_TABLE_MISSING=true;
-    }
-    return cloudUpdateCampaign(id,{session_state:sessionState});
+    const {error}=await sb.from("campaign_gm_state").upsert({campaign_id:id,session_state:sessionState,updated_at:new Date().toISOString()},{onConflict:"campaign_id"});
+    if(error)throw error;
+    return;
   }
   const camp=getCampaignLocal(id);if(!camp)return;camp.sessionState=sessionState;upsertCampaignLocal(camp);
 }
@@ -1831,11 +1819,10 @@ function boardSubscribe(campaignId){
     .on("postgres_changes",{event:"*",schema:"public",table:"characters",filter:"campaign_id=eq."+campaignId},
         ()=>boardRefetch(campaignId))
     // Second listener on the same channel, watching the campaign row itself
-    // (name/notes/session_state) so a GM's initiative/NPC/notes edit shows
-    // up live for anyone else looking at this campaign's board — same
-    // debounced-refetch handler as the characters listener above, requires
-    // `campaigns` to be added to the realtime publication (see the comment
-    // by emptySessionState() near the top of this file).
+    // (name/notes/rules) so those edits show up live for anyone else looking
+    // at this campaign's board — same debounced-refetch handler as the
+    // characters listener above; needs `campaigns` in the realtime
+    // publication.
     .on("postgres_changes",{event:"*",schema:"public",table:"campaigns",filter:"id=eq."+campaignId},
         ()=>boardRefetch(campaignId))
     // GM-only session state (RLS means only the GM receives these events).
@@ -1856,7 +1843,7 @@ function boardUnsubscribe(){
 // character's `state` jsonb can be large) — always refetch the full list
 // over REST, debounced so a burst of near-simultaneous edits collapses into
 // one request instead of one per event. Also refreshes CAMPAIGN_VIEW.campaign
-// (name/notes/session_state) -- it's normally only fetched once on entry via
+// (name/notes, and the GM's session state) -- it's normally only fetched once on entry via
 // loadCampaignViewUnified, so without this a GM tools edit made in another
 // tab would never appear here until the board was left and reopened.
 function boardRefetch(campaignId){
@@ -1956,10 +1943,10 @@ function boardHTML(){
    customizable location set, and status-effect chips, plus session notes.
    Replaces the old flat initiative list + freeform-text NPC prep cards
    (which were never actually linked to each other -- see the migration
-   note at sessionStateOf above). Everything lives in one
-   campaigns.session_state jsonb blob, mutated optimistically the same way
-   campField() handles name/notes, and refreshed for every viewer via the
-   board-<id> realtime channel's campaigns listener. ---- */
+   note at sessionStateOf above). Everything lives in one GM-only
+   campaign_gm_state.session_state jsonb blob, mutated optimistically the
+   same way campField() handles name/notes, and refreshed in the GM's other
+   tabs via the board-<id> realtime channel's campaign_gm_state listener. ---- */
 function combatantEffectChipHTML(combatantId,e){
   const t=COMBAT_EFFECT_MAP[e.type];
   return '<span class="cbt-fxchip '+e.mode+'" title="'+(e.mode==="duration"?"Counts down, clears at 0":"Counts up -- clear by hand once resolved")+'">'

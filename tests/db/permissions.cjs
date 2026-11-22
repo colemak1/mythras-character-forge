@@ -1,5 +1,6 @@
 // Multi-account permission tests on a real Postgres (PGlite).
-// Runs the stand-in base schema, then every file in supabase/migrations/ in
+// Runs the stand-in base schema (with supabase/baseline_schema.sql, the live
+// base tables, at its include line), then every file in supabase/migrations/ in
 // order, then acts as separate signed-in users through the same roles and
 // auth.uid() the Supabase API uses:
 //   A = GM of Red, B and C = Red players, D = GM of Blue, E = outsider.
@@ -18,7 +19,10 @@ const B1='20000000-0000-4000-8000-0000000000b1',C1='20000000-0000-4000-8000-0000
 let passed=0;
 (async()=>{
 const db=new PGlite();
-await db.exec(fs.readFileSync(path.join(__dirname,'base-schema.sql'),'utf8'));
+const INCLUDE='-- @include supabase/baseline_schema.sql';
+const base=fs.readFileSync(path.join(__dirname,'base-schema.sql'),'utf8');
+assert(base.includes(INCLUDE),'base-schema.sql loads the baseline');
+await db.exec(base.replace(INCLUDE,()=>fs.readFileSync(path.join(root,'supabase/baseline_schema.sql'),'utf8')));
 const dir=path.join(root,'supabase/migrations');
 for(const f of fs.readdirSync(dir).filter(n=>n.endsWith('.sql')).sort())await db.exec(fs.readFileSync(path.join(dir,f),'utf8'));
 // Run one statement as a user (or signed out with who=null). Errors come back, not thrown.
@@ -34,9 +38,10 @@ const denied=r=>{assert(r.error,'expected an error, got '+JSON.stringify(r.rows)
 const ok=r=>{assert(!r.error,r.error);return r.rows;};
 // Fixtures, as the database owner.
 await db.exec(`
-insert into profiles(id,display_name,email) values
- ('${U.A}','Gail','a@example.test'),('${U.B}','Bram','b@example.test'),('${U.C}','Cass','c@example.test'),
- ('${U.D}','Dov','d@example.test'),('${U.E}','Esk','e@example.test');
+insert into auth.users(id) values ('${U.A}'),('${U.B}'),('${U.C}'),('${U.D}'),('${U.E}');
+insert into profiles(id,display_name,created_at) values
+ ('${U.A}','Gail','2026-01-01'),('${U.B}','Bram','2026-01-02'),('${U.C}','Cass','2026-01-03'),
+ ('${U.D}','Dov','2026-01-04'),('${U.E}','Esk','2026-01-05');
 insert into campaigns(id,name,dm_id,invite_code) values ('${RED}','Red','${U.A}','REDCODE'),('${BLUE}','Blue','${U.D}','BLUECODE');
 insert into campaign_members values ('${RED}','${U.A}','dm'),('${RED}','${U.B}','player'),('${RED}','${U.C}','player'),('${BLUE}','${U.D}','dm');
 select set_config('request.jwt.claim.sub','${U.B}',false);
@@ -52,7 +57,7 @@ await test('D-S3 a signed-in outsider reads every display name, including people
  assert.deepEqual(rows.map(r=>r.display_name),['Bram','Cass','Dov','Esk','Gail']);
 });
 await test('D-S3 nobody reads another profile\'s private columns, not even with select *',async()=>{
- assert.match(denied(await as('E','select email from profiles')),/permission denied/);
+ assert.match(denied(await as('E','select created_at from profiles')),/permission denied/);
  assert.match(denied(await as('E','select * from profiles')),/permission denied/);
  assert.match(denied(await as('B','select created_at from profiles where id=$1',[U.B])),/permission denied/,'only id and display_name are exposed');
 });
@@ -65,7 +70,7 @@ await test('D-S3 writes are unchanged: only your own profile, and the app\'s ups
  denied(await as(null,'update profiles set display_name=$1',['x']));
  ok(await as('B','insert into profiles(id,display_name) values ($1,$2) on conflict (id) do update set display_name=excluded.display_name',[U.B,'Bram the Bold']));
  assert.equal(ok(await as('C','select display_name from profiles where id=$1',[U.B]))[0].display_name,'Bram the Bold');
- assert.equal((await db.query('select email from profiles where id=$1',[U.B])).rows[0].email,'b@example.test','private data untouched');
+ assert.equal((await db.query("select to_char(created_at,'YYYY-MM-DD') d from profiles where id=$1",[U.B])).rows[0].d,'2026-01-02','private data untouched');
 });
 await test('S8 step 1-2: GM notes are GM-only; the readable campaign row carries none',async()=>{
  assert.equal(ok(await as('A','select session_state from campaign_gm_state where campaign_id=$1',[RED])).length,1);
