@@ -5,6 +5,30 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Atlas: full bleed, read-only street maps, breadcrumb (Atlas UX spec)
+
+Built to `docs/ux/atlas-20261121.md`.
+
+- **No grey round the map.** At every level (Sit’ota, a nation, a town) the picture covers the whole stage: the zoom
+  stops where it covers it and panning stops at its edges. The landing shows the whole continent edge to edge; the
+  timeline starts folded (it opens from its bar), and settlement names start one notch further in, so the landing
+  shows the nations' own names alone. Scrolling out at a nation's widest view still flies back to Sit’ota; scrolling
+  out at a town's widest view now flies back to its nation.
+- **Street maps are pictures, not the generator.** Shamur's street map is a baked export of the same Watabou city
+  (`assets/atlas/towns/golshehr.webp`, `scripts/bake-town-maps.cjs`), shown in the atlas's own pan and zoom: no
+  generator menu, no regenerate, no link to it, no iframe catching the scroll wheel. Only settlements with a baked
+  map open a town level; the rest stay on their nation's map until baked.
+- **Breadcrumb.** `Sit’ota › Valeshar › Shamur` replaces the "‹" button; every step but the last goes back to it.
+- **Drawer.** Closed until a place is chosen; × only closes it inside a nation or town. It now changes when the map
+  does, behind the clouds, instead of naming the place before the map shows it. Placeholder entries show nation,
+  tier and street-map availability with "Lore coming soon" (no more "No entry yet"). A nation or street map that
+  won't load says so in the drawer, with a button back up.
+- **One Shamur label.** The Valeshar plate's printed "Golshehr" is erased (`scripts/patch-plate-labels.py`), and
+  Shamur keeps its label on the nation's map. Settlements with a street map have a dashed ring on the map and a map
+  mark in the drawer's lists and search.
+
+---
+
 ## Supabase baseline schema; the old GM session column is gone
 
 - **`supabase/baseline_schema.sql`** records the five tables production had before the migrations, taken from

@@ -48,7 +48,31 @@ test('town maps: Azgaar\'s Watabou links, with the lore name',()=>{
   else if(s.group==='village')assert.match(s.map,/^https:\/\/watabou\.github\.io\/village-generator\/\?pop=/,s.id);
   else assert.match(s.map,/^https:\/\/watabou\.github\.io\/city-generator\/\?name=/,s.id);
  }
- assert.match(run('atlasTownHTML')(g,'Shamur'),/href="https:\/\/watabou[^"]*name=Shamur/,'the panel links to the generator');
+ const html=run('atlasTownHTML')(data,g,'Shamur');
+ assert.match(html,/Street map/);assert.doesNotMatch(html,/href=|generator ↗/,'read-only: no link to regenerate it (Atlas UX spec)');
+ assert.equal(run('atlasTownHTML')(data,data.settlements.find(s=>s.map&&!(data.towns||{})[s.id]),'X'),'','no street map baked: nothing');
+});
+test('street maps are baked pictures, stamped, on the site (Atlas UX spec: no generator, no iframe)',()=>{
+ const crypto=require('node:crypto'),ids=Object.keys(data.towns||{});
+ assert(ids.includes('golshehr'),'Shamur has a street map');
+ for(const id of ids){
+  const t=data.towns[id],s=data.settlements.find(x=>x.id===id);
+  assert(s&&s.map,id+' is a settlement with a town');
+  const [file,v]=t.src.split('?v=');
+  assert(fs.existsSync(path.join(root,file)),t.src);
+  assert.equal(v,crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex').slice(0,10),t.src+' stamp');
+  assert(t.w>0&&t.h>0&&t.px[0]/t.w>=1,id+' size');
+ }
+ const js=fs.readFileSync(path.join(root,'js/atlas.js'),'utf8');
+ assert.doesNotMatch(js,/<iframe/,'no generator iframe (it trapped the scroll wheel)');
+});
+test('one label for a renamed place: the plate\'s old name is erased (Work 2026-11-20, Shamur over Golshehr)',()=>{
+ const erase=fs.readFileSync(path.join(root,'scripts/patch-plate-labels.py'),'utf8');
+ for(const s of data.settlements){
+  if(run('atlasPlaceName')(s)===s.name||!(data.details[s.nation]||{}).labels)continue;
+  assert(new RegExp('"'+s.id+'":').test(erase),s.id+' is renamed in the lore: add its plate label to scripts/patch-plate-labels.py');
+ }
+ assert.match(run('atlasSvgHTML(DATA)'),/class="atlas-pl has-town is-renamed"[^>]*data-sel="s-golshehr"/,'it keeps its own label at the nation level, and shows its street map');
 });
 test('a nation or its settlement opens the nation\'s own map; events and nothing do not',()=>{
  const of=run('atlasNationOf');
@@ -57,7 +81,7 @@ test('a nation or its settlement opens the nation\'s own map; events and nothing
  const det=data.details.valeshar;
  assert(run('atlasDetailScale')(det)>5,'the stand-in plate is sharper than the whole map');
  const c=run('atlasClamp')({k:6,x:99999,y:99999},800,600,1024,768,.5,10,[det.x,det.y,det.x+det.w,det.y+det.h]);
- assert.equal(c.x,400-det.x*6,'panning stops at the nation map\'s edge');
+ assert.equal(c.x,-det.x*6,'panning stops with the nation map\'s edge at the screen\'s');
 });
 test('three levels: a nation opens its own map, a settlement its town map, a fort stays on the nation map (owner, 2026-11-20)',()=>{
  const lv=sel=>J('atlasLevelOf(DATA,'+JSON.stringify(sel)+')');
@@ -67,15 +91,41 @@ test('three levels: a nation opens its own map, a settlement its town map, a for
  assert.deepEqual(lv('s-golshehr'),{level:'town',nation:'valeshar',town:'golshehr'});
  const fort=data.settlements.find(s=>s.group==='fort'&&s.nation);
  assert.deepEqual(lv('s-'+fort.id),{level:'nation',nation:fort.nation,town:null});
+ const unbaked=data.settlements.find(s=>s.map&&s.nation&&!data.towns[s.id]);
+ assert.deepEqual(lv('s-'+unbaked.id),{level:'nation',nation:unbaked.nation,town:null},'no street map baked yet: the nation map');
  assert(run('atlasDepth("town")>atlasDepth("nation")&&atlasDepth("nation")>atlasDepth("world")'));
 });
-test('inside a nation it moves like the whole map, with grey space around, but never off the nation (owner, 2026-11-20)',()=>{
- const min=run('atlasNationMin'),clamp=run('atlasClamp'),rect=[100,100,300,200];
- const kMin=min(800,600,rect);assert.equal(kMin,4*.8,'zooms out until all of it fits, with room around it');
+test('full bleed at every level: the map covers the screen, no grey round it (Atlas UX spec, 2026-11-21)',()=>{
+ const cover=run('atlasCoverK'),clamp=run('atlasClamp'),rect=[100,100,300,200];
+ const kMin=cover(800,600,rect);assert.equal(kMin,6,'zooms out only until it covers the screen');
  const far=clamp({k:6,x:99999,y:-99999},800,600,1024,768,kMin,20,rect);
- assert.equal(far.x,400-100*6,'the middle of the screen stops at its west edge (grey space beyond)');
- assert.equal(far.y,300-200*6,'and at its south edge');
+ assert.equal(far.x,-100*6,'its west edge stops at the screen\'s left');
+ assert.equal(far.y,600-200*6,'its south edge at the screen\'s bottom');
  assert.equal(clamp({k:1,x:0,y:0},800,600,1024,768,kMin,20,rect).k,kMin);
+ for(const [w,h] of [[1280,700],[390,560],[1920,800]]){
+  const k=cover(w,h,[0,0,data.width,data.height]),v=clamp({k:k*.5,x:500,y:500},w,h,data.width,data.height,k,20);
+  assert(v.x<=0&&v.y<=0&&v.x+data.width*v.k>=w-1e-9&&v.y+data.height*v.k>=h-1e-9,'the whole map covers '+w+' x '+h);
+ }
+});
+test('the breadcrumb: Sit’ota › Valeshar › Shamur, every step but the last goes back (Atlas UX spec)',()=>{
+ const c=at=>J('atlasCrumbs(DATA,'+JSON.stringify(at)+')');
+ assert.deepEqual(c({level:'world'}),[{label:'Sit’ota',sel:null}]);
+ assert.deepEqual(c({level:'nation',nation:'valeshar'}).map(x=>x.label),['Sit’ota','Valeshar']);
+ assert.deepEqual(c({level:'town',nation:'valeshar',town:'golshehr'}),[{label:'Sit’ota',sel:null},{label:'Valeshar',sel:'n-valeshar'},{label:'Shamur',sel:'s-golshehr'}]);
+ const html=run('atlasCrumbsHTML(DATA,{level:"town",nation:"valeshar",town:"golshehr"})');
+ assert.match(html,/<button[^>]*onclick="atlasSelect\(null\)">Sit’ota<\/button>/);
+ assert.match(html,/<button[^>]*onclick="atlasSelect\('n-valeshar',\{fly:true\}\)">Valeshar<\/button>/);
+ assert.match(html,/<span class="atlas-crumb" aria-current="location">Shamur<\/span>/);
+});
+test('placeholder entries show the facts and "Lore coming soon", never "No entry yet" (Atlas UX spec)',()=>{
+ run('ATLAS_DATA=DATA;');
+ const vish=run('atlasDetailHTML({kind:"n",id:"vishka"})');
+ assert.match(vish,/Lore coming soon/);assert.match(vish,/<dt>Street maps<\/dt>/);
+ const unbaked=data.settlements.find(s=>s.map&&s.nation&&!data.towns[s.id]&&!(run('ATLAS_LORE.places')[s.id]));
+ const pl=run('atlasDetailHTML({kind:"s",id:'+JSON.stringify(unbaked.id)+'})');
+ for(const re of [/Lore coming soon/,/<dt>Nation<\/dt>/,/<dt>Tier<\/dt>/,/<dt>Street map<\/dt><dd>Not yet/])assert.match(pl,re);
+ assert.match(run('atlasDetailHTML({kind:"s",id:"golshehr"})'),/<dt>Street map<\/dt><dd><svg[^]*?Yes/);
+ for(const f of ['atlas','atlas-lore'])assert.doesNotMatch(fs.readFileSync(path.join(root,'js',f+'.js'),'utf8'),/No entry yet/);
 });
 test('the scroll wheel goes between levels: in over a nation, out past a nation\'s widest view (owner, 2026-11-20)',()=>{
  const w=o=>J('atlasWheelIntent('+JSON.stringify(o)+')'),dive=run('ATLAS_DIVE_K');
@@ -89,7 +139,10 @@ test('the scroll wheel goes between levels: in over a nation, out past a nation\
  assert.equal(r.go,'out','keeping on scrolling out leaves the nation');
  assert.equal(w({...n,k:8,factor:.9,push:.25}).go,null,'turning round starts the count again');
  assert.equal(w({...n,k:8,factor:1.5}).go,'in','scrolling on at the closest view goes into a town');
- assert.equal(w({level:'town',k:8,factor:.5}).go,null);
+ assert.equal(w({level:'town',k:8,kMin:3,kMax:12,factor:.5}).go,null,'a town zooms out first');
+ let t=w({level:'town',k:3,kMin:3,kMax:12,factor:.8});t=w({level:'town',k:3,kMin:3,kMax:12,factor:.8,push:t.push});
+ assert.equal(t.go,'out','then scrolling on out goes back to the nation');
+ assert.equal(w({level:'town',k:12,kMin:3,kMax:12,factor:1.5}).go,null,'nothing deeper than a town');
 });
 test('no present day until the owner sets one (845 PE is Azgaar\'s placeholder)',()=>{
  assert.equal(run('ATLAS_LORE.calendar'),null);assert.equal(run('atlasCalendar()'),null);
@@ -119,11 +172,11 @@ test('Valeshar\'s capital shows its lore name, and search finds it by either nam
 });
 test('zoom levels, fitting and clamping',()=>{
  const lod=run('atlasLod');
- assert.deepEqual([0.5,1.3,2.5,5].map(lod),[0,1,2,3]);
+ assert.deepEqual([0.5,1.3,1.6,2.5,5].map(lod),[0,0,1,2,3],'a desktop landing (k about 1.25) shows no settlement names over the nations\' own');
  const f=run('atlasFit')([100,100,300,200],1000,500,0);
  assert.equal(f.k,5);assert.equal(f.x+200*f.k,500);assert.equal(f.y+150*f.k,250);
  const c=run('atlasClamp')({k:99,x:5000,y:-5000},800,600,1024,768,.5,6);
- assert.equal(c.k,6);assert.equal(c.x,400,'the map\'s left edge stops at the middle');assert.equal(c.y,300-768*6);
+ assert.equal(c.k,6);assert.equal(c.x,0,'the map\'s left edge stops at the screen\'s');assert.equal(c.y,600-768*6);
  const z=run('atlasZoomAt')({k:1,x:0,y:0},2,100,50);assert.deepEqual({...z},{k:2,x:-100,y:-50},'the point under the pointer stays put');
  const home=run('atlasHomeView')(data,{x:0,y:0,w:390,h:600});
  assert(home.k>390/data.width*1.5,'a phone starts zoomed in past fit-the-width');
@@ -174,7 +227,7 @@ test('events sort by year, filter by era and attach to their nations and places'
 test('the map layer draws every nation and every settlement that belongs to one',()=>{
  const svg=run('atlasSvgHTML(DATA)');
  assert.equal((svg.match(/class="atlas-nation"/g)||[]).length,20);
- assert.equal((svg.match(/class="atlas-pl"/g)||[]).length,data.settlements.filter(s=>s.nation).length);
+ assert.equal((svg.match(/class="atlas-pl[" ]/g)||[]).length,data.settlements.filter(s=>s.nation).length);
  assert.match(svg,/data-sel="s-golshehr"[^>]*>.*?<text[^>]*>Shamur</);
  for(const g of ['sea','rivers','roads','nations','places'])assert(svg.includes('atlas-g-'+g),g);
 });

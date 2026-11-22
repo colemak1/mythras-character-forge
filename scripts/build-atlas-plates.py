@@ -5,7 +5,8 @@ assets/atlas/atlas-data.json ("details"), so the atlas can zoom from the
 whole map straight into the nation's own map with every settlement in place.
 
     python3 -I scripts/build-atlas-plates.py path/to/Nation_Atlas
-    (run after scripts/build-atlas-data.py, which keeps "details")
+    (run after scripts/build-atlas-data.py, which keeps "details";
+    then scripts/patch-plate-labels.py, which erases renamed labels)
 
 The plates (Sitota_Atlas_Pack, 2026-11-20) draw each nation centred in a
 2400 x 1800 frame at its own scale, with its border in one brown. The border's

@@ -21,7 +21,7 @@
    sample: true marks a made-up event (the timeline says "Sample events").
 
    body is trusted HTML written by the owner or Claude (paragraphs, lists).
-   summary is plain text. Anything left out shows "No entry yet". */
+   summary is plain text. Anything left out shows "Lore coming soon" over the facts. */
 const ATLAS_LORE={
  nations:{
   valeshar:{summary:'A country in Sit’ota.'}

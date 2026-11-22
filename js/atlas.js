@@ -16,16 +16,20 @@
      and a town's map. Choosing a nation flies in through the clouds to the
      nation's own map (data.details: one picture per nation and the
      rectangle it covers in map units) and locks there: it pans and zooms,
-     but stops at its edges. Choosing a settlement flies on through the
-     clouds into its town map, the Watabou city or village Azgaar generates
-     for it (settlement.map). "‹" goes back up one level the same way.
-     Until the detailed maps are drawn the nation maps are the stand-in
-     national plates (scripts/build-atlas-plates.py).
+     but stops at its edges. Choosing a settlement with a street map flies
+     on through the clouds into it: a read-only picture baked from the
+     Watabou city Azgaar generates for it (data.towns, made by
+     scripts/bake-town-maps.cjs), in the same pan and zoom. The breadcrumb
+     goes back up the same way. Until the detailed maps are drawn the nation
+     maps are the stand-in national plates (scripts/build-atlas-plates.py).
+   - Full bleed (Atlas UX spec, docs/ux/atlas-20261121.md): at every level
+     the picture covers the whole stage. The zoom stops where it covers it
+     and panning stops at its edges, so no grey shows round it.
 
    Pure helpers (atlasSearch, atlasLod, atlasFit, atlasClamp, ...) take
    plain values so tests/atlas.cjs can check them without a browser. */
 
-const ATLAS_DATA_URL='assets/atlas/atlas-data.json?v=a91c9f6e88';
+const ATLAS_DATA_URL='assets/atlas/atlas-data.json?v=b8b75988df';
 const ATLAS_MAP_URL='assets/atlas/sitota-map.webp?v=1bea6796c2';
 const ATLAS_LAYERS=[
  {id:'borders',label:'Borders',on:true},
@@ -37,7 +41,7 @@ const ATLAS_LAYERS=[
 // Zoom (screen pixels per map unit) at which each detail level starts:
 // cities, then towns and their names, then villages. Absolute, so a phone
 // and a desktop show the same density of names at the same size.
-const ATLAS_LOD=[1.25,2.3,4];
+const ATLAS_LOD=[1.5,2.3,4]; // 1.5: a desktop landing (about 1.25, full bleed) shows the nations' names alone
 const ATLAS_K_MAX=6; // the stand-in picture is 1.5 px per unit; past this it is mush
 const ATLAS_GROUP_LABEL={capital:'Capital',city:'City',town:'Town',village:'Village',fort:'Fort'};
 
@@ -80,9 +84,13 @@ function atlasEventNations(data,ev){
  return ns;
 }
 function atlasDetail(data,id){return id&&data&&data.details&&data.details[id]||null;}
+// A settlement's baked street map ({src, w, h, px}), or null: only these
+// open a town level (data.towns, scripts/bake-town-maps.cjs).
+function atlasTown(data,id){return id&&data&&data.towns&&data.towns[id]||null;}
 // Pixels per map unit of a nation map: past this zoom it only gets blurrier.
 function atlasDetailScale(det){return det?det.px[0]/det.w:0;}
-// Azgaar's town map link, with the lore name in place of the map file's.
+// Azgaar's town map link, with the lore name in place of the map file's
+// (what scripts/bake-town-maps.cjs opens; the site no longer links to it).
 function atlasTownLink(s,name){
  if(!s||!s.map)return null;
  return s.map.replace(/([?&](?:name)=)[^&]*/,(m,a)=>a+encodeURIComponent(name||s.name).replace(/%20/g,'+'));
@@ -126,7 +134,7 @@ function atlasSearch(data,q,limit){
  (data.settlements||[]).forEach(p=>{
   const shown=atlasPlaceName(p),s=Math.min(...[score(shown),score(p.name)].map(v=>v<0?9:v));
   if(s<9){const nat=atlasNation(data,p.nation);
-   hits.push({sel:'s-'+p.id,name:shown,kind:(ATLAS_GROUP_LABEL[p.group]||'Settlement')+(nat?' · '+nat.name:''),rank:s+(p.capital?0:p.group==='city'?.2:.4)});}
+   hits.push({sel:'s-'+p.id,name:shown,kind:(ATLAS_GROUP_LABEL[p.group]||'Settlement')+(nat?' · '+nat.name:'')+(atlasTown(data,p.id)?' · street map':''),rank:s+(p.capital?0:p.group==='city'?.2:.4)});}
  });
  (atlasLore().events||[]).forEach(e=>{const s=score(e.title);if(s>=0)hits.push({sel:'e-'+e.id,name:e.title,kind:'Event',rank:s+.1});});
  return hits.sort((a,b)=>a.rank-b.rank||a.name.localeCompare(b.name)).slice(0,limit||12);
@@ -156,47 +164,63 @@ function atlasFit(box,w,h,pad){
  const k=Math.max(.01,Math.min((w-2*pad)/bw,(h-2*pad)/bh));
  return {k,x:w/2-(box[0]+bw/2)*k,y:h/2-(box[1]+bh/2)*k};
 }
-// Keep the middle of the viewport over the map (or over rect [x0,y0,x1,y1],
-// a nation's own map), and the zoom in range.
+// Keep the map (or rect [x0,y0,x1,y1]: a nation's or a town's own map)
+// over the whole viewport, and the zoom in range: its edges stop at the
+// viewport's, so no grey shows (Atlas UX spec). Narrower than the viewport
+// (only below the covering zoom), it is centred.
 function atlasClamp(v,w,h,mapW,mapH,kMin,kMax,rect){
  const k=Math.min(kMax,Math.max(kMin,v.k)),r=rect||[0,0,mapW,mapH];
- const x=Math.min(w/2-r[0]*k,Math.max(w/2-r[2]*k,v.x)),y=Math.min(h/2-r[1]*k,Math.max(h/2-r[3]*k,v.y));
- return {k,x,y};
+ const fit=(lo,hi,val)=>lo>hi?(lo+hi)/2:Math.min(hi,Math.max(lo,val));
+ return {k,x:fit(w-r[2]*k,-r[0]*k,v.x)+0,y:fit(h-r[3]*k,-r[1]*k,v.y)+0}; // +0: never -0
 }
+// The smallest zoom at which rect covers a w x h viewport.
+function atlasCoverK(w,h,rect){return Math.max(w/(rect[2]-rect[0]),h/(rect[3]-rect[1]));}
 function atlasZoomAt(v,factor,px,py){
  const k=v.k*factor;return {k,x:px-(px-v.x)*factor,y:py-(py-v.y)*factor};
 }
 // The level a selection opens: the whole map ('world'), a nation's own map
-// ('nation'), or a settlement's town map ('town'). A settlement with no town
-// map (a fort) is shown on its nation's map.
+// ('nation'), or a settlement's town map ('town'). A settlement with no
+// baked street map (a fort, or one not baked yet) is shown on its nation's map.
 function atlasLevelOf(data,sel){
  const nation=atlasNationOf(data,sel);
  if(!nation||!atlasDetail(data,nation))return {level:'world',nation:null,town:null};
  const p=atlasParseSel(sel);
- if(p.kind==='s'){const s=atlasSettlement(data,p.id);if(s&&s.map)return {level:'town',nation,town:s.id};}
+ if(p.kind==='s'&&atlasTown(data,p.id))return {level:'town',nation,town:p.id};
  return {level:'nation',nation,town:null};
 }
 // Scroll-wheel trips between levels (owner, 2026-11-20). On the whole map,
 // zooming in past ATLAS_DIVE_K over a nation dives into it. Inside a nation,
 // scrolling on past its widest view flies back out, and past its closest
-// view over a town goes into the town. push carries the scroll already spent
+// view over a town goes into the town. Inside a town, scrolling on past its
+// widest view goes back to the nation. push carries the scroll already spent
 // against a limit (log of the zoom asked for), so a stray notch doesn't go.
 const ATLAS_DIVE_K=ATLAS_LOD[1],ATLAS_WHEEL_PUSH=.3;
 function atlasWheelIntent(s){
  const dir=s.factor>1?1:s.factor<1?-1:0;let push=s.push||0;
  if(!dir||Math.sign(push)===-dir)push=0;
  if(s.level==='world')return {push:0,go:dir>0&&s.k*s.factor>=ATLAS_DIVE_K?'in':null};
- if(s.level!=='nation')return {push:0,go:null};
+ if(s.level==='town'&&dir>0)return {push:0,go:null};
  const atLimit=dir<0?s.k<=s.kMin*1.001:s.k>=s.kMax*.999;
  if(!atLimit)return {push:0,go:null};
  push+=Math.log(s.factor);
  return Math.abs(push)>=ATLAS_WHEEL_PUSH?{push:0,go:dir>0?'in':'out'}:{push,go:null};
 }
 function atlasDepth(level){return level==='town'?2:level==='nation'?1:0;}
-// Smallest zoom of a nation's map: as on the whole map, all of it fits with
-// grey space around it (owner, 2026-11-20: "locked" means nothing else of
-// Sit'ota shows, not that the map can't move).
-function atlasNationMin(w,h,rect){return Math.min(w/(rect[2]-rect[0]),h/(rect[3]-rect[1]))*.8;}
+// The breadcrumb for a level: Sit'ota, then the nation, then the town. Every
+// step but the last goes back to it; the last is where you are.
+function atlasCrumbs(data,at){
+ const c=[{label:'Sit’ota',sel:null}],n=at.nation&&atlasNation(data,at.nation),s=at.town&&atlasSettlement(data,at.town);
+ if(n&&at.level!=='world')c.push({label:n.name,sel:'n-'+n.id});
+ if(s&&at.level==='town')c.push({label:atlasPlaceName(s),sel:'s-'+s.id});
+ return c;
+}
+function atlasCrumbsHTML(data,at){
+ const c=atlasCrumbs(data,at);
+ return '<ol>'+c.map((x,i)=>'<li>'+(i?'<span class="atlas-crumb-sep" aria-hidden="true">›</span>':'')
+  +(i===c.length-1?'<span class="atlas-crumb" aria-current="location">'+esc(x.label)+'</span>'
+   :'<button type="button" class="atlas-crumb" onclick="atlasSelect('+(x.sel?'\''+x.sel+'\',{fly:true}':'null')+')">'+esc(x.label)+'</button>')
+  +'</li>').join('')+'</ol>';
+}
 
 /* ---------- markup ---------- */
 function atlasLayersState(){
@@ -207,27 +231,27 @@ function atlasHTML(){
  const layers=atlasLayersState();
  // Arriving from another page starts from the whole map (or the selection).
  if(typeof document!=='undefined'&&document.getElementById&&!document.getElementById('atlasRoot'))ATLAS.view=null;
- const mobile=typeof matchMedia==='function'&&matchMedia('(max-width:899px)').matches;
- if(ATLAS.timeline===null)ATLAS.timeline=!mobile;
+ // The timeline starts folded, so the landing shows the whole continent
+ // edge to edge (Atlas UX spec); it opens from its bar.
+ if(ATLAS.timeline===null)ATLAS.timeline=false;
  const icon=d=>'<svg class="i" viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>';
  return '<section class="atlas" id="atlasRoot" aria-labelledby="atlasTitle" data-timeline="'+(ATLAS.timeline?'open':'closed')+'"'
   +Object.keys(layers).map(k=>' data-layer-'+k+'="'+(layers[k]?'on':'off')+'"').join('')+'>'
   +'<h1 class="atlas-sr" id="atlasTitle" tabindex="-1">Atlas of Sit’ota</h1>'
   +'<div class="atlas-stage">'
   +'<div class="atlas-map" id="atlasMap" aria-label="Map of Sit’ota. Drag to pan, scroll or pinch to zoom, or use the arrow keys and plus and minus." tabindex="0" role="application">'
-  +'<div class="atlas-world" id="atlasWorld"><img class="atlas-base" src="'+ATLAS_MAP_URL+'" alt="" draggable="false" decoding="async"><div class="atlas-details" id="atlasDetails"></div><svg class="atlas-svg" id="atlasSvg" aria-hidden="true"></svg></div>'
+  +'<div class="atlas-world" id="atlasWorld"><img class="atlas-base" src="'+ATLAS_MAP_URL+'" alt="" draggable="false" decoding="async"><div class="atlas-details" id="atlasDetails"></div><svg class="atlas-svg" id="atlasSvg" aria-hidden="true"></svg><img class="atlas-town" id="atlasTownImg" alt="" draggable="false" decoding="async" hidden></div>'
   +'<p class="atlas-status" id="atlasStatus" role="status">Loading the atlas…</p>'
   +'</div>'
-  +'<div class="atlas-townview" id="atlasTownView" hidden><iframe id="atlasTownFrame" title="Town map" sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>'
   +'<div class="atlas-clouds" id="atlasClouds" aria-hidden="true" hidden></div>'
   +'<div class="atlas-top">'
+  +'<nav class="atlas-crumbs" id="atlasCrumbs" aria-label="Where you are in the atlas">'+atlasCrumbsHTML(ATLAS_DATA||{},{level:'world'})+'</nav>'
   +'<div class="atlas-search"><label class="atlas-sr" for="atlasSearch">Search the atlas</label>'
   +'<span class="atlas-search-ic" aria-hidden="true">'+icon('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>')+'</span>'
   +'<input id="atlasSearch" type="search" autocomplete="off" placeholder="Search places and events" aria-controls="atlasResults" aria-autocomplete="list" oninput="atlasOnSearch(this.value)" onkeydown="atlasSearchKey(event)">'
   +'<div class="atlas-results" id="atlasResults" role="listbox" aria-label="Search results" hidden></div></div>'
   +'<div class="atlas-tools">'
-  +'<button type="button" class="atlas-tool atlas-tool-out" id="atlasOut" onclick="atlasUp()" title="Back out">'+icon('<path d="M15 5l-7 7 7 7"/>')+'<span id="atlasOutLabel">Sit’ota</span></button>'
-  +'<button type="button" class="atlas-tool" onclick="atlasOpenList()" aria-label="Nations list" title="Nations">'+icon('<path d="M4 6h16M4 12h16M4 18h10"/>')+'<span>Nations</span></button>'
+  +'<button type="button" class="atlas-tool atlas-tool-icon" onclick="atlasOpenList()" aria-label="Nations list" title="Nations">'+icon('<path d="M4 6h16M4 12h16M4 18h10"/>')+'<span>Nations</span></button>'
   +'<button type="button" class="atlas-tool atlas-tool-icon" id="atlasLayersBtn" aria-label="Map layers" aria-expanded="false" aria-controls="atlasLayers" onclick="atlasToggleLayers()" title="Map layers">'+icon('<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>')+'<span>Layers</span></button>'
   +'<a class="atlas-tool atlas-tool-icon" href="#/world/welcome" aria-label="Guide chapters" title="Guide chapters">'+icon('<path d="M12 6C9 4 6 4 3 5v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1Zm0 0v14"/>')+'<span>Guide</span></a>'
   +'</div>'
@@ -272,8 +296,8 @@ function atlasSvgHTML(data){
  const route=kinds=>(data.routes||[]).filter(r=>kinds.includes(r.kind)).map(r=>'<path class="atlas-route atlas-route-'+(r.kind==='roads'?'road':r.kind==='searoutes'?'sea':'trail')+'" d="'+r.d+'"/>').join('');
  const rivers=(data.rivers||[]).map(r=>'<path class="atlas-river" style="--w:'+Math.min(3,.6+Math.sqrt(r.w||0)/14).toFixed(2)+'px" d="'+r.d+'"/>').join('');
  const nations=(data.nations||[]).map(n=>'<path class="atlas-nation" data-sel="n-'+n.id+'" d="'+n.d+'"><title>'+esc(n.name)+'</title></path>').join('');
- const places=(data.settlements||[]).filter(s=>s.nation).sort((a,b)=>lod(b)-lod(a)).map(s=>'<g class="atlas-pl" data-lod="'+lod(s)+'" data-n="'+s.nation+'" data-sel="s-'+s.id+'" transform="translate('+s.x+' '+s.y+')"><g class="atlas-pl-s">'
-  +(s.capital?'<circle class="atlas-pl-ring" r="6"/>':'')+'<circle class="atlas-pl-dot" r="'+(s.capital?3.4:s.group==='city'?3:2.4)+'"/><circle class="atlas-pl-hit" r="10"/>'
+ const places=(data.settlements||[]).filter(s=>s.nation).sort((a,b)=>lod(b)-lod(a)).map(s=>'<g class="atlas-pl'+(atlasTown(data,s.id)?' has-town':'')+(atlasPlaceName(s)!==s.name?' is-renamed':'')+'" data-lod="'+lod(s)+'" data-n="'+s.nation+'" data-sel="s-'+s.id+'" transform="translate('+s.x+' '+s.y+')"><g class="atlas-pl-s">'
+  +(atlasTown(data,s.id)?'<circle class="atlas-pl-town" r="9.5"/>':'')+(s.capital?'<circle class="atlas-pl-ring" r="6"/>':'')+'<circle class="atlas-pl-dot" r="'+(s.capital?3.4:s.group==='city'?3:2.4)+'"/><circle class="atlas-pl-hit" r="10"/>'
   +'<text x="7" y="4">'+esc(atlasPlaceName(s))+'</text></g><title>'+esc(atlasPlaceName(s))+'</title></g>').join('');
  return '<g class="atlas-g-sea">'+route(['searoutes'])+'</g>'
   +'<g class="atlas-g-rivers">'+rivers+'</g>'
@@ -309,7 +333,8 @@ function atlasMount(){
   const tl=atlasEl('atlasTimeline');if(tl)tl.outerHTML=atlasTimelineHTML();
   const sel=WORLD_PLACE&&atlasSelValid(data,WORLD_PLACE)?WORLD_PLACE:null;
   if(!sel)WORLD_PLACE=null;
-  atlasShowPanel(sel?'detail':atlasDesktop()?'list':null);
+  // The drawer stays closed until a place is chosen (Atlas UX spec).
+  atlasShowPanel(sel?'detail':null);
   atlasReset(true);
   if(sel)atlasSelect(sel,{fly:true,instant:true,keepRoute:true,view:prev});
   else if(prev)atlasApply(prev);
@@ -327,14 +352,21 @@ function atlasLockBox(){
  if(atlasDesktop())return atlasFreeBox();
  const {w,h}=atlasSize();return {x:0,y:0,w,h};
 }
+// Each level's zoom range: from the zoom that covers the stage (no grey
+// round the map) to past its picture's sharpness.
 function atlasLimits(){
- const {w,h}=atlasSize(),d=ATLAS_DATA,det=ATLAS.level==='nation'?atlasDetail(d,ATLAS.nation):null;
- const fit=Math.min(w/d.width,h/d.height);ATLAS.fit=fit;
- if(det){
-  const rect=[det.x,det.y,det.x+det.w,det.y+det.h];
-  return {kMin:atlasNationMin(w,h,rect),kMax:Math.max(ATLAS_K_MAX,atlasDetailScale(det)*1.25),rect};
+ const {w,h}=atlasSize(),d=ATLAS_DATA;
+ const town=ATLAS.level==='town'?atlasTown(d,ATLAS.town):null,det=ATLAS.level==='nation'?atlasDetail(d,ATLAS.nation):null;
+ if(town){
+  const rect=[0,0,town.w,town.h],kMin=atlasCoverK(w,h,rect);
+  return {kMin,kMax:Math.max(kMin*4,town.px[0]/town.w*1.5),rect};
  }
- return {kMin:fit*.8,kMax:Math.max(fit*2,ATLAS_K_MAX)};
+ if(det){
+  const rect=[det.x,det.y,det.x+det.w,det.y+det.h],kMin=atlasCoverK(w,h,rect);
+  return {kMin,kMax:Math.max(ATLAS_K_MAX,atlasDetailScale(det)*1.25,kMin*2),rect};
+ }
+ const kMin=atlasCoverK(w,h,[0,0,d.width,d.height]);ATLAS.fit=kMin;
+ return {kMin,kMax:Math.max(kMin*2,ATLAS_K_MAX)};
 }
 // The view kept inside the current level's limits.
 function atlasClampView(v){
@@ -417,14 +449,14 @@ function atlasWheelLevel(f,px,py,cx,cy){
  // In: the town nearest the pointer, if one is close.
  let best=null,bd=48;
  (ATLAS_DATA.settlements||[]).forEach(s=>{
-  if(s.nation!==ATLAS.nation||!s.map)return;
+  if(s.nation!==ATLAS.nation||!atlasTown(ATLAS_DATA,s.id))return;
   const d=Math.hypot(v.x+s.x*v.k-px,v.y+s.y*v.k-py);if(d<bd){bd=d;best=s;}
  });
  if(!best)return false;
  atlasSelect('s-'+best.id,{fly:true});return true;
 }
 function atlasZoomBy(f,px,py){
- if(!ATLAS.view||ATLAS.level==='town')return;
+ if(!ATLAS.view)return;
  const {w,h}=atlasSize();
  atlasAnimateTo(atlasZoomIn(ATLAS.view,f,px==null?w/2:px,py==null?h/2:py));
 }
@@ -501,10 +533,11 @@ function atlasBind(){
   const now=Date.now();
   if(!t&&now-ATLAS.lastTap<320){const r=map.getBoundingClientRect();atlasZoomBy(1.8,e.clientX-r.left,e.clientY-r.top);ATLAS.lastTap=0;return;}
   ATLAS.lastTap=now;
+  if(ATLAS.level==='town'){if(atlasEl('atlasPanel').hidden)atlasShowPanel('detail');return;} // a picture: nothing to choose
   if(t)atlasSelect(t.getAttribute('data-sel'),{fly:!t.classList.contains('atlas-pl')});
   else if(ATLAS.level==='nation'){
    // Locked in a nation's map, an empty click comes back to the nation
-   // (and its panel, closed on a phone); leaving is the "‹" button.
+   // (and its drawer, if closed); leaving is the breadcrumb.
    if(WORLD_PLACE!=='n-'+ATLAS.nation)atlasSelect('n-'+ATLAS.nation);
    else if(atlasEl('atlasPanel').hidden)atlasShowPanel('detail');
   }
@@ -619,9 +652,11 @@ function atlasSelect(sel,opts){
  atlasMark(WORLD_PLACE);
  const track=atlasEl('atlasTrack');
  if(track)track.querySelectorAll('.atlas-tl-ev').forEach(b=>{const on=WORLD_PLACE==='e-'+b.dataset.ev;if(on){b.setAttribute('aria-current','true');b.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});}else b.removeAttribute('aria-current');});
- atlasShowPanel(WORLD_PLACE?'detail':atlasDesktop()?'list':null);
  const to=atlasLevelOf(ATLAS_DATA,WORLD_PLACE);
+ // A trip to another level swaps the drawer when the map swaps, behind the
+ // clouds (atlasTravel), so it never names the place before the map shows it.
  if(to.level!==ATLAS.level||to.nation!==ATLAS.nation||to.town!==ATLAS.town){atlasTravel(to,opts);return;}
+ atlasShowPanel(WORLD_PLACE?'detail':null);
  if(WORLD_PLACE&&opts.fly&&to.level!=='town'){
   const p=atlasParseSel(WORLD_PLACE),box=atlasSelBox(p);
   if(box)atlasFlyToBox(box,opts.instant,p.kind==='s'?3:0,p.kind==='e'?ATLAS_EVENT_K:0);
@@ -646,14 +681,15 @@ async function atlasTravel(to,opts){
   ATLAS.travelling=true;root.classList.add('is-travelling');
   const {w,h}=atlasSize(),f=deeper&&from.level!=='town'?atlasTravelFocus(to):{x:w/2,y:h/2};
   clouds=atlasClouds(deeper,f.x,f.y);
-  const tv=atlasEl('atlasTownView');
-  if(from.level==='town'&&tv)tv.animate([{transform:'scale(1)'},{transform:'scale('+(deeper?1.6:.55)+')'}],{duration:ATLAS_TRAVEL_IN,easing:'ease-in',fill:'forwards'});
-  const dive=from.level==='town'?null:atlasAnimateTo(atlasZoomAt(ATLAS.view,deeper?4:.3,f.x,f.y),false,{free:true,dur:ATLAS_TRAVEL_IN,ease:'in'});
-  await atlasWait(ATLAS_TRAVEL_IN);void dive;
+  atlasAnimateTo(atlasZoomAt(ATLAS.view,deeper?4:.3,f.x,f.y),false,{free:true,dur:ATLAS_TRAVEL_IN,ease:'in'});
+  await atlasWait(ATLAS_TRAVEL_IN);
   if(id!==ATLAS.travel)return;
   cancelAnimationFrame(ATLAS.anim);
  }
  const ready=atlasEnterLevel(to);
+ // The drawer changes with the map, before the view is worked out (the
+ // drawer takes part of the screen on a phone).
+ atlasShowPanel(WORLD_PLACE?'detail':null);
  const target=atlasClampView(atlasLevelView(to,from));
  if(instant){ATLAS.flying=false;atlasApply(opts.view||target);atlasTravelDone();return;}
  await Promise.race([ready,atlasWait(2500)]);
@@ -664,8 +700,6 @@ async function atlasTravel(to,opts){
  ATLAS.flying=false;
  const lim=atlasLimits(),k0=deeper?Math.max(lim.kMin,target.k*.4):target.k*2.4;
  atlasApply(atlasZoomAt(target,k0/target.k,f.x+f.w/2,f.y+f.h/2));
- const tv=atlasEl('atlasTownView');
- if(to.level==='town'&&tv)tv.animate([{transform:'scale('+(deeper?.6:1.5)+')'},{transform:'scale(1)'}],{duration:ATLAS_TRAVEL_OUT,easing:'cubic-bezier(.2,.6,.3,1)'});
  clouds.part();
  await atlasAnimateTo(target,false,{dur:ATLAS_TRAVEL_OUT,ease:'out'});
  if(id===ATLAS.travel)atlasTravelDone();
@@ -686,14 +720,14 @@ function atlasTravelFocus(to){
  return {x:Math.min(w*.85,Math.max(w*.15,v.x+x*v.k)),y:Math.min(h*.85,Math.max(h*.15,v.y+y*v.k))};
 }
 // The view a level opens on: the whole map (or an event's places); the
-// nation (or the town just left, or a fort chosen); a town keeps the view.
+// nation (or the town just left, or a fort chosen); all of a town's map.
 function atlasLevelView(to,from){
  const d=ATLAS_DATA,p=atlasParseSel(WORLD_PLACE);
  if(to.level==='world'){
   const box=p&&p.kind==='e'?atlasSelBox(p):null;
   return box?atlasBoxView(box,0,ATLAS_EVENT_K):atlasHomeView(d,atlasFreeBox());
  }
- if(to.level==='town')return ATLAS.view;
+ if(to.level==='town'){const t=atlasTown(d,to.town),{w,h}=atlasSize(),k=atlasCoverK(w,h,[0,0,t.w,t.h]);return {k,x:(w-t.w*k)/2,y:(h-t.h*k)/2};}
  const back=from&&from.level==='town'&&from.nation===to.nation&&atlasSettlement(d,from.town);
  const s=back||(p&&p.kind==='s'?atlasSettlement(d,p.id):null);
  if(s){const f=atlasLockBox(),k=Math.max(3,atlasDetailScale(atlasDetail(d,to.nation))*.55);return {k,x:f.x+f.w/2-s.x*k,y:f.y+f.h/2-s.y*k};}
@@ -730,24 +764,27 @@ function atlasEnterLevel(to){
    img.src=det.src;box.appendChild(img);
    ready.push(new Promise(done=>{
     const show=()=>{img.dataset.ready='1';if(ATLAS.nation===id)img.classList.add('is-on');done();};
-    (img.decode?img.decode():Promise.resolve()).then(show,()=>{img.addEventListener('load',show,{once:true});img.addEventListener('error',done,{once:true});});
+    const fail=()=>{if(ATLAS.nation===id)atlasMissing('nation');done();};
+    (img.decode?img.decode():Promise.resolve()).then(show,()=>{if(img.complete&&!img.naturalWidth)fail();else{img.addEventListener('load',show,{once:true});img.addEventListener('error',fail,{once:true});}});
    }));
   }else if(img.dataset.ready==='1')img.classList.add('is-on');
  }
- const tv=atlasEl('atlasTownView'),fr=atlasEl('atlasTownFrame');
- if(tv&&fr){
-  const s=to.level==='town'&&atlasSettlement(ATLAS_DATA,to.town);
-  tv.hidden=!s;
-  if(s&&fr.dataset.town!==s.id){
-   const name=atlasPlaceName(s);
-   fr.dataset.town=s.id;fr.title='Map of '+name;
-   ready.push(new Promise(done=>fr.addEventListener('load',()=>setTimeout(done,250),{once:true})));
-   fr.src=atlasTownLink(s,name);
-  }else if(!s&&fr.dataset.town){fr.dataset.town='';fr.removeAttribute('src');}
+ // A town's street map: a baked picture in the same pan and zoom (no
+ // generator, nothing to edit).
+ const ti=atlasEl('atlasTownImg'),town=to.level==='town'&&atlasTown(ATLAS_DATA,to.town);
+ if(ti){
+  ti.hidden=!town;
+  if(town&&ti.dataset.town!==to.town){
+   ti.dataset.town=to.town;ti.dataset.ready='';
+   Object.assign(ti.style,{width:town.w+'px',height:town.h+'px'});
+   ready.push(new Promise(done=>{
+    ti.onload=()=>{ti.dataset.ready='1';done();};
+    ti.onerror=()=>{if(ti.dataset.town===to.town)atlasMissing('town');done();};
+   }));
+   ti.src=town.src;
+  }else if(!town&&ti.dataset.town){ti.dataset.town='';ti.removeAttribute('src');}
  }
- const out=atlasEl('atlasOut'),label=atlasEl('atlasOutLabel'),n=id&&atlasNation(ATLAS_DATA,id);
- if(label)label.textContent=to.level==='town'&&n?n.name:'Sit’ota';
- if(out)out.title=to.level==='town'&&n?'Back to '+n.name:'Back to the whole map';
+ const crumbs=atlasEl('atlasCrumbs');if(crumbs)crumbs.innerHTML=atlasCrumbsHTML(ATLAS_DATA,to);
  return Promise.all(ready);
 }
 // Clouds closing in toward (fx, fy), deeper: puffs grow out of the
@@ -802,26 +839,41 @@ function atlasShowPanel(mode){
  panel.innerHTML=mode==='list'?atlasListHTML():atlasDetailHTML(atlasParseSel(WORLD_PLACE));
  panel.scrollTop=0;
 }
-// ×: inside a nation or town a phone just closes the sheet (to see the
-// map); a desktop goes up a level. On the whole map it clears the choice.
+// ×: inside a nation or town it only closes the drawer, to see the map
+// (the breadcrumb goes up). On the whole map it clears the choice.
 function atlasCloseBtn(){return '<button type="button" class="atlas-panel-x" onclick="atlasClose()" aria-label="Close">×</button>';}
 function atlasClose(){
- if(ATLAS.level!=='world'){if(atlasDesktop())atlasUp();else atlasShowPanel(null);}
- else if(WORLD_PLACE)atlasSelect(null);else atlasShowPanel(null);
+ if(ATLAS.level!=='world'||!WORLD_PLACE)atlasShowPanel(null);
+ else atlasSelect(null);
+}
+// A nation's or town's picture that will not load (Atlas UX spec, error
+// state): say so in the drawer, with the way back up.
+function atlasMissing(kind){
+ const panel=atlasEl('atlasPanel');if(!panel||!ATLAS_DATA)return;
+ if(panel.hidden)atlasShowPanel('detail');
+ if(panel.querySelector('.atlas-missing'))return;
+ const n=atlasNation(ATLAS_DATA,ATLAS.nation),up=kind==='town'&&n?{sel:'n-'+n.id,label:n.name}:{sel:null,label:'Sit’ota'};
+ const p=document.createElement('div');p.className='atlas-missing';p.setAttribute('role','alert');
+ p.innerHTML='<p>The '+(kind==='town'?'street':'nation’s')+' map could not be loaded. Check your connection, or go back.</p>'
+  +'<button type="button" class="st-btn st-btn-sm" onclick="atlasSelect('+(up.sel?'\''+up.sel+'\',{fly:true}':'null')+')">‹ '+esc(up.label)+'</button>';
+ const h=panel.querySelector('h2');if(h)h.after(p);else panel.prepend(p);
 }
 function atlasListHTML(){
  const d=ATLAS_DATA;
- return (atlasDesktop()?'':atlasCloseBtn())+'<p class="atlas-kicker">The atlas</p><h2 tabindex="-1">Nations of Sit’ota</h2>'
-  +'<p class="atlas-lede">Choose a nation on the map or below. Zoom in to see more settlements.</p>'
+ return atlasCloseBtn()+'<p class="atlas-kicker">The atlas</p><h2 tabindex="-1">Nations of Sit’ota</h2>'
+  +'<p class="atlas-lede">Choose a nation on the map or below. Zoom in to see more settlements; those marked with a ring open a street map.</p>'
   +'<ul class="atlas-list">'+d.nations.map(n=>'<li><button type="button" onclick="atlasSelect(\'n-'+n.id+'\',{fly:true})"><span class="atlas-swatch" aria-hidden="true"></span>'+esc(n.name)
   +'<small>'+d.settlements.filter(s=>s.nation===n.id).length+'</small></button></li>').join('')+'</ul>'
   +'<p class="atlas-note">Stand-in maps. Borders and settlements come from the working map file and may change.</p>';
 }
+// While the lore is still being written, the facts below it carry the entry.
+const ATLAS_NO_LORE='<p class="atlas-empty">Lore coming soon.</p>';
 function atlasLoreBody(l){
- if(!l)return '<p class="atlas-empty">No entry yet.</p>';
+ if(!l)return ATLAS_NO_LORE;
  return (l.summary?'<p class="atlas-summary">'+esc(l.summary)+'</p>':'')+(l.body?'<div class="atlas-body">'+l.body+'</div>':'')
-  ||'<p class="atlas-empty">No entry yet.</p>';
+  ||ATLAS_NO_LORE;
 }
+const ATLAS_MAP_ICON='<svg class="i atlas-mapic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>';
 function atlasEventsHTML(evs){
  if(!evs.length)return '';
  const cal=atlasCalendar();
@@ -838,9 +890,10 @@ function atlasDetailHTML(p){
    +atlasLoreBody((lore.nations||{})[n.id])
    +'<dl class="atlas-facts">'+(cap?'<div><dt>Capital</dt><dd>'+atlasLink('s-'+cap.id,atlasPlaceName(cap))+(atlasPlaceName(cap)!==cap.name?' <small>('+esc(cap.name)+' on the stand-in map)</small>':'')+'</dd></div>':'')
    +'<div><dt>Settlements</dt><dd>'+places.length+'</dd></div>'
+   +'<div><dt>Street maps</dt><dd>'+(places.filter(s=>atlasTown(d,s.id)).length||'None yet')+'</dd></div>'
    +'<div><dt>Area</dt><dd>≈ '+Number(Math.round(n.areaSqMi/1000)*1000).toLocaleString('en-US')+' sq mi</dd></div></dl>'
    +atlasEventsHTML(atlasEventsFor(d,'n',n.id))
-   +(places.length?'<h3>Settlements</h3><ul class="atlas-places">'+places.map(s=>'<li>'+atlasLink('s-'+s.id,atlasPlaceName(s))+'<small>'+esc(ATLAS_GROUP_LABEL[s.group]||'')+(s.port?' · port':'')+'</small></li>').join('')+'</ul>':'')
+   +(places.length?'<h3>Settlements</h3><ul class="atlas-places">'+places.map(s=>'<li'+(atlasTown(d,s.id)?' class="has-town"':'')+'>'+atlasLink('s-'+s.id,atlasPlaceName(s))+'<small>'+esc(ATLAS_GROUP_LABEL[s.group]||'')+(s.port?' · port':'')+(atlasTown(d,s.id)?' · '+ATLAS_MAP_ICON+'street map':'')+'</small></li>').join('')+'</ul>':'')
    +(atlasDetail(d,n.id)?'<p class="atlas-note">The nation map is a stand-in until the detailed map is drawn.</p>':'');
  }
  if(p.kind==='s'){
@@ -851,8 +904,9 @@ function atlasDetailHTML(p){
    +(name!==s.name?'<p class="atlas-alias">'+esc(s.name)+' on the stand-in map</p>':'')
    +atlasLoreBody((lore.places||{})[s.id])
    +'<dl class="atlas-facts">'+(n?'<div><dt>Nation</dt><dd>'+atlasLink('n-'+n.id,n.name)+'</dd></div>':'')
-   +'<div><dt>Kind</dt><dd>'+esc(ATLAS_GROUP_LABEL[s.group]||'Settlement')+(s.port?', port':'')+'</dd></div></dl>'
-   +atlasTownHTML(s,name)
+   +'<div><dt>Tier</dt><dd>'+esc(ATLAS_GROUP_LABEL[s.group]||'Settlement')+(s.port?', port':'')+'</dd></div>'
+   +'<div><dt>Street map</dt><dd>'+(atlasTown(d,s.id)?ATLAS_MAP_ICON+'Yes':'Not yet')+'</dd></div></dl>'
+   +atlasTownHTML(d,s,name)
    +atlasEventsHTML(atlasEventsFor(d,'s',s.id));
  }
  const e=atlasEvent(p.id),cal=atlasCalendar(),era=(lore.eras||[]).find(x=>x.id===e.era);
@@ -863,15 +917,13 @@ function atlasDetailHTML(p){
   +atlasLoreBody(e.summary||e.body?{summary:e.summary,body:e.body}:null)
   +(links.length?'<h3>Where</h3><p class="atlas-where">'+links.join('')+'</p>':'');
 }
-// The town map Azgaar generates for a settlement (Watabou's generators)
-// fills the map once the trip through the clouds arrives; the panel says
-// where it comes from and links to the generator.
-function atlasTownHTML(s,name){
- const link=atlasTownLink(s,name);
- if(!link)return '';
- return '<h3>Town map</h3><p class="atlas-town-note">Drag and scroll the map to explore '+esc(name)+'. '
-  +'<a href="'+esc(link)+'" target="_blank" rel="noopener">Open in the generator ↗</a></p>'
-  +'<p class="atlas-note">Generated by Azgaar with Watabou’s '+(/village-generator/.test(link)?'Village':'Medieval Fantasy City')+' Generator. A stand-in until the town is drawn.</p>';
+// A settlement's street map fills the map once the trip through the clouds
+// arrives; the drawer says where it comes from. Read-only: no generator
+// controls and no link to regenerate it (Atlas UX spec).
+function atlasTownHTML(d,s,name){
+ if(!atlasTown(d,s.id))return '';
+ return '<h3>Street map</h3><p class="atlas-town-note">Drag, scroll or pinch to explore '+esc(name)+'.</p>'
+  +'<p class="atlas-note">Made with Watabou’s '+(/village-generator/.test(s.map||'')?'Village':'Medieval Fantasy City')+' Generator, from Azgaar’s map. A stand-in until the town is drawn.</p>';
 }
 
 /* Called by the router when only the selection changed (back/forward). */
