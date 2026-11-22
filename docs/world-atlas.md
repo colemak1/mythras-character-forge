@@ -6,12 +6,14 @@ timeline under the map whose events light up the places they happened.
 
 The atlas has three levels (owner, 2026-11-20): the whole map, a nation's own map, and a town's map. Choosing a nation
 **flies in through the clouds** to the nation's own map and **stays there**, as if the whole map weren't there: it
-drags and zooms like the whole map, with the same grey space around it, and nothing from the whole map shows. Choosing a settlement flies on through the clouds into **its town map** (the city
-or village Azgaar generates for it with Watabou's generators), which fills the map. **‹** goes back up one level the
-same way (Escape too); forts have no town map and stay on the nation's map. Reduced motion skips the clouds.
+drags and zooms like the whole map, edge to edge, and nothing from the whole map shows. Choosing a settlement with a **street map** (a dashed ring on the map) flies on through the clouds into it: a
+read-only picture baked from the Watabou city Azgaar generates for it, in the same pan and zoom. Settlements without
+one (forts, and towns not baked yet) stay on the nation's map. The **breadcrumb** (`Sit’ota › Valeshar › Shamur`) goes
+back to any level the same way (Escape goes up one). Reduced motion skips the clouds. At every level the picture
+covers the stage edge to edge, with no grey round it (Atlas UX spec, `docs/ux/atlas-20261121.md`).
 The scroll wheel does the same: scrolling in over a nation past the zoom where towns appear dives into it; scrolling
-on out at a nation's widest view flies back out; scrolling on in at its closest view near a town goes into the town.
-Inside a town map the wheel belongs to the generator, so leaving a town is the **‹** button. The old guide chapters are still there
+on out at a nation's widest view flies back out; scrolling on in at its closest view near a street map goes into the
+town, and scrolling on out at a town's widest view goes back to the nation. The old guide chapters are still there
 (`#/world/welcome`, the **Guide** button).
 
 ## Files
@@ -21,7 +23,8 @@ Inside a town map the wheel belongs to the generator, so leaving a town is the *
 | Map picture (stand-in) | `assets/atlas/sitota-map.webp` | replaced when the final map arrives |
 | Borders, settlements, rivers, roads | `assets/atlas/atlas-data.json` | built by `scripts/build-atlas-data.py` |
 | Nation maps (stand-in: the plates cropped to their map) | `assets/atlas/nations/<nation id>.webp`, placed by `data.details` | built by `scripts/build-atlas-plates.py`; replaced when the detailed maps are drawn |
-| Town maps | links in `atlas-data.json` (`settlement.map`), shown full size at the town level | built with the data, the same as Azgaar's burg preview |
+| Street maps | `assets/atlas/towns/<settlement id>.webp`, placed by `data.towns` (`{src, w, h, px}`) | `node scripts/bake-town-maps.cjs <id>...` exports each from Watabou (Azgaar's link, `settlement.map`, with the lore name) |
+| Lore renames on the plates | `scripts/patch-plate-labels.py` erases a plate's printed name for a renamed place | run once after `build-atlas-plates.py` |
 | Descriptions, lore names, eras, events | `js/atlas-lore.js` (`ATLAS_LORE`) | owner content; Claude types it in |
 | The page | `js/atlas.js`, `sitota-atlas.css` | Claude |
 | Tests | `tests/atlas.cjs` | Claude |
@@ -87,9 +90,11 @@ re-exporting makes the override unnecessary (it then claims nothing).
 - The picture is 1536 px wide, so it is soft at the deeper zooms (the zoom stops at 6×).
 - Settlement names, areas and borders come from the generated Azgaar map. The only lore name so far is Shamur
   (Golshehr on the map file); the panel says when a name differs.
-- The stand-in nation maps print the map file's names, so a lore name (Shamur) sits next to the printed Golshehr.
-- Town maps come live from watabou.github.io; if that site changes its generator, a town can change. The panel
-  links to the generator, so a map you like can be saved (its PNG or SVG export) and sent in to replace it.
+- The stand-in nation maps print the map file's names; a lore rename needs its printed label erased
+  (`scripts/patch-plate-labels.py`, Shamur done). `tests/atlas.cjs` fails if one is missed.
+- Only Shamur has a street map so far. Baking more is one command (`node scripts/bake-town-maps.cjs <ids>`); about
+  0.6 MB a city. Which ones is the owner's call (the spec's open question).
+- On a very wide screen (wider than 4:3 plus the header) full bleed crops the top and bottom of the continent.
 - The timeline is empty until events are written, and shows no present day until one is set (845 PE in the map
   file is Azgaar's placeholder).
 
@@ -101,3 +106,6 @@ Headless Chromium at 1280 × 800 and 390 × 844, light and dark: the whole map, 
 panel (desktop and phone).
 2026-11-20, third batch: the trip through the clouds into Valeshar and Khor, then Shamur, and back out, at 1280 × 800
 (light, dark) and on a phone (iPhone 13); dragging and zooming out stop at Valeshar's edges. Not on a real phone.
+2026-11-22, Atlas UX spec: at 1280 × 800 (light) and 390 × 844 (dark), the map covers the stage at Sit’ota (also
+zoomed all the way out), Valeshar and Shamur (also zoomed in); the drawer stays as it was mid-trip; wheeling out of
+Valeshar returns to Sit’ota; the breadcrumb goes back from Shamur to Valeshar. No page errors.

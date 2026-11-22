@@ -231,7 +231,8 @@ def main(src):
            "settlements": settlements, "rivers": rivers, "routes": routes}
     if OUT.exists():  # the nation maps placed by build-atlas-plates.py
         old = json.loads(OUT.read_text(encoding="utf-8"))
-        if "details" in old: out["details"] = old["details"]
+        for k in ("details", "towns"):  # and the baked town maps (bake-town-maps.cjs)
+            if k in old: out[k] = old[k]
     OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"{OUT}: {OUT.stat().st_size // 1024} KB, {len(nations)} nations, {len(settlements)} settlements, "
           f"{len(rivers)} rivers, {len(routes)} routes")
