@@ -5,6 +5,19 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Supabase baseline schema; the old GM session column is gone
+
+- **`supabase/baseline_schema.sql`** records the five tables production had before the migrations, taken from
+  Work's live snapshot (`docs/supabase-baseline-20261121.md`, #393) minus the two columns migrations add
+  (`campaigns.rules_settings`, `characters.revision`). The database permission tests now build on it instead of a
+  hand-written copy (`tests/db/base-schema.sql` keeps only Supabase stand-ins and the old helpers), and
+  `tests/supabase-baseline.cjs` fails if it drifts from the snapshot.
+- **GM session state is read and written only in the GM-only table.** The `GM_STATE_TABLE_MISSING` fallback to the
+  readable `campaigns.session_state` column is removed from `js/cloud.js` (no live campaign used it); an error from
+  the GM table is now reported, never redirected to the readable row. Nothing changes for players or the GM.
+
+---
+
 ## The Pits: who won an opposed roll, the Endurance story, and four stage fixes (reports of 18 and 20 Nov)
 
 - **Opposed rolls say who won and why** (report 20261120-214915, "hard to see if you won the roll or not"). The dice

@@ -157,8 +157,7 @@ await test('signed in: restore inserts a new campaign, GM state, homebrew and GM
   eq(k,v){q.eq=[k,v];if(q.op==="update"||q.op==="delete"){calls.push({t,op:q.op,row:q.row,eq:q.eq});return Promise.resolve({error:null});}return api;},
   single(){const row=Object.assign({id:t+"-new-"+(++n)},q.row);calls.push({t,op:"insert",row:clone(row)});return Promise.resolve({data:row,error:null});},
   maybeSingle(){return Promise.resolve({data:null,error:null});},
-  then(res){if(q.op==="insert")calls.push({t,op:"insert",row:clone(q.row)});res({data:q.op==="insert"?null:[],error:null});}};return api;};
- GM_STATE_TABLE_MISSING=false;`);
+  then(res){if(q.op==="insert")calls.push({t,op:"insert",row:clone(q.row)});res({data:q.op==="insert"?null:[],error:null});}};return api;};`);
  assert.equal(run('cloudActive()'),true);
  ctx.restoreFile=file(json);await run('APP.campaignRestoreFile({files:[restoreFile]})');await run('APP.confirmCampaignRestore()');
  const calls=JSON.parse(run('JSON.stringify(calls)'));

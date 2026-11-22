@@ -35,7 +35,7 @@ await test('C8-SEC12/BRD17 a player never requests the GM session state',async()
  assert.equal(camp.session_state,null);
 });
 await test('the GM reads session state from the GM-only table',async()=>{
- run('AUTH_USER={id:"gm"};calls=[];GM_STATE_TABLE_MISSING=false;gmMissing=false;gmRow={session_state:{sessionNotes:"secret",combatants:[]}};');
+ run('AUTH_USER={id:"gm"};calls=[];gmMissing=false;gmRow={session_state:{sessionNotes:"secret",combatants:[]}};');
  const camp=await run('loadCampaignRowUnified("c1")');
  assert.equal(camp.session_state.sessionNotes,'secret');
 });
@@ -44,12 +44,20 @@ await test('GM tool saves go to the GM-only table, never the readable campaign r
  assert(run('calls.some(c=>c.t==="campaign_gm_state"&&c.op==="upsert"&&c.row.campaign_id==="c1")'));
  assert(!run('calls.some(c=>c.t==="campaigns"&&c.op==="update")'));
 });
-await test('before the migration runs, the app falls back to the old column and keeps working',async()=>{
- run('calls=[];GM_STATE_TABLE_MISSING=false;gmMissing=true;campRow.session_state={sessionNotes:"old",combatants:[]};');
- const camp=await run('loadCampaignRowUnified("c1")');assert.equal(camp.session_state.sessionNotes,'old');
- run('calls=[];');await run('sessionStateCampaignUnified("c1",{sessionNotes:"y",combatants:[]})');
- assert(run('calls.some(c=>c.t==="campaigns"&&c.op==="update"&&c.row.session_state.sessionNotes==="y")'));
- run('gmMissing=false;campRow.session_state=null;GM_STATE_TABLE_MISSING=false;');
+await test('the old campaigns.session_state column is never read or written, even if the GM table errors',async()=>{
+ assert.equal(run('typeof GM_STATE_TABLE_MISSING'),'undefined','the fallback flag is gone');
+ run('AUTH_USER={id:"gm"};calls=[];gmMissing=false;gmRow=null;campRow.session_state={sessionNotes:"old",combatants:[]};');
+ assert.equal((await run('loadCampaignRowUnified("c1")')).session_state,null,'no GM row: empty, not the old column');
+ run('AUTH_USER={id:"player"};');
+ assert.equal((await run('loadCampaignRowUnified("c1")')).session_state,null,'a player never sees the column');
+ run('AUTH_USER={id:"gm"};calls=[];gmMissing=true;');
+ await assert.rejects(run('loadCampaignRowUnified("c1")'),'a missing GM table is an error');
+ await assert.rejects(run('sessionStateCampaignUnified("c1",{sessionNotes:"y",combatants:[]})'));
+ assert(!run('calls.some(c=>c.t==="campaigns"&&c.op==="update")'),'no write to the readable column');
+ run('gmMissing=false;calls=[];cloudFetchMembers=async()=>[];cloudFetchCharacters=async()=>[];cloudFetchCustomContent=async()=>[];');
+ const bk=await run('buildCampaignBackup("c1")');
+ assert.equal('session_state' in bk.campaign,false);assert.equal(bk.gmSessionState,null,'the backup ignores the old column');
+ run('campRow.session_state=null;');
 });
 await test('other save errors are reported, not silently redirected to the readable column',async()=>{
  run('calls=[];gmFail={code:"42501",message:"permission denied"};');
