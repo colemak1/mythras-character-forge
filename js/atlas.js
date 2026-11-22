@@ -30,6 +30,12 @@
    plain values so tests/atlas.cjs can check them without a browser. */
 
 const ATLAS_DATA_URL='assets/atlas/atlas-data.json?v=b8b75988df';
+// The open sea round the picture (scripts/build-atlas-sea.py): a parchment
+// tile laid ATLAS_SEA map units past every edge, under the picture's faded,
+// unframed edge (owner, 2026-11-22: no border, and room to see the whole
+// continent zoomed out).
+const ATLAS_SEA_URL='assets/atlas/sea-tile.webp?v=9e96186dd8';
+const ATLAS_SEA=1600,ATLAS_SEA_TILE=200/1.5; // tile size in map units (the picture is 1.5 px per unit)
 const ATLAS_MAP_URL='assets/atlas/sitota-map.webp?v=1bea6796c2';
 const ATLAS_LAYERS=[
  {id:'borders',label:'Borders',on:true},
@@ -173,6 +179,15 @@ function atlasClamp(v,w,h,mapW,mapH,kMin,kMax,rect){
  const fit=(lo,hi,val)=>lo>hi?(lo+hi)/2:Math.min(hi,Math.max(lo,val));
  return {k,x:fit(w-r[2]*k,-r[0]*k,v.x)+0,y:fit(h-r[3]*k,-r[1]*k,v.y)+0}; // +0: never -0
 }
+// What the whole map's zoom and panning keep in view: the land, with a
+// margin of sea (and the title cartouche under it). Zoomed all the way out
+// it all fits, with sea round it; zoomed in, panning stops at its edges.
+function atlasWorldRect(data){
+ const b=atlasLandBox(data);
+ return [b[0]-40,b[1]-40,b[2]+40,b[3]+95];
+}
+// The smallest zoom at which rect fits in a w x h viewport.
+function atlasFitK(w,h,rect){return Math.min(w/(rect[2]-rect[0]),h/(rect[3]-rect[1]));}
 // The smallest zoom at which rect covers a w x h viewport.
 function atlasCoverK(w,h,rect){return Math.max(w/(rect[2]-rect[0]),h/(rect[3]-rect[1]));}
 function atlasZoomAt(v,factor,px,py){
@@ -240,7 +255,7 @@ function atlasHTML(){
   +'<h1 class="atlas-sr" id="atlasTitle" tabindex="-1">Atlas of Sit’ota</h1>'
   +'<div class="atlas-stage">'
   +'<div class="atlas-map" id="atlasMap" aria-label="Map of Sit’ota. Drag to pan, scroll or pinch to zoom, or use the arrow keys and plus and minus." tabindex="0" role="application">'
-  +'<div class="atlas-world" id="atlasWorld"><img class="atlas-base" src="'+ATLAS_MAP_URL+'" alt="" draggable="false" decoding="async"><div class="atlas-details" id="atlasDetails"></div><svg class="atlas-svg" id="atlasSvg" aria-hidden="true"></svg><img class="atlas-town" id="atlasTownImg" alt="" draggable="false" decoding="async" hidden></div>'
+  +'<div class="atlas-world" id="atlasWorld"><div class="atlas-sea" id="atlasSea"></div><img class="atlas-base" src="'+ATLAS_MAP_URL+'" alt="" draggable="false" decoding="async"><div class="atlas-details" id="atlasDetails"></div><svg class="atlas-svg" id="atlasSvg" aria-hidden="true"></svg><img class="atlas-town" id="atlasTownImg" alt="" draggable="false" decoding="async" hidden></div>'
   +'<p class="atlas-status" id="atlasStatus" role="status">Loading the atlas…</p>'
   +'</div>'
   +'<div class="atlas-clouds" id="atlasClouds" aria-hidden="true" hidden></div>'
@@ -324,6 +339,9 @@ function atlasMount(){
   svg.setAttribute('viewBox','0 0 '+data.width+' '+data.height);
   svg.innerHTML=atlasSvgHTML(data);
   const world=atlasEl('atlasWorld');world.style.width=data.width+'px';world.style.height=data.height+'px';
+  const sea=atlasEl('atlasSea');
+  if(sea)Object.assign(sea.style,{left:-ATLAS_SEA+'px',top:-ATLAS_SEA+'px',width:data.width+2*ATLAS_SEA+'px',height:data.height+2*ATLAS_SEA+'px',
+   backgroundImage:'url("'+ATLAS_SEA_URL+'")',backgroundSize:ATLAS_SEA_TILE+'px '+ATLAS_SEA_TILE+'px'});
   atlasEl('atlasStatus').hidden=true;
   atlasBind();
   // A re-render while the atlas is open (sign-in, theme) keeps the view.
@@ -365,8 +383,9 @@ function atlasLimits(){
   const rect=[det.x,det.y,det.x+det.w,det.y+det.h],kMin=atlasCoverK(w,h,rect);
   return {kMin,kMax:Math.max(ATLAS_K_MAX,atlasDetailScale(det)*1.25,kMin*2),rect};
  }
- const kMin=atlasCoverK(w,h,[0,0,d.width,d.height]);ATLAS.fit=kMin;
- return {kMin,kMax:Math.max(kMin*2,ATLAS_K_MAX)};
+ // The whole map: out until all the land fits, the sea filling round it.
+ const rect=atlasWorldRect(d),kMin=atlasFitK(w,h,rect);ATLAS.fit=kMin;
+ return {kMin,kMax:Math.max(kMin*2,ATLAS_K_MAX),rect};
 }
 // The view kept inside the current level's limits.
 function atlasClampView(v){

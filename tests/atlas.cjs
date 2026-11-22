@@ -102,10 +102,20 @@ test('full bleed at every level: the map covers the screen, no grey round it (At
  assert.equal(far.x,-100*6,'its west edge stops at the screen\'s left');
  assert.equal(far.y,600-200*6,'its south edge at the screen\'s bottom');
  assert.equal(clamp({k:1,x:0,y:0},800,600,1024,768,kMin,20,rect).k,kMin);
- for(const [w,h] of [[1280,700],[390,560],[1920,800]]){
-  const k=cover(w,h,[0,0,data.width,data.height]),v=clamp({k:k*.5,x:500,y:500},w,h,data.width,data.height,k,20);
-  assert(v.x<=0&&v.y<=0&&v.x+data.width*v.k>=w-1e-9&&v.y+data.height*v.k>=h-1e-9,'the whole map covers '+w+' x '+h);
+});
+test('the whole map: no frame, open sea round it, and zoomed out the whole continent fits any screen (owner, 2026-11-22)',()=>{
+ const rect=J('atlasWorldRect(DATA)'),land=J('atlasLandBox(DATA)'),fitK=run('atlasFitK'),clamp=run('atlasClamp'),S=run('ATLAS_SEA');
+ assert(rect[0]<land[0]&&rect[1]<land[1]&&rect[2]>land[2]&&rect[3]>land[3],'a margin of sea round the land');
+ for(const [w,h] of [[1280,700],[1920,800],[390,560],[360,740],[820,1000]]){
+  const k=fitK(w,h,rect),v=clamp({k:k*.5,x:9999,y:-9999},w,h,data.width,data.height,k,20,rect);
+  assert.equal(v.k,k);
+  const vis=[-v.x/v.k,-v.y/v.k,(w-v.x)/v.k,(h-v.y)/v.k];
+  assert(vis[0]<=land[0]&&vis[1]<=land[1]&&vis[2]>=land[2]&&vis[3]>=land[3],'zoomed out, all the land shows on '+w+' x '+h);
+  assert(vis[0]>=-S&&vis[1]>=-S&&vis[2]<=data.width+S&&vis[3]<=data.height+S,'and the sea fills the rest of '+w+' x '+h);
  }
+ const css=fs.readFileSync(path.join(root,'sitota-atlas.css'),'utf8');
+ assert.match(css,/\.atlas-base\{[^}]*mask-image:linear-gradient\(to right,transparent 2/,'the picture\'s framed edge is faded out');
+ assert(fs.existsSync(path.join(root,run('ATLAS_SEA_URL').split('?')[0])),'the sea tile');
 });
 test('the breadcrumb: Sit’ota › Valeshar › Shamur, every step but the last goes back (Atlas UX spec)',()=>{
  const c=at=>J('atlasCrumbs(DATA,'+JSON.stringify(at)+')');
