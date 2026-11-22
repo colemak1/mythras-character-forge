@@ -170,14 +170,22 @@ function atlasFit(box,w,h,pad){
  const k=Math.max(.01,Math.min((w-2*pad)/bw,(h-2*pad)/bh));
  return {k,x:w/2-(box[0]+bw/2)*k,y:h/2-(box[1]+bh/2)*k};
 }
-// Keep the map (or rect [x0,y0,x1,y1]: a nation's or a town's own map)
-// over the whole viewport, and the zoom in range: its edges stop at the
-// viewport's, so no grey shows (Atlas UX spec). Narrower than the viewport
-// (only below the covering zoom), it is centred.
-function atlasClamp(v,w,h,mapW,mapH,kMin,kMax,rect){
+// Keep rect [x0,y0,x1,y1] (what the level keeps in view; the whole map
+// without one) and the zoom in range. Bigger than the viewport, its edges
+// stop at the viewport's; smaller (zoomed out to see all of it), it sits in
+// the middle of the free part of the screen (free {x,y,w,h}: beside or
+// above the drawer, the whole screen without one), never off screen.
+function atlasClamp(v,w,h,mapW,mapH,kMin,kMax,rect,free){
  const k=Math.min(kMax,Math.max(kMin,v.k)),r=rect||[0,0,mapW,mapH];
- const fit=(lo,hi,val)=>lo>hi?(lo+hi)/2:Math.min(hi,Math.max(lo,val));
- return {k,x:fit(w-r[2]*k,-r[0]*k,v.x)+0,y:fit(h-r[3]*k,-r[1]*k,v.y)+0}; // +0: never -0
+ // A zoom held at its limit keeps the middle of the screen where it was.
+ if(k!==v.k)v={k,x:w/2-(w/2-v.x)*k/v.k,y:h/2-(h/2-v.y)*k/v.k};
+ const f=free||{x:0,y:0,w,h};
+ const axis=(size,r0,r1,f0,fs,val)=>{
+  const lo=size-r1*k,hi=-r0*k;
+  if(lo<=hi)return Math.min(hi,Math.max(lo,val));           // bigger: edges stop at the screen's
+  return Math.min(lo,Math.max(hi,f0+fs/2-(r0+r1)/2*k));     // smaller: centred in the free part, on screen
+ };
+ return {k,x:axis(w,r[0],r[2],f.x,f.w,v.x)+0,y:axis(h,r[1],r[3],f.y,f.h,v.y)+0}; // +0: never -0
 }
 // What the whole map's zoom and panning keep in view: the land, with a
 // margin of sea (and the title cartouche under it). Zoomed all the way out
@@ -186,6 +194,15 @@ function atlasWorldRect(data){
  const b=atlasLandBox(data);
  return [b[0]-40,b[1]-40,b[2]+40,b[3]+95];
 }
+// A nation's box with a margin round it: zoomed all the way out the whole
+// nation shows (owner, 2026-11-22: "extend any map in which I can't see the
+// whole subject"), with its own map and the sea round it.
+function atlasNationRect(n){
+ const b=n.box,mx=(b[2]-b[0])*.08,my=(b[3]-b[1])*.08;
+ return [b[0]-mx,b[1]-my,b[2]+mx,b[3]+my];
+}
+// A town's street map with a margin of its paper round it: the whole city fits.
+function atlasTownRect(t){const m=Math.max(t.w,t.h)*.04;return [-m,-m,t.w+m,t.h+m];}
 // The smallest zoom at which rect fits in a w x h viewport.
 function atlasFitK(w,h,rect){return Math.min(w/(rect[2]-rect[0]),h/(rect[3]-rect[1]));}
 // The smallest zoom at which rect covers a w x h viewport.
@@ -375,12 +392,14 @@ function atlasLockBox(){
 function atlasLimits(){
  const {w,h}=atlasSize(),d=ATLAS_DATA;
  const town=ATLAS.level==='town'?atlasTown(d,ATLAS.town):null,det=ATLAS.level==='nation'?atlasDetail(d,ATLAS.nation):null;
+ // Every level zooms out until its whole subject fits (owner, 2026-11-22),
+ // with sea, or the town's paper, filling round it.
  if(town){
-  const rect=[0,0,town.w,town.h],kMin=atlasCoverK(w,h,rect);
-  return {kMin,kMax:Math.max(kMin*4,town.px[0]/town.w*1.5),rect};
+  const rect=atlasTownRect(town),kMin=atlasFitK(w,h,rect);
+  return {kMin,kMax:Math.max(kMin*6,town.px[0]/town.w*1.5),rect};
  }
  if(det){
-  const rect=[det.x,det.y,det.x+det.w,det.y+det.h],kMin=atlasCoverK(w,h,rect);
+  const rect=atlasNationRect(atlasNation(d,ATLAS.nation)),kMin=atlasFitK(w,h,rect);
   return {kMin,kMax:Math.max(ATLAS_K_MAX,atlasDetailScale(det)*1.25,kMin*2),rect};
  }
  // The whole map: out until all the land fits, the sea filling round it.
@@ -390,7 +409,7 @@ function atlasLimits(){
 // The view kept inside the current level's limits.
 function atlasClampView(v){
  const d=ATLAS_DATA,{w,h}=atlasSize(),lim=atlasLimits();
- return atlasClamp(v,w,h,d.width,d.height,lim.kMin,lim.kMax,lim.rect);
+ return atlasClamp(v,w,h,d.width,d.height,lim.kMin,lim.kMax,lim.rect,atlasFreeBox());
 }
 // While flying (or travelling through the clouds) the view is drawn as it
 // comes; it was clamped where it is going.
@@ -483,7 +502,10 @@ function atlasZoomBy(f,px,py){
 // On a phone the search bar and buttons cover the top too.
 function atlasFreeBox(){
  const {w,h}=atlasSize(),panel=atlasEl('atlasPanel');
- if(atlasDesktop())return {x:0,y:0,w:panel&&!panel.hidden?Math.max(200,w-panel.offsetWidth-16):w,h};
+ if(atlasDesktop()){ // below the search bar and beside the drawer
+  const top=atlasEl('atlasRoot')&&atlasEl('atlasRoot').querySelector('.atlas-top'),y=top?Math.min(h*.2,top.offsetTop+top.offsetHeight):0;
+  return {x:0,y,w:panel&&!panel.hidden?Math.max(200,w-panel.offsetWidth-16):w,h:h-y};
+ }
  const top=atlasEl('atlasRoot')&&atlasEl('atlasRoot').querySelector('.atlas-top'),y=top?Math.min(h*.4,top.offsetTop+top.offsetHeight):0;
  const bottom=panel&&!panel.hidden?panel.offsetHeight:0;
  return {x:0,y,w,h:Math.max(140,h-y-bottom)};
@@ -746,7 +768,10 @@ function atlasLevelView(to,from){
   const box=p&&p.kind==='e'?atlasSelBox(p):null;
   return box?atlasBoxView(box,0,ATLAS_EVENT_K):atlasHomeView(d,atlasFreeBox());
  }
- if(to.level==='town'){const t=atlasTown(d,to.town),{w,h}=atlasSize(),k=atlasCoverK(w,h,[0,0,t.w,t.h]);return {k,x:(w-t.w*k)/2,y:(h-t.h*k)/2};}
+ if(to.level==='town'){ // all of the city, beside the drawer
+  const r=atlasTownRect(atlasTown(d,to.town)),f=atlasFreeBox(),k=atlasFitK(f.w,f.h,r);
+  return {k,x:f.x+(f.w-(r[0]+r[2])*k)/2,y:f.y+(f.h-(r[1]+r[3])*k)/2};
+ }
  const back=from&&from.level==='town'&&from.nation===to.nation&&atlasSettlement(d,from.town);
  const s=back||(p&&p.kind==='s'?atlasSettlement(d,p.id):null);
  if(s){const f=atlasLockBox(),k=Math.max(3,atlasDetailScale(atlasDetail(d,to.nation))*.55);return {k,x:f.x+f.w/2-s.x*k,y:f.y+f.h/2-s.y*k};}
@@ -853,7 +878,7 @@ function atlasOpenList(){if(WORLD_PLACE&&ATLAS.level==='world'){WORLD_PLACE=null
 function atlasShowPanel(mode){
  const panel=atlasEl('atlasPanel');if(!panel)return;
  ATLAS.panel=mode;
- if(!mode){panel.hidden=true;panel.innerHTML='';return;}
+ if(!mode){panel.hidden=true;panel.innerHTML='';if(ATLAS.view&&!ATLAS.travelling)atlasApply(ATLAS.view);return;}
  panel.hidden=false;
  panel.innerHTML=mode==='list'?atlasListHTML():atlasDetailHTML(atlasParseSel(WORLD_PLACE));
  panel.scrollTop=0;

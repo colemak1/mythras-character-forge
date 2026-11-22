@@ -18,6 +18,7 @@
   /* The atlas picture is parchment in both modes, so the marks drawn on it
      (sitota-atlas.css) are never redefined either. */
   --map-ink:#3b2416; --map-paper:#f3e6c8; --map-accent:#a3301f; --map-water:#4f7d97; --map-road:#7a5233;
+  --atlas-town-paper:#bfbfb5; /* the street maps' own paper (Watabou's export), carried on past their edges */
   /* the clouds the atlas flies through between levels (sitota-atlas.css) */
   --atlas-cloud:#fbf9f4; --atlas-cloud-shade:#d8dce2;
   --font-display:"Fraunces",Georgia,serif;
