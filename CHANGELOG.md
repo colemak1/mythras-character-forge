@@ -5,6 +5,23 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## The Pits: knees and elbows bend one way only (FR-35), preview behind `?stage=joints`
+
+Reports 20261118-232203 and 20261120-215045: "knee and elbow joints often bend the wrong way"; "the left knee bends
+weird then teleports". Owner, 2026-11-25: build it behind a preview link. Open The Pits with `?stage=joints`
+(`experiments/practice-combat.html?stage=joints`); without it nothing changes.
+
+- **Elbows** always bend the way an elbow does. Poses with a raised elbow, and the wrist rule, used to turn the elbow
+  over to keep the weapon in the hand; now the hand stays where the movement put it and a weapon past the wrist stops
+  at the wrist. Aimed blows still land where they did. Visible change: some guards hold the weapon at a different
+  angle (the two-handed spear recovers upright, for example).
+- **Knees** never go to the back of the leg. A knee that would be under the floor rests on it, with the shin turned
+  toward the foot (the deep lunge's back leg kneels). Getting onto one knee from the ground, the back leg turns toward
+  the viewer as it swings under, instead of folding past where a knee bends.
+- Measured over 127,300 frames of generated blows: elbows bent backwards 54% → 0, knees 7% → 0, knee jumps 791 → 30.
+- Tests: `tests/pits-cine-joints.cjs` (the fault is there by default and gone with the switch; contacts unchanged).
+  The default look is unchanged (`tests/pits-cine-look.cjs`).
+
 ## Atlas: no border, open sea round the continent; every map zooms out to its whole subject
 
 Owner, 2026-11-22: "remove the border on the map and extend the ocean a bit so when fully zoomed out we can see the

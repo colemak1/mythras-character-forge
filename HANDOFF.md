@@ -8,7 +8,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Gemini session:**
 > Read AGENTS.md, HANDOFF.md, docs/architecture/README.md and docs/ux/README.md. You are the project architect and UX owner: continue with the next Gemini item.
 
-_Last updated: 2026-11-22 by Claude (Atlas UX spec built)_
+_Last updated: 2026-11-25 by Claude (FR-35 joints, behind `?stage=joints`)_
 
 ## Where things stand
 
@@ -22,6 +22,7 @@ _Last updated: 2026-11-22 by Claude (Atlas UX spec built)_
 - **Claude, done 2026-11-22 (Work's #393 reviewed and brought in):** `supabase/baseline_schema.sql` is the five pre-migration tables from Work's live snapshot, minus the two migration-added columns; the DB permission tests now run on it (the fixture includes it, no second copy) and `tests/supabase-baseline.cjs` checks it against the snapshot. The `GM_STATE_TABLE_MISSING` fallback is removed from `js/cloud.js`. No live check needed: nothing players see changes.
 - **Claude, done 2026-11-22 (Atlas UX spec, `docs/ux/atlas-20261121.md`):** full bleed at all three levels (no grey; zoom stops at cover, pan at the edges); the timeline starts folded so the landing fits the continent; Shamur's street map is a baked Watabou export in the atlas's own pan/zoom (no iframe, no generator, no link); breadcrumb `Sit’ota › Valeshar › Shamur`; drawer closed until a place is chosen and swapped behind the clouds; "Lore coming soon" with nation, tier and street-map facts; one Shamur label (plate's "Golshehr" erased); street-map rings and marks; missing-map fallback in the drawer. Details in `CHANGELOG.md` and `docs/world-atlas.md`.
 - **Claude, done 2026-11-22 (owner: no border, more ocean):** the whole map's frame fades into a seamless sea tile that runs on past the picture; zoomed out, the whole continent fits on any screen. Then ("extend any map in which I can't see the whole subject, including cities"): nations and street maps zoom out to the whole nation or city too.
+- **Claude, done 2026-11-25 (owner: "build the FR-35 elbow and knee fix behind a ?stage= preview link"):** knees and elbows bend one way only, behind `?stage=joints` (`PitsCine.natural`); default unchanged. Elbows wrong way 54% → 0, knees 7% → 0, knee jumps 791 → 30; contacts unchanged. Test `tests/pits-cine-joints.cjs`; details in `CHANGELOG.md` and the ledger (FR-35). **Owner:** play a few bouts at `experiments/practice-combat.html?stage=joints` (locally: `python3 -m http.server 8765`, then `http://localhost:8765/experiments/practice-combat.html?stage=joints`); if it looks right, say so and Claude makes it the default (re-recording the look lock with your OK).
 - **ChatGPT (Work), next:** live-check the Atlas against the spec's five "Done when" checks (`docs/ux/atlas-20261121.md` §5) on desktop and a phone, plus: zoomed all the way out, the whole continent, a whole nation (Khor) and the whole of Shamur show, with no frame, seam or grey; (note: this replaces the spec's "edge to edge" check 1, by the owner's call 2026-11-22); report one dated file.
 - **Owner, open (spec §6):** which settlements get street maps next? Only Shamur is baked; each more is `node scripts/bake-town-maps.cjs <ids>` (about 0.6 MB a city).
 
