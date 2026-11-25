@@ -92,7 +92,13 @@ function keepWrist(Q,h,eb){
 }
 const SHIELD_R={buckler:13,target:17,peltast:17,heater:19,viking:21,kite:22,hoplite:23,scutum:26};
 const supports=()=>true;
-let KEEP=1500;       // how much of the past a fighter keeps (ms); 0 keeps it all (the study tools)
+let KEEP=1500;
+// FR-35 (reports 20261118-232203, 20261120-215045: "knee and elbow joints often bend the wrong way"), behind
+// ?stage=joints until the owner has played it (AGENTS.md, Forwards rule 5). Knees and elbows bend one way only: an
+// elbow is never drawn bent backwards (a pose's raised elbow, eb, and the wrist rule no longer turn it over; a weapon
+// past the wrist stops at the wrist instead), and a knee that would go under the floor rests on it, the shin turned
+// toward the foot, instead of going to the back of the leg (the deep lunge's back leg kneels).
+let NATURAL=(()=>{try{return typeof location!=='undefined'&&/[?&]stage=joints\b/.test(location.search);}catch(e){return false;}})();       // how much of the past a fighter keeps (ms); 0 keeps it all (the study tools)
 
 // ----- the rig -----
 const dirL=a=>[Math.cos(rad(a)),Math.sin(rad(a))];
@@ -107,6 +113,30 @@ function ik2(a,b,l1,l2,prefer,free){
   // (a knee or an elbow is never under the floor: on the ground the joint goes the other way)
   if(!free&&mid[1]<1){const alt=s1>=0?j2:j1;if(alt[1]>mid[1])mid=alt;}
   return {mid,end:[a[0]+ux*dd,a[1]+uy*dd],over:d-dd};
+}
+// Two bones from a to b with the joint on the side a real joint bends to (NATURAL). f: facing; way: 1 for an elbow
+// (shoulder to elbow to hand turns up and over, in the fighter's frame), -1 for a knee (it points the way the fighter
+// faces). The joint is never under the floor: with `rest` it rests on the floor and the second bone turns toward
+// where it was going (the foot or the hand moves, nothing jumps); without, it takes the other side. free: no floor.
+function ikNat(a,b,l1,l2,f,way,rest,free){
+  const d=Math.hypot(b[0]-a[0],b[1]-a[1])||1e-6,ux=(b[0]-a[0])/d,uy=(b[1]-a[1])/d,s=f*way;
+  const r=ik2(a,b,l1,l2,[s*uy,-s*ux],true);
+  if(free||r.mid[1]>=1)return r;
+  if(!rest){const alt=ik2(a,b,l1,l2,[-s*uy,s*ux],true);return alt.mid[1]>r.mid[1]?alt:r;}
+  const dy=a[1]-1;if(dy>=l1)return r;
+  const kx=Math.sqrt(l1*l1-dy*dy),c1=[a[0]+kx,1],c2=[a[0]-kx,1];
+  // (the floor point on the side the joint bends to: ahead of the hip for a knee, whichever way the leg goes)
+  const K=(c1[0]-a[0])*f*-way>=0?c1:c2;
+  let vx=b[0]-K[0],vy=b[1]-K[1];const vl=Math.hypot(vx,vy)||1e-6;vx/=vl;vy/=vl;
+  let F=[K[0]+vx*l2,K[1]+vy*l2];
+  if(F[1]<0){const sx=Math.sign(vx)||-f;F=[K[0]+sx*Math.sqrt(l2*l2-1),0];}
+  return {mid:K,end:F,over:0};
+}
+// is the joint at mid bent the wrong way (by more than tol degrees)? (the tests measure with this)
+function wrongWay(a,mid,end,f,way,tol){
+  const x1=mid[0]-a[0],y1=mid[1]-a[1],x2=end[0]-mid[0],y2=end[1]-mid[1];
+  const ang=Math.atan2(x1*y2-y1*x2,x1*x2+y1*y2)*180/Math.PI*f*way;
+  return ang<-(tol==null?8:tol);
 }
 // the torso in the fighter's frame from a local pose (hip, lean, bend, head, turn)
 function torsoL(P){
@@ -141,7 +171,11 @@ function solve(v,f,m,opt){
   else if(opt.pinS){oua=to(oua,-58,opt.pinS);ofa=to(ofa,-40,opt.pinS);}
   const du=D(ua),df=D(fa);let E=[wS[0]+du[0]*DIM.upper,wS[1]+du[1]*DIM.upper],Hn=[E[0]+df[0]*DIM.fore,E[1]+df[1]*DIM.fore];
   // an arm lying on the ground rests on it
-  if(Hn[1]<1||E[1]<1){const r=ik2(wS,[Hn[0],Math.max(1,Hn[1])],DIM.upper,DIM.fore,[0,1]);E=r.mid;Hn=r.end;}
+  if(Hn[1]<1||E[1]<1){const r=NATURAL?ikNat(wS,[Hn[0],Math.max(1,Hn[1])],DIM.upper,DIM.fore,f,1,true):ik2(wS,[Hn[0],Math.max(1,Hn[1])],DIM.upper,DIM.fore,[0,1]);E=r.mid;Hn=r.end;}
+  // (NATURAL: the hand stays where the movement put it and the elbow goes to the side an elbow bends to; the weapon
+  // keeps its angle unless that folds it past the wrist, then it stops at the wrist)
+  if(NATURAL&&wrongWay(wS,E,Hn,f,1,0)){{const r=ikNat(wS,Hn,DIM.upper,DIM.fore,f,1,true);E=r.mid;Hn=r.end;}
+    const fa2=deg(Math.atan2(Hn[1]-E[1],f*(Hn[0]-E[0])));if(wristOver(w,fa2)){const r=((w-fa2+540)%360+360)%360-180;w=fa2+(r>WRIST.hi&&r-WRIST.hi<=WRIST.lo+360-r?WRIST.hi:WRIST.lo);}}
   const len=m?(m.prof.to!=null?m.prof.to:m.weapon.len):92;let dw=D(w);
   let tip=[Hn[0]+dw[0]*len,Hn[1]+dw[1]*len],blen=len;
   // a weapon does not go through the floor: its point rests on it and it is drawn shorter (turned into the scene)
@@ -152,7 +186,8 @@ function solve(v,f,m,opt){
     dw=D(w);                                      // (the grip below follows the weapon as drawn)
   }
   let ou=D(oua),of=D(ofa),oE=[oS[0]+ou[0]*DIM.upper,oS[1]+ou[1]*DIM.upper],oHn=[oE[0]+of[0]*DIM.fore,oE[1]+of[1]*DIM.fore];
-  if(oHn[1]<1||oE[1]<1){const r=ik2(oS,[oHn[0],Math.max(1,oHn[1])],DIM.upper,DIM.fore,[0,1]);oE=r.mid;oHn=r.end;}
+  if(oHn[1]<1||oE[1]<1){const r=NATURAL?ikNat(oS,[oHn[0],Math.max(1,oHn[1])],DIM.upper,DIM.fore,f,1,true):ik2(oS,[oHn[0],Math.max(1,oHn[1])],DIM.upper,DIM.fore,[0,1]);oE=r.mid;oHn=r.end;}
+  if(NATURAL&&wrongWay(oS,oE,oHn,f,1,0)){const r=ikNat(oS,oHn,DIM.upper,DIM.fore,f,1,true);oE=r.mid;oHn=r.end;}
   // both hands on a long weapon: the lead hand holds the shaft where it can reach it
   let grip=null;
   const two=m&&m.prof.two&&!opt.off&&!opt.weapon&&!opt.unarmed?m.prof.two:0;
@@ -164,10 +199,11 @@ function solve(v,f,m,opt){
     if(far(two)<=ARM*.98&&two>=lo&&two<=hi)d=two;
     else for(let k=3;k<=hi-lo+3&&d==null;k+=3)for(const x of [two-k,two+k])if(x>=lo&&x<=hi&&far(x)<=ARM*.98){d=x;break;}
     grip=d;
-    if(d!=null){const g=at(d),r=ik2(oS,[g[0],Math.max(1,g[1])],DIM.upper,DIM.fore,[-f*.3,-1]);oE=r.mid;oHn=r.end;}
+    if(d!=null){const g=at(d),r=NATURAL?ikNat(oS,[g[0],Math.max(1,g[1])],DIM.upper,DIM.fore,f,1,true):ik2(oS,[g[0],Math.max(1,g[1])],DIM.upper,DIM.fore,[-f*.3,-1]);oE=r.mid;oHn=r.end;}
   }
   const kneeWay=[f*.9,.45];
-  const fl=ik2(P,[v.ffx,Math.max(0,v.ffy)],DIM.thigh,DIM.shin,kneeWay),bl=ik2(P,[v.bfx,Math.max(0,v.bfy)],DIM.thigh,DIM.shin,kneeWay);
+  const leg=F=>NATURAL?ikNat(P,F,DIM.thigh,DIM.shin,f,-1,true):ik2(P,F,DIM.thigh,DIM.shin,kneeWay);
+  const fl=leg([v.ffx,Math.max(0,v.ffy)]),bl=leg([v.bfx,Math.max(0,v.bfy)]);
   let bK=bl.mid,bF=bl.end;
   if(v.kd>.001)({bK,bF}=kneelLeg(P,f,bK,bF,Math.min(1,v.kd)));
   return {P,M,S,wS,oS,Hd,E,Hn,oE,oHn,K:fl.mid,F:fl.end,bK,bF,tip,w,blen,grip};
@@ -184,6 +220,14 @@ function kneelLeg(P,f,K0,F0,u){
   // swaps the knee to the other side, whatever the feet do meanwhile)
   const TUCK=[rad(80),rad(-110)];
   const k0=L(K0),f0=L(F0);
+  // (NATURAL, FR-35: the tuck above folds the shin past where a knee bends. Instead the leg turns toward the viewer
+  // as it swings under the body, drawn shorter on the way: the knee and the foot go straight from where the feet put
+  // them to the kneeling leg, never under the floor)
+  if(NATURAL){
+    const kE=[-kx,-dh],fE=[kE[0]-DIM.shin,kE[1]],w=EASE.io(u),mixP=(p,q)=>[lerp(p[0],q[0],w),lerp(p[1],q[1],w)];
+    const k=mixP(k0,kE),fo=mixP(f0,fE);k[1]=Math.max(k[1],1-P[1]);fo[1]=Math.max(fo[1],-P[1]);
+    return {bK:W(k),bF:W(fo)};
+  }
   let ta,sa;
   if(u<.25){const w=u/.25;ta=mix(at([0,0],k0),TUCK[0],w);sa=mix(at(k0,f0),TUCK[1],w);}
   else{const w=(u-.25)/.75;ta=mix(TUCK[0],Math.atan2(-dh,-kx),w);sa=mix(TUCK[1],Math.PI,w);}
@@ -238,7 +282,7 @@ function fill(m,P){
 function armAngles(h,eb){
   // (around the shoulder, not on the floor: the floor rule of ik2 would put every elbow asked to be below the shoulder
   // above it, and the weapon would sit awkwardly in the hand, owner 2026-11-16)
-  const r=ik2([0,0],h,DIM.upper,DIM.fore,eb>0?[0,1]:eb<0?[-1,0]:[0,-1],true);
+  const r=NATURAL?ikNat([0,0],h,DIM.upper,DIM.fore,1,1,false,true):ik2([0,0],h,DIM.upper,DIM.fore,eb>0?[0,1]:eb<0?[-1,0]:[0,-1],true);
   return {ua:deg(Math.atan2(r.mid[1],r.mid[0])),fa:deg(Math.atan2(r.end[1]-r.mid[1],r.end[0]-r.mid[0]))};
 }
 // Write a key: pose P (local, partial) at time t. o: at (the base, world x), e (ease), ec (ease per channel),
@@ -1825,7 +1869,7 @@ function speed(m,t){
 function sliding(m,t){const ks=m.keys,i=idx(ks,t),b=ks[i+1];return !!(b&&b.slide&&t>ks[i].t);}
 
 const api={WRIST,supports,fighter,gap,station,place,setRange,stancePose,restance,recover,intent,blow,withdraw,flinch,fall,stand,lower,celebrate,yieldTo,surrender,press,overextend,trip,disarm,counterDisarm,react,pose,
-  joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
+  joints,sample,speed,sliding,takeFx,profile,extent,key,cut,POSE,keep:n=>{KEEP=n;},fixChoices:u=>{FIXED=u==null?null:u;},natural:on=>{if(on!=null)NATURAL=!!on;return NATURAL;},wrongWay,DIM,LEG,ARM,SHIELD_R,partAt,world:m=>m.pair};
 root.PitsCine=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
