@@ -1,8 +1,14 @@
 name: Export Pits fight reports
-# Manual only. Copies the Pits fight reports from the site's database onto the `pits-reports` branch, where Claude and
-# ChatGPT read them (docs/pits-reports.md). It never touches main and never publishes the site.
+# Copies the Pits fight reports and site feedback from the site's database onto the `pits-reports` branch, where Claude
+# and ChatGPT read them (docs/pits-reports.md). It never touches main and never publishes the site.
+# Runs by hand, and every 6 hours at 12 AM, 6 AM, 12 PM and 6 PM Pacific (owner, 2026-11-27). GitHub's cron is UTC
+# only, so both the summer (PDT, UTC-7) and winter (PST, UTC-8) hours are listed, and the first step skips the run
+# whose hours are not today's. It goes by the schedule that fired, not the clock, so a late start still runs once.
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 1,7,13,19 * * *'   # PDT: 6 PM, 12 AM, 6 AM, 12 PM Pacific
+    - cron: '0 2,8,14,20 * * *'   # PST: 6 PM, 12 AM, 6 AM, 12 PM Pacific
 permissions:
   contents: write
 concurrency:
@@ -13,13 +19,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Skip the schedule for the other half of the year
+        id: when
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          offset=$(TZ=America/Los_Angeles date +%z)
+          if [ "$SCHEDULE" = '0 1,7,13,19 * * *' ] && [ "$offset" != "-0700" ]; then echo "run=no" >> "$GITHUB_OUTPUT"
+          elif [ "$SCHEDULE" = '0 2,8,14,20 * * *' ] && [ "$offset" != "-0800" ]; then echo "run=no" >> "$GITHUB_OUTPUT"
+          else echo "run=yes" >> "$GITHUB_OUTPUT"; fi
+          echo "event=${{ github.event_name }} schedule='$SCHEDULE' Pacific offset=$offset"
+      - if: steps.when.outputs.run == 'yes'
+        uses: actions/checkout@v4
+      - if: steps.when.outputs.run == 'yes'
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Keep the export script and the site's public settings from main
+      - if: steps.when.outputs.run == 'yes'
+        name: Keep the export script and the site's public settings from main
         run: cp scripts/pits-reports-export.cjs js/cloud.js "$RUNNER_TEMP/"
-      - name: Open the reports branch (created empty the first time)
+      - if: steps.when.outputs.run == 'yes'
+        name: Open the reports branch (created empty the first time)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -29,11 +49,13 @@ jobs:
             git checkout --orphan pits-reports
             git rm -rfq .
           fi
-      - name: Export
+      - if: steps.when.outputs.run == 'yes'
+        name: Export
         env:
           PITS_REPORTS_TOKEN: ${{ secrets.PITS_REPORTS_TOKEN }}
         run: node "$RUNNER_TEMP/pits-reports-export.cjs" --cloud "$RUNNER_TEMP/cloud.js" --out reports
-      - name: Commit and push
+      - if: steps.when.outputs.run == 'yes'
+        name: Commit and push
         run: |
           git add reports
           if git diff --cached --quiet; then echo "No new reports."; exit 0; fi

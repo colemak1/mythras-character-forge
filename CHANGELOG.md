@@ -5,6 +5,23 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Feedback button on every page; reports export every 6 hours; automation queue
+
+Owner, 2026-11-27.
+
+- **Feedback button.** A small round button in the bottom-right corner of every page opens a popup: **Report a bug**
+  or **Share an idea**, a text box and an optional name (shared with the Pits windows). It records the page, view,
+  route, viewport size and light or dark, and saves to the Pits reports table, so it is exported with the fight
+  reports (`[Site bug]` / `[Site idea]`). No database change. On phones it sits above the tab bar, Play Mode's bar or
+  the builder's footer, measured on the page; in a Pits fight it is hidden (Report fight and Idea are there). Offline,
+  it waits on the device and goes with the next one. `js/feedback.js`, `sitota-feedback.css`, `tests/feedback.cjs`.
+- **Export every 6 hours.** "Export Pits fight reports" now also runs at 12 AM, 6 AM, 12 PM and 6 PM Pacific, summer
+  and winter time alike, as well as by hand.
+- **`docs/auto-queue.md`:** one shared list of items with statuses `QUEUED FOR CLAUDE`, `READY FOR LIVE TEST`,
+  `PASSED`, `FAILED LIVE TEST` and `NEEDS OWNER`, and a retries count (two failed live tests, then the owner).
+
+---
+
 ## Atlas: no border, open sea round the continent; every map zooms out to its whole subject
 
 Owner, 2026-11-22: "remove the border on the map and extend the ocean a bit so when fully zoomed out we can see the
