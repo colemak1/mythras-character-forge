@@ -8,7 +8,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Gemini session:**
 > Read AGENTS.md, HANDOFF.md, docs/architecture/README.md and docs/ux/README.md. You are the project architect and UX owner: continue with the next Gemini item.
 
-_Last updated: 2026-11-22 by Claude (Atlas UX spec built)_
+_Last updated: 2026-11-27 by Claude (feedback button, 6-hourly export, automation queue)_
 
 ## Where things stand
 
@@ -18,6 +18,7 @@ _Last updated: 2026-11-22 by Claude (Atlas UX spec built)_
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+- **Claude, done 2026-11-27 (owner):** a feedback button on every page (bug or idea, with page, view and viewport; saved to the Pits reports table so it exports with them, `docs/pits-reports.md` "Site feedback"); the export runs every 6 hours (12 AM, 6 AM, 12 PM, 6 PM Pacific) as well as by hand; `docs/auto-queue.md` is the shared work list (statuses and a retries count). **ChatGPT (Work), next:** AQ-1 and AQ-2 in `docs/auto-queue.md`.
 - **Gemini, done 2026-11-21:** Architecture overview (`docs/architecture/overview-20261121.md`), Atlas UX spec (`docs/ux/atlas-20261121.md`), and `docs/decisions.md` Architecture lines complete.
 - **Claude, done 2026-11-22 (Work's #393 reviewed and brought in):** `supabase/baseline_schema.sql` is the five pre-migration tables from Work's live snapshot, minus the two migration-added columns; the DB permission tests now run on it (the fixture includes it, no second copy) and `tests/supabase-baseline.cjs` checks it against the snapshot. The `GM_STATE_TABLE_MISSING` fallback is removed from `js/cloud.js`. No live check needed: nothing players see changes.
 - **Claude, done 2026-11-22 (Atlas UX spec, `docs/ux/atlas-20261121.md`):** full bleed at all three levels (no grey; zoom stops at cover, pan at the edges); the timeline starts folded so the landing fits the continent; Shamur's street map is a baked Watabou export in the atlas's own pan/zoom (no iframe, no generator, no link); breadcrumb `Sit’ota › Valeshar › Shamur`; drawer closed until a place is chosen and swapped behind the clouds; "Lore coming soon" with nation, tier and street-map facts; one Shamur label (plate's "Golshehr" erased); street-map rings and marks; missing-map fallback in the drawer. Details in `CHANGELOG.md` and `docs/world-atlas.md`.
