@@ -5,6 +5,30 @@ Entries before November 5, 2026 were merged from separate `CHANGELOG-<TOPIC>.md`
 
 ---
 
+## Combat Companion v1 for phones (AQ-3)
+
+Owner + Gemini, 2026-11-27 (`docs/ux/mobile-combat-companion-20261127.md`).
+
+- **Way in and out.** On a phone, Play Mode's header has a **Companion** button; the companion has a **Full site**
+  button in its bottom bar. The choice is kept per device. A teammate's read-only sheet stays in full Play Mode.
+- **Table bar.** AP dots and New round, Luck dots, Magic Points −/+, Fatigue (with its grade) and a **Hints on/off**
+  toggle kept per device. Header: the character's name opens a character switcher; the save status badge and, where
+  the browser supports it, **Keep screen on** (Wake Lock, taken again when the page comes back).
+- **Combat tab.** Weapon chips switch the Combat Style %, Size, Reach (Range and Force for ranged), AP/HP and Damage
+  with Damage Modifier. Difficulty buttons (Easy to Herculean) show each grade's % with Fatigue and load applied, and
+  why it moved. **Attack, Parry, Evade** each spend 1 AP; at 0 AP the first tap warns and a second acts anyway.
+  **In-app roll** or **Physical dice** (tap Critical, Success, Failure or Fumble; Cancel refunds the AP). Then the
+  opponent's result, and Special Effect chips filtered by the same rules as Play Mode (CombatRules); `?` on a chip
+  shows its rule inline with a tactics tip for the common ones. Damage strip with Roll damage and a d20 hit location.
+  Condition chips (Prone, Bleeding, Pinned, Impaled, Disabled limb) save with the character as reminders; they do
+  not change any %.
+- **Body tab.** Tap-a-zone figure and seven location rows with HP, armour and wound level. A stepper takes damage
+  through armour, ignoring armour, or heals, using Play Mode's own damage actions, so wound records and saving are
+  unchanged; it flags Minor, Serious and Major and the Endurance check.
+- **Rule Hints** (when on): parry Size rule, 0 AP, Serious Wound reminder, Special Effects, and one line per condition.
+- Files: `js/companion.js`, `sitota-companion.css`, `S.play.conditions` in `js/engine.js`, the hand-over in
+  `js/play.js`. Tests `tests/companion.cjs`.
+
 ## Feedback button on every page; reports export every 6 hours; automation queue
 
 Owner, 2026-11-27.

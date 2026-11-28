@@ -376,7 +376,7 @@ function freshState(){return {
  // start at null, meaning "at max" — they're only written once the player
  // actually spends/takes damage, so a freshly-finished character always
  // shows full without needing an extra initialization step.
- play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"skills",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,spiritCombat:null,mysticismCasting:null,theismCasting:null,castingHurt:null,initiative:null,surprised:false,pinned:[]},
+ play:{hp:{},hpMaxOverride:{},woundEvents:[],luck:null,magic:null,apUsed:0,tab:"skills",fatigue:"Fresh",selectedLoc:null,sorceryCasting:null,spiritCombat:null,mysticismCasting:null,theismCasting:null,castingHurt:null,initiative:null,surprised:false,pinned:[],conditions:[]},
  // Experience Rolls (core rulebook pp.71-73, cross-checked against the
  // Mythras Core pp.71–72, checked against the uploaded rulebook — see audit for
  // citations). pool = banked, unspent Experience Rolls. fumbled = skill
@@ -581,6 +581,8 @@ function normalizeState(){
   // Pinned skills (Play Mode): keys only, unique, capped so a bad save can't bloat the sheet.
   S.play.pinned=Array.isArray(S.play.pinned)?[...new Set(S.play.pinned.filter(k=>typeof k==="string"&&k.length<200))].slice(0,30):[];
   S.play.surprised=S.play.surprised===true;
+  // Combat Companion condition chips (AQ-3): reminders only, known ids, once each.
+  S.play.conditions=Array.isArray(S.play.conditions)?[...new Set(S.play.conditions.filter(k=>["prone","bleeding","pinned","impaled","disabled"].includes(k)))]:[];
   S.play.giftKnown=Array.isArray(S.play.giftKnown)?S.play.giftKnown.filter(x=>typeof x==="string"&&/^[a-z0-9]{4,40}$/.test(x)).slice(-200):[];
   const ini=S.play.initiative;
   if(!ini||!Number.isInteger(ini.roll)||ini.roll<1||ini.roll>10||!Number.isInteger(ini.bonus)||ini.total!==ini.roll+ini.bonus)S.play.initiative=null;
