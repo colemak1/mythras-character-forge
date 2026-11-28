@@ -35,6 +35,7 @@ documents, and `docs/pits-report-ledger.md` keeps the per-report diagnosis. Link
 |---|---|---|---|---|---|---|---|
 | AQ-1 | Site-wide feedback button (bug or idea, saved with page, view and viewport) | owner, 2026-11-27 | — | `READY FOR LIVE TEST` | 0 | 2026-11-27 | Check at 390px and desktop: button above the tab bar, never over navigation; a sent bug appears in the next export as `[Site bug]`. |
 | AQ-2 | Export runs every 6 hours (12 AM, 6 AM, 12 PM, 6 PM Pacific) | owner, 2026-11-27 | — | `READY FOR LIVE TEST` | 0 | 2026-11-27 | After merge: the Actions tab shows a scheduled run of "Export Pits fight reports" at the next slot. |
+| AQ-3 | Mobile Combat Companion v1 (Combat + Body tabs, physical & in-app dice, optional Rule Hints) | owner + Gemini, 2026-11-27 | 2 | QUEUED FOR CLAUDE | 0 | 2026-11-27 | Build per docs/ux/mobile-combat-companion-20261127.md; reuse js/combat-rules.js and Codex · Stone tokens. |
 
 ## Ideas (waiting for the owner)
 
