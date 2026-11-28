@@ -4,10 +4,12 @@ Copied from the site by the "Export Pits fight reports" workflow. One file per r
 build it came from, and the fight record (dice and rulings in the order shown, the engine's log, what the stage drew).
 Diagnoses go in `docs/pits-report-ledger.md` on the working branch, not here. How it works: `docs/pits-reports.md`.
 
-74 reports.
+76 reports.
 
 | When (UTC) | Who | Note | Page | Build | File |
 |---|---|---|---|---|---|
+| 2026-11-21 23:03 | - | left elbow still always backwards at the end of fights | experiments/practice-combat.html | arena=5d92e70c91;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=c8e7f37e02;cine-fx=02003a23cc;stage=26a1067db6 | [20261121-230341-0cd909f6.json](20261121-230341-0cd909f6.json) |
+| 2026-11-21 23:02 | - | finishing blow looks awkward here | experiments/practice-combat.html | arena=5d92e70c91;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=c8e7f37e02;cine-fx=02003a23cc;stage=26a1067db6 | [20261121-230211-ac7dcee2.json](20261121-230211-ac7dcee2.json) |
 | 2026-11-20 21:50 | - | knee and elbow joints often bend in the wrong direction. also for press advantage it looks like your pressing advantage before the blow even hits, it should ... | experiments/practice-combat.html | arena=0668e33d79;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=6eb3edda87;cine-fx=02003a23cc;stage=ed0226be94 | [20261120-215045-e01a024c.json](20261120-215045-e01a024c.json) |
 | 2026-11-20 21:49 | - | [Lost #1 note] contested rolls in general are hard to follow and hard to ee if you won the roll or not | experiments/practice-combat.html | arena=0668e33d79;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=6eb3edda87;cine-fx=02003a23cc;stage=ed0226be94 | [20261120-214915-3409cebc.json](20261120-214915-3409cebc.json) |
 | 2026-11-20 21:48 | - | [Lost #1] Pressed "What just happened?" in round 2. | experiments/practice-combat.html | arena=0668e33d79;motion=5c6cf25c54;spring=d6e69e0c95;writer=e371f2e1b2;spring-live=8c9c8efa51;cine=6eb3edda87;cine-fx=02003a23cc;stage=ed0226be94 | [20261120-214853-d0dfc616.json](20261120-214853-d0dfc616.json) |
