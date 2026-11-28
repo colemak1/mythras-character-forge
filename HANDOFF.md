@@ -8,7 +8,7 @@ Read `AGENTS.md`, then this, at the start of every session; update it before end
 **Owner kickoff line for a new Gemini session:**
 > Read AGENTS.md, HANDOFF.md, docs/architecture/README.md and docs/ux/README.md. You are the project architect and UX owner: continue with the next Gemini item.
 
-_Last updated: 2026-11-27 by Claude (feedback button, 6-hourly export, automation queue)_
+_Last updated: 2026-11-28 by Claude (AQ-3 Combat Companion v1)_
 
 ## Where things stand
 
@@ -18,6 +18,7 @@ _Last updated: 2026-11-27 by Claude (feedback button, 6-hourly export, automatio
 - **Combat rules** live in `js/combat-rules.js` (`CombatRules`), shared by Play Mode and The Pits; tests in `tests/combat-rules.cjs`. The Pits is melee only (owner, 2026-11-07).
 
 ## Next
+- **Claude, done 2026-11-28 (scheduled run):** AQ-3 Combat Companion v1 built to `docs/ux/mobile-combat-companion-20261127.md` (`js/companion.js`, `sitota-companion.css`, `tests/companion.cjs`); merged docs PRs #397 and #401. Next queued for Claude: AQ-4 (Pits finishing blow / left elbow, check against PR #398). **ChatGPT (Work), next:** AQ-1, AQ-2 and AQ-3 in `docs/auto-queue.md`.
 - **Claude, done 2026-11-27 (owner):** a feedback button on every page (bug or idea, with page, view and viewport; saved to the Pits reports table so it exports with them, `docs/pits-reports.md` "Site feedback"); the export runs every 6 hours (12 AM, 6 AM, 12 PM, 6 PM Pacific) as well as by hand; `docs/auto-queue.md` is the shared work list (statuses and a retries count). **ChatGPT (Work), next:** AQ-1 and AQ-2 in `docs/auto-queue.md`.
 - **Gemini, done 2026-11-21:** Architecture overview (`docs/architecture/overview-20261121.md`), Atlas UX spec (`docs/ux/atlas-20261121.md`), and `docs/decisions.md` Architecture lines complete.
 - **Claude, done 2026-11-22 (Work's #393 reviewed and brought in):** `supabase/baseline_schema.sql` is the five pre-migration tables from Work's live snapshot, minus the two migration-added columns; the DB permission tests now run on it (the fixture includes it, no second copy) and `tests/supabase-baseline.cjs` checks it against the snapshot. The `GM_STATE_TABLE_MISSING` fallback is removed from `js/cloud.js`. No live check needed: nothing players see changes.

@@ -1629,6 +1629,9 @@ function renderPlayView(){
   document.body.classList.toggle("view-only",VIEW_ONLY);
   document.title=(S.concept.name?S.concept.name+" — ":"")+"Play Mode";
   if(!VIEW_ONLY){rememberGifts(S);if(cloudActive())startGiftPoll();}
+  // Combat Companion (js/companion.js, AQ-3): the focused phone view, when on.
+  if(typeof ccActive==="function"&&ccActive()){renderCompanionView();return;}
+  document.body.classList.remove("cc-mode");
   if(!charsReady()){
     $("#main").innerHTML='<div class="pm-wrap pmx"><p><button class="pm-btn" onclick="APP.backFromPlay()">&#8592; Edit Character</button></p>'
      +'<p class="pm-empty" style="margin-top:14px">Finish Characteristics first &mdash; Play Mode needs those numbers to work from.</p></div>';
@@ -1646,7 +1649,7 @@ function renderPlayView(){
    +'<div class="pmx-avatar">'+(S.concept.portrait?'<img src="'+S.concept.portrait+'" alt="">':'<span>'+esc(initials)+'</span>')+'</div>'
    +'<div class="pmx-id"><button class="pmx-back" onclick="APP.backFromPlay()">'+backLabel+'</button>'
    +'<h1 class="pmx-name">'+esc(name)+'</h1>'+(sub?'<p class="pmx-sub">'+sub+'</p>':'')+'</div>'
-   +'<div class="pmx-headbtns">'+pmHeadExtrasHTML()
+   +'<div class="pmx-headbtns">'+(VIEW_ONLY||typeof ccActive!=="function"?'':'<button type="button" class="pm-btn pmx-cc-enter" onclick="APP.ccEnter()" aria-label="Combat Companion"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></svg><span class="lbl">Companion</span></button>')+pmHeadExtrasHTML()
    +'<button class="pm-btn" onclick="APP.pmPopup(\'log\')" aria-label="Roll log"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/></svg><span class="lbl">Roll log'+(S.rollLog.length?' <span class="pmx-dim">'+S.rollLog.length+'</span>':'')+'</span></button>'
    +(VIEW_ONLY?"":'<button class="pm-btn" onclick="APP.pmPopup(\'advance\')" aria-label="Advance time"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span class="lbl">Advance time</span></button>')
    +(VIEW_ONLY?"":'<button class="pm-btn pmx-pri" onclick="APP.openXP()" aria-label="Improve skills"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span class="lbl">Improve skills</span>'+(S.xp.pool?' <span class="pm-xpbadge">'+S.xp.pool+'</span>':'')+'</button>')
